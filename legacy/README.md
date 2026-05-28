@@ -1,0 +1,2 @@
+# swm
+aplikasi untuk swm

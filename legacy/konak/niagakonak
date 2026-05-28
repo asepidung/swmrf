@@ -1,0 +1,13 @@
+<?php
+$servername = "localhost";
+$username = "u525862761_idung";
+$password = "H4f1zh(!!$@%%@";
+$dbname = "u525862761_swm";
+
+// membuat koneksi
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+// cek koneksi
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
