@@ -25,5 +25,9 @@ class AppServiceProvider extends ServiceProvider
                 ->locales(['en', 'id'])
                 ->visible(outsidePanels: true);
         });
+
+        \Filament\Support\Facades\FilamentAsset::register([
+            \Filament\Support\Assets\Js::make('auto-logout', asset('js/auto-logout.js')),
+        ]);
     }
 }

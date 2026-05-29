@@ -16,6 +16,9 @@ return new class extends Migration
             $table->string('name');
             $table->string('username')->unique();
             $table->string('password');
+            $table->enum('gender', ['L', 'P'])->nullable();
+            $table->enum('role', ['programmer', 'employee'])->default('employee');
+            $table->boolean('is_active')->default(true);
             $table->rememberToken();
             $table->timestamps();
         });

@@ -1,0 +1,140 @@
+<?php
+
+namespace App\Filament\Admin\Resources;
+
+use App\Filament\Admin\Resources\UserResource\Pages;
+use App\Models\User;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Support\Facades\Hash;
+use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Builder;
+
+class UserResource extends Resource
+{
+    protected static ?string $model = User::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-users';
+    
+    protected static ?string $navigationLabel = 'User Management';
+
+    public static function getEloquentQuery(): Builder
+    {
+        // Exclude absolute programmer account from the UI completely
+        return parent::getEloquentQuery()->where('role', '!=', 'programmer');
+    }
+
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\Section::make(__('User Details'))
+                    ->schema([
+                        Forms\Components\TextInput::make('name')
+                            ->label(__('Name'))
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('username')
+                            ->label(__('Username'))
+                            ->required()
+                            ->unique(ignoreRecord: true)
+                            ->maxLength(255),
+                        Forms\Components\Select::make('gender')
+                            ->label(__('Gender'))
+                            ->options([
+                                'L' => __('Male'),
+                                'P' => __('Female'),
+                            ])
+                            ->required(),
+                        Forms\Components\Toggle::make('is_active')
+                            ->label(__('Active Status'))
+                            ->default(true)
+                            ->required(),
+                    ])->columns(2),
+
+                Forms\Components\Section::make(__('Permissions (Hak Akses)'))
+                    ->description(__('Define custom permissions for this employee.'))
+                    ->schema([
+                        Forms\Components\CheckboxList::make('permissions')
+                            ->label(__('Permissions (Hak Akses)'))
+                            ->relationship('permissions', 'name')
+                            ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->name} - " . __($record->description))
+                            ->bulkToggleable()
+                            ->columns(2),
+                    ]),
+            ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('name')
+                    ->label(__('Name'))
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('username')
+                    ->label(__('Username'))
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('gender')
+                    ->label(__('Gender'))
+                    ->badge()
+                    ->colors([
+                        'primary' => 'L',
+                        'warning' => 'P',
+                    ])
+                    ->formatStateUsing(fn ($state) => $state === 'L' ? __('Male') : __('Female')),
+                Tables\Columns\IconColumn::make('is_active')
+                    ->label(__('Active Status'))
+                    ->boolean(),
+            ])
+            ->filters([
+                Tables\Filters\TernaryFilter::make('is_active')
+                    ->label(__('Active Status')),
+            ])
+            ->actions([
+                Tables\Actions\Action::make('reset_password')
+                    ->label(__('Reset Password'))
+                    ->requiresConfirmation()
+                    ->action(function (User $record) {
+                        $record->update([
+                            'password' => Hash::make('1234')
+                        ]);
+                        Notification::make()
+                            ->title(__('Password Reset Successfully'))
+                            ->body(__("The password for user ':username' has been reset to '1234'.", ['username' => $record->username]))
+                            ->success()
+                            ->send();
+                    })
+                    ->visible(fn () => auth()->user()->hasPermission('reset_password'))
+                    ->color('warning')
+                    ->icon('heroicon-o-arrow-path'),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ])
+            ->recordUrl(fn (User $record): string => Pages\EditUser::getUrl(['record' => $record]));
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            //
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListUsers::route('/'),
+            'create' => Pages\CreateUser::route('/create'),
+            'edit' => Pages\EditUser::route('/{record}/edit'),
+        ];
+    }
+}

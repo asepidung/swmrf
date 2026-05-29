@@ -29,6 +29,10 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(Login::class)
+            ->brandName('W-Apps')
+            ->brandLogo(asset('img/light.png'))
+            ->darkModeBrandLogo(asset('img/dark.png'))
+            ->brandLogoHeight('2.5rem')
             ->colors([
                 'primary' => Color::Amber,
             ])
@@ -40,7 +44,6 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\\Filament\\Admin\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -55,6 +58,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                \App\Http\Middleware\CheckActiveUser::class,
+                \App\Http\Middleware\CheckPasswordChange::class,
             ]);
     }
 }
