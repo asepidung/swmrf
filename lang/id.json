@@ -62,5 +62,21 @@
     "Cattle Class": "Kelas Sapi",
     "Cattle Classes": "Kelas Sapi",
     "Created at": "Dibuat pada",
-    "Updated at": "Diperbarui pada"
+    "Updated at": "Diperbarui pada",
+    "Customer": "Customer",
+    "Customers": "Customer",
+    "Customer Segment": "Segmen Customer",
+    "Customer Segments": "Segmen Customer",
+    "Customer Group": "Grup Customer",
+    "Customer Groups": "Grup Customer",
+    "Basic Information": "Informasi Dasar",
+    "Customer profile and relations data.": "Data profil dan relasi customer.",
+    "Customer Name": "Nama Customer",
+    "Leave empty if Customer does not have a Group.": "Kosongkan Jika Customer Tidak Memiliki Grup.",
+    "Segment": "Segmen",
+    "TOP (Term of Payment) / Days": "TOP (Term of Payment) / Hari",
+    "Full Address": "Alamat Lengkap",
+    "Required Documents": "Kebutuhan Dokumen",
+    "Check the documents that must be included during delivery.": "Centang dokumen yang wajib disertakan saat pengiriman.",
+    "TOP (Days)": "TOP (Hari)"
 }

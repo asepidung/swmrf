@@ -40,6 +40,24 @@ class DatabaseSeeder extends Seeder
             ['name' => 'create_cattle_classes', 'module_name' => 'Cattle Classes', 'description' => 'Create cattle classes'],
             ['name' => 'edit_cattle_classes', 'module_name' => 'Cattle Classes', 'description' => 'Edit cattle classes'],
             ['name' => 'delete_cattle_classes', 'module_name' => 'Cattle Classes', 'description' => 'Delete cattle classes'],
+
+            // Customers Module
+            ['name' => 'view_customers', 'module_name' => 'Customers', 'description' => 'View customers'],
+            ['name' => 'create_customers', 'module_name' => 'Customers', 'description' => 'Create customers'],
+            ['name' => 'edit_customers', 'module_name' => 'Customers', 'description' => 'Edit customers'],
+            ['name' => 'delete_customers', 'module_name' => 'Customers', 'description' => 'Delete customers'],
+
+            // Customer Segments Module
+            ['name' => 'view_customer_segments', 'module_name' => 'Customer Segments', 'description' => 'View customer segments'],
+            ['name' => 'create_customer_segments', 'module_name' => 'Customer Segments', 'description' => 'Create customer segments'],
+            ['name' => 'edit_customer_segments', 'module_name' => 'Customer Segments', 'description' => 'Edit customer segments'],
+            ['name' => 'delete_customer_segments', 'module_name' => 'Customer Segments', 'description' => 'Delete customer segments'],
+
+            // Customer Groups Module
+            ['name' => 'view_customer_groups', 'module_name' => 'Customer Groups', 'description' => 'View customer groups'],
+            ['name' => 'create_customer_groups', 'module_name' => 'Customer Groups', 'description' => 'Create customer groups'],
+            ['name' => 'edit_customer_groups', 'module_name' => 'Customer Groups', 'description' => 'Edit customer groups'],
+            ['name' => 'delete_customer_groups', 'module_name' => 'Customer Groups', 'description' => 'Delete customer groups'],
         ];
 
         foreach ($permissions as $perm) {
