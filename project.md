@@ -23,26 +23,44 @@ Database: MySQL. Penamaan tabel dan kolom (baru) wajib menggunakan Bahasa Inggri
 3. Aturan Standar UI/UX & Modul Global (WAJIB DITERAPKAN DI SEMUA MODUL)
 Setiap pengembangan fitur atau penambahan resource baru di Filament wajib menerapkan standarisasi berikut:
 
-Fitur Ekspor Komprehensif (Excel & PDF): Mengingat kebutuhan pelaporan dan dokumentasi fisik yang esensial, setiap modul atau tabel wajib mengimplementasikan fitur export (Excel, PDF, dan opsi Print) menggunakan Bulk Actions atau Header Actions standar di Filament.
+Kenyamanan Entry Data (Ergonomi UI/UX): Form input harus dirancang untuk kecepatan dan kenyamanan pengguna operasional. Selalu terapkan fungsi autofocus() pada field pertama di form Create atau Edit. Susun urutan field secara logis dan natural agar pengguna dapat bernavigasi dengan lancar murni menggunakan tombol Tab pada keyboard tanpa lompatan kursor yang membingungkan.
+
+Fitur Ekspor Komprehensif (Excel & PDF): Mengingat kebutuhan pelaporan yang esensial, setiap modul atau tabel wajib mengimplementasikan fitur export (Excel, PDF, dan opsi Print) menggunakan Bulk Actions atau Header Actions standar di Filament.
 
 Bilingual UI (Dukungan Bahasa): Seluruh elemen antarmuka mulai dari menu, label input (field), notifikasi/alert, pesan error validasi, hingga teks sistem statis wajib mengikuti lokalisasi (Inggris dan Indonesia). Selalu gunakan helper bawaan Laravel seperti __() dan daftarkan terjemahannya di file lang/id.json maupun lang/en.json.
 
 Auto Redirect to Index: Setelah pengguna berhasil membuat data baru (Create) ataupun mengubah data (Edit/Update), workflow form harus dialihkan kembali (redirect) ke halaman daftar data (Index/List). Jangan membiarkan pengguna berdiam di halaman form setelah tombol "Save" ditekan.
 
-Format Angka & Mata Uang (UI vs Database): Pada antarmuka pengguna (UI), gunakan masking agar format desimal menggunakan titik (.) dan pemisah ribuan adalah koma (,) contoh: 1,000.34. Namun, pastikan data yang dikirim dan disimpan ke database diproses sebagai angka murni menggunakan Casting atau mutator Laravel yang tepat.
+Format Angka & Mata Uang (UI vs Database): Pada antarmuka pengguna (UI), gunakan masking otomatis agar format desimal menggunakan titik (.) dan pemisah ribuan adalah koma (,) contoh: 1,000.34. Namun, pastikan data yang dikirim dan disimpan ke database diproses sebagai angka murni menggunakan Casting atau mutator Laravel.
 
 Clickable Rows (UI Tabel Bersih): Untuk menghemat ruang, jangan tampilkan tombol aksi (Actions) statis untuk Edit di dalam table list. Jadikan baris data pada tabel itu sendiri sebagai clickable row agar bisa diklik langsung menuju ke form edit (menggunakan method recordUrl()).
 
-Manajemen Hak Akses (Permissions) Terkelompok: Setiap membuat modul baru, wajib mendaftarkan set hak akses baru di database seeder beserta kolom module_name. Form manajemen hak akses di UI juga wajib ditampilkan secara visual terkelompok berdasarkan modul (Gunakan skema generator dinamis dengan Section untuk tiap modul dan CheckboxList dengan property dehydrated(false), lalu intersep penyimpanannya melalui afterSave dan afterCreate di Pages).
+Manajemen Hak Akses (Permissions) Terkelompok: Setiap membuat modul baru, wajib mendaftarkan set hak akses baru di database seeder beserta kolom module_name. Form manajemen hak akses di UI juga wajib ditampilkan secara visual terkelompok berdasarkan modul (Gunakan skema generator dinamis dengan Section untuk tiap modul dan CheckboxList).
 
 Minimalist Dashboard: Dilarang menampilkan widget non-fungsional bawaan framework (seperti FilamentInfoWidget) pada dashboard. Jaga agar antarmuka hanya memuat informasi fungsional yang berkaitan dengan sistem ERP Wijaya Meat SWM.
 
-4. Workflow & Eksekusi Tugas
-Kerja Berbasis Issue: Kerjakan fitur hanya berdasarkan ruang lingkup (scope) dari GitHub Issue yang sedang ditugaskan. Implementasi harus bersifat sangat mendetail (low-level).
+4. Workflow, Eksekusi Tugas & Komunikasi
+Standar Penulisan Issue: Setiap GitHub Issue wajib dijabarkan sedetail dan sespesifik mungkin (low-level blueprint). Ketegasan detail ini mutlak diperlukan karena issue akan dijadikan acuan kerja langsung oleh programmer junior maupun agen AI level eksekutor.
+
+Konfirmasi Sebelum Eksekusi: Sebelum mengeksekusi kode, implementor wajib mendiskusikan issue yang sedang ditugaskan dengan Project Owner dan melakukan konfirmasi hingga tercapai kesepakatan.
+
+Alur Wajib Eksekusi (Pre-Execution Flow): Saat akan mengerjakan issue baru (misalnya: Issue #7), implementor dilarang langsung melakukan coding. Anda wajib:
+
+Membaca ulang aturan global di project.md ini.
+
+Membaca riwayat seluruh issue sebelumnya (misal: Issue #1 hingga #6) untuk memahami konteks dan dependensi sistem yang sudah ada.
+
+Mengeksekusi instruksi pada Issue #7.
+
+Evaluasi Pasca-Pembuatan (Post-Execution Review): Setelah modul atau issue disepakati selesai dibuat, implementor wajib meninjau ulang:
+
+Apakah dokumen Issue terkait perlu direvisi untuk menyesuaikan dengan hasil akhir pengembangan?
+
+Apakah ditemukan aturan main baru yang mengharuskan pembaruan/revisi pada dokumen project.md ini?
 
 Referensi Legacy Code: Sebelum mulai menyusun logika bisnis di framework baru, wajib meninjau direktori legacy/ untuk memahami proses dan aturan bisnis yang sudah ada pada sistem lama.
 
-Praktik Modern: Hindari kebiasaan pemrograman prosedural. Selalu terapkan standar best-practice arsitektur Laravel 11 (seperti Middleware untuk proteksi, Form Requests untuk validasi, Eloquent relationships, dan Service pattern untuk logika yang kompleks).
+Proaktif Berdiskusi & Memberikan Opsi: Jika terdapat instruksi, alur logika, atau batasan sistem yang ambigu/kurang jelas, implementor (terutama agen AI) DILARANG mengambil asumsi sepihak. Anda wajib berhenti mengeksekusi kode, paparkan masalahnya, dan berikan beberapa pilihan/opsi penyelesaian agar Project Owner dapat memilih jalan yang paling tepat.
 
 5. Kualitas Kode & Manajemen Repositori
 Standar Format Kode: Seluruh kode PHP wajib ditulis mengikuti standar kebersihan kode (seperti PSR-12).
@@ -51,4 +69,13 @@ Konvensi Git Branching: Dilarang melakukan komit langsung ke branch utama (main/
 
 Pull Request (PR): Setiap branch yang selesai harus diajukan sebagai Pull Request dan melalui proses code review sebelum digabungkan.
 
-Catatan: Semua file source code peninggalan versi sebelumnya diselamatkan di dalam folder legacy/ untuk mempermudah pengecekan referensi.
+6. Keamanan Database Utama & Aturan Testing (CRITICAL)
+Proteksi Database Utama: Agen AI dilarang keras menjalankan perintah pengujian (php artisan test) sebelum memverifikasi secara pasti bahwa file phpunit.xml menggunakan environment database in-memory (SQLite :memory:) atau database testing terpisah. Trait RefreshDatabase pada proses testing tidak boleh menyentuh database MySQL utama.
+
+Larangan Reset Database: Dilarang mengeksekusi perintah destruktif seperti php artisan migrate:fresh pada database utama kecuali diinstruksikan secara eksplisit di dalam Issue. Gunakan php artisan migrate standar untuk penambahan modul baru.
+
+Kredensial Akun Default Tetap: Konfigurasi akun default untuk development tidak boleh diubah, dihapus, atau dimodifikasi oleh AI saat membuat modul atau seeder baru. Kredensial berikut wajib dipertahankan dan harus selalu bisa digunakan:
+
+Username: programmer
+
+Password: programmerpassword

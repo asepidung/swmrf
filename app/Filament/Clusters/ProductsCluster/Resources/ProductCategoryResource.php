@@ -41,6 +41,12 @@ class ProductCategoryResource extends Resource
                             ->unique(ignorable: fn ($record) => $record)
                             ->maxLength(255)
                             ->extraInputAttributes(['style' => 'text-transform:uppercase']),
+                        Forms\Components\TextInput::make('prefix')
+                            ->label(__('Prefix (Kode)'))
+                            ->required()
+                            ->numeric()
+                            ->unique(ignorable: fn ($record) => $record)
+                            ->hint(__('Contoh: 1 untuk kategori A, 2 untuk kategori B')),
                     ])
             ]);
     }
@@ -49,13 +55,14 @@ class ProductCategoryResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('id')
-                    ->label(__('ID'))
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('name')
                     ->label(__('Category Name'))
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('prefix')
+                    ->label(__('Prefix'))
+                    ->sortable()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Created at'))
                     ->dateTime()

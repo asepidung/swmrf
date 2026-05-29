@@ -7,5 +7,8 @@ use Filament\Clusters\Cluster;
 class Materials extends Cluster
 {
     protected static ?string $navigationIcon = 'heroicon-o-archive-box';
-    protected static ?string $navigationGroup = 'Master Data';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Master Data');
+    }
 }

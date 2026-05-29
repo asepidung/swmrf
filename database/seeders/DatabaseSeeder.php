@@ -81,7 +81,7 @@ class DatabaseSeeder extends Seeder
             ['username' => 'programmer'],
             [
                 'name' => 'Programmer SWM',
-                'password' => Hash::make('programmerpassword'),
+                'password' => 'programmerpassword',
                 'gender' => 'L',
                 'role' => 'programmer',
                 'is_active' => true,
@@ -93,7 +93,7 @@ class DatabaseSeeder extends Seeder
             ['username' => 'employee'],
             [
                 'name' => 'Karyawan SWM',
-                'password' => Hash::make('1234'), // default password to trigger change
+                'password' => '1234', // default password to trigger change
                 'gender' => 'P',
                 'role' => 'employee',
                 'is_active' => true,

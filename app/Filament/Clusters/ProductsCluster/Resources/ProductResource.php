@@ -94,6 +94,12 @@ class ProductResource extends Resource
                                     ->unique('product_categories', 'name')
                                     ->maxLength(255)
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
+                                Forms\Components\TextInput::make('prefix')
+                                    ->label(__('Prefix (Kode)'))
+                                    ->required()
+                                    ->numeric()
+                                    ->unique('product_categories', 'prefix')
+                                    ->hint(__('Contoh: 1 untuk kategori A, 2 untuk kategori B')),
                             ])
                             ->createOptionAction(
                                 fn (Forms\Components\Actions\Action $action) => $action->modalWidth('md')->color('warning')
@@ -197,19 +203,31 @@ class ProductResource extends Resource
                 return;
             }
 
-            $categoryId = (int) $categoryId;
+            $category = \App\Models\ProductCategory::find($categoryId);
+            if (!$category || !$category->prefix) {
+                $set('code', null);
+                return;
+            }
+
+            $prefix = (string) $category->prefix;
+            $prefixLen = strlen($prefix);
+
             $maxUrut = Product::where('category_id', $categoryId)
                 ->whereNull('parent_id')
                 ->get()
-                ->map(function ($product) use ($categoryId) {
-                    $code = (int) $product->code;
-                    return (int) (($code - ($categoryId * 100000)) / 100);
+                ->map(function ($product) use ($prefix, $prefixLen) {
+                    $code = $product->code;
+                    if (str_starts_with($code, $prefix) && str_ends_with($code, '00') && strlen($code) === ($prefixLen + 5)) {
+                        return (int) substr($code, $prefixLen, 3);
+                    }
+                    return 0;
                 })
                 ->max() ?? 0;
 
             $nomorUrut = $maxUrut + 1;
-            $code = ($categoryId * 100000) + ($nomorUrut * 100);
-            $set('code', (string) $code);
+            // e.g. prefix 1, urut 1 -> 100100 (prefix + 001 + 00)
+            $code = $prefix . sprintf('%03d', $nomorUrut) . '00';
+            $set('code', $code);
         } elseif ($structureType === 'sub') {
             $parentId = $get('parent_id');
             if (!$parentId) {
@@ -218,22 +236,23 @@ class ProductResource extends Resource
             }
 
             $parent = Product::find($parentId);
-            if (!$parent) {
+            if (!$parent || !$parent->code) {
                 $set('code', null);
                 return;
             }
 
             $parentCode = (int) $parent->code;
             $count = Product::where('parent_id', $parentId)->count();
-            $nextCode = $parentCode + $count + 1;
+
+            $nextCode = (string) ($parentCode + $count + 1);
 
             // Collision check
             while (Product::where('code', $nextCode)->exists()) {
                 $count++;
-                $nextCode = $parentCode + $count + 1;
+                $nextCode = (string) ($parentCode + $count + 1);
             }
 
-            $set('code', (string) $nextCode);
+            $set('code', $nextCode);
         } else {
             $set('code', null);
         }

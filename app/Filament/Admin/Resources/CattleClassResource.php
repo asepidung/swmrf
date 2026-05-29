@@ -19,7 +19,10 @@ class CattleClassResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationGroup = 'Master Data';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Master Data');
+    }
 
     public static function getModelLabel(): string
     {

@@ -8,7 +8,10 @@ class ProductsCluster extends Cluster
 {
     protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
     
-    protected static ?string $navigationGroup = 'Master Data';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Master Data');
+    }
 
     public static function getNavigationLabel(): string
     {

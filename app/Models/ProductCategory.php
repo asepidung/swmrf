@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductCategory extends Model
 {
-    protected $fillable = ['name'];
+    protected $fillable = ['name', 'prefix'];
 
     public function setNameAttribute($value)
     {

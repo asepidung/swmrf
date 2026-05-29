@@ -14,7 +14,7 @@ class ProductTest extends TestCase
     /** @test */
     public function it_forces_uppercase_category_and_product_names()
     {
-        $category = ProductCategory::create(['name' => 'primary cuts']);
+        $category = ProductCategory::create(['name' => 'primary cuts', 'prefix' => 1]);
         $this->assertEquals('PRIMARY CUTS', $category->name);
 
         $product = Product::create([
@@ -30,7 +30,7 @@ class ProductTest extends TestCase
     /** @test */
     public function it_generates_correct_codes_for_main_and_sub_products()
     {
-        $category = ProductCategory::create(['name' => 'PRIMARY CUTS']);
+        $category = ProductCategory::create(['name' => 'PRIMARY CUTS', 'prefix' => 12]);
         $catId = $category->id;
         
         // Mocking Filament Form Set/Get logic
@@ -49,7 +49,7 @@ class ProductTest extends TestCase
 
         // Call the static updateCode from ProductResource
         \App\Filament\Clusters\ProductsCluster\Resources\ProductResource::updateCode($set, $get);
-        $expected1 = (string) (($catId * 100000) + 100);
+        $expected1 = '1200100';
         $this->assertEquals($expected1, $setValues['code']);
 
         // Create the product
@@ -62,12 +62,8 @@ class ProductTest extends TestCase
 
         // Second main product code generation
         $setValues = [];
-        $getValues = [
-            'structure_type' => 'main',
-            'category_id' => $catId,
-        ];
         \App\Filament\Clusters\ProductsCluster\Resources\ProductResource::updateCode($set, $get);
-        $expected2 = (string) (($catId * 100000) + 200);
+        $expected2 = '1200200';
         $this->assertEquals($expected2, $setValues['code']);
 
         // Create second product
@@ -85,7 +81,7 @@ class ProductTest extends TestCase
             'parent_id' => $mainProduct1->id,
         ];
         \App\Filament\Clusters\ProductsCluster\Resources\ProductResource::updateCode($set, $get);
-        $expectedSub1 = (string) ((int) $mainProduct1->code + 1);
+        $expectedSub1 = '1200101';
         $this->assertEquals($expectedSub1, $setValues['code']);
 
         // Create first sub product
@@ -99,12 +95,8 @@ class ProductTest extends TestCase
 
         // Second sub product under mainProduct1
         $setValues = [];
-        $getValues = [
-            'structure_type' => 'sub',
-            'parent_id' => $mainProduct1->id,
-        ];
         \App\Filament\Clusters\ProductsCluster\Resources\ProductResource::updateCode($set, $get);
-        $expectedSub2 = (string) ((int) $mainProduct1->code + 2);
+        $expectedSub2 = '1200102';
         $this->assertEquals($expectedSub2, $setValues['code']);
     }
 }
