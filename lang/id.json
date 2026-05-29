@@ -78,5 +78,17 @@
     "Full Address": "Alamat Lengkap",
     "Required Documents": "Kebutuhan Dokumen",
     "Check the documents that must be included during delivery.": "Centang dokumen yang wajib disertakan saat pengiriman.",
-    "TOP (Days)": "TOP (Hari)"
+    "TOP (Days)": "TOP (Hari)",
+    "Product": "Barang",
+    "Products": "Barang",
+    "Product Category": "Kategori Produk",
+    "Product Categories": "Kategori Produk",
+    "Product Structure": "Struktur Barang",
+    "Main Product": "Produk Utama",
+    "Sub Product / Variant": "Produk Turunan / Varian",
+    "Parent Product": "Barang Induk",
+    "Product Code": "Kode Barang",
+    "Product Name": "Nama Barang",
+    "Variant of": "Varian dari",
+    "Category Name": "Nama Kategori"
 }

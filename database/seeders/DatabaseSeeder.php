@@ -58,6 +58,18 @@ class DatabaseSeeder extends Seeder
             ['name' => 'create_customer_groups', 'module_name' => 'Customer Groups', 'description' => 'Create customer groups'],
             ['name' => 'edit_customer_groups', 'module_name' => 'Customer Groups', 'description' => 'Edit customer groups'],
             ['name' => 'delete_customer_groups', 'module_name' => 'Customer Groups', 'description' => 'Delete customer groups'],
+
+            // Product Categories Module
+            ['name' => 'view_product_categories', 'module_name' => 'Product Categories', 'description' => 'View product categories'],
+            ['name' => 'create_product_categories', 'module_name' => 'Product Categories', 'description' => 'Create product categories'],
+            ['name' => 'edit_product_categories', 'module_name' => 'Product Categories', 'description' => 'Edit product categories'],
+            ['name' => 'delete_product_categories', 'module_name' => 'Product Categories', 'description' => 'Delete product categories'],
+
+            // Products Module
+            ['name' => 'view_products', 'module_name' => 'Products', 'description' => 'View products'],
+            ['name' => 'create_products', 'module_name' => 'Products', 'description' => 'Create products'],
+            ['name' => 'edit_products', 'module_name' => 'Products', 'description' => 'Edit products'],
+            ['name' => 'delete_products', 'module_name' => 'Products', 'description' => 'Delete products'],
         ];
 
         foreach ($permissions as $perm) {
