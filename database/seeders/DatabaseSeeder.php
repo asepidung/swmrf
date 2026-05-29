@@ -75,6 +75,12 @@ class DatabaseSeeder extends Seeder
             ['name' => 'create_bank_accounts', 'module_name' => 'Bank Accounts', 'description' => 'Create bank accounts'],
             ['name' => 'edit_bank_accounts', 'module_name' => 'Bank Accounts', 'description' => 'Edit bank accounts'],
             ['name' => 'delete_bank_accounts', 'module_name' => 'Bank Accounts', 'description' => 'Delete bank accounts'],
+
+            // PO Cattle Module
+            ['name' => 'view_purchase_cattles', 'module_name' => 'PO Cattle', 'description' => 'View PO cattle'],
+            ['name' => 'create_purchase_cattles', 'module_name' => 'PO Cattle', 'description' => 'Create PO cattle'],
+            ['name' => 'edit_purchase_cattles', 'module_name' => 'PO Cattle', 'description' => 'Edit PO cattle'],
+            ['name' => 'delete_purchase_cattles', 'module_name' => 'PO Cattle', 'description' => 'Delete PO cattle'],
         ];
 
         foreach ($permissions as $perm) {
