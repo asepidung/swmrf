@@ -28,6 +28,12 @@ class DatabaseSeeder extends Seeder
             ['name' => 'create_suppliers', 'module_name' => 'Suppliers', 'description' => 'Create suppliers'],
             ['name' => 'edit_suppliers', 'module_name' => 'Suppliers', 'description' => 'Edit suppliers'],
             ['name' => 'delete_suppliers', 'module_name' => 'Suppliers', 'description' => 'Delete suppliers'],
+
+            // Materials Module
+            ['name' => 'view_materials', 'module_name' => 'Logistic Items', 'description' => 'View logistic items'],
+            ['name' => 'create_materials', 'module_name' => 'Logistic Items', 'description' => 'Create logistic items'],
+            ['name' => 'edit_materials', 'module_name' => 'Logistic Items', 'description' => 'Edit logistic items'],
+            ['name' => 'delete_materials', 'module_name' => 'Logistic Items', 'description' => 'Delete logistic items'],
         ];
 
         foreach ($permissions as $perm) {

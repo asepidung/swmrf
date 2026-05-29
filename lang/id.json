@@ -43,5 +43,20 @@
     "Tax 11%": "Pajak 11%",
     "Enable 11% value-added tax for this supplier": "Aktifkan pajak pertambahan nilai 11% untuk pemasok ini",
     "Toggle supplier active state": "Ubah status aktif/non-aktif pemasok",
-    "User Management": "Manajemen User"
+    "User Management": "Manajemen User",
+    "Logistic Items": "Barang Logistik",
+    "Logistic Item": "Barang Logistik",
+    "Logistic Item Information": "Informasi Barang Logistik",
+    "Item Code": "Kode Barang",
+    "Item Name": "Nama Barang",
+    "Auto-generated": "Dibuat otomatis",
+    "Unit": "Satuan",
+    "Unit Name": "Nama Satuan",
+    "Category": "Kategori",
+    "Category Name": "Nama Kategori",
+    "Min. Stock": "Stok Minimum",
+    "Show in Stock List?": "Tampilkan di Daftar Stok?",
+    "Turn OFF for non-inventory items like Office Supplies.": "Matikan untuk barang non-inventaris seperti Alat Tulis Kantor.",
+    "Is Active": "Aktif",
+    "Show in Stock": "Tampil di Stok"
 }
