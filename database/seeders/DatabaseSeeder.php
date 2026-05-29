@@ -34,6 +34,12 @@ class DatabaseSeeder extends Seeder
             ['name' => 'create_materials', 'module_name' => 'Logistic Items', 'description' => 'Create logistic items'],
             ['name' => 'edit_materials', 'module_name' => 'Logistic Items', 'description' => 'Edit logistic items'],
             ['name' => 'delete_materials', 'module_name' => 'Logistic Items', 'description' => 'Delete logistic items'],
+
+            // Cattle Class Module
+            ['name' => 'view_cattle_classes', 'module_name' => 'Cattle Classes', 'description' => 'View cattle classes'],
+            ['name' => 'create_cattle_classes', 'module_name' => 'Cattle Classes', 'description' => 'Create cattle classes'],
+            ['name' => 'edit_cattle_classes', 'module_name' => 'Cattle Classes', 'description' => 'Edit cattle classes'],
+            ['name' => 'delete_cattle_classes', 'module_name' => 'Cattle Classes', 'description' => 'Delete cattle classes'],
         ];
 
         foreach ($permissions as $perm) {
