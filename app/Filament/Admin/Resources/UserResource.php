@@ -18,8 +18,16 @@ class UserResource extends Resource
     protected static ?string $model = User::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
-    
-    protected static ?string $navigationLabel = 'User Management';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Master Data');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('User Management');
+    }
 
     public static function getEloquentQuery(): Builder
     {
@@ -57,14 +65,34 @@ class UserResource extends Resource
 
                 Forms\Components\Section::make(__('Permissions (Hak Akses)'))
                     ->description(__('Define custom permissions for this employee.'))
-                    ->schema([
-                        Forms\Components\CheckboxList::make('permissions')
-                            ->label(__('Permissions (Hak Akses)'))
-                            ->relationship('permissions', 'name')
-                            ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->name} - " . __($record->description))
-                            ->bulkToggleable()
-                            ->columns(2),
-                    ]),
+                    ->schema(function () {
+                        $schema = [];
+                        $modules = \App\Models\Permission::all()->groupBy('module_name');
+
+                        foreach ($modules as $moduleName => $permissions) {
+                            $schema[] = Forms\Components\Section::make(__($moduleName))
+                                ->schema([
+                                    Forms\Components\CheckboxList::make('permissions_' . $moduleName)
+                                        ->hiddenLabel()
+                                        ->options($permissions->pluck('description', 'id')->toArray())
+                                        ->bulkToggleable()
+                                        ->columns(4)
+                                        ->dehydrated(false)
+                                        ->afterStateHydrated(function (Forms\Components\CheckboxList $component, ?User $record) use ($moduleName) {
+                                            if ($record) {
+                                                $hasPermissions = $record->permissions()
+                                                    ->where('module_name', $moduleName)
+                                                    ->pluck('permissions.id')
+                                                    ->toArray();
+                                                $component->state($hasPermissions);
+                                            }
+                                        }),
+                                ])
+                                ->compact()
+                                ->collapsible();
+                        }
+                        return $schema;
+                    }),
             ]);
     }
 

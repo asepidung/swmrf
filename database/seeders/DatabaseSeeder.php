@@ -16,11 +16,18 @@ class DatabaseSeeder extends Seeder
     {
         // 1. Seed Permissions
         $permissions = [
-            ['name' => 'view_users', 'description' => 'View users'],
-            ['name' => 'create_users', 'description' => 'Create users'],
-            ['name' => 'edit_users', 'description' => 'Edit users'],
-            ['name' => 'delete_users', 'description' => 'Delete users'],
-            ['name' => 'reset_password', 'description' => 'Reset password'],
+            // User Module
+            ['name' => 'view_users', 'module_name' => 'Users', 'description' => 'View users'],
+            ['name' => 'create_users', 'module_name' => 'Users', 'description' => 'Create users'],
+            ['name' => 'edit_users', 'module_name' => 'Users', 'description' => 'Edit users'],
+            ['name' => 'delete_users', 'module_name' => 'Users', 'description' => 'Delete users'],
+            ['name' => 'reset_password', 'module_name' => 'Users', 'description' => 'Reset password'],
+            
+            // Supplier Module
+            ['name' => 'view_suppliers', 'module_name' => 'Suppliers', 'description' => 'View suppliers'],
+            ['name' => 'create_suppliers', 'module_name' => 'Suppliers', 'description' => 'Create suppliers'],
+            ['name' => 'edit_suppliers', 'module_name' => 'Suppliers', 'description' => 'Edit suppliers'],
+            ['name' => 'delete_suppliers', 'module_name' => 'Suppliers', 'description' => 'Delete suppliers'],
         ];
 
         foreach ($permissions as $perm) {

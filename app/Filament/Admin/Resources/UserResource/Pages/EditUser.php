@@ -21,4 +21,18 @@ class EditUser extends EditRecord
     {
         return $this->getResource()::getUrl('index');
     }
+
+    protected function afterSave(): void
+    {
+        $data = $this->form->getRawState();
+        $permissionIds = [];
+
+        foreach ($data as $key => $value) {
+            if (str_starts_with($key, 'permissions_') && is_array($value)) {
+                $permissionIds = array_merge($permissionIds, $value);
+            }
+        }
+
+        $this->record->permissions()->sync($permissionIds);
+    }
 }
