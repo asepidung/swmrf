@@ -70,6 +70,11 @@ class DatabaseSeeder extends Seeder
             ['name' => 'create_products', 'module_name' => 'Products', 'description' => 'Create products'],
             ['name' => 'edit_products', 'module_name' => 'Products', 'description' => 'Edit products'],
             ['name' => 'delete_products', 'module_name' => 'Products', 'description' => 'Delete products'],
+            // Bank Accounts Module
+            ['name' => 'view_bank_accounts', 'module_name' => 'Bank Accounts', 'description' => 'View bank accounts'],
+            ['name' => 'create_bank_accounts', 'module_name' => 'Bank Accounts', 'description' => 'Create bank accounts'],
+            ['name' => 'edit_bank_accounts', 'module_name' => 'Bank Accounts', 'description' => 'Edit bank accounts'],
+            ['name' => 'delete_bank_accounts', 'module_name' => 'Bank Accounts', 'description' => 'Delete bank accounts'],
         ];
 
         foreach ($permissions as $perm) {
