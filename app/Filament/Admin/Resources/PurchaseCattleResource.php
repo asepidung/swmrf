@@ -146,14 +146,7 @@ class PurchaseCattleResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\Action::make('print')
-                    ->label('')
-                    ->tooltip('Print PO')
-                    ->icon('heroicon-o-printer')
-                    ->url(fn (PurchaseCattle $record): string => route('po-cattle.print', $record))
-                    ->openUrlInNewTab(),
-                Tables\Actions\EditAction::make()->label(''),
-                Tables\Actions\DeleteAction::make()->label(''),
+                // No action buttons on index page
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

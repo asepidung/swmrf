@@ -13,6 +13,12 @@ class EditPurchaseCattle extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('print')
+                ->label('Print')
+                ->color('warning')
+                ->icon('heroicon-o-printer')
+                ->url(fn ($record): string => route('po-cattle.print', $record))
+                ->openUrlInNewTab(),
             Actions\DeleteAction::make(),
         ];
     }

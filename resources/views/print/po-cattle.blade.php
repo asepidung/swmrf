@@ -272,26 +272,12 @@
             </div>
         </div>
 
-        <div class="sig-container">
+        <div class="sig-container" style="justify-content: flex-end;">
             <div class="sig-box">
                 <p>Purchasing,</p>
                 <div class="sig-space"></div>
                 <div class="sig-name">{{ $record->creator->name ?? 'AYU' }}</div>
                 <div class="sig-role">Purchasing Dept.</div>
-            </div>
-
-            <div class="sig-box">
-                <p>Mengetahui,</p>
-                <div class="sig-space"></div>
-                <div class="sig-name">AHMAD</div>
-                <div class="sig-role">Finance Manager</div>
-            </div>
-
-            <div class="sig-box">
-                <p>Supplier Confirmation,</p>
-                <div class="sig-space"></div>
-                <div class="sig-name">( ____________________ )</div>
-                <div class="sig-role">Name & Stamp</div>
             </div>
         </div>
     </div>
