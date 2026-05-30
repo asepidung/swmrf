@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Carbon\Carbon;
-
+use Filament\Support\RawJs;
 class PurchaseCattleResource extends Resource
 {
     protected static ?string $model = PurchaseCattle::class;
@@ -68,24 +68,29 @@ class PurchaseCattleResource extends Resource
                                         ->label(__('Name')),
                                 ])
                                 ->placeholder(__('Category'))
+                                ->label('')
                                 ->hiddenLabel(),
                             Forms\Components\TextInput::make('qty')
                                 ->required()
                                 ->rules(['integer', 'min:1'])
                                 ->placeholder(__('Qty / Head'))
+                                ->label('')
                                 ->hiddenLabel(),
                             Forms\Components\TextInput::make('price')
                                 ->required()
                                 ->default(0)
                                 ->prefix('Rp')
-                                ->extraAlpineAttributes(['x-mask:dynamic' => "\$money(\$input, '.', '', 0)"])
+                                ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                 ->stripCharacters('.')
+                                ->numeric()
                                 ->rules(['integer', 'min:0'])
                                 ->extraInputAttributes(['onfocus' => 'this.select()'])
                                 ->placeholder(__('Price / Kg'))
+                                ->label('')
                                 ->hiddenLabel(),
                             Forms\Components\TextInput::make('item_notes')
                                 ->placeholder(__('ITEM NOTE'))
+                                ->label('')
                                 ->hiddenLabel(),
                         ])
                         ->columns(4)

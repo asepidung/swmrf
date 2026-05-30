@@ -13,6 +13,10 @@ class EditPurchaseCattle extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('cancel')
+                ->label('Cancel')
+                ->color('gray')
+                ->url(fn (): string => $this->getResource()::getUrl('index')),
             Actions\Action::make('print')
                 ->label('Print')
                 ->color('warning')
@@ -20,6 +24,13 @@ class EditPurchaseCattle extends EditRecord
                 ->url(fn ($record): string => route('po-cattle.print', $record))
                 ->openUrlInNewTab(),
             Actions\DeleteAction::make(),
+        ];
+    }
+
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getSaveFormAction(),
         ];
     }
 
