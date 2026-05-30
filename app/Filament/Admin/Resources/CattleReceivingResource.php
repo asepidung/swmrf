@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\HtmlString;
 
 class CattleReceivingResource extends Resource
 {
@@ -52,12 +53,14 @@ class CattleReceivingResource extends Resource
                         Forms\Components\TextInput::make('po_number_display')
                             ->label(__('PO Number'))
                             ->disabled()
-                            ->dehydrated(false),
+                            ->dehydrated(false)
+                            ->formatStateUsing(fn ($record, $state) => $state ?: $record?->purchaseCattle?->document_number),
 
                         Forms\Components\TextInput::make('supplier_name_display')
                             ->label(__('Supplier'))
                             ->disabled()
-                            ->dehydrated(false),
+                            ->dehydrated(false)
+                            ->formatStateUsing(fn ($record, $state) => $state ?: $record?->supplier?->name),
 
                         Forms\Components\DatePicker::make('receive_date')
                             ->label(__('Receive Date'))
@@ -94,13 +97,14 @@ class CattleReceivingResource extends Resource
                                     ->required()
                                     ->searchable()
                                     ->preload()
+                                    ->live()
                                     ->label('')
                                     ->hiddenLabel(),
 
                                 Forms\Components\TextInput::make('eartag')
                                     ->placeholder(__('Eartag'))
                                     ->required()
-                                    ->live(onBlur: true)
+                                    ->live(debounce: 500)
                                     ->rules([
                                         fn (Forms\Get $get, ?Model $record): \Closure => function (string $attribute, $value, \Closure $fail) use ($get, $record) {
                                             $eartag = strtoupper(trim((string)$value));
@@ -141,7 +145,7 @@ class CattleReceivingResource extends Resource
                                     ->integer()
                                     ->minValue(0)
                                     ->maxValue(800)
-                                    ->live(onBlur: true)
+                                    ->live(debounce: 500)
                                     ->suffix('Kg')
                                     ->label('')
                                     ->hiddenLabel(),
@@ -163,8 +167,28 @@ class CattleReceivingResource extends Resource
                             ->label(__('Total Weight'))
                             ->content(function (Forms\Get $get) {
                                 $items = $get('items') ?? [];
-                                $total = collect($items)->sum('initial_weight');
-                                return number_format($total) . ' Kg';
+                                
+                                // Group by cattle class name
+                                $classIds = collect($items)->pluck('cattle_class_id')->filter()->unique();
+                                $classes = CattleClass::whereIn('id', $classIds)->pluck('name', 'id');
+                                
+                                $groups = collect($items)->groupBy('cattle_class_id');
+                                $lines = [];
+                                $overallTotal = 0;
+                                
+                                foreach ($groups as $classId => $groupItems) {
+                                    $className = $classes[$classId] ?? __('Unknown');
+                                    $sum = collect($groupItems)->sum('initial_weight');
+                                    $overallTotal += $sum;
+                                    
+                                    if ($className) {
+                                        $lines[] = "{$className}: " . number_format($sum) . ' Kg';
+                                    }
+                                }
+                                
+                                $lines[] = "<strong>Total: " . number_format($overallTotal) . ' Kg</strong>';
+                                
+                                return new HtmlString(implode('<br>', $lines));
                             }),
                     ]),
             ]);
@@ -175,7 +199,7 @@ class CattleReceivingResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('receiving_number')
-                    ->label(__('GRC Number'))
+                    ->label(__('Receive Number'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
@@ -205,10 +229,33 @@ class CattleReceivingResource extends Resource
                     ->color('gray'),
             ])
             ->recordUrl(
-                fn (CattleReceiving $record): string => Pages\ViewCattleReceiving::getUrl([$record->id]),
+                fn (CattleReceiving $record): string => Pages\EditCattleReceiving::getUrl([$record->id]),
             )
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\SelectFilter::make('supplier_id')
+                    ->relationship('supplier', 'name')
+                    ->label(__('Supplier')),
+                Tables\Filters\Filter::make('receive_date')
+                    ->form([
+                        Forms\Components\DatePicker::make('from')
+                            ->label(__('From'))
+                            ->default(now()->startOfMonth()),
+                        Forms\Components\DatePicker::make('until')
+                            ->label(__('Until'))
+                            ->default(now()),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['from'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('receive_date', '>=', $date),
+                            )
+                            ->when(
+                                $data['until'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('receive_date', '<=', $date),
+                            );
+                    }),
             ])
             ->actions([
                 //
