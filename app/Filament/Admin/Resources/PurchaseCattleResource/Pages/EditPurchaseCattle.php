@@ -30,6 +30,9 @@ class EditPurchaseCattle extends EditRecord
 
     protected function getFormActions(): array
     {
+        if ($this->getRecord()->receivings()->exists()) {
+            return [];
+        }
         return [
             $this->getSaveFormAction(),
         ];

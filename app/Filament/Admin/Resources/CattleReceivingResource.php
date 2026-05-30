@@ -178,7 +178,7 @@ class CattleReceivingResource extends Resource
                                 
                                 foreach ($groups as $classId => $groupItems) {
                                     $className = $classes[$classId] ?? __('Unknown');
-                                    $sum = collect($groupItems)->sum('initial_weight');
+                                    $sum = collect($groupItems)->sum(fn ($item) => (int) ($item['initial_weight'] ?? 0));
                                     $overallTotal += $sum;
                                     
                                     if ($className) {
