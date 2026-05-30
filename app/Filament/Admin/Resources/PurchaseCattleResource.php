@@ -40,9 +40,6 @@ class PurchaseCattleResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Section::make('Header Info')->schema([
-                    Forms\Components\Placeholder::make('document_number')
-                        ->label(__('Document Number'))
-                        ->content(fn ($record) => $record?->document_number ?? 'Auto Generated'),
                     Forms\Components\Select::make('supplier_id')
                         ->relationship('supplier', 'name')
                         ->required()
@@ -54,7 +51,7 @@ class PurchaseCattleResource extends Resource
                     Forms\Components\Textarea::make('summary_note')
                         ->label(__('Summary Note'))
                         ->columnSpanFull(),
-                ])->columns(3),
+                ])->columns(2),
                 
                 Forms\Components\Section::make('Items')->schema([
                     Forms\Components\Repeater::make('items')
@@ -63,6 +60,13 @@ class PurchaseCattleResource extends Resource
                             Forms\Components\Select::make('cattle_class_id')
                                 ->relationship('cattleClass', 'name')
                                 ->required()
+                                ->createOptionForm([
+                                    Forms\Components\TextInput::make('name')
+                                        ->required()
+                                        ->maxLength(255)
+                                        ->unique(table: 'cattle_classes', column: 'name')
+                                        ->label(__('Name')),
+                                ])
                                 ->label(__('Cattle Class')),
                             Forms\Components\TextInput::make('qty')
                                 ->numeric()
@@ -70,9 +74,11 @@ class PurchaseCattleResource extends Resource
                                 ->minValue(1)
                                 ->label(__('Qty (Head)')),
                             Forms\Components\TextInput::make('price')
-                                ->numeric()
                                 ->required()
                                 ->default(0)
+                                ->extraAlpineAttributes(['x-mask:dynamic' => "\$money(\$input, ',', '', 0)"])
+                                ->stripCharacters(',')
+                                ->numeric()
                                 ->minValue(0)
                                 ->extraInputAttributes(['onfocus' => 'this.select()'])
                                 ->label(__('Price')),
@@ -91,35 +97,25 @@ class PurchaseCattleResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('document_number')
-                    ->label(__('Document Number'))
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('supplier.name')
-                    ->label(__('Supplier'))
-                    ->searchable(),
+                    ->label(__('PO Number'))
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label(__('PO Date'))
+                    ->date('d-M-Y')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('shipping_date')
                     ->label(__('Shipping Date'))
-                    ->date()
+                    ->date('d-M-Y')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('created_by')
-                    ->label(__('Created By'))
-                    ->numeric()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label(__('Created At'))
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->label(__('Updated At'))
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('deleted_at')
-                    ->label(__('Deleted At'))
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('supplier.name')
+                    ->label(__('Supplier'))
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('summary_note')
+                    ->label(__('Note'))
+                    ->limit(50)
+                    ->searchable(),
             ])
             ->recordUrl(
                 fn (Model $record): string => Pages\EditPurchaseCattle::getUrl([$record->getKey()]),
@@ -151,10 +147,13 @@ class PurchaseCattleResource extends Resource
             ])
             ->actions([
                 Tables\Actions\Action::make('print')
-                    ->label('Print PO')
+                    ->label('')
+                    ->tooltip('Print PO')
                     ->icon('heroicon-o-printer')
                     ->url(fn (PurchaseCattle $record): string => route('po-cattle.print', $record))
                     ->openUrlInNewTab(),
+                Tables\Actions\EditAction::make()->label(''),
+                Tables\Actions\DeleteAction::make()->label(''),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

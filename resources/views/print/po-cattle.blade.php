@@ -1,230 +1,311 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Print PO Cattle - {{ $record->document_number }}</title>
+    <title>Purchase Order Cattle - {{ $record->document_number }}</title>
     <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+
         body {
             font-family: 'Arial', sans-serif;
+            font-size: 11px;
             color: #333;
-            line-height: 1.5;
+            line-height: 1.4;
             margin: 0;
-            padding: 20px;
         }
+
         .header {
             display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            border-bottom: 3px solid #dc2626; /* SWM Red */
-            padding-bottom: 20px;
+            align-items: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
             margin-bottom: 20px;
         }
-        .logo-container {
-            width: 250px;
+
+        .logo-box {
+            width: 80px;
+            margin-right: 20px;
         }
-        .logo-container img {
-            max-width: 100%;
+
+        .logo-box img {
+            width: 100%;
             height: auto;
         }
+
         .company-info {
-            text-align: right;
+            flex-grow: 1;
         }
+
         .company-name {
-            font-size: 24px;
+            font-size: 18px;
             font-weight: bold;
-            color: #dc2626;
+            color: #000;
             margin: 0;
         }
-        .slogan {
-            font-style: italic;
-            font-size: 14px;
-            color: #666;
-            margin-top: 5px;
+
+        .company-address {
+            font-size: 10px;
+            color: #333;
+            margin-top: 3px;
+            line-height: 1.3;
         }
-        .doc-title {
-            text-align: center;
-            font-size: 22px;
-            font-weight: bold;
-            margin: 20px 0;
+
+        .doc-title-box {
+            text-align: right;
+            min-width: 200px;
+        }
+
+        .doc-title-box h2 {
+            margin: 0;
+            font-size: 20px;
             text-transform: uppercase;
+            color: #000;
+            border-bottom: 1px solid #333;
+            display: inline-block;
         }
-        .info-table {
-            width: 100%;
-            margin-bottom: 20px;
-        }
-        .info-table td {
-            vertical-align: top;
-            padding: 5px;
-        }
-        .info-table .label {
-            font-weight: bold;
-            width: 120px;
-        }
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 30px;
-        }
-        .items-table th, .items-table td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
-        }
-        .items-table th {
-            background-color: #f9fafb;
-            font-weight: bold;
-            color: #374151;
-        }
-        .items-table .text-right {
+
+        .doc-meta {
+            margin-top: 8px;
+            font-size: 11px;
             text-align: right;
         }
-        .items-table .text-center {
+
+        .meta-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+
+        .meta-box {
+            width: 50%;
+            border: 1px solid #000;
+            padding: 8px;
+            border-radius: 2px;
+        }
+
+        .meta-box h4 {
+            margin: 0 0 5px 0;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #555;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 2px;
+        }
+
+        .meta-content {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .meta-address {
+            font-size: 10px;
+            font-weight: normal;
+            margin-top: 4px;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+
+        table th {
+            background: #fafafa;
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 10px;
+        }
+
+        table td {
+            border: 1px solid #000;
+            padding: 6px;
+            vertical-align: top;
+            font-size: 11px;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
             text-align: center;
         }
-        .footer {
-            margin-top: 50px;
+
+        .footer-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .note-section {
+            width: 100%;
+        }
+
+        .note-box {
+            border: 1px solid #ccc;
+            padding: 8px;
+            min-height: 40px;
+            margin-top: 5px;
+            font-size: 10px;
+            font-style: italic;
+        }
+
+        .sig-container {
+            margin-top: 40px;
             display: flex;
             justify-content: space-between;
         }
-        .signature {
+
+        .sig-box {
+            width: 30%;
             text-align: center;
-            width: 250px;
         }
-        .signature-line {
-            border-top: 1px solid #333;
-            margin-top: 80px;
-            padding-top: 5px;
+
+        .sig-space {
+            height: 60px;
         }
+
+        .sig-name {
+            font-weight: bold;
+            text-decoration: underline;
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+
+        .sig-role {
+            font-size: 10px;
+            color: #555;
+        }
+
         @media print {
             body {
-                padding: 0;
+                background: none;
             }
-            @page {
-                margin: 1.5cm;
+
+            .no-print {
+                display: none;
             }
         }
     </style>
 </head>
-<body onload="window.print(); setTimeout(function(){ window.close(); }, 500);">
 
-    <div class="header">
-        <div class="logo-container">
-            <!-- Assuming light.png is in public/images/ or similar. We use asset() -->
-            <img src="{{ asset('images/light.png') }}" alt="SWM Logo" onerror="this.src='https://via.placeholder.com/250x80?text=SWM+Logo'">
+<body>
+
+    <div style="padding: 10px;">
+        <div class="header">
+            <div class="logo-box">
+                <img src="{{ asset('img/light.png') }}" alt="LOGO">
+            </div>
+            <div class="company-info">
+                <div class="company-name">PT. SANTI WIJAYA MEAT</div>
+                <div class="company-address">
+                    PERUM ASABRI RT 001/RW 005, Desa Sukasirna, Kec. Jonggol,<br>
+                    Kab. Bogor, Jawa Barat, 16830 Phone: 0813 6006 959
+                </div>
+            </div>
+            <div class="doc-title-box">
+                <h2>PURCHASE ORDER</h2>
+                <div class="doc-meta">
+                    <strong>PO No:</strong> {{ $record->document_number }}<br>
+                    <strong>Created:</strong> {{ $record->created_at->format('d-M-Y') }}<br>
+                    <strong style="color: #d9534f;">Est. Arrival:</strong> {{ $record->shipping_date ? $record->shipping_date->format('d-M-Y') : '-' }}
+                </div>
+            </div>
         </div>
-        <div class="company-info">
-            <h1 class="company-name">PT SANTI WIJAYA MEAT</h1>
-            <div class="slogan">"Committed to Meeting Your Need"</div>
+
+        <div class="meta-container">
+            <div class="meta-box">
+                <h4>Vendor / Supplier</h4>
+                <div class="meta-content">{{ $record->supplier->name ?? 'Unknown Supplier' }}</div>
+                <div class="meta-address">
+                    {{ $record->supplier->address ?? 'No Address Provided' }}<br>
+                    <strong>Terms of Payment:</strong> {{ $record->supplier->top_days ?? '0' }} Days
+                </div>
+            </div>
+            <div class="meta-box">
+                <h4>Ship To</h4>
+                <div class="meta-content">PT. SANTI WIJAYA MEAT - RPH Jonggol</div>
+                <div class="meta-address">
+                    Jl. SMPN 1 Jonggol Kp. Menan Rt 04/01 Ds. Sukamaju<br>
+                    Kec. Jonggol Kab. Bogor POS 16830
+                </div>
+            </div>
         </div>
-    </div>
 
-    <div class="doc-title">PURCHASE ORDER (CATTLE)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th width="5%">No</th>
+                    <th width="25%">Cattle Class</th>
+                    <th width="15%">Qty (Head)</th>
+                    <th width="20%">Price / Kg</th>
+                    <th width="35%">Item Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($record->items as $index => $item)
+                <tr>
+                    <td class="text-center">{{ $index + 1 }}</td>
+                    <td>{{ $item->cattleClass->name ?? '-' }}</td>
+                    <td class="text-center">{{ number_format($item->qty, 0, ',', '.') }} Ekor</td>
+                    <td class="text-right">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
+                    <td>{{ $item->item_notes ?? '-' }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
 
-    <table class="info-table">
-        <tr>
-            <td width="50%">
-                <table width="100%">
-                    <tr>
-                        <td class="label">Supplier:</td>
-                        <td>{{ $record->supplier->name ?? '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Address:</td>
-                        <td>{{ $record->supplier->address ?? '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Phone:</td>
-                        <td>{{ $record->supplier->phone ?? '-' }}</td>
-                    </tr>
-                </table>
-            </td>
-            <td width="50%">
-                <table width="100%">
-                    <tr>
-                        <td class="label">PO Number:</td>
-                        <td><strong>{{ $record->document_number }}</strong></td>
-                    </tr>
-                    <tr>
-                        <td class="label">Date:</td>
-                        <td>{{ $record->created_at->format('d M Y') }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Shipping Date:</td>
-                        <td>{{ $record->shipping_date->format('d M Y') }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Ship To:</td>
-                        <td>RPH Jonggol Jl. SMPN 01 Jonggol<br>Kp. Menan Rt 06 Rw 02 Ds. Sukamaju<br>Kec. Jonggol Kab. Bogor 16830</td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-
-    <table class="items-table">
-        <thead>
-            <tr>
-                <th width="5%" class="text-center">No</th>
-                <th width="35%">Cattle Class</th>
-                <th width="15%" class="text-center">Qty (Head)</th>
-                <th width="20%" class="text-right">Price</th>
-                <th width="25%" class="text-right">Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            @php $totalQty = 0; $totalAmount = 0; @endphp
-            @foreach($record->items as $index => $item)
-            @php 
-                $subtotal = $item->qty * $item->price;
-                $totalQty += $item->qty;
-                $totalAmount += $subtotal;
-            @endphp
-            <tr>
-                <td class="text-center">{{ $index + 1 }}</td>
-                <td>
-                    {{ $item->cattleClass->name ?? '-' }}
-                    @if($item->item_notes)
-                        <br><small style="color: #666;">Note: {{ $item->item_notes }}</small>
-                    @endif
-                </td>
-                <td class="text-center">{{ number_format($item->qty) }}</td>
-                <td class="text-right">{{ number_format($item->price, 2) }}</td>
-                <td class="text-right">{{ number_format($subtotal, 2) }}</td>
-            </tr>
-            @endforeach
-        </tbody>
-        <tfoot>
-            <tr>
-                <th colspan="2" class="text-right">Grand Total</th>
-                <th class="text-center">{{ number_format($totalQty) }}</th>
-                <th></th>
-                <th class="text-right">{{ number_format($totalAmount, 2) }}</th>
-            </tr>
-        </tfoot>
-    </table>
-
-    @if($record->summary_note)
-    <div style="margin-bottom: 20px;">
-        <strong>Notes:</strong><br>
-        {!! nl2br(e($record->summary_note)) !!}
-    </div>
-    @endif
-
-    <div class="footer">
-        <div class="signature">
-            <div style="margin-bottom: 60px;">Created By,</div>
-            <div class="signature-line">{{ $record->creator->name ?? 'Admin' }}</div>
+        <div class="footer-container">
+            <div class="note-section">
+                <strong>General Notes:</strong>
+                <div class="note-box">
+                    {{ $record->summary_note ?? 'Tidak ada catatan tambahan.' }}
+                </div>
+            </div>
         </div>
-        <div class="signature">
-            <div style="margin-bottom: 60px;">Approved By,</div>
-            <div class="signature-line">Director</div>
-        </div>
-        <div class="signature">
-            <div style="margin-bottom: 60px;">Supplier / Vendor,</div>
-            <div class="signature-line">{{ $record->supplier->name ?? '-' }}</div>
+
+        <div class="sig-container">
+            <div class="sig-box">
+                <p>Purchasing,</p>
+                <div class="sig-space"></div>
+                <div class="sig-name">{{ $record->creator->name ?? 'AYU' }}</div>
+                <div class="sig-role">Purchasing Dept.</div>
+            </div>
+
+            <div class="sig-box">
+                <p>Mengetahui,</p>
+                <div class="sig-space"></div>
+                <div class="sig-name">AHMAD</div>
+                <div class="sig-role">Finance Manager</div>
+            </div>
+
+            <div class="sig-box">
+                <p>Supplier Confirmation,</p>
+                <div class="sig-space"></div>
+                <div class="sig-name">( ____________________ )</div>
+                <div class="sig-role">Name & Stamp</div>
+            </div>
         </div>
     </div>
+
+    <script>
+        window.onload = function() {
+            window.print();
+        };
+
+        window.onafterprint = function() {
+            window.close();
+        };
+    </script>
 
 </body>
+
 </html>
