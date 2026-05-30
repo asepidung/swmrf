@@ -81,6 +81,9 @@ class DatabaseSeeder extends Seeder
             ['name' => 'create_purchase_cattles', 'module_name' => 'PO Cattle', 'description' => 'Create PO cattle'],
             ['name' => 'edit_purchase_cattles', 'module_name' => 'PO Cattle', 'description' => 'Edit PO cattle'],
             ['name' => 'delete_purchase_cattles', 'module_name' => 'PO Cattle', 'description' => 'Delete PO cattle'],
+
+            // Activity Logs Module
+            ['name' => 'view_activity_logs', 'module_name' => 'Activity Logs', 'description' => 'View activity logs'],
         ];
 
         foreach ($permissions as $perm) {
