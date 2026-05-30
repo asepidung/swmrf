@@ -53,7 +53,7 @@ class PurchaseCattleResource extends Resource
                         ->columnSpanFull(),
                 ])->columns(2),
                 
-                Forms\Components\Section::make('Items')->schema([
+                Forms\Components\Section::make('Cattle Details')->schema([
                     Forms\Components\Repeater::make('items')
                         ->relationship()
                         ->schema([
@@ -67,27 +67,31 @@ class PurchaseCattleResource extends Resource
                                         ->unique(table: 'cattle_classes', column: 'name')
                                         ->label(__('Name')),
                                 ])
-                                ->label(__('Cattle Class')),
+                                ->placeholder(__('Category'))
+                                ->hiddenLabel(),
                             Forms\Components\TextInput::make('qty')
-                                ->numeric()
                                 ->required()
-                                ->minValue(1)
-                                ->label(__('Qty (Head)')),
+                                ->rules(['integer', 'min:1'])
+                                ->placeholder(__('Qty / Head'))
+                                ->hiddenLabel(),
                             Forms\Components\TextInput::make('price')
                                 ->required()
                                 ->default(0)
-                                ->extraAlpineAttributes(['x-mask:dynamic' => "\$money(\$input, ',', '', 0)"])
-                                ->stripCharacters(',')
-                                ->numeric()
-                                ->minValue(0)
+                                ->prefix('Rp')
+                                ->extraAlpineAttributes(['x-mask:dynamic' => "\$money(\$input, '.', '', 0)"])
+                                ->stripCharacters('.')
+                                ->rules(['integer', 'min:0'])
                                 ->extraInputAttributes(['onfocus' => 'this.select()'])
-                                ->label(__('Price')),
-                            Forms\Components\Textarea::make('item_notes')
-                                ->label(__('Item Notes'))
-                                ->rows(1),
+                                ->placeholder(__('Price / Kg'))
+                                ->hiddenLabel(),
+                            Forms\Components\TextInput::make('item_notes')
+                                ->placeholder(__('ITEM NOTE'))
+                                ->hiddenLabel(),
                         ])
                         ->columns(4)
                         ->defaultItems(1)
+                        ->hiddenLabel()
+                        ->addActionLabel(__('Add Cattle'))
                 ])
             ]);
     }
