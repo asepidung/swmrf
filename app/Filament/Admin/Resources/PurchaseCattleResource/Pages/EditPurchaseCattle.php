@@ -23,7 +23,8 @@ class EditPurchaseCattle extends EditRecord
                 ->icon('heroicon-o-printer')
                 ->url(fn ($record): string => route('po-cattle.print', $record))
                 ->openUrlInNewTab(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->disabled(fn ($record) => $record->receivings()->exists()),
         ];
     }
 

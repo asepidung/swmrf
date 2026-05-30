@@ -98,7 +98,8 @@ class PurchaseCattleResource extends Resource
                         ->hiddenLabel()
                         ->addActionLabel(__('Add Cattle'))
                 ])
-            ]);
+            ])
+            ->disabled(fn (?PurchaseCattle $record) => $record && $record->receivings()->exists());
     }
 
     public static function table(Table $table): Table
