@@ -23,6 +23,11 @@ class PurchaseCattleItem extends Model
         'created_by',
     ];
 
+    protected $casts = [
+        'qty' => 'integer',
+        'price' => 'integer',
+    ];
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

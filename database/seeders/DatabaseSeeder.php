@@ -84,6 +84,20 @@ class DatabaseSeeder extends Seeder
 
             // Activity Logs Module
             ['name' => 'view_activity_logs', 'module_name' => 'Activity Logs', 'description' => 'View activity logs'],
+            // Cattle Receiving Module
+            ['name' => 'view_cattle_receivings', 'module_name' => 'Cattle Receiving', 'description' => 'View cattle receivings'],
+            ['name' => 'create_cattle_receivings', 'module_name' => 'Cattle Receiving', 'description' => 'Create cattle receivings'],
+            ['name' => 'edit_cattle_receivings', 'module_name' => 'Cattle Receiving', 'description' => 'Edit cattle receivings'],
+            ['name' => 'delete_cattle_receivings', 'module_name' => 'Cattle Receiving', 'description' => 'Delete cattle receivings'],
+
+            // Cattle Weighing Module
+            ['name' => 'view_cattle_weighings', 'module_name' => 'Cattle Weighing', 'description' => 'View cattle weighings'],
+            ['name' => 'create_cattle_weighings', 'module_name' => 'Cattle Weighing', 'description' => 'Create cattle weighings'],
+            ['name' => 'edit_cattle_weighings', 'module_name' => 'Cattle Weighing', 'description' => 'Edit cattle weighings'],
+            ['name' => 'delete_cattle_weighings', 'module_name' => 'Cattle Weighing', 'description' => 'Delete cattle weighings'],
+
+            // Financial Loss Module
+            ['name' => 'view_financial_losses', 'module_name' => 'Financial Loss', 'description' => 'View financial losses'],
         ];
 
         foreach ($permissions as $perm) {

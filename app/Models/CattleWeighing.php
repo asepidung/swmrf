@@ -109,6 +109,66 @@ class CattleWeighing extends Model
         return $this->morphOne(FinancialLoss::class, 'lossable');
     }
 
+    public function calculateAndSaveFinancialLoss(): void
+    {
+        $this->refresh();
+        $receiving = CattleReceiving::with('purchaseCattle.items')->find($this->cattle_receiving_id);
+        
+        $totalLoss = 0;
+        
+        if ($receiving && $receiving->purchaseCattle) {
+            $po = $receiving->purchaseCattle;
+            $poItems = $po->items->keyBy('cattle_class_id');
+            $supplierId = $po->supplier_id;
+            
+            foreach ($this->items as $itemData) {
+                $initial = floatval($itemData->initial_weight ?? 0);
+                $actual = floatval($itemData->actual_weight ?? 0);
+                
+                if ($actual < $initial) {
+                    $lossWeight = $initial - $actual;
+                    $classId = $itemData->cattle_class_id ?? null;
+                    $price = 0;
+                    
+                    if ($classId) {
+                        // 1. Cek di PO saat ini
+                        if (isset($poItems[$classId])) {
+                            $price = $poItems[$classId]->price;
+                        } else {
+                            // 2. Cek histori harga terakhir dari supplier yg sama untuk class ini
+                            $lastPurchaseItem = \App\Models\PurchaseCattleItem::where('cattle_class_id', $classId)
+                                ->whereHas('purchaseCattle', function ($q) use ($supplierId) {
+                                    $q->where('supplier_id', $supplierId);
+                                })
+                                ->latest('created_at')
+                                ->first();
+
+                            if ($lastPurchaseItem && $lastPurchaseItem->price > 0) {
+                                $price = $lastPurchaseItem->price;
+                            } else {
+                                // 3. Fallback: Rata-rata harga class yg ada di PO ini
+                                if ($poItems->count() > 0) {
+                                    $price = $poItems->avg('price');
+                                }
+                            }
+                        }
+                    }
+                    
+                    $totalLoss += ($lossWeight * $price);
+                }
+            }
+        }
+        
+        if ($totalLoss > 0) {
+            $this->financialLoss()->updateOrCreate(
+                ['transaction_type' => 'Cattle Weighing', 'reference_number' => $this->weighing_number],
+                ['date' => $this->weighing_date, 'amount' => $totalLoss, 'note' => 'Susut Timbang Ulang Sapi']
+            );
+        } else {
+            $this->financialLoss()->delete();
+        }
+    }
+
     public function getReceivingNumberAttribute()
     {
         return $this->receiving->receiving_number ?? null;
