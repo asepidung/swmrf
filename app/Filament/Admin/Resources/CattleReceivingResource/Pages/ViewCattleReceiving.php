@@ -17,6 +17,12 @@ class ViewCattleReceiving extends ViewRecord
                 ->label(__('Cancel'))
                 ->url(fn() => static::getResource()::getUrl('index'))
                 ->color('gray'),
+            Actions\Action::make('print')
+                ->label(__('Print'))
+                ->color('warning')
+                ->icon('heroicon-o-printer')
+                ->url(fn ($record): string => route('cattle-receiving.print', $record))
+                ->openUrlInNewTab(),
         ];
     }
 }
