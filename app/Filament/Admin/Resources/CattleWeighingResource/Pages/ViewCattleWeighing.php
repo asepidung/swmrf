@@ -23,7 +23,8 @@ class ViewCattleWeighing extends ViewRecord
                 ->icon('heroicon-o-printer')
                 ->url(fn ($record): string => route('cattle-weighing.print', $record))
                 ->openUrlInNewTab(),
-            Actions\EditAction::make(),
+            Actions\EditAction::make()
+                ->hidden(fn ($record) => $record->trashed()),
         ];
     }
 }
