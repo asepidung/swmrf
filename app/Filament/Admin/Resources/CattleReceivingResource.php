@@ -191,7 +191,8 @@ class CattleReceivingResource extends Resource
                                 return new HtmlString(implode('<br>', $lines));
                             }),
                     ]),
-            ]);
+            ])
+            ->disabled(fn (?CattleReceiving $record) => $record && $record->weighing()->exists());
     }
 
     public static function table(Table $table): Table
@@ -258,7 +259,7 @@ class CattleReceivingResource extends Resource
                     }),
             ])
             ->actions([
-                //
+                // Actions moved to Edit/View page header actions per project guidelines
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

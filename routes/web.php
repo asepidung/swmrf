@@ -8,8 +8,10 @@ Route::get('/', function () {
 
 use App\Http\Controllers\POCattlePrintController;
 use App\Http\Controllers\CattleReceivingPrintController;
+use App\Http\Controllers\CattleWeighingPrintController;
 
 Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/po-cattle/{record}/print', POCattlePrintController::class)->name('po-cattle.print');
     Route::get('/cattle-receiving/{record}/print', CattleReceivingPrintController::class)->name('cattle-receiving.print');
+    Route::get('/cattle-weighing/{record}/print', CattleWeighingPrintController::class)->name('cattle-weighing.print');
 });

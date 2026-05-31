@@ -10,6 +10,8 @@ class EditCattleReceiving extends EditRecord
 {
     protected static string $resource = CattleReceivingResource::class;
 
+
+
     protected function getHeaderActions(): array
     {
         return [
@@ -23,13 +25,16 @@ class EditCattleReceiving extends EditRecord
                 ->icon('heroicon-o-printer')
                 ->url(fn ($record): string => route('cattle-receiving.print', $record))
                 ->openUrlInNewTab(),
-            Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->disabled(fn ($record) => $record->weighing()->exists()),
         ];
     }
 
     protected function getFormActions(): array
     {
+        if ($this->getRecord()->weighing()->exists()) {
+            return [];
+        }
         return [
             $this->getSaveFormAction(),
         ];
