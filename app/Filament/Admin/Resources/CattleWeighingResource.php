@@ -188,31 +188,37 @@ class CattleWeighingResource extends Resource
                 Tables\Columns\TextColumn::make('weighing_number')
                     ->label('Weighing No')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('receiving.receiving_number')
                     ->label('Receive No')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('receiving.purchaseCattle.document_number')
                     ->label('PO No')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('receiving.supplier.name')
                     ->label('Supplier')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('weighing_date')
                     ->label('Date')
                     ->date()
-                    ->sortable(),
+                    ->sortable()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label('Weigher')
                     ->badge()
-                    ->color('success'),
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : 'success'),
                 Tables\Columns\TextColumn::make('items_count')
                     ->counts('items')
                     ->label('Heads')
-                    ->formatStateUsing(fn ($state) => $state . ' Heads'),
+                    ->formatStateUsing(fn ($state) => $state . ' Heads')
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
             ])
             ->recordUrl(
                 fn (CattleWeighing $record): string => $record->trashed()

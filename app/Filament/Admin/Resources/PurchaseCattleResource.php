@@ -109,23 +109,28 @@ class PurchaseCattleResource extends Resource
                 Tables\Columns\TextColumn::make('document_number')
                     ->label(__('PO Number'))
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('PO Date'))
                     ->date('d-M-Y')
-                    ->sortable(),
+                    ->sortable()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('shipping_date')
                     ->label(__('Shipping Date'))
                     ->date('d-M-Y')
-                    ->sortable(),
+                    ->sortable()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('supplier.name')
                     ->label(__('Supplier'))
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('summary_note')
                     ->label(__('Note'))
                     ->limit(50)
-                    ->searchable(),
+                    ->searchable()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
             ])
             ->recordUrl(
                 fn (Model $record): string => $record->trashed() 

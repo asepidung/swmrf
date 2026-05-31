@@ -9,4 +9,14 @@ use Filament\Resources\Pages\ViewRecord;
 class ViewPurchaseCattle extends ViewRecord
 {
     protected static string $resource = PurchaseCattleResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\Action::make('cancel')
+                ->label(__('Cancel'))
+                ->url(fn() => static::getResource()::getUrl('index'))
+                ->color('gray'),
+        ];
+    }
 }

@@ -203,31 +203,36 @@ class CattleReceivingResource extends Resource
                     ->label(__('Receive Number'))
                     ->searchable()
                     ->sortable()
-                    ->weight('bold'),
+                    ->weight('bold')
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
 
                 Tables\Columns\TextColumn::make('purchaseCattle.document_number')
                     ->label(__('PO Number'))
-                    ->searchable(),
+                    ->searchable()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
 
                 Tables\Columns\TextColumn::make('supplier.name')
                     ->label(__('Supplier'))
-                    ->searchable(),
+                    ->searchable()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
 
                 Tables\Columns\TextColumn::make('receive_date')
                     ->label(__('Date'))
                     ->date('d M Y')
-                    ->sortable(),
+                    ->sortable()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
 
                 Tables\Columns\TextColumn::make('items_count')
                     ->label(__('Heads'))
                     ->counts('items')
                     ->suffix(' Heads')
-                    ->alignCenter(),
+                    ->alignCenter()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
 
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label(__('Received By'))
                     ->badge()
-                    ->color('gray'),
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : 'gray'),
             ])
             ->recordUrl(
                 fn (CattleReceiving $record): string => $record->trashed() 
