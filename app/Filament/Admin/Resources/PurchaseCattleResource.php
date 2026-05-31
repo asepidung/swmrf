@@ -128,9 +128,14 @@ class PurchaseCattleResource extends Resource
                     ->searchable(),
             ])
             ->recordUrl(
-                fn (Model $record): string => Pages\EditPurchaseCattle::getUrl([$record->getKey()]),
+                fn (Model $record): string => $record->trashed() 
+                    ? Pages\ViewPurchaseCattle::getUrl(['record' => $record]) 
+                    : Pages\EditPurchaseCattle::getUrl(['record' => $record]),
             )
+            ->recordClasses(fn (Model $record) => $record->trashed() ? 'border-s-2 border-danger-600 dark:border-danger-400 bg-danger-50 dark:bg-danger-900/50' : null)
             ->filters([
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_purchase_cattles')),
                 SelectFilter::make('supplier_id')
                     ->relationship('supplier', 'name')
                     ->label(__('Supplier')),
@@ -178,7 +183,16 @@ class PurchaseCattleResource extends Resource
         return [
             'index' => Pages\ListPurchaseCattle::route('/'),
             'create' => Pages\CreatePurchaseCattle::route('/create'),
+            'view' => Pages\ViewPurchaseCattle::route('/{record}'),
             'edit' => Pages\EditPurchaseCattle::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                SoftDeletingScope::class,
+            ]);
     }
 }

@@ -214,9 +214,35 @@ class CattleWeighingResource extends Resource
                     ->label('Heads')
                     ->formatStateUsing(fn ($state) => $state . ' Heads'),
             ])
-            ->recordUrl(fn (CattleWeighing $record): string => Pages\EditCattleWeighing::getUrl(['record' => $record]))
+            ->recordUrl(
+                fn (CattleWeighing $record): string => $record->trashed()
+                    ? Pages\ViewCattleWeighing::getUrl(['record' => $record])
+                    : Pages\EditCattleWeighing::getUrl(['record' => $record])
+            )
+            ->recordClasses(fn (CattleWeighing $record) => $record->trashed() ? 'border-s-2 border-danger-600 dark:border-danger-400 bg-danger-50 dark:bg-danger-900/50' : null)
             ->filters([
-                Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_cattle_weighings')),
+                Tables\Filters\Filter::make('weighing_date')
+                    ->form([
+                        Forms\Components\DatePicker::make('from')
+                            ->label(__('From'))
+                            ->default(now()->startOfMonth()),
+                        Forms\Components\DatePicker::make('until')
+                            ->label(__('Until'))
+                            ->default(now()),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['from'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('weighing_date', '>=', $date),
+                            )
+                            ->when(
+                                $data['until'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('weighing_date', '<=', $date),
+                            );
+                    }),
             ])
             ->actions([
                 // Actions moved to Edit/View page header actions per project guidelines

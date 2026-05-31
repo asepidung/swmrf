@@ -9,11 +9,4 @@ use Filament\Resources\Pages\ViewRecord;
 class ViewCattleReceiving extends ViewRecord
 {
     protected static string $resource = CattleReceivingResource::class;
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            Actions\EditAction::make(),
-        ];
-    }
 }

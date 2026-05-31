@@ -230,10 +230,14 @@ class CattleReceivingResource extends Resource
                     ->color('gray'),
             ])
             ->recordUrl(
-                fn (CattleReceiving $record): string => Pages\EditCattleReceiving::getUrl([$record->id]),
+                fn (CattleReceiving $record): string => $record->trashed() 
+                    ? Pages\ViewCattleReceiving::getUrl(['record' => $record]) 
+                    : Pages\EditCattleReceiving::getUrl([$record->id]),
             )
+            ->recordClasses(fn (CattleReceiving $record) => $record->trashed() ? 'border-s-2 border-danger-600 dark:border-danger-400 bg-danger-50 dark:bg-danger-900/50' : null)
             ->filters([
-                Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_cattle_receivings')),
                 Tables\Filters\SelectFilter::make('supplier_id')
                     ->relationship('supplier', 'name')
                     ->label(__('Supplier')),
