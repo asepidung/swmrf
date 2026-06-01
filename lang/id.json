@@ -90,5 +90,19 @@
     "Product Code": "Kode Barang",
     "Product Name": "Nama Barang",
     "Variant of": "Varian dari",
-    "Category Name": "Nama Kategori"
+    "Category Name": "Nama Kategori",
+    "Cattle Weighing": "Timbang Ulang",
+    "Cattle Weighings": "Timbang Ulang",
+    "Weighing Header": "Header Timbang Ulang",
+    "Weighing Date": "Tanggal Timbang",
+    "Weighing No": "No Timbang",
+    "General Note": "Catatan Umum",
+    "Cattle List (Actual Weight)": "Daftar Sapi (Berat Aktual)",
+    "Actual Weight": "Berat Aktual",
+    "Calculation Results": "Hasil Perhitungan",
+    "Total Initial Weight": "Total Berat Awal",
+    "Total Actual Weight": "Total Berat Aktual",
+    "Total Variance (Loss)": "Total Selisih (Susut)",
+    "Action not allowed": "Aksi tidak diizinkan",
+    "This receiving has already been weighed and cannot be edited.": "Penerimaan ini sudah ditimbang ulang dan tidak dapat diubah."
 }

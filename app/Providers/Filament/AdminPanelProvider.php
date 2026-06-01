@@ -29,6 +29,12 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(Login::class)
+            ->userMenuItems([
+                'profile' => \Filament\Navigation\MenuItem::make()
+                    ->label(fn() => auth()->user()->name)
+                    ->url(fn (): string => \App\Filament\Admin\Pages\MyProfile::getUrl())
+                    ->icon('heroicon-o-user'),
+            ])
             ->brandName('W-Apps')
             ->brandLogo(asset('img/light.png'))
             ->darkModeBrandLogo(asset('img/dark.png'))
@@ -62,6 +68,20 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
                 \App\Http\Middleware\CheckActiveUser::class,
                 \App\Http\Middleware\CheckPasswordChange::class,
-            ]);
+            ])
+            ->sidebarCollapsibleOnDesktop()
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::HEAD_START,
+                fn (): string => '<style>
+                    /* Compact sidebar spacing */
+                    .fi-sidebar-nav-groups { gap: 0.25rem !important; }
+                    .fi-sidebar-nav-group { margin-top: 0.25rem !important; }
+                    .fi-sidebar-nav-group-label { margin-bottom: 0.1rem !important; padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; }
+                    .fi-sidebar-item { margin-top: 0 !important; margin-bottom: 0 !important; }
+                    .fi-sidebar-item-button { padding-top: 0.35rem !important; padding-bottom: 0.35rem !important; gap: 0.5rem !important; }
+                    .fi-sidebar-item-label { font-size: 0.875rem !important; }
+                    .fi-sidebar-item-icon { width: 1.25rem !important; height: 1.25rem !important; }
+                </style>',
+            );
     }
 }

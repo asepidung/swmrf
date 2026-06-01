@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>GRC - {{ $record->receiving_number }} - {{ $record->supplier->name ?? 'Unknown' }}</title>
+    <title>Cattle Weighing - {{ $record->weighing_number }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         /* Document Styles */
@@ -134,12 +134,24 @@
             font-weight: bold;
         }
 
-        .status-badge {
+        .loss-badge {
             font-weight: bold;
             padding: 2px 4px;
-            border: 1px solid #ccc;
+            border: 1px solid #ffcccc;
+            background: #ffe6e6;
+            color: #cc0000;
             font-size: 10px;
-            margin-right: 4px;
+            border-radius: 4px;
+        }
+        
+        .gain-badge {
+            font-weight: bold;
+            padding: 2px 4px;
+            border: 1px solid #ccffcc;
+            background: #e6ffe6;
+            color: #009900;
+            font-size: 10px;
+            border-radius: 4px;
         }
 
         .note {
@@ -158,6 +170,7 @@
             margin-top: 40px;
             display: flex;
             justify-content: flex-end;
+            gap: 60px;
         }
 
         .sign-card {
@@ -225,31 +238,27 @@
         </div>
 
         <div class="title">
-            <h1>Good Receipt Cattle (GRC)</h1>
-            <div style="font-weight: bold; color: var(--ink); font-size: 14px;">No: {{ $record->receiving_number }}</div>
+            <h1>Cattle Weighing Record</h1>
+            <div style="font-weight: bold; color: var(--ink); font-size: 14px;">No: {{ $record->weighing_number }}</div>
         </div>
 
         <dl class="meta">
-            <dt>Tgl. Terima</dt>
-            <dd>{{ \Carbon\Carbon::parse($record->receive_date)->format('d-M-Y') }}</dd>
+            <dt>Tgl. Timbang</dt>
+            <dd>{{ \Carbon\Carbon::parse($record->weighing_date)->format('d-M-Y') }}</dd>
 
             <dt>Supplier</dt>
-            <dd>{{ $record->supplier->name ?? '-' }}</dd>
+            <dd>{{ $record->receiving->supplier->name ?? '-' }}</dd>
+
+            <dt>No. Receive</dt>
+            <dd>{{ $record->receiving->receiving_number ?? '-' }}</dd>
 
             <dt>No. PO Referensi</dt>
-            <dd>{{ $record->purchaseCattle->document_number ?? '-' }}</dd>
+            <dd>{{ $record->receiving->purchaseCattle->document_number ?? '-' }}</dd>
 
-            <dt>No. Dokumen (SJ)</dt>
-            <dd>{{ $record->doc_no ?? '-' }}</dd>
 
-            <dt>Health Status</dt>
-            <dd>
-                <span class="status-badge">SV: {{ $record->sv_ok ? 'OK' : 'X' }}</span>
-                <span class="status-badge">SKKH: {{ $record->skkh_ok ? 'OK' : 'X' }}</span>
-            </dd>
 
-            <dt>Penerima</dt>
-            <dd>{{ $record->creator->name ?? 'Admin Gudang' }}</dd>
+            <dt>Penimbang</dt>
+            <dd>{{ $record->creator->name ?? 'Admin' }}</dd>
         </dl>
 
         <table class="wgh-table">
@@ -257,43 +266,63 @@
                 <tr>
                     <th style="width:40px;">#</th>
                     <th>Eartag Number</th>
-                    <th style="width:120px;">Class/Category</th>
-                    <th style="width:120px;">Initial Weight</th>
+                    <th style="width:100px;">Initial Weight</th>
+                    <th style="width:100px;">Actual Weight</th>
+                    <th style="width:100px;">Variance</th>
                     <th>Notes</th>
                 </tr>
             </thead>
             <tbody>
+                @php
+                    $totalInitial = 0;
+                    $totalActual = 0;
+                    $totalVariance = 0;
+                @endphp
                 @forelse($record->items as $index => $item)
+                @php
+                    $initial = $item->receivingItem->initial_weight ?? 0;
+                    $actual = $item->actual_weight ?? 0;
+                    $variance = $actual - $initial;
+                    
+                    $totalInitial += $initial;
+                    $totalActual += $actual;
+                    $totalVariance += $variance;
+                @endphp
                 <tr>
                     <td class="center">{{ $index + 1 }}</td>
-                    <td style="font-weight: bold; letter-spacing: 0.5px; font-size: 12px;">{{ $item->eartag }}</td>
-                    <td class="center">{{ $item->cattleClass->name ?? '-' }}</td>
-                    <td class="num">{{ number_format($item->initial_weight, 0, ',', '.') }} Kg</td>
+                    <td style="font-weight: bold; letter-spacing: 0.5px; font-size: 12px;">{{ $item->receivingItem->eartag ?? '-' }}</td>
+                    <td class="num">{{ number_format($initial, 2, ',', '.') }} Kg</td>
+                    <td class="num">{{ number_format($actual, 2, ',', '.') }} Kg</td>
+                    <td class="num">
+                        @if($variance < 0)
+                            <span class="loss-badge">{{ number_format($variance, 2, ',', '.') }} Kg</span>
+                        @elseif($variance > 0)
+                            <span class="gain-badge">+{{ number_format($variance, 2, ',', '.') }} Kg</span>
+                        @else
+                            {{ number_format($variance, 2, ',', '.') }} Kg
+                        @endif
+                    </td>
                     <td style="color: var(--muted); font-size: 10px;">{{ $item->notes ?? '-' }}</td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="center" style="color:#888; padding: 20px;">Tidak ada data sapi yang diterima.</td>
+                    <td colspan="6" class="center" style="color:#888; padding: 20px;">Tidak ada data sapi.</td>
                 </tr>
                 @endforelse
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="3" style="text-align: right; text-transform: uppercase; font-size: 11px;">Total ({{ $record->items->count() }} Heads)</td>
+                    <td colspan="2" style="text-align: right; text-transform: uppercase; font-size: 11px;">Total ({{ $record->items->count() }} Heads)</td>
+                    <td class="num">{{ number_format($totalInitial, 2, ',', '.') }} Kg</td>
+                    <td class="num">{{ number_format($totalActual, 2, ',', '.') }} Kg</td>
                     <td class="num">
-                        @php
-                            $groups = $record->items->groupBy('cattle_class_id');
-                            $groupLines = [];
-                            foreach ($groups as $classId => $groupItems) {
-                                $className = $groupItems->first()->cattleClass->name ?? 'Unknown';
-                                $sum = $groupItems->sum('initial_weight');
-                                $groupLines[] = "{$className}: " . number_format($sum, 0, ',', '.') . " Kg";
-                            }
-                            $overallTotal = $record->items->sum('initial_weight');
-                        @endphp
-                        {!! implode('<br>', $groupLines) !!}
-                        <br>
-                        <strong>Total: {{ number_format($overallTotal, 0, ',', '.') }} Kg</strong>
+                        @if($totalVariance < 0)
+                            <span class="loss-badge">{{ number_format($totalVariance, 2, ',', '.') }} Kg</span>
+                        @elseif($totalVariance > 0)
+                            <span class="gain-badge">+{{ number_format($totalVariance, 2, ',', '.') }} Kg</span>
+                        @else
+                            {{ number_format($totalVariance, 2, ',', '.') }} Kg
+                        @endif
                     </td>
                     <td></td>
                 </tr>
@@ -311,8 +340,12 @@
 
         <div class="signs">
             <div class="sign-card">
-                <div class="muted">Penerima,</div>
-                <div class="sign-line">{{ $record->creator->name ?? 'Admin Gudang' }}</div>
+                <div class="muted">Diperiksa Oleh,</div>
+                <div class="sign-line">QC / Supervisor</div>
+            </div>
+            <div class="sign-card">
+                <div class="muted">Penimbang,</div>
+                <div class="sign-line">{{ $record->creator->name ?? 'Admin' }}</div>
             </div>
         </div>
     </div>

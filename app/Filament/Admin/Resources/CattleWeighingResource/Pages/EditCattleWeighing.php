@@ -1,16 +1,14 @@
 <?php
 
-namespace App\Filament\Admin\Resources\CattleReceivingResource\Pages;
+namespace App\Filament\Admin\Resources\CattleWeighingResource\Pages;
 
-use App\Filament\Admin\Resources\CattleReceivingResource;
+use App\Filament\Admin\Resources\CattleWeighingResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
-class EditCattleReceiving extends EditRecord
+class EditCattleWeighing extends EditRecord
 {
-    protected static string $resource = CattleReceivingResource::class;
-
-
+    protected static string $resource = CattleWeighingResource::class;
 
     protected function getHeaderActions(): array
     {
@@ -23,18 +21,16 @@ class EditCattleReceiving extends EditRecord
                 ->label(__('Print'))
                 ->color('warning')
                 ->icon('heroicon-o-printer')
-                ->url(fn ($record): string => route('cattle-receiving.print', $record))
+                ->url(fn ($record): string => route('cattle-weighing.print', $record))
                 ->openUrlInNewTab(),
-            Actions\DeleteAction::make()
-                ->disabled(fn ($record) => $record->weighing()->exists()),
+            Actions\DeleteAction::make(),
+            Actions\ForceDeleteAction::make(),
+            Actions\RestoreAction::make(),
         ];
     }
 
     protected function getFormActions(): array
     {
-        if ($this->getRecord()->weighing()->exists()) {
-            return [];
-        }
         return [
             $this->getSaveFormAction(),
         ];
@@ -43,5 +39,11 @@ class EditCattleReceiving extends EditRecord
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
+    }
+
+    protected function afterSave(): void
+    {
+        $record = $this->record;
+        $record->calculateAndSaveFinancialLoss();
     }
 }

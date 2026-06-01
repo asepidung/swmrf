@@ -191,7 +191,8 @@ class CattleReceivingResource extends Resource
                                 return new HtmlString(implode('<br>', $lines));
                             }),
                     ]),
-            ]);
+            ])
+            ->disabled(fn (?CattleReceiving $record) => $record && $record->weighing()->exists());
     }
 
     public static function table(Table $table): Table
@@ -202,37 +203,46 @@ class CattleReceivingResource extends Resource
                     ->label(__('Receive Number'))
                     ->searchable()
                     ->sortable()
-                    ->weight('bold'),
+                    ->weight('bold')
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
 
                 Tables\Columns\TextColumn::make('purchaseCattle.document_number')
                     ->label(__('PO Number'))
-                    ->searchable(),
+                    ->searchable()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
 
                 Tables\Columns\TextColumn::make('supplier.name')
                     ->label(__('Supplier'))
-                    ->searchable(),
+                    ->searchable()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
 
                 Tables\Columns\TextColumn::make('receive_date')
                     ->label(__('Date'))
                     ->date('d M Y')
-                    ->sortable(),
+                    ->sortable()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
 
                 Tables\Columns\TextColumn::make('items_count')
                     ->label(__('Heads'))
                     ->counts('items')
                     ->suffix(' Heads')
-                    ->alignCenter(),
+                    ->alignCenter()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
 
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label(__('Received By'))
                     ->badge()
-                    ->color('gray'),
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : 'gray'),
             ])
             ->recordUrl(
-                fn (CattleReceiving $record): string => Pages\EditCattleReceiving::getUrl([$record->id]),
+                fn (CattleReceiving $record): string => $record->trashed() 
+                    ? Pages\ViewCattleReceiving::getUrl(['record' => $record]) 
+                    : Pages\EditCattleReceiving::getUrl([$record->id]),
             )
+            ->recordClasses(fn (CattleReceiving $record) => $record->trashed() ? 'border-s-2 border-danger-600 dark:border-danger-400 bg-danger-50 dark:bg-danger-900/50' : null)
             ->filters([
-                Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_cattle_receivings')),
                 Tables\Filters\SelectFilter::make('supplier_id')
                     ->relationship('supplier', 'name')
                     ->label(__('Supplier')),
@@ -258,7 +268,7 @@ class CattleReceivingResource extends Resource
                     }),
             ])
             ->actions([
-                //
+                // Actions moved to Edit/View page header actions per project guidelines
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

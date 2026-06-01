@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Admin\Resources\CattleReceivingResource\Pages;
+namespace App\Filament\Admin\Resources\PurchaseCattleResource\Pages;
 
-use App\Filament\Admin\Resources\CattleReceivingResource;
+use App\Filament\Admin\Resources\PurchaseCattleResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
 
-class ViewCattleReceiving extends ViewRecord
+class ViewPurchaseCattle extends ViewRecord
 {
-    protected static string $resource = CattleReceivingResource::class;
+    protected static string $resource = PurchaseCattleResource::class;
 
     protected function getHeaderActions(): array
     {
@@ -21,7 +21,7 @@ class ViewCattleReceiving extends ViewRecord
                 ->label(__('Print'))
                 ->color('warning')
                 ->icon('heroicon-o-printer')
-                ->url(fn ($record): string => route('cattle-receiving.print', $record))
+                ->url(fn ($record): string => route('po-cattle.print', $record))
                 ->openUrlInNewTab(),
         ];
     }
