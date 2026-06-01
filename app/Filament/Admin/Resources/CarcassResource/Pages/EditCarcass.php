@@ -43,11 +43,11 @@ class EditCarcass extends EditRecord
         return $this->getResource()::getUrl('index');
     }
 
-    protected function mutateFormDataBeforeSave(array $data): array
+    protected function beforeSave(): void
     {
-        if (isset($data['items']) && is_array($data['items'])) {
+        if (isset($this->data['items']) && is_array($this->data['items'])) {
             $filteredItems = [];
-            foreach ($data['items'] as $key => $item) {
+            foreach ($this->data['items'] as $key => $item) {
                 $c1 = (float) ($item['carcass_1'] ?? 0);
                 $c2 = (float) ($item['carcass_2'] ?? 0);
                 $h = (float) ($item['hides'] ?? 0);
@@ -57,9 +57,8 @@ class EditCarcass extends EditRecord
                     $filteredItems[$key] = $item;
                 }
             }
-            $data['items'] = $filteredItems;
+            $this->data['items'] = $filteredItems;
+            $this->form->fill($this->data);
         }
-
-        return $data;
     }
 }

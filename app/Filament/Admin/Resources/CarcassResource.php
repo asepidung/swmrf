@@ -265,7 +265,6 @@ class CarcassResource extends Resource
                     ->url(fn (Carcass $record): string => CarcassResource::getUrl('print', ['record' => $record]))
                     ->openUrlInNewTab(),
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

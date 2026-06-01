@@ -17,11 +17,11 @@ class CreateCarcass extends CreateRecord
         return parent::getCreateAnotherFormAction()->hidden();
     }
 
-    protected function mutateFormDataBeforeCreate(array $data): array
+    protected function beforeCreate(): void
     {
-        if (isset($data['items']) && is_array($data['items'])) {
+        if (isset($this->data['items']) && is_array($this->data['items'])) {
             $filteredItems = [];
-            foreach ($data['items'] as $key => $item) {
+            foreach ($this->data['items'] as $key => $item) {
                 $c1 = (float) ($item['carcass_1'] ?? 0);
                 $c2 = (float) ($item['carcass_2'] ?? 0);
                 $h = (float) ($item['hides'] ?? 0);
@@ -30,10 +30,10 @@ class CreateCarcass extends CreateRecord
                     $filteredItems[$key] = $item;
                 }
             }
-            $data['items'] = $filteredItems;
+            // Update the form's raw state so the Repeater doesn't save the removed items
+            $this->data['items'] = $filteredItems;
+            $this->form->fill($this->data);
         }
-
-        return $data;
     }
 
     protected function getRedirectUrl(): string
