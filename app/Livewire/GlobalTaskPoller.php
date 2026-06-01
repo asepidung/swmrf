@@ -33,7 +33,7 @@ class GlobalTaskPoller extends Component
             $this->lastPoId = $currentPoId;
             if (auth()->user()->hasPermission('create_cattle_receivings')) {
                 Notification::make()
-                    ->title(auth()->user()->name . ', ada tugas penerimaan sapi baru')
+                    ->title(__('Ada tugas penerimaan sapi baru', ['name' => auth()->user()->name]))
                     ->warning()
                     ->send();
             }
@@ -43,7 +43,7 @@ class GlobalTaskPoller extends Component
             $this->lastReceivingId = $currentReceivingId;
             if (auth()->user()->hasPermission('create_cattle_weighings')) {
                 Notification::make()
-                    ->title(auth()->user()->name . ', ada tugas timbang baru')
+                    ->title(__('Ada tugas timbang baru', ['name' => auth()->user()->name]))
                     ->warning()
                     ->send();
             }
