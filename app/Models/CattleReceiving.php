@@ -75,6 +75,26 @@ class CattleReceiving extends Model
                 });
             }
         });
+
+        static::created(function ($model) {
+            $users = \App\Models\User::where('is_active', true)
+                ->where(function ($q) {
+                    $q->where('role', 'programmer')
+                      ->orWhereHas('permissions', function ($q2) {
+                          $q2->where('name', 'create_cattle_weighings');
+                      });
+                })->get();
+
+            if ($users->count() > 0) {
+                foreach ($users as $user) {
+                    \Filament\Notifications\Notification::make()
+                        ->title($user->name . ', ada tugas timbang baru')
+                        ->body('Penerimaan Sapi: ' . $model->receiving_number)
+                        ->warning()
+                        ->sendToDatabase($user);
+                }
+            }
+        });
     }
 
     public function purchaseCattle(): BelongsTo
