@@ -13,6 +13,12 @@ class ViewCarcass extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('print')
+                ->label('Print')
+                ->icon('heroicon-o-printer')
+                ->color('gray')
+                ->url(fn (): string => CarcassResource::getUrl('print', ['record' => $this->record]))
+                ->openUrlInNewTab(),
             Actions\EditAction::make(),
         ];
     }

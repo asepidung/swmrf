@@ -17,6 +17,12 @@ class EditCarcass extends EditRecord
                 ->label('Cancel')
                 ->color('gray')
                 ->url($this->getResource()::getUrl('index')),
+            Actions\Action::make('print')
+                ->label('Print')
+                ->icon('heroicon-o-printer')
+                ->color('gray')
+                ->url(fn (): string => CarcassResource::getUrl('print', ['record' => $this->record]))
+                ->openUrlInNewTab(),
             Actions\ViewAction::make(),
             Actions\DeleteAction::make(),
             Actions\ForceDeleteAction::make(),
@@ -35,5 +41,25 @@ class EditCarcass extends EditRecord
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
+    }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        if (isset($data['items']) && is_array($data['items'])) {
+            $filteredItems = [];
+            foreach ($data['items'] as $key => $item) {
+                $c1 = (float) ($item['carcass_1'] ?? 0);
+                $c2 = (float) ($item['carcass_2'] ?? 0);
+                $h = (float) ($item['hides'] ?? 0);
+
+                // Ignore if all are 0
+                if ($c1 > 0 || $c2 > 0 || $h > 0) {
+                    $filteredItems[$key] = $item;
+                }
+            }
+            $data['items'] = $filteredItems;
+        }
+
+        return $data;
     }
 }
