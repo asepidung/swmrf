@@ -82,6 +82,10 @@ class AdminPanelProvider extends PanelProvider
                     .fi-sidebar-item-label { font-size: 0.875rem !important; }
                     .fi-sidebar-item-icon { width: 1.25rem !important; height: 1.25rem !important; }
                 </style>',
+            )
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::FOOTER,
+                fn (): \Illuminate\Contracts\View\View => view('filament.admin.footer'),
             );
     }
 }
