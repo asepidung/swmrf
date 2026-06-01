@@ -157,7 +157,25 @@ class CattleReceivingResource extends Resource
                             ])
                             ->columns(4)
                             ->minItems(1)
-                            ->defaultItems(1)
+                            ->default(function () {
+                                $poId = request()->query('po_id');
+                                if (!$poId) return [];
+                                $po = \App\Models\PurchaseCattle::with('items')->find($poId);
+                                if (!$po) return [];
+                                
+                                $generatedRows = [];
+                                foreach ($po->items as $poItem) {
+                                    for ($i = 0; $i < $poItem->qty; $i++) {
+                                        $generatedRows[(string) \Illuminate\Support\Str::uuid()] = [
+                                            'cattle_class_id' => $poItem->cattle_class_id,
+                                            'eartag' => null,
+                                            'initial_weight' => null,
+                                            'notes' => null,
+                                        ];
+                                    }
+                                }
+                                return $generatedRows;
+                            })
                             ->addActionLabel(__('Add Manual Row'))
                             ->reorderable(false)
                             ->label('')
