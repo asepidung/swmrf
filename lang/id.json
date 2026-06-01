@@ -104,5 +104,16 @@
     "Total Actual Weight": "Total Berat Aktual",
     "Total Variance (Loss)": "Total Selisih (Susut)",
     "Action not allowed": "Aksi tidak diizinkan",
-    "This receiving has already been weighed and cannot be edited.": "Penerimaan ini sudah ditimbang ulang dan tidak dapat diubah."
+    "This receiving has already been weighed and cannot be edited.": "Penerimaan ini sudah ditimbang ulang dan tidak dapat diubah.",
+    "Ada :count proses karkas sapi yang belum dikerjakan.": "Ada :count proses karkas sapi yang belum dikerjakan.",
+    ":name, ada tugas karkas baru": ":name, ada tugas karkas baru",
+    "Carcass": "Karkas",
+    "Carcasses": "Karkas",
+    "Draft Carcass (Weighings)": "Draft Karkas (Timbang)",
+    "Tarik Data": "Tarik Data",
+    "Total Sapi": "Total Sapi",
+    "Belum Dipotong": "Belum Dipotong",
+    "Eartag": "Eartag",
+    "Carcass Information": "Informasi Karkas",
+    "Carcass Details": "Detail Karkas"
 }

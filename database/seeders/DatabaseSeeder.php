@@ -101,6 +101,13 @@ class DatabaseSeeder extends Seeder
 
             // Financial Loss Module
             ['name' => 'view_financial_losses', 'module_name' => 'Financial Loss', 'description' => 'View financial losses'],
+
+            // Carcass Module
+            ['name' => 'view_carcasses', 'module_name' => 'Carcass', 'description' => 'View carcasses'],
+            ['name' => 'create_carcasses', 'module_name' => 'Carcass', 'description' => 'Create carcasses'],
+            ['name' => 'edit_carcasses', 'module_name' => 'Carcass', 'description' => 'Edit carcasses'],
+            ['name' => 'delete_carcasses', 'module_name' => 'Carcass', 'description' => 'Delete carcasses'],
+            ['name' => 'view_deleted_carcasses', 'module_name' => 'Carcass', 'description' => 'View deleted carcasses'],
         ];
 
         foreach ($permissions as $perm) {
