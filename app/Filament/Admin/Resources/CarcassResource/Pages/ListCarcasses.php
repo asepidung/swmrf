@@ -13,7 +13,11 @@ class ListCarcasses extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\Action::make('draft')
+                ->label('Draft Timbang')
+                ->icon('heroicon-o-document-plus')
+                ->color('warning')
+                ->url(fn (): string => CarcassResource::getUrl('draft')),
         ];
     }
 }
