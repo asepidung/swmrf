@@ -69,8 +69,6 @@ class AdminPanelProvider extends PanelProvider
                 \App\Http\Middleware\CheckActiveUser::class,
                 \App\Http\Middleware\CheckPasswordChange::class,
             ])
-            ->databaseNotifications()
-            ->databaseNotificationsPolling('5s')
             ->sidebarCollapsibleOnDesktop()
             ->renderHook(
                 \Filament\View\PanelsRenderHook::HEAD_START,
@@ -88,6 +86,10 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 \Filament\View\PanelsRenderHook::FOOTER,
                 fn (): \Illuminate\Contracts\View\View => view('filament.admin.footer'),
+            )
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::BODY_END,
+                fn (): string => \Illuminate\Support\Facades\Blade::render('<livewire:global-task-poller />'),
             );
     }
 }

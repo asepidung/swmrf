@@ -75,26 +75,6 @@ class PurchaseCattle extends Model
                 throw new \Exception("Cannot delete PO Cattle because it has already been received.");
             }
         });
-
-        static::created(function ($model) {
-            $users = \App\Models\User::where('is_active', true)
-                ->where(function ($q) {
-                    $q->where('role', 'programmer')
-                      ->orWhereHas('permissions', function ($q2) {
-                          $q2->where('name', 'create_cattle_receivings');
-                      });
-                })->get();
-
-            if ($users->count() > 0) {
-                foreach ($users as $user) {
-                    \Filament\Notifications\Notification::make()
-                        ->title($user->name . ', ada tugas penerimaan sapi baru')
-                        ->body('PO Sapi: ' . $model->document_number)
-                        ->warning()
-                        ->sendToDatabase($user);
-                }
-            }
-        });
     }
 
     public function supplier(): BelongsTo
