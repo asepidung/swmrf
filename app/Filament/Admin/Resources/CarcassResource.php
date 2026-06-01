@@ -254,18 +254,13 @@ class CarcassResource extends Resource
                 Tables\Columns\TextColumn::make('kill_date')->date(),
                 Tables\Columns\TextColumn::make('items_count')->counts('items')->label('Total Sapi'),
             ])
+            ->recordUrl(
+                fn (Carcass $record): string => Pages\ViewCarcass::getUrl(['record' => $record])
+            )
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
             ])
-            ->actions([
-                Tables\Actions\Action::make('print')
-                    ->label('Print')
-                    ->icon('heroicon-o-printer')
-                    ->color('gray')
-                    ->url(fn (Carcass $record): string => CarcassResource::getUrl('print', ['record' => $record]))
-                    ->openUrlInNewTab(),
-                Tables\Actions\ViewAction::make(),
-            ])
+            ->actions([])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
