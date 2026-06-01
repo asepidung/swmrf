@@ -105,7 +105,7 @@
     "Total Variance (Loss)": "Total Selisih (Susut)",
     "Action not allowed": "Aksi tidak diizinkan",
     "This receiving has already been weighed and cannot be edited.": "Penerimaan ini sudah ditimbang ulang dan tidak dapat diubah.",
-    "Ada :count proses karkas sapi yang belum dikerjakan.": "Ada :count proses karkas sapi yang belum dikerjakan.",
+    "Ada :count draft timbangan yang belum dipotong (karkas).": "Ada :count draft timbangan yang belum dipotong (karkas).",
     ":name, ada tugas karkas baru": ":name, ada tugas karkas baru",
     "Carcass": "Karkas",
     "Carcasses": "Karkas",

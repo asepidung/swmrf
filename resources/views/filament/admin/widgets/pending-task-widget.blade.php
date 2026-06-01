@@ -29,7 +29,7 @@
                 <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
             </span>
             <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count proses karkas sapi yang belum dikerjakan.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingCarcassCount().'</strong>']) !!}
+                {!! __('Ada :count draft timbangan yang belum dipotong (karkas).', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingCarcassCount().'</strong>']) !!}
             </p>
         </div>
         @endif
