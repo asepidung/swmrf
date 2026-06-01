@@ -57,4 +57,9 @@ class CattleWeighingItem extends Model
     {
         return optional($this->receivingItem)->cattle_class_id;
     }
+
+    public function carcassItems(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(CarcassItem::class, 'cattle_weighing_item_id');
+    }
 }
