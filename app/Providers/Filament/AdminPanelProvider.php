@@ -69,6 +69,8 @@ class AdminPanelProvider extends PanelProvider
                 \App\Http\Middleware\CheckActiveUser::class,
                 \App\Http\Middleware\CheckPasswordChange::class,
             ])
+            ->databaseNotifications()
+            ->databaseNotificationsPolling('5s')
             ->sidebarCollapsibleOnDesktop()
             ->renderHook(
                 \Filament\View\PanelsRenderHook::HEAD_START,
