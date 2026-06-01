@@ -29,6 +29,12 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(Login::class)
+            ->userMenuItems([
+                'profile' => \Filament\Navigation\MenuItem::make()
+                    ->label(fn() => auth()->user()->name)
+                    ->url(fn (): string => \App\Filament\Admin\Pages\MyProfile::getUrl())
+                    ->icon('heroicon-o-user'),
+            ])
             ->brandName('W-Apps')
             ->brandLogo(asset('img/light.png'))
             ->darkModeBrandLogo(asset('img/dark.png'))
