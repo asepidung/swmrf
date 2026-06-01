@@ -29,4 +29,14 @@ class PendingTaskWidget extends Widget
         }
         return CattleReceiving::doesntHave('weighing')->count();
     }
+
+    public function getPendingCarcassCount(): int
+    {
+        if (!auth()->user()->hasPermission('create_carcasses')) {
+            return 0;
+        }
+        return \App\Models\CattleWeighing::whereHas('items', function ($query) {
+            $query->whereDoesntHave('carcassItems');
+        })->count();
+    }
 }

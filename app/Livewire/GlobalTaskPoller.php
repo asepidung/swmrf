@@ -6,17 +6,20 @@ use Livewire\Component;
 use Filament\Notifications\Notification;
 use App\Models\PurchaseCattle;
 use App\Models\CattleReceiving;
+use App\Models\CattleWeighing;
 
 class GlobalTaskPoller extends Component
 {
     public int $lastPoId = 0;
     public int $lastReceivingId = 0;
+    public int $lastWeighingId = 0;
 
     public function mount()
     {
         if (auth()->check()) {
             $this->lastPoId = (int) PurchaseCattle::max('id');
             $this->lastReceivingId = (int) CattleReceiving::max('id');
+            $this->lastWeighingId = (int) CattleWeighing::max('id');
         }
     }
 
@@ -28,6 +31,7 @@ class GlobalTaskPoller extends Component
 
         $currentPoId = (int) PurchaseCattle::max('id');
         $currentReceivingId = (int) CattleReceiving::max('id');
+        $currentWeighingId = (int) CattleWeighing::max('id');
 
         if ($currentPoId > $this->lastPoId) {
             $this->lastPoId = $currentPoId;
@@ -44,6 +48,16 @@ class GlobalTaskPoller extends Component
             if (auth()->user()->hasPermission('create_cattle_weighings')) {
                 Notification::make()
                     ->title(__('Ada tugas timbang baru', ['name' => auth()->user()->name]))
+                    ->warning()
+                    ->send();
+            }
+        }
+
+        if ($currentWeighingId > $this->lastWeighingId) {
+            $this->lastWeighingId = $currentWeighingId;
+            if (auth()->user()->hasPermission('create_carcasses')) {
+                Notification::make()
+                    ->title(__(':name, ada tugas karkas baru', ['name' => auth()->user()->name]))
                     ->warning()
                     ->send();
             }
