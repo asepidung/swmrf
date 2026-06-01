@@ -249,10 +249,31 @@ class CarcassResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('carcass_number')->label('Carcass No')->searchable(),
-                Tables\Columns\TextColumn::make('weighing.weighing_number')->label('Weighing No')->searchable(),
-                Tables\Columns\TextColumn::make('kill_date')->date(),
-                Tables\Columns\TextColumn::make('items_count')->counts('items')->label('Total Sapi'),
+                Tables\Columns\TextColumn::make('carcass_number')
+                    ->label('Carcass No')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('weighing.weighing_number')
+                    ->label('Weighing No')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('weighing.receiving.supplier.name')
+                    ->label('Supplier')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('kill_date')
+                    ->label('Kill Date')
+                    ->date('d M Y')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('items_count')
+                    ->counts('items')
+                    ->label('Heads')
+                    ->formatStateUsing(fn ($state) => $state . ' Heads')
+                    ->badge()
+                    ->color('warning'),
+                Tables\Columns\TextColumn::make('creator.name')
+                    ->label('Prepared By')
+                    ->sortable(),
             ])
             ->recordUrl(
                 fn (Carcass $record): string => Pages\ViewCarcass::getUrl(['record' => $record])

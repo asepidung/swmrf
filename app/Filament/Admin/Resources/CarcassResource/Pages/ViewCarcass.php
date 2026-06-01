@@ -20,6 +20,7 @@ class ViewCarcass extends ViewRecord
                 ->url(fn (): string => CarcassResource::getUrl('print', ['record' => $this->record]))
                 ->openUrlInNewTab(),
             Actions\EditAction::make(),
+            Actions\DeleteAction::make(),
         ];
     }
 }
