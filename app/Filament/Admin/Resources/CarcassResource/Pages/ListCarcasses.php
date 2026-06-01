@@ -14,7 +14,7 @@ class ListCarcasses extends ListRecords
     {
         return [
             Actions\Action::make('draft')
-                ->label('Draft Timbang')
+                ->label('Draft Carcass')
                 ->icon('heroicon-o-document-plus')
                 ->color('warning')
                 ->url(fn (): string => CarcassResource::getUrl('draft')),

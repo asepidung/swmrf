@@ -26,11 +26,32 @@ class CarcassResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Section::make('Carcass Information')->schema([
-                    Forms\Components\Select::make('cattle_weighing_id')
-                        ->relationship('weighing', 'weighing_number')
-                        ->required()
+                    Forms\Components\Hidden::make('cattle_weighing_id')
+                        ->default(fn() => request()->query('weighing_id')),
+                    Forms\Components\TextInput::make('weighing_number')
+                        ->label('Weighing Number')
                         ->disabled()
-                        ->dehydrated(),
+                        ->dehydrated(false)
+                        ->default(function() {
+                            $weighingId = request()->query('weighing_id');
+                            return $weighingId ? \App\Models\CattleWeighing::find($weighingId)?->weighing_number : null;
+                        }),
+                    Forms\Components\TextInput::make('po_number')
+                        ->label('PO Number')
+                        ->disabled()
+                        ->dehydrated(false)
+                        ->default(function() {
+                            $weighingId = request()->query('weighing_id');
+                            return $weighingId ? \App\Models\CattleWeighing::with('receiving.purchaseCattle')->find($weighingId)?->receiving?->purchaseCattle?->document_number : null;
+                        }),
+                    Forms\Components\TextInput::make('supplier_name')
+                        ->label('Supplier')
+                        ->disabled()
+                        ->dehydrated(false)
+                        ->default(function() {
+                            $weighingId = request()->query('weighing_id');
+                            return $weighingId ? \App\Models\CattleWeighing::with('receiving.supplier')->find($weighingId)?->receiving?->supplier?->name : null;
+                        }),
                     Forms\Components\DatePicker::make('kill_date')
                         ->required()
                         ->default(now()),
@@ -41,6 +62,25 @@ class CarcassResource extends Resource
                 Forms\Components\Section::make('Carcass Details')->schema([
                     Forms\Components\Repeater::make('items')
                         ->relationship()
+                        ->default(function () {
+                            $weighingId = request()->query('weighing_id');
+                            if ($weighingId) {
+                                $weighing = \App\Models\CattleWeighing::with(['items' => function ($q) {
+                                    $q->whereDoesntHave('carcassItems');
+                                }])->find($weighingId);
+                                
+                                if ($weighing) {
+                                    return $weighing->items->map(function ($item) {
+                                        return [
+                                            'cattle_weighing_item_id' => $item->id,
+                                            'eartag' => $item->eartag,
+                                            'tail' => 0,
+                                        ];
+                                    })->toArray();
+                                }
+                            }
+                            return [];
+                        })
                         ->schema([
                             Forms\Components\Hidden::make('cattle_weighing_item_id'),
                             Forms\Components\TextInput::make('eartag')

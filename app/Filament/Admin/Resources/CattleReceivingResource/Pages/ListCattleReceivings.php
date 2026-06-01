@@ -14,7 +14,7 @@ class ListCattleReceivings extends ListRecords
     {
         return [
             Actions\Action::make('draft')
-                ->label(__('Draft / Select PO'))
+                ->label('Draft Receive')
                 ->icon('heroicon-o-document-plus')
                 ->color('warning')
                 ->url(fn (): string => $this->getResource()::getUrl('draft')),
