@@ -20,7 +20,10 @@ class ActivityLogResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
 
-    protected static ?string $navigationGroup = 'System';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('System');
+    }
 
     public static function getModelLabel(): string
     {

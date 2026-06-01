@@ -23,7 +23,10 @@ class PurchaseCattleResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
 
-    protected static ?string $navigationGroup = 'Purchase Order';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Purchase Order');
+    }
 
     public static function getModelLabel(): string
     {

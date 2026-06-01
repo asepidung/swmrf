@@ -19,7 +19,10 @@ class BankAccountResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
 
-    protected static ?string $navigationGroup = 'Master Data';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Master Data');
+    }
 
     public static function getModelLabel(): string
     {
