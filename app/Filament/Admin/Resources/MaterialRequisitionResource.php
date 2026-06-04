@@ -72,6 +72,7 @@ class MaterialRequisitionResource extends Resource
                 Forms\Components\Section::make('Item Details')
                     ->schema([
                         Forms\Components\Repeater::make('items')
+                            ->relationship()
                             ->hiddenLabel()
                             ->defaultItems(0)
                             ->reorderableWithDragAndDrop(false)
@@ -90,7 +91,7 @@ class MaterialRequisitionResource extends Resource
                                     ->placeholder('Qty')
                                     ->default(0)
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()'])
-                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
+                                    ->mask(RawJs::make('$money($input, \'.\', \',\', 0)'))
                                     ->dehydrateStateUsing(fn($state) => self::parseNumber($state))
                                     ->columnSpan(['default' => 6, 'md' => 2]),
 
@@ -100,7 +101,7 @@ class MaterialRequisitionResource extends Resource
                                     ->prefix('Rp')
                                     ->default(0)
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()'])
-                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
+                                    ->mask(RawJs::make('$money($input, \'.\', \',\', 0)'))
                                     ->dehydrateStateUsing(fn($state) => self::parseNumber($state))
                                     ->columnSpan(['default' => 6, 'md' => 3]),
 
@@ -109,7 +110,8 @@ class MaterialRequisitionResource extends Resource
                                     ->placeholder('Notes')
                                     ->columnSpan(['default' => 12, 'md' => 3]),
                             ])
-                            ->columns(12),
+                            ->columns(12)
+                            ->live(debounce: 500),
                     ]),
 
 
