@@ -16,6 +16,7 @@ class MaterialRequisitionItem extends Model
         'qty',
         'price',
         'subtotal',
+        'note',
     ];
 
     public function getActivitylogOptions(): LogOptions

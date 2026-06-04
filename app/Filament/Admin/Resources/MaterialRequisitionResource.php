@@ -89,42 +89,27 @@ class MaterialRequisitionResource extends Resource
                                     ->required()
                                     ->hiddenLabel()
                                     ->placeholder('Qty')
-                                    ->formatStateUsing(fn($state) => $state ? number_format(self::parseNumber($state), 2, ',', '.') : '')
+                                    ->default(0)
+                                    ->extraInputAttributes(['onfocus' => 'this.select()'])
+                                    ->formatStateUsing(fn($state) => $state ? number_format(self::parseNumber($state), 2, ',', '.') : '0')
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
                                     ->dehydrateStateUsing(fn($state) => self::parseNumber($state))
-                                    ->live(debounce: 500)
-                                    ->afterStateUpdated(function ($state, $set, $get) {
-                                        $qty = self::parseNumber($state);
-                                        $price = self::parseNumber($get('price'));
-                                        $set('item_total', number_format($qty * $price, 0, ',', '.'));
-                                    })
                                     ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('price')
                                     ->hiddenLabel()
                                     ->placeholder('Harga')
                                     ->prefix('Rp')
-                                    ->formatStateUsing(fn($state) => $state ? number_format(self::parseNumber($state), 0, ',', '.') : '')
+                                    ->default(0)
+                                    ->extraInputAttributes(['onfocus' => 'this.select()'])
+                                    ->formatStateUsing(fn($state) => $state ? number_format(self::parseNumber($state), 0, ',', '.') : '0')
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                     ->dehydrateStateUsing(fn($state) => self::parseNumber($state))
-                                    ->live(debounce: 500)
-                                    ->afterStateUpdated(function ($state, $set, $get) {
-                                        $price = self::parseNumber($state);
-                                        $qty = self::parseNumber($get('qty'));
-                                        $set('item_total', number_format($qty * $price, 0, ',', '.'));
-                                    })
                                     ->columnSpan(['default' => 6, 'md' => 3]),
 
-                                Forms\Components\TextInput::make('item_total')
+                                Forms\Components\TextInput::make('note')
                                     ->hiddenLabel()
-                                    ->placeholder('Subtotal')
-                                    ->prefix('Rp')
-                                    ->readOnly()
-                                    ->afterStateHydrated(function ($component, $get) {
-                                        $qty = self::parseNumber($get('qty'));
-                                        $price = self::parseNumber($get('price'));
-                                        $component->state(number_format($qty * $price, 0, ',', '.'));
-                                    })
+                                    ->placeholder('Notes')
                                     ->columnSpan(['default' => 12, 'md' => 3]),
                             ])
                             ->columns(12),
