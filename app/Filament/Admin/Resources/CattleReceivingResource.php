@@ -157,6 +157,7 @@ class CattleReceivingResource extends Resource
                             ])
                             ->columns(4)
                             ->minItems(1)
+                            ->defaultItems(0)
                             ->default(function () {
                                 $poId = request()->query('po_id');
                                 if (!$poId) return [];

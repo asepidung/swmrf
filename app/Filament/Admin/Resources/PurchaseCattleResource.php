@@ -87,7 +87,7 @@ class PurchaseCattleResource extends Resource
                                 ->stripCharacters('.')
                                 ->numeric()
                                 ->rules(['integer', 'min:0'])
-                                ->extraInputAttributes(['onfocus' => 'this.select()'])
+                                ->extraInputAttributes(['x-on:focus' => '$el.select()'])
                                 ->placeholder(__('Price / Kg'))
                                 ->label('')
                                 ->hiddenLabel(),
@@ -97,7 +97,7 @@ class PurchaseCattleResource extends Resource
                                 ->hiddenLabel(),
                         ])
                         ->columns(4)
-                        ->defaultItems(1)
+                        ->defaultItems(0)
                         ->hiddenLabel()
                         ->addActionLabel(__('Add Cattle'))
                 ])
