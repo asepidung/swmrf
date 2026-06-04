@@ -51,19 +51,6 @@ class CreateMaterialRequisition extends CreateRecord
             }
         }
         $this->record->updateTotalAmount();
-
-        $reviewers = User::where('role', 'programmer')
-            ->orWhereHas('permissions', function ($query) {
-                $query->where('name', 'review_material_requisitions');
-            })->get();
-
-        if ($reviewers->isNotEmpty()) {
-            Notification::make()
-                ->title('New Material Request')
-                ->body("A new request {$this->record->document_number} has been created and requires review.")
-                ->info()
-                ->sendToDatabase($reviewers);
-        }
     }
 
 

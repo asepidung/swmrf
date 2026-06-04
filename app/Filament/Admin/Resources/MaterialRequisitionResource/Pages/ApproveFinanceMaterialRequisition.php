@@ -94,20 +94,7 @@ class ApproveFinanceMaterialRequisition extends EditRecord
                 
                 $this->record->generatePurchaseOrder();
                 
-                // Notify Purchasing
-                $purchasingUsers = User::where('role', 'programmer')
-                    ->orWhereHas('permissions', function ($query) {
-                        $query->where('name', 'review_material_requisitions');
-                    })->get();
-
-                if ($purchasingUsers->isNotEmpty()) {
-                    Notification::make()
-                        ->title('PO Generated')
-                        ->body("Finance has approved request {$this->record->document_number} and generated a PO.")
-                        ->success()
-                        ->sendToDatabase($purchasingUsers);
-                }
-
+                // Notifications rely on PendingTaskWidget now.
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }
@@ -130,19 +117,7 @@ class ApproveFinanceMaterialRequisition extends EditRecord
                     'reject_note' => $data['reject_note'],
                 ]);
 
-                $purchasingUsers = User::where('role', 'programmer')
-                    ->orWhereHas('permissions', function ($query) {
-                        $query->where('name', 'review_material_requisitions');
-                    })->get();
-
-                if ($purchasingUsers->isNotEmpty()) {
-                    Notification::make()
-                        ->title('Material Request Returned')
-                        ->body("Finance returned request {$this->record->document_number}: {$data['reject_note']}")
-                        ->danger()
-                        ->sendToDatabase($purchasingUsers);
-                }
-
+                // Notifications rely on PendingTaskWidget now.
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }

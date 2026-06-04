@@ -39,4 +39,22 @@ class PendingTaskWidget extends Widget
             $query->whereDoesntHave('carcassItems');
         })->count();
     }
+
+    public function getPendingMaterialRequestCount(): int
+    {
+        $user = auth()->user();
+        if (!$user->isProgrammer() && !$user->hasPermission('review_material_requisitions')) {
+            return 0;
+        }
+        return \App\Models\MaterialRequisition::where('status', 'Requested')->count();
+    }
+
+    public function getPendingMaterialFinanceCount(): int
+    {
+        $user = auth()->user();
+        if (!$user->isProgrammer() && !$user->hasPermission('approve_material_requisitions')) {
+            return 0;
+        }
+        return \App\Models\MaterialRequisition::where('status', 'Pending Finance')->count();
+    }
 }

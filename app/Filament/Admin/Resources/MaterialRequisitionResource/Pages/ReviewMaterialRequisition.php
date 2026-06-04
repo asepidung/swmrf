@@ -93,19 +93,7 @@ class ReviewMaterialRequisition extends EditRecord
                     'reject_note' => null,
                 ]);
 
-                $financeUsers = User::where('role', 'programmer')
-                    ->orWhereHas('permissions', function ($query) {
-                        $query->where('name', 'approve_material_requisitions');
-                    })->get();
-
-                if ($financeUsers->isNotEmpty()) {
-                    Notification::make()
-                        ->title('Material Request Approved')
-                        ->body("Request {$this->record->document_number} has been reviewed and requires Finance approval.")
-                        ->success()
-                        ->sendToDatabase($financeUsers);
-                }
-
+                // Notifications rely on PendingTaskWidget now.
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }
@@ -128,14 +116,7 @@ class ReviewMaterialRequisition extends EditRecord
                     'reject_note' => $data['reject_note'],
                 ]);
 
-                if ($this->record->user) {
-                    Notification::make()
-                        ->title('Material Request Rejected')
-                        ->body("Your request {$this->record->document_number} was returned: {$data['reject_note']}")
-                        ->danger()
-                        ->sendToDatabase($this->record->user);
-                }
-
+                // User can see rejected status in their list.
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }
