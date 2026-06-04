@@ -12,9 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
 use Filament\Support\RawJs;
-use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
-
-class MaterialRequisitionResource extends Resource implements HasShieldPermissions
+class MaterialRequisitionResource extends Resource
 {
     protected static ?string $model = MaterialRequisition::class;
     protected static ?string $navigationGroup = 'REQUEST';
@@ -22,11 +20,6 @@ class MaterialRequisitionResource extends Resource implements HasShieldPermissio
     protected static ?string $navigationIcon = 'heroicon-o-document-duplicate';
     protected static ?string $navigationLabel = 'Material Request';
     protected static ?string $modelLabel = 'Material Request';
-
-    public static function getPermissionPrefixes(): array
-    {
-        return ['view_any', 'view', 'create', 'update', 'delete', 'review', 'approve'];
-    }
 
     public static function parseNumber($value): float
     {
