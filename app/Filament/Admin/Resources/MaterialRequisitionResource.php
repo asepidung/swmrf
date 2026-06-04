@@ -77,9 +77,8 @@ class MaterialRequisitionResource extends Resource
                             ->reorderableWithDragAndDrop(false)
                             ->schema([
                                 Forms\Components\Select::make('material_id')
-                                    ->relationship('material', 'name')
+                                    ->options(fn() => \App\Models\Material::orderBy('name')->pluck('name', 'id'))
                                     ->searchable()
-                                    ->preload()
                                     ->required()
                                     ->hiddenLabel()
                                     ->placeholder('Pilih Material...')
