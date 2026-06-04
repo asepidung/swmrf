@@ -10,16 +10,15 @@ class EditMaterialRequisition extends EditRecord
 {
     protected static string $resource = MaterialRequisitionResource::class;
 
-    protected function mutateFormDataBeforeValidation(array $data): array
+    protected function beforeValidate(): void
     {
-        if (isset($data['items']) && is_array($data['items'])) {
-            foreach ($data['items'] as $key => $item) {
-                if (empty($item['material_id'])) {
-                    unset($data['items'][$key]);
-                }
+        $items = $this->data['items'] ?? [];
+        foreach ($items as $key => $item) {
+            if (empty($item['material_id'])) {
+                unset($items[$key]);
             }
         }
-        return $data;
+        $this->data['items'] = $items;
     }
 
     protected function getRedirectUrl(): string
