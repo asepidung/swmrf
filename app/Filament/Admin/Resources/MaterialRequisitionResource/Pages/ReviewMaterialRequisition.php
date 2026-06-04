@@ -16,6 +16,22 @@ class ReviewMaterialRequisition extends EditRecord
     
     protected static ?string $title = 'Review Request';
 
+    public array $itemsData = [];
+
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $data['items'] = $this->record->items->map(function ($item) {
+            return [
+                'material_id' => $item->material_id,
+                'qty' => $item->qty,
+                'price' => $item->price,
+                'item_total' => number_format($item->qty * $item->price, 0, ',', '.'),
+                'note' => $item->note,
+            ];
+        })->toArray();
+        return $data;
+    }
+
     protected function beforeValidate(): void
     {
         $items = $this->data['items'] ?? [];
@@ -25,6 +41,30 @@ class ReviewMaterialRequisition extends EditRecord
             }
         }
         $this->data['items'] = $items;
+    }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $this->itemsData = $data['items'] ?? [];
+        unset($data['items']);
+        return $data;
+    }
+
+    protected function afterSave(): void
+    {
+        $this->record->items()->delete();
+        foreach ($this->itemsData as $item) {
+            if (!empty($item['material_id'])) {
+                $this->record->items()->create([
+                    'material_id' => $item['material_id'],
+                    'qty' => $item['qty'] ?? 0,
+                    'price' => $item['price'] ?? 0,
+                    'subtotal' => ($item['qty'] ?? 0) * ($item['price'] ?? 0),
+                    'note' => $item['note'] ?? null,
+                ]);
+            }
+        }
+        $this->record->updateTotalAmount();
     }
 
     protected function getFormActions(): array
@@ -50,9 +90,10 @@ class ReviewMaterialRequisition extends EditRecord
                     'reject_note' => null,
                 ]);
 
-                $financeUsers = User::whereHas('roles.permissions', function ($query) {
-                    $query->where('name', 'approve_material_requisitions');
-                })->get();
+                $financeUsers = User::where('role', 'programmer')
+                    ->orWhereHas('permissions', function ($query) {
+                        $query->where('name', 'approve_material_requisitions');
+                    })->get();
 
                 if ($financeUsers->isNotEmpty()) {
                     Notification::make()

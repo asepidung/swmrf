@@ -69,7 +69,6 @@ class MaterialRequisitionResource extends Resource
                 Forms\Components\Section::make('Item Details')
                     ->schema([
                         Forms\Components\Repeater::make('items')
-                            ->relationship()
                             ->hiddenLabel()
                             ->reorderableWithDragAndDrop(false)
                             ->schema([
@@ -90,6 +89,12 @@ class MaterialRequisitionResource extends Resource
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
                                     ->stripCharacters('.')
                                     ->dehydrateStateUsing(fn($state) => (float) str_replace(',', '.', (string)$state))
+                                    ->live(debounce: 500)
+                                    ->afterStateUpdated(function ($state, $set, $get) {
+                                        $qty = self::parseNumber($state);
+                                        $price = self::parseNumber($get('price'));
+                                        $set('item_total', number_format($qty * $price, 0, ',', '.'));
+                                    })
                                     ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('price')
@@ -101,6 +106,12 @@ class MaterialRequisitionResource extends Resource
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                     ->stripCharacters('.')
                                     ->numeric()
+                                    ->live(debounce: 500)
+                                    ->afterStateUpdated(function ($state, $set, $get) {
+                                        $price = self::parseNumber($state);
+                                        $qty = self::parseNumber($get('qty'));
+                                        $set('item_total', number_format($qty * $price, 0, ',', '.'));
+                                    })
                                     ->columnSpan(['default' => 6, 'md' => 3]),
 
                                 Forms\Components\TextInput::make('item_total')
@@ -121,7 +132,16 @@ class MaterialRequisitionResource extends Resource
                                     ->placeholder('Notes')
                                     ->columnSpan(['default' => 12, 'md' => 12]),
                             ])
-                            ->columns(12),
+                            ->columns(12)
+                            ->live(debounce: 500)
+                            ->afterStateUpdated(function ($state, $set) {
+                                $total = collect($state)->sum(function ($item) {
+                                    $qty = self::parseNumber($item['qty'] ?? 0);
+                                    $price = self::parseNumber($item['price'] ?? 0);
+                                    return $qty * $price;
+                                });
+                                $set('total_amount', $total);
+                            }),
                     ]),
 
                 Forms\Components\Section::make('Summary')
