@@ -10,21 +10,23 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Support\RawJs;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Illuminate\Support\Facades\DB;
+use Filament\Support\RawJs;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
-class MaterialRequisitionResource extends Resource
+class MaterialRequisitionResource extends Resource implements HasShieldPermissions
 {
     protected static ?string $model = MaterialRequisition::class;
-
     protected static ?string $navigationGroup = 'REQUEST';
     protected static ?int $navigationSort = 11;
     protected static ?string $navigationIcon = 'heroicon-o-document-duplicate';
     protected static ?string $navigationLabel = 'Material Request';
     protected static ?string $modelLabel = 'Material Request';
+
+    public static function getPermissionPrefixes(): array
+    {
+        return ['view_any', 'view', 'create', 'update', 'delete', 'review', 'approve'];
+    }
 
     public static function parseNumber($value): float
     {
@@ -67,6 +69,8 @@ class MaterialRequisitionResource extends Resource
                             ->columnSpan(12),
 
                         Forms\Components\Hidden::make('user_id')->default(fn() => Auth::id()),
+                        Forms\Components\Hidden::make('total_amount'),
+                        Forms\Components\Hidden::make('tax_amount')->default(0),
                     ])->columns(12),
 
                 Forms\Components\Section::make('Item Details')
@@ -74,12 +78,11 @@ class MaterialRequisitionResource extends Resource
                         Forms\Components\Repeater::make('items')
                             ->relationship()
                             ->hiddenLabel()
-                            ->defaultItems(0)
-                            ->reorderableWithDragAndDrop(false)
                             ->schema([
                                 Forms\Components\Select::make('material_id')
-                                    ->options(fn() => \App\Models\Material::orderBy('name')->pluck('name', 'id'))
+                                    ->relationship('material', 'name')
                                     ->searchable()
+                                    ->preload()
                                     ->required()
                                     ->hiddenLabel()
                                     ->placeholder('Pilih Material...')
@@ -89,21 +92,39 @@ class MaterialRequisitionResource extends Resource
                                     ->required()
                                     ->hiddenLabel()
                                     ->placeholder('Qty')
-                                    ->default(0)
-                                    ->extraInputAttributes(['x-on:focus' => '$el.select()'])
-                                    ->mask(RawJs::make('$money($input, \'.\', \',\', 0)'))
+                                    ->formatStateUsing(fn($state) => $state ? number_format(self::parseNumber($state), 2, ',', '.') : '')
+                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
                                     ->dehydrateStateUsing(fn($state) => self::parseNumber($state))
+                                    ->live(debounce: 500)
+                                    ->afterStateUpdated(function ($state, $set, $get) {
+                                        $qty = self::parseNumber($state);
+                                        $price = self::parseNumber($get('price'));
+                                        $set('subtotal', number_format($qty * $price, 0, ',', '.'));
+                                    })
                                     ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('price')
                                     ->hiddenLabel()
                                     ->placeholder('Harga')
                                     ->prefix('Rp')
-                                    ->default(0)
-                                    ->extraInputAttributes(['x-on:focus' => '$el.select()'])
-                                    ->mask(RawJs::make('$money($input, \'.\', \',\', 0)'))
+                                    ->formatStateUsing(fn($state) => $state ? number_format(self::parseNumber($state), 0, ',', '.') : '')
+                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                     ->dehydrateStateUsing(fn($state) => self::parseNumber($state))
+                                    ->live(debounce: 500)
+                                    ->afterStateUpdated(function ($state, $set, $get) {
+                                        $price = self::parseNumber($state);
+                                        $qty = self::parseNumber($get('qty'));
+                                        $set('subtotal', number_format($qty * $price, 0, ',', '.'));
+                                    })
                                     ->columnSpan(['default' => 6, 'md' => 3]),
+
+                                Forms\Components\Hidden::make('subtotal')
+                                    ->afterStateHydrated(function ($component, $get) {
+                                        $qty = self::parseNumber($get('qty'));
+                                        $price = self::parseNumber($get('price'));
+                                        $component->state(number_format($qty * $price, 0, ',', '.'));
+                                    })
+                                    ->dehydrateStateUsing(fn($state) => self::parseNumber($state)),
 
                                 Forms\Components\TextInput::make('note')
                                     ->hiddenLabel()
@@ -111,9 +132,25 @@ class MaterialRequisitionResource extends Resource
                                     ->columnSpan(['default' => 12, 'md' => 3]),
                             ])
                             ->columns(12)
-                            ->live(debounce: 500),
-                    ]),
+                            ->live(debounce: 500)
+                            ->afterStateUpdated(function ($state, $set, $get) {
+                                $total = collect($state)->sum(function ($item) {
+                                    $qty = self::parseNumber($item['qty'] ?? 0);
+                                    $price = self::parseNumber($item['price'] ?? 0);
+                                    return $qty * $price;
+                                });
 
+                                $supplierId = $get('supplier_id');
+                                $supplier = Supplier::find($supplierId);
+                                $hasTax = $supplier ? $supplier->has_tax : false;
+
+                                $tax = $hasTax ? ($total * 0.11) : 0;
+                                $grandTotal = $total + $tax;
+
+                                $set('total_amount', $grandTotal);
+                                $set('tax_amount', $tax);
+                            }),
+                    ]),
 
                 Forms\Components\Section::make('Rejection Info')
                     ->description('Informasi alasan penolakan atau revisi request ini.')
@@ -132,10 +169,14 @@ class MaterialRequisitionResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->defaultSort('created_at', 'desc')
+            ->defaultSort('id', 'desc')
             ->recordAction(null)
             ->recordUrl(function ($record) {
-                return static::getUrl('view', ['record' => $record]);
+                $user = auth()->user();
+                $canView = $user->hasRole('super_admin') ||
+                    ($record->status === 'Requested' && $user->can('review_material::requisition')) ||
+                    (in_array($record->status, ['Pending Finance', 'Returned to Purchasing', 'PO Created']));
+                return $canView ? static::getUrl('view', ['record' => $record]) : null;
             })
             ->columns([
                 Tables\Columns\TextColumn::make('document_number')
@@ -171,7 +212,6 @@ class MaterialRequisitionResource extends Resource
                     }),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make(),
                 Tables\Filters\Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')
@@ -181,7 +221,7 @@ class MaterialRequisitionResource extends Resource
                             ->label('Until Date')
                             ->default(now()),
                     ])
-                    ->query(function (Builder $query, array $data): Builder {
+                    ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
                         return $query
                             ->when($data['created_from'], fn($q, $date) => $q->whereDate('created_at', '>=', $date))
                             ->when($data['created_until'], fn($q, $date) => $q->whereDate('created_at', '<=', $date));
@@ -191,9 +231,11 @@ class MaterialRequisitionResource extends Resource
                 Tables\Actions\Action::make('print_dynamic')
                     ->icon('heroicon-s-printer')
                     ->color(fn($record) => $record->status === 'PO Created' ? 'success' : 'primary')
-                    ->tooltip('Print Request')
+                    ->tooltip(fn($record) => $record->status === 'PO Created' ? 'Print Purchase Order' : 'Print Request')
                     ->iconButton()
-                    ->url(fn ($record) => route('print.material-request', ['id' => $record->id]))
+                    ->url(function ($record) {
+                        return '#';
+                    })
                     ->openUrlInNewTab(),
 
                 Tables\Actions\Action::make('review')
@@ -203,7 +245,7 @@ class MaterialRequisitionResource extends Resource
                     ->iconButton()
                     ->visible(function ($record) {
                         $user = auth()->user();
-                        return in_array($record->status, ['Requested', 'Returned to Purchasing']) && $user->hasPermission('review_material_requisitions');
+                        return in_array($record->status, ['Requested', 'Returned to Purchasing']) && ($user->hasRole('super_admin') || $user->can('review_material::requisition'));
                     })
                     ->url(fn($record) => static::getUrl('review', ['record' => $record])),
 
@@ -214,7 +256,7 @@ class MaterialRequisitionResource extends Resource
                     ->iconButton()
                     ->visible(function ($record) {
                         $user = auth()->user();
-                        return $record->status === 'Pending Finance' && $user->hasPermission('approve_material_requisitions');
+                        return $record->status === 'Pending Finance' && ($user->hasRole('super_admin') || $user->can('approve_material::requisition'));
                     })
                     ->url(fn($record) => static::getUrl('finance-approve', ['record' => $record])),
 
@@ -228,21 +270,7 @@ class MaterialRequisitionResource extends Resource
 
                 Tables\Actions\EditAction::make()->iconButton()->visible(fn($record) => in_array($record->status, ['Requested', 'Returned to Purchasing'])),
                 Tables\Actions\DeleteAction::make()->iconButton()->visible(fn($record) => $record->status === 'Requested'),
-                Tables\Actions\RestoreAction::make()->iconButton(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
-                ]),
             ]);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
     }
 
     public static function getPages(): array
