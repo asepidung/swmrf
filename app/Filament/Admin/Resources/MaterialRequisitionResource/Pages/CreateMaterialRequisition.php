@@ -21,6 +21,14 @@ class CreateMaterialRequisition extends CreateRecord
         $this->data['items'] = $items;
     }
 
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        // Provide default values since they will be recalculated by the model observer anyway
+        $data['total_amount'] = 0;
+        $data['tax_amount'] = 0;
+        return $data;
+    }
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');

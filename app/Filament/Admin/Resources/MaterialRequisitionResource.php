@@ -90,7 +90,7 @@ class MaterialRequisitionResource extends Resource
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
                                     ->stripCharacters('.')
                                     ->dehydrateStateUsing(fn($state) => (float) str_replace(',', '.', (string)$state))
-                                    ->columnSpan(['default' => 6, 'md' => 4]),
+                                    ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('price')
                                     ->hiddenLabel()
@@ -101,12 +101,12 @@ class MaterialRequisitionResource extends Resource
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                     ->stripCharacters('.')
                                     ->numeric()
-                                    ->columnSpan(['default' => 6, 'md' => 4]),
+                                    ->columnSpan(['default' => 6, 'md' => 3]),
 
                                 Forms\Components\TextInput::make('note')
                                     ->hiddenLabel()
                                     ->placeholder('Notes')
-                                    ->columnSpan(['default' => 12, 'md' => 4]),
+                                    ->columnSpan(['default' => 12, 'md' => 3]),
                             ])
                             ->columns(12),
                     ]),
