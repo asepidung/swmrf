@@ -166,8 +166,8 @@ class MaterialRequisitionResource extends Resource
             ->recordAction(null)
             ->recordUrl(function ($record) {
                 $user = auth()->user();
-                $canView = $user->hasRole('super_admin') ||
-                    ($record->status === 'Requested' && $user->can('review_material::requisition')) ||
+                $canView = $user->isProgrammer() ||
+                    ($record->status === 'Requested' && $user->hasPermission('review_material_requisitions')) ||
                     (in_array($record->status, ['Pending Finance', 'Returned to Purchasing', 'PO Created']));
                 return $canView ? static::getUrl('view', ['record' => $record]) : null;
             })
@@ -238,7 +238,7 @@ class MaterialRequisitionResource extends Resource
                     ->iconButton()
                     ->visible(function ($record) {
                         $user = auth()->user();
-                        return in_array($record->status, ['Requested', 'Returned to Purchasing']) && ($user->hasRole('super_admin') || $user->can('review_material::requisition'));
+                        return in_array($record->status, ['Requested', 'Returned to Purchasing']) && ($user->isProgrammer() || $user->hasPermission('review_material_requisitions'));
                     })
                     ->url(fn($record) => static::getUrl('review', ['record' => $record])),
 
@@ -249,7 +249,7 @@ class MaterialRequisitionResource extends Resource
                     ->iconButton()
                     ->visible(function ($record) {
                         $user = auth()->user();
-                        return $record->status === 'Pending Finance' && ($user->hasRole('super_admin') || $user->can('approve_material::requisition'));
+                        return $record->status === 'Pending Finance' && ($user->isProgrammer() || $user->hasPermission('approve_material_requisitions'));
                     })
                     ->url(fn($record) => static::getUrl('finance-approve', ['record' => $record])),
 
