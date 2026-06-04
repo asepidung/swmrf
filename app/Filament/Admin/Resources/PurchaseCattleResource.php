@@ -137,8 +137,10 @@ class PurchaseCattleResource extends Resource
                     ->sum('items', 'qty')
                     ->label(__('Total Head'))
                     ->numeric()
-                    ->sortable()
-                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
+                    ->badge()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : 'info')
+                    ->suffix(' Ekor')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('summary_note')
                     ->label(__('Note'))
                     ->limit(50)
