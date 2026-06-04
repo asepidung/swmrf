@@ -89,7 +89,7 @@ class MaterialRequisitionResource extends Resource
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
                                     ->stripCharacters('.')
                                     ->dehydrateStateUsing(fn($state) => (float) str_replace(',', '.', (string)$state))
-                                    ->live(debounce: 500)
+                                    ->live(onBlur: true)
                                     ->afterStateUpdated(function ($state, $set, $get) {
                                         $qty = self::parseNumber($state);
                                         $price = self::parseNumber($get('price'));
@@ -106,7 +106,7 @@ class MaterialRequisitionResource extends Resource
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                     ->stripCharacters('.')
                                     ->numeric()
-                                    ->live(debounce: 500)
+                                    ->live(onBlur: true)
                                     ->afterStateUpdated(function ($state, $set, $get) {
                                         $price = self::parseNumber($state);
                                         $qty = self::parseNumber($get('qty'));
@@ -132,16 +132,7 @@ class MaterialRequisitionResource extends Resource
                                     ->placeholder('Notes')
                                     ->columnSpan(['default' => 12, 'md' => 12]),
                             ])
-                            ->columns(12)
-                            ->live(debounce: 500)
-                            ->afterStateUpdated(function ($state, $set) {
-                                $total = collect($state)->sum(function ($item) {
-                                    $qty = self::parseNumber($item['qty'] ?? 0);
-                                    $price = self::parseNumber($item['price'] ?? 0);
-                                    return $qty * $price;
-                                });
-                                $set('total_amount', $total);
-                            }),
+                            ->columns(12),
                     ]),
 
                 Forms\Components\Section::make('Summary')

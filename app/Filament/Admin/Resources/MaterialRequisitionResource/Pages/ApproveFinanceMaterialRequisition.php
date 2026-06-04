@@ -19,14 +19,14 @@ class ApproveFinanceMaterialRequisition extends EditRecord
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        $data['items'] = $this->record->items->map(function ($item) {
-            return [
+        $data['items'] = $this->record->items->mapWithKeys(function ($item) {
+            return [(string) \Illuminate\Support\Str::uuid() => [
                 'material_id' => $item->material_id,
                 'qty' => $item->qty,
                 'price' => $item->price,
                 'item_total' => number_format($item->qty * $item->price, 0, ',', '.'),
                 'note' => $item->note,
-            ];
+            ]];
         })->toArray();
         return $data;
     }
