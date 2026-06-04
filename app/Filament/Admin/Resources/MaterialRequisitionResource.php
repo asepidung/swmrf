@@ -86,9 +86,7 @@ class MaterialRequisitionResource extends Resource
                                     ->placeholder('Qty')
                                     ->default(0)
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()'])
-                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
-                                    ->stripCharacters('.')
-                                    ->dehydrateStateUsing(fn($state) => (float) str_replace(',', '.', (string)$state))
+                                    ->numeric()
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(function ($state, $set, $get) {
                                         $qty = self::parseNumber($state);
