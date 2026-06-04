@@ -10,6 +10,11 @@ class EditMaterialRequisition extends EditRecord
 {
     protected static string $resource = MaterialRequisitionResource::class;
 
+    public function getTitle(): string
+    {
+        return 'Edit Request: ' . $this->record->document_number;
+    }
+
     public array $itemsData = [];
 
     protected function mutateFormDataBeforeFill(array $data): array
@@ -17,8 +22,8 @@ class EditMaterialRequisition extends EditRecord
         $data['items'] = $this->record->items->mapWithKeys(function ($item) {
             return [(string) \Illuminate\Support\Str::uuid() => [
                 'material_id' => $item->material_id,
-                'qty' => $item->qty,
-                'price' => $item->price,
+                'qty' => number_format($item->qty, 2, ',', '.'),
+                'price' => number_format($item->price, 0, ',', '.'),
                 'item_total' => number_format($item->qty * $item->price, 0, ',', '.'),
                 'note' => $item->note,
             ]];

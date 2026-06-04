@@ -10,28 +10,49 @@ class ViewMaterialRequisition extends ViewRecord
 {
     protected static string $resource = MaterialRequisitionResource::class;
 
+    public function getTitle(): string
+    {
+        return 'Request: ' . $this->record->document_number;
+    }
+
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $data['items'] = $this->record->items->mapWithKeys(function ($item) {
+            return [(string) \Illuminate\Support\Str::uuid() => [
+                'material_id' => $item->material_id,
+                'qty' => number_format($item->qty, 2, ',', '.'),
+                'price' => number_format($item->price, 0, ',', '.'),
+                'item_total' => number_format($item->qty * $item->price, 0, ',', '.'),
+                'note' => $item->note,
+            ]];
+        })->toArray();
+        return $data;
+    }
+
     protected function getHeaderActions(): array
     {
         return [
             Actions\Action::make('print')
-                ->label('Print')
+                ->tooltip('Print')
                 ->icon('heroicon-o-printer')
                 ->color('gray')
                 ->url(fn() => route('print.material-request', ['id' => $this->record->id]))
-                ->openUrlInNewTab(),
+                ->openUrlInNewTab()
+                ->iconButton(),
 
             Actions\Action::make('review')
-                ->label('Review')
+                ->tooltip('Review')
                 ->icon('heroicon-o-clipboard-document-check')
                 ->color('warning')
                 ->visible(function () {
                     $user = auth()->user();
                     return in_array($this->record->status, ['Requested', 'Returned to Purchasing']) && ($user->isProgrammer() || $user->hasPermission('review_material_requisitions'));
                 })
-                ->url(fn() => $this->getResource()::getUrl('review', ['record' => $this->record])),
+                ->url(fn() => $this->getResource()::getUrl('review', ['record' => $this->record]))
+                ->iconButton(),
 
             Actions\Action::make('resubmit')
-                ->label('Resubmit Request')
+                ->tooltip('Resubmit Request')
                 ->icon('heroicon-o-arrow-path')
                 ->color('success')
                 ->requiresConfirmation()
@@ -42,28 +63,36 @@ class ViewMaterialRequisition extends ViewRecord
                         'reject_note' => null,
                     ]);
                     $this->redirect($this->getResource()::getUrl('index'));
-                }),
+                })
+                ->iconButton(),
 
             Actions\Action::make('finance_approval')
-                ->label('Finance Approval')
+                ->tooltip('Finance Approval')
                 ->icon('heroicon-o-shield-check')
                 ->color('success')
                 ->visible(function () {
                     $user = auth()->user();
                     return $this->record->status === 'Pending Finance' && ($user->isProgrammer() || $user->hasPermission('approve_material_requisitions'));
                 })
-                ->url(fn() => $this->getResource()::getUrl('finance-approve', ['record' => $this->record])),
+                ->url(fn() => $this->getResource()::getUrl('finance-approve', ['record' => $this->record]))
+                ->iconButton(),
 
             Actions\EditAction::make()
+                ->tooltip('Edit')
+                ->iconButton()
                 ->visible(fn() => in_array($this->record->status, ['Requested', 'Returned to Purchasing'])),
 
             Actions\DeleteAction::make()
+                ->tooltip('Delete')
+                ->iconButton()
                 ->visible(fn() => $this->record->status === 'Requested'),
 
             Actions\Action::make('back')
-                ->label('Back to List')
+                ->tooltip('Back to List')
+                ->icon('heroicon-o-arrow-left')
                 ->color('gray')
-                ->url($this->getResource()::getUrl('index')),
+                ->url($this->getResource()::getUrl('index'))
+                ->iconButton(),
         ];
     }
 }

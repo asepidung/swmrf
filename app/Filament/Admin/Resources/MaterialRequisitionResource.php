@@ -251,6 +251,14 @@ class MaterialRequisitionResource extends Resource
                     }),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('status')
+                    ->options([
+                        'Requested' => 'Requested',
+                        'Pending Finance' => 'Pending Finance',
+                        'Returned to Purchasing' => 'Returned to Purchasing',
+                        'PO Created' => 'PO Created',
+                        'Rejected' => 'Rejected',
+                    ]),
                 Tables\Filters\Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')

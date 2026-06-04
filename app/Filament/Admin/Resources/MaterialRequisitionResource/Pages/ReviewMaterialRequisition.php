@@ -14,7 +14,10 @@ class ReviewMaterialRequisition extends EditRecord
 {
     protected static string $resource = MaterialRequisitionResource::class;
     
-    protected static ?string $title = 'Review Request';
+    public function getTitle(): string
+    {
+        return 'Review Request: ' . $this->record->document_number;
+    }
 
     public array $itemsData = [];
 
@@ -23,8 +26,8 @@ class ReviewMaterialRequisition extends EditRecord
         $data['items'] = $this->record->items->mapWithKeys(function ($item) {
             return [(string) \Illuminate\Support\Str::uuid() => [
                 'material_id' => $item->material_id,
-                'qty' => $item->qty,
-                'price' => $item->price,
+                'qty' => number_format($item->qty, 2, ',', '.'),
+                'price' => number_format($item->price, 0, ',', '.'),
                 'item_total' => number_format($item->qty * $item->price, 0, ',', '.'),
                 'note' => $item->note,
             ]];
