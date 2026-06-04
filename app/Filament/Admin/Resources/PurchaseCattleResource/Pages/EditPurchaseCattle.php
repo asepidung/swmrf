@@ -10,6 +10,18 @@ class EditPurchaseCattle extends EditRecord
 {
     protected static string $resource = PurchaseCattleResource::class;
 
+    protected function mutateFormDataBeforeValidation(array $data): array
+    {
+        if (isset($data['items']) && is_array($data['items'])) {
+            foreach ($data['items'] as $key => $item) {
+                if (empty($item['cattle_class_id'])) {
+                    unset($data['items'][$key]);
+                }
+            }
+        }
+        return $data;
+    }
+
     protected function getHeaderActions(): array
     {
         return [

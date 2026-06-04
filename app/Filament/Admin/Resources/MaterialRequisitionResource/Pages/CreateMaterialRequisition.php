@@ -10,6 +10,18 @@ class CreateMaterialRequisition extends CreateRecord
 {
     protected static string $resource = MaterialRequisitionResource::class;
 
+    protected function mutateFormDataBeforeValidation(array $data): array
+    {
+        if (isset($data['items']) && is_array($data['items'])) {
+            foreach ($data['items'] as $key => $item) {
+                if (empty($item['material_id'])) {
+                    unset($data['items'][$key]);
+                }
+            }
+        }
+        return $data;
+    }
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
