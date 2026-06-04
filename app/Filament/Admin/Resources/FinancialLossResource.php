@@ -22,7 +22,7 @@ class FinancialLossResource extends Resource
     
     public static function getNavigationGroup(): ?string
     {
-        return __('Finance');
+        return __('FINANCE');
     }
 
     public static function getModelLabel(): string

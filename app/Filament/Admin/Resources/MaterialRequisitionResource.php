@@ -127,73 +127,9 @@ class MaterialRequisitionResource extends Resource
                                     })
                                     ->columnSpan(['default' => 12, 'md' => 3]),
                             ])
-                            ->columns(12)
-                            ->live(debounce: 500)
-                            ->afterStateUpdated(function ($state, $set) {
-                                $total = collect($state)->sum(function ($item) {
-                                    $qty = self::parseNumber($item['qty'] ?? 0);
-                                    $price = self::parseNumber($item['price'] ?? 0);
-                                    return $qty * $price;
-                                });
-                                $set('total_amount', $total);
-                            }),
+                            ->columns(12),
                     ]),
 
-                Forms\Components\Section::make('Summary')
-                    ->schema([
-                        Forms\Components\Grid::make(3)
-                            ->schema([
-                                Forms\Components\Placeholder::make('subtotal_display')
-                                    ->label('Subtotal')
-                                    ->content(function ($get) {
-                                        $items = $get('items') ?? [];
-                                        $total = 0;
-                                        foreach ($items as $item) {
-                                            $total += self::parseNumber($item['qty'] ?? 0) * self::parseNumber($item['price'] ?? 0);
-                                        }
-                                        return 'Rp ' . number_format($total, 0, ',', '.');
-                                    }),
-
-                                Forms\Components\Placeholder::make('tax_display')
-                                    ->label('Tax / PPN (11%)')
-                                    ->content(function ($get) {
-                                        $supplierId = $get('supplier_id');
-                                        $supplier = Supplier::find($supplierId);
-                                        $hasTax = $supplier ? $supplier->has_tax : false;
-
-                                        if (!$hasTax) return 'Rp 0 (Non-PKP)';
-
-                                        $items = $get('items') ?? [];
-                                        $total = 0;
-                                        foreach ($items as $item) {
-                                            $total += self::parseNumber($item['qty'] ?? 0) * self::parseNumber($item['price'] ?? 0);
-                                        }
-                                        $tax = $total * 0.11;
-                                        return 'Rp ' . number_format($tax, 0, ',', '.');
-                                    }),
-
-                                Forms\Components\Placeholder::make('grand_total_display')
-                                    ->label('Grand Total')
-                                    ->content(function ($get) {
-                                        $supplierId = $get('supplier_id');
-                                        $supplier = Supplier::find($supplierId);
-                                        $hasTax = $supplier ? $supplier->has_tax : false;
-
-                                        $items = $get('items') ?? [];
-                                        $total = 0;
-                                        foreach ($items as $item) {
-                                            $total += self::parseNumber($item['qty'] ?? 0) * self::parseNumber($item['price'] ?? 0);
-                                        }
-
-                                        $tax = $hasTax ? ($total * 0.11) : 0;
-                                        $grandTotal = $total + $tax;
-
-                                        return 'Rp ' . number_format($grandTotal, 0, ',', '.');
-                                    })
-                                    ->extraAttributes(['class' => 'font-bold text-lg text-primary-600']),
-                            ])
-                            ->columnSpan(12),
-                    ])->columns(12),
 
                 Forms\Components\Section::make('Rejection Info')
                     ->description('Informasi alasan penolakan atau revisi request ini.')
@@ -215,11 +151,7 @@ class MaterialRequisitionResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->recordAction(null)
             ->recordUrl(function ($record) {
-                $user = auth()->user();
-                $canView = $user->hasRole('programmer') ||
-                    ($record->status === 'Requested' && $user->hasPermission('review_material_requisitions')) ||
-                    (in_array($record->status, ['Pending Finance', 'Returned to Purchasing', 'PO Created']));
-                return $canView ? static::getUrl('view', ['record' => $record]) : null;
+                return static::getUrl('view', ['record' => $record]);
             })
             ->columns([
                 Tables\Columns\TextColumn::make('document_number')
@@ -287,7 +219,7 @@ class MaterialRequisitionResource extends Resource
                     ->iconButton()
                     ->visible(function ($record) {
                         $user = auth()->user();
-                        return in_array($record->status, ['Requested', 'Returned to Purchasing']) && ($user->hasRole('programmer') || $user->hasPermission('review_material_requisitions'));
+                        return in_array($record->status, ['Requested', 'Returned to Purchasing']) && $user->hasPermission('review_material_requisitions');
                     })
                     ->url(fn($record) => static::getUrl('review', ['record' => $record])),
 
@@ -298,7 +230,7 @@ class MaterialRequisitionResource extends Resource
                     ->iconButton()
                     ->visible(function ($record) {
                         $user = auth()->user();
-                        return $record->status === 'Pending Finance' && ($user->hasRole('programmer') || $user->hasPermission('approve_material_requisitions'));
+                        return $record->status === 'Pending Finance' && $user->hasPermission('approve_material_requisitions');
                     })
                     ->url(fn($record) => static::getUrl('finance-approve', ['record' => $record])),
 

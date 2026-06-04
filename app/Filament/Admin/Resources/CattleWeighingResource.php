@@ -21,7 +21,7 @@ class CattleWeighingResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-scale';
     public static function getNavigationGroup(): ?string
     {
-        return __('Cattle');
+        return __('CATTLE');
     }
 
     public static function getNavigationLabel(): string

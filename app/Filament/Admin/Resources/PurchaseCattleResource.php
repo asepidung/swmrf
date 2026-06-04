@@ -25,7 +25,7 @@ class PurchaseCattleResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('Purchase Order');
+        return __('PURCHASE ORDER');
     }
 
     public static function getModelLabel(): string

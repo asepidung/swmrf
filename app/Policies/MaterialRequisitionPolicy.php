@@ -13,7 +13,7 @@ class MaterialRequisitionPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasPermission('view_material_requisitions') || $user->hasRole('programmer');
+        return $user->hasPermission('view_material_requisitions');
     }
 
     /**
@@ -21,7 +21,7 @@ class MaterialRequisitionPolicy
      */
     public function view(User $user, MaterialRequisition $materialRequisition): bool
     {
-        return $user->hasPermission('view_material_requisitions') || $user->hasRole('programmer');
+        return $user->hasPermission('view_material_requisitions');
     }
 
     /**
@@ -29,7 +29,7 @@ class MaterialRequisitionPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasPermission('create_material_requisitions') || $user->hasRole('programmer');
+        return $user->hasPermission('create_material_requisitions');
     }
 
     /**
@@ -37,7 +37,7 @@ class MaterialRequisitionPolicy
      */
     public function update(User $user, MaterialRequisition $materialRequisition): bool
     {
-        return $user->hasPermission('edit_material_requisitions') || $user->hasRole('programmer');
+        return $user->hasPermission('edit_material_requisitions');
     }
 
     /**
@@ -45,7 +45,7 @@ class MaterialRequisitionPolicy
      */
     public function delete(User $user, MaterialRequisition $materialRequisition): bool
     {
-        return $user->hasPermission('delete_material_requisitions') || $user->hasRole('programmer');
+        return $user->hasPermission('delete_material_requisitions');
     }
 
     /**
@@ -53,7 +53,7 @@ class MaterialRequisitionPolicy
      */
     public function restore(User $user, MaterialRequisition $materialRequisition): bool
     {
-        return $user->hasPermission('delete_material_requisitions') || $user->hasRole('programmer');
+        return $user->hasPermission('delete_material_requisitions');
     }
 
     /**
@@ -61,6 +61,6 @@ class MaterialRequisitionPolicy
      */
     public function forceDelete(User $user, MaterialRequisition $materialRequisition): bool
     {
-        return $user->hasPermission('delete_material_requisitions') || $user->hasRole('programmer');
+        return $user->hasPermission('delete_material_requisitions');
     }
 }
