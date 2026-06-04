@@ -31,7 +31,8 @@ class MaterialRequisition extends Model
         return LogOptions::defaults()
             ->logFillable()
             ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
+            ->dontSubmitEmptyLogs()
+            ->useLogName($this->document_number ?? 'Material Requisition');
     }
 
     protected static function booted()

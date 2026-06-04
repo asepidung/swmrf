@@ -17,7 +17,7 @@ class ViewPurchaseMaterial extends ViewRecord
                 ->label('Print PO')
                 ->icon('heroicon-o-printer')
                 ->color('gray')
-                ->url('#')
+                ->url(fn() => route('print.po-material', ['id' => $this->record->id]))
                 ->openUrlInNewTab(),
                 
             Actions\Action::make('back')

@@ -90,6 +90,12 @@ class MaterialRequisitionResource extends Resource
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
                                     ->stripCharacters('.')
                                     ->dehydrateStateUsing(fn($state) => (float) str_replace(',', '.', (string)$state))
+                                    ->live(debounce: 500)
+                                    ->afterStateUpdated(function ($state, $set, $get) {
+                                        $qty = self::parseNumber($state);
+                                        $price = self::parseNumber($get('price'));
+                                        $set('item_total', number_format($qty * $price, 0, ',', '.'));
+                                    })
                                     ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('price')
@@ -101,15 +107,99 @@ class MaterialRequisitionResource extends Resource
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                     ->stripCharacters('.')
                                     ->numeric()
+                                    ->live(debounce: 500)
+                                    ->afterStateUpdated(function ($state, $set, $get) {
+                                        $price = self::parseNumber($state);
+                                        $qty = self::parseNumber($get('qty'));
+                                        $set('item_total', number_format($qty * $price, 0, ',', '.'));
+                                    })
                                     ->columnSpan(['default' => 6, 'md' => 3]),
 
+                                Forms\Components\TextInput::make('item_total')
+                                    ->hiddenLabel()
+                                    ->placeholder('Subtotal')
+                                    ->prefix('Rp')
+                                    ->readOnly()
+                                    ->afterStateHydrated(function ($component, $get) {
+                                        $qty = self::parseNumber($get('qty'));
+                                        $price = self::parseNumber($get('price'));
+                                        $component->state(number_format($qty * $price, 0, ',', '.'));
+                                    })
+                                    ->columnSpan(['default' => 12, 'md' => 3]),
+
+                                // Formatted notes removed from repeater to make room for subtotal. It was empty/unused mostly in legacy, or it should be added in a separate row if needed. Let's just span 12 for note if they want it.
                                 Forms\Components\TextInput::make('note')
                                     ->hiddenLabel()
                                     ->placeholder('Notes')
-                                    ->columnSpan(['default' => 12, 'md' => 3]),
+                                    ->columnSpan(['default' => 12, 'md' => 12]),
                             ])
-                            ->columns(12),
+                            ->columns(12)
+                            ->live(debounce: 500)
+                            ->afterStateUpdated(function ($state, $set) {
+                                $total = collect($state)->sum(function ($item) {
+                                    $qty = self::parseNumber($item['qty'] ?? 0);
+                                    $price = self::parseNumber($item['price'] ?? 0);
+                                    return $qty * $price;
+                                });
+                                $set('total_amount', $total);
+                            }),
                     ]),
+
+                Forms\Components\Section::make('Summary')
+                    ->schema([
+                        Forms\Components\Grid::make(3)
+                            ->schema([
+                                Forms\Components\Placeholder::make('subtotal_display')
+                                    ->label('Subtotal')
+                                    ->content(function ($get) {
+                                        $items = $get('items') ?? [];
+                                        $total = 0;
+                                        foreach ($items as $item) {
+                                            $total += self::parseNumber($item['qty'] ?? 0) * self::parseNumber($item['price'] ?? 0);
+                                        }
+                                        return 'Rp ' . number_format($total, 0, ',', '.');
+                                    }),
+
+                                Forms\Components\Placeholder::make('tax_display')
+                                    ->label('Tax / PPN (11%)')
+                                    ->content(function ($get) {
+                                        $supplierId = $get('supplier_id');
+                                        $supplier = \App\Models\Supplier::find($supplierId);
+                                        $hasTax = $supplier ? $supplier->has_tax : false;
+
+                                        if (!$hasTax) return 'Rp 0 (Non-PKP)';
+
+                                        $items = $get('items') ?? [];
+                                        $total = 0;
+                                        foreach ($items as $item) {
+                                            $total += self::parseNumber($item['qty'] ?? 0) * self::parseNumber($item['price'] ?? 0);
+                                        }
+                                        $tax = $total * 0.11;
+                                        return 'Rp ' . number_format($tax, 0, ',', '.');
+                                    }),
+
+                                Forms\Components\Placeholder::make('grand_total_display')
+                                    ->label('Grand Total')
+                                    ->content(function ($get) {
+                                        $supplierId = $get('supplier_id');
+                                        $supplier = \App\Models\Supplier::find($supplierId);
+                                        $hasTax = $supplier ? $supplier->has_tax : false;
+
+                                        $items = $get('items') ?? [];
+                                        $total = 0;
+                                        foreach ($items as $item) {
+                                            $total += self::parseNumber($item['qty'] ?? 0) * self::parseNumber($item['price'] ?? 0);
+                                        }
+
+                                        $tax = $hasTax ? ($total * 0.11) : 0;
+                                        $grandTotal = $total + $tax;
+
+                                        return 'Rp ' . number_format($grandTotal, 0, ',', '.');
+                                    })
+                                    ->extraAttributes(['class' => 'font-bold text-lg text-primary-600']),
+                            ])
+                            ->columnSpan(12),
+                    ])->columns(12),
 
                 Forms\Components\Section::make('Rejection Info')
                     ->description('Informasi alasan penolakan atau revisi request ini.')

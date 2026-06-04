@@ -7,6 +7,8 @@ use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Forms\Components\Textarea;
 use Illuminate\Database\Eloquent\Model;
+use Filament\Notifications\Notification;
+use App\Models\User;
 
 class ReviewMaterialRequisition extends EditRecord
 {
@@ -41,13 +43,25 @@ class ReviewMaterialRequisition extends EditRecord
             ->icon('heroicon-s-check-circle')
             ->requiresConfirmation()
             ->action(function () {
-                // Save form data (validates and updates db)
                 $this->save(false);
                 
                 $this->record->update([
                     'status' => 'Pending Finance',
                     'reject_note' => null,
                 ]);
+
+                $financeUsers = User::whereHas('roles.permissions', function ($query) {
+                    $query->where('name', 'approve_material_requisitions');
+                })->get();
+
+                if ($financeUsers->isNotEmpty()) {
+                    Notification::make()
+                        ->title('Material Request Approved')
+                        ->body("Request {$this->record->document_number} has been reviewed and requires Finance approval.")
+                        ->success()
+                        ->sendToDatabase($financeUsers);
+                }
+
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }
@@ -69,6 +83,15 @@ class ReviewMaterialRequisition extends EditRecord
                     'status' => 'Rejected',
                     'reject_note' => $data['reject_note'],
                 ]);
+
+                if ($this->record->user) {
+                    Notification::make()
+                        ->title('Material Request Rejected')
+                        ->body("Your request {$this->record->document_number} was returned: {$data['reject_note']}")
+                        ->danger()
+                        ->sendToDatabase($this->record->user);
+                }
+
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }

@@ -5,10 +5,27 @@ namespace App\Filament\Admin\Resources\MaterialRequisitionResource\Pages;
 use App\Filament\Admin\Resources\MaterialRequisitionResource;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
+use Filament\Notifications\Notification;
+use App\Models\User;
 
 class CreateMaterialRequisition extends CreateRecord
 {
     protected static string $resource = MaterialRequisitionResource::class;
+
+    protected function afterCreate(): void
+    {
+        $reviewers = User::whereHas('roles.permissions', function ($query) {
+            $query->where('name', 'review_material_requisitions');
+        })->get();
+
+        if ($reviewers->isNotEmpty()) {
+            Notification::make()
+                ->title('New Material Request')
+                ->body("A new request {$this->record->document_number} has been created and requires review.")
+                ->info()
+                ->sendToDatabase($reviewers);
+        }
+    }
 
     protected function beforeValidate(): void
     {

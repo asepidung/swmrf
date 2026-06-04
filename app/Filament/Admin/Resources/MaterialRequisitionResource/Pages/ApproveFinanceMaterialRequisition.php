@@ -6,6 +6,8 @@ use App\Filament\Admin\Resources\MaterialRequisitionResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Forms\Components\Textarea;
+use Filament\Notifications\Notification;
+use App\Models\User;
 
 class ApproveFinanceMaterialRequisition extends EditRecord
 {
@@ -29,6 +31,8 @@ class ApproveFinanceMaterialRequisition extends EditRecord
             ->icon('heroicon-s-check-circle')
             ->requiresConfirmation()
             ->action(function () {
+                $this->save(false); // Make sure to save any changes made by Finance, if any
+
                 $this->record->update([
                     'status' => 'PO Created',
                     'reject_note' => null,
@@ -36,6 +40,19 @@ class ApproveFinanceMaterialRequisition extends EditRecord
                 
                 $this->record->generatePurchaseOrder();
                 
+                // Notify Purchasing
+                $purchasingUsers = User::whereHas('roles.permissions', function ($query) {
+                    $query->where('name', 'review_material_requisitions');
+                })->get();
+
+                if ($purchasingUsers->isNotEmpty()) {
+                    Notification::make()
+                        ->title('PO Generated')
+                        ->body("Finance has approved request {$this->record->document_number} and generated a PO.")
+                        ->success()
+                        ->sendToDatabase($purchasingUsers);
+                }
+
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }
@@ -57,6 +74,19 @@ class ApproveFinanceMaterialRequisition extends EditRecord
                     'status' => 'Returned to Purchasing',
                     'reject_note' => $data['reject_note'],
                 ]);
+
+                $purchasingUsers = User::whereHas('roles.permissions', function ($query) {
+                    $query->where('name', 'review_material_requisitions');
+                })->get();
+
+                if ($purchasingUsers->isNotEmpty()) {
+                    Notification::make()
+                        ->title('Material Request Returned')
+                        ->body("Finance returned request {$this->record->document_number}: {$data['reject_note']}")
+                        ->danger()
+                        ->sendToDatabase($purchasingUsers);
+                }
+
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }

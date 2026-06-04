@@ -17,7 +17,7 @@ class ViewMaterialRequisition extends ViewRecord
                 ->label('Print')
                 ->icon('heroicon-o-printer')
                 ->color('gray')
-                ->url('#')
+                ->url(fn() => route('print.material-request', ['id' => $this->record->id]))
                 ->openUrlInNewTab(),
 
             Actions\Action::make('review')
@@ -29,6 +29,20 @@ class ViewMaterialRequisition extends ViewRecord
                     return in_array($this->record->status, ['Requested', 'Returned to Purchasing']) && ($user->isProgrammer() || $user->hasPermission('review_material_requisitions'));
                 })
                 ->url(fn() => $this->getResource()::getUrl('review', ['record' => $this->record])),
+
+            Actions\Action::make('resubmit')
+                ->label('Resubmit Request')
+                ->icon('heroicon-o-arrow-path')
+                ->color('success')
+                ->requiresConfirmation()
+                ->visible(fn() => $this->record->status === 'Rejected' && $this->record->user_id === auth()->id())
+                ->action(function () {
+                    $this->record->update([
+                        'status' => 'Requested',
+                        'reject_note' => null,
+                    ]);
+                    $this->redirect($this->getResource()::getUrl('index'));
+                }),
 
             Actions\Action::make('finance_approval')
                 ->label('Finance Approval')
