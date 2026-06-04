@@ -29,6 +29,14 @@ class DatabaseSeeder extends Seeder
             ['name' => 'edit_suppliers', 'module_name' => 'Suppliers', 'description' => 'Edit suppliers'],
             ['name' => 'delete_suppliers', 'module_name' => 'Suppliers', 'description' => 'Delete suppliers'],
 
+            // Material Requisition Module
+            ['name' => 'view_material_requisitions', 'module_name' => 'Material Requisition', 'description' => 'View material requisitions'],
+            ['name' => 'create_material_requisitions', 'module_name' => 'Material Requisition', 'description' => 'Create material requisitions'],
+            ['name' => 'edit_material_requisitions', 'module_name' => 'Material Requisition', 'description' => 'Edit material requisitions'],
+            ['name' => 'delete_material_requisitions', 'module_name' => 'Material Requisition', 'description' => 'Delete material requisitions'],
+            ['name' => 'review_material_requisitions', 'module_name' => 'Material Requisition', 'description' => 'Review material requisitions'],
+            ['name' => 'approve_material_requisitions', 'module_name' => 'Material Requisition', 'description' => 'Approve material requisitions'],
+
             // Materials Module
             ['name' => 'view_materials', 'module_name' => 'Logistic Items', 'description' => 'View logistic items'],
             ['name' => 'create_materials', 'module_name' => 'Logistic Items', 'description' => 'Create logistic items'],
