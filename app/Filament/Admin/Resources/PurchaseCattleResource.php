@@ -46,10 +46,10 @@ class PurchaseCattleResource extends Resource
                     Forms\Components\Select::make('supplier_id')
                         ->relationship('supplier', 'name')
                         ->required()
+                        ->autofocus()
                         ->label(__('Supplier')),
                     Forms\Components\DatePicker::make('shipping_date')
                         ->required()
-                        ->autofocus()
                         ->label(__('Shipping Date')),
                     Forms\Components\Textarea::make('summary_note')
                         ->label(__('Summary Note'))
