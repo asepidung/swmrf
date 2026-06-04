@@ -71,11 +71,11 @@ class MaterialRequisitionResource extends Resource
                         Forms\Components\Repeater::make('items')
                             ->relationship()
                             ->hiddenLabel()
+                            ->reorderableWithDragAndDrop(false)
                             ->schema([
                                 Forms\Components\Select::make('material_id')
-                                    ->relationship('material', 'name')
+                                    ->options(fn() => \App\Models\Material::orderBy('name')->pluck('name', 'id'))
                                     ->searchable()
-                                    ->preload()
                                     ->required()
                                     ->hiddenLabel()
                                     ->placeholder('Pilih Material...')
@@ -85,64 +85,30 @@ class MaterialRequisitionResource extends Resource
                                     ->required()
                                     ->hiddenLabel()
                                     ->placeholder('Qty')
-                                    ->formatStateUsing(fn($state) => $state ? number_format(self::parseNumber($state), 2, ',', '.') : '')
+                                    ->default(0)
+                                    ->extraInputAttributes(['x-on:focus' => '$el.select()'])
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
-                                    ->dehydrateStateUsing(fn($state) => self::parseNumber($state))
-                                    ->live(debounce: 500)
-                                    ->afterStateUpdated(function ($state, $set, $get) {
-                                        $qty = self::parseNumber($state);
-                                        $price = self::parseNumber($get('price'));
-                                        $set('subtotal', number_format($qty * $price, 0, ',', '.'));
-                                    })
-                                    ->columnSpan(['default' => 6, 'md' => 2]),
+                                    ->stripCharacters('.')
+                                    ->dehydrateStateUsing(fn($state) => (float) str_replace(',', '.', (string)$state))
+                                    ->columnSpan(['default' => 6, 'md' => 4]),
 
                                 Forms\Components\TextInput::make('price')
                                     ->hiddenLabel()
                                     ->placeholder('Harga')
                                     ->prefix('Rp')
-                                    ->formatStateUsing(fn($state) => $state ? number_format(self::parseNumber($state), 0, ',', '.') : '')
+                                    ->default(0)
+                                    ->extraInputAttributes(['x-on:focus' => '$el.select()'])
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                                    ->dehydrateStateUsing(fn($state) => self::parseNumber($state))
-                                    ->live(debounce: 500)
-                                    ->afterStateUpdated(function ($state, $set, $get) {
-                                        $price = self::parseNumber($state);
-                                        $qty = self::parseNumber($get('qty'));
-                                        $set('subtotal', number_format($qty * $price, 0, ',', '.'));
-                                    })
-                                    ->columnSpan(['default' => 6, 'md' => 3]),
-
-                                Forms\Components\Hidden::make('subtotal')
-                                    ->afterStateHydrated(function ($component, $get) {
-                                        $qty = self::parseNumber($get('qty'));
-                                        $price = self::parseNumber($get('price'));
-                                        $component->state(number_format($qty * $price, 0, ',', '.'));
-                                    })
-                                    ->dehydrateStateUsing(fn($state) => self::parseNumber($state)),
+                                    ->stripCharacters('.')
+                                    ->numeric()
+                                    ->columnSpan(['default' => 6, 'md' => 4]),
 
                                 Forms\Components\TextInput::make('note')
                                     ->hiddenLabel()
                                     ->placeholder('Notes')
-                                    ->columnSpan(['default' => 12, 'md' => 3]),
+                                    ->columnSpan(['default' => 12, 'md' => 4]),
                             ])
-                            ->columns(12)
-                            ->live(debounce: 500)
-                            ->afterStateUpdated(function ($state, $set, $get) {
-                                $total = collect($state)->sum(function ($item) {
-                                    $qty = self::parseNumber($item['qty'] ?? 0);
-                                    $price = self::parseNumber($item['price'] ?? 0);
-                                    return $qty * $price;
-                                });
-
-                                $supplierId = $get('supplier_id');
-                                $supplier = Supplier::find($supplierId);
-                                $hasTax = $supplier ? $supplier->has_tax : false;
-
-                                $tax = $hasTax ? ($total * 0.11) : 0;
-                                $grandTotal = $total + $tax;
-
-                                $set('total_amount', $grandTotal);
-                                $set('tax_amount', $tax);
-                            }),
+                            ->columns(12),
                     ]),
 
                 Forms\Components\Section::make('Rejection Info')

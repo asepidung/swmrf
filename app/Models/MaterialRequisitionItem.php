@@ -41,4 +41,19 @@ class MaterialRequisitionItem extends Model
     {
         return $this->belongsTo(Material::class, 'material_id');
     }
+
+    protected static function booted()
+    {
+        static::saving(function ($item) {
+            $item->subtotal = (float)$item->qty * (float)$item->price;
+        });
+
+        static::saved(function ($item) {
+            $item->requisition->updateTotalAmount();
+        });
+
+        static::deleted(function ($item) {
+            $item->requisition->updateTotalAmount();
+        });
+    }
 }
