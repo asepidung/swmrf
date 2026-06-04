@@ -27,6 +27,21 @@ class MaterialRequisitionItem extends Model
             ->dontSubmitEmptyLogs();
     }
 
+    protected static function booted()
+    {
+        static::saving(function ($model) {
+            $model->subtotal = $model->qty * $model->price;
+        });
+
+        static::saved(function ($model) {
+            $model->requisition?->updateTotalAmount();
+        });
+
+        static::deleted(function ($model) {
+            $model->requisition?->updateTotalAmount();
+        });
+    }
+
     public function requisition()
     {
         return $this->belongsTo(MaterialRequisition::class, 'material_requisition_id');

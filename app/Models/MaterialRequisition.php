@@ -48,9 +48,22 @@ class MaterialRequisition extends Model
                 $nextNumber = $count + 1;
                 $requestNumber = sprintf("%03s", $nextNumber);
 
-                $model->document_number = "MRQ#" . substr($currentYear, 2) . $requestNumber;
+                $model->document_number = "MR#" . substr($currentYear, 2) . $requestNumber;
             });
         });
+    }
+
+    public function updateTotalAmount()
+    {
+        $total = $this->items()->sum('subtotal');
+        $tax = 0;
+        if ($this->supplier && $this->supplier->has_tax) {
+            $tax = $total * 0.11;
+        }
+        $this->update([
+            'total_amount' => $total + $tax,
+            'tax_amount' => $tax
+        ]);
     }
 
     public function items()

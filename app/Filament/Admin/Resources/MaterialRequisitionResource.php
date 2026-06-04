@@ -67,7 +67,6 @@ class MaterialRequisitionResource extends Resource
                             ->columnSpan(12),
 
                         Forms\Components\Hidden::make('user_id')->default(fn() => Auth::id()),
-                        Forms\Components\Hidden::make('total_amount'),
                     ])->columns(12),
 
                 Forms\Components\Section::make('Item Details')
@@ -92,7 +91,9 @@ class MaterialRequisitionResource extends Resource
                                     ->placeholder('Qty')
                                     ->default(0)
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()'])
-                                    ->numeric()
+                                    ->formatStateUsing(fn($state) => $state ? number_format(self::parseNumber($state), 2, ',', '.') : '0')
+                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
+                                    ->dehydrateStateUsing(fn($state) => self::parseNumber($state))
                                     ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('price')
@@ -101,7 +102,9 @@ class MaterialRequisitionResource extends Resource
                                     ->prefix('Rp')
                                     ->default(0)
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()'])
-                                    ->numeric()
+                                    ->formatStateUsing(fn($state) => $state ? number_format(self::parseNumber($state), 0, ',', '.') : '0')
+                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
+                                    ->dehydrateStateUsing(fn($state) => self::parseNumber($state))
                                     ->columnSpan(['default' => 6, 'md' => 3]),
 
                                 Forms\Components\TextInput::make('note')
