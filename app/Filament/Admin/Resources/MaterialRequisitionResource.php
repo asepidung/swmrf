@@ -72,7 +72,6 @@ class MaterialRequisitionResource extends Resource
                 Forms\Components\Section::make('Item Details')
                     ->schema([
                         Forms\Components\Repeater::make('items')
-                            ->relationship()
                             ->hiddenLabel()
                             ->defaultItems(0)
                             ->reorderableWithDragAndDrop(false)
@@ -92,10 +91,8 @@ class MaterialRequisitionResource extends Resource
                                     ->placeholder('Qty')
                                     ->default(0)
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()'])
-                                    ->formatStateUsing(fn($state) => $state ? number_format(self::parseNumber($state), 2, ',', '.') : '0')
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
                                     ->dehydrateStateUsing(fn($state) => self::parseNumber($state))
-                                    ->live(onBlur: true)
                                     ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('price')
@@ -104,10 +101,8 @@ class MaterialRequisitionResource extends Resource
                                     ->prefix('Rp')
                                     ->default(0)
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()'])
-                                    ->formatStateUsing(fn($state) => $state ? number_format(self::parseNumber($state), 0, ',', '.') : '0')
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                     ->dehydrateStateUsing(fn($state) => self::parseNumber($state))
-                                    ->live(onBlur: true)
                                     ->columnSpan(['default' => 6, 'md' => 3]),
 
                                 Forms\Components\TextInput::make('note')
