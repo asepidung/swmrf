@@ -187,48 +187,7 @@ class MaterialRequisitionResource extends Resource
                     })
             ])
             ->actions([
-                Tables\Actions\Action::make('print_dynamic')
-                    ->icon('heroicon-s-printer')
-                    ->color(fn($record) => $record->status === 'PO Created' ? 'success' : 'primary')
-                    ->tooltip(fn($record) => $record->status === 'PO Created' ? 'Print Purchase Order' : 'Print Request')
-                    ->iconButton()
-                    ->url(function ($record) {
-                        return '#';
-                    })
-                    ->openUrlInNewTab(),
-
-                Tables\Actions\Action::make('review')
-                    ->icon('heroicon-s-clipboard-document-check')
-                    ->color('warning')
-                    ->tooltip('Review Request')
-                    ->iconButton()
-                    ->visible(function ($record) {
-                        $user = auth()->user();
-                        return in_array($record->status, ['Requested', 'Returned to Purchasing']) && ($user->isProgrammer() || $user->hasPermission('review_material_requisitions'));
-                    })
-                    ->url(fn($record) => static::getUrl('review', ['record' => $record])),
-
-                Tables\Actions\Action::make('finance_approval')
-                    ->icon('heroicon-s-shield-check')
-                    ->color('success')
-                    ->tooltip('Finance Approval')
-                    ->iconButton()
-                    ->visible(function ($record) {
-                        $user = auth()->user();
-                        return $record->status === 'Pending Finance' && ($user->isProgrammer() || $user->hasPermission('approve_material_requisitions'));
-                    })
-                    ->url(fn($record) => static::getUrl('finance-approve', ['record' => $record])),
-
-                Tables\Actions\Action::make('resubmit')
-                    ->icon('heroicon-s-arrow-path')
-                    ->color('info')
-                    ->tooltip('Edit & Re-submit')
-                    ->iconButton()
-                    ->visible(fn($record) => $record->status === 'Rejected')
-                    ->url(fn($record) => static::getUrl('edit', ['record' => $record])),
-
-                Tables\Actions\EditAction::make()->iconButton()->visible(fn($record) => in_array($record->status, ['Requested', 'Returned to Purchasing'])),
-                Tables\Actions\DeleteAction::make()->iconButton()->visible(fn($record) => $record->status === 'Requested'),
+                // Clean UI: Actions moved to View Page
             ]);
     }
 

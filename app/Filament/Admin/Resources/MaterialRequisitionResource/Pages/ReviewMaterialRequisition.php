@@ -14,6 +14,17 @@ class ReviewMaterialRequisition extends EditRecord
     
     protected static ?string $title = 'Review Request';
 
+    protected function beforeValidate(): void
+    {
+        $items = $this->data['items'] ?? [];
+        foreach ($items as $key => $item) {
+            if (empty($item['material_id'])) {
+                unset($items[$key]);
+            }
+        }
+        $this->data['items'] = $items;
+    }
+
     protected function getFormActions(): array
     {
         return [
@@ -30,6 +41,9 @@ class ReviewMaterialRequisition extends EditRecord
             ->icon('heroicon-s-check-circle')
             ->requiresConfirmation()
             ->action(function () {
+                // Save form data (validates and updates db)
+                $this->save(false);
+                
                 $this->record->update([
                     'status' => 'Pending Finance',
                     'reject_note' => null,

@@ -80,4 +80,46 @@ class MaterialRequisition extends Model
     {
         return $this->belongsTo(Supplier::class);
     }
+
+    public function purchaseMaterial()
+    {
+        return $this->hasOne(PurchaseMaterial::class);
+    }
+
+    public function generatePurchaseOrder()
+    {
+        $this->loadMissing(['items', 'supplier']);
+
+        DB::transaction(function () {
+            $currentYear2Digit = date('y');
+            $currentYear4Digit = date('Y');
+
+            $countThisYear = PurchaseMaterial::whereYear('created_at', $currentYear4Digit)
+                ->lockForUpdate()
+                ->count();
+            
+            $urut = $countThisYear + 1;
+            $poNumber = 'SWM-MPO#' . $currentYear2Digit . str_pad($urut, 3, '0', STR_PAD_LEFT);
+
+            $po = PurchaseMaterial::create([
+                'po_number' => $poNumber,
+                'material_requisition_id' => $this->id,
+                'supplier_id' => $this->supplier_id,
+                'approved_by' => auth()->id() ?? 1, // fallback to 1 if console
+                'po_date' => $this->due_date ?? now(),
+                'total_amount' => $this->total_amount,
+                'note' => $this->note,
+            ]);
+
+            foreach ($this->items as $item) {
+                PurchaseMaterialItem::create([
+                    'purchase_material_id' => $po->id,
+                    'material_id' => $item->material_id,
+                    'qty' => $item->qty,
+                    'price' => $item->price,
+                    'subtotal' => $item->subtotal,
+                ]);
+            }
+        });
+    }
 }

@@ -34,8 +34,7 @@ class ApproveFinanceMaterialRequisition extends EditRecord
                     'reject_note' => null,
                 ]);
                 
-                // Nantinya disini generate PO seperti legacy:
-                // MaterialRequisitionResource::generatePurchaseOrder($this->record);
+                $this->record->generatePurchaseOrder();
                 
                 $this->redirect($this->getResource()::getUrl('index'));
             });

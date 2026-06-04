@@ -116,6 +116,10 @@ class DatabaseSeeder extends Seeder
             ['name' => 'edit_carcasses', 'module_name' => 'Carcass', 'description' => 'Edit carcasses'],
             ['name' => 'delete_carcasses', 'module_name' => 'Carcass', 'description' => 'Delete carcasses'],
             ['name' => 'view_deleted_carcasses', 'module_name' => 'Carcass', 'description' => 'View deleted carcasses'],
+            
+            // PO Material Module
+            ['name' => 'view_purchase_materials', 'module_name' => 'PO Material', 'description' => 'View PO materials'],
+            ['name' => 'print_purchase_materials', 'module_name' => 'PO Material', 'description' => 'Print PO materials'],
         ];
 
         foreach ($permissions as $perm) {
