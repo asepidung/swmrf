@@ -26,8 +26,8 @@ class ApproveFinanceMaterialRequisition extends EditRecord
             return [(string) \Illuminate\Support\Str::uuid() => [
                 'material_id' => $item->material_id,
                 'qty' => (float) $item->qty,
-                'price' => number_format($item->price, 0, ',', '.'),
-                'item_total' => number_format($item->qty * $item->price, 0, ',', '.'),
+                'price' => (float) $item->price,
+                'item_total' => (float) ($item->qty * $item->price),
                 'note' => $item->note,
             ]];
         })->toArray();

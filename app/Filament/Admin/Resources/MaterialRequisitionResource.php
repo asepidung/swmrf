@@ -86,6 +86,8 @@ class MaterialRequisitionResource extends Resource
                                     ->placeholder('Qty')
                                     ->default(0)
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()'])
+                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
+                                    ->stripCharacters('.')
                                     ->numeric()
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(function ($state, $set, $get) {
