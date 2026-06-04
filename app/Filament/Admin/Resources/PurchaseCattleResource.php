@@ -87,7 +87,7 @@ class PurchaseCattleResource extends Resource
                                 ->required()
                                 ->default(0)
                                 ->prefix('Rp')
-                                ->mask(RawJs::make('$money($input, \'.\', \',\', 0)'))
+                                ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                 ->stripCharacters('.')
                                 ->numeric()
                                 ->rules(['integer', 'min:0'])
