@@ -75,6 +75,7 @@ class MaterialRequisitionResource extends Resource
                             ->relationship()
                             ->hiddenLabel()
                             ->defaultItems(0)
+                            ->reorderableWithDragAndDrop(false)
                             ->schema([
                                 Forms\Components\Select::make('material_id')
                                     ->relationship('material', 'name')
@@ -94,6 +95,7 @@ class MaterialRequisitionResource extends Resource
                                     ->formatStateUsing(fn($state) => $state ? number_format(self::parseNumber($state), 2, ',', '.') : '0')
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
                                     ->dehydrateStateUsing(fn($state) => self::parseNumber($state))
+                                    ->live(onBlur: true)
                                     ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('price')
@@ -105,6 +107,7 @@ class MaterialRequisitionResource extends Resource
                                     ->formatStateUsing(fn($state) => $state ? number_format(self::parseNumber($state), 0, ',', '.') : '0')
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                     ->dehydrateStateUsing(fn($state) => self::parseNumber($state))
+                                    ->live(onBlur: true)
                                     ->columnSpan(['default' => 6, 'md' => 3]),
 
                                 Forms\Components\TextInput::make('note')

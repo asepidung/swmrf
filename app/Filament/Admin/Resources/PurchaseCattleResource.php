@@ -59,6 +59,8 @@ class PurchaseCattleResource extends Resource
                 Forms\Components\Section::make('Cattle Details')->schema([
                     Forms\Components\Repeater::make('items')
                         ->relationship()
+                        ->reorderableWithDragAndDrop(false)
+                        ->defaultItems(0)
                         ->schema([
                             Forms\Components\Select::make('cattle_class_id')
                                 ->relationship('cattleClass', 'name')
@@ -86,6 +88,7 @@ class PurchaseCattleResource extends Resource
                                 ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                 ->dehydrateStateUsing(fn($state) => is_string($state) ? (float) str_replace('.', '', $state) : $state)
                                 ->formatStateUsing(fn($state) => $state ? number_format((float)$state, 0, ',', '.') : '0')
+                                ->live(onBlur: true)
                                 ->rules(['integer', 'min:0'])
                                 ->extraInputAttributes(['x-on:focus' => '$el.select()'])
                                 ->placeholder(__('Price / Kg'))
