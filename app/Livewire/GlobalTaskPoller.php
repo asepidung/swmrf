@@ -13,6 +13,7 @@ class GlobalTaskPoller extends Component
     public int $lastPoId = 0;
     public int $lastReceivingId = 0;
     public int $lastWeighingId = 0;
+    public int $lastMaterialRequestId = 0;
 
     public function mount()
     {
@@ -20,6 +21,7 @@ class GlobalTaskPoller extends Component
             $this->lastPoId = (int) PurchaseCattle::max('id');
             $this->lastReceivingId = (int) CattleReceiving::max('id');
             $this->lastWeighingId = (int) CattleWeighing::max('id');
+            $this->lastMaterialRequestId = (int) \App\Models\MaterialRequisition::max('id');
         }
     }
 
@@ -32,6 +34,7 @@ class GlobalTaskPoller extends Component
         $currentPoId = (int) PurchaseCattle::max('id');
         $currentReceivingId = (int) CattleReceiving::max('id');
         $currentWeighingId = (int) CattleWeighing::max('id');
+        $currentMaterialRequestId = (int) \App\Models\MaterialRequisition::max('id');
 
         if ($currentPoId > $this->lastPoId) {
             $this->lastPoId = $currentPoId;
@@ -59,6 +62,16 @@ class GlobalTaskPoller extends Component
                 Notification::make()
                     ->title(__(':name, ada tugas karkas baru', ['name' => auth()->user()->name]))
                     ->warning()
+                    ->send();
+            }
+        }
+
+        if ($currentMaterialRequestId > $this->lastMaterialRequestId) {
+            $this->lastMaterialRequestId = $currentMaterialRequestId;
+            if (auth()->user()->isProgrammer() || auth()->user()->hasPermission('review_material_requisitions')) {
+                Notification::make()
+                    ->title(__('Hay :name ada request material baru', ['name' => auth()->user()->name]))
+                    ->info()
                     ->send();
             }
         }
