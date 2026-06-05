@@ -201,7 +201,13 @@
     <div class="doc">
         <div class="header">
             <div class="brand">
-                <img src="{{ asset('img/LOGO-Y.png') }}" alt="Logo">
+                @php
+                    $path = public_path('img/light.png');
+                    $type = pathinfo($path, PATHINFO_EXTENSION);
+                    $data = file_get_contents($path);
+                    $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+                @endphp
+                <img src="{{ $base64 }}" alt="Logo">
                 <div>
                     <div class="name">PT. SANTI WIJAYA MEAT</div>
                     <div class="tag">Committed to Meeting Your Need</div>
