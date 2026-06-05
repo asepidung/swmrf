@@ -37,8 +37,7 @@ class ViewMaterialRequisition extends ViewRecord
                 ->icon('heroicon-o-printer')
                 ->color('gray')
                 ->url(fn() => route('print.material-request', ['id' => $this->record->id]))
-                ->openUrlInNewTab()
-                ->iconButton(),
+                ->openUrlInNewTab(),
 
             Actions\Action::make('review')
                 ->tooltip('Review')
@@ -48,8 +47,7 @@ class ViewMaterialRequisition extends ViewRecord
                     $user = auth()->user();
                     return in_array($this->record->status, ['Requested', 'Returned to Purchasing']) && ($user->isProgrammer() || $user->hasPermission('review_material_requisitions'));
                 })
-                ->url(fn() => $this->getResource()::getUrl('review', ['record' => $this->record]))
-                ->iconButton(),
+                ->url(fn() => $this->getResource()::getUrl('review', ['record' => $this->record])),
 
             Actions\Action::make('resubmit')
                 ->tooltip('Resubmit Request')
@@ -63,8 +61,7 @@ class ViewMaterialRequisition extends ViewRecord
                         'reject_note' => null,
                     ]);
                     $this->redirect($this->getResource()::getUrl('index'));
-                })
-                ->iconButton(),
+                }),
 
             Actions\Action::make('finance_approval')
                 ->tooltip('Finance Approval')
@@ -74,25 +71,21 @@ class ViewMaterialRequisition extends ViewRecord
                     $user = auth()->user();
                     return $this->record->status === 'Pending Finance' && ($user->isProgrammer() || $user->hasPermission('approve_material_requisitions'));
                 })
-                ->url(fn() => $this->getResource()::getUrl('finance-approve', ['record' => $this->record]))
-                ->iconButton(),
+                ->url(fn() => $this->getResource()::getUrl('finance-approve', ['record' => $this->record])),
 
             Actions\EditAction::make()
                 ->tooltip('Edit')
-                ->iconButton()
                 ->visible(fn() => in_array($this->record->status, ['Requested', 'Returned to Purchasing'])),
 
             Actions\DeleteAction::make()
                 ->tooltip('Delete')
-                ->iconButton()
                 ->visible(fn() => $this->record->status === 'Requested'),
 
             Actions\Action::make('back')
                 ->tooltip('Back to List')
                 ->icon('heroicon-o-arrow-left')
                 ->color('gray')
-                ->url($this->getResource()::getUrl('index'))
-                ->iconButton(),
+                ->url($this->getResource()::getUrl('index')),
         ];
     }
 }

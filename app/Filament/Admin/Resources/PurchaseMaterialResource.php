@@ -142,6 +142,11 @@ class PurchaseMaterialResource extends Resource
                     ->money('IDR', locale: 'id'),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('supplier_id')
+                    ->label('Supplier')
+                    ->relationship('supplier', 'name')
+                    ->searchable()
+                    ->preload(),
                 Tables\Filters\Filter::make('po_date')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')

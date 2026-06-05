@@ -251,6 +251,16 @@ class MaterialRequisitionResource extends Resource
                     }),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('supplier_id')
+                    ->label('Supplier')
+                    ->relationship('supplier', 'name')
+                    ->searchable()
+                    ->preload(),
+                Tables\Filters\SelectFilter::make('user_id')
+                    ->label('Requester')
+                    ->relationship('user', 'name')
+                    ->searchable()
+                    ->preload(),
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
                         'Requested' => 'Requested',

@@ -2,294 +2,315 @@
 <html lang="en">
 
 <head>
-    <meta charset="utf-8">
-    <title>PO - {{ $record->po_number }} - {{ $record->supplier->name ?? 'Unknown' }}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <title>Purchase Order Material - {{ $record->po_number }}</title>
     <style>
-        /* Document Styles */
-        :root {
-            --accent: #337ab7;
-            --ink: #111;
-            --muted: #666;
-            --line: #e7e7e7;
+        @page {
+            size: A4;
+            margin: 1cm;
         }
 
         body {
-            color: var(--ink);
-            font-size: 13px;
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
+            font-size: 11px;
+            color: #333;
+            line-height: 1.4;
             margin: 0;
-            padding: 0;
-        }
-
-        .doc {
-            max-width: 960px;
-            margin: 24px auto 48px;
-            padding: 0 16px;
         }
 
         .header {
             display: flex;
             align-items: center;
-            gap: 16px;
-            border-bottom: 2px solid var(--ink);
-            padding-bottom: 12px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
         }
 
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        .logo-box {
+            width: 80px;
+            margin-right: 20px;
         }
 
-        .brand img {
-            height: 52px;
-            width: auto;
+        .logo-box img {
+            width: 100%;
+            height: auto;
         }
 
-        .brand .name {
+        .company-info {
+            flex-grow: 1;
+        }
+
+        .company-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #000;
+            margin: 0;
+        }
+
+        .company-address {
+            font-size: 10px;
+            color: #333;
+            margin-top: 3px;
+            line-height: 1.3;
+        }
+
+        .doc-title-box {
+            text-align: right;
+            min-width: 200px;
+        }
+
+        .doc-title-box h2 {
+            margin: 0;
             font-size: 20px;
-            font-weight: 700;
-            letter-spacing: .3px;
+            text-transform: uppercase;
+            color: #000;
+            border-bottom: 1px solid #333;
+            display: inline-block;
         }
 
-        .brand .tag {
-            font-size: 12px;
-            color: var(--muted);
+        .doc-meta {
+            margin-top: 8px;
+            font-size: 11px;
+            text-align: right;
         }
 
-        .title {
-            margin: 18px 0 8px;
+        .meta-container {
             display: flex;
-            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+
+        .meta-box {
+            width: 50%;
+            border: 1px solid #000;
+            padding: 8px;
+            border-radius: 2px;
+        }
+
+        .meta-box h4 {
+            margin: 0 0 5px 0;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #555;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 2px;
+        }
+
+        .meta-content {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .meta-address {
+            font-size: 10px;
+            font-weight: normal;
+            margin-top: 4px;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+
+        table th {
+            background: #fafafa;
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 10px;
+        }
+
+        table td {
+            border: 1px solid #000;
+            padding: 6px;
+            vertical-align: top;
+            font-size: 11px;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .footer-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .note-section {
+            width: 100%;
+        }
+
+        .note-box {
+            border: 1px solid #ccc;
+            padding: 8px;
+            min-height: 40px;
+            margin-top: 5px;
+            font-size: 10px;
+            font-style: italic;
+        }
+
+        .sig-container {
+            margin-top: 40px;
+            display: flex;
             justify-content: space-between;
         }
 
-        .title h1 {
-            font-size: 18px;
-            font-weight: 700;
-            margin: 0;
-            letter-spacing: .5px;
-        }
-
-        .meta {
-            margin-top: 12px;
-            display: grid;
-            grid-template-columns: auto 1fr auto 1fr;
-            column-gap: 16px;
-            row-gap: 6px;
-            align-items: center;
-        }
-
-        .meta dt {
-            font-weight: 600;
-            margin: 0;
-        }
-
-        .meta dd {
-            margin: 0;
-        }
-
-        table.wgh-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-        }
-
-        .wgh-table thead th {
-            background: #fafafa;
-            border: 1px solid var(--line);
-            font-weight: 600;
-            text-align: center;
-            padding: 8px;
-        }
-
-        .wgh-table td {
-            border: 1px solid var(--line);
-            padding: 8px;
-        }
-
-        .wgh-table td.num {
-            text-align: right;
-            white-space: nowrap;
-        }
-
-        .wgh-table td.center {
+        .sig-box {
+            width: 30%;
             text-align: center;
         }
 
-        .wgh-table tbody tr:nth-child(even) {
-            background: #fcfcfc;
+        .sig-space {
+            height: 60px;
         }
 
-        .totals {
-            margin-top: 6px;
-            display: flex;
-            justify-content: flex-end;
+        .sig-name {
+            font-weight: bold;
+            text-decoration: underline;
+            text-transform: uppercase;
+            font-size: 11px;
         }
 
-        .totals table {
-            border-collapse: collapse;
-        }
-
-        .totals th,
-        .totals td {
-            padding: 6px 10px;
-        }
-
-        .totals th {
-            text-align: right;
-            color: var(--muted);
-            font-weight: 600;
-        }
-
-        .totals td {
-            text-align: right;
-            min-width: 140px;
-            border-bottom: 1px solid var(--line);
-        }
-
-        .note {
-            margin-top: 12px;
-        }
-
-        .note .label {
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .signs {
-            margin-top: 34px;
-            display: flex;
-            justify-content: flex-end;
-        }
-
-        .sign-card {
-            width: 260px;
-            text-align: center;
-        }
-
-        .sign-card .muted {
-            margin-bottom: 56px;
-            color: var(--muted);
-        }
-
-        .sign-line {
-            border-top: 1px dashed var(--line);
-            padding-top: 6px;
+        .sig-role {
+            font-size: 10px;
+            color: #555;
         }
 
         @media print {
             body {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+                background: none;
             }
 
             .no-print {
-                display: none !important;
+                display: none;
             }
-
-            .doc {
-                margin: 0;
-                padding: 0;
-            }
+        }
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 120px;
+            color: rgba(255, 0, 0, 0.15);
+            font-weight: bold;
+            z-index: 9999;
+            pointer-events: none;
+            white-space: nowrap;
+            user-select: none;
         }
     </style>
 </head>
 
 <body>
-    <div class="doc">
+
+    @if($record->trashed())
+        <div class="watermark">DELETED</div>
+    @endif
+
+    <div style="padding: 10px;">
         <div class="header">
-            <div class="brand">
-                <img src="{{ asset('img/LOGO-Y.png') }}" alt="Logo">
-                <div>
-                    <div class="name">PT. SANTI WIJAYA MEAT</div>
-                    <div class="tag">Committed to Meeting Your Need</div>
+            <div class="logo-box">
+                <img src="{{ asset('img/light.png') }}" alt="LOGO">
+            </div>
+            <div class="company-info">
+                <div class="company-name">PT. SANTI WIJAYA MEAT</div>
+                <div class="company-address">
+                    PERUM ASABRI RT 001/RW 005, Desa Sukasirna, Kec. Jonggol,<br>
+                    Kab. Bogor, Jawa Barat, 16830 Phone: 0813 6006 959
+                </div>
+            </div>
+            <div class="doc-title-box">
+                <h2>PURCHASE ORDER</h2>
+                <div class="doc-meta">
+                    <strong>PO No:</strong> {{ $record->po_number }}<br>
+                    <strong>PO Date:</strong> {{ $record->po_date ? \Carbon\Carbon::parse($record->po_date)->format('d-M-Y') : $record->created_at->format('d-M-Y') }}<br>
                 </div>
             </div>
         </div>
 
-        <div class="title">
-            <h1>Purchase Order</h1>
-            <div class="muted">PO No: {{ $record->po_number }}</div>
+        <div class="meta-container">
+            <div class="meta-box">
+                <h4>Vendor / Supplier</h4>
+                <div class="meta-content">{{ $record->supplier->name ?? 'Unknown Supplier' }}</div>
+                <div class="meta-address">
+                    {{ $record->supplier->address ?? 'No Address Provided' }}<br>
+                    <strong>Terms of Payment:</strong> {{ $record->supplier->top_days ?? '0' }} Days
+                </div>
+            </div>
+            <div class="meta-box">
+                <h4>Ship To</h4>
+                <div class="meta-content">PT. SANTI WIJAYA MEAT - RPH Jonggol</div>
+                <div class="meta-address">
+                    Jl. SMPN 1 Jonggol Kp. Menan Rt 04/01 Ds. Sukamaju<br>
+                    Kec. Jonggol Kab. Bogor POS 16830
+                </div>
+            </div>
         </div>
 
-        <dl class="meta">
-            <dt>PO Date</dt>
-            <dd>{{ \Carbon\Carbon::parse($record->po_date)->format('d-M-Y') }}</dd>
-
-            <dt>Supplier</dt>
-            <dd>{{ $record->supplier->name ?? '-' }}</dd>
-
-            <dt>Terms of Payment</dt>
-            <dd>{{ $record->supplier->term_of_payment ?? '0' }} Days</dd>
-        </dl>
-
-        <table class="wgh-table">
+        <table>
             <thead>
                 <tr>
-                    <th style="width:52px;">#</th>
-                    <th>Product Description</th>
-                    <th style="width:100px;">Qty</th>
-                    <th style="width:140px;">Unit Price (Rp)</th>
-                    <th style="width:140px;">Amount (Rp)</th>
+                    <th width="5%">No</th>
+                    <th width="30%">Material Name</th>
+                    <th width="10%">Qty</th>
+                    <th width="15%">Unit Price</th>
+                    <th width="20%">Subtotal</th>
+                    <th width="20%">Item Note</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse($record->items as $index => $item)
+                @foreach($record->items as $index => $item)
                 <tr>
-                    <td class="center">{{ $index + 1 }}</td>
+                    <td class="text-center">{{ $index + 1 }}</td>
                     <td>{{ $item->material->name ?? '-' }}</td>
-                    <td class="num right">{{ number_format($item->qty, 2, ',', '.') }}</td>
-                    <td class="num right">{{ number_format($item->price, 0, ',', '.') }}</td>
-                    <td class="num right">{{ number_format($item->subtotal, 0, ',', '.') }}</td>
+                    <td class="text-center">{{ number_format($item->qty, 0, ',', '.') }}</td>
+                    <td class="text-right">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
+                    <td class="text-right">Rp {{ number_format($item->subtotal ?? ($item->qty * $item->price), 0, ',', '.') }}</td>
+                    <td>{{ $item->note ?? '-' }}</td>
                 </tr>
-                @empty
-                <tr>
-                    <td colspan="5" class="center" style="color:#888;">No items found.</td>
-                </tr>
-                @endforelse
+                @endforeach
             </tbody>
         </table>
 
-        <div class="totals">
-            <table>
-                @php
-                    $subtotal = $record->items->sum('subtotal');
-                    $taxAmount = 0;
-                    if ($record->supplier && $record->supplier->has_tax) {
-                        $taxAmount = $subtotal * 0.11;
-                    }
-                    $grandTotal = $subtotal + $taxAmount;
-                @endphp
-
-                <tr>
-                    <th>Subtotal</th>
-                    <td>Rp {{ number_format($subtotal, 0, ',', '.') }}</td>
-                </tr>
-                
-                <tr>
-                    <th>Tax (11%)</th>
-                    <td>Rp {{ number_format($taxAmount, 0, ',', '.') }}</td>
-                </tr>
-                <tr>
-                    <th>Grand Total</th>
-                    <td><strong>Rp {{ number_format($grandTotal, 0, ',', '.') }}</strong></td>
-                </tr>
-            </table>
+        <div class="footer-container">
+            <div class="note-section">
+                <strong>General Notes:</strong>
+                <div class="note-box">
+                    {{ $record->note ?? 'Tidak ada catatan tambahan.' }}
+                </div>
+            </div>
+            
+            <div style="width: 300px; margin-top: 10px;">
+                <table style="border: none; margin: 0;">
+                    <tr>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px;">Grand Total:</td>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; font-size: 14px;">Rp {{ number_format($record->total_amount, 0, ',', '.') }}</td>
+                    </tr>
+                </table>
+            </div>
         </div>
 
-        @if(!empty($record->note))
-        <div class="note">
-            <div class="label">Additional Notes</div>
-            <div>{!! nl2br(e($record->note)) !!}</div>
-        </div>
-        @endif
-
-        <div class="signs">
-            <div class="sign-card">
-                <div class="muted">Approved By</div>
-                <div class="sign-line">{{ $record->approvedBy->name ?? '-' }}</div>
+        <div class="sig-container" style="justify-content: flex-end; gap: 40px;">
+            <div class="sig-box">
+                <p>Purchasing,</p>
+                <div class="sig-space"></div>
+                <div class="sig-name">{{ $record->materialRequisition->user->name ?? 'PURCHASING' }}</div>
+                <div class="sig-role">Purchasing Dept.</div>
+            </div>
+            <div class="sig-box">
+                <p>Approved By,</p>
+                <div class="sig-space"></div>
+                <div class="sig-name">{{ $record->approvedBy->name ?? 'FINANCE' }}</div>
+                <div class="sig-role">Finance / Direktur</div>
             </div>
         </div>
     </div>
@@ -303,6 +324,7 @@
             window.close();
         };
     </script>
+
 </body>
 
 </html>

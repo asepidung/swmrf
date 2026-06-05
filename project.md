@@ -8,7 +8,7 @@
 
 Proyek ini bertujuan memodernisasi sistem ERP "Wijaya Meat (SWM)" yang sebelumnya berbasis Native/Procedural PHP, AdminLTE 3, dan jQuery.
 Migrasi dilakukan menggunakan pendekatan **"Strangler Pattern"** secara bertahap.
-jangan selalu setuju dengan apa yang saya katakan, jika ada hal yang lebih baik atau yang bisa di diskusikan tahan dulu eksekusi dan sampaikan kepada saya 
+jangan selalu setuju dengan apa yang saya katakan, jika ada hal yang lebih baik atau yang bisa di diskusikan tahan dulu eksekusi dan sampaikan kepada saya, selalu buat implementation plan menggunakan bahasa indonesia
 
 * **Strategi Database Transisi:** Selama masa migrasi, sistem baru (Laravel) akan berbagi sumber data dengan sistem lama. Dilarang merubah struktur tabel fundamental yang masih dipakai secara aktif oleh sistem lama tanpa instruksi eksplisit dari Issue.
 * Seluruh alur pengerjaan dan pembagian tugas diatur serta didelegasikan secara terperinci melalui tiket **GitHub Issues**.

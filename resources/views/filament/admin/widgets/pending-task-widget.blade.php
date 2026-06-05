@@ -51,7 +51,7 @@
                 <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
             </span>
             <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count request material yang belum di-approve oleh Finance.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingMaterialFinanceCount().'</strong>']) !!}
+                {!! __('Ada :count request material yang belum di-approve.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingMaterialFinanceCount().'</strong>']) !!}
             </p>
         </div>
         @endif
