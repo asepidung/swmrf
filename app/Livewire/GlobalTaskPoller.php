@@ -76,7 +76,7 @@ class GlobalTaskPoller extends Component
         if ($recentUpdates->isNotEmpty()) {
             $this->lastMaterialCheckAt = now()->toDateTimeString();
             foreach ($recentUpdates as $req) {
-                if ($req->status === 'Requested' && $req->created_at == $req->updated_at) {
+                if ($req->status === 'Requested' && $req->created_at->diffInSeconds($req->updated_at) <= 2) {
                     if (auth()->user()->isProgrammer() || auth()->user()->hasPermission('review_material_requisitions')) {
                         Notification::make()->title('ada request material baru')->warning()->icon('heroicon-o-document-text')->send();
                     }
@@ -125,7 +125,7 @@ class GlobalTaskPoller extends Component
         if ($recentProductUpdates->isNotEmpty()) {
             $this->lastProductCheckAt = now()->toDateTimeString();
             foreach ($recentProductUpdates as $req) {
-                if ($req->status === 'Requested' && $req->created_at == $req->updated_at) {
+                if ($req->status === 'Requested' && $req->created_at->diffInSeconds($req->updated_at) <= 2) {
                     if (auth()->user()->isProgrammer() || auth()->user()->hasPermission('review_product_requisitions')) {
                         Notification::make()->title('ada request beef baru')->warning()->icon('heroicon-o-document-text')->send();
                     }

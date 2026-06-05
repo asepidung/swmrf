@@ -69,7 +69,7 @@ class PurchaseProductResource extends Resource
                             ->deletable(false)
                             ->schema([
                                 Forms\Components\Select::make('product_id')
-                                    ->relationship('Product', 'name')
+                                    ->relationship('product', 'name')
                                     ->disabled()
                                     ->hiddenLabel()
                                     ->columnSpan(['default' => 12, 'md' => 4]),

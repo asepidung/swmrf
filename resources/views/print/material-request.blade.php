@@ -229,9 +229,6 @@
 
             <dt>Supplier</dt>
             <dd>{{ $record->supplier->name ?? '-' }}</dd>
-
-            <dt>Terms of Payment</dt>
-            <dd>{{ $record->supplier->term_of_payment ?? '0' }} Days</dd>
         </dl>
 
         <table class="wgh-table">
@@ -248,7 +245,7 @@
                 @forelse($record->items as $index => $item)
                 <tr>
                     <td class="center">{{ $index + 1 }}</td>
-                    <td>{{ $item->item->name ?? '-' }}</td>
+                    <td>{{ $item->material->name ?? '-' }}</td>
                     <td class="num right">{{ number_format($item->qty, 0, ',', '.') }}</td>
                     <td class="num right">{{ number_format($item->price, 0, ',', '.') }}</td>
                     <td class="num right">{{ number_format($item->qty * $item->price, 0, ',', '.') }}</td>
