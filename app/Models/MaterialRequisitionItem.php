@@ -3,12 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Activitylog\LogOptions;
 
 class MaterialRequisitionItem extends Model
 {
-    use LogsActivity;
+    
 
     protected $fillable = [
         'material_requisition_id',
@@ -19,14 +17,7 @@ class MaterialRequisitionItem extends Model
         'note',
     ];
 
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logFillable()
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
-    }
-
+    
     public function requisition()
     {
         return $this->belongsTo(MaterialRequisition::class, 'material_requisition_id');

@@ -5,13 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Activitylog\LogOptions;
+
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CarcassItem extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'carcass_items';
 
@@ -29,14 +28,7 @@ class CarcassItem extends Model
         'eartag',
     ];
 
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logAll()
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
-    }
-
+    
     public function carcass(): BelongsTo
     {
         return $this->belongsTo(Carcass::class, 'carcass_id');

@@ -42,7 +42,7 @@ class ActivityLogResource extends Resource
         }
 
         // Try common naming fields in order of preference
-        foreach (['document_number', 'receiving_number', 'doc_no', 'name', 'username', 'bank_name', 'account_number', 'title', 'initial'] as $field) {
+        foreach (['document_number', 'receiving_number', 'doc_no', 'po_number', 'carcass_number', 'cow_number', 'rfid_tag', 'name', 'username', 'bank_name', 'account_number', 'title', 'initial'] as $field) {
             if (!empty($subject->{$field})) {
                 return $subject->{$field};
             }
