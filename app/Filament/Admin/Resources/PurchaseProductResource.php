@@ -50,7 +50,7 @@ class PurchaseProductResource extends Resource
 
                         Forms\Components\Select::make('approved_by')
                             ->label('Approved By')
-                            ->relationship('approvedBy', 'name')
+                            ->relationship('approver', 'name')
                             ->disabled()
                             ->columnSpan(['default' => 12, 'md' => 6]),
 
@@ -134,7 +134,7 @@ class PurchaseProductResource extends Resource
                     ->label('Supplier')
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('approvedBy.name')
+                Tables\Columns\TextColumn::make('approver.name')
                     ->label('Approved By'),
 
                 Tables\Columns\TextColumn::make('total_amount')
