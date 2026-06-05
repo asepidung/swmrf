@@ -13,7 +13,7 @@ class GlobalTaskPoller extends Component
     public int $lastPoId = 0;
     public int $lastReceivingId = 0;
     public int $lastWeighingId = 0;
-    public string $lastMaterialCheckAt;
+    public string $lastMaterialCheckAt = '';
 
     public function mount()
     {
@@ -64,6 +64,10 @@ class GlobalTaskPoller extends Component
                     ->warning()
                     ->send();
             }
+        }
+
+        if (empty($this->lastMaterialCheckAt)) {
+            $this->lastMaterialCheckAt = now()->toDateTimeString();
         }
 
         $recentUpdates = \App\Models\MaterialRequisition::where('updated_at', '>', $this->lastMaterialCheckAt)->get();
