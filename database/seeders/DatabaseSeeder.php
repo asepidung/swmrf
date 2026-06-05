@@ -37,6 +37,14 @@ class DatabaseSeeder extends Seeder
             ['name' => 'review_material_requisitions', 'module_name' => 'Material Requisition', 'description' => 'Review material requisitions'],
             ['name' => 'approve_material_requisitions', 'module_name' => 'Material Requisition', 'description' => 'Approve material requisitions'],
 
+            // Product Requisition Module
+            ['name' => 'view_product_requisitions', 'module_name' => 'Product Requisition', 'description' => 'View beef requests'],
+            ['name' => 'create_product_requisitions', 'module_name' => 'Product Requisition', 'description' => 'Create beef requests'],
+            ['name' => 'edit_product_requisitions', 'module_name' => 'Product Requisition', 'description' => 'Edit beef requests'],
+            ['name' => 'delete_product_requisitions', 'module_name' => 'Product Requisition', 'description' => 'Delete beef requests'],
+            ['name' => 'review_product_requisitions', 'module_name' => 'Product Requisition', 'description' => 'Review beef requests'],
+            ['name' => 'approve_product_requisitions', 'module_name' => 'Product Requisition', 'description' => 'Approve beef requests'],
+
             // Materials Module
             ['name' => 'view_materials', 'module_name' => 'Logistic Items', 'description' => 'View logistic items'],
             ['name' => 'create_materials', 'module_name' => 'Logistic Items', 'description' => 'Create logistic items'],
@@ -120,6 +128,10 @@ class DatabaseSeeder extends Seeder
             // PO Material Module
             ['name' => 'view_purchase_materials', 'module_name' => 'PO Material', 'description' => 'View PO materials'],
             ['name' => 'print_purchase_materials', 'module_name' => 'PO Material', 'description' => 'Print PO materials'],
+
+            // PO Product (Beef) Module
+            ['name' => 'view_purchase_products', 'module_name' => 'PO Beef', 'description' => 'View PO beef'],
+            ['name' => 'print_purchase_products', 'module_name' => 'PO Beef', 'description' => 'Print PO beef'],
         ];
 
         foreach ($permissions as $perm) {

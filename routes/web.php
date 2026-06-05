@@ -24,6 +24,19 @@ Route::middleware(['web', 'auth'])->group(function () {
         return view('print.po-material', compact('record'));
     })->name('print.po-material');
 
+    // ------------------------------------------
+    // 2. MODUL REQUEST BEEF (PRODUCT)
+    // ------------------------------------------
+    Route::get('/print/product-request/{id}', function ($id) {
+        $record = \App\Models\ProductRequisition::with(['user', 'supplier', 'items.product'])->findOrFail($id);
+        return view('print.product-request', compact('record'));
+    })->name('print.product-request');
+
+    Route::get('/po-product/{id}/print', function ($id) {
+        $record = \App\Models\PurchaseProduct::with(['supplier', 'items.product', 'approver'])->findOrFail($id);
+        return view('print.po-product', compact('record'));
+    })->name('print.po-product');
+
     Route::get('/po-cattle/{record}/print', POCattlePrintController::class)->name('po-cattle.print');
     Route::get('/cattle-receiving/{record}/print', CattleReceivingPrintController::class)->name('cattle-receiving.print');
     Route::get('/cattle-weighing/{record}/print', CattleWeighingPrintController::class)->name('cattle-weighing.print');

@@ -57,4 +57,22 @@ class PendingTaskWidget extends Widget
         }
         return \App\Models\MaterialRequisition::where('status', 'Pending Finance')->count();
     }
+
+    public function getPendingProductRequestCount(): int
+    {
+        $user = auth()->user();
+        if (!$user->isProgrammer() && !$user->hasPermission('review_product_requisitions')) {
+            return 0;
+        }
+        return \App\Models\ProductRequisition::where('status', 'Requested')->count();
+    }
+
+    public function getPendingProductFinanceCount(): int
+    {
+        $user = auth()->user();
+        if (!$user->isProgrammer() && !$user->hasPermission('approve_product_requisitions')) {
+            return 0;
+        }
+        return \App\Models\ProductRequisition::where('status', 'Pending Finance')->count();
+    }
 }
