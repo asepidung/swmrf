@@ -20,7 +20,7 @@ class CarcassResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-scissors';
     public static function getNavigationGroup(): ?string
     {
-        return __('Cattle');
+        return __('CATTLE');
     }
     protected static ?int $navigationSort = 3;
 
@@ -248,6 +248,7 @@ class CarcassResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('carcass_number')
                     ->label('Carcass No')

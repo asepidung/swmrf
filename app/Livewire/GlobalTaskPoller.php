@@ -13,6 +13,7 @@ class GlobalTaskPoller extends Component
     public int $lastPoId = 0;
     public int $lastReceivingId = 0;
     public int $lastWeighingId = 0;
+    public string $lastMaterialCheckAt = '';
 
     public function mount()
     {
@@ -20,6 +21,7 @@ class GlobalTaskPoller extends Component
             $this->lastPoId = (int) PurchaseCattle::max('id');
             $this->lastReceivingId = (int) CattleReceiving::max('id');
             $this->lastWeighingId = (int) CattleWeighing::max('id');
+            $this->lastMaterialCheckAt = now()->toDateTimeString();
         }
     }
 
@@ -32,6 +34,7 @@ class GlobalTaskPoller extends Component
         $currentPoId = (int) PurchaseCattle::max('id');
         $currentReceivingId = (int) CattleReceiving::max('id');
         $currentWeighingId = (int) CattleWeighing::max('id');
+        $currentMaterialRequestId = (int) \App\Models\MaterialRequisition::max('id');
 
         if ($currentPoId > $this->lastPoId) {
             $this->lastPoId = $currentPoId;
@@ -60,6 +63,55 @@ class GlobalTaskPoller extends Component
                     ->title(__(':name, ada tugas karkas baru', ['name' => auth()->user()->name]))
                     ->warning()
                     ->send();
+            }
+        }
+
+        if (empty($this->lastMaterialCheckAt)) {
+            $this->lastMaterialCheckAt = now()->toDateTimeString();
+        }
+
+        $recentUpdates = \App\Models\MaterialRequisition::where('updated_at', '>', $this->lastMaterialCheckAt)->get();
+        if ($recentUpdates->isNotEmpty()) {
+            $this->lastMaterialCheckAt = now()->toDateTimeString();
+            foreach ($recentUpdates as $req) {
+                if ($req->status === 'Requested' && $req->created_at == $req->updated_at) {
+                    if (auth()->user()->isProgrammer() || auth()->user()->hasPermission('review_material_requisitions')) {
+                        Notification::make()->title('ada request material baru')->warning()->icon('heroicon-o-document-text')->send();
+                    }
+                }
+                
+                if ($req->status === 'Pending Finance') {
+                    if ($req->user_id === auth()->id()) {
+                        Notification::make()->title('Request Material kamu sudah disetujui oleh purchasing dan diteruskan ke finance')->success()->icon('heroicon-o-check-circle')->send();
+                    }
+                    if (auth()->user()->isProgrammer() || auth()->user()->hasPermission('approve_material_requisitions')) {
+                        Notification::make()->title('ada request baru yang menunggu persetujuanmu')->warning()->icon('heroicon-o-document-text')->send();
+                    }
+                }
+                
+                if ($req->status === 'Rejected') {
+                    if ($req->user_id === auth()->id()) {
+                        Notification::make()->title('Request anda ditolak')->danger()->icon('heroicon-o-x-circle')->send();
+                    }
+                }
+                
+                if (in_array($req->status, ['Approved', 'PO Generated'])) {
+                    if ($req->user_id === auth()->id()) {
+                        Notification::make()->title('request kamu disetujui finance')->success()->icon('heroicon-o-check-circle')->send();
+                    }
+                    if (auth()->user()->isProgrammer() || auth()->user()->hasPermission('review_material_requisitions')) {
+                        Notification::make()->title('request material di setujui finance')->success()->icon('heroicon-o-check-circle')->send();
+                    }
+                }
+                
+                if ($req->status === 'Returned to Purchasing') {
+                    if ($req->user_id === auth()->id()) {
+                        Notification::make()->title('Request anda dikembalikan oleh Finance')->danger()->icon('heroicon-o-x-circle')->send();
+                    }
+                    if (auth()->user()->isProgrammer() || auth()->user()->hasPermission('review_material_requisitions')) {
+                        Notification::make()->title('Request dikembalikan oleh Finance')->danger()->icon('heroicon-o-x-circle')->send();
+                    }
+                }
             }
         }
     }

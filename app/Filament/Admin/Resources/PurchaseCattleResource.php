@@ -25,7 +25,7 @@ class PurchaseCattleResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('Purchase Order');
+        return __('PURCHASE ORDER');
     }
 
     public static function getModelLabel(): string
@@ -46,10 +46,10 @@ class PurchaseCattleResource extends Resource
                     Forms\Components\Select::make('supplier_id')
                         ->relationship('supplier', 'name')
                         ->required()
+                        ->autofocus()
                         ->label(__('Supplier')),
                     Forms\Components\DatePicker::make('shipping_date')
                         ->required()
-                        ->autofocus()
                         ->label(__('Shipping Date')),
                     Forms\Components\Textarea::make('summary_note')
                         ->label(__('Summary Note'))
@@ -59,6 +59,8 @@ class PurchaseCattleResource extends Resource
                 Forms\Components\Section::make('Cattle Details')->schema([
                     Forms\Components\Repeater::make('items')
                         ->relationship()
+                        ->reorderableWithDragAndDrop(false)
+                        ->defaultItems(0)
                         ->schema([
                             Forms\Components\Select::make('cattle_class_id')
                                 ->relationship('cattleClass', 'name')
@@ -75,6 +77,8 @@ class PurchaseCattleResource extends Resource
                                 ->hiddenLabel(),
                             Forms\Components\TextInput::make('qty')
                                 ->required()
+                                ->stripCharacters('.')
+                                ->numeric()
                                 ->rules(['integer', 'min:1'])
                                 ->placeholder(__('Qty / Head'))
                                 ->label('')
@@ -87,7 +91,7 @@ class PurchaseCattleResource extends Resource
                                 ->stripCharacters('.')
                                 ->numeric()
                                 ->rules(['integer', 'min:0'])
-                                ->extraInputAttributes(['onfocus' => 'this.select()'])
+                                ->extraInputAttributes(['x-on:focus' => '$el.select()'])
                                 ->placeholder(__('Price / Kg'))
                                 ->label('')
                                 ->hiddenLabel(),
@@ -97,7 +101,7 @@ class PurchaseCattleResource extends Resource
                                 ->hiddenLabel(),
                         ])
                         ->columns(4)
-                        ->defaultItems(1)
+                        ->defaultItems(0)
                         ->hiddenLabel()
                         ->addActionLabel(__('Add Cattle'))
                 ])
@@ -129,6 +133,14 @@ class PurchaseCattleResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
+                Tables\Columns\TextColumn::make('items_sum_qty')
+                    ->sum('items', 'qty')
+                    ->label(__('Total Head'))
+                    ->numeric()
+                    ->badge()
+                    ->color(fn (Model $record) => $record->trashed() ? 'danger' : 'info')
+                    ->suffix(' Ekor')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('summary_note')
                     ->label(__('Note'))
                     ->limit(50)

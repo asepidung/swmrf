@@ -21,7 +21,7 @@ class SupplierResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('Master Data');
+        return __('MASTER DATA');
     }
 
     public static function getNavigationLabel(): string

@@ -10,6 +10,17 @@ class CreatePurchaseCattle extends CreateRecord
 {
     protected static string $resource = PurchaseCattleResource::class;
 
+    protected function beforeValidate(): void
+    {
+        $items = $this->data['items'] ?? [];
+        foreach ($items as $key => $item) {
+            if (empty($item['cattle_class_id'])) {
+                unset($items[$key]);
+            }
+        }
+        $this->data['items'] = $items;
+    }
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');

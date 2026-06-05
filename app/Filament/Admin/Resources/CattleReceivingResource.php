@@ -23,7 +23,7 @@ class CattleReceivingResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('Cattle');
+        return __('CATTLE');
     }
 
     public static function getNavigationLabel(): string
@@ -157,6 +157,7 @@ class CattleReceivingResource extends Resource
                             ])
                             ->columns(4)
                             ->minItems(1)
+                            ->defaultItems(0)
                             ->default(function () {
                                 $poId = request()->query('po_id');
                                 if (!$poId) return [];

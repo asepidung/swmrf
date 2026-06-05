@@ -21,9 +21,9 @@ class MaterialResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-cube';
     
-    protected static ?string $navigationLabel = 'Logistic Items';
+    protected static ?string $navigationLabel = 'Material Items';
 
-    protected static ?string $modelLabel = 'Logistic Item';
+    protected static ?string $modelLabel = 'Material Item';
 
     public static function form(Form $form): Form
     {
