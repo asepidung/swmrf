@@ -79,11 +79,13 @@ class ViewMaterialRequisition extends ViewRecord
 
             Actions\EditAction::make()
                 ->tooltip('Edit')
+                ->icon('heroicon-o-pencil')
                 ->hiddenLabel()
                 ->visible(fn() => in_array($this->record->status, ['Requested', 'Returned to Purchasing'])),
 
             Actions\DeleteAction::make()
                 ->tooltip('Delete')
+                ->icon('heroicon-o-trash')
                 ->hiddenLabel()
                 ->visible(fn() => $this->record->status === 'Requested'),
 
