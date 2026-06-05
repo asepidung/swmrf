@@ -34,6 +34,7 @@ class ViewMaterialRequisition extends ViewRecord
         return [
             Actions\Action::make('print')
                 ->tooltip('Print')
+                ->hiddenLabel()
                 ->icon('heroicon-o-printer')
                 ->color('gray')
                 ->url(fn() => route('print.material-request', ['id' => $this->record->id]))
@@ -41,6 +42,7 @@ class ViewMaterialRequisition extends ViewRecord
 
             Actions\Action::make('review')
                 ->tooltip('Review')
+                ->hiddenLabel()
                 ->icon('heroicon-o-clipboard-document-check')
                 ->color('warning')
                 ->visible(function () {
@@ -51,6 +53,7 @@ class ViewMaterialRequisition extends ViewRecord
 
             Actions\Action::make('resubmit')
                 ->tooltip('Resubmit Request')
+                ->hiddenLabel()
                 ->icon('heroicon-o-arrow-path')
                 ->color('success')
                 ->requiresConfirmation()
@@ -65,6 +68,7 @@ class ViewMaterialRequisition extends ViewRecord
 
             Actions\Action::make('finance_approval')
                 ->tooltip('Finance Approval')
+                ->hiddenLabel()
                 ->icon('heroicon-o-shield-check')
                 ->color('success')
                 ->visible(function () {
@@ -75,14 +79,17 @@ class ViewMaterialRequisition extends ViewRecord
 
             Actions\EditAction::make()
                 ->tooltip('Edit')
+                ->hiddenLabel()
                 ->visible(fn() => in_array($this->record->status, ['Requested', 'Returned to Purchasing'])),
 
             Actions\DeleteAction::make()
                 ->tooltip('Delete')
+                ->hiddenLabel()
                 ->visible(fn() => $this->record->status === 'Requested'),
 
             Actions\Action::make('back')
                 ->tooltip('Back to List')
+                ->hiddenLabel()
                 ->icon('heroicon-o-arrow-left')
                 ->color('gray')
                 ->url($this->getResource()::getUrl('index')),

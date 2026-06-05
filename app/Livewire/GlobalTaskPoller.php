@@ -97,7 +97,10 @@ class GlobalTaskPoller extends Component
                 
                 if (in_array($req->status, ['Approved', 'PO Generated'])) {
                     if ($req->user_id === auth()->id()) {
-                        Notification::make()->title('Request Material kamu sudah disetujui oleh finance')->success()->icon('heroicon-o-check-circle')->send();
+                        Notification::make()->title('request kamu disetujui finance')->success()->icon('heroicon-o-check-circle')->send();
+                    }
+                    if (auth()->user()->isProgrammer() || auth()->user()->hasPermission('review_material_requisitions')) {
+                        Notification::make()->title('request material di setujui finance')->success()->icon('heroicon-o-check-circle')->send();
                     }
                 }
                 

@@ -219,7 +219,13 @@
     <div style="padding: 10px;">
         <div class="header">
             <div class="logo-box">
-                <img src="{{ asset('img/light.png') }}" alt="LOGO">
+                @php
+                    $path = public_path('img/light.png');
+                    $type = pathinfo($path, PATHINFO_EXTENSION);
+                    $data = file_get_contents($path);
+                    $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+                @endphp
+                <img src="{{ $base64 }}" alt="LOGO">
             </div>
             <div class="company-info">
                 <div class="company-name">PT. SANTI WIJAYA MEAT</div>
