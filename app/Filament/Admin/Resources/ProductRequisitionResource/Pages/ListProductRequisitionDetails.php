@@ -33,9 +33,7 @@ class ListProductRequisitionDetails extends Page implements HasTable
             ->query(
                 ProductRequisitionItem::query()
                     ->with(['productRequisition.supplier', 'productRequisition.user', 'product'])
-                    ->whereHas('productRequisition', function ($query) {
-                        $query->where('is_deleted', false);
-                    })
+                    ->whereHas('productRequisition')
             )
             ->defaultSort('product_requisition_id', 'desc')
             ->columns([
