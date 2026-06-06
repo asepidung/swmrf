@@ -84,6 +84,16 @@ class AdminPanelProvider extends PanelProvider
                 </style>',
             )
             ->renderHook(
+                \Filament\View\PanelsRenderHook::SCRIPTS_START,
+                fn (): string => '<script>
+                    document.addEventListener("livewire:init", () => {
+                        Livewire.onPageExpired((response, message) => {
+                            window.location.reload();
+                        });
+                    });
+                </script>',
+            )
+            ->renderHook(
                 \Filament\View\PanelsRenderHook::FOOTER,
                 fn (): \Illuminate\Contracts\View\View => view('filament.admin.footer'),
             )
