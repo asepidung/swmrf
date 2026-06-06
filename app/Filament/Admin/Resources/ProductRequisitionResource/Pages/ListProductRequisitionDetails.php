@@ -85,40 +85,21 @@ class ListProductRequisitionDetails extends Page implements HasTable
             ->filters([
                 Filter::make('created_at')
                     ->form([
-                        DatePicker::make('created_from')->label(__('Periode Awal'))->default(now()->startOfMonth()),
-                        DatePicker::make('created_until')->label(__('Periode Akhir'))->default(now()),
+                        DatePicker::make('created_from')->label(__('Periode Awal')),
+                        DatePicker::make('created_until')->label(__('Periode Akhir')),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                $data['created_from'],
-                                fn (Builder $query, $date): Builder => $query->whereHas('productRequisition', fn($q) => $q->whereDate('created_at', '>=', $date)),
-                            )
-                            ->when(
-                                $data['created_until'],
-                                fn (Builder $query, $date): Builder => $query->whereHas('productRequisition', fn($q) => $q->whereDate('created_at', '<=', $date)),
-                            );
-                    })
-                    ->indicateUsing(function (array $data): array {
-                        $indicators = [];
-                        if ($data['created_from'] ?? null) {
-                            $indicators[] = Tables\Filters\Indicator::make('Dari: ' . Carbon::parse($data['created_from'])->format('d M Y'))
-                                ->removeField('created_from');
-                        }
-                        if ($data['created_until'] ?? null) {
-                            $indicators[] = Tables\Filters\Indicator::make('Sampai: ' . Carbon::parse($data['created_until'])->format('d M Y'))
-                                ->removeField('created_until');
-                        }
-                        return $indicators;
+                        $from = $data['created_from'] ?? now()->startOfMonth()->toDateString();
+                        $until = $data['created_until'] ?? now()->toDateString();
+
+                        return $query->whereHas('productRequisition', function ($q) use ($from, $until) {
+                            $q->whereDate('created_at', '>=', $from)
+                              ->whereDate('created_at', '<=', $until);
+                        });
                     }),
                 SelectFilter::make('supplier')
                     ->label(__('Supplier'))
                     ->relationship('productRequisition.supplier', 'name')
-                    ->searchable()
-                    ->preload(),
-                SelectFilter::make('user')
-                    ->label(__('User'))
-                    ->relationship('productRequisition.user', 'name')
                     ->searchable()
                     ->preload(),
             ])
