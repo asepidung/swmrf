@@ -84,7 +84,7 @@ class AdminPanelProvider extends PanelProvider
                 </style>',
             )
             ->renderHook(
-                \Filament\View\PanelsRenderHook::SCRIPTS_START,
+                \Filament\View\PanelsRenderHook::BODY_END,
                 fn (): string => '<script>
                     document.addEventListener("livewire:init", () => {
                         Livewire.onPageExpired((response, message) => {
