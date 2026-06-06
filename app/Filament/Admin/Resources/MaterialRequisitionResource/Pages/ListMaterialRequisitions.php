@@ -13,7 +13,12 @@ class ListMaterialRequisitions extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\Action::make('detail')
+                ->label('Detail')
+                ->icon('heroicon-o-list-bullet')
+                ->url(static::getResource()::getUrl('detail-list')),
+            Actions\CreateAction::make()
+                ->label('Create'),
         ];
     }
 }

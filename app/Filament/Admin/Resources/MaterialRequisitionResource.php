@@ -284,6 +284,7 @@ class MaterialRequisitionResource extends Resource
         return [
             'index' => Pages\ListMaterialRequisitions::route('/'),
             'create' => Pages\CreateMaterialRequisition::route('/create'),
+            'detail-list' => Pages\ListMaterialRequisitionDetails::route('/detail-list'),
             'view' => Pages\ViewMaterialRequisition::route('/{record}'),
             'review' => Pages\ReviewMaterialRequisition::route('/{record}/review'),
             'finance-approve' => Pages\ApproveFinanceMaterialRequisition::route('/{record}/finance-approve'),

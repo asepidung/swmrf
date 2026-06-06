@@ -7,12 +7,12 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "barryvdh/laravel-dompdf": "*",
+        "barryvdh/laravel-dompdf": "^3.1",
         "bezhansalleh/filament-language-switch": "^3.1",
         "filament/filament": "^3.2",
         "laravel/framework": "^11.31",
         "laravel/tinker": "^2.9",
-        "openspout/openspout": "*",
+        "openspout/openspout": "^4.32",
         "spatie/laravel-activitylog": "^4.12"
     },
     "require-dev": {

@@ -87,8 +87,13 @@ class AdminPanelProvider extends PanelProvider
                 \Filament\View\PanelsRenderHook::BODY_END,
                 fn (): string => '<script>
                     document.addEventListener("livewire:init", () => {
-                        Livewire.onPageExpired((response, message) => {
-                            window.location.reload();
+                        Livewire.hook("request", ({ fail }) => {
+                            fail(({ status, preventDefault }) => {
+                                if (status === 419) {
+                                    preventDefault();
+                                    window.location.reload();
+                                }
+                            });
                         });
                     });
                 </script>',
