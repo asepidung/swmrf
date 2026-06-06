@@ -283,12 +283,12 @@ class ProductRequisitionResource extends Resource
     {
         return [
             'index' => Pages\ListProductRequisitions::route('/'),
+            'detail-list' => Pages\ListProductRequisitionDetails::route('/detail-list'),
             'create' => Pages\CreateProductRequisition::route('/create'),
             'view' => Pages\ViewProductRequisition::route('/{record}'),
             'review' => Pages\ReviewProductRequisition::route('/{record}/review'),
             'finance-approve' => Pages\ApproveFinanceProductRequisition::route('/{record}/finance-approve'),
             'edit' => Pages\EditProductRequisition::route('/{record}/edit'),
-            'detail-list' => Pages\ListProductRequisitionDetails::route('/detail-list'),
         ];
     }
 }
