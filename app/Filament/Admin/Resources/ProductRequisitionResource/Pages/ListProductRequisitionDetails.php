@@ -104,13 +104,38 @@ class ListProductRequisitionDetails extends Page implements HasTable
                     ->preload(),
             ])
             ->headerActions([
-                Tables\Actions\ExportAction::make()
+                Tables\Actions\Action::make('pdf')
+                    ->label('PDF')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('danger')
+                    ->action(function ($livewire) {
+                        $records = $livewire->getFilteredTableQuery()->get();
+                        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.product-requisition-details-pdf', ['records' => $records]);
+                        return response()->streamDownload(fn () => print($pdf->output()), 'detail-request-beef.pdf');
+                    }),
+                Tables\Actions\ExportAction::make('excel')
+                    ->label('Excel')
+                    ->icon('heroicon-o-document-text')
+                    ->color('success')
                     ->exporter(\App\Filament\Exports\ProductRequisitionItemExporter::class)
+                    ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\ExportBulkAction::make()
+                    Tables\Actions\BulkAction::make('pdf_bulk')
+                        ->label('PDF')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('danger')
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.product-requisition-details-pdf', ['records' => $records]);
+                            return response()->streamDownload(fn () => print($pdf->output()), 'detail-request-beef.pdf');
+                        }),
+                    Tables\Actions\ExportBulkAction::make('excel_bulk')
+                        ->label('Excel')
+                        ->icon('heroicon-o-document-text')
+                        ->color('success')
                         ->exporter(\App\Filament\Exports\ProductRequisitionItemExporter::class)
+                        ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
                 ]),
             ]);
     }

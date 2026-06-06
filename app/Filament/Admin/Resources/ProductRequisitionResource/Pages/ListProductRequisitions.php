@@ -18,7 +18,7 @@ class ListProductRequisitions extends ListRecords
                 ->icon('heroicon-o-list-bullet')
                 ->color('info')
                 ->url(fn (): string => ProductRequisitionResource::getUrl('detail-list')),
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()->label(__('Create')),
         ];
     }
 }
