@@ -83,21 +83,7 @@ class AdminPanelProvider extends PanelProvider
                     .fi-sidebar-item-icon { width: 1.25rem !important; height: 1.25rem !important; }
                 </style>',
             )
-            ->renderHook(
-                \Filament\View\PanelsRenderHook::BODY_END,
-                fn (): string => '<script>
-                    document.addEventListener("livewire:init", () => {
-                        Livewire.hook("request", ({ fail }) => {
-                            fail(({ status, preventDefault }) => {
-                                if (status === 419) {
-                                    preventDefault();
-                                    window.location.reload();
-                                }
-                            });
-                        });
-                    });
-                </script>',
-            )
+
             ->renderHook(
                 \Filament\View\PanelsRenderHook::FOOTER,
                 fn (): \Illuminate\Contracts\View\View => view('filament.admin.footer'),

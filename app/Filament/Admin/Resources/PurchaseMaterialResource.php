@@ -162,6 +162,32 @@ class PurchaseMaterialResource extends Resource
                             ->when($data['created_until'], fn($q, $date) => $q->whereDate('po_date', '<=', $date));
                     })
             ])
+                        ->headerActions([
+                \Filament\Tables\Actions\ActionGroup::make([
+                    \Filament\Tables\Actions\ExportAction::make('excel')
+                        ->label('Excel')
+                        ->icon('heroicon-o-document-text')
+                        ->color('success')
+                        ->exporter(\App\Filament\Exports\PurchaseMaterialExporter::class)
+                        ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
+                    \Filament\Tables\Actions\Action::make('pdf')
+                        ->label('PDF')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('danger')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.parent-records-pdf', [
+                                'records' => $records,
+                                'title' => 'Purchase Materials'
+                            ]);
+                            return response()->streamDownload(fn () => print($pdf->output()), 'export.pdf');
+                        }),
+                ])
+                ->label('Export Data')
+                ->icon('heroicon-m-arrow-down-tray')
+                ->button()
+                ->color('primary'),
+            ])
             ->actions([
                 // Clean table UI
             ]);

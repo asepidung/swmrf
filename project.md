@@ -4,17 +4,19 @@
 > **ATURAN MUTLAK**: Dokumen ini adalah panduan utama (High-Level Guidelines) sekaligus **aturan global mutlak** untuk seluruh pengembangan dan refactoring sistem "Wijaya Meat (SWM)".
 > Setiap implementor (termasuk agen AI) **WAJIB** membaca dan mematuhi dokumen ini sebelum mengeksekusi instruksi dari GitHub Issue mana pun.
 
-## 1. Project Overview & Strategi Migrasi
+> [!IMPORTANT]
+> **KHUSUS UNTUK AI AGENT (CORE BEHAVIOR DIRECTIVE):**
+> 1. **Dilarang "Yes-Man":** Jangan selalu setuju dengan apa yang saya katakan. Jika instruksi saya berpotensi menimbulkan *bug*, menyalahi *best-practice* Laravel/Filament, atau ada pendekatan yang lebih efisien, **TAHAN EKSEKUSI**. Sampaikan keberatan Anda secara logis dan berikan opsi diskusi.
+> 2. **Wajib Membuat Implementation Plan:** Sebelum menulis kode apa pun untuk sebuah tugas/Issue, Anda WAJIB menyajikan "Implementation Plan" dalam Bahasa Indonesia. Rencana ini minimal harus mencakup: (a) Analisis Masalah, (b) File apa saja yang akan dibuat/diubah, dan (c) Langkah-langkah penyelesaian. Tunggu persetujuan saya sebelum mulai *coding*.
 
+## 1. Project Overview & Strategi Migrasi
 Proyek ini bertujuan memodernisasi sistem ERP "Wijaya Meat (SWM)" yang sebelumnya berbasis Native/Procedural PHP, AdminLTE 3, dan jQuery.
 Migrasi dilakukan menggunakan pendekatan **"Strangler Pattern"** secara bertahap.
-jangan selalu setuju dengan apa yang saya katakan, jika ada hal yang lebih baik atau yang bisa di diskusikan tahan dulu eksekusi dan sampaikan kepada saya, selalu buat implementation plan menggunakan bahasa indonesia
 
 * **Strategi Database Transisi:** Selama masa migrasi, sistem baru (Laravel) akan berbagi sumber data dengan sistem lama. Dilarang merubah struktur tabel fundamental yang masih dipakai secara aktif oleh sistem lama tanpa instruksi eksplisit dari Issue.
 * Seluruh alur pengerjaan dan pembagian tugas diatur serta didelegasikan secara terperinci melalui tiket **GitHub Issues**.
 
 ## 2. Tech Stack & Arsitektur Utama
-
 Implementor wajib menggunakan standard stack berikut:
 
 * **Backend:** Laravel 11. Interaksi database wajib menggunakan Eloquent ORM dan Migration (hindari raw SQL procedural).
@@ -22,7 +24,6 @@ Implementor wajib menggunakan standard stack berikut:
 * **Database:** MySQL. Penamaan tabel dan kolom (baru) wajib menggunakan Bahasa Inggris sesuai konvensi Laravel (*snake_case*, *plural*).
 
 ## 3. Aturan Standar UI/UX & Modul Global (WAJIB DITERAPKAN DI SEMUA MODUL)
-
 Setiap pengembangan fitur atau penambahan *resource* baru di Filament wajib menerapkan standarisasi berikut:
 
 * **Kenyamanan Entry Data (Ergonomi UI/UX):** Form input harus dirancang untuk kecepatan dan kenyamanan pengguna operasional. Selalu terapkan fungsi `autofocus()` pada *field* pertama di form *Create* atau *Edit*. Susun urutan *field* secara logis dan natural agar pengguna dapat bernavigasi dengan lancar murni menggunakan tombol `Tab` pada keyboard tanpa lompatan kursor yang membingungkan.
@@ -48,17 +49,13 @@ Setiap pengembangan fitur atau penambahan *resource* baru di Filament wajib mene
 * **Standar Penulisan Issue:** Setiap GitHub Issue wajib dijabarkan sedetail dan sespesifik mungkin (*low-level blueprint*). Ketegasan detail ini mutlak diperlukan karena *issue* akan dijadikan acuan kerja langsung oleh *programmer junior* maupun *agen AI* level eksekutor.
 * **Konfirmasi Sebelum Eksekusi:** Sebelum mengeksekusi kode, implementor wajib mendiskusikan *issue* yang sedang ditugaskan dengan *Project Owner* dan melakukan konfirmasi hingga tercapai kesepakatan.
 * **Alur Wajib Eksekusi (Pre-Execution Flow):** Saat akan mengerjakan *issue* baru, implementor dilarang langsung melakukan *coding*. Anda wajib:
-1. Membaca ulang aturan global di `project.md` ini.
-2. Membaca riwayat seluruh *issue* sebelumnya untuk memahami konteks dan dependensi sistem yang sudah ada.
-3. Mengeksekusi instruksi pada *Issue* target.
-
-
+  1. Membaca ulang aturan global di `project.md` ini.
+  2. Membaca riwayat seluruh *issue* sebelumnya untuk memahami konteks dan dependensi sistem yang sudah ada.
+  3. Mengeksekusi instruksi pada *Issue* target menggunakan format *Implementation Plan*.
 * **Evaluasi Pasca-Pembuatan (Post-Execution Review):** Setelah modul atau *issue* disepakati selesai dibuat, implementor wajib meninjau ulang:
-* Apakah dokumen *Issue* terkait perlu direvisi untuk menyesuaikan dengan hasil akhir pengembangan?
-* Apakah ditemukan aturan main baru yang mengharuskan pembaruan/revisi pada dokumen `project.md` ini?
-
-
-* **Referensi Legacy Code:** Sebelum mulai menyusun logika bisnis di framework baru, wajib meninjau direktori `legacy/` untuk memahami proses dan aturan bisnis yang sudah ada pada sistem lama. dan didalamnya ada 2 folder versi prosedural yang sudah lengkap modulnya, dan versi laravel yang baru sebagian, utamakan merujuk ke versi laravel dulu baru prosedural jika ada perbedaan
+  * Apakah dokumen *Issue* terkait perlu direvisi untuk menyesuaikan dengan hasil akhir pengembangan?
+  * Apakah ditemukan aturan main baru yang mengharuskan pembaruan/revisi pada dokumen `project.md` ini?
+* **Referensi Legacy Code:** Sebelum mulai menyusun logika bisnis di framework baru, wajib meninjau direktori `legacy/`. Di dalamnya terdapat 2 folder: versi prosedural (modul sudah lengkap) dan versi laravel (baru sebagian). **Utamakan merujuk ke versi laravel terlebih dahulu**, baru gunakan prosedural jika ada perbedaan atau jika modul di Laravel belum ada.
 * **Proaktif Berdiskusi & Memberikan Opsi:** Jika terdapat instruksi, alur logika, atau batasan sistem yang ambigu/kurang jelas, implementor (terutama agen AI) **DILARANG mengambil asumsi sepihak**. Anda wajib berhenti mengeksekusi kode, paparkan masalahnya, dan **berikan beberapa pilihan/opsi penyelesaian** agar *Project Owner* dapat memilih jalan yang paling tepat.
 
 ## 5. Kualitas Kode & Manajemen Repositori
@@ -72,5 +69,5 @@ Setiap pengembangan fitur atau penambahan *resource* baru di Filament wajib mene
 * **Proteksi Database Utama:** Agen AI **dilarang keras** menjalankan perintah pengujian (`php artisan test`) sebelum memverifikasi secara pasti bahwa file `phpunit.xml` menggunakan environment database in-memory (SQLite `:memory:`) atau database testing terpisah. Trait `RefreshDatabase` pada proses *testing* tidak boleh menyentuh database MySQL utama.
 * **Larangan Reset Database:** Dilarang mengeksekusi perintah destruktif seperti `php artisan migrate:fresh` pada database utama kecuali diinstruksikan secara eksplisit di dalam Issue. Gunakan `php artisan migrate` standar untuk penambahan modul baru.
 * **Kredensial Akun Default Tetap:** Konfigurasi akun *default* untuk *development* tidak boleh diubah, dihapus, atau dimodifikasi oleh AI saat membuat modul atau *seeder* baru. Kredensial berikut wajib dipertahankan dan harus selalu bisa digunakan:
-* **Username:** programmer
-* **Password:** programmerpassword
+  * **Username:** programmer
+  * **Password:** programmerpassword
