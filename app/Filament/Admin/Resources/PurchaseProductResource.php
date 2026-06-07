@@ -186,7 +186,7 @@ class PurchaseProductResource extends Resource
                 ->label('Export Data')
                 ->icon('heroicon-m-arrow-down-tray')
                 ->button()
-                ->color('primary'),
+                ->color('success'),
             ])
             ->actions([
                 // Clean table UI

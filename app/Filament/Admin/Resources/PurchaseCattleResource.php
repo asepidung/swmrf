@@ -204,7 +204,7 @@ class PurchaseCattleResource extends Resource
                 ->label('Export Data')
                 ->icon('heroicon-m-arrow-down-tray')
                 ->button()
-                ->color('primary'),
+                ->color('success'),
             ])
             ->actions([
                 // No action buttons on index page

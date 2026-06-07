@@ -16,6 +16,7 @@ class ListMaterialRequisitions extends ListRecords
             Actions\Action::make('detail')
                 ->label('Detail')
                 ->icon('heroicon-o-list-bullet')
+                ->color('info')
                 ->url(static::getResource()::getUrl('detail-list')),
             Actions\CreateAction::make()
                 ->label('Create'),

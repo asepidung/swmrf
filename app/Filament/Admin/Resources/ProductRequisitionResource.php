@@ -298,7 +298,7 @@ class ProductRequisitionResource extends Resource
                 ->label('Export Data')
                 ->icon('heroicon-m-arrow-down-tray')
                 ->button()
-                ->color('primary'),
+                ->color('success'),
             ])
             ->actions([
                 // Clean UI: Actions moved to View Page
