@@ -52,8 +52,8 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
             $itemsData[] = [
                 'material_id' => $item->material_id,
                 'material_name' => $item->material->name,
-                'po_qty' => $item->qty,
-                'qty_received' => $item->qty, // default to fully received
+                'po_qty' => number_format($item->qty, 2, ',', '.'),
+                'qty_received' => number_format($item->qty, 2, ',', '.'),
                 'price' => $item->price,
             ];
         }
@@ -115,14 +115,12 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
                                     ->label('Qty in PO')
                                     ->hiddenLabel()
                                     ->placeholder('Qty in PO')
-                                    ->numeric()
                                     ->disabled()
                                     ->dehydrated(false),
                                 Forms\Components\TextInput::make('qty_received')
                                     ->label('Qty Received')
                                     ->hiddenLabel()
                                     ->placeholder('Qty Received')
-                                    ->numeric()
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
                                     ->stripCharacters('.')
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()'])
