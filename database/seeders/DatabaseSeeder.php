@@ -132,6 +132,12 @@ class DatabaseSeeder extends Seeder
             // PO Product (Beef) Module
             ['name' => 'view_purchase_products', 'module_name' => 'PO Beef', 'description' => 'View PO beef'],
             ['name' => 'print_purchase_products', 'module_name' => 'PO Beef', 'description' => 'Print PO beef'],
+
+            // GR Material Module
+            ['name' => 'view_gr_materials', 'module_name' => 'GR Material', 'description' => 'View GR materials'],
+            ['name' => 'create_gr_materials', 'module_name' => 'GR Material', 'description' => 'Create GR materials'],
+            ['name' => 'edit_gr_materials', 'module_name' => 'GR Material', 'description' => 'Edit GR materials'],
+            ['name' => 'delete_gr_materials', 'module_name' => 'GR Material', 'description' => 'Delete GR materials'],
         ];
 
         foreach ($permissions as $perm) {
