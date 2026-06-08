@@ -36,12 +36,11 @@ class ListPendingPoMaterials extends Page implements HasTable
                     }),
                 TextColumn::make('approvedBy.name')->label('Approved By'),
             ])
+            ->recordUrl(
+                fn (PurchaseMaterial $record): string => GoodsReceiptMaterialResource::getUrl('create', ['po_id' => $record->id])
+            )
             ->actions([
-                Action::make('process_gr')
-                    ->label('Process GR')
-                    ->icon('heroicon-o-arrow-right-circle')
-                    ->color('primary')
-                    ->url(fn (PurchaseMaterial $record): string => GoodsReceiptMaterialResource::getUrl('create', ['po_id' => $record->id])),
+                // Clean UI: No row actions needed
             ]);
     }
 }

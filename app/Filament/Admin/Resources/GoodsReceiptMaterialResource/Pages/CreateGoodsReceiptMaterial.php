@@ -207,7 +207,7 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
             // Generate GR Number
             $latest = GoodsReceiptMaterial::latest('id')->first();
             $nextId = $latest ? $latest->id + 1 : 1;
-            $grNumber = 'GRM-' . date('Ymd') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+            $grNumber = 'SWM-GRM#' . date('y') . str_pad($nextId, 3, '0', STR_PAD_LEFT);
 
             $gr = GoodsReceiptMaterial::create([
                 'gr_number' => $grNumber,
