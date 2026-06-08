@@ -111,7 +111,9 @@ class GoodsReceiptMaterialResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->recordUrl(
-                fn (GoodsReceiptMaterial $record): string => Pages\ViewGoodsReceiptMaterial::getUrl(['record' => $record]),
+                fn (GoodsReceiptMaterial $record): string => $record->trashed() 
+                    ? Pages\ViewGoodsReceiptMaterial::getUrl(['record' => $record]) 
+                    : Pages\EditGoodsReceiptMaterial::getUrl([$record->id]),
             )
             ->headerActions([
                 \Filament\Tables\Actions\ActionGroup::make([
@@ -144,11 +146,9 @@ class GoodsReceiptMaterialResource extends Resource
                 Tables\Filters\Filter::make('receive_date')
                     ->form([
                         Forms\Components\DatePicker::make('from')
-                            ->label('From')
-                            ->default(now()->startOfMonth()),
+                            ->label('From'),
                         Forms\Components\DatePicker::make('until')
-                            ->label('Until')
-                            ->default(now()),
+                            ->label('Until'),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
@@ -190,7 +190,7 @@ class GoodsReceiptMaterialResource extends Resource
             'drafts' => Pages\ListPendingPoMaterials::route('/drafts'),
             'create' => Pages\CreateGoodsReceiptMaterial::route('/create'),
             'view' => Pages\ViewGoodsReceiptMaterial::route('/{record}'),
-            // 'edit' => Pages\EditGoodsReceiptMaterial::route('/{record}/edit'), // No Edit for GR
+            'edit' => Pages\EditGoodsReceiptMaterial::route('/{record}/edit'),
         ];
     }
 }

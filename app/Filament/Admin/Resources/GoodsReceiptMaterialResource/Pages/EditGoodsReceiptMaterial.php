@@ -13,8 +13,22 @@ class EditGoodsReceiptMaterial extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\ViewAction::make(),
+            Actions\Action::make('cancel')
+                ->label(__('Cancel'))
+                ->color('gray')
+                ->url(fn (): string => $this->getResource()::getUrl('index')),
+            Actions\Action::make('print')
+                ->label(__('Print'))
+                ->color('warning')
+                ->icon('heroicon-o-printer')
+                ->url('#')
+                ->openUrlInNewTab(),
             Actions\DeleteAction::make(),
         ];
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
     }
 }
