@@ -59,6 +59,7 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
         }
 
         $this->form->fill([
+            'supplier_name' => $this->purchaseMaterial->supplier->name ?? '-',
             'receive_date' => null,
             'sj_number' => null,
             'note' => '',
@@ -85,7 +86,6 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
                     ->schema([
                         Forms\Components\TextInput::make('supplier_name')
                             ->label('Supplier')
-                            ->default(fn() => $this->purchaseMaterial->supplier->name ?? '-')
                             ->disabled()
                             ->dehydrated(false),
                         Forms\Components\DatePicker::make('receive_date')
