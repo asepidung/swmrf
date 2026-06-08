@@ -132,7 +132,7 @@ class GoodsReceiptMaterialResource extends Resource
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_gr_materials')),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make()->color('info'),
+                //
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

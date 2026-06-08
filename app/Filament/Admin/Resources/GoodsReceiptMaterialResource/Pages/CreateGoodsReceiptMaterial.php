@@ -49,13 +49,28 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
 
         $itemsData = [];
         foreach ($this->purchaseMaterial->items as $item) {
-            $itemsData[] = [
-                'material_id' => $item->material_id,
-                'material_name' => $item->material->name,
-                'po_qty' => number_format($item->qty, 2, ',', '.'),
-                'qty_received' => number_format($item->qty, 2, ',', '.'),
-                'price' => $item->price,
-            ];
+            $previouslyReceived = \App\Models\GoodsReceiptMaterialItem::whereHas('goodsReceiptMaterial', function ($query) {
+                $query->where('purchase_material_id', $this->poId);
+            })->where('material_id', $item->material_id)->sum('qty_received');
+
+            $remainingQty = $item->qty - $previouslyReceived;
+
+            if ($remainingQty > 0) {
+                $itemsData[] = [
+                    'material_id' => $item->material_id,
+                    'material_name' => $item->material->name,
+                    'po_qty' => number_format($remainingQty, 2, ',', '.'),
+                    'qty_received' => number_format($remainingQty, 2, ',', '.'),
+                    'price' => $item->price,
+                ];
+            }
+        }
+
+        if (empty($itemsData)) {
+            $this->purchaseMaterial->update(['status' => 'completed']);
+            Notification::make()->title('All items for this PO have already been completely received!')->warning()->send();
+            $this->redirect(GoodsReceiptMaterialResource::getUrl('index'));
+            return;
         }
 
         $this->form->fill([
