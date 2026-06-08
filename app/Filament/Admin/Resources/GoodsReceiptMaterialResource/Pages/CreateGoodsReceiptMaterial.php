@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Filament\Notifications\Notification;
 use Filament\Actions\Action;
 use Illuminate\Support\Str;
+use Filament\Support\RawJs;
 
 class CreateGoodsReceiptMaterial extends Page implements HasForms
 {
@@ -58,8 +59,8 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
         }
 
         $this->form->fill([
-            'receive_date' => date('Y-m-d'),
-            'sj_number' => '',
+            'receive_date' => null,
+            'sj_number' => null,
             'note' => '',
             'items' => $itemsData,
         ]);
@@ -82,16 +83,21 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
                 Forms\Components\Section::make('Purchase Order Information')
                     ->description('PO Number: ' . ($this->purchaseMaterial->po_number ?? '-'))
                     ->schema([
+                        Forms\Components\TextInput::make('supplier_name')
+                            ->label('Supplier')
+                            ->default(fn() => $this->purchaseMaterial->supplier->name ?? '-')
+                            ->disabled()
+                            ->dehydrated(false),
                         Forms\Components\DatePicker::make('receive_date')
                             ->label('Receive Date')
                             ->required(),
                         Forms\Components\TextInput::make('sj_number')
                             ->label('Surat Jalan Number')
-                            ->required(),
+                            ->nullable(),
                         Forms\Components\Textarea::make('note')
                             ->label('Note')
                             ->columnSpanFull(),
-                    ])->columns(2),
+                    ])->columns(3),
 
                 Forms\Components\Section::make('Materials to Receive')
                     ->schema([
@@ -117,8 +123,10 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
                                     ->hiddenLabel()
                                     ->placeholder('Qty Received')
                                     ->numeric()
+                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
+                                    ->stripCharacters('.')
+                                    ->extraInputAttributes(['x-on:focus' => '$el.select()'])
                                     ->required()
-                                    ->rules(['min:0'])
                                     ->live(onBlur: true),
                             ])
                             ->columns(3)
@@ -130,13 +138,28 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
             ->statePath('data');
     }
 
+    public static function parseNumber($value): float
+    {
+        if (blank($value)) return 0.0;
+        $val = (string) $value;
+
+        if (preg_match('/^-?\d+(\.\d{1,2})?$/', $val)) {
+            return (float) $val;
+        }
+
+        $val = str_replace('.', '', $val);
+        $val = str_replace(',', '.', $val);
+        return (float) $val;
+    }
+
     public function processSave(): void
     {
         $data = $this->form->getState();
         
         $isPartial = false;
         foreach ($data['items'] as $item) {
-            if ($item['qty_received'] < $item['po_qty']) {
+            $qtyReceived = self::parseNumber($item['qty_received']);
+            if ($qtyReceived < $item['po_qty']) {
                 $isPartial = true;
                 break;
             }
@@ -183,12 +206,13 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
             ]);
 
             foreach ($data['items'] as $item) {
-                if ($item['qty_received'] > 0) {
+                $qtyReceived = self::parseNumber($item['qty_received']);
+                if ($qtyReceived > 0) {
                     $gr->items()->create([
                         'material_id' => $item['material_id'],
-                        'qty_received' => $item['qty_received'],
+                        'qty_received' => $qtyReceived,
                         'price' => $item['price'],
-                        'subtotal' => $item['qty_received'] * $item['price'],
+                        'subtotal' => $qtyReceived * $item['price'],
                     ]);
                 }
             }

@@ -13,7 +13,20 @@ class ViewGoodsReceiptMaterial extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\EditAction::make(),
+            Actions\Action::make('print')
+                ->tooltip('Print')
+                ->hiddenLabel()
+                ->icon('heroicon-o-printer')
+                ->color('gray')
+                ->url('#') // Optional implementation for Print
+                ->openUrlInNewTab(),
+
+            Actions\Action::make('back')
+                ->tooltip('Back to List')
+                ->hiddenLabel()
+                ->icon('heroicon-o-arrow-left')
+                ->color('gray')
+                ->url($this->getResource()::getUrl('index')),
         ];
     }
 }

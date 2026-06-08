@@ -17,7 +17,7 @@ class GoodsReceiptMaterialResource extends Resource
     protected static ?string $model = GoodsReceiptMaterial::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-truck';
-    protected static ?string $navigationGroup = 'Goods Receipt';
+    protected static ?string $navigationGroup = 'GOODS RECEIPT';
     protected static ?int $navigationSort = 15;
     protected static ?string $navigationLabel = 'Material Receipt';
     protected static ?string $modelLabel = 'Material Receipt';
@@ -105,6 +105,28 @@ class GoodsReceiptMaterialResource extends Resource
             ->recordUrl(
                 fn (GoodsReceiptMaterial $record): string => Pages\ViewGoodsReceiptMaterial::getUrl(['record' => $record]),
             )
+            ->headerActions([
+                \Filament\Tables\Actions\ActionGroup::make([
+                    \Filament\Tables\Actions\ExportAction::make('excel')
+                        ->label('Excel')
+                        ->icon('heroicon-o-document-text')
+                        ->color('success')
+                        ->exporter(\App\Filament\Exports\GoodsReceiptMaterialExporter::class)
+                        ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
+                    \Filament\Tables\Actions\Action::make('pdf')
+                        ->label('PDF')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('danger')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            // Optional: Implement PDF generation
+                            // return response()->streamDownload(fn () => print($pdf->output()), 'export.pdf');
+                        }),
+                ])
+                ->label('Export Data')
+                ->icon('heroicon-m-arrow-down-tray')
+                ->button()
+            ])
             ->filters([
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_gr_materials')),

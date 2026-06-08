@@ -2,7 +2,7 @@
     <form wire:submit="processSave">
         {{ $this->form }}
 
-        <div class="mt-4">
+        <div class="mt-8 flex justify-end">
             <x-filament::button type="submit" color="primary">
                 Save Goods Receipt
             </x-filament::button>
