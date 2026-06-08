@@ -17,10 +17,10 @@ class GoodsReceiptMaterialResource extends Resource
     protected static ?string $model = GoodsReceiptMaterial::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-truck';
-    protected static ?string $navigationGroup = 'GOODS RECEIPT';
+    protected static ?string $navigationGroup = 'Goods Receipt';
     protected static ?int $navigationSort = 15;
-    protected static ?string $navigationLabel = 'GR Material';
-    protected static ?string $modelLabel = 'GR Material';
+    protected static ?string $navigationLabel = 'Material Receipt';
+    protected static ?string $modelLabel = 'Material Receipt';
 
     public static function form(Form $form): Form
     {
@@ -52,10 +52,14 @@ class GoodsReceiptMaterialResource extends Resource
                                 Forms\Components\Select::make('material_id')
                                     ->relationship('material', 'name')
                                     ->label('Material')
+                                    ->hiddenLabel()
+                                    ->placeholder('Material')
                                     ->disabled()
                                     ->dehydrated(false),
                                 Forms\Components\TextInput::make('qty_received')
                                     ->label('Qty Received')
+                                    ->hiddenLabel()
+                                    ->placeholder('Qty Received')
                                     ->numeric()
                                     ->disabled()
                                     ->dehydrated(false),
@@ -98,8 +102,12 @@ class GoodsReceiptMaterialResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->recordUrl(
+                fn (GoodsReceiptMaterial $record): string => Pages\ViewGoodsReceiptMaterial::getUrl(['record' => $record]),
+            )
             ->filters([
-                Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_gr_materials')),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()->color('info'),

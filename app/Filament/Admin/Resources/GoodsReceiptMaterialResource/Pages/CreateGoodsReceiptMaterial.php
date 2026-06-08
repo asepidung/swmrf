@@ -99,17 +99,23 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
                             ->schema([
                                 Forms\Components\TextInput::make('material_name')
                                     ->label('Material')
+                                    ->hiddenLabel()
+                                    ->placeholder('Material')
                                     ->disabled()
                                     ->dehydrated(false),
                                 Forms\Components\Hidden::make('material_id'),
                                 Forms\Components\Hidden::make('price'),
                                 Forms\Components\TextInput::make('po_qty')
                                     ->label('Qty in PO')
+                                    ->hiddenLabel()
+                                    ->placeholder('Qty in PO')
                                     ->numeric()
                                     ->disabled()
                                     ->dehydrated(false),
                                 Forms\Components\TextInput::make('qty_received')
                                     ->label('Qty Received')
+                                    ->hiddenLabel()
+                                    ->placeholder('Qty Received')
                                     ->numeric()
                                     ->required()
                                     ->rules(['min:0'])

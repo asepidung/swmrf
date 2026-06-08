@@ -138,6 +138,7 @@ class DatabaseSeeder extends Seeder
             ['name' => 'create_gr_materials', 'module_name' => 'GR Material', 'description' => 'Create GR materials'],
             ['name' => 'edit_gr_materials', 'module_name' => 'GR Material', 'description' => 'Edit GR materials'],
             ['name' => 'delete_gr_materials', 'module_name' => 'GR Material', 'description' => 'Delete GR materials'],
+            ['name' => 'view_deleted_gr_materials', 'module_name' => 'GR Material', 'description' => 'View deleted GR materials'],
         ];
 
         foreach ($permissions as $perm) {
