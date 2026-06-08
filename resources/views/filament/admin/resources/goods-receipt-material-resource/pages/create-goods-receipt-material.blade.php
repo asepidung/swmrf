@@ -1,13 +1,11 @@
 <x-filament-panels::page>
-    <form wire:submit="processSave">
+    <x-filament-panels::form wire:submit="processSave">
         {{ $this->form }}
 
-        <div class="mt-8 flex justify-end">
-            <x-filament::button type="submit" color="primary">
-                Save Goods Receipt
-            </x-filament::button>
-        </div>
-    </form>
+        <x-filament-panels::form.actions
+            :actions="$this->getFormActions()"
+        />
+    </x-filament-panels::form>
 
     <x-filament::modal id="partial-confirmation-modal" width="md">
         <x-slot name="heading">

@@ -228,4 +228,14 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
             Notification::make()->title('Error: ' . $e->getMessage())->danger()->send();
         }
     }
+
+    protected function getFormActions(): array
+    {
+        return [
+            Action::make('save')
+                ->label('Save Goods Receipt')
+                ->color('primary')
+                ->submit('processSave')
+        ];
+    }
 }
