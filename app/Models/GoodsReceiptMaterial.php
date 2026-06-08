@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
-class PurchaseMaterial extends Model
+class GoodsReceiptMaterial extends Model
 {
     use HasFactory, SoftDeletes, LogsActivity;
 
@@ -20,12 +20,12 @@ class PurchaseMaterial extends Model
             ->logFillable()
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
-            ->useLogName($this->po_number ?? 'PO Material');
+            ->useLogName($this->gr_number ?? 'GR Material');
     }
 
-    public function materialRequisition()
+    public function purchaseMaterial()
     {
-        return $this->belongsTo(MaterialRequisition::class);
+        return $this->belongsTo(PurchaseMaterial::class);
     }
 
     public function supplier()
@@ -33,18 +33,13 @@ class PurchaseMaterial extends Model
         return $this->belongsTo(Supplier::class);
     }
 
-    public function approvedBy()
+    public function createdBy()
     {
-        return $this->belongsTo(User::class, 'approved_by');
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function items()
     {
-        return $this->hasMany(PurchaseMaterialItem::class);
-    }
-
-    public function goodsReceipts()
-    {
-        return $this->hasMany(GoodsReceiptMaterial::class);
+        return $this->hasMany(GoodsReceiptMaterialItem::class);
     }
 }
