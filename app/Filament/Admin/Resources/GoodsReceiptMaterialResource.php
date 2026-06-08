@@ -79,24 +79,32 @@ class GoodsReceiptMaterialResource extends Resource
                 Tables\Columns\TextColumn::make('gr_number')
                     ->label('GR Number')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->weight('bold')
+                    ->color(fn (GoodsReceiptMaterial $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('receive_date')
                     ->label('Receive Date')
-                    ->date()
-                    ->sortable(),
+                    ->date('d M Y')
+                    ->sortable()
+                    ->color(fn (GoodsReceiptMaterial $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('sj_number')
                     ->label('Surat Jalan')
-                    ->searchable(),
+                    ->searchable()
+                    ->color(fn (GoodsReceiptMaterial $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('purchaseMaterial.po_number')
                     ->label('PO Number')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->color(fn (GoodsReceiptMaterial $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('supplier.name')
                     ->label('Supplier')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->color(fn (GoodsReceiptMaterial $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('createdBy.name')
-                    ->label('Created By'),
+                    ->label('Created By')
+                    ->badge()
+                    ->color(fn (GoodsReceiptMaterial $record) => $record->trashed() ? 'danger' : 'gray'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -130,6 +138,29 @@ class GoodsReceiptMaterialResource extends Resource
             ->filters([
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_gr_materials')),
+                Tables\Filters\SelectFilter::make('supplier_id')
+                    ->relationship('supplier', 'name')
+                    ->label('Supplier'),
+                Tables\Filters\Filter::make('receive_date')
+                    ->form([
+                        Forms\Components\DatePicker::make('from')
+                            ->label('From')
+                            ->default(now()->startOfMonth()),
+                        Forms\Components\DatePicker::make('until')
+                            ->label('Until')
+                            ->default(now()),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['from'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('receive_date', '>=', $date),
+                            )
+                            ->when(
+                                $data['until'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('receive_date', '<=', $date),
+                            );
+                    }),
             ])
             ->actions([
                 //
@@ -141,10 +172,8 @@ class GoodsReceiptMaterialResource extends Resource
                     Tables\Actions\RestoreBulkAction::make(),
                 ]),
             ])
-            ->recordClasses(fn (GoodsReceiptMaterial $record) => match ($record->trashed()) {
-                true => 'bg-danger-100/50 dark:bg-danger-900/50',
-                false => null,
-            });
+            ->recordClasses(fn (GoodsReceiptMaterial $record) => $record->trashed() ? 'border-s-2 border-danger-600 dark:border-danger-400 bg-danger-50 dark:bg-danger-900/50' : null)
+            ->defaultSort('id', 'desc');
     }
 
     public static function getRelations(): array
