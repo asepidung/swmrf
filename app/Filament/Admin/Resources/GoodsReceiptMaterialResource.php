@@ -11,6 +11,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Support\RawJs;
 
 class GoodsReceiptMaterialResource extends Resource
 {
@@ -60,9 +61,11 @@ class GoodsReceiptMaterialResource extends Resource
                                     ->label('Qty Received')
                                     ->hiddenLabel()
                                     ->placeholder('Qty Received')
-                                    ->numeric()
-                                    ->disabled()
-                                    ->dehydrated(false),
+                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
+                                    ->stripCharacters('.')
+                                    ->extraInputAttributes(['x-on:focus' => '$el.select()'])
+                                    ->required()
+                                    ->dehydrateStateUsing(fn ($state) => (float) str_replace(['.', ','], ['', '.'], $state)),
                             ])
                             ->columns(2)
                             ->disableItemCreation()
