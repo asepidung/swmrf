@@ -116,7 +116,7 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
                                     ->hiddenLabel()
                                     ->placeholder('Qty in PO')
                                     ->disabled()
-                                    ->dehydrated(false),
+                                    ->dehydrated(true),
                                 Forms\Components\TextInput::make('qty_received')
                                     ->label('Qty Received')
                                     ->hiddenLabel()
@@ -157,7 +157,8 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
         $isPartial = false;
         foreach ($data['items'] as $item) {
             $qtyReceived = self::parseNumber($item['qty_received']);
-            if ($qtyReceived < $item['po_qty']) {
+            $poQty = self::parseNumber($item['po_qty']);
+            if ($qtyReceived < $poQty) {
                 $isPartial = true;
                 break;
             }
