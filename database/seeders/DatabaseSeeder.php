@@ -143,6 +143,14 @@ class DatabaseSeeder extends Seeder
             // Payables Module
             ['name' => 'view_payables', 'module_name' => 'Payables', 'description' => 'View payables'],
             ['name' => 'view_deleted_payables', 'module_name' => 'Payables', 'description' => 'View deleted payables'],
+
+            // Material Stock Module
+            ['name' => 'view_material_stocks', 'module_name' => 'Material Stocks', 'description' => 'View material stocks'],
+            ['name' => 'view_deleted_material_stocks', 'module_name' => 'Material Stocks', 'description' => 'View deleted material stocks'],
+
+            // Material Stock Movements Module
+            ['name' => 'view_material_stock_movements', 'module_name' => 'Material Stock Movements', 'description' => 'View material stock movements'],
+            ['name' => 'view_deleted_material_stock_movements', 'module_name' => 'Material Stock Movements', 'description' => 'View deleted material stock movements'],
         ];
 
         foreach ($permissions as $perm) {

@@ -23,6 +23,17 @@ class GoodsReceiptMaterial extends Model
             if ($payable && in_array($payable->status, ['partial', 'paid'])) {
                 throw new \Exception(__('This record cannot be deleted because its payable status is partial or paid.'));
             }
+
+            // Adjust stock for all items
+            foreach ($gr->items as $item) {
+                \App\Services\StockService::adjustStock(
+                    $item->material_id,
+                    -(float) $item->qty_received,
+                    'RETUR',
+                    $gr->gr_number,
+                    "Pembatalan/Hapus GR " . $gr->gr_number
+                );
+            }
         });
     }
 
