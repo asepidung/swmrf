@@ -16,7 +16,7 @@ class MaterialStockMovementResource extends Resource
 {
     protected static ?string $model = MaterialStockMovement::class;
 
-    protected static ?string $cluster = \App\Filament\Clusters\Materials::class;
+    protected static ?string $navigationGroup = 'STOCKS';
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-path-rounded-square';
 
