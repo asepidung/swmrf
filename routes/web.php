@@ -24,6 +24,16 @@ Route::middleware(['web', 'auth'])->group(function () {
         return view('print.po-material', compact('record'));
     })->name('print.po-material');
 
+    Route::get('/goods-receipt-material/{id}/print', function ($id) {
+        $record = \App\Models\GoodsReceiptMaterial::withTrashed()->with([
+            'supplier',
+            'purchaseMaterial',
+            'items.material',
+            'createdBy'
+        ])->findOrFail($id);
+        return view('print.goods-receipt-material', compact('record'));
+    })->name('goods-receipt-material.print');
+
     // ------------------------------------------
     // 2. MODUL REQUEST BEEF (PRODUCT)
     // ------------------------------------------

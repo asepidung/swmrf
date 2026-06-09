@@ -14,6 +14,18 @@ class GoodsReceiptMaterial extends Model
 
     protected $guarded = ['id'];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($gr) {
+            $payable = $gr->payable;
+            if ($payable && in_array($payable->status, ['partial', 'paid'])) {
+                throw new \Exception(__('This record cannot be deleted because its payable status is partial or paid.'));
+            }
+        });
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
@@ -41,5 +53,10 @@ class GoodsReceiptMaterial extends Model
     public function items()
     {
         return $this->hasMany(GoodsReceiptMaterialItem::class);
+    }
+
+    public function payable()
+    {
+        return $this->morphOne(Payable::class, 'payableable');
     }
 }

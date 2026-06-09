@@ -139,6 +139,10 @@ class DatabaseSeeder extends Seeder
             ['name' => 'edit_gr_materials', 'module_name' => 'GR Material', 'description' => 'Edit GR materials'],
             ['name' => 'delete_gr_materials', 'module_name' => 'GR Material', 'description' => 'Delete GR materials'],
             ['name' => 'view_deleted_gr_materials', 'module_name' => 'GR Material', 'description' => 'View deleted GR materials'],
+
+            // Payables Module
+            ['name' => 'view_payables', 'module_name' => 'Payables', 'description' => 'View payables'],
+            ['name' => 'view_deleted_payables', 'module_name' => 'Payables', 'description' => 'View deleted payables'],
         ];
 
         foreach ($permissions as $perm) {

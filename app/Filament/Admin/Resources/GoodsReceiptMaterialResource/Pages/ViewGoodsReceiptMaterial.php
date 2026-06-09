@@ -18,7 +18,7 @@ class ViewGoodsReceiptMaterial extends ViewRecord
                 ->hiddenLabel()
                 ->icon('heroicon-o-printer')
                 ->color('gray')
-                ->url('#') // Optional implementation for Print
+                ->url(fn ($record): string => route('goods-receipt-material.print', $record))
                 ->openUrlInNewTab(),
 
             Actions\Action::make('back')

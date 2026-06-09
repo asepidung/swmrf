@@ -13,6 +13,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Support\RawJs;
 
+use Illuminate\Support\HtmlString;
+use Illuminate\Database\Eloquent\Model;
+
 class GoodsReceiptMaterialResource extends Resource
 {
     protected static ?string $model = GoodsReceiptMaterial::class;
@@ -33,7 +36,17 @@ class GoodsReceiptMaterialResource extends Resource
                             ->label('GR Number')
                             ->disabled()
                             ->dehydrated(false)
-                            ->visibleOn('view'),
+                            ->visibleOn(['view', 'edit']),
+                        Forms\Components\TextInput::make('po_number_display')
+                            ->label('PO Number')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->formatStateUsing(fn ($record) => $record?->purchaseMaterial?->po_number ?? '-'),
+                        Forms\Components\TextInput::make('supplier_name_display')
+                            ->label('Supplier')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->formatStateUsing(fn ($record) => $record?->supplier?->name ?? '-'),
                         Forms\Components\DatePicker::make('receive_date')
                             ->label('Receive Date')
                             ->required(),
@@ -43,12 +56,25 @@ class GoodsReceiptMaterialResource extends Resource
                         Forms\Components\Textarea::make('note')
                             ->label('Note')
                             ->columnSpanFull(),
-                    ])->columns(2),
+                    ])->columns(3),
                 
                 Forms\Components\Section::make('Materials Received')
                     ->schema([
+                        Forms\Components\Placeholder::make('items_headers')
+                            ->label('')
+                            ->hiddenLabel()
+                            ->content(new HtmlString('
+                                <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1rem; padding: 0 1rem 0.5rem 1rem;" class="text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                                    <div>Material</div>
+                                    <div>Qty PO</div>
+                                    <div>Price</div>
+                                    <div>Qty Received</div>
+                                    <div>Subtotal</div>
+                                </div>
+                            ')),
                         Forms\Components\Repeater::make('items')
                             ->relationship()
+                            ->hiddenLabel()
                             ->schema([
                                 Forms\Components\Select::make('material_id')
                                     ->relationship('material', 'name')
@@ -57,6 +83,29 @@ class GoodsReceiptMaterialResource extends Resource
                                     ->placeholder('Material')
                                     ->disabled()
                                     ->dehydrated(false),
+                                Forms\Components\TextInput::make('po_qty')
+                                    ->label('Qty PO')
+                                    ->hiddenLabel()
+                                    ->placeholder('Qty PO')
+                                    ->disabled()
+                                    ->dehydrated(false)
+                                    ->afterStateHydrated(function ($component, $record) {
+                                        if ($record && $record->goodsReceiptMaterial) {
+                                            $poItem = \App\Models\PurchaseMaterialItem::where('purchase_material_id', $record->goodsReceiptMaterial->purchase_material_id)
+                                                ->where('material_id', $record->material_id)
+                                                ->first();
+                                            $component->state($poItem ? number_format($poItem->qty, 2, ',', '.') : '0,00');
+                                        }
+                                    }),
+                                Forms\Components\TextInput::make('price')
+                                    ->label('Price')
+                                    ->hiddenLabel()
+                                    ->placeholder('Price')
+                                    ->disabled()
+                                    ->dehydrated(false)
+                                    ->afterStateHydrated(function ($component, $state) {
+                                        $component->state(number_format((float)$state, 0, ',', '.'));
+                                    }),
                                 Forms\Components\TextInput::make('qty_received')
                                     ->label('Qty Received')
                                     ->hiddenLabel()
@@ -65,12 +114,106 @@ class GoodsReceiptMaterialResource extends Resource
                                     ->stripCharacters('.')
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()'])
                                     ->required()
+                                    ->live(onBlur: true)
                                     ->dehydrateStateUsing(fn ($state) => (float) str_replace(['.', ','], ['', '.'], $state)),
+                                Forms\Components\Placeholder::make('item_subtotal')
+                                    ->label('Subtotal')
+                                    ->hiddenLabel()
+                                    ->content(function (Forms\Get $get) {
+                                        $qty = (float) str_replace(['.', ','], ['', '.'], $get('qty_received') ?? '0');
+                                        $price = (float) str_replace(['.', ','], ['', '.'], $get('price') ?? '0');
+                                        return 'Rp ' . number_format($qty * $price, 0, ',', '.');
+                                    }),
                             ])
-                            ->columns(2)
+                            ->columns(5)
                             ->disableItemCreation()
                             ->disableItemDeletion()
                             ->disableItemMovement(),
+                    ]),
+
+                Forms\Components\Section::make('Summary & Actions')
+                    ->schema([
+                        Forms\Components\Placeholder::make('grand_total_summary')
+                            ->label('')
+                            ->hiddenLabel()
+                            ->content(function (Forms\Get $get, ?GoodsReceiptMaterial $record) {
+                                $items = $get('items') ?? [];
+                                $subtotal = 0;
+                                foreach ($items as $item) {
+                                    $qty = (float) str_replace(['.', ','], ['', '.'], $item['qty_received'] ?? '0');
+                                    $price = (float) str_replace(['.', ','], ['', '.'], $item['price'] ?? '0');
+                                    $subtotal += $qty * $price;
+                                }
+
+                                // Check tax setting of the supplier
+                                $isTax11 = false;
+                                if ($record && $record->supplier) {
+                                    $isTax11 = (bool) $record->supplier->is_tax_11;
+                                } else {
+                                    $poId = $record?->purchase_material_id;
+                                    if ($poId) {
+                                        $po = \App\Models\PurchaseMaterial::find($poId);
+                                        if ($po && $po->supplier) {
+                                            $isTax11 = (bool) $po->supplier->is_tax_11;
+                                        }
+                                    }
+                                }
+
+                                $tax = $isTax11 ? ($subtotal * 0.11) : 0;
+                                $netTotal = $subtotal + $tax;
+
+                                $taxLabel = $isTax11 ? 'PPN (11%)' : 'PPN (0% - Non Tax)';
+
+                                return new HtmlString("
+                                    <div class='flex flex-col gap-2 max-w-md ml-auto border-t pt-4 dark:border-gray-700'>
+                                        <div class='flex justify-between text-sm'>
+                                            <span class='text-gray-500 dark:text-gray-400'>Total Sebelum Pajak (Subtotal):</span>
+                                            <span class='font-semibold'>Rp " . number_format($subtotal, 0, ',', '.') . "</span>
+                                        </div>
+                                        <div class='flex justify-between text-sm'>
+                                            <span class='text-gray-500 dark:text-gray-400'>{$taxLabel}:</span>
+                                            <span class='font-semibold'>Rp " . number_format($tax, 0, ',', '.') . "</span>
+                                        </div>
+                                        <div class='flex justify-between text-base border-t pt-2 dark:border-gray-600 font-bold text-primary-600 dark:text-primary-400'>
+                                            <span>Total Setelah Pajak (Net Total):</span>
+                                            <span>Rp " . number_format($netTotal, 0, ',', '.') . "</span>
+                                        </div>
+                                    </div>
+                                ");
+                            }),
+
+                        Forms\Components\Radio::make('po_status_action')
+                            ->label('Tindakan untuk Sisa PO')
+                            ->options([
+                                'partial' => 'Tetap Partial (Sisa barang akan ditunggu di penerimaan berikutnya)',
+                                'completed' => 'Tutup PO (Sisa barang dianggap hangus / selesai)',
+                            ])
+                            ->default('partial')
+                            ->required()
+                            ->visible(function (Forms\Get $get, ?GoodsReceiptMaterial $record) {
+                                if (!$record) return false;
+                                
+                                // Calculate total PO qty
+                                $poItems = \App\Models\PurchaseMaterialItem::where('purchase_material_id', $record->purchase_material_id)->get();
+                                $totalPoQty = $poItems->sum('qty');
+                                
+                                // Calculate total received from OTHER GRs of this PO
+                                $otherGrQty = \App\Models\GoodsReceiptMaterialItem::whereHas('goodsReceiptMaterial', function ($query) use ($record) {
+                                    $query->where('purchase_material_id', $record->purchase_material_id)
+                                          ->where('id', '!=', $record->id);
+                                })->sum('qty_received');
+                                
+                                // Calculate current form's received qty
+                                $items = $get('items') ?? [];
+                                $currentFormQty = 0;
+                                foreach ($items as $item) {
+                                    $currentFormQty += (float) str_replace(['.', ','], ['', '.'], $item['qty_received'] ?? '0');
+                                }
+                                
+                                $newTotalReceived = $otherGrQty + $currentFormQty;
+                                
+                                return $newTotalReceived < $totalPoQty;
+                            }),
                     ]),
             ]);
     }
@@ -149,9 +292,11 @@ class GoodsReceiptMaterialResource extends Resource
                 Tables\Filters\Filter::make('receive_date')
                     ->form([
                         Forms\Components\DatePicker::make('from')
-                            ->label('From'),
+                            ->label('From')
+                            ->default(now()->startOfMonth()),
                         Forms\Components\DatePicker::make('until')
-                            ->label('Until'),
+                            ->label('Until')
+                            ->default(now()),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
