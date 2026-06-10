@@ -10,13 +10,17 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Pages\SubNavigationPosition;
 
 class MaterialStockMovementResource extends Resource
 {
     protected static ?string $model = MaterialStockMovement::class;
 
-    protected static ?string $navigationGroup = 'STOCKS';
+    protected static ?string $cluster = \App\Filament\Admin\Clusters\Materials::class;
+
+    protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
+
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-path-rounded-square';
 
@@ -84,16 +88,19 @@ class MaterialStockMovementResource extends Resource
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Timestamp'))
                     ->dateTime('d M Y H:i')
-                    ->sortable(),
+                    ->sortable()
+                    ->tooltip(fn (MaterialStockMovement $record): ?string => $record->note),
                 Tables\Columns\TextColumn::make('reference_document')
                     ->label(__('Reference Document'))
                     ->searchable()
                     ->sortable()
-                    ->weight('bold'),
+                    ->weight('bold')
+                    ->tooltip(fn (MaterialStockMovement $record): ?string => $record->note),
                 Tables\Columns\TextColumn::make('material.name')
                     ->label(__('Material'))
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->tooltip(fn (MaterialStockMovement $record): ?string => $record->note),
                 Tables\Columns\TextColumn::make('transaction_type')
                     ->label(__('Transaction Type'))
                     ->badge()
@@ -104,32 +111,30 @@ class MaterialStockMovementResource extends Resource
                         'RETUR' => 'info',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn (string $state): string => __($state)),
+                    ->formatStateUsing(fn (string $state): string => __($state))
+                    ->tooltip(fn (MaterialStockMovement $record): ?string => $record->note),
                 Tables\Columns\TextColumn::make('qty_in')
                     ->label(__('Qty In'))
                     ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')
-                    ->sortable(),
+                    ->sortable()
+                    ->tooltip(fn (MaterialStockMovement $record): ?string => $record->note),
                 Tables\Columns\TextColumn::make('qty_out')
                     ->label(__('Qty Out'))
                     ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')
-                    ->sortable(),
+                    ->sortable()
+                    ->tooltip(fn (MaterialStockMovement $record): ?string => $record->note),
                 Tables\Columns\TextColumn::make('balance')
                     ->label(__('Balance'))
                     ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('note')
-                    ->label(__('Note'))
-                    ->wrap()
-                    ->limit(50),
+                    ->sortable()
+                    ->tooltip(fn (MaterialStockMovement $record): ?string => $record->note),
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label(__('Operator'))
                     ->sortable()
                     ->badge()
-                    ->color('gray'),
+                    ->color('gray')
+                    ->tooltip(fn (MaterialStockMovement $record): ?string => $record->note),
             ])
-            ->recordUrl(
-                fn (MaterialStockMovement $record): string => Pages\ViewMaterialStockMovement::getUrl([$record->id]),
-            )
             ->headerActions([
                 \Filament\Tables\Actions\ActionGroup::make([
                     \Filament\Tables\Actions\ExportAction::make('excel')
@@ -188,12 +193,19 @@ class MaterialStockMovementResource extends Resource
                     ->indicateUsing(fn (array $data): array => []),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                // Read-only, clickable row handles navigation
             ])
             ->bulkActions([
                 // Read-only log
             ])
+            ->recordUrl(null)
+            ->recordAction(null)
             ->defaultSort('id', 'desc');
+    }
+
+    public static function getRecordUrl(\Illuminate\Database\Eloquent\Model $record): ?string
+    {
+        return null;
     }
 
     public static function getRelations(): array

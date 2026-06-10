@@ -10,13 +10,17 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Pages\SubNavigationPosition;
 
 class MaterialStockResource extends Resource
 {
     protected static ?string $model = MaterialStock::class;
 
-    protected static ?string $navigationGroup = 'STOCKS';
+    protected static ?string $cluster = \App\Filament\Admin\Clusters\Materials::class;
+
+    protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
+
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $navigationIcon = 'heroicon-o-circle-stack';
 
@@ -94,9 +98,6 @@ class MaterialStockResource extends Resource
                     ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')
                     ->sortable(),
             ])
-            ->recordUrl(
-                fn (MaterialStock $record): string => Pages\ViewMaterialStock::getUrl([$record->id]),
-            )
             ->headerActions([
                 \Filament\Tables\Actions\ActionGroup::make([
                     \Filament\Tables\Actions\ExportAction::make('excel')
@@ -134,12 +135,19 @@ class MaterialStockResource extends Resource
                     })),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                // Read-only, clickable row handles navigation
             ])
             ->bulkActions([
                 // Read-only stock levels
             ])
+            ->recordUrl(null)
+            ->recordAction(null)
             ->defaultSort('id', 'desc');
+    }
+
+    public static function getRecordUrl(\Illuminate\Database\Eloquent\Model $record): ?string
+    {
+        return null;
     }
 
     public static function getRelations(): array
