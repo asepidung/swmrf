@@ -23,3 +23,6 @@ yarn-error.log
 /.zed
 /legacy/
 checklist_modul.md
+clean.php
+rename.php
+sync_perms.php
