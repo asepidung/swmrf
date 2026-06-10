@@ -16,7 +16,7 @@ class MaterialStockResource extends Resource
 {
     protected static ?string $model = MaterialStock::class;
 
-    protected static ?string $cluster = \App\Filament\Admin\Clusters\Materials::class;
+    protected static ?string $cluster = \App\Filament\Clusters\MaterialsStock::class;
 
     protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 

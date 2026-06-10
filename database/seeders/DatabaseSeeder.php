@@ -151,6 +151,21 @@ class DatabaseSeeder extends Seeder
             // Material Stock Movements Module
             ['name' => 'view_material_stock_movements', 'module_name' => 'Material Stock Movements', 'description' => 'View material stock movements'],
             ['name' => 'view_deleted_material_stock_movements', 'module_name' => 'Material Stock Movements', 'description' => 'View deleted material stock movements'],
+
+            // Boning Module
+            ['name' => 'view_bonings', 'module_name' => 'Boning', 'description' => 'View bonings'],
+            ['name' => 'create_bonings', 'module_name' => 'Boning', 'description' => 'Create bonings'],
+            ['name' => 'edit_bonings', 'module_name' => 'Boning', 'description' => 'Edit bonings'],
+            ['name' => 'delete_bonings', 'module_name' => 'Boning', 'description' => 'Delete bonings'],
+            ['name' => 'lock_bonings', 'module_name' => 'Boning', 'description' => 'Lock/Unlock boning batch'],
+
+            // Beef Stock Module
+            ['name' => 'view_beef_stocks', 'module_name' => 'Beef Stocks', 'description' => 'View beef stocks'],
+            ['name' => 'view_deleted_beef_stocks', 'module_name' => 'Beef Stocks', 'description' => 'View deleted beef stocks'],
+
+            // Beef Stock Movements Module
+            ['name' => 'view_beef_stock_movements', 'module_name' => 'Beef Stock Movements', 'description' => 'View beef stock movements'],
+            ['name' => 'view_deleted_beef_stock_movements', 'module_name' => 'Beef Stock Movements', 'description' => 'View deleted beef stock movements'],
         ];
 
         foreach ($permissions as $perm) {
@@ -185,6 +200,16 @@ class DatabaseSeeder extends Seeder
         $viewUsersPermission = Permission::where('name', 'view_users')->first();
         if ($viewUsersPermission) {
             $employee->permissions()->sync([$viewUsersPermission->id]);
+        }
+
+        // Seed Warehouses
+        \App\Models\Warehouse::updateOrCreate(['code' => 'JONGGOL'], ['name' => 'JONGGOL', 'is_active' => true]);
+        \App\Models\Warehouse::updateOrCreate(['code' => 'PERUM'], ['name' => 'PERUM', 'is_active' => true]);
+
+        // Seed Grades
+        $grades = ['CHILL', 'FROZEN', 'A', 'B', 'R'];
+        foreach ($grades as $gradeName) {
+            \App\Models\Grade::updateOrCreate(['name' => $gradeName], ['is_active' => true]);
         }
     }
 }

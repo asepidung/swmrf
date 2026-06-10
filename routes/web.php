@@ -50,4 +50,12 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/po-cattle/{record}/print', POCattlePrintController::class)->name('po-cattle.print');
     Route::get('/cattle-receiving/{record}/print', CattleReceivingPrintController::class)->name('cattle-receiving.print');
     Route::get('/cattle-weighing/{record}/print', CattleWeighingPrintController::class)->name('cattle-weighing.print');
+
+    // ------------------------------------------
+    // 3. MODUL BONING
+    // ------------------------------------------
+    Route::get('/print-label/{id}', function ($id) {
+        $item = \App\Models\BoningItem::with(['product', 'boning', 'grade'])->findOrFail($id);
+        return view('print.boning-label', compact('item'));
+    })->name('boning.label');
 });

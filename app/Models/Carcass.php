@@ -93,6 +93,11 @@ class Carcass extends Model
         return $this->hasMany(CarcassItem::class, 'carcass_id');
     }
 
+    public function boningCarcasses(): HasMany
+    {
+        return $this->hasMany(BoningCarcass::class, 'carcass_id');
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

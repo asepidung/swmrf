@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Filament\Admin\Clusters;
+namespace App\Filament\Clusters;
 
 use Filament\Clusters\Cluster;
 
-class Beefs extends Cluster
+class MaterialsStock extends Cluster
 {
     protected static ?string $navigationGroup = 'STOCKS';
 
@@ -12,6 +12,6 @@ class Beefs extends Cluster
 
     public static function getNavigationLabel(): string
     {
-        return __('Beefs');
+        return __('Materials');
     }
 }
