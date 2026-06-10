@@ -31,5 +31,8 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         \App\Models\GoodsReceiptMaterialItem::observe(\App\Observers\GoodsReceiptMaterialItemObserver::class);
+
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\BeefStock::class, \App\Policies\BeefStockPolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\BeefStockMovement::class, \App\Policies\BeefStockMovementPolicy::class);
     }
 }

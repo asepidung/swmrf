@@ -40,4 +40,9 @@ class Product extends Model
     {
         return $this->hasMany(Product::class, 'parent_id');
     }
+
+    public function beefStocks(): HasMany
+    {
+        return $this->hasMany(BeefStock::class, 'product_id');
+    }
 }
