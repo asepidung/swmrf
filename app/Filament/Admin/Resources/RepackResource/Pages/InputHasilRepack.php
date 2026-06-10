@@ -1,14 +1,13 @@
 <?php
 
-namespace App\Filament\Admin\Resources\BoningResource\Pages;
+namespace App\Filament\Admin\Resources\RepackResource\Pages;
 
-use App\Filament\Admin\Resources\BoningResource;
-use App\Models\Boning;
-use App\Models\BoningItem;
+use App\Filament\Admin\Resources\RepackResource;
+use App\Models\Repack;
+use App\Models\RepackResult;
 use App\Models\BeefStock;
 use App\Models\BeefStockMovement;
 use App\Models\Product;
-use App\Models\Warehouse;
 use App\Models\Grade;
 use Filament\Resources\Pages\Page;
 use Filament\Forms\Contracts\HasForms;
@@ -25,12 +24,13 @@ use Filament\Support\Enums\MaxWidth;
 use Filament\Notifications\Notification;
 use Carbon\Carbon;
 
-class LabelingBoning extends Page implements HasForms, HasTable
+class InputHasilRepack extends Page implements HasForms, HasTable
 {
     use InteractsWithForms, InteractsWithTable;
 
-    protected static string $resource = BoningResource::class;
-    protected static string $view = 'filament.resources.boning-resource.pages.labeling-boning';
+    protected static string $resource = RepackResource::class;
+    
+    protected static string $view = 'filament.resources.repack-resource.pages.input-hasil-repack';
 
     public function getMaxContentWidth(): MaxWidth | string | null
     {
@@ -42,19 +42,20 @@ class LabelingBoning extends Page implements HasForms, HasTable
         return '';
     }
 
-    public Boning $record;
+    public Repack $record;
     public ?array $data = [];
 
-    public function mount(Boning $record): void
+    public function mount(Repack $record): void
     {
         $this->record = $record;
 
         $defaultPackDate = now()->format('Y-m-d');
         $defaultGrade = 1;
 
+        /* Inisialisasi nilai awal untuk form */
         $this->form->fill([
+            'origin' => session('last_origin_' . $this->record->id, '2'),
             'pack_date' => $defaultPackDate,
-            'warehouse_id' => 1,
             'grade_id' => $defaultGrade,
             'ph_level' => session('last_ph_' . $this->record->id),
             'show_exp' => session('show_exp_session', true),
@@ -62,13 +63,15 @@ class LabelingBoning extends Page implements HasForms, HasTable
         ]);
     }
 
+    /* Menghitung tanggal kedaluwarsa berdasarkan grade_id */
     public static function calculateExpiry($packDate, $gradeId, callable $set)
     {
         if (!$packDate || !$gradeId) return;
 
         $date = Carbon::parse($packDate);
 
-        if (in_array((int)$gradeId, [1, 3])) { // CHILL or A
+        // Jika grade ID = 1 (CHILL), exp 3 bulan, selain itu 1 tahun
+        if ((int)$gradeId === 1) {
             $expiry = $date->addMonths(3)->format('Y-m-d');
         } else {
             $expiry = $date->addYear()->format('Y-m-d');
@@ -83,13 +86,17 @@ class LabelingBoning extends Page implements HasForms, HasTable
             ->schema([
                 Forms\Components\Group::make()
                     ->schema([
-                        Forms\Components\Select::make('warehouse_id')
+                        Forms\Components\Select::make('origin')
                             ->hiddenLabel()
-                            ->placeholder(__('Warehouse'))
-                            ->options(Warehouse::pluck('name', 'id'))
+                            ->placeholder(__('Pilih Origin Repack'))
+                            ->options([
+                                '2' => 'Repack Stock',
+                                '3' => 'Repack Import',
+                                '4' => 'Repack Return',
+                                '5' => 'Repack Trading',
+                            ])
                             ->required()
-                            ->extraAttributes(['tabindex' => '-1'])
-                            ->extraInputAttributes(['tabindex' => '-1']),
+                            ->autofocus(),
 
                         Forms\Components\Select::make('product_id')
                             ->hiddenLabel()
@@ -98,7 +105,6 @@ class LabelingBoning extends Page implements HasForms, HasTable
                             ->required()
                             ->searchable()
                             ->preload()
-                            ->autofocus()
                             ->extraAttributes(['class' => 'product-select-container']),
 
                         Forms\Components\Select::make('grade_id')
@@ -123,7 +129,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
                         Forms\Components\Hidden::make('exp_date'),
 
                         Forms\Components\Checkbox::make('show_exp')
-                            ->label(__('Show Expiry Date on Label'))
+                            ->label(__('Tampilkan Tanggal Expired Pada Label'))
                             ->default(true)
                             ->dehydrated(false)
                             ->extraAttributes(['tabindex' => '-1']),
@@ -153,13 +159,14 @@ class LabelingBoning extends Page implements HasForms, HasTable
                         ]),
                     ])->columns(1)
             ])
+            ->disabled(fn () => $this->record->kunci == 1)
             ->statePath('data');
     }
 
     public function table(Table $table): Table
     {
         return $table
-            ->query(BoningItem::query()->where('boning_id', $this->record->id))
+            ->query(RepackResult::query()->where('repack_id', $this->record->id))
             ->defaultSort('id', 'desc')
             ->paginated([10, 25, 50, 'all'])
             ->columns([
@@ -168,124 +175,93 @@ class LabelingBoning extends Page implements HasForms, HasTable
                     ->weight('bold')
                     ->size('sm')
                     ->alignCenter()
-                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center'])
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('product.name')
                     ->label(__('Product'))
                     ->size('sm')
-                    ->alignLeft()
-                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center'])
-                    ->searchable()
                     ->weight('bold')
                     ->color('primary')
-                    ->url(fn($record) => route('boning.label', ['id' => $record->id, 'show_exp' => 1]))
+                    ->url(fn($record) => route('repack.label', ['id' => $record->id, 'show_exp' => 1]))
                     ->openUrlInNewTab(),
 
                 Tables\Columns\TextColumn::make('weight')
-                    ->label(__('Weight'))
+                    ->label(__('Qty'))
                     ->size('sm')
                     ->alignCenter()
-                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center'])
-                    ->searchable()
                     ->formatStateUsing(fn($state) => number_format((float) $state, 2, '.', '')),
 
                 Tables\Columns\TextColumn::make('grade.name')
                     ->label(__('Grade'))
                     ->alignCenter()
-                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center'])
                     ->badge()
-                    ->color(fn($state) => in_array($state, ['CHILL', 'A']) ? 'info' : 'danger'),
+                    ->color(fn($state) => str_contains(strtolower($state), 'chill') ? 'info' : 'danger'),
 
                 Tables\Columns\TextColumn::make('qty_pcs')
                     ->label(__('Pcs'))
                     ->size('sm')
-                    ->alignCenter()
-                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center']),
-
-                Tables\Columns\TextColumn::make('creator.name')
-                    ->label(__('Operator'))
-                    ->size('sm')
-                    ->alignLeft()
-                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center']),
+                    ->alignCenter(),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Time'))
                     ->time('H:i:s')
                     ->size('sm')
-                    ->alignCenter()
-                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center']),
-            ])
-            ->filters([
-                Tables\Filters\SelectFilter::make('product_id')
-                    ->label(__('Product'))
-                    ->options(Product::orderBy('name')->pluck('name', 'id'))
-                    ->searchable()
-                    ->preload(),
-
-                Tables\Filters\SelectFilter::make('grade_id')
-                    ->label(__('Grade'))
-                    ->options(Grade::where('is_active', true)->pluck('name', 'id'))
+                    ->alignCenter(),
             ])
             ->actions([
-                Tables\Actions\Action::make('repack_status')
-                    ->label('R')
-                    ->color('warning')
-                    ->tooltip(__('Barang sudah masuk bahan repack'))
-                    ->visible(fn (BoningItem $record) => DB::table('repack_materials')->where('barcode', $record->barcode)->exists())
-                    ->extraAttributes([
-                        'onclick' => 'event.preventDefault(); event.stopPropagation();',
-                        'style' => 'cursor: not-allowed;',
-                    ]),
                 Tables\Actions\DeleteAction::make()
-                    ->hidden(fn (BoningItem $record) => DB::table('repack_materials')->where('barcode', $record->barcode)->exists())
-                    ->icon('heroicon-m-trash')
-                    ->hiddenLabel()
-                    ->color('danger')
-                    ->tooltip(__('Delete Data'))
+                    ->label('')
+                    ->tooltip(__('Hapus Data'))
                     ->requiresConfirmation()
-                    ->action(function (BoningItem $record) {
-                        // Cek pengaman ganda sebelum menghapus
-                        if (DB::table('repack_materials')->where('barcode', $record->barcode)->exists()) {
-                            Notification::make()
-                                ->title(__('Gagal!'))
-                                ->body(__('Barang sudah digunakan di modul Repack.'))
-                                ->danger()
-                                ->send();
-                            return;
-                        }
-
+                    ->hidden(fn () => $this->record->kunci == 1)
+                    ->action(function ($record, $livewire) {
                         DB::transaction(function () use ($record) {
+                            /* 1. Mencatat pengurangan stok dari hasil produksi yang dibatalkan */
                             BeefStockMovement::create([
                                 'product_id' => $record->product_id,
-                                'warehouse_id' => $record->warehouse_id,
+                                'warehouse_id' => $record->warehouse_id ?? 1,
                                 'condition' => $record->grade_id,
                                 'barcode' => $record->barcode,
-                                'transaction_type' => 'VOID_BONING',
-                                'reference_document' => $record->boning->doc_no ?? 'DELETED',
-                                'weight_in' => -$record->weight,
-                                'pcs_in' => -$record->qty_pcs,
+                                'transaction_type' => 'VOID_IN_REPACK',
+                                'reference_document' => $record->repack->doc_no ?? 'DELETED',
+                                'weight_in' => -$record->weight, // Nilai minus karena batal masuk
+                                'pcs_in' => -$record->qty_pcs, // Nilai minus karena batal masuk
                                 'created_by' => Auth::id(),
                             ]);
 
+                            /* 2. Menghapus data stok hasil dari gudang dan rekaman hasil produksi */
                             BeefStock::where('barcode', $record->barcode)->delete();
                             $record->delete();
                         });
 
                         Notification::make()
-                            ->title(__('Data voided and removed from stock!'))
+                            ->title(__('Data hasil dihapus!'))
                             ->success()
                             ->send();
+
+                        /* Memanggil event livewire untuk memfokuskan kembali inputan */
+                        $livewire->dispatch('refreshTable');
                     }),
             ]);
     }
 
     public function create(): void
     {
+        if ($this->record->kunci == 1) {
+            Notification::make()
+                ->title(__('Gagal!'))
+                ->body(__('Dokumen Repack sudah dikunci.'))
+                ->danger()
+                ->send();
+            return;
+        }
+
         $showExp = $this->data['show_exp'] ?? false;
         $formData = $this->form->getState();
 
+        /* Menyimpan state form ke session */
         session(['show_exp_session' => $showExp]);
+        session(['last_origin_' . $this->record->id => $formData['origin']]);
 
         if (isset($formData['ph_level'])) {
             session(['last_ph_' . $this->record->id => $formData['ph_level']]);
@@ -298,8 +274,11 @@ class LabelingBoning extends Page implements HasForms, HasTable
 
         try {
             $insertedItem = DB::transaction(function () use ($formData, $weight, $pcs) {
-                $origin = '1';
+
+                /* Proses pembuatan kode barcode */
+                $origin = $formData['origin'];
                 $dateStr = Carbon::parse($formData['pack_date'])->format('dmy');
+                
                 $product = Product::find($formData['product_id']);
                 $productCode = $product->code ?? '000000';
                 
@@ -316,16 +295,17 @@ class LabelingBoning extends Page implements HasForms, HasTable
                 $phStr = isset($formData['ph_level']) ? str_pad(round($formData['ph_level'] * 10), 2, '0', STR_PAD_LEFT) : '00';
 
                 $prefix = $origin . $dateStr;
-                $latestItem = BoningItem::withTrashed()->where('barcode', 'like', $prefix . '%')->orderBy('id', 'desc')->first();
+                $latestItem = RepackResult::withTrashed()->where('barcode', 'like', $prefix . '%')->orderBy('id', 'desc')->first();
                 $counter = ($latestItem && strlen($latestItem->barcode) >= 25) ? ((int) substr($latestItem->barcode, -3) + 1) : 1;
                 $counterStr = str_pad($counter, 3, '0', STR_PAD_LEFT);
 
                 $barcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
 
-                $item = BoningItem::create([
-                    'boning_id' => $this->record->id,
+                /* Menyimpan data hasil repack */
+                $item = RepackResult::create([
+                    'repack_id' => $this->record->id,
                     'product_id' => $formData['product_id'],
-                    'warehouse_id' => $formData['warehouse_id'],
+                    'warehouse_id' => 1, // Default JONGGOL
                     'grade_id' => $formData['grade_id'],
                     'weight' => $weight,
                     'qty_pcs' => $pcs,
@@ -333,29 +313,30 @@ class LabelingBoning extends Page implements HasForms, HasTable
                     'pack_date' => $formData['pack_date'],
                     'exp_date' => $formData['exp_date'],
                     'barcode' => $barcode,
-                    'created_by' => Auth::id(),
                 ]);
 
+                /* Memasukkan barang hasil repack ke dalam stok */
                 BeefStock::create([
                     'barcode' => $barcode,
                     'product_id' => $formData['product_id'],
-                    'warehouse_id' => $formData['warehouse_id'],
+                    'warehouse_id' => 1,
                     'grade_id' => $formData['grade_id'],
                     'weight' => $weight,
                     'qty_pcs' => $pcs,
                     'ph_level' => $formData['ph_level'] ?? null,
                     'pack_date' => $formData['pack_date'],
                     'exp_date' => $formData['exp_date'],
-                    'origin' => 'BONING',
+                    'origin' => 'REPACK',
                     'status' => 'IN_STOCK',
                 ]);
 
+                /* Mencatat pergerakan stok masuk */
                 BeefStockMovement::create([
                     'product_id' => $formData['product_id'],
-                    'warehouse_id' => $formData['warehouse_id'],
+                    'warehouse_id' => 1,
                     'condition' => $formData['grade_id'],
                     'barcode' => $barcode,
-                    'transaction_type' => 'IN_BONING',
+                    'transaction_type' => 'IN_REPACK',
                     'reference_document' => $this->record->doc_no,
                     'weight_in' => $weight,
                     'pcs_in' => $pcs,
@@ -367,8 +348,9 @@ class LabelingBoning extends Page implements HasForms, HasTable
 
             Notification::make()->title(__('Successfully Added'))->success()->send();
 
+            /* Mengembalikan state form setelah sukses input */
             $this->form->fill([
-                'warehouse_id' => $formData['warehouse_id'],
+                'origin' => $formData['origin'],
                 'product_id' => $formData['product_id'],
                 'grade_id' => $formData['grade_id'],
                 'pack_date' => $formData['pack_date'],
@@ -381,14 +363,18 @@ class LabelingBoning extends Page implements HasForms, HasTable
             $this->dispatch('refreshTable');
 
             if ($insertedItem) {
-                $printUrl = route('boning.label', [
+                // Memicu cetak label
+                $printUrl = route('repack.label', [
                     'id' => $insertedItem->id,
                     'show_exp' => $showExp ? 1 : 0
                 ]);
                 $this->dispatch('auto-print', url: $printUrl);
             }
         } catch (\Exception $e) {
-            Notification::make()->title(__('Error!'))->body($e->getMessage())->danger()->send();
+            if (app()->runningUnitTests()) {
+                throw $e;
+            }
+            Notification::make()->title('Error!')->body($e->getMessage())->danger()->send();
         }
     }
 }

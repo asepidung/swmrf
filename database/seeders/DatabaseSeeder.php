@@ -166,6 +166,14 @@ class DatabaseSeeder extends Seeder
             // Beef Stock Movements Module
             ['name' => 'view_beef_stock_movements', 'module_name' => 'Beef Stock Movements', 'description' => 'View beef stock movements'],
             ['name' => 'view_deleted_beef_stock_movements', 'module_name' => 'Beef Stock Movements', 'description' => 'View deleted beef stock movements'],
+
+            // Repack Module
+            ['name' => 'view_repacks', 'module_name' => 'Repack', 'description' => 'View repacks'],
+            ['name' => 'create_repacks', 'module_name' => 'Repack', 'description' => 'Create repacks'],
+            ['name' => 'edit_repacks', 'module_name' => 'Repack', 'description' => 'Edit repacks'],
+            ['name' => 'delete_repacks', 'module_name' => 'Repack', 'description' => 'Delete repacks'],
+            ['name' => 'lock_repacks', 'module_name' => 'Repack', 'description' => 'Lock/Unlock repack batch'],
+            ['name' => 'view_deleted_repacks', 'module_name' => 'Repack', 'description' => 'View deleted repacks'],
         ];
 
         foreach ($permissions as $perm) {

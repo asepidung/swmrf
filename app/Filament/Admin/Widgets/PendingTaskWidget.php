@@ -75,4 +75,13 @@ class PendingTaskWidget extends Widget
         }
         return \App\Models\ProductRequisition::where('status', 'Pending Finance')->count();
     }
+
+    public function getPendingRepackLockCount(): int
+    {
+        $user = auth()->user();
+        if (!$user->isProgrammer() && !$user->hasPermission('lock_repacks')) {
+            return 0;
+        }
+        return \App\Models\Repack::where('kunci', '!=', 1)->count();
+    }
 }

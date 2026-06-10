@@ -12,6 +12,8 @@ use App\Models\BeefStock;
 use App\Models\BeefStockMovement;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Livewire\Livewire;
+use App\Filament\Admin\Resources\BoningResource\Pages\LabelingBoning;
 
 class BoningTest extends TestCase
 {
@@ -97,5 +99,119 @@ class BoningTest extends TestCase
         $response->assertSee('12.55');
         $response->assertSee('3-Pcs');
         $response->assertSee('1100626B001112550355001');
+    }
+
+    /** @test */
+    public function it_shows_delete_action_when_boning_item_is_not_in_repack_materials()
+    {
+        $user = User::factory()->create(['role' => 'programmer', 'is_active' => true]);
+
+        $boning = Boning::create([
+            'boning_date' => now()->format('Y-m-d'),
+            'created_by' => $user->id,
+        ]);
+
+        $category = \App\Models\ProductCategory::create([
+            'name' => 'MEAT',
+            'prefix' => 'MT',
+            'is_active' => true,
+        ]);
+
+        $product = Product::create([
+            'name' => 'SIRLOIN BEEF',
+            'code' => 'B001',
+            'category_id' => $category->id,
+            'structure_type' => 'main',
+            'is_active' => true,
+        ]);
+
+        $warehouse = Warehouse::where('code', 'JONGGOL')->first();
+        $grade = Grade::where('name', 'CHILL')->first();
+
+        $item = BoningItem::create([
+            'boning_id' => $boning->id,
+            'product_id' => $product->id,
+            'warehouse_id' => $warehouse->id,
+            'grade_id' => $grade->id,
+            'weight' => 12.55,
+            'qty_pcs' => 3,
+            'ph_level' => 5.5,
+            'pack_date' => now(),
+            'exp_date' => now()->addMonths(3),
+            'barcode' => '1100626B001112550355001',
+            'created_by' => $user->id,
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(LabelingBoning::class, ['record' => $boning])
+            ->assertTableActionVisible('delete', $item)
+            ->assertTableActionHidden('repack_status', $item);
+    }
+
+    /** @test */
+    public function it_hides_delete_action_and_shows_repack_status_action_when_item_is_in_repack_materials()
+    {
+        $user = User::factory()->create(['role' => 'programmer', 'is_active' => true]);
+
+        $boning = Boning::create([
+            'boning_date' => now()->format('Y-m-d'),
+            'created_by' => $user->id,
+        ]);
+
+        $repack = \App\Models\Repack::create([
+            'repack_date' => now()->format('Y-m-d'),
+            'created_by' => $user->id,
+        ]);
+
+        $category = \App\Models\ProductCategory::create([
+            'name' => 'MEAT',
+            'prefix' => 'MT',
+            'is_active' => true,
+        ]);
+
+        $product = Product::create([
+            'name' => 'SIRLOIN BEEF',
+            'code' => 'B001',
+            'category_id' => $category->id,
+            'structure_type' => 'main',
+            'is_active' => true,
+        ]);
+
+        $warehouse = Warehouse::where('code', 'JONGGOL')->first();
+        $grade = Grade::where('name', 'CHILL')->first();
+
+        $item = BoningItem::create([
+            'boning_id' => $boning->id,
+            'product_id' => $product->id,
+            'warehouse_id' => $warehouse->id,
+            'grade_id' => $grade->id,
+            'weight' => 12.55,
+            'qty_pcs' => 3,
+            'ph_level' => 5.5,
+            'pack_date' => now(),
+            'exp_date' => now()->addMonths(3),
+            'barcode' => '1100626B001112550355001',
+            'created_by' => $user->id,
+        ]);
+
+        // Insert into repack_materials to simulate being in repack
+        \Illuminate\Support\Facades\DB::table('repack_materials')->insert([
+            'repack_id' => $repack->id,
+            'product_id' => $product->id,
+            'warehouse_id' => $warehouse->id,
+            'grade_id' => $grade->id,
+            'barcode' => '1100626B001112550355001',
+            'weight' => 12.55,
+            'qty_pcs' => 3,
+            'pack_date' => now()->format('Y-m-d'),
+            'exp_date' => now()->addMonths(3)->format('Y-m-d'),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(LabelingBoning::class, ['record' => $boning])
+            ->assertTableActionHidden('delete', $item)
+            ->assertTableActionVisible('repack_status', $item);
     }
 }

@@ -58,4 +58,20 @@ Route::middleware(['web', 'auth'])->group(function () {
         $item = \App\Models\BoningItem::with(['product', 'boning', 'grade'])->findOrFail($id);
         return view('print.boning-label', compact('item'));
     })->name('boning.label');
+
+    // ------------------------------------------
+    // 4. MODUL REPACK
+    // ------------------------------------------
+    Route::get('/print-repack-label/{id}', function ($id) {
+        $item = \App\Models\RepackResult::with(['product', 'repack', 'grade'])->findOrFail($id);
+        return view('print.repack-label', compact('item'));
+    })->name('repack.label');
+
+    Route::get('/print-repack-summary/{id}', function ($id) {
+        $repack = \App\Models\Repack::findOrFail($id);
+        $bahan = \App\Models\RepackMaterial::with('product', 'grade')->where('repack_id', $id)->get();
+        $hasil = \App\Models\RepackResult::with('product', 'grade')->where('repack_id', $id)->get();
+
+        return view('print.repack-summary', compact('repack', 'bahan', 'hasil'));
+    })->name('repack.summary');
 });
