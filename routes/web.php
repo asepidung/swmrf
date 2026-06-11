@@ -74,4 +74,12 @@ Route::middleware(['web', 'auth'])->group(function () {
 
         return view('print.repack-summary', compact('repack', 'bahan', 'hasil'));
     })->name('repack.summary');
+
+    // ------------------------------------------
+    // 5. MODUL PRICELIST
+    // ------------------------------------------
+    Route::get('/print/pricelist/{record}', function (\App\Models\PriceList $record) {
+        $record->load(['customerGroup', 'items.product', 'creator']);
+        return view('print.pricelist', compact('record'));
+    })->name('print.pricelist');
 });

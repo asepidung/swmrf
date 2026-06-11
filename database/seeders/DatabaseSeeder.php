@@ -174,6 +174,13 @@ class DatabaseSeeder extends Seeder
             ['name' => 'delete_repacks', 'module_name' => 'Repack', 'description' => 'Delete repacks'],
             ['name' => 'lock_repacks', 'module_name' => 'Repack', 'description' => 'Lock/Unlock repack batch'],
             ['name' => 'view_deleted_repacks', 'module_name' => 'Repack', 'description' => 'View deleted repacks'],
+
+            // Price Lists Module
+            ['name' => 'view_price_lists', 'module_name' => 'Price Lists', 'description' => 'View price lists'],
+            ['name' => 'create_price_lists', 'module_name' => 'Price Lists', 'description' => 'Create price lists'],
+            ['name' => 'edit_price_lists', 'module_name' => 'Price Lists', 'description' => 'Edit price lists'],
+            ['name' => 'delete_price_lists', 'module_name' => 'Price Lists', 'description' => 'Delete price lists'],
+            ['name' => 'view_deleted_price_lists', 'module_name' => 'Price Lists', 'description' => 'View deleted price lists'],
         ];
 
         foreach ($permissions as $perm) {
