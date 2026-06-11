@@ -108,9 +108,15 @@ class BeefStockResource extends Resource
                         Forms\Components\TextInput::make('name')
                             ->label(__('Name'))
                             ->disabled(),
-                        Forms\Components\TextInput::make('category.name')
+                        Forms\Components\TextInput::make('category_name')
                             ->label(__('Category'))
-                            ->disabled(),
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->afterStateHydrated(function (Forms\Components\TextInput $component, $record) {
+                                if ($record) {
+                                    $component->state($record->category?->name);
+                                }
+                            }),
                     ])->columns(3),
             ]);
     }
@@ -220,6 +226,32 @@ class BeefStockResource extends Resource
                     ->sortable()
                     ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '')
                     ->summarize(Sum::make()->label('')),
+            ])
+            ->headerActions([
+                \Filament\Tables\Actions\ActionGroup::make([
+                    \Filament\Tables\Actions\ExportAction::make('excel')
+                        ->label('Excel')
+                        ->icon('heroicon-o-document-text')
+                        ->color('success')
+                        ->exporter(\App\Filament\Exports\BeefStockExporter::class)
+                        ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
+                    \Filament\Tables\Actions\Action::make('pdf')
+                        ->label('PDF')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('danger')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.beef-stocks-pdf', [
+                                'records' => $records,
+                                'title' => __('Beef Stock')
+                            ]);
+                            return response()->streamDownload(fn () => print($pdf->output()), 'export_beef_stocks.pdf');
+                        }),
+                ])
+                ->label('Export Data')
+                ->icon('heroicon-m-arrow-down-tray')
+                ->button()
+                ->color('success'),
             ])
             ->filters([
                 Tables\Filters\Filter::make('hide_empty')

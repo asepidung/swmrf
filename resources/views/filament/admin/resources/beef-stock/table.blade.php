@@ -109,6 +109,43 @@
     };
 @endphp
 
+<style>
+    /* Remove divide-y lines that cut through rowspanned header cells */
+    .fi-ta-table thead,
+    .fi-ta-table thead > tr {
+        border-top: none !important;
+        border-bottom: none !important;
+        background-color: transparent !important;
+    }
+    .fi-ta-table thead > tr:not(:first-child) {
+        border-top: none !important;
+    }
+    .fi-ta-table thead tr:not(:first-child) th {
+        border-top: none !important;
+    }
+    .fi-ta-table thead th {
+        border-bottom: none !important;
+    }
+
+    /* Add border bottom specifically to the group headers (first row of grouped columns) */
+    .fi-table-header-group-cell {
+        border-bottom: 1px solid rgb(229 231 235) !important;
+    }
+    .dark .fi-table-header-group-cell {
+        border-bottom: 1px solid rgb(63 63 70) !important;
+    }
+
+    /* Add border bottom to bottom-row cells and rowspanned cells */
+    .fi-ta-table thead tr:first-child th[rowspan],
+    .fi-ta-table thead tr:last-child th {
+        border-bottom: 2px solid rgb(229 231 235) !important;
+    }
+    .dark .fi-ta-table thead tr:first-child th[rowspan],
+    .dark .fi-ta-table thead tr:last-child th {
+        border-bottom: 2px solid rgb(63 63 70) !important;
+    }
+</style>
+
 <div
     @if (! $isLoaded)
         wire:init="loadTable"
@@ -725,7 +762,31 @@
                             @foreach ($columnsLayout as $columnGroup)
                                 @if ($columnGroup instanceof Column)
                                     @if ($columnGroup->isVisible() && (! $columnGroup->isToggledHidden()))
-                                        <th></th>
+                                        @php
+                                            $columnWidth = $columnGroup->getWidth();
+                                        @endphp
+                                        <x-filament-tables::header-cell
+                                            :actively-sorted="$getSortColumn() === $columnGroup->getName()"
+                                            :alignment="$columnGroup->getAlignment()"
+                                            :name="$columnGroup->getName()"
+                                            :sortable="$columnGroup->isSortable() && (! $isReordering)"
+                                            :sort-direction="$getSortDirection()"
+                                            :wrap="$columnGroup->isHeaderWrapped()"
+                                            :attributes="
+                                                \Filament\Support\prepare_inherited_attributes($columnGroup->getExtraHeaderAttributeBag())
+                                                    ->class([
+                                                        'fi-table-header-cell-' . str($columnGroup->getName())->camel()->kebab(),
+                                                        'w-full' => blank($columnWidth) && $columnGroup->canGrow(default: false),
+                                                        $getHiddenClasses($columnGroup),
+                                                    ])
+                                                    ->style([
+                                                        ('width: ' . $columnWidth) => filled($columnWidth),
+                                                    ])
+                                            "
+                                            rowspan="2"
+                                        >
+                                            {{ $columnGroup->getLabel() }}
+                                        </x-filament-tables::header-cell>
                                     @endif
                                 @elseif ($columnGroup instanceof ColumnGroup)
                                     @php
@@ -745,18 +806,9 @@
                                         >
                                             <div
                                                 @class([
-                                                    'flex w-full items-center',
+                                                    'flex w-full items-center justify-center',
                                                     'whitespace-nowrap' => ! $isColumnGroupHeaderWrapped,
                                                     'whitespace-normal' => $isColumnGroupHeaderWrapped,
-                                                    match ($columnGroupAlignment) {
-                                                        Alignment::Start => 'justify-start',
-                                                        Alignment::Center => 'justify-center',
-                                                        Alignment::End => 'justify-end',
-                                                        Alignment::Left => 'justify-start rtl:flex-row-reverse',
-                                                        Alignment::Right => 'justify-end rtl:flex-row-reverse',
-                                                        Alignment::Justify, Alignment::Between => 'justify-between',
-                                                        default => $columnGroupAlignment,
-                                                    },
                                                     $getHiddenClasses($columnGroup),
                                                 ])
                                             >
@@ -840,31 +892,33 @@
                         @endif
 
                         @foreach ($columns as $column)
-                            @php
-                                $columnWidth = $column->getWidth();
-                            @endphp
+                            @if ($column->getGroup() !== null)
+                                @php
+                                    $columnWidth = $column->getWidth();
+                                @endphp
 
-                            <x-filament-tables::header-cell
-                                :actively-sorted="$getSortColumn() === $column->getName()"
-                                :alignment="$column->getAlignment()"
-                                :name="$column->getName()"
-                                :sortable="$column->isSortable() && (! $isReordering)"
-                                :sort-direction="$getSortDirection()"
-                                :wrap="$column->isHeaderWrapped()"
-                                :attributes="
-                                    \Filament\Support\prepare_inherited_attributes($column->getExtraHeaderAttributeBag())
-                                        ->class([
-                                            'fi-table-header-cell-' . str($column->getName())->camel()->kebab(),
-                                            'w-full' => blank($columnWidth) && $column->canGrow(default: false),
-                                            $getHiddenClasses($column),
-                                        ])
-                                        ->style([
-                                            ('width: ' . $columnWidth) => filled($columnWidth),
-                                        ])
-                                "
-                            >
-                                {{ $column->getLabel() }}
-                            </x-filament-tables::header-cell>
+                                <x-filament-tables::header-cell
+                                    :actively-sorted="$getSortColumn() === $column->getName()"
+                                    :alignment="$column->getAlignment()"
+                                    :name="$column->getName()"
+                                    :sortable="$column->isSortable() && (! $isReordering)"
+                                    :sort-direction="$getSortDirection()"
+                                    :wrap="$column->isHeaderWrapped()"
+                                    :attributes="
+                                        \Filament\Support\prepare_inherited_attributes($column->getExtraHeaderAttributeBag())
+                                            ->class([
+                                                'fi-table-header-cell-' . str($column->getName())->camel()->kebab(),
+                                                'w-full' => blank($columnWidth) && $column->canGrow(default: false),
+                                                $getHiddenClasses($column),
+                                            ])
+                                            ->style([
+                                                ('width: ' . $columnWidth) => filled($columnWidth),
+                                            ])
+                                    "
+                                >
+                                    {{ $column->getLabel() }}
+                                </x-filament-tables::header-cell>
+                            @endif
                         @endforeach
 
                         @if (! $isReordering)
