@@ -29,6 +29,6 @@ class BeefStockPolicy
 
     public function delete(User $user, BeefStock $model): bool
     {
-        return $user->hasPermission('delete_beef_stocks');
+        return $user->isProgrammer() || $user->hasPermission('delete_beef_stocks');
     }
 }

@@ -15,6 +15,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Filament\Pages\SubNavigationPosition;
 use Filament\Tables\Columns\Summarizers\Sum;
 
+use Filament\Tables\Columns\ColumnGroup;
+use Filament\Tables\Grouping\Group;
+
 class BeefStockResource extends Resource
 {
     protected static ?string $model = Product::class;
@@ -112,10 +115,58 @@ class BeefStockResource extends Resource
             ]);
     }
 
+    protected static ?array $cachedCategorySums = null;
+
+    public static function getCategorySums($livewire, $categoryName): array
+    {
+        if (self::$cachedCategorySums === null) {
+            self::$cachedCategorySums = [];
+            
+            $query = $livewire->getFilteredTableQuery();
+            $sumsQuery = (clone $query);
+            
+            $results = Product::query()
+                ->fromSub($sumsQuery, 'sub')
+                ->join('product_categories', 'sub.category_id', '=', 'product_categories.id')
+                ->selectRaw('
+                    product_categories.name as category_name,
+                    COALESCE(SUM(sub.chill_jonggol), 0) as chill_jonggol,
+                    COALESCE(SUM(sub.frozen_jonggol), 0) as frozen_jonggol,
+                    COALESCE(SUM(sub.chill_perum), 0) as chill_perum,
+                    COALESCE(SUM(sub.frozen_perum), 0) as frozen_perum,
+                    COALESCE(SUM(sub.total_qty), 0) as total_qty
+                ')
+                ->groupBy('product_categories.name')
+                ->get();
+
+            foreach ($results as $row) {
+                self::$cachedCategorySums[$row->category_name] = [
+                    'chill_jonggol' => (float)$row->chill_jonggol,
+                    'frozen_jonggol' => (float)$row->frozen_jonggol,
+                    'chill_perum' => (float)$row->chill_perum,
+                    'frozen_perum' => (float)$row->frozen_perum,
+                    'total_qty' => (float)$row->total_qty,
+                ];
+            }
+        }
+
+        return self::$cachedCategorySums[$categoryName] ?? [
+            'chill_jonggol' => 0.0,
+            'frozen_jonggol' => 0.0,
+            'chill_perum' => 0.0,
+            'frozen_perum' => 0.0,
+            'total_qty' => 0.0,
+        ];
+    }
+
     public static function table(Table $table): Table
     {
         return $table
-            ->defaultGroup('category.name')
+            ->view('filament.admin.resources.beef-stock.table')
+            ->defaultGroup(
+                Group::make('category.name')
+                    ->titlePrefixedWithLabel(false)
+            )
             ->columns([
                 Tables\Columns\TextColumn::make('code')
                     ->label(__('Code'))
@@ -130,33 +181,37 @@ class BeefStockResource extends Resource
                     ->sortable()
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('chill_jonggol')
-                    ->label(__('CHILL (J)'))
-                    ->alignRight()
-                    ->sortable()
-                    ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '')
-                    ->summarize(Sum::make()->label('')),
+                ColumnGroup::make(__('G. Jonggol'), [
+                    Tables\Columns\TextColumn::make('chill_jonggol')
+                        ->label(__('CHILL'))
+                        ->alignRight()
+                        ->sortable()
+                        ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '')
+                        ->summarize(Sum::make()->label('')),
 
-                Tables\Columns\TextColumn::make('frozen_jonggol')
-                    ->label(__('FROZEN (J)'))
-                    ->alignRight()
-                    ->sortable()
-                    ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '')
-                    ->summarize(Sum::make()->label('')),
+                    Tables\Columns\TextColumn::make('frozen_jonggol')
+                        ->label(__('FROZEN'))
+                        ->alignRight()
+                        ->sortable()
+                        ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '')
+                        ->summarize(Sum::make()->label('')),
+                ]),
 
-                Tables\Columns\TextColumn::make('chill_perum')
-                    ->label(__('CHILL (P)'))
-                    ->alignRight()
-                    ->sortable()
-                    ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '')
-                    ->summarize(Sum::make()->label('')),
+                ColumnGroup::make(__('G. Perum'), [
+                    Tables\Columns\TextColumn::make('chill_perum')
+                        ->label(__('CHILL'))
+                        ->alignRight()
+                        ->sortable()
+                        ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '')
+                        ->summarize(Sum::make()->label('')),
 
-                Tables\Columns\TextColumn::make('frozen_perum')
-                    ->label(__('FROZEN (P)'))
-                    ->alignRight()
-                    ->sortable()
-                    ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '')
-                    ->summarize(Sum::make()->label('')),
+                    Tables\Columns\TextColumn::make('frozen_perum')
+                        ->label(__('FROZEN'))
+                        ->alignRight()
+                        ->sortable()
+                        ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '')
+                        ->summarize(Sum::make()->label('')),
+                ]),
 
                 Tables\Columns\TextColumn::make('total_qty')
                     ->label(__('Total'))
@@ -178,7 +233,7 @@ class BeefStockResource extends Resource
                     ->preload(),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                // Clickable rows are enabled, no explicit view action button is needed
             ])
             ->recordUrl(fn (Product $record): string => Pages\ViewBeefStock::getUrl(['record' => $record]));
     }
