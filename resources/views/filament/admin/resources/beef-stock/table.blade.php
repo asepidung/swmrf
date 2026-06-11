@@ -61,7 +61,7 @@
     $hasFiltersBelowContent = $hasFilters && ($filtersLayout === FiltersLayout::BelowContent);
     $hasColumnToggleDropdown = $hasToggleableColumns();
     $hasHeader = $header || $heading || $description || ($headerActions && (! $isReordering)) || $isReorderable || $areGroupingSettingsVisible || $isGlobalSearchVisible || $hasFilters || count($filterIndicators) || $hasColumnToggleDropdown;
-    $hasHeaderToolbar = $isReorderable || $areGroupingSettingsVisible || $isGlobalSearchVisible || $hasFiltersDialog || $hasColumnToggleDropdown;
+    $hasHeaderToolbar = $isReorderable || $areGroupingSettingsVisible || $isGlobalSearchVisible || $hasFiltersDialog || $hasColumnToggleDropdown || ($headerActions && ! $isReordering);
     $pluralModelLabel = $getPluralModelLabel();
     $records = $isLoaded ? $getRecords() : null;
     $searchDebounce = $getSearchDebounce();
@@ -110,6 +110,35 @@
 @endphp
 
 <style>
+    /* Shrink the font size and padding for the entire table */
+    .fi-ta-table {
+        font-size: 0.75rem !important; /* text-xs */
+        line-height: 1rem !important;
+    }
+    
+    /* Header labels font size */
+    .fi-ta-header-cell-label {
+        font-size: 0.75rem !important;
+    }
+
+    /* Column group header cells (G. Jonggol / G. Perum) */
+    .fi-table-header-group-cell span {
+        font-size: 0.75rem !important;
+    }
+    
+    /* Table cells vertical padding and font size */
+    .fi-ta-table th,
+    .fi-ta-table td {
+        font-size: 0.75rem !important;
+        padding-top: 0.375rem !important;
+        padding-bottom: 0.375rem !important;
+    }
+
+    /* Category header rows font size & padding */
+    .fi-ta-table tr td {
+        font-size: 0.75rem !important;
+    }
+
     /* Remove divide-y lines that cut through rowspanned header cells */
     .fi-ta-table thead,
     .fi-ta-table thead > tr {
@@ -173,10 +202,9 @@
 
             @if ($header)
                 {{ $header }}
-            @elseif (($heading || $description || $headerActions) && ! $isReordering)
+                        @elseif (($heading || $description) && ! $isReordering)
                 <x-filament-tables::header
-                    :actions="$isReordering ? [] : $headerActions"
-                    :actions-position="$headerActionsPosition"
+                    :actions="[]"
                     :description="$description"
                     :heading="$heading"
                 />
@@ -252,8 +280,15 @@
                     {{ \Filament\Support\Facades\FilamentView::renderHook(\Filament\Tables\View\TablesRenderHook::TOOLBAR_GROUPING_SELECTOR_AFTER, scopes: static::class) }}
                 </div>
 
-                @if ($isGlobalSearchVisible || $hasFiltersDialog || $hasColumnToggleDropdown)
+                @if ($isGlobalSearchVisible || $hasFiltersDialog || $hasColumnToggleDropdown || ($headerActions && ! $isReordering))
                     <div class="ms-auto flex items-center gap-x-4">
+                        @if ($headerActions && ! $isReordering)
+                            <x-filament-tables::actions
+                                :actions="$headerActions"
+                                class="shrink-0"
+                            />
+                        @endif
+
                         {{ \Filament\Support\Facades\FilamentView::renderHook(\Filament\Tables\View\TablesRenderHook::TOOLBAR_SEARCH_BEFORE, scopes: static::class) }}
 
                         @if ($isGlobalSearchVisible)
@@ -813,7 +848,7 @@
                                                 ])
                                             >
                                                 <span
-                                                    class="text-sm font-semibold text-gray-950 dark:text-white"
+                                                    class="text-xs font-semibold text-gray-950 dark:text-white"
                                                 >
                                                     {{ $columnGroup->getLabel() }}
                                                 </span>

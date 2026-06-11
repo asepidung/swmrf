@@ -178,27 +178,23 @@ class BeefStockResource extends Resource
                     ->label(__('Code'))
                     ->weight('bold')
                     ->alignCenter()
-                    ->sortable()
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('name')
                     ->label(__('Product Name'))
                     ->weight('bold')
-                    ->sortable()
                     ->searchable(),
 
                 ColumnGroup::make(__('G. Jonggol'), [
                     Tables\Columns\TextColumn::make('chill_jonggol')
                         ->label(__('CHILL'))
                         ->alignRight()
-                        ->sortable()
                         ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '')
                         ->summarize(Sum::make()->label('')),
 
                     Tables\Columns\TextColumn::make('frozen_jonggol')
                         ->label(__('FROZEN'))
                         ->alignRight()
-                        ->sortable()
                         ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '')
                         ->summarize(Sum::make()->label('')),
                 ]),
@@ -207,14 +203,12 @@ class BeefStockResource extends Resource
                     Tables\Columns\TextColumn::make('chill_perum')
                         ->label(__('CHILL'))
                         ->alignRight()
-                        ->sortable()
                         ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '')
                         ->summarize(Sum::make()->label('')),
 
                     Tables\Columns\TextColumn::make('frozen_perum')
                         ->label(__('FROZEN'))
                         ->alignRight()
-                        ->sortable()
                         ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '')
                         ->summarize(Sum::make()->label('')),
                 ]),
@@ -223,7 +217,6 @@ class BeefStockResource extends Resource
                     ->label(__('Total'))
                     ->alignRight()
                     ->weight('bold')
-                    ->sortable()
                     ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '')
                     ->summarize(Sum::make()->label('')),
             ])
