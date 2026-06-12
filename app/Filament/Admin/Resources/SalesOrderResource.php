@@ -135,7 +135,7 @@ class SalesOrderResource extends Resource
                                         $currentItems[$existingKey]['price'] = number_format($price, 0, '', '.');
                                     } else {
                                         // Add new product row
-                                        $currentItems[(string) \Illuminate\Support\Str::uuid()] = [
+                                        $currentItems['uuid-' . (string) \Illuminate\Support\Str::uuid()] = [
                                             'product_id' => $productId,
                                             'weight' => 0,
                                             'price' => number_format($price, 0, '', '.'),
