@@ -241,5 +241,6 @@
     "Created By": "Dibuat Oleh",
     "Manage Price List": "Kelola Price List",
     "Head Office Address": "Alamat Kantor Pusat",
-    "Head Office PIC": "PIC Kantor Pusat"
+    "Head Office PIC": "PIC Kantor Pusat",
+    "Sales order cannot be created without any products.": "Sales order tidak bisa dibuat jika belum ada produk sama sekali."
 }

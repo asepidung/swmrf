@@ -71,18 +71,6 @@ class SalesOrderResource extends Resource
                             ->label(__('PO Number'))
                             ->maxLength(255),
 
-                        Forms\Components\Select::make('status')
-                            ->label(__('Status'))
-                            ->options([
-                                'waiting' => 'Waiting',
-                                'processing' => 'Processing',
-                                'completed' => 'Completed',
-                                'cancelled' => 'Cancelled',
-                            ])
-                            ->default('waiting')
-                            ->required()
-                            ->hiddenOn('create'),
-
                         Forms\Components\Textarea::make('shipping_address')
                             ->label(__('Shipping Address'))
                             ->rows(2)
@@ -176,6 +164,10 @@ class SalesOrderResource extends Resource
                             ->defaultItems(0) // Start empty, force use of modal
                             ->reorderableWithButtons()
                             ->disableItemCreation() // Disable standard "Add Item" to force modal usage
+                            ->minItems(1)
+                            ->validationMessages([
+                                'min' => __('Sales order cannot be created without any products.'),
+                            ])
                             ->schema([
                                 Forms\Components\Grid::make(12)
                                     ->schema([
@@ -441,29 +433,7 @@ class SalesOrderResource extends Resource
                 ->color('success'),
             ])
             ->actions([
-                Tables\Actions\Action::make('print')
-                    ->label(__('Print'))
-                    ->icon('heroicon-o-printer')
-                    ->color('success')
-                    ->iconButton()
-                    ->tooltip(__('Print SO'))
-                    ->url(fn(SalesOrder $record): string => route('print.salesorder', $record))
-                    ->openUrlInNewTab(),
-
-                Tables\Actions\EditAction::make()
-                    ->iconButton()
-                    ->tooltip(__('Edit'))
-                    ->visible(fn(SalesOrder $record) => $record->status === 'waiting' && !$record->trashed()),
-
-                Tables\Actions\DeleteAction::make()
-                    ->iconButton()
-                    ->tooltip(__('Delete'))
-                    ->visible(fn(SalesOrder $record) => $record->status === 'waiting' && !$record->trashed()),
-
-                Tables\Actions\ForceDeleteAction::make()
-                    ->iconButton(),
-                Tables\Actions\RestoreAction::make()
-                    ->iconButton(),
+                // Clickable rows handle editing; no action buttons displayed on the index table.
             ])
             ->recordUrl(fn(SalesOrder $record) => ($record->status === 'waiting' && !$record->trashed()) ? Pages\EditSalesOrder::getUrl([$record->id]) : null)
             ->bulkActions([

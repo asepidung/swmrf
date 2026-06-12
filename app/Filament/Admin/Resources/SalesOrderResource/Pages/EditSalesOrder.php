@@ -13,6 +13,12 @@ class EditSalesOrder extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('print')
+                ->label(__('Print'))
+                ->icon('heroicon-o-printer')
+                ->color('success')
+                ->url(fn(): string => route('print.salesorder', $this->record))
+                ->openUrlInNewTab(),
             Actions\Action::make('cancel')
                 ->label(__('Cancel'))
                 ->color('gray')
