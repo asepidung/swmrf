@@ -15,6 +15,11 @@ class CustomerGroup extends Model
         'head_office_pic',
     ];
 
+    public function setNameAttribute($value)
+    {
+        $this->attributes['name'] = strtoupper(trim($value));
+    }
+
     public function customers()
     {
         return $this->hasMany(Customer::class);

@@ -51,8 +51,15 @@ class CustomerResource extends Resource
                             ->label(__('Customer Group'))
                             ->createOptionForm([
                                 Forms\Components\TextInput::make('name')
+                                    ->label(__('Name'))
                                     ->required()
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
+                                Forms\Components\TextInput::make('head_office_pic')
+                                    ->label(__('Head Office PIC'))
+                                    ->maxLength(255),
+                                Forms\Components\Textarea::make('head_office_address')
+                                    ->label(__('Head Office Address'))
+                                    ->columnSpanFull(),
                             ])
                             ->helperText(__('Leave empty if Customer does not have a Group.')),
                         Forms\Components\Select::make('customer_segment_id')
@@ -61,6 +68,7 @@ class CustomerResource extends Resource
                             ->required()
                             ->createOptionForm([
                                 Forms\Components\TextInput::make('name')
+                                    ->label(__('Name'))
                                     ->required()
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                             ]),

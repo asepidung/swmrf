@@ -11,6 +11,11 @@ class CustomerSegment extends Model
     
     protected $fillable = ['name'];
 
+    public function setNameAttribute($value)
+    {
+        $this->attributes['name'] = strtoupper(trim($value));
+    }
+
     public function customers()
     {
         return $this->hasMany(Customer::class);
