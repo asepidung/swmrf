@@ -365,7 +365,8 @@ class SalesOrderResource extends Resource
                     ->toggleable(),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_sales_orders')),
 
                 Tables\Filters\SelectFilter::make('customer_id')
                     ->label(__('Customer'))
