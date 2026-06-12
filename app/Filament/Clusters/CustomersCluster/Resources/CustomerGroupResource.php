@@ -67,12 +67,12 @@ class CustomerGroupResource extends Resource
                 Tables\Columns\TextColumn::make('head_office_pic')
                     ->label(__('Head Office PIC'))
                     ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('head_office_address')
                     ->label(__('Head Office Address'))
                     ->searchable()
                     ->limit(50)
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Created at'))
                     ->dateTime()
