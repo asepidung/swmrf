@@ -109,6 +109,9 @@ class SalesOrderResource extends Resource
                                     ->multiple()
                                     ->searchable()
                                     ->preload()
+                                    ->extraAttributes([
+                                        'style' => 'margin-bottom: 240px;',
+                                    ])
                                     ->options(function (Get $get, $livewire) {
                                         $selectedIds = collect($livewire->data['items'] ?? $get('../../items') ?? [])
                                             ->pluck('product_id')
@@ -191,6 +194,17 @@ class SalesOrderResource extends Resource
                                                 $price = static::calculateProductPrice($customerId, $state);
                                                 $set('price', number_format($price, 0, '', '.'));
                                             })
+                                            ->extraAttributes([
+                                                'class' => 'so-product-select-column',
+                                                'x-on:keydown.enter.prevent' => '
+                                                    let wrappers = Array.from(document.querySelectorAll(".so-product-select-column"));
+                                                    let idx = wrappers.indexOf($el);
+                                                    if (idx !== -1 && wrappers[idx + 1]) {
+                                                        let nextInput = wrappers[idx + 1].querySelector("input, [role=\"combobox\"]");
+                                                        if (nextInput) nextInput.focus();
+                                                    }
+                                                '
+                                            ])
                                             ->columnSpan(3),
 
                                         Forms\Components\TextInput::make('weight')
@@ -200,8 +214,16 @@ class SalesOrderResource extends Resource
                                             ->numeric()
                                             // Click auto select all block as requested
                                             ->extraInputAttributes([
-                                                'class' => 'text-right',
-                                                'onclick' => 'this.select()'
+                                                'class' => 'text-right so-weight-input-column',
+                                                'onclick' => 'this.select()',
+                                                'x-on:keydown.enter.prevent' => '
+                                                    let inputs = Array.from(document.querySelectorAll(".so-weight-input-column"));
+                                                    let idx = inputs.indexOf($el);
+                                                    if (idx !== -1 && inputs[idx + 1]) {
+                                                        inputs[idx + 1].focus();
+                                                        inputs[idx + 1].select();
+                                                    }
+                                                '
                                             ])
                                             ->columnSpan(2),
 
@@ -214,8 +236,16 @@ class SalesOrderResource extends Resource
                                             ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                             ->stripCharacters('.')
                                             ->extraInputAttributes([
-                                                'class' => 'text-right',
-                                                'onclick' => 'this.select()'
+                                                'class' => 'text-right so-price-input-column',
+                                                'onclick' => 'this.select()',
+                                                'x-on:keydown.enter.prevent' => '
+                                                    let inputs = Array.from(document.querySelectorAll(".so-price-input-column"));
+                                                    let idx = inputs.indexOf($el);
+                                                    if (idx !== -1 && inputs[idx + 1]) {
+                                                        inputs[idx + 1].focus();
+                                                        inputs[idx + 1].select();
+                                                    }
+                                                '
                                             ])
                                             ->columnSpan(2),
 
@@ -227,8 +257,16 @@ class SalesOrderResource extends Resource
                                             ->minValue(0)
                                             ->maxValue(100)
                                             ->extraInputAttributes([
-                                                'class' => 'text-right',
-                                                'onclick' => 'this.select()'
+                                                'class' => 'text-right so-discount-input-column',
+                                                'onclick' => 'this.select()',
+                                                'x-on:keydown.enter.prevent' => '
+                                                    let inputs = Array.from(document.querySelectorAll(".so-discount-input-column"));
+                                                    let idx = inputs.indexOf($el);
+                                                    if (idx !== -1 && inputs[idx + 1]) {
+                                                        inputs[idx + 1].focus();
+                                                        inputs[idx + 1].select();
+                                                    }
+                                                '
                                             ])
                                             ->columnSpan(2),
 
@@ -236,6 +274,16 @@ class SalesOrderResource extends Resource
                                             ->hiddenLabel()
                                             ->placeholder(__('Note'))
                                             ->maxLength(255)
+                                            ->extraInputAttributes([
+                                                'class' => 'so-note-input-column',
+                                                'x-on:keydown.enter.prevent' => '
+                                                    let inputs = Array.from(document.querySelectorAll(".so-note-input-column"));
+                                                    let idx = inputs.indexOf($el);
+                                                    if (idx !== -1 && inputs[idx + 1]) {
+                                                        inputs[idx + 1].focus();
+                                                    }
+                                                '
+                                            ])
                                             ->columnSpan(3),
                                     ]),
                             ]),
