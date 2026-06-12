@@ -12,7 +12,7 @@ class EditPriceList extends EditRecord
 
     public function getTitle(): string
     {
-        return $this->getRecord()->items()->exists()
+        return ($this->getRecord()->priceList && $this->getRecord()->priceList->items()->exists())
             ? __('Edit Price List')
             : __('Create Price List');
     }

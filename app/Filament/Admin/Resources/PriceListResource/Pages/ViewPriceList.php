@@ -21,12 +21,12 @@ class ViewPriceList extends ViewRecord
                 ->label(__('Print'))
                 ->color('success')
                 ->icon('heroicon-o-printer')
-                ->url(fn ($record): string => route('print.pricelist', $record))
+                ->url(fn ($record): string => route('print.pricelist', $record->priceList))
                 ->openUrlInNewTab()
-                ->visible(fn ($record) => $record->items()->exists()),
+                ->visible(fn ($record) => $record->priceList && $record->priceList->items()->exists()),
             Actions\EditAction::make()
                 ->label(__('Edit'))
-                ->color('warning'),
+                ->color('primary'),
         ];
     }
 }
