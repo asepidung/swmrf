@@ -20,6 +20,8 @@ class CustomerGroupResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    protected static ?int $navigationSort = 2;
+
     protected static ?string $cluster = CustomersCluster::class;
 
     public static function getModelLabel(): string
@@ -36,11 +38,22 @@ class CustomerGroupResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->label(__('Name'))
-                    ->required()
-                    ->maxLength(255)
-                    ->extraInputAttributes(['style' => 'text-transform:uppercase']),
+                Forms\Components\Section::make(__('Basic Information'))
+                    ->schema([
+                        Forms\Components\TextInput::make('name')
+                            ->label(__('Name'))
+                            ->required()
+                            ->maxLength(255)
+                            ->extraInputAttributes(['style' => 'text-transform:uppercase']),
+                        
+                        Forms\Components\TextInput::make('head_office_pic')
+                            ->label(__('Head Office PIC'))
+                            ->maxLength(255),
+                            
+                        Forms\Components\Textarea::make('head_office_address')
+                            ->label(__('Head Office Address'))
+                            ->columnSpanFull(),
+                    ])->columns(2),
             ]);
     }
 
@@ -51,6 +64,15 @@ class CustomerGroupResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->label(__('Name'))
                     ->searchable(),
+                Tables\Columns\TextColumn::make('head_office_pic')
+                    ->label(__('Head Office PIC'))
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('head_office_address')
+                    ->label(__('Head Office Address'))
+                    ->searchable()
+                    ->limit(50)
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Created at'))
                     ->dateTime()

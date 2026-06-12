@@ -20,6 +20,8 @@ class CustomerSegmentResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    protected static ?int $navigationSort = 3;
+
     protected static ?string $cluster = CustomersCluster::class;
 
     public static function getModelLabel(): string
