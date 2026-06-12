@@ -232,5 +232,12 @@
     "Paid": "Paid",
     "Overdue by :days days": "Overdue by :days days",
     "Due today": "Due today",
-    "Remaining :days days": "Remaining :days days"
+    "Remaining :days days": "Remaining :days days",
+    "Price List Information": "Price List Information",
+    "Products Pricing": "Products Pricing",
+    "Create Price List": "Create Price List",
+    "Edit Price List": "Edit Price List",
+    "Last Updated": "Last Updated",
+    "Created By": "Created By",
+    "Manage Price List": "Manage Price List"
 }

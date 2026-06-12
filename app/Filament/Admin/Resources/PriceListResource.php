@@ -32,10 +32,10 @@ class PriceListResource extends Resource
                             ->label(__('Customer Group'))
                             ->relationship('customerGroup', 'name')
                             ->required()
-                            ->unique(ignoreRecord: true)
+                            ->disabled()
+                            ->dehydrated()
                             ->searchable()
-                            ->preload()
-                            ->autofocus(),
+                            ->preload(),
 
                         Forms\Components\Hidden::make('created_by')
                             ->default(fn () => auth()->id()),
@@ -69,6 +69,10 @@ class PriceListResource extends Resource
                                     ->numeric()
                                     ->default(0)
                                     ->minValue(0)
+                                    ->extraInputAttributes([
+                                        'class' => 'text-right',
+                                        'onclick' => 'this.select()'
+                                    ])
                                     ->columnSpan(4),
 
                                 Forms\Components\TextInput::make('note')
@@ -90,29 +94,30 @@ class PriceListResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('row_index')
+                    ->label('#')
+                    ->rowIndex(),
+
                 Tables\Columns\TextColumn::make('customerGroup.name')
                     ->label(__('Customer Group'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
 
-                Tables\Columns\TextColumn::make('creator.name')
-                    ->label(__('Created By'))
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: false),
-
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label(__('Last Updated'))
                     ->dateTime('d M Y, H:i')
-                    ->sortable(),
+                    ->sortable()
+                    ->formatStateUsing(fn ($record, $state) => $record->items()->exists() ? $state : '-'),
+
+                Tables\Columns\TextColumn::make('creator.name')
+                    ->label(__('Created By'))
+                    ->sortable()
+                    ->formatStateUsing(fn ($record, $state) => $record->items()->exists() ? $state : '-'),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make(),
+                // No soft deletes or TrashedFilter per instruction
             ])
-            ->recordClasses(fn (PriceList $record) => match (true) {
-                $record->trashed() => 'bg-danger-50 dark:bg-danger-900/20',
-                default => null,
-            })
             ->actions([
                 Tables\Actions\Action::make('print')
                     ->label(__('Print'))
@@ -120,27 +125,22 @@ class PriceListResource extends Resource
                     ->color('success')
                     ->iconButton()
                     ->tooltip(__('Print Price List'))
+                    ->visible(fn (PriceList $record) => $record->items()->exists())
                     ->url(fn (PriceList $record): string => route('print.pricelist', $record))
                     ->openUrlInNewTab(),
-                Tables\Actions\EditAction::make()
-                    ->iconButton()
-                    ->tooltip(__('Edit')),
-                Tables\Actions\DeleteAction::make()
-                    ->iconButton()
-                    ->tooltip(__('Delete')),
-                Tables\Actions\ForceDeleteAction::make()
-                    ->iconButton(),
-                Tables\Actions\RestoreAction::make()
-                    ->iconButton(),
+
+                Tables\Actions\Action::make('manage_pricelist')
+                    ->label(fn (PriceList $record) => $record->items()->exists() ? __('Edit') : __('Create'))
+                    ->icon(fn (PriceList $record) => $record->items()->exists() ? 'heroicon-o-pencil-square' : 'heroicon-o-document-plus')
+                    ->color(fn (PriceList $record) => $record->items()->exists() ? 'primary' : 'warning')
+                    ->button()
+                    ->url(fn (PriceList $record): string => Pages\EditPriceList::getUrl([$record->id])),
             ])
-            ->recordUrl(fn (PriceList $record) => $record->trashed() ? null : Pages\EditPriceList::getUrl([$record->id]))
+            ->recordUrl(fn (PriceList $record) => Pages\ViewPriceList::getUrl([$record->id]))
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
-                ]),
-            ]);
+                // Delete bulk actions disabled per instruction
+            ])
+            ->defaultSort('customer_groups.name', 'asc');
     }
 
     public static function getRelations(): array
@@ -154,16 +154,31 @@ class PriceListResource extends Resource
     {
         return [
             'index' => Pages\ListPriceLists::route('/'),
-            'create' => Pages\CreatePriceList::route('/create'),
+            'view' => Pages\ViewPriceList::route('/{record}'),
             'edit' => Pages\EditPriceList::route('/{record}/edit'),
         ];
     }
 
     public static function getEloquentQuery(): Builder
     {
+        // Self-healing: auto-create missing price lists for any existing customer groups
+        try {
+            $groupsWithoutPriceList = \App\Models\CustomerGroup::whereDoesntHave('priceList')->get();
+            foreach ($groupsWithoutPriceList as $group) {
+                \App\Models\PriceList::create([
+                    'customer_group_id' => $group->id,
+                    'created_by' => auth()->id() ?: 1, // Fallback to programmer
+                ]);
+            }
+        } catch (\Exception $e) {
+            // Silently ignore during migration/seeding if tables do not exist yet
+        }
+
         return parent::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
-            ]);
+            ])
+            ->join('customer_groups', 'price_lists.customer_group_id', '=', 'customer_groups.id')
+            ->select('price_lists.*');
     }
 }

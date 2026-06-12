@@ -10,6 +10,13 @@ class EditPriceList extends EditRecord
 {
     protected static string $resource = PriceListResource::class;
 
+    public function getTitle(): string
+    {
+        return $this->getRecord()->items()->exists()
+            ? __('Edit Price List')
+            : __('Create Price List');
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -17,9 +24,6 @@ class EditPriceList extends EditRecord
                 ->label(__('Cancel'))
                 ->color('gray')
                 ->url($this->getResource()::getUrl('index')),
-            Actions\DeleteAction::make(),
-            Actions\ForceDeleteAction::make(),
-            Actions\RestoreAction::make(),
         ];
     }
 

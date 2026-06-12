@@ -12,9 +12,6 @@ class ListPriceLists extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [
-            Actions\CreateAction::make()
-                ->label(__('Create')),
-        ];
+        return [];
     }
 }

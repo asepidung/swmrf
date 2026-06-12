@@ -15,4 +15,9 @@ class CustomerGroup extends Model
     {
         return $this->hasMany(Customer::class);
     }
+
+    public function priceList()
+    {
+        return $this->hasOne(PriceList::class);
+    }
 }

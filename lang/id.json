@@ -232,5 +232,12 @@
     "Paid": "Lunas",
     "Overdue by :days days": "Terlambat :days hari",
     "Due today": "Jatuh tempo hari ini",
-    "Remaining :days days": "Sisa :days hari"
+    "Remaining :days days": "Sisa :days hari",
+    "Price List Information": "Informasi Price List",
+    "Products Pricing": "Harga Produk",
+    "Create Price List": "Buat Price List",
+    "Edit Price List": "Ubah Price List",
+    "Last Updated": "Terakhir Diperbarui",
+    "Created By": "Dibuat Oleh",
+    "Manage Price List": "Kelola Price List"
 }
