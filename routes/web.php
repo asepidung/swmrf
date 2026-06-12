@@ -82,4 +82,12 @@ Route::middleware(['web', 'auth'])->group(function () {
         $record->load(['customerGroup', 'items.product', 'creator']);
         return view('print.pricelist', compact('record'));
     })->name('print.pricelist');
+
+    // ------------------------------------------
+    // 6. MODUL SALES ORDER
+    // ------------------------------------------
+    Route::get('/print/salesorder/{record}', function (\App\Models\SalesOrder $record) {
+        $record->load(['customer', 'items.product', 'creator']);
+        return view('print.salesorder', compact('record'));
+    })->name('print.salesorder');
 });

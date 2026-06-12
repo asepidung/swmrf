@@ -181,6 +181,13 @@ class DatabaseSeeder extends Seeder
             ['name' => 'edit_price_lists', 'module_name' => 'Price Lists', 'description' => 'Edit price lists'],
             ['name' => 'delete_price_lists', 'module_name' => 'Price Lists', 'description' => 'Delete price lists'],
             ['name' => 'view_deleted_price_lists', 'module_name' => 'Price Lists', 'description' => 'View deleted price lists'],
+
+            // Sales Orders Module
+            ['name' => 'view_sales_orders', 'module_name' => 'Sales Orders', 'description' => 'View sales orders'],
+            ['name' => 'create_sales_orders', 'module_name' => 'Sales Orders', 'description' => 'Create sales orders'],
+            ['name' => 'edit_sales_orders', 'module_name' => 'Sales Orders', 'description' => 'Edit sales orders'],
+            ['name' => 'delete_sales_orders', 'module_name' => 'Sales Orders', 'description' => 'Delete sales orders'],
+            ['name' => 'view_deleted_sales_orders', 'module_name' => 'Sales Orders', 'description' => 'View deleted sales orders'],
         ];
 
         foreach ($permissions as $perm) {

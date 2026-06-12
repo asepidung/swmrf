@@ -65,7 +65,7 @@ class PriceListResource extends Resource
                                     ->prefix('Rp')
                                     ->placeholder(__('Price'))
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                                    ->stripCharacters(',')
+                                    ->stripCharacters('.')
                                     ->numeric()
                                     ->default(0)
                                     ->minValue(0)
