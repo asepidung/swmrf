@@ -149,7 +149,12 @@
         .marketing-info {
             font-size: 10px;
             color: #333;
-            line-height: 1.5;
+            line-height: 1.6;
+            border: 1px solid #ddd;
+            padding: 12px;
+            background-color: #fafafa;
+            border-radius: 3px;
+            width: 100%;
         }
 
         .sig-container {
@@ -274,23 +279,19 @@
         <div class="footer-container">
             <div class="marketing-info">
                 <strong>Informasi Lebih Lanjut Silahkan Hubungi:</strong><br>
-                Muryani 0818 0898 5323<br>
-                yani@wijayameat.co.id
+                Muryani - 0818 0898 5323 (yani@wijayameat.co.id)<br>
+                <span style="font-weight: bold; color: #c0392b; display: block; margin-top: 5px;">
+                    PT SANTI WIJAYA MEAT tidak bertanggung jawab jika pricelist bukan berasal dari kontak tersebut.
+                </span>
             </div>
         </div>
 
-        <div class="sig-container">
+        <div class="sig-container" style="justify-content: flex-end;">
             <div class="sig-box">
                 <p>Dibuat Oleh,</p>
                 <div class="sig-space"></div>
                 <div class="sig-name">{{ $record->creator->name ?? 'Admin' }}</div>
                 <div class="sig-role">Sales Dept.</div>
-            </div>
-            <div class="sig-box">
-                <p>Disetujui Oleh,</p>
-                <div class="sig-space"></div>
-                <div class="sig-name">MANAJEMEN</div>
-                <div class="sig-role">PT. Santi Wijaya Meat</div>
             </div>
         </div>
     </div>

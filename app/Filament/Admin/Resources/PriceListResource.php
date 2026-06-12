@@ -52,6 +52,17 @@ class PriceListResource extends Resource
                                     ->preload()
                                     ->placeholder(__('Select Product'))
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                    ->extraAttributes([
+                                        'class' => 'product-select-column',
+                                        'x-on:keydown.enter.prevent' => '
+                                            let wrappers = Array.from(document.querySelectorAll(".product-select-column"));
+                                            let idx = wrappers.indexOf($el);
+                                            if (idx !== -1 && wrappers[idx + 1]) {
+                                                let nextInput = wrappers[idx + 1].querySelector("input, [role=\"combobox\"]");
+                                                if (nextInput) nextInput.focus();
+                                            }
+                                        '
+                                    ])
                                     ->columnSpan(4),
 
                                 Forms\Components\TextInput::make('price')
@@ -66,8 +77,16 @@ class PriceListResource extends Resource
                                     ->default(0)
                                     ->minValue(0)
                                     ->extraInputAttributes([
-                                        'class' => 'text-right',
-                                        'onclick' => 'this.select()'
+                                        'class' => 'text-right price-input-column',
+                                        'onclick' => 'this.select()',
+                                        'x-on:keydown.enter.prevent' => '
+                                            let inputs = Array.from(document.querySelectorAll(".price-input-column"));
+                                            let idx = inputs.indexOf($el);
+                                            if (idx !== -1 && inputs[idx + 1]) {
+                                                inputs[idx + 1].focus();
+                                                inputs[idx + 1].select();
+                                            }
+                                        '
                                     ])
                                     ->columnSpan(4),
 
@@ -76,6 +95,16 @@ class PriceListResource extends Resource
                                     ->hiddenLabel()
                                     ->placeholder(__('Note (Optional)'))
                                     ->maxLength(255)
+                                    ->extraInputAttributes([
+                                        'class' => 'note-input-column',
+                                        'x-on:keydown.enter.prevent' => '
+                                            let inputs = Array.from(document.querySelectorAll(".note-input-column"));
+                                            let idx = inputs.indexOf($el);
+                                            if (idx !== -1 && inputs[idx + 1]) {
+                                                inputs[idx + 1].focus();
+                                            }
+                                        '
+                                    ])
                                     ->columnSpan(4),
                             ])
                             ->columns(12)
