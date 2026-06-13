@@ -6,9 +6,9 @@
             @if($record->status === 'processing')
                 <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
                     <form wire:submit.prevent="scan">
-                        <div class="flex gap-4">
+                        <div class="flex gap-4 items-end">
                             <div class="flex-1">
-                                <label for="barcode_input" class="sr-only">Barcode</label>
+                                <label for="barcode_input" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">{{ __('Scan Barcode Here') }}</label>
                                 <input 
                                     id="barcode_input"
                                     type="text" 
@@ -19,9 +19,16 @@
                                     autocomplete="off"
                                 >
                             </div>
-                            <x-filament::button type="submit" size="xl">
-                                {{ __('Scan') }}
-                            </x-filament::button>
+                            <div class="w-1/3">
+                                <label for="pod_limit_input" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Max POD Age (Days)</label>
+                                <input 
+                                    id="pod_limit_input"
+                                    type="number" 
+                                    wire:model.live="podLimit"
+                                    placeholder="Limit" 
+                                    class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white text-center text-xl font-bold py-3"
+                                >
+                            </div>
                         </div>
                     </form>
                 </div>

@@ -5,13 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Auth;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Activitylog\LogOptions;
 
 class TallyItem extends Model
 {
-    use LogsActivity;
-
     protected $table = 'tally_items';
 
     protected $fillable = [
@@ -35,14 +31,6 @@ class TallyItem extends Model
         'pack_date' => 'date',
         'exp_date' => 'date',
     ];
-
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logAll()
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
-    }
 
     public function tally(): BelongsTo
     {

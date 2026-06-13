@@ -440,4 +440,76 @@ class TallyTest extends TestCase
         $poller->call('checkTasks');
         $this->assertEquals(SalesOrder::max('id'), $poller->get('lastSalesOrderId'));
     }
+
+    /** @test */
+    public function it_highlights_scanned_items_exceeding_pod_limit()
+    {
+        $this->actingAs($this->user);
+
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer->id,
+            'delivery_date' => now()->addDays(2)->format('Y-m-d'),
+            'created_by' => $this->user->id,
+            'status' => 'processing',
+        ]);
+
+        $tally = Tally::create([
+            'sales_order_id' => $so->id,
+            'status' => 'processing',
+        ]);
+
+        // Scanned item packed 15 days ago
+        $itemExceeding = TallyItem::create([
+            'tally_id' => $tally->id,
+            'barcode' => 'BC_POD_EXCEED',
+            'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id,
+            'weight' => 12.00,
+            'qty_pcs' => 1,
+            'pack_date' => now()->subDays(15),
+            'origin' => 'BONING',
+        ]);
+
+        // Scanned item packed 5 days ago
+        $itemOk = TallyItem::create([
+            'tally_id' => $tally->id,
+            'barcode' => 'BC_POD_OK',
+            'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id,
+            'weight' => 10.00,
+            'qty_pcs' => 1,
+            'pack_date' => now()->subDays(5),
+            'origin' => 'BONING',
+        ]);
+
+        // Set podLimit to 10 days in session
+        session(['tally_pod_limit' => 10]);
+
+        $component = Livewire::test(ScanTally::class, ['record' => $tally]);
+
+        // The component's podLimit should be loaded from session
+        $this->assertEquals(10, $component->get('podLimit'));
+
+        // Verify recordClasses logic via the component
+        $tableInstance = new \Filament\Tables\Table($component->instance());
+        $table = $component->instance()->table($tableInstance);
+
+        $classesForExceeding = $table->getRecordClasses($itemExceeding);
+        $classesForOk = $table->getRecordClasses($itemOk);
+
+        $this->assertStringContainsString('bg-danger', implode(' ', $classesForExceeding));
+        $this->assertEmpty($classesForOk);
+
+        // Change podLimit via component to 20
+        $component->set('podLimit', 20);
+        $this->assertEquals(20, session('tally_pod_limit'));
+
+        // Now both should be ok (not highlighted in red) - refresh table instance
+        $tableInstanceAfter = new \Filament\Tables\Table($component->instance());
+        $tableAfter = $component->instance()->table($tableInstanceAfter);
+        $classesForExceedingAfter = $tableAfter->getRecordClasses($itemExceeding);
+        $this->assertEmpty($classesForExceedingAfter);
+    }
 }

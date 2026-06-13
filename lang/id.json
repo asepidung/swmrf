@@ -269,5 +269,5 @@
     "BARANG TIDAK TERDAFTAR di Stock": "BARANG TIDAK TERDAFTAR di Stock",
     "Barang Tidak ada di PO": "Barang Tidak ada di PO",
     "Ada Sales Order baru yang siap dibuatkan Tally": "Ada Sales Order baru yang siap dibuatkan Tally",
-    "Ada :count penyiapan yang belum dibuatkan Tally.": "Ada :count penyiapan yang belum dibuatkan Tally."
+    "Ada :count Sales Order yang belum dibuatkan Tally.": "Ada :count Sales Order yang belum dibuatkan Tally."
 }

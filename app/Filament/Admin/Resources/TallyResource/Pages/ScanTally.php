@@ -30,6 +30,7 @@ class ScanTally extends Page implements HasForms, HasTable
 
     public Tally $record;
     public ?string $barcode = '';
+    public ?int $podLimit = null;
 
     public function getMaxContentWidth(): MaxWidth | string | null
     {
@@ -49,6 +50,12 @@ class ScanTally extends Page implements HasForms, HasTable
     public function mount(Tally $record): void
     {
         $this->record = $record;
+        $this->podLimit = session('tally_pod_limit');
+    }
+
+    public function updatedPodLimit($value): void
+    {
+        session(['tally_pod_limit' => $value !== null && $value !== '' ? (int) $value : null]);
     }
 
     protected function getHeaderActions(): array
@@ -138,8 +145,19 @@ class ScanTally extends Page implements HasForms, HasTable
                     ->time('H:i:s')
                     ->alignCenter(),
             ])
+            ->recordClasses(function (TallyItem $record) {
+                $podLimit = $this->podLimit;
+                if ($podLimit !== null && $podLimit !== '' && $record->pack_date) {
+                    $ageInDays = (int) abs(now()->startOfDay()->diffInDays($record->pack_date->startOfDay()));
+                    if ($ageInDays > (int) $podLimit) {
+                        return 'bg-danger-500/10 text-danger-700 dark:text-danger-300 font-semibold';
+                    }
+                }
+                return null;
+            })
             ->actions([
                 Tables\Actions\DeleteAction::make()
+                    ->iconButton()
                     ->hidden(fn () => $this->record->status === 'locked')
                     ->requiresConfirmation()
                     ->tooltip(__('Delete Data'))

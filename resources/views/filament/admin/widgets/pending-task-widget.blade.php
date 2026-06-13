@@ -95,7 +95,7 @@
                 <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
             </span>
             <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count penyiapan yang belum dibuatkan Tally.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingTallyCount().'</strong>']) !!}
+                {!! __('Ada :count Sales Order yang belum dibuatkan Tally.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingTallyCount().'</strong>']) !!}
             </p>
         </div>
         @endif
