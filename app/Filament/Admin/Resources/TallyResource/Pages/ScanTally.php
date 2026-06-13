@@ -55,7 +55,15 @@ class ScanTally extends Page implements HasForms, HasTable
 
     public function updatedPodLimit($value): void
     {
-        session(['tally_pod_limit' => $value !== null && $value !== '' ? (int) $value : null]);
+        if ($value === null || $value === '' || (int) $value < 0) {
+            $this->podLimit = session('tally_pod_limit', 30);
+            Notification::make()
+                ->title(__('Max POD Age wajib diisi'))
+                ->warning()
+                ->send();
+            return;
+        }
+        session(['tally_pod_limit' => (int) $value]);
     }
 
     protected function getHeaderActions(): array
@@ -140,9 +148,9 @@ class ScanTally extends Page implements HasForms, HasTable
                     ->label(__('Origin'))
                     ->alignCenter(),
 
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label(__('Scanned At'))
-                    ->time('H:i:s')
+                Tables\Columns\TextColumn::make('pack_date')
+                    ->label(__('POD'))
+                    ->date('d-m-y')
                     ->alignCenter(),
             ])
             ->recordClasses(function (TallyItem $record) {

@@ -24,6 +24,7 @@
                                 <input 
                                     id="pod_limit_input"
                                     type="number" 
+                                    required
                                     wire:model.live="podLimit"
                                     placeholder="Limit" 
                                     class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white text-center text-xl font-bold py-3"
@@ -130,5 +131,27 @@
                 }, 50);
             });
         });
+
+        // Auto collapse sidebar when loaded or nav update
+        (function() {
+            const collapseSidebar = () => {
+                if (window.Alpine && window.Alpine.store('sidebar')) {
+                    window.Alpine.store('sidebar').close();
+                }
+            };
+
+            // Poll until Alpine is ready
+            const interval = setInterval(() => {
+                if (window.Alpine && window.Alpine.store('sidebar')) {
+                    collapseSidebar();
+                    clearInterval(interval);
+                }
+            }, 50);
+            setTimeout(() => clearInterval(interval), 3000);
+
+            // Also hook into livewire navigates
+            document.addEventListener('livewire:navigated', collapseSidebar);
+            document.addEventListener('livewire:init', collapseSidebar);
+        })();
     </script>
 </x-filament-panels::page>

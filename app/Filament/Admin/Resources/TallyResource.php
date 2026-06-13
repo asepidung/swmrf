@@ -152,7 +152,8 @@ class TallyResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(fn (\Illuminate\Support\Collection $records) => $records->each->delete()),
                 ]),
             ]);
     }

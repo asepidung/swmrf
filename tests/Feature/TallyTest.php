@@ -535,4 +535,72 @@ class TallyTest extends TestCase
         $this->assertEquals('processing', $tally->status);
         $this->assertEquals(15, session('tally_pod_limit'));
     }
+
+    /** @test */
+    public function it_enforces_required_non_negative_pod_limit()
+    {
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer->id,
+            'delivery_date' => now()->addDays(2)->format('Y-m-d'),
+            'created_by' => $this->user->id,
+            'status' => 'processing',
+        ]);
+
+        $tally = Tally::create([
+            'sales_order_id' => $so->id,
+            'status' => 'processing',
+        ]);
+
+        session(['tally_pod_limit' => 15]);
+
+        $component = Livewire::actingAs($this->user)
+            ->test(ScanTally::class, ['record' => $tally])
+            ->set('podLimit', '')
+            ->assertSet('podLimit', 15);
+
+        $component->set('podLimit', -5)
+            ->assertSet('podLimit', 15);
+    }
+
+    /** @test */
+    public function it_restores_stock_on_bulk_delete_action()
+    {
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer->id,
+            'delivery_date' => now()->addDays(2)->format('Y-m-d'),
+            'created_by' => $this->user->id,
+            'status' => 'processing',
+        ]);
+
+        $tally = Tally::create([
+            'sales_order_id' => $so->id,
+            'status' => 'processing',
+        ]);
+
+        TallyItem::create([
+            'tally_id' => $tally->id,
+            'barcode' => 'BC_BULK_DEL',
+            'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id,
+            'weight' => 15.00,
+            'qty_pcs' => 1,
+            'pack_date' => now(),
+            'origin' => 'BONING',
+        ]);
+
+        $records = collect([$tally]);
+        
+        $this->actingAs($this->user);
+        
+        Livewire::test(\App\Filament\Admin\Resources\TallyResource\Pages\ListTallies::class)
+            ->callTableBulkAction('delete', $records);
+
+        $this->assertSoftDeleted('tallies', ['id' => $tally->id]);
+        $this->assertDatabaseMissing('tally_items', ['barcode' => 'BC_BULK_DEL']);
+        $this->assertDatabaseHas('beef_stocks', [
+            'barcode' => 'BC_BULK_DEL',
+            'weight' => 15.00,
+        ]);
+    }
 }
