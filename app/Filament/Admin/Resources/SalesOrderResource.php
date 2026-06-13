@@ -87,6 +87,71 @@ class SalesOrderResource extends Resource
 
                 Forms\Components\Section::make(__('Products Detail'))
                     ->compact()
+                    ->extraAttributes([
+                        'x-on:keydown.enter' => '
+                            (function(e) {
+                                let target = e.target;
+                                if (!target) return;
+                                
+                                let classes = ["so-weight-input-column", "so-price-input-column", "so-discount-input-column", "so-note-input-column"];
+                                let foundClass = classes.find(c => target.classList.contains(c));
+                                
+                                if (foundClass) {
+                                    e.preventDefault();
+                                    let inputs = Array.from(document.querySelectorAll("." + foundClass));
+                                    let idx = inputs.indexOf(target);
+                                    if (idx !== -1 && inputs[idx + 1]) {
+                                        inputs[idx + 1].focus();
+                                        if (typeof inputs[idx + 1].select === "function") {
+                                            inputs[idx + 1].select();
+                                        }
+                                    }
+                                } else {
+                                    let selectWrapper = target.closest(".so-product-select-column");
+                                    if (selectWrapper) {
+                                        e.preventDefault();
+                                        let wrappers = Array.from(document.querySelectorAll(".so-product-select-column"));
+                                        let idx = wrappers.indexOf(selectWrapper);
+                                        if (idx !== -1 && wrappers[idx + 1]) {
+                                            let nextInput = wrappers[idx + 1].querySelector("input, [role=\"combobox\"]");
+                                            if (nextInput) {
+                                                nextInput.focus();
+                                            }
+                                        }
+                                    }
+                                }
+                            })(event)
+                        ',
+                        'x-on:input' => '
+                            (function(e) {
+                                let target = e.target;
+                                if (!target) return;
+                                
+                                let classes = ["so-weight-input-column", "so-price-input-column", "so-discount-input-column"];
+                                let foundClass = classes.find(c => target.classList.contains(c));
+                                
+                                if (foundClass) {
+                                    let digits = target.value.replace(/[^0-9]/g, "");
+                                    let formatted = digits;
+                                    if (foundClass !== "so-discount-input-column" && digits !== "") {
+                                        formatted = new Intl.NumberFormat("de-DE").format(parseInt(digits, 10));
+                                    }
+                                    if (target.value !== formatted) {
+                                        let selectionStart = target.selectionStart;
+                                        let selectionEnd = target.selectionEnd;
+                                        let originalLength = target.value.length;
+                                        
+                                        target.value = formatted;
+                                        
+                                        let diff = formatted.length - originalLength;
+                                        target.setSelectionRange(selectionStart + diff, selectionEnd + diff);
+                                        
+                                        target.dispatchEvent(new Event("input", { bubbles: true }));
+                                    }
+                                }
+                            })(event)
+                        '
+                    ])
                     ->headerActions([
                         Forms\Components\Actions\Action::make('add_products')
                             ->label(__('Add Products'))
@@ -105,10 +170,7 @@ class SalesOrderResource extends Resource
                                             ->pluck('product_id')
                                             ->filter()
                                             ->toArray();
-                                        \Illuminate\Support\Facades\Log::info("add_products options selectedIds=" . json_encode($selectedIds));
-
-                                        return Product::whereNotIn('id', $selectedIds)
-                                            ->pluck('name', 'id');
+                                        return Product::whereNotIn('id', $selectedIds)->pluck('name', 'id');
                                     })
                                     ->required(),
                             ])
@@ -116,10 +178,8 @@ class SalesOrderResource extends Resource
                                 $customerId = $livewire->data['customer_id'] ?? $get('../../customer_id') ?? null;
                                 $selectedProductIds = $data['product_ids'] ?? [];
                                 $currentItems = $livewire->data['items'] ?? $get('../../items') ?? [];
-                                \Illuminate\Support\Facades\Log::info("add_products action: customerId=" . var_export($customerId, true) . " selectedProducts=" . json_encode($selectedProductIds) . " currentItemsCount=" . count($currentItems));
                                 
                                 foreach ($selectedProductIds as $productId) {
-                                    // Check if product already exists in current items
                                     $existingKey = null;
                                     foreach ($currentItems as $key => $item) {
                                         if (($item['product_id'] ?? null) == $productId) {
@@ -131,11 +191,10 @@ class SalesOrderResource extends Resource
                                     $price = static::calculateProductPrice($customerId, $productId);
 
                                     if ($existingKey !== null) {
-                                        // Product already exists, update its price to the latest Price List price
                                         $currentItems[$existingKey]['price'] = number_format($price, 0, '', '.');
                                     } else {
-                                        // Add new product row
-                                        $currentItems['uuid-' . (string) \Illuminate\Support\Str::uuid()] = [
+                                        $newKey = 'item_' . \Illuminate\Support\Str::random(12);
+                                        $currentItems[$newKey] = [
                                             'product_id' => $productId,
                                             'weight' => 0,
                                             'price' => number_format($price, 0, '', '.'),
@@ -159,125 +218,71 @@ class SalesOrderResource extends Resource
                             ]),
 
                         Forms\Components\Repeater::make('items')
-                            ->relationship()
                             ->hiddenLabel()
                             ->defaultItems(0) // Start empty, force use of modal
-                            ->reorderableWithButtons()
+                            ->disableItemMovement()
                             ->disableItemCreation() // Disable standard "Add Item" to force modal usage
-                            ->minItems(1)
                             ->validationMessages([
                                 'min' => __('Sales order cannot be created without any products.'),
                             ])
+                            ->columns(12)
                             ->schema([
-                                Forms\Components\Grid::make(12)
-                                    ->schema([
-                                        Forms\Components\Select::make('product_id')
-                                            ->hiddenLabel()
-                                            ->placeholder(__('Product'))
-                                            ->relationship('product', 'name')
-                                            ->searchable()
-                                            ->preload()
-                                            ->required()
-                                            ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                                            ->live()
-                                            ->afterStateUpdated(function (Get $get, Set $set, $state, $livewire) {
-                                                $customerId = $get('../../customer_id') ?? $livewire->data['customer_id'] ?? null;
-                                                \Illuminate\Support\Facades\Log::info("product_id afterStateUpdated: customerId=" . var_export($customerId, true) . " product_id=" . var_export($state, true));
-                                                $price = static::calculateProductPrice($customerId, $state);
-                                                $set('price', number_format($price, 0, '', '.'));
-                                            })
-                                            ->extraAttributes([
-                                                'class' => 'so-product-select-column',
-                                                'x-on:keydown.enter.prevent' => '
-                                                    let wrappers = Array.from(document.querySelectorAll(".so-product-select-column"));
-                                                    let idx = wrappers.indexOf($el);
-                                                    if (idx !== -1 && wrappers[idx + 1]) {
-                                                        let nextInput = wrappers[idx + 1].querySelector("input, [role=\"combobox\"]");
-                                                        if (nextInput) nextInput.focus();
-                                                    }
-                                                '
-                                            ])
-                                            ->columnSpan(3),
+                                Forms\Components\Select::make('product_id')
+                                    ->hiddenLabel()
+                                    ->placeholder(__('Product'))
+                                    ->options(fn() => \App\Models\Product::pluck('name', 'id'))
+                                    ->searchable()
+                                    ->required()
+                                    ->extraAttributes([
+                                        'class' => 'so-product-select-column',
+                                    ])
+                                    ->columnSpan(3),
 
-                                        Forms\Components\TextInput::make('weight')
-                                            ->hiddenLabel()
-                                            ->placeholder(__('Weight'))
-                                            ->required()
-                                            ->numeric()
-                                            // Click auto select all block as requested
-                                            ->extraInputAttributes([
-                                                'class' => 'text-right so-weight-input-column',
-                                                'onclick' => 'this.select()',
-                                                'x-on:keydown.enter.prevent' => '
-                                                    let inputs = Array.from(document.querySelectorAll(".so-weight-input-column"));
-                                                    let idx = inputs.indexOf($el);
-                                                    if (idx !== -1 && inputs[idx + 1]) {
-                                                        inputs[idx + 1].focus();
-                                                        inputs[idx + 1].select();
-                                                    }
-                                                '
-                                            ])
-                                            ->columnSpan(2),
+                                Forms\Components\TextInput::make('weight')
+                                    ->hiddenLabel()
+                                    ->placeholder(__('Weight'))
+                                    ->required()
+                                    // Click auto select all block as requested
+                                    ->extraInputAttributes([
+                                        'class' => 'text-right so-weight-input-column',
+                                        'onclick' => 'this.select()',
+                                        'inputmode' => 'numeric',
+                                    ])
+                                    ->columnSpan(2),
 
-                                        Forms\Components\TextInput::make('price')
-                                            ->hiddenLabel()
-                                            ->placeholder(__('Price'))
-                                            ->required()
-                                            ->numeric()
-                                            ->prefix('Rp')
-                                            ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                                            ->stripCharacters('.')
-                                            ->extraInputAttributes([
-                                                'class' => 'text-right so-price-input-column',
-                                                'onclick' => 'this.select()',
-                                                'x-on:keydown.enter.prevent' => '
-                                                    let inputs = Array.from(document.querySelectorAll(".so-price-input-column"));
-                                                    let idx = inputs.indexOf($el);
-                                                    if (idx !== -1 && inputs[idx + 1]) {
-                                                        inputs[idx + 1].focus();
-                                                        inputs[idx + 1].select();
-                                                    }
-                                                '
-                                            ])
-                                            ->columnSpan(2),
+                                Forms\Components\TextInput::make('price')
+                                    ->hiddenLabel()
+                                    ->placeholder(__('Price'))
+                                    ->required()
+                                    ->prefix('Rp')
+                                    ->extraInputAttributes([
+                                        'class' => 'text-right so-price-input-column',
+                                        'onclick' => 'this.select()',
+                                        'inputmode' => 'numeric',
+                                    ])
+                                    ->columnSpan(2),
 
-                                        Forms\Components\TextInput::make('discount')
-                                            ->hiddenLabel()
-                                            ->placeholder(__('Discount'))
-                                            ->numeric()
-                                            ->suffix('%')
-                                            ->minValue(0)
-                                            ->maxValue(100)
-                                            ->extraInputAttributes([
-                                                'class' => 'text-right so-discount-input-column',
-                                                'onclick' => 'this.select()',
-                                                'x-on:keydown.enter.prevent' => '
-                                                    let inputs = Array.from(document.querySelectorAll(".so-discount-input-column"));
-                                                    let idx = inputs.indexOf($el);
-                                                    if (idx !== -1 && inputs[idx + 1]) {
-                                                        inputs[idx + 1].focus();
-                                                        inputs[idx + 1].select();
-                                                    }
-                                                '
-                                            ])
-                                            ->columnSpan(2),
+                                Forms\Components\TextInput::make('discount')
+                                    ->hiddenLabel()
+                                    ->placeholder(__('Discount'))
+                                    ->suffix('%')
+                                    ->minValue(0)
+                                    ->maxValue(100)
+                                    ->extraInputAttributes([
+                                        'class' => 'text-right so-discount-input-column',
+                                        'onclick' => 'this.select()',
+                                        'inputmode' => 'numeric',
+                                    ])
+                                    ->columnSpan(2),
 
-                                        Forms\Components\TextInput::make('note')
-                                            ->hiddenLabel()
-                                            ->placeholder(__('Note'))
-                                            ->maxLength(255)
-                                            ->extraInputAttributes([
-                                                'class' => 'so-note-input-column',
-                                                'x-on:keydown.enter.prevent' => '
-                                                    let inputs = Array.from(document.querySelectorAll(".so-note-input-column"));
-                                                    let idx = inputs.indexOf($el);
-                                                    if (idx !== -1 && inputs[idx + 1]) {
-                                                        inputs[idx + 1].focus();
-                                                    }
-                                                '
-                                            ])
-                                            ->columnSpan(3),
-                                    ]),
+                                Forms\Components\TextInput::make('note')
+                                    ->hiddenLabel()
+                                    ->placeholder(__('Note'))
+                                    ->maxLength(255)
+                                    ->extraInputAttributes([
+                                        'class' => 'so-note-input-column',
+                                    ])
+                                    ->columnSpan(3),
                             ]),
                     ])
             ]);

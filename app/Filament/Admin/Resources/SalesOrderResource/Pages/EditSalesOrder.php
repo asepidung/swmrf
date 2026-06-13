@@ -36,6 +36,47 @@ class EditSalesOrder extends EditRecord
         ];
     }
 
+    protected array $itemsData = [];
+
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $items = [];
+        foreach ($this->record->items as $item) {
+            $items['item_' . \Illuminate\Support\Str::random(12)] = [
+                'product_id' => $item->product_id,
+                'weight' => number_format($item->weight, 0, '', '.'),
+                'price' => number_format($item->price, 0, '', '.'),
+                'discount' => number_format($item->discount, 0, '', '.'),
+                'note' => $item->note,
+            ];
+        }
+        $data['items'] = $items;
+        return $data;
+    }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $this->itemsData = $data['items'] ?? [];
+        unset($data['items']);
+        return $data;
+    }
+
+    protected function afterSave(): void
+    {
+        $record = $this->getRecord();
+        $record->items()->delete();
+        
+        foreach ($this->itemsData as $item) {
+            $record->items()->create([
+                'product_id' => $item['product_id'],
+                'weight' => (int) str_replace('.', '', $item['weight'] ?? 0),
+                'price' => (int) str_replace('.', '', $item['price'] ?? 0),
+                'discount' => (int) str_replace('.', '', $item['discount'] ?? 0),
+                'note' => $item['note'] ?? '',
+            ]);
+        }
+    }
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
