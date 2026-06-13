@@ -512,4 +512,27 @@ class TallyTest extends TestCase
         $classesForExceedingAfter = $tableAfter->getRecordClasses($itemExceeding);
         $this->assertEmpty($classesForExceedingAfter);
     }
+
+    /** @test */
+    public function it_requires_pod_limit_when_creating_tally_via_draft_page()
+    {
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer->id,
+            'delivery_date' => now()->addDays(2)->format('Y-m-d'),
+            'created_by' => $this->user->id,
+            'status' => 'waiting',
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(\App\Filament\Admin\Resources\TallyResource\Pages\DraftTally::class)
+            ->callTableAction('process', $so, [
+                'pod_limit' => 15,
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $tally = Tally::where('sales_order_id', $so->id)->first();
+        $this->assertNotNull($tally);
+        $this->assertEquals('processing', $tally->status);
+        $this->assertEquals(15, session('tally_pod_limit'));
+    }
 }

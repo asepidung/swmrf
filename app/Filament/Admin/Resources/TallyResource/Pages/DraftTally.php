@@ -12,6 +12,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Illuminate\Support\Facades\DB;
 use Filament\Notifications\Notification;
+use Filament\Forms;
 
 class DraftTally extends Page implements HasTable
 {
@@ -62,8 +63,17 @@ class DraftTally extends Page implements HasTable
                     ->label(__('Buat Tally'))
                     ->icon('heroicon-m-arrow-right-circle')
                     ->color('primary')
-                    ->action(function (SalesOrder $record) {
-                        return DB::transaction(function () use ($record) {
+                    ->form([
+                        Forms\Components\TextInput::make('pod_limit')
+                            ->label(__('Max POD Age (Days)'))
+                            ->numeric()
+                            ->required()
+                            ->default(fn () => session('tally_pod_limit', 30)),
+                    ])
+                    ->action(function (SalesOrder $record, array $data) {
+                        return DB::transaction(function () use ($record, $data) {
+                            session(['tally_pod_limit' => (int) $data['pod_limit']]);
+
                             $tally = Tally::create([
                                 'sales_order_id' => $record->id,
                                 'status' => 'processing',

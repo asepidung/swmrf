@@ -30,6 +30,7 @@
                                 >
                             </div>
                         </div>
+                        <button type="submit" class="hidden">Scan</button>
                     </form>
                 </div>
             @else
