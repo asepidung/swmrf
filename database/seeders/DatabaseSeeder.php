@@ -188,6 +188,14 @@ class DatabaseSeeder extends Seeder
             ['name' => 'edit_sales_orders', 'module_name' => 'Sales Orders', 'description' => 'Edit sales orders'],
             ['name' => 'delete_sales_orders', 'module_name' => 'Sales Orders', 'description' => 'Delete sales orders'],
             ['name' => 'view_deleted_sales_orders', 'module_name' => 'Sales Orders', 'description' => 'View deleted sales orders'],
+
+            // Tallies Module
+            ['name' => 'view_tallies', 'module_name' => 'Tallies', 'description' => 'View tallies'],
+            ['name' => 'create_tallies', 'module_name' => 'Tallies', 'description' => 'Create tallies'],
+            ['name' => 'edit_tallies', 'module_name' => 'Tallies', 'description' => 'Edit tallies'],
+            ['name' => 'delete_tallies', 'module_name' => 'Tallies', 'description' => 'Delete tallies'],
+            ['name' => 'view_deleted_tallies', 'module_name' => 'Tallies', 'description' => 'View deleted tallies'],
+            ['name' => 'lock_tallies', 'module_name' => 'Tallies', 'description' => 'Lock tallies'],
         ];
 
         foreach ($permissions as $perm) {

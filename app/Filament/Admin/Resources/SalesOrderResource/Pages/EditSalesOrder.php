@@ -43,6 +43,7 @@ class EditSalesOrder extends EditRecord
         $items = [];
         foreach ($this->record->items as $item) {
             $items['item_' . \Illuminate\Support\Str::random(12)] = [
+                'id' => $item->id,
                 'product_id' => $item->product_id,
                 'weight' => number_format($item->weight, 0, '', '.'),
                 'price' => number_format($item->price, 0, '', '.'),

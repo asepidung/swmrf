@@ -43,6 +43,8 @@ class SalesOrderResource extends Resource
                             ->preload()
                             ->required()
                             ->live()
+                            ->disabled(fn (?SalesOrder $record) => $record?->status === 'processing')
+                            ->dehydrated()
                             ->afterStateUpdated(function (Get $get, Set $set, $state) {
                                 \Illuminate\Support\Facades\Log::info("customer_id afterStateUpdated: state=" . var_export($state, true));
                                 if ($state) {
@@ -65,7 +67,9 @@ class SalesOrderResource extends Resource
                         Forms\Components\DatePicker::make('delivery_date')
                             ->label(__('Delivery Date'))
                             ->required()
-                            ->default(now()),
+                            ->default(now())
+                            ->disabled(fn (?SalesOrder $record) => $record?->status === 'processing')
+                            ->dehydrated(),
 
                         Forms\Components\TextInput::make('po_number')
                             ->label(__('PO Number'))
@@ -74,7 +78,9 @@ class SalesOrderResource extends Resource
                         Forms\Components\Textarea::make('shipping_address')
                             ->label(__('Shipping Address'))
                             ->rows(2)
-                            ->columnSpan(2),
+                            ->columnSpan(2)
+                            ->disabled(fn (?SalesOrder $record) => $record?->status === 'processing')
+                            ->dehydrated(),
 
                         Forms\Components\Textarea::make('note')
                             ->label(__('Note'))
@@ -222,17 +228,22 @@ class SalesOrderResource extends Resource
                             ->defaultItems(0) // Start empty, force use of modal
                             ->disableItemMovement()
                             ->disableItemCreation() // Disable standard "Add Item" to force modal usage
+                            ->disableItemDeletion(fn (?SalesOrder $record) => $record?->status === 'processing')
                             ->validationMessages([
                                 'min' => __('Sales order cannot be created without any products.'),
                             ])
                             ->columns(12)
                             ->schema([
+                                Forms\Components\Hidden::make('id'),
+
                                 Forms\Components\Select::make('product_id')
                                     ->hiddenLabel()
                                     ->placeholder(__('Product'))
                                     ->options(fn() => \App\Models\Product::pluck('name', 'id'))
                                     ->searchable()
                                     ->required()
+                                    ->disabled(fn (Get $get, ?SalesOrder $record) => $record?->status === 'processing' && !empty($get('id')))
+                                    ->dehydrated()
                                     ->extraAttributes([
                                         'class' => 'so-product-select-column',
                                     ])
@@ -359,6 +370,7 @@ class SalesOrderResource extends Resource
                     ->colors([
                         'gray' => 'waiting',
                         'info' => 'processing',
+                        'warning' => 'prepared',
                         'success' => 'completed',
                         'danger' => 'cancelled',
                     ])
@@ -441,7 +453,7 @@ class SalesOrderResource extends Resource
             ->actions([
                 // Clickable rows handle editing; no action buttons displayed on the index table.
             ])
-            ->recordUrl(fn(SalesOrder $record) => ($record->status === 'waiting' && !$record->trashed()) ? Pages\EditSalesOrder::getUrl([$record->id]) : null)
+            ->recordUrl(fn(SalesOrder $record) => (in_array($record->status, ['waiting', 'processing']) && !$record->trashed()) ? Pages\EditSalesOrder::getUrl([$record->id]) : null)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),

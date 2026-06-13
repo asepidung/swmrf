@@ -13,6 +13,7 @@ class GlobalTaskPoller extends Component
     public int $lastPoId = 0;
     public int $lastReceivingId = 0;
     public int $lastWeighingId = 0;
+    public int $lastSalesOrderId = 0;
     public string $lastMaterialCheckAt = '';
     public string $lastProductCheckAt = '';
 
@@ -22,6 +23,7 @@ class GlobalTaskPoller extends Component
             $this->lastPoId = (int) PurchaseCattle::max('id');
             $this->lastReceivingId = (int) CattleReceiving::max('id');
             $this->lastWeighingId = (int) CattleWeighing::max('id');
+            $this->lastSalesOrderId = (int) \App\Models\SalesOrder::max('id');
             $this->lastMaterialCheckAt = now()->toDateTimeString();
             $this->lastProductCheckAt = now()->toDateTimeString();
         }
@@ -36,6 +38,7 @@ class GlobalTaskPoller extends Component
         $currentPoId = (int) PurchaseCattle::max('id');
         $currentReceivingId = (int) CattleReceiving::max('id');
         $currentWeighingId = (int) CattleWeighing::max('id');
+        $currentSalesOrderId = (int) \App\Models\SalesOrder::max('id');
         $currentMaterialRequestId = (int) \App\Models\MaterialRequisition::max('id');
 
         if ($currentPoId > $this->lastPoId) {
@@ -63,6 +66,16 @@ class GlobalTaskPoller extends Component
             if (auth()->user()->hasPermission('create_carcasses')) {
                 Notification::make()
                     ->title(__(':name, ada tugas karkas baru', ['name' => auth()->user()->name]))
+                    ->warning()
+                    ->send();
+            }
+        }
+
+        if ($currentSalesOrderId > $this->lastSalesOrderId) {
+            $this->lastSalesOrderId = $currentSalesOrderId;
+            if (auth()->user()->hasPermission('create_tallies')) {
+                Notification::make()
+                    ->title(__('Ada Sales Order baru yang siap dibuatkan Tally'))
                     ->warning()
                     ->send();
             }

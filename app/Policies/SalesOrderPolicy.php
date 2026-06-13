@@ -29,16 +29,16 @@ class SalesOrderPolicy
 
     public function delete(User $user, SalesOrder $model): bool
     {
-        return $user->hasPermission('delete_sales_orders');
+        return $user->hasPermission('delete_sales_orders') && in_array($model->status, ['waiting', 'cancelled']);
     }
 
     public function restore(User $user, SalesOrder $model): bool
     {
-        return $user->hasPermission('delete_sales_orders');
+        return $user->hasPermission('delete_sales_orders') && in_array($model->status, ['waiting', 'cancelled']);
     }
 
     public function forceDelete(User $user, SalesOrder $model): bool
     {
-        return $user->hasPermission('delete_sales_orders');
+        return $user->hasPermission('delete_sales_orders') && in_array($model->status, ['waiting', 'cancelled']);
     }
 }

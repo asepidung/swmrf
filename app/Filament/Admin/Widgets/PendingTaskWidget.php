@@ -84,4 +84,13 @@ class PendingTaskWidget extends Widget
         }
         return \App\Models\Repack::where('kunci', '!=', 1)->count();
     }
+
+    public function getPendingTallyCount(): int
+    {
+        $user = auth()->user();
+        if (!$user->isProgrammer() && !$user->hasPermission('create_tallies')) {
+            return 0;
+        }
+        return \App\Models\SalesOrder::where('status', 'waiting')->count();
+    }
 }

@@ -62,6 +62,7 @@ Setiap pengembangan fitur atau penambahan *resource* baru di Filament wajib mene
   * Apakah ditemukan aturan main baru yang mengharuskan pembaruan/revisi pada dokumen `project.md` ini?
 * **Referensi Legacy Code:** Sebelum mulai menyusun logika bisnis di framework baru, wajib meninjau direktori `legacy/`. Di dalamnya terdapat 2 folder: versi prosedural (modul sudah lengkap) dan versi laravel (baru sebagian). **Utamakan merujuk ke versi laravel terlebih dahulu**, baru gunakan prosedural jika ada perbedaan atau jika modul di Laravel belum ada.
 * **Proaktif Berdiskusi & Memberikan Opsi:** Jika terdapat instruksi, alur logika, atau batasan sistem yang ambigu/kurang jelas, implementor (terutama agen AI) **DILARANG mengambil asumsi sepihak**. Anda wajib berhenti mengeksekusi kode, paparkan masalahnya, dan **berikan beberapa pilihan/opsi penyelesaian** agar *Project Owner* dapat memilih jalan yang paling tepat.
+* **Pencatatan & Cabang Git (GitHub Issues & Branching):** Setiap rencana implementasi (Implementation Plan) yang telah ditinjau dan disetujui oleh Project Owner wajib dibuatkan tiket GitHub Issue-nya (jika belum ada). Jika selama pengerjaan ditemukan kendala, bug, atau permasalahan baru, temuan tersebut wajib didokumentasikan/diunggah ke GitHub Issue terkait dan dikerjakan pada branch Git yang sesuai dengan nomor issue tersebut.
 
 ## 5. Kualitas Kode & Manajemen Repositori
 

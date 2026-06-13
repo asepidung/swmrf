@@ -81,4 +81,9 @@ class SalesOrder extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function tally()
+    {
+        return $this->hasOne(Tally::class, 'sales_order_id');
+    }
 }
