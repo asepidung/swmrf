@@ -87,8 +87,9 @@ class BeefStockMovementResource extends Resource
                             ->label(__('Transaction Type'))
                             ->badge()
                             ->color(fn ($state) => match ($state) {
-                                'IN_BONING', 'IN_REPACK', 'VOID_OUT_REPACK', 'VOID_STOCK' => 'success',
-                                'OUT_TO_REPACK', 'VOID_BONING', 'VOID_IN_REPACK' => 'danger',
+                                'IN_BONING', 'IN_REPACK', 'VOID_OUT_REPACK', 'VOID_STOCK', 'TALLY_REVERT' => 'success',
+                                'OUT_TO_REPACK', 'VOID_BONING', 'VOID_IN_REPACK', 'TALLY' => 'danger',
+                                'TALLY_RELABEL' => 'warning',
                                 default => 'gray',
                             })
                             ->formatStateUsing(fn ($state) => __($state)),
@@ -116,6 +117,7 @@ class BeefStockMovementResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('id', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Timestamp'))
@@ -150,8 +152,9 @@ class BeefStockMovementResource extends Resource
                     ->label(__('Transaction Type'))
                     ->badge()
                     ->color(fn ($state) => match ($state) {
-                        'IN_BONING', 'IN_REPACK', 'VOID_OUT_REPACK', 'VOID_STOCK' => 'success',
-                        'OUT_TO_REPACK', 'VOID_BONING', 'VOID_IN_REPACK' => 'danger',
+                        'IN_BONING', 'IN_REPACK', 'VOID_OUT_REPACK', 'VOID_STOCK', 'TALLY_REVERT' => 'success',
+                        'OUT_TO_REPACK', 'VOID_BONING', 'VOID_IN_REPACK', 'TALLY' => 'danger',
+                        'TALLY_RELABEL' => 'warning',
                         default => 'gray',
                     })
                     ->formatStateUsing(fn ($state) => __($state))
@@ -160,22 +163,12 @@ class BeefStockMovementResource extends Resource
                 Tables\Columns\TextColumn::make('weight_in')
                     ->label(__('Weight In'))
                     ->alignRight()
-                    ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '-'),
+                    ->getStateUsing(fn (BeefStockMovement $record) => $record->weight_in > 0 ? number_format((float) $record->weight_in, 2, '.', ',') . '/' . $record->pcs_in : '-'),
 
                 Tables\Columns\TextColumn::make('weight_out')
                     ->label(__('Weight Out'))
                     ->alignRight()
-                    ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '-'),
-
-                Tables\Columns\TextColumn::make('pcs_in')
-                    ->label(__('Pcs In'))
-                    ->alignCenter()
-                    ->formatStateUsing(fn ($state) => $state > 0 ? $state : '-'),
-
-                Tables\Columns\TextColumn::make('pcs_out')
-                    ->label(__('Pcs Out'))
-                    ->alignCenter()
-                    ->formatStateUsing(fn ($state) => $state > 0 ? $state : '-'),
+                    ->getStateUsing(fn (BeefStockMovement $record) => $record->weight_out > 0 ? number_format((float) $record->weight_out, 2, '.', ',') . '/' . $record->pcs_out : '-'),
 
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label(__('Operator'))
@@ -217,6 +210,9 @@ class BeefStockMovementResource extends Resource
                         'IN_REPACK' => 'IN_REPACK',
                         'VOID_IN_REPACK' => 'VOID_IN_REPACK',
                         'VOID_STOCK' => 'VOID_STOCK',
+                        'TALLY' => 'TALLY',
+                        'TALLY_REVERT' => 'TALLY_REVERT',
+                        'TALLY_RELABEL' => 'TALLY_RELABEL',
                     ])
                     ->label(__('Transaction Type')),
                 Tables\Filters\SelectFilter::make('warehouse_id')
@@ -244,9 +240,7 @@ class BeefStockMovementResource extends Resource
                     })
                     ->indicateUsing(fn (array $data): array => []),
             ])
-            ->actions([
-                Tables\Actions\ViewAction::make(),
-            ])
+            ->actions([])
             ->recordUrl(fn (BeefStockMovement $record): string => Pages\ViewBeefStockMovement::getUrl(['record' => $record]))
             ->bulkActions([]);
     }

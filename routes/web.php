@@ -90,4 +90,34 @@ Route::middleware(['web', 'auth'])->group(function () {
         $record->load(['customer', 'items.product', 'creator']);
         return view('print.salesorder', compact('record'));
     })->name('print.salesorder');
+
+    // ------------------------------------------
+    // 7. MODUL TALLY
+    // ------------------------------------------
+    Route::get('/print/tally/{record}', function (\App\Models\Tally $record) {
+        $record->load(['salesOrder.customer', 'items.product', 'creator']);
+        
+        $productData = [];
+        foreach ($record->items as $item) {
+            $productName = $item->product?->name ?? 'Unknown';
+            if (!isset($productData[$productName])) {
+                $productData[$productName] = [
+                    'weights' => [],
+                    'total' => 0,
+                ];
+            }
+            $productData[$productName]['weights'][] = (float) $item->weight;
+            $productData[$productName]['total'] += (float) $item->weight;
+        }
+
+        $totalBox = $record->items()->count();
+        $totalQty = (float) $record->items()->sum('weight');
+
+        return view('print.tally', compact('record', 'productData', 'totalBox', 'totalQty'));
+    })->name('print.tally');
+
+    Route::get('/print/tally-item/{id}', function ($id) {
+        $item = \App\Models\TallyItem::with(['product', 'grade'])->findOrFail($id);
+        return view('print.tally-item-label', compact('item'));
+    })->name('tally-item.label');
 });

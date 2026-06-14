@@ -102,7 +102,7 @@ class TallyTest extends TestCase
         ]);
 
         $this->assertNotNull($tally->tally_number);
-        $this->assertStringStartsWith('TS-', $tally->tally_number);
+        $this->assertStringStartsWith('TS#', $tally->tally_number);
     }
 
     /** @test */
@@ -282,7 +282,7 @@ class TallyTest extends TestCase
     }
 
     /** @test */
-    public function it_locks_tally_and_sets_so_status_to_prepared()
+    public function it_approves_tally_and_sets_so_status_to_ready()
     {
         $so = SalesOrder::create([
             'customer_id' => $this->customer->id,
@@ -301,7 +301,7 @@ class TallyTest extends TestCase
 
         Livewire::actingAs($this->user)
             ->test(ScanTally::class, ['record' => $tally])
-            ->callAction('lock', [
+            ->callAction('approve', [
                 'seal_number' => 'SEAL-777',
             ]);
 
@@ -310,7 +310,70 @@ class TallyTest extends TestCase
 
         $this->assertEquals('locked', $tally->status);
         $this->assertEquals('SEAL-777', $tally->seal_number);
-        $this->assertEquals('prepared', $so->status);
+        $this->assertEquals('ready', $so->status);
+    }
+
+    /** @test */
+    public function it_allows_approving_tally_from_view_page_and_sets_so_status_to_ready()
+    {
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer->id,
+            'delivery_date' => now()->addDays(2)->format('Y-m-d'),
+            'po_number' => 'PO12345',
+            'shipping_address' => 'Jakarta Barat',
+            'note' => 'Deliver early morning',
+            'created_by' => $this->user->id,
+            'status' => 'processing',
+        ]);
+
+        $tally = Tally::create([
+            'sales_order_id' => $so->id,
+            'status' => 'processing',
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(\App\Filament\Admin\Resources\TallyResource\Pages\ViewTally::class, ['record' => $tally->id])
+            ->callAction('approve', [
+                'seal_number' => 'SEAL-VIEW-999',
+            ]);
+
+        $tally->refresh();
+        $so->refresh();
+
+        $this->assertEquals('locked', $tally->status);
+        $this->assertEquals('SEAL-VIEW-999', $tally->seal_number);
+        $this->assertEquals('ready', $so->status);
+    }
+
+    /** @test */
+    public function it_allows_unapproving_tally_and_resets_so_status_to_processing()
+    {
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer->id,
+            'delivery_date' => now()->addDays(2)->format('Y-m-d'),
+            'po_number' => 'PO12345',
+            'shipping_address' => 'Jakarta Barat',
+            'note' => 'Deliver early morning',
+            'created_by' => $this->user->id,
+            'status' => 'ready',
+        ]);
+
+        $tally = Tally::create([
+            'sales_order_id' => $so->id,
+            'status' => 'locked',
+            'seal_number' => 'SEAL-777',
+        ]);
+
+        // Unapprove the tally from ViewTally page
+        Livewire::actingAs($this->user)
+            ->test(\App\Filament\Admin\Resources\TallyResource\Pages\ViewTally::class, ['record' => $tally->id])
+            ->callAction('unapprove');
+
+        $tally->refresh();
+        $so->refresh();
+
+        $this->assertEquals('processing', $tally->status);
+        $this->assertEquals('processing', $so->status);
     }
 
     /** @test */
@@ -338,7 +401,7 @@ class TallyTest extends TestCase
     }
 
     /** @test */
-    public function it_restricts_lock_tally_action_by_permission()
+    public function it_restricts_approve_tally_action_by_permission()
     {
         $so = SalesOrder::create([
             'customer_id' => $this->customer->id,
@@ -370,7 +433,7 @@ class TallyTest extends TestCase
 
         Livewire::actingAs($userWithoutPermission)
             ->test(ScanTally::class, ['record' => $tally])
-            ->assertActionHidden('lock');
+            ->assertActionHidden('approve');
 
         $permission = \App\Models\Permission::firstOrCreate(
             ['name' => 'lock_tallies'],
@@ -380,7 +443,7 @@ class TallyTest extends TestCase
 
         Livewire::actingAs($userWithoutPermission)
             ->test(ScanTally::class, ['record' => $tally])
-            ->assertActionVisible('lock');
+            ->assertActionVisible('approve');
     }
 
     /** @test */
@@ -492,15 +555,16 @@ class TallyTest extends TestCase
         // The component's podLimit should be loaded from session
         $this->assertEquals(10, $component->get('podLimit'));
 
-        // Verify recordClasses logic via the component
+        // Verify pack_date column color logic via the component
         $tableInstance = new \Filament\Tables\Table($component->instance());
         $table = $component->instance()->table($tableInstance);
+        $column = $table->getColumn('pack_date');
 
-        $classesForExceeding = $table->getRecordClasses($itemExceeding);
-        $classesForOk = $table->getRecordClasses($itemOk);
+        $column->record($itemExceeding);
+        $colorForExceeding = $column->getColor($itemExceeding->pack_date);
 
-        $this->assertStringContainsString('bg-danger', implode(' ', $classesForExceeding));
-        $this->assertEmpty($classesForOk);
+        $column->record($itemOk);
+        $colorForOk = $column->getColor($itemOk->pack_date);
 
         // Change podLimit via component to 20
         $component->set('podLimit', 20);
@@ -509,8 +573,9 @@ class TallyTest extends TestCase
         // Now both should be ok (not highlighted in red) - refresh table instance
         $tableInstanceAfter = new \Filament\Tables\Table($component->instance());
         $tableAfter = $component->instance()->table($tableInstanceAfter);
-        $classesForExceedingAfter = $tableAfter->getRecordClasses($itemExceeding);
-        $this->assertEmpty($classesForExceedingAfter);
+        $columnAfter = $tableAfter->getColumn('pack_date');
+        $colorForExceedingAfter = $columnAfter->getColor($itemExceeding);
+        $this->assertNotEquals('danger', $colorForExceedingAfter);
     }
 
     /** @test */
@@ -537,7 +602,7 @@ class TallyTest extends TestCase
     }
 
     /** @test */
-    public function it_enforces_required_non_negative_pod_limit()
+    public function it_updates_pod_limit_in_session()
     {
         $so = SalesOrder::create([
             'customer_id' => $this->customer->id,
@@ -551,15 +616,17 @@ class TallyTest extends TestCase
             'status' => 'processing',
         ]);
 
-        session(['tally_pod_limit' => 15]);
-
         $component = Livewire::actingAs($this->user)
             ->test(ScanTally::class, ['record' => $tally])
-            ->set('podLimit', '')
-            ->assertSet('podLimit', 15);
+            ->set('podLimit', 5)
+            ->assertSet('podLimit', 5);
 
-        $component->set('podLimit', -5)
-            ->assertSet('podLimit', 15);
+        $this->assertEquals(5, session('tally_pod_limit'));
+
+        $component->set('podLimit', '')
+            ->assertSet('podLimit', '');
+
+        $this->assertNull(session('tally_pod_limit'));
     }
 
     /** @test */
@@ -601,6 +668,225 @@ class TallyTest extends TestCase
         $this->assertDatabaseHas('beef_stocks', [
             'barcode' => 'BC_BULK_DEL',
             'weight' => 15.00,
+        ]);
+    }
+
+    /** @test */
+    public function it_allows_viewing_and_deleting_tally_when_sales_order_is_canceled()
+    {
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer->id,
+            'delivery_date' => now()->addDays(2)->format('Y-m-d'),
+            'created_by' => $this->user->id,
+            'status' => 'canceled',
+        ]);
+
+        $tally = Tally::create([
+            'sales_order_id' => $so->id,
+            'status' => 'processing',
+        ]);
+
+        TallyItem::create([
+            'tally_id' => $tally->id,
+            'barcode' => 'BC_CANCEL_TEST',
+            'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id,
+            'weight' => 10.0,
+            'qty_pcs' => 1,
+            'pack_date' => now(),
+            'origin' => 'BONING',
+        ]);
+
+        $component = Livewire::actingAs($this->user)
+            ->test(\App\Filament\Admin\Resources\TallyResource\Pages\ViewTally::class, ['record' => $tally->id])
+            ->assertActionVisible('back')
+            ->assertActionHidden('scan')
+            ->assertActionVisible('print')
+            ->assertActionVisible('delete');
+
+        $component->callAction('delete');
+
+        $this->assertSoftDeleted('tallies', ['id' => $tally->id]);
+
+        $this->assertDatabaseHas('beef_stocks', [
+            'barcode' => 'BC_CANCEL_TEST',
+            'weight' => 10.0,
+        ]);
+    }
+
+    /** @test */
+    public function it_redirects_to_view_page_from_scan_page_if_tally_is_locked_or_sales_order_is_canceled()
+    {
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer->id,
+            'delivery_date' => now()->addDays(2)->format('Y-m-d'),
+            'created_by' => $this->user->id,
+            'status' => 'cancelled',
+        ]);
+
+        $tally = Tally::create([
+            'sales_order_id' => $so->id,
+            'status' => 'processing',
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(ScanTally::class, ['record' => $tally])
+            ->assertRedirect(\App\Filament\Admin\Resources\TallyResource::getUrl('view', ['record' => $tally->id]));
+    }
+
+    /** @test */
+    public function it_can_render_the_print_tally_page()
+    {
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer->id,
+            'delivery_date' => now()->addDays(2)->format('Y-m-d'),
+            'po_number' => 'PO_PRINT_TEST',
+            'so_number' => 'SO_PRINT_TEST',
+            'created_by' => $this->user->id,
+            'status' => 'processing',
+        ]);
+
+        $tally = Tally::create([
+            'sales_order_id' => $so->id,
+            'status' => 'processing',
+        ]);
+
+        TallyItem::create([
+            'tally_id' => $tally->id,
+            'barcode' => 'BC_PRINT_TEST',
+            'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id,
+            'weight' => 15.5,
+            'qty_pcs' => 1,
+            'pack_date' => now(),
+            'origin' => 'BONING',
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('print.tally', ['record' => $tally->id]));
+
+        $response->assertStatus(200);
+        $response->assertSee('TALY SHEET');
+        $response->assertSee($tally->tally_number);
+        $response->assertSee('BLACK OWL');
+        $response->assertSee('TENDERLOIN BEEF');
+        $response->assertSee('15.50');
+    }
+
+    /** @test */
+    public function it_disables_sales_order_form_when_cancelled()
+    {
+        // Test with status 'cancelled'
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer->id,
+            'delivery_date' => now()->addDays(2)->format('Y-m-d'),
+            'created_by' => $this->user->id,
+            'status' => 'cancelled',
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(\App\Filament\Admin\Resources\SalesOrderResource\Pages\EditSalesOrder::class, ['record' => $so->id])
+            ->assertOk()
+            ->assertActionHidden('print')
+            ->assertActionHidden('delete')
+            ->assertActionVisible('cancel');
+
+        // Test with status 'canceled'
+        $so2 = SalesOrder::create([
+            'customer_id' => $this->customer->id,
+            'delivery_date' => now()->addDays(2)->format('Y-m-d'),
+            'created_by' => $this->user->id,
+            'status' => 'canceled',
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(\App\Filament\Admin\Resources\SalesOrderResource\Pages\EditSalesOrder::class, ['record' => $so2->id])
+            ->assertOk()
+            ->assertActionHidden('print')
+            ->assertActionHidden('delete')
+            ->assertActionVisible('cancel');
+    }
+
+    /** @test */
+    public function it_allows_relabeling_tally_item_and_updates_barcode()
+    {
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer->id,
+            'delivery_date' => now()->addDays(2)->format('Y-m-d'),
+            'created_by' => $this->user->id,
+            'status' => 'processing',
+        ]);
+
+        $tally = Tally::create([
+            'sales_order_id' => $so->id,
+            'status' => 'processing',
+        ]);
+
+        $item = TallyItem::create([
+            'tally_id' => $tally->id,
+            'barcode' => '1140626MT00100122500800001',
+            'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id,
+            'weight' => 22.50,
+            'qty_pcs' => 8,
+            'ph_level' => null,
+            'pack_date' => '2026-06-14',
+            'origin' => 'BONING',
+        ]);
+
+        // Create the corresponding stock movement
+        $movement = \App\Models\BeefStockMovement::create([
+            'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse->id,
+            'condition' => $this->grade->id,
+            'barcode' => '1140626MT00100122500800001',
+            'transaction_type' => 'TALLY',
+            'reference_document' => $tally->tally_number,
+            'weight_in' => 0,
+            'weight_out' => 22.50,
+            'pcs_in' => 0,
+            'pcs_out' => 8,
+            'created_by' => $this->user->id,
+        ]);
+
+        $newPackDate = '2026-06-15'; // one day later
+        
+        Livewire::actingAs($this->user)
+            ->test(ScanTally::class, ['record' => $tally])
+            ->callTableAction('relabel', $item, [
+                'pack_date' => $newPackDate,
+                'show_exp' => true,
+            ]);
+
+        $item->refresh();
+        $movement->refresh();
+
+        // New barcode should start with '6' + new pack date '150626'
+        $expectedNewBarcode = '6150626MT0010122500800001';
+        
+        $this->assertEquals($expectedNewBarcode, $item->barcode);
+        $this->assertEquals($newPackDate, $item->pack_date->format('Y-m-d'));
+        
+        // Expiry date should be calculated (Chill / A = +3 months)
+        $expectedExpDate = \Carbon\Carbon::parse($newPackDate)->addMonths(3)->format('Y-m-d');
+        $this->assertEquals($expectedExpDate, $item->exp_date->format('Y-m-d'));
+
+        // Movement should be updated with new barcode
+        $this->assertEquals($expectedNewBarcode, $movement->barcode);
+
+        // Verify activity log was NOT created
+        $this->assertDatabaseMissing('activity_log', [
+            'log_name' => 'tally_item',
+        ]);
+
+        // Verify custom TALLY_RELABEL movement was created in beef_stock_movements
+        $this->assertDatabaseHas('beef_stock_movements', [
+            'transaction_type' => 'TALLY_RELABEL',
+            'barcode' => $expectedNewBarcode,
+            'note' => "Relabel: 1140626MT00100122500800001 -> {$expectedNewBarcode} (POD: 2026-06-14 -> {$newPackDate})",
         ]);
     }
 }

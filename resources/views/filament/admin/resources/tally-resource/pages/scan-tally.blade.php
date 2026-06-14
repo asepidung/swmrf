@@ -1,47 +1,40 @@
 <x-filament-panels::page>
+    <!-- Original split scan layout -->
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; width: 100%;">
-        
         <!-- Left Side: Barcode Scanner & Scanned Items List -->
         <div class="space-y-6">
-            @if($record->status === 'processing')
-                <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
-                    <form wire:submit.prevent="scan">
-                        <div class="flex gap-4 items-end">
-                            <div class="flex-1">
-                                <label for="barcode_input" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">{{ __('Scan Barcode Here') }}</label>
-                                <input 
-                                    id="barcode_input"
-                                    type="text" 
-                                    wire:model="barcode"
-                                    placeholder="{{ __('Scan Barcode Here') }}" 
-                                    class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white text-center text-xl font-bold py-3"
-                                    autofocus
-                                    autocomplete="off"
-                                >
-                            </div>
-                            <div class="w-1/3">
-                                <label for="pod_limit_input" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Max POD Age (Days)</label>
-                                <input 
-                                    id="pod_limit_input"
-                                    type="number" 
-                                    required
-                                    wire:model.live="podLimit"
-                                    placeholder="Limit" 
-                                    class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white text-center text-xl font-bold py-3"
-                                >
-                            </div>
+            <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
+                <form wire:submit.prevent="scan">
+                    <div class="flex gap-4 items-end">
+                        <div class="flex-1">
+                            <label for="barcode_input" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">{{ __('Scan Barcode Here') }}</label>
+                            <input 
+                                id="barcode_input"
+                                type="text" 
+                                wire:model="barcode"
+                                placeholder="{{ __('Scan Barcode Here') }}" 
+                                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white text-center text-xl font-bold py-3"
+                                autofocus
+                                autocomplete="off"
+                                required
+                            >
                         </div>
-                        <button type="submit" class="hidden">Scan</button>
-                    </form>
-                </div>
-            @else
-                <div class="rounded-xl bg-amber-50 p-4 border border-amber-200 text-amber-800 dark:bg-amber-950/20 dark:border-amber-800 dark:text-amber-300">
-                    <strong>{{ __('Locked') }}</strong>: {{ __('Tally has been locked and cannot be modified.') }}
-                    @if($record->seal_number)
-                        <br><strong>{{ __('Seal Number') }}</strong>: {{ $record->seal_number }}
-                    @endif
-                </div>
-            @endif
+                        <div class="w-1/3">
+                            <label for="pod_limit_input" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Max POD Age (Days)</label>
+                            <input 
+                                id="pod_limit_input"
+                                type="number" 
+                                required
+                                min="0"
+                                wire:model.live="podLimit"
+                                placeholder="Limit" 
+                                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white text-center text-xl font-bold py-3"
+                            >
+                        </div>
+                    </div>
+                    <button type="submit" class="hidden">Scan</button>
+                </form>
+            </div>
 
             <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
                 {{ $this->table }}
@@ -105,7 +98,6 @@
                 </table>
             </div>
         </div>
-
     </div>
 
     <script>
@@ -114,6 +106,10 @@
                 const input = document.getElementById('barcode_input');
                 if (input) input.focus();
             }, 50);
+        });
+
+        document.addEventListener('auto-print', (event) => {
+            window.open(event.detail.url, '_blank');
         });
 
         // Initial focus on mount

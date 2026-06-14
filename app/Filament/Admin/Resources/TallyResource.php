@@ -47,7 +47,7 @@ class TallyResource extends Resource
     {
         return $table
             ->defaultSort('id', 'desc')
-            ->recordUrl(null)
+            ->recordUrl(fn (Tally $record): string => static::getUrl('view', ['record' => $record->id]))
             ->columns([
                 Tables\Columns\TextColumn::make('tally_number')
                     ->label(__('Tally Number'))
@@ -60,7 +60,7 @@ class TallyResource extends Resource
                     ->label(__('SO Number'))
                     ->searchable()
                     ->sortable()
-                    ->url(fn (Tally $record): ?string => $record->salesOrder ? route('filament.admin.resources.sales-orders.edit', $record->sales_order_id) : null),
+                    ->weight('bold'),
 
                 Tables\Columns\TextColumn::make('salesOrder.customer.name')
                     ->label(__('Customer'))
@@ -79,7 +79,7 @@ class TallyResource extends Resource
                         'info' => 'processing',
                         'success' => 'locked',
                     ])
-                    ->formatStateUsing(fn (string $state): string => ucfirst($state)),
+                    ->formatStateUsing(fn (string $state): string => $state === 'locked' ? __('Approved') : ucfirst($state)),
 
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label(__('Created By'))
@@ -140,15 +140,13 @@ class TallyResource extends Resource
             })
             ->actions([
                 Tables\Actions\Action::make('scan')
-                    ->label(fn (Tally $record) => $record->status === 'processing' ? __('Scan') : __('View'))
-                    ->icon(fn (Tally $record) => $record->status === 'processing' ? 'heroicon-m-qr-code' : 'heroicon-m-eye')
-                    ->color(fn (Tally $record) => $record->status === 'processing' ? 'primary' : 'gray')
-                    ->url(fn (Tally $record): string => static::getUrl('scan', ['record' => $record->id])),
-
-                Tables\Actions\DeleteAction::make()
-                    ->hidden(fn (Tally $record) => $record->status === 'locked' || $record->trashed())
-                    ->requiresConfirmation()
-                    ->tooltip(__('Delete Tally & Restore Stock')),
+                    ->label('')
+                    ->iconButton()
+                    ->icon('heroicon-m-qr-code')
+                    ->color('primary')
+                    ->tooltip(__('Scan'))
+                    ->url(fn (Tally $record): string => static::getUrl('scan', ['record' => $record->id]))
+                    ->visible(fn (Tally $record) => $record->status === 'processing' && !in_array($record->salesOrder?->status, ['cancelled', 'canceled'])),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -169,6 +167,7 @@ class TallyResource extends Resource
             'index' => Pages\ListTallies::route('/'),
             'draft' => Pages\DraftTally::route('/draft'),
             'scan' => Pages\ScanTally::route('/{record}/scan'),
+            'view' => Pages\ViewTally::route('/{record}'),
         ];
     }
 

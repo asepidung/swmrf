@@ -50,17 +50,19 @@ class ScanTally extends Page implements HasForms, HasTable
     public function mount(Tally $record): void
     {
         $this->record = $record;
+
+        if ($this->record->status !== 'processing' || in_array($this->record->salesOrder?->status, ['cancelled', 'canceled'])) {
+            $this->redirect(TallyResource::getUrl('view', ['record' => $this->record->id]));
+            return;
+        }
+
         $this->podLimit = session('tally_pod_limit');
     }
 
     public function updatedPodLimit($value): void
     {
-        if ($value === null || $value === '' || (int) $value < 0) {
-            $this->podLimit = session('tally_pod_limit', 30);
-            Notification::make()
-                ->title(__('Max POD Age wajib diisi'))
-                ->warning()
-                ->send();
+        if ($value === null || $value === '') {
+            session(['tally_pod_limit' => null]);
             return;
         }
         session(['tally_pod_limit' => (int) $value]);
@@ -70,16 +72,31 @@ class ScanTally extends Page implements HasForms, HasTable
     {
         return [
             Actions\Action::make('back')
-                ->label(__('Back to List'))
+                ->label('')
+                ->tooltip(__('Back to List'))
                 ->icon('heroicon-m-arrow-left')
                 ->color('gray')
+                ->iconButton()
                 ->url(fn () => TallyResource::getUrl('index')),
 
-            Actions\Action::make('lock')
-                ->label(__('Lock Tally'))
-                ->icon('heroicon-m-lock-closed')
+            Actions\Action::make('print')
+                ->label('')
+                ->tooltip(__('Print Tally'))
+                ->icon('heroicon-m-printer')
+                ->color('gray')
+                ->iconButton()
+                ->url(fn () => route('print.tally', ['record' => $this->record->id]))
+                ->openUrlInNewTab(),
+
+            Actions\Action::make('approve')
+                ->label('')
+                ->tooltip(__('Approve Tally'))
+                ->icon('heroicon-m-check-circle')
                 ->color('success')
+                ->iconButton()
                 ->requiresConfirmation()
+                ->modalHeading(__('Approve Tally'))
+                ->modalDescription(__('Apakah Anda yakin ingin menyetujui Tally ini? Setelah disetujui, data tidak dapat diubah lagi.'))
                 ->form([
                     Forms\Components\TextInput::make('seal_number')
                         ->label(__('Nomor Segel (Jika Ada)'))
@@ -92,20 +109,22 @@ class ScanTally extends Page implements HasForms, HasTable
                             'seal_number' => $data['seal_number'] ?? null,
                         ]);
                         $this->record->salesOrder->update([
-                            'status' => 'prepared',
+                            'status' => 'ready',
                         ]);
 
                         activity('tally')
                             ->performedOn($this->record)
-                            ->log('Locked Tally: ' . $this->record->tally_number);
+                            ->log('Approved Tally: ' . $this->record->tally_number);
                     });
 
                     Notification::make()
-                        ->title(__('Tally Locked Successfully'))
+                        ->title(__('Tally Approved Successfully'))
                         ->success()
                         ->send();
+
+                    $this->redirect(TallyResource::getUrl('view', ['record' => $this->record->id]));
                 })
-                ->visible(fn () => $this->record->status === 'processing' && auth()->user()->hasPermission('lock_tallies')),
+                ->visible(fn () => auth()->user()->hasPermission('lock_tallies')),
         ];
     }
 
@@ -129,7 +148,12 @@ class ScanTally extends Page implements HasForms, HasTable
                     ->label(__('Grade'))
                     ->alignCenter()
                     ->badge()
-                    ->color(fn ($state) => in_array($state, ['CHILL', 'A']) ? 'info' : 'danger'),
+                    ->formatStateUsing(fn ($state) => match(strtoupper($state)) {
+                        'CHILL' => 'C',
+                        'FROZEN' => 'F',
+                        default => $state,
+                    })
+                    ->color(fn (?TallyItem $record) => $record ? (in_array($record->grade?->name, ['CHILL', 'A']) ? 'info' : 'danger') : null),
 
                 Tables\Columns\TextColumn::make('weight')
                     ->label(__('Weight'))
@@ -144,29 +168,144 @@ class ScanTally extends Page implements HasForms, HasTable
                     ->label(__('pH'))
                     ->alignCenter(),
 
-                Tables\Columns\TextColumn::make('origin')
-                    ->label(__('Origin'))
-                    ->alignCenter(),
-
                 Tables\Columns\TextColumn::make('pack_date')
                     ->label(__('POD'))
                     ->date('d-m-y')
+                    ->alignCenter()
+                    ->color(function (?TallyItem $record, $livewire) {
+                        if (!$record) {
+                            return null;
+                        }
+                        $podLimit = $livewire->podLimit;
+                        if ($podLimit !== null && $podLimit !== '' && $record->pack_date) {
+                            $ageInDays = (int) abs(now()->startOfDay()->diffInDays($record->pack_date->startOfDay()));
+                            if ($ageInDays > (int) $podLimit) {
+                                return 'danger';
+                            }
+                        }
+                        return null;
+                    })
+                    ->action(
+                        Tables\Actions\Action::make('relabel')
+                            ->modalHeading(__('Relabel Tally Item'))
+                            ->modalDescription(__('Ubah tanggal POD dan cetak ulang label.'))
+                            ->form(fn (TallyItem $record) => [
+                                Forms\Components\TextInput::make('product_name')
+                                    ->label(__('Product'))
+                                    ->default($record->product?->name)
+                                    ->readOnly(),
+                                Forms\Components\TextInput::make('old_barcode')
+                                    ->label(__('Old Barcode'))
+                                    ->default($record->barcode)
+                                    ->readOnly(),
+                                Forms\Components\DatePicker::make('pack_date')
+                                    ->label(__('New Pack Date (POD)'))
+                                    ->required()
+                                    ->default($record->pack_date?->format('Y-m-d') ?? now()->format('Y-m-d'))
+                                    ->live(),
+                                Forms\Components\Checkbox::make('show_exp')
+                                    ->label(__('Show Expiry Date on Label'))
+                                    ->default(true),
+                            ])
+                            ->action(function (TallyItem $record, array $data, $livewire) {
+                                $newPackDate = $data['pack_date'];
+                                $showExp = $data['show_exp'];
+                                
+                                DB::transaction(function () use ($record, $newPackDate, $showExp) {
+                                    $oldBarcode = $record->barcode;
+                                    $oldPackDate = $record->pack_date?->format('Y-m-d');
+                                    $oldExpDate = $record->exp_date?->format('Y-m-d');
+                                    
+                                    // Calculate expiry date based on product type
+                                    $date = \Carbon\Carbon::parse($newPackDate);
+                                    if (in_array((int)$record->grade_id, [1, 3])) { // CHILL or A
+                                        $newExpDate = $date->copy()->addMonths(3)->format('Y-m-d');
+                                    } else {
+                                        $newExpDate = $date->copy()->addYear()->format('Y-m-d');
+                                    }
+                                    
+                                    // Generate new barcode starting with prefix '6'
+                                    $origin = '6';
+                                    $dateStr = \Carbon\Carbon::parse($newPackDate)->format('dmy');
+                                    $productCode = $record->product?->code ?? '000000';
+                                    if (strlen($productCode) > 6) {
+                                        $productCode = substr($productCode, 0, 6);
+                                    } else {
+                                        $productCode = str_pad($productCode, 6, '0', STR_PAD_LEFT);
+                                    }
+                                    
+                                    $gradeId = $record->grade_id;
+                                    $weightStr = str_pad(round($record->weight * 100), 4, '0', STR_PAD_LEFT);
+                                    $pcsStr = str_pad($record->qty_pcs, 2, '0', STR_PAD_LEFT);
+                                    $phStr = isset($record->ph_level) ? str_pad(round($record->ph_level * 10), 2, '0', STR_PAD_LEFT) : '00';
+                                    
+                                    $prefix = $origin . $dateStr;
+                                    
+                                    // Find maximum counter in tally_items
+                                    $latestTallyItem = \App\Models\TallyItem::where('barcode', 'like', $prefix . '%')->orderBy('id', 'desc')->first();
+                                    $counterTally = ($latestTallyItem && strlen($latestTallyItem->barcode) >= 25) ? ((int) substr($latestTallyItem->barcode, -3)) : 0;
+
+                                    // Find maximum counter in beef_stocks
+                                    $latestBeefStock = \App\Models\BeefStock::where('barcode', 'like', $prefix . '%')->orderBy('id', 'desc')->first();
+                                    $counterStock = ($latestBeefStock && strlen($latestBeefStock->barcode) >= 25) ? ((int) substr($latestBeefStock->barcode, -3)) : 0;
+
+                                    $counter = max($counterTally, $counterStock) + 1;
+                                    $counterStr = str_pad($counter, 3, '0', STR_PAD_LEFT);
+                                    
+                                    $newBarcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
+                                    
+                                    // Update tally item
+                                    $record->update([
+                                        'barcode' => $newBarcode,
+                                        'pack_date' => $newPackDate,
+                                        'exp_date' => $newExpDate,
+                                    ]);
+                                    
+                                    // Update matching beef stock movement of type TALLY
+                                    \App\Models\BeefStockMovement::where('barcode', $oldBarcode)
+                                        ->where('transaction_type', 'TALLY')
+                                        ->update([
+                                            'barcode' => $newBarcode,
+                                        ]);
+                                        
+                                    // Log the change in beef_stock_movements
+                                    \App\Models\BeefStockMovement::create([
+                                        'product_id' => $record->product_id,
+                                        'warehouse_id' => $record->warehouse_id,
+                                        'condition' => $record->grade_id,
+                                        'barcode' => $newBarcode,
+                                        'transaction_type' => 'TALLY_RELABEL',
+                                        'reference_document' => $record->tally?->tally_number ?? $record->tally_id,
+                                        'weight_in' => 0,
+                                        'weight_out' => 0,
+                                        'pcs_in' => 0,
+                                        'pcs_out' => 0,
+                                        'note' => "Relabel: {$oldBarcode} -> {$newBarcode} (POD: {$oldPackDate} -> {$newPackDate})",
+                                        'created_by' => auth()->id() ?? 1,
+                                    ]);
+                                });
+                                
+                                Notification::make()
+                                    ->title(__('Tally Item Relabeled Successfully'))
+                                    ->success()
+                                    ->send();
+                                    
+                                $printUrl = route('tally-item.label', [
+                                    'id' => $record->id,
+                                    'show_exp' => $showExp ? 1 : 0
+                                ]);
+                                
+                                $livewire->dispatch('auto-print', url: $printUrl);
+                            })
+                    ),
+
+                Tables\Columns\TextColumn::make('origin')
+                    ->label(__('Origin'))
                     ->alignCenter(),
             ])
-            ->recordClasses(function (TallyItem $record) {
-                $podLimit = $this->podLimit;
-                if ($podLimit !== null && $podLimit !== '' && $record->pack_date) {
-                    $ageInDays = (int) abs(now()->startOfDay()->diffInDays($record->pack_date->startOfDay()));
-                    if ($ageInDays > (int) $podLimit) {
-                        return 'bg-danger-500/10 text-danger-700 dark:text-danger-300 font-semibold';
-                    }
-                }
-                return null;
-            })
             ->actions([
                 Tables\Actions\DeleteAction::make()
                     ->iconButton()
-                    ->hidden(fn () => $this->record->status === 'locked')
                     ->requiresConfirmation()
                     ->tooltip(__('Delete Data'))
                     ->after(function () {
@@ -180,7 +319,7 @@ class ScanTally extends Page implements HasForms, HasTable
 
     public function scan()
     {
-        if ($this->record->status !== 'processing') {
+        if ($this->record->status !== 'processing' || in_array($this->record->salesOrder?->status, ['cancelled', 'canceled'])) {
             return;
         }
 
@@ -262,6 +401,7 @@ class ScanTally extends Page implements HasForms, HasTable
                     'pcs_in' => 0,
                     'pcs_out' => $stock->qty_pcs,
                     'note' => 'Scan Tally',
+                    'created_by' => auth()->id() ?? 1,
                 ]);
             });
 
@@ -300,5 +440,30 @@ class ScanTally extends Page implements HasForms, HasTable
             ];
         }
         return $summary;
+    }
+
+    public function getViewData(): array
+    {
+        $productData = [];
+        foreach ($this->record->items as $item) {
+            $productName = $item->product?->name ?? 'Unknown';
+            if (!isset($productData[$productName])) {
+                $productData[$productName] = [
+                    'weights' => [],
+                    'total' => 0,
+                ];
+            }
+            $productData[$productName]['weights'][] = (float) $item->weight;
+            $productData[$productName]['total'] += (float) $item->weight;
+        }
+
+        $totalBox = $this->record->items()->count();
+        $totalQty = (float) $this->record->items()->sum('weight');
+
+        return [
+            'productData' => $productData,
+            'totalBox' => $totalBox,
+            'totalQty' => $totalQty,
+        ];
     }
 }

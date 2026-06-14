@@ -18,19 +18,26 @@ class EditSalesOrder extends EditRecord
                 ->icon('heroicon-o-printer')
                 ->color('success')
                 ->url(fn(): string => route('print.salesorder', $this->record))
-                ->openUrlInNewTab(),
+                ->openUrlInNewTab()
+                ->visible(fn(): bool => !in_array($this->record->status, ['cancelled', 'canceled'])),
             Actions\Action::make('cancel')
                 ->label(__('Cancel'))
                 ->color('gray')
                 ->url($this->getResource()::getUrl('index')),
-            Actions\DeleteAction::make(),
-            Actions\ForceDeleteAction::make(),
-            Actions\RestoreAction::make(),
+            Actions\DeleteAction::make()
+                ->hidden(fn(): bool => in_array($this->record->status, ['cancelled', 'canceled', 'ready'])),
+            Actions\ForceDeleteAction::make()
+                ->hidden(fn(): bool => in_array($this->record->status, ['cancelled', 'canceled', 'ready'])),
+            Actions\RestoreAction::make()
+                ->hidden(fn(): bool => in_array($this->record->status, ['cancelled', 'canceled', 'ready'])),
         ];
     }
 
     protected function getFormActions(): array
     {
+        if (in_array($this->record->status, ['cancelled', 'canceled', 'ready'])) {
+            return [];
+        }
         return [
             $this->getSaveFormAction(),
         ];

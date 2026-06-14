@@ -70,13 +70,13 @@ class Tally extends Model
                 $nextSequence = 1;
 
                 if ($lastTally && !empty($lastTally->tally_number)) {
-                    // tally_number format: TS-YYxxx (e.g. TS-26001)
-                    // The sequence is the last 3 characters
-                    $lastSequence = (int) substr($lastTally->tally_number, -3);
+                    // tally_number format: TS#YYxxxx (e.g. TS#260001)
+                    // The sequence is the last 4 characters
+                    $lastSequence = (int) substr($lastTally->tally_number, -4);
                     $nextSequence = $lastSequence + 1;
                 }
 
-                $tally->tally_number = 'TS-' . $year2Digit . str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
+                $tally->tally_number = 'TS#' . $year2Digit . str_pad($nextSequence, 4, '0', STR_PAD_LEFT);
             }
         });
 

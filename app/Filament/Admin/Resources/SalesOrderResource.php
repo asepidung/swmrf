@@ -89,7 +89,8 @@ class SalesOrderResource extends Resource
 
                         Forms\Components\Hidden::make('created_by')
                             ->default(fn() => auth()->id()),
-                    ])->columns(3),
+                    ])->columns(3)
+                    ->disabled(fn (?SalesOrder $record) => in_array($record?->status, ['cancelled', 'canceled', 'ready'])),
 
                 Forms\Components\Section::make(__('Products Detail'))
                     ->compact()
@@ -162,6 +163,7 @@ class SalesOrderResource extends Resource
                         Forms\Components\Actions\Action::make('add_products')
                             ->label(__('Add Products'))
                             ->icon('heroicon-m-plus')
+                            ->visible(fn (?SalesOrder $record) => !in_array($record?->status, ['cancelled', 'canceled', 'ready']))
                             ->form([
                                 Forms\Components\Select::make('product_ids')
                                     ->label(__('Select Products'))
@@ -296,6 +298,7 @@ class SalesOrderResource extends Resource
                                     ->columnSpan(3),
                             ]),
                     ])
+                    ->disabled(fn (?SalesOrder $record) => in_array($record?->status, ['cancelled', 'canceled', 'ready']))
             ]);
     }
 
@@ -371,7 +374,7 @@ class SalesOrderResource extends Resource
                         'gray' => 'waiting',
                         'info' => 'processing',
                         'warning' => 'prepared',
-                        'success' => 'completed',
+                        'success' => ['completed', 'ready'],
                         'danger' => 'cancelled',
                     ])
                     ->formatStateUsing(fn(string $state): string => ucfirst($state)),
@@ -453,7 +456,7 @@ class SalesOrderResource extends Resource
             ->actions([
                 // Clickable rows handle editing; no action buttons displayed on the index table.
             ])
-            ->recordUrl(fn(SalesOrder $record) => (in_array($record->status, ['waiting', 'processing']) && !$record->trashed()) ? Pages\EditSalesOrder::getUrl([$record->id]) : null)
+            ->recordUrl(fn(SalesOrder $record) => !$record->trashed() ? Pages\EditSalesOrder::getUrl([$record->id]) : null)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
