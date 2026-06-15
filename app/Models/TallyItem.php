@@ -55,6 +55,19 @@ class TallyItem extends Model
     protected static function booted()
     {
         static::deleted(function (TallyItem $item) {
+            $tally = $item->tally;
+            $do = $tally ? \App\Models\DeliveryOrder::where('tally_id', $tally->id)->first() : null;
+
+            $note = $do 
+                ? 'Tolakan dari DO#' . $do->delivery_order_number 
+                : 'Unscan / Return to stock from Tally';
+            
+            $refDoc = $do 
+                ? $do->delivery_order_number 
+                : ($tally?->tally_number ?? 'Tally rollback');
+
+            $txType = $do ? 'DO_REJECT' : 'TALLY_REVERT';
+
             // Restore to beef_stocks
             BeefStock::create([
                 'barcode' => $item->barcode,
@@ -68,21 +81,22 @@ class TallyItem extends Model
                 'exp_date' => $item->exp_date,
                 'origin' => $item->origin,
                 'status' => 'IN_STOCK',
+                'note' => $note,
             ]);
 
-            // Log beef stock movement (TALLY_REVERT / TALLY_RETURN)
+            // Log beef stock movement
             BeefStockMovement::create([
                 'product_id' => $item->product_id,
                 'warehouse_id' => $item->warehouse_id,
                 'condition' => $item->grade_id, // condition stores grade_id
                 'barcode' => $item->barcode,
-                'transaction_type' => 'TALLY_REVERT',
-                'reference_document' => $item->tally?->tally_number ?? 'Tally rollback',
+                'transaction_type' => $txType,
+                'reference_document' => $refDoc,
                 'weight_in' => $item->weight,
                 'weight_out' => 0,
                 'pcs_in' => $item->qty_pcs,
                 'pcs_out' => 0,
-                'note' => 'Unscan / Return to stock from Tally',
+                'note' => $note,
                 'created_by' => Auth::id() ?? 1, // Fallback if no user is authenticated (e.g. CLI/testing)
             ]);
         });

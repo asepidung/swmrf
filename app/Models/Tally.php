@@ -42,6 +42,11 @@ class Tally extends Model
         return $this->hasMany(TallyItem::class, 'tally_id');
     }
 
+    public function deliveryOrder(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(DeliveryOrder::class, 'tally_id');
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

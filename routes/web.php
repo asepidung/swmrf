@@ -116,6 +116,10 @@ Route::middleware(['web', 'auth'])->group(function () {
         return view('print.tally', compact('record', 'productData', 'totalBox', 'totalQty'));
     })->name('print.tally');
 
+    Route::get('/print/delivery-order/{record}', function (\App\Models\DeliveryOrder $record) {
+        return view('print.delivery-order', compact('record'));
+    })->name('print.delivery-order');
+
     Route::get('/print/tally-item/{id}', function ($id) {
         $item = \App\Models\TallyItem::with(['product', 'grade'])->findOrFail($id);
         return view('print.tally-item-label', compact('item'));

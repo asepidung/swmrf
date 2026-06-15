@@ -239,6 +239,8 @@
     "Edit Price List": "Ubah Price List",
     "Last Updated": "Terakhir Diperbarui",
     "Created By": "Dibuat Oleh",
+    "Ready": "Siap Kirim",
+    "Approved": "Disetujui",
     "Manage Price List": "Kelola Price List",
     "Head Office Address": "Alamat Kantor Pusat",
     "Head Office PIC": "PIC Kantor Pusat",
@@ -269,5 +271,16 @@
     "BARANG TIDAK TERDAFTAR di Stock": "BARANG TIDAK TERDAFTAR di Stock",
     "Barang Tidak ada di PO": "Barang Tidak ada di PO",
     "Ada Sales Order baru yang siap dibuatkan Tally": "Ada Sales Order baru yang siap dibuatkan Tally",
-    "Ada :count Sales Order yang belum dibuatkan Tally.": "Ada :count Sales Order yang belum dibuatkan Tally."
+    "Ada :count Sales Order yang belum dibuatkan Tally.": "Ada :count Sales Order yang belum dibuatkan Tally.",
+    "Plan Delivery": "Plan Delivery",
+    "Plan Deliveries": "Plan Delivery",
+    "Trip Details": "Detail Perjalanan",
+    "Driver": "Sopir",
+    "Armada": "Armada",
+    "Jam Loading": "Jam Loading",
+    "Associated Sales Orders": "Sales Order Terkait",
+    "Plan Delivery Items Detail": "Detail Item Rencana Pengiriman",
+    "Cancel": "Batal",
+    "Ada :count rencana pengiriman besok yang belum ditentukan driver/armadanya.": "Ada :count rencana pengiriman besok yang belum ditentukan driver/armadanya.",
+    "Police Number": "No. Polisi"
 }

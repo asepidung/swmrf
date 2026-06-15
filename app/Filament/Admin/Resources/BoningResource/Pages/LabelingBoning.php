@@ -237,8 +237,20 @@ class LabelingBoning extends Page implements HasForms, HasTable
                         'onclick' => 'event.preventDefault(); event.stopPropagation();',
                         'style' => 'cursor: not-allowed;',
                     ]),
+                Tables\Actions\Action::make('tally_status')
+                    ->label('D')
+                    ->color('info')
+                    ->tooltip(__('Barang sudah masuk tally'))
+                    ->visible(fn (BoningItem $record) => DB::table('tally_items')->where('barcode', $record->barcode)->exists())
+                    ->extraAttributes([
+                        'onclick' => 'event.preventDefault(); event.stopPropagation();',
+                        'style' => 'cursor: not-allowed;',
+                    ]),
                 Tables\Actions\DeleteAction::make()
-                    ->hidden(fn (BoningItem $record) => DB::table('repack_materials')->where('barcode', $record->barcode)->exists())
+                    ->hidden(fn (BoningItem $record) => 
+                        DB::table('repack_materials')->where('barcode', $record->barcode)->exists() ||
+                        DB::table('tally_items')->where('barcode', $record->barcode)->exists()
+                    )
                     ->icon('heroicon-m-trash')
                     ->hiddenLabel()
                     ->color('danger')
@@ -250,6 +262,15 @@ class LabelingBoning extends Page implements HasForms, HasTable
                             Notification::make()
                                 ->title(__('Gagal!'))
                                 ->body(__('Barang sudah digunakan di modul Repack.'))
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        if (DB::table('tally_items')->where('barcode', $record->barcode)->exists()) {
+                            Notification::make()
+                                ->title(__('Gagal!'))
+                                ->body(__('Barang sudah digunakan di modul Tally.'))
                                 ->danger()
                                 ->send();
                             return;

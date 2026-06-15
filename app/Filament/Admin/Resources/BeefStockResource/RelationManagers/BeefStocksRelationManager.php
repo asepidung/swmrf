@@ -69,6 +69,11 @@ class BeefStocksRelationManager extends RelationManager
                     ->label(__('Origin'))
                     ->alignCenter()
                     ->formatStateUsing(fn ($state) => __($state)),
+
+                Tables\Columns\TextColumn::make('note')
+                    ->label(__('Note'))
+                    ->wrap()
+                    ->searchable(),
             ])
             ->filters([])
             ->headerActions([])

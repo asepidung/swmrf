@@ -25,7 +25,8 @@ class BeefStock extends Model
         'pack_date',
         'exp_date',
         'origin',
-        'status'
+        'status',
+        'note'
     ];
 
     protected $casts = [

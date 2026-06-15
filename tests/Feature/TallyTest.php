@@ -889,4 +889,57 @@ class TallyTest extends TestCase
             'note' => "Relabel: 1140626MT00100122500800001 -> {$expectedNewBarcode} (POD: 2026-06-14 -> {$newPackDate})",
         ]);
     }
+
+    /** @test */
+    public function it_allows_deleting_tally_from_scan_page_when_processing_and_restores_stock()
+    {
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer->id,
+            'delivery_date' => now()->addDays(2)->format('Y-m-d'),
+            'po_number' => 'PO12345',
+            'shipping_address' => 'Jakarta Barat',
+            'note' => 'Deliver early morning',
+            'created_by' => $this->user->id,
+            'status' => 'processing',
+        ]);
+
+        $tally = Tally::create([
+            'sales_order_id' => $so->id,
+            'status' => 'processing',
+        ]);
+
+        $item = TallyItem::create([
+            'tally_id' => $tally->id,
+            'barcode' => 'BC_SCAN_DEL_1',
+            'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id,
+            'weight' => 10.0,
+            'qty_pcs' => 1,
+            'pack_date' => now(),
+            'origin' => 'BONING',
+        ]);
+
+        // Access ScanTally page and trigger delete
+        Livewire::actingAs($this->user)
+            ->test(ScanTally::class, ['record' => $tally])
+            ->assertActionExists('delete')
+            ->callAction('delete');
+
+        // Assert Tally is soft deleted
+        $this->assertTrue($tally->fresh()->trashed());
+
+        // Assert TallyItem is deleted
+        $this->assertDatabaseMissing('tally_items', ['id' => $item->id]);
+
+        // Assert stock is restored
+        $this->assertDatabaseHas('beef_stocks', [
+            'barcode' => 'BC_SCAN_DEL_1',
+            'weight' => 10.0,
+        ]);
+
+        // Assert SO status reverted to waiting
+        $so->refresh();
+        $this->assertEquals('waiting', $so->status);
+    }
 }

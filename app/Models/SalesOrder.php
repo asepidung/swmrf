@@ -21,6 +21,8 @@ class SalesOrder extends Model
         'status',
         'note',
         'created_by',
+        'delivery_plan_id',
+        'delivery_note',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -65,6 +67,26 @@ class SalesOrder extends Model
                 $model->so_number = 'SO#' . $year2Digit . str_pad($nextSequence, 4, '0', STR_PAD_LEFT);
             }
         });
+
+        static::saving(function ($model) {
+            if ($model->customer_id && $model->delivery_date) {
+                if ($model->isDirty('customer_id') || $model->isDirty('delivery_date') || is_null($model->delivery_plan_id)) {
+                    $plan = DeliveryPlan::withTrashed()->firstOrCreate(
+                        [
+                            'customer_id' => $model->customer_id,
+                            'delivery_date' => $model->delivery_date
+                        ],
+                        [
+                            'created_by' => auth()->id()
+                        ]
+                    );
+                    if ($plan->trashed()) {
+                        $plan->restore();
+                    }
+                    $model->delivery_plan_id = $plan->id;
+                }
+            }
+        });
     }
 
     public function customer()
@@ -85,5 +107,10 @@ class SalesOrder extends Model
     public function tally()
     {
         return $this->hasOne(Tally::class, 'sales_order_id');
+    }
+
+    public function deliveryPlan()
+    {
+        return $this->belongsTo(DeliveryPlan::class);
     }
 }

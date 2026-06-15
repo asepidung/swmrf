@@ -93,4 +93,22 @@ class PendingTaskWidget extends Widget
         }
         return \App\Models\SalesOrder::where('status', 'waiting')->count();
     }
+
+    public function getPendingDeliveryPlanCount(): int
+    {
+        $user = auth()->user();
+        if (!$user->isProgrammer() && !$user->hasPermission('edit_delivery_plans')) {
+            return 0;
+        }
+        $tomorrow = now()->addDay()->toDateString();
+        return \App\Models\DeliveryPlan::whereDate('delivery_date', $tomorrow)
+            ->where(function ($query) {
+                $query->whereNull('driver')
+                    ->orWhere('driver', '')
+                    ->orWhereNull('armada')
+                    ->orWhere('armada', '')
+                    ->orWhereNull('load_time');
+            })
+            ->count();
+    }
 }

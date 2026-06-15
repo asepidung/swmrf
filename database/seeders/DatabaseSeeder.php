@@ -196,6 +196,21 @@ class DatabaseSeeder extends Seeder
             ['name' => 'delete_tallies', 'module_name' => 'Tallies', 'description' => 'Delete tallies'],
             ['name' => 'view_deleted_tallies', 'module_name' => 'Tallies', 'description' => 'View deleted tallies'],
             ['name' => 'lock_tallies', 'module_name' => 'Tallies', 'description' => 'Lock tallies'],
+
+            // Delivery Plans Module
+            ['name' => 'view_delivery_plans', 'module_name' => 'Delivery Plans', 'description' => 'View delivery plans'],
+            ['name' => 'create_delivery_plans', 'module_name' => 'Delivery Plans', 'description' => 'Create delivery plans'],
+            ['name' => 'edit_delivery_plans', 'module_name' => 'Delivery Plans', 'description' => 'Edit delivery plans'],
+            ['name' => 'delete_delivery_plans', 'module_name' => 'Delivery Plans', 'description' => 'Delete delivery plans'],
+            ['name' => 'view_deleted_delivery_plans', 'module_name' => 'Delivery Plans', 'description' => 'View deleted delivery plans'],
+
+            // Delivery Orders Module
+            ['name' => 'view_delivery_orders', 'module_name' => 'Delivery Orders', 'description' => 'View delivery orders'],
+            ['name' => 'create_delivery_orders', 'module_name' => 'Delivery Orders', 'description' => 'Create delivery orders'],
+            ['name' => 'edit_delivery_orders', 'module_name' => 'Delivery Orders', 'description' => 'Edit delivery orders'],
+            ['name' => 'delete_delivery_orders', 'module_name' => 'Delivery Orders', 'description' => 'Delete delivery orders'],
+            ['name' => 'view_deleted_delivery_orders', 'module_name' => 'Delivery Orders', 'description' => 'View deleted delivery orders'],
+            ['name' => 'view_delivery_receipts', 'module_name' => 'Delivery Orders', 'description' => 'View delivery receipts'],
         ];
 
         foreach ($permissions as $perm) {

@@ -10,6 +10,10 @@ use App\Models\Warehouse;
 use App\Models\Product;
 use App\Models\BeefStock;
 use App\Models\BeefStockMovement;
+use App\Models\Customer;
+use App\Models\CustomerSegment;
+use App\Models\SalesOrder;
+use App\Models\Tally;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Livewire\Livewire;
@@ -213,5 +217,94 @@ class BoningTest extends TestCase
             ->test(LabelingBoning::class, ['record' => $boning])
             ->assertTableActionHidden('delete', $item)
             ->assertTableActionVisible('repack_status', $item);
+    }
+
+    /** @test */
+    public function it_hides_delete_action_and_shows_tally_status_action_when_item_is_in_tally_items()
+    {
+        $user = User::factory()->create(['role' => 'programmer', 'is_active' => true]);
+
+        $boning = Boning::create([
+            'boning_date' => now()->format('Y-m-d'),
+            'created_by' => $user->id,
+        ]);
+
+        $segment = CustomerSegment::create([
+            'name' => 'RETAIL',
+            'is_active' => true,
+        ]);
+
+        $customer = Customer::create([
+            'name' => 'BLACK OWL',
+            'customer_segment_id' => $segment->id,
+            'address' => 'Ruko PIK',
+            'pic' => 'John Doe',
+            'phone' => '0812345678',
+            'top' => 30,
+        ]);
+
+        $so = SalesOrder::create([
+            'customer_id' => $customer->id,
+            'delivery_date' => now()->addDays(2)->format('Y-m-d'),
+            'po_number' => 'PO12345',
+            'created_by' => $user->id,
+            'status' => 'processing',
+        ]);
+
+        $tally = Tally::create([
+            'sales_order_id' => $so->id,
+            'status' => 'processing',
+        ]);
+
+        $category = \App\Models\ProductCategory::create([
+            'name' => 'MEAT',
+            'prefix' => 'MT',
+            'is_active' => true,
+        ]);
+
+        $product = Product::create([
+            'name' => 'SIRLOIN BEEF',
+            'code' => 'B001',
+            'category_id' => $category->id,
+            'structure_type' => 'main',
+            'is_active' => true,
+        ]);
+
+        $warehouse = Warehouse::where('code', 'JONGGOL')->first();
+        $grade = Grade::where('name', 'CHILL')->first();
+
+        $item = BoningItem::create([
+            'boning_id' => $boning->id,
+            'product_id' => $product->id,
+            'warehouse_id' => $warehouse->id,
+            'grade_id' => $grade->id,
+            'weight' => 12.55,
+            'qty_pcs' => 3,
+            'ph_level' => 5.5,
+            'pack_date' => now(),
+            'exp_date' => now()->addMonths(3),
+            'barcode' => '1100626B001112550355001',
+            'created_by' => $user->id,
+        ]);
+
+        // Insert into tally_items
+        \App\Models\TallyItem::create([
+            'tally_id' => $tally->id,
+            'barcode' => '1100626B001112550355001',
+            'product_id' => $product->id,
+            'warehouse_id' => $warehouse->id,
+            'grade_id' => $grade->id,
+            'weight' => 12.55,
+            'qty_pcs' => 3,
+            'ph_level' => 5.5,
+            'pack_date' => now(),
+            'exp_date' => now()->addMonths(3),
+            'origin' => 'BONING',
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(LabelingBoning::class, ['record' => $boning])
+            ->assertTableActionHidden('delete', $item)
+            ->assertTableActionVisible('tally_status', $item);
     }
 }

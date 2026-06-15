@@ -125,6 +125,27 @@ class ScanTally extends Page implements HasForms, HasTable
                     $this->redirect(TallyResource::getUrl('view', ['record' => $this->record->id]));
                 })
                 ->visible(fn () => auth()->user()->hasPermission('lock_tallies')),
+
+            Actions\Action::make('delete')
+                ->label('')
+                ->tooltip(__('Delete Tally'))
+                ->icon('heroicon-m-trash')
+                ->color('danger')
+                ->iconButton()
+                ->requiresConfirmation()
+                ->modalHeading(__('Hapus Tally'))
+                ->modalDescription(__('Jika Anda menghapus Tally ini, maka semua data barang di dalam Tally akan dikembalikan ke stock.'))
+                ->action(function () {
+                    DB::transaction(function () {
+                        $this->record->delete();
+                    });
+                    Notification::make()
+                        ->title(__('Tally Deleted and Stock Restored'))
+                        ->success()
+                        ->send();
+                    $this->redirect(TallyResource::getUrl('index'));
+                })
+                ->visible(fn () => $this->record->status === 'processing' && auth()->user()->hasPermission('delete_tallies')),
         ];
     }
 

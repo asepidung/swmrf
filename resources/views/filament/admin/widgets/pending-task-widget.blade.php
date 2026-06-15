@@ -1,5 +1,5 @@
 <x-filament-widgets::widget class="fi-wi-pending-task">
-    @if($this->getPendingReceivingCount() > 0 || $this->getPendingWeighingCount() > 0 || $this->getPendingCarcassCount() > 0 || $this->getPendingMaterialRequestCount() > 0 || $this->getPendingMaterialFinanceCount() > 0 || $this->getPendingProductRequestCount() > 0 || $this->getPendingProductFinanceCount() > 0 || $this->getPendingRepackLockCount() > 0 || $this->getPendingTallyCount() > 0)
+    @if($this->getPendingReceivingCount() > 0 || $this->getPendingWeighingCount() > 0 || $this->getPendingCarcassCount() > 0 || $this->getPendingMaterialRequestCount() > 0 || $this->getPendingMaterialFinanceCount() > 0 || $this->getPendingProductRequestCount() > 0 || $this->getPendingProductFinanceCount() > 0 || $this->getPendingRepackLockCount() > 0 || $this->getPendingTallyCount() > 0 || $this->getPendingDeliveryPlanCount() > 0)
     <div class="space-y-2">
         @if($this->getPendingReceivingCount() > 0)
         <div class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3">
@@ -96,6 +96,17 @@
             </span>
             <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
                 {!! __('Ada :count Sales Order yang belum dibuatkan Tally.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingTallyCount().'</strong>']) !!}
+            </p>
+        </div>
+        @endif
+
+        @if($this->getPendingDeliveryPlanCount() > 0)
+        <div class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3">
+            <span style="color: #f59e0b !important;">
+                <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
+            </span>
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
+                {!! __('Ada :count rencana pengiriman besok yang belum ditentukan driver/armadanya.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingDeliveryPlanCount().'</strong>']) !!}
             </p>
         </div>
         @endif
