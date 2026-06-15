@@ -26,9 +26,9 @@ class AppServiceProvider extends ServiceProvider
                 ->visible(outsidePanels: true);
         });
 
-        \Filament\Support\Facades\FilamentAsset::register([
-            \Filament\Support\Assets\Js::make('auto-logout', asset('js/auto-logout.js')),
-        ]);
+        // \Filament\Support\Facades\FilamentAsset::register([
+        //     \Filament\Support\Assets\Js::make('auto-logout', asset('js/auto-logout.js')),
+        // ]);
 
         \App\Models\GoodsReceiptMaterialItem::observe(\App\Observers\GoodsReceiptMaterialItemObserver::class);
 
