@@ -13,6 +13,10 @@ class ListGoodsReceiptMaterials extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('detail_list')
+                ->label(__('Detail List'))
+                ->color('info')
+                ->url(static::$resource::getUrl('detail-list')),
             Actions\Action::make('draft_po')
                 ->label('Draft PO')
                 ->icon('heroicon-o-document-text')

@@ -39,6 +39,21 @@ class PriceListResource extends Resource
                         Forms\Components\Hidden::make('created_by')
                             ->default(fn () => auth()->id() ?: 1),
 
+                        // Clean Repeater Header UI
+                        Forms\Components\Grid::make(12)
+                            ->schema([
+                                Forms\Components\Placeholder::make('col_product')
+                                    ->label(__('Product'))
+                                    ->columnSpan(4),
+                                Forms\Components\Placeholder::make('col_price')
+                                    ->label(__('Price'))
+                                    ->columnSpan(4),
+                                Forms\Components\Placeholder::make('col_note')
+                                    ->label(__('Note (Optional)'))
+                                    ->columnSpan(4),
+                            ])
+                            ->extraAttributes(['class' => 'hidden md:grid']),
+
                         Forms\Components\Repeater::make('items')
                             ->relationship('items')
                             ->label('')

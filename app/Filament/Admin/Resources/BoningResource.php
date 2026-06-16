@@ -176,6 +176,33 @@ class BoningResource extends Resource
                     ->limit(50)
                     ->searchable(),
             ])
+            ->filters([
+                Tables\Filters\Filter::make('boning_date')
+                    ->form([
+                        Forms\Components\DatePicker::make('boning_from')
+                            ->label(__('From Date')),
+                        Forms\Components\DatePicker::make('boning_until')
+                            ->label(__('Until Date')),
+                    ])
+                    ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
+                        $from = $data['boning_from'] ?? now()->startOfMonth()->toDateString();
+                        $until = $data['boning_until'] ?? now()->toDateString();
+
+                        return $query
+                            ->when($from, fn($q, $date) => $q->whereDate('boning_date', '>=', $date))
+                            ->when($until, fn($q, $date) => $q->whereDate('boning_date', '<=', $date));
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if ($data['boning_from'] ?? null) {
+                            $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['boning_from'])->format('d M Y');
+                        }
+                        if ($data['boning_until'] ?? null) {
+                            $indicators[] = 'Until: ' . \Carbon\Carbon::parse($data['boning_until'])->format('d M Y');
+                        }
+                        return $indicators;
+                    }),
+            ])
             ->actions([
                 /* 1. Tombol Lock */
                 Tables\Actions\Action::make('toggleLock')

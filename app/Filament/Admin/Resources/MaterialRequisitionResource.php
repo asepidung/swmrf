@@ -68,6 +68,25 @@ class MaterialRequisitionResource extends Resource
 
                 Forms\Components\Section::make('Item Details')
                     ->schema([
+                        // Clean Repeater Header UI
+                        Forms\Components\Grid::make(12)
+                            ->schema([
+                                Forms\Components\Placeholder::make('col_material')
+                                    ->label(__('Material'))
+                                    ->columnSpan(['default' => 12, 'md' => 4]),
+                                Forms\Components\Placeholder::make('col_qty')
+                                    ->label(__('Qty'))
+                                    ->columnSpan(['default' => 6, 'md' => 2]),
+                                Forms\Components\Placeholder::make('col_price')
+                                    ->label(__('Price'))
+                                    ->columnSpan(['default' => 6, 'md' => 3]),
+                                Forms\Components\Placeholder::make('col_item_total')
+                                    ->label(__('Subtotal'))
+                                    ->columnSpan(['default' => 12, 'md' => 3])
+                                    ->hidden(fn ($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord),
+                            ])
+                            ->extraAttributes(['class' => 'hidden md:grid']),
+
                         Forms\Components\Repeater::make('items')
                             ->hiddenLabel()
                             ->reorderableWithDragAndDrop(false)

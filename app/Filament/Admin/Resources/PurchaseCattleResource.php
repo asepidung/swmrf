@@ -57,6 +57,16 @@ class PurchaseCattleResource extends Resource
                 ])->columns(2),
                 
                 Forms\Components\Section::make('Cattle Details')->schema([
+                    // Clean Repeater Header UI
+                    Forms\Components\Grid::make(4)
+                        ->schema([
+                            Forms\Components\Placeholder::make('col_category')->label(__('Category')),
+                            Forms\Components\Placeholder::make('col_qty')->label(__('Qty / Head')),
+                            Forms\Components\Placeholder::make('col_price')->label(__('Price / Kg')),
+                            Forms\Components\Placeholder::make('col_item_notes')->label(__('Item Note')),
+                        ])
+                        ->extraAttributes(['class' => 'hidden md:grid']),
+
                     Forms\Components\Repeater::make('items')
                         ->relationship()
                         ->reorderableWithDragAndDrop(false)

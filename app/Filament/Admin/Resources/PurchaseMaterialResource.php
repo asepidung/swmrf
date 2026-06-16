@@ -62,6 +62,24 @@ class PurchaseMaterialResource extends Resource
 
                 Forms\Components\Section::make('Item Details')
                     ->schema([
+                        // Clean Repeater Header UI
+                        Forms\Components\Grid::make(12)
+                            ->schema([
+                                Forms\Components\Placeholder::make('col_material')
+                                    ->label(__('Material'))
+                                    ->columnSpan(['default' => 12, 'md' => 4]),
+                                Forms\Components\Placeholder::make('col_qty')
+                                    ->label(__('Qty'))
+                                    ->columnSpan(['default' => 6, 'md' => 2]),
+                                Forms\Components\Placeholder::make('col_price')
+                                    ->label(__('Price'))
+                                    ->columnSpan(['default' => 6, 'md' => 3]),
+                                Forms\Components\Placeholder::make('col_subtotal')
+                                    ->label(__('Subtotal'))
+                                    ->columnSpan(['default' => 12, 'md' => 3]),
+                            ])
+                            ->extraAttributes(['class' => 'hidden md:grid']),
+
                         Forms\Components\Repeater::make('items')
                             ->relationship()
                             ->hiddenLabel()
@@ -197,6 +215,7 @@ class PurchaseMaterialResource extends Resource
     {
         return [
             'index' => Pages\ListPurchaseMaterials::route('/'),
+            'detail-list' => Pages\PurchaseMaterialDetailList::route('/detail-list'),
             'view' => Pages\ViewPurchaseMaterial::route('/{record}'),
         ];
     }

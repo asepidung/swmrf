@@ -62,6 +62,24 @@ class PurchaseProductResource extends Resource
 
                 Forms\Components\Section::make('Item Details')
                     ->schema([
+                        // Clean Repeater Header UI
+                        Forms\Components\Grid::make(12)
+                            ->schema([
+                                Forms\Components\Placeholder::make('col_product')
+                                    ->label(__('Product'))
+                                    ->columnSpan(['default' => 12, 'md' => 4]),
+                                Forms\Components\Placeholder::make('col_qty')
+                                    ->label(__('Qty'))
+                                    ->columnSpan(['default' => 6, 'md' => 2]),
+                                Forms\Components\Placeholder::make('col_price')
+                                    ->label(__('Price'))
+                                    ->columnSpan(['default' => 6, 'md' => 3]),
+                                Forms\Components\Placeholder::make('col_subtotal')
+                                    ->label(__('Subtotal'))
+                                    ->columnSpan(['default' => 12, 'md' => 3]),
+                            ])
+                            ->extraAttributes(['class' => 'hidden md:grid']),
+
                         Forms\Components\Repeater::make('items')
                             ->relationship()
                             ->hiddenLabel()
@@ -150,16 +168,27 @@ class PurchaseProductResource extends Resource
                 Tables\Filters\Filter::make('po_date')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')
-                            ->label('From Date')
-                            ->default(now()->startOfMonth()),
+                            ->label('From Date'),
                         Forms\Components\DatePicker::make('created_until')
-                            ->label('Until Date')
-                            ->default(now()),
+                            ->label('Until Date'),
                     ])
                     ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
+                        $from = $data['created_from'] ?? now()->startOfMonth()->toDateString();
+                        $until = $data['created_until'] ?? now()->toDateString();
+
                         return $query
-                            ->when($data['created_from'], fn($q, $date) => $q->whereDate('po_date', '>=', $date))
-                            ->when($data['created_until'], fn($q, $date) => $q->whereDate('po_date', '<=', $date));
+                            ->when($from, fn($q, $date) => $q->whereDate('po_date', '>=', $date))
+                            ->when($until, fn($q, $date) => $q->whereDate('po_date', '<=', $date));
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if ($data['created_from'] ?? null) {
+                            $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['created_from'])->format('d M Y');
+                        }
+                        if ($data['created_until'] ?? null) {
+                            $indicators[] = 'Until: ' . \Carbon\Carbon::parse($data['created_until'])->format('d M Y');
+                        }
+                        return $indicators;
                     })
             ])
                         ->headerActions([
@@ -197,6 +226,7 @@ class PurchaseProductResource extends Resource
     {
         return [
             'index' => Pages\ListPurchaseProducts::route('/'),
+            'detail-list' => Pages\PurchaseProductDetailList::route('/detail-list'),
             'view' => Pages\ViewPurchaseProduct::route('/{record}'),
         ];
     }

@@ -88,6 +88,16 @@ class CattleReceivingResource extends Resource
 
                 Forms\Components\Section::make(__('Cattle Details (Per Head)'))
                     ->schema([
+                        // Clean Repeater Header UI
+                        Forms\Components\Grid::make(4)
+                            ->schema([
+                                Forms\Components\Placeholder::make('col_cattle_class')->label(__('Class')),
+                                Forms\Components\Placeholder::make('col_eartag')->label(__('Eartag')),
+                                Forms\Components\Placeholder::make('col_initial_weight')->label(__('Weight')),
+                                Forms\Components\Placeholder::make('col_notes')->label(__('Notes')),
+                            ])
+                            ->extraAttributes(['class' => 'hidden md:grid']),
+
                         Forms\Components\Repeater::make('items')
                             ->relationship('items')
                             ->schema([
@@ -268,23 +278,57 @@ class CattleReceivingResource extends Resource
                 Tables\Filters\Filter::make('receive_date')
                     ->form([
                         Forms\Components\DatePicker::make('from')
-                            ->label(__('From'))
-                            ->default(now()->startOfMonth()),
+                            ->label(__('From')),
                         Forms\Components\DatePicker::make('until')
-                            ->label(__('Until'))
-                            ->default(now()),
+                            ->label(__('Until')),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
+                        $from = $data['from'] ?? now()->startOfMonth()->toDateString();
+                        $until = $data['until'] ?? now()->toDateString();
+
                         return $query
                             ->when(
-                                $data['from'],
+                                $from,
                                 fn (Builder $query, $date): Builder => $query->whereDate('receive_date', '>=', $date),
                             )
                             ->when(
-                                $data['until'],
+                                $until,
                                 fn (Builder $query, $date): Builder => $query->whereDate('receive_date', '<=', $date),
                             );
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if ($data['from'] ?? null) {
+                            $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['from'])->format('d M Y');
+                        }
+                        if ($data['until'] ?? null) {
+                            $indicators[] = 'Until: ' . \Carbon\Carbon::parse($data['until'])->format('d M Y');
+                        }
+                        return $indicators;
                     }),
+            ])
+            ->headerActions([
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ExportAction::make('excel')
+                        ->label('Excel')
+                        ->icon('heroicon-o-document-text')
+                        ->exporter(\App\Filament\Exports\CattleReceivingExporter::class)
+                        ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
+                    Tables\Actions\Action::make('pdf')
+                        ->label('PDF')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->withCount('items')->get();
+                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.cattle-receivings-pdf', [
+                                'records' => $records
+                            ]);
+                            return response()->streamDownload(fn () => print($pdf->output()), 'cattle-receivings.pdf');
+                        }),
+                ])
+                ->label('Export Data')
+                ->icon('heroicon-m-arrow-down-tray')
+                ->button()
+                ->color('success'),
             ])
             ->actions([
                 // Actions moved to Edit/View page header actions per project guidelines

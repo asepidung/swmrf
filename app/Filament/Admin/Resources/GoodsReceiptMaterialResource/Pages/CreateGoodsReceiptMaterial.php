@@ -116,16 +116,15 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
 
                 Forms\Components\Section::make('Materials to Receive')
                     ->schema([
-                        Forms\Components\Placeholder::make('items_headers')
-                            ->label('')
-                            ->hiddenLabel()
-                            ->content(new \Illuminate\Support\HtmlString('
-                                <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; padding: 0 1rem 0.5rem 1rem;" class="text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                                    <div>Material</div>
-                                    <div>Qty PO</div>
-                                    <div>Qty Received</div>
-                                </div>
-                            ')),
+                        // Clean Repeater Header UI
+                        Forms\Components\Grid::make(3)
+                            ->schema([
+                                Forms\Components\Placeholder::make('col_material')->label(__('Material')),
+                                Forms\Components\Placeholder::make('col_po_qty')->label(__('Qty PO')),
+                                Forms\Components\Placeholder::make('col_qty_received')->label(__('Qty Received')),
+                            ])
+                            ->extraAttributes(['class' => 'hidden md:grid']),
+
                         Forms\Components\Repeater::make('items')
                             ->hiddenLabel()
                             ->schema([

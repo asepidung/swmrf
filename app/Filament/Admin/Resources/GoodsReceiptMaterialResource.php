@@ -60,18 +60,17 @@ class GoodsReceiptMaterialResource extends Resource
                 
                 Forms\Components\Section::make('Materials Received')
                     ->schema([
-                        Forms\Components\Placeholder::make('items_headers')
-                            ->label('')
-                            ->hiddenLabel()
-                            ->content(new HtmlString('
-                                <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1rem; padding: 0 1rem 0.5rem 1rem;" class="text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                                    <div>Material</div>
-                                    <div>Qty PO</div>
-                                    <div>Price</div>
-                                    <div>Qty Received</div>
-                                    <div>Subtotal</div>
-                                </div>
-                            ')),
+                        // Clean Repeater Header UI
+                        Forms\Components\Grid::make(5)
+                            ->schema([
+                                Forms\Components\Placeholder::make('col_material')->label(__('Material')),
+                                Forms\Components\Placeholder::make('col_po_qty')->label(__('Qty PO')),
+                                Forms\Components\Placeholder::make('col_price')->label(__('Price')),
+                                Forms\Components\Placeholder::make('col_qty_received')->label(__('Qty Received')),
+                                Forms\Components\Placeholder::make('col_subtotal')->label(__('Subtotal')),
+                            ])
+                            ->extraAttributes(['class' => 'hidden md:grid']),
+
                         Forms\Components\Repeater::make('items')
                             ->relationship()
                             ->hiddenLabel()
@@ -337,6 +336,7 @@ class GoodsReceiptMaterialResource extends Resource
             'index' => Pages\ListGoodsReceiptMaterials::route('/'),
             'drafts' => Pages\ListPendingPoMaterials::route('/drafts'),
             'create' => Pages\CreateGoodsReceiptMaterial::route('/create'),
+            'detail-list' => Pages\GoodsReceiptMaterialDetailList::route('/detail-list'),
             'view' => Pages\ViewGoodsReceiptMaterial::route('/{record}'),
             'edit' => Pages\EditGoodsReceiptMaterial::route('/{record}/edit'),
         ];
