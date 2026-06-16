@@ -17,8 +17,8 @@ class ListGoodsReceiptProducts extends ListRecords
                 ->label(__('Detail List'))
                 ->color('info')
                 ->url(static::$resource::getUrl('detail-list')),
-            Actions\Action::make('create')
-                ->label(__('Create'))
+            Actions\Action::make('draft')
+                ->label(__('Draft'))
                 ->icon('heroicon-o-document-text')
                 ->color('primary')
                 ->url(fn () => GoodsReceiptProductResource::getUrl('drafts')),

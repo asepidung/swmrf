@@ -146,12 +146,6 @@ class GoodsReceiptProductResource extends Resource
                     ? Pages\ViewGoodsReceiptProduct::getUrl(['record' => $record])
                     : Pages\InputGoodsReceiptProduct::getUrl(['record' => $record]),
             )
-            ->headerActions([
-                Tables\Actions\Action::make('create_from_po')
-                    ->label('Create')
-                    ->color('primary')
-                    ->url(fn (): string => self::getUrl('drafts')),
-            ])
             ->filters([
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_goods_receipt_products')),
