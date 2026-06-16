@@ -205,6 +205,7 @@ class GoodsReceiptProductResource extends Resource
             'drafts' => Pages\ListPendingPoProducts::route('/drafts'),
             'input' => Pages\InputGoodsReceiptProduct::route('/{record}/input'),
             'view' => Pages\ViewGoodsReceiptProduct::route('/{record}'),
+            'detail-list' => Pages\GoodsReceiptProductDetailList::route('/detail-list'),
         ];
     }
 
