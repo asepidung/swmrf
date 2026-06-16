@@ -47,6 +47,22 @@ Route::middleware(['web', 'auth'])->group(function () {
         return view('print.po-product', compact('record'));
     })->name('print.po-product');
 
+    Route::get('/goods-receipt-product/{id}/print', function ($id) {
+        $record = \App\Models\GoodsReceiptProduct::withTrashed()->with([
+            'supplier',
+            'purchaseProduct',
+            'items.product',
+            'items.grade',
+            'createdBy'
+        ])->findOrFail($id);
+        return view('print.goods-receipt-product', compact('record'));
+    })->name('goods-receipt-product.print');
+
+    Route::get('/print-gr-beef-label/{id}', function ($id) {
+        $item = \App\Models\GoodsReceiptProductItem::with(['product', 'goodsReceiptProduct', 'grade'])->findOrFail($id);
+        return view('print.goods-receipt-product-label', compact('item'));
+    })->name('goods-receipt-product.label');
+
     Route::get('/po-cattle/{record}/print', POCattlePrintController::class)->name('po-cattle.print');
     Route::get('/cattle-receiving/{record}/print', CattleReceivingPrintController::class)->name('cattle-receiving.print');
     Route::get('/cattle-weighing/{record}/print', CattleWeighingPrintController::class)->name('cattle-weighing.print');

@@ -19,6 +19,7 @@ class PurchaseProduct extends Model
         'approved_by',
         'total_amount',
         'note',
+        'status',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -48,5 +49,10 @@ class PurchaseProduct extends Model
     public function items()
     {
         return $this->hasMany(PurchaseProductItem::class);
+    }
+
+    public function goodsReceipts()
+    {
+        return $this->hasMany(GoodsReceiptProduct::class);
     }
 }

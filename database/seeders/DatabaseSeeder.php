@@ -140,6 +140,13 @@ class DatabaseSeeder extends Seeder
             ['name' => 'delete_gr_materials', 'module_name' => 'GR Material', 'description' => 'Delete GR materials'],
             ['name' => 'view_deleted_gr_materials', 'module_name' => 'GR Material', 'description' => 'View deleted GR materials'],
 
+            // GR Beef Module
+            ['name' => 'view_goods_receipt_products', 'module_name' => 'GR Beef', 'description' => 'View GR beef'],
+            ['name' => 'create_goods_receipt_products', 'module_name' => 'GR Beef', 'description' => 'Create GR beef'],
+            ['name' => 'edit_goods_receipt_products', 'module_name' => 'GR Beef', 'description' => 'Edit GR beef'],
+            ['name' => 'delete_goods_receipt_products', 'module_name' => 'GR Beef', 'description' => 'Delete GR beef'],
+            ['name' => 'view_deleted_goods_receipt_products', 'module_name' => 'GR Beef', 'description' => 'View deleted GR beef'],
+
             // Payables Module
             ['name' => 'view_payables', 'module_name' => 'Payables', 'description' => 'View payables'],
             ['name' => 'view_deleted_payables', 'module_name' => 'Payables', 'description' => 'View deleted payables'],
