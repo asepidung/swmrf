@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('purchase_products', function (Blueprint $table) {
-            $table->enum('status', ['pending', 'partial', 'completed', 'canceled'])->default('pending')->after('note');
+        Schema::table('goods_receipt_products', function (Blueprint $table) {
+            $table->boolean('is_locked')->default(false)->after('note');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('purchase_products', function (Blueprint $table) {
-            $table->dropColumn('status');
+        Schema::table('goods_receipt_products', function (Blueprint $table) {
+            $table->dropColumn('is_locked');
         });
     }
 };

@@ -119,7 +119,7 @@ class GoodsReceiptProductResource extends Resource
                     ->sortable()
                     ->color(fn (GoodsReceiptProduct $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('sj_number')
-                    ->label('Surat Jalan')
+                    ->label('Delivery Number')
                     ->searchable()
                     ->color(fn (GoodsReceiptProduct $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('purchaseProduct.po_number')
@@ -142,9 +142,7 @@ class GoodsReceiptProductResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->recordUrl(
-                fn (GoodsReceiptProduct $record): string => $record->trashed()
-                    ? Pages\ViewGoodsReceiptProduct::getUrl(['record' => $record])
-                    : Pages\InputGoodsReceiptProduct::getUrl(['record' => $record]),
+                fn (GoodsReceiptProduct $record): string => Pages\InputGoodsReceiptProduct::getUrl(['record' => $record]),
             )
             ->filters([
                 Tables\Filters\TrashedFilter::make()
@@ -199,6 +197,8 @@ class GoodsReceiptProductResource extends Resource
             'drafts' => Pages\ListPendingPoProducts::route('/drafts'),
             'input' => Pages\InputGoodsReceiptProduct::route('/{record}/input'),
             'view' => Pages\ViewGoodsReceiptProduct::route('/{record}'),
+            'labeling' => Pages\LabelingGoodsReceiptProduct::route('/{record}/labeling'),
+            'scan' => Pages\ScanGoodsReceiptProduct::route('/{record}/scan'),
             'detail-list' => Pages\GoodsReceiptProductDetailList::route('/detail-list'),
         ];
     }

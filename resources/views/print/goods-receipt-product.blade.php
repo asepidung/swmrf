@@ -224,7 +224,7 @@
         </div>
 
         <div class="title">
-            <h1>Good Receipt Beef (GRB)</h1>
+            <h1>Receiving Note</h1>
             <div style="font-weight: bold; color: var(--ink); font-size: 14px;">No: {{ $record->gr_number }}</div>
         </div>
 
@@ -249,36 +249,43 @@
             <thead>
                 <tr>
                     <th style="width:40px;">#</th>
-                    <th>Barcode</th>
                     <th>Product Name</th>
-                    <th>Grade</th>
-                    <th style="width:100px;">Weight (Kg)</th>
-                    <th style="width:80px;">Pcs</th>
+                    <th style="width:100px;">Qty PO</th>
+                    <th style="width:100px;">Qty Received</th>
                     <th style="width:120px;">Price</th>
                     <th style="width:150px;">Subtotal</th>
                 </tr>
             </thead>
             <tbody>
                 @php
+                    // Group received items by product_id
+                    $groupedItems = $record->items()
+                        ->select('product_id', DB::raw('SUM(weight) as total_weight'), DB::raw('SUM(qty_pcs) as total_pcs'), DB::raw('SUM(subtotal) as total_subtotal'), DB::raw('MAX(price) as item_price'))
+                        ->groupBy('product_id')
+                        ->with('product')
+                        ->get();
+
                     $subtotalSum = 0;
                 @endphp
-                @forelse($record->items as $index => $item)
+                @forelse($groupedItems as $index => $item)
                 @php
-                    $subtotalSum += $item->subtotal;
+                    $poItem = \App\Models\PurchaseProductItem::where('purchase_product_id', $record->purchase_product_id)
+                        ->where('product_id', $item->product_id)
+                        ->first();
+                    $poQty = $poItem ? $poItem->qty : 0;
+                    $subtotalSum += $item->total_subtotal;
                 @endphp
                 <tr>
                     <td class="center">{{ $index + 1 }}</td>
-                    <td class="center" style="font-family: monospace;">{{ $item->barcode }}</td>
                     <td style="font-weight: bold; font-size: 11px;">{{ $item->product->name ?? '-' }}</td>
-                    <td class="center">{{ $item->grade->name ?? '-' }}</td>
-                    <td class="center">{{ number_format($item->weight, 2, ',', '.') }}</td>
-                    <td class="center">{{ number_format($item->qty_pcs, 0, ',', '.') }}</td>
-                    <td class="num">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
-                    <td class="num">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</td>
+                    <td class="center">{{ number_format($poQty, 2, ',', '.') }}</td>
+                    <td class="center">{{ number_format($item->total_weight, 2, ',', '.') }}</td>
+                    <td class="num">Rp {{ number_format($item->item_price, 0, ',', '.') }}</td>
+                    <td class="num">Rp {{ number_format($item->total_subtotal, 0, ',', '.') }}</td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="center" style="color:#888; padding: 20px;">Tidak ada data produk yang diterima.</td>
+                    <td colspan="6" class="center" style="color:#888; padding: 20px;">Tidak ada data produk yang diterima.</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -289,17 +296,17 @@
                     $grandTotal = $subtotalSum + $tax;
                 @endphp
                 <tr>
-                    <td colspan="7" style="text-align: right; text-transform: uppercase;">Total Sebelum Pajak (Subtotal)</td>
+                    <td colspan="5" style="text-align: right; text-transform: uppercase;">Total Sebelum Pajak (Subtotal)</td>
                     <td class="num">Rp {{ number_format($subtotalSum, 0, ',', '.') }}</td>
                 </tr>
                 <tr>
-                    <td colspan="7" style="text-align: right; text-transform: uppercase;">
+                    <td colspan="5" style="text-align: right; text-transform: uppercase;">
                         PPN ({{ $isTax11 ? '11%' : '0%' }})
                     </td>
                     <td class="num">Rp {{ number_format($tax, 0, ',', '.') }}</td>
                 </tr>
                 <tr style="font-size: 12px; font-weight: bold; background: #eaeaea;">
-                    <td colspan="7" style="text-align: right; text-transform: uppercase;">Total Setelah Pajak (Net Total)</td>
+                    <td colspan="5" style="text-align: right; text-transform: uppercase;">Total Setelah Pajak (Net Total)</td>
                     <td class="num">Rp {{ number_format($grandTotal, 0, ',', '.') }}</td>
                 </tr>
             </tfoot>

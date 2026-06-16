@@ -55,6 +55,18 @@ class ListPendingPoProducts extends Page implements HasTable
                         // Redirect to the Input page
                         return redirect(GoodsReceiptProductResource::getUrl('input', ['record' => $gr->id]));
                     }),
+                Action::make('cancel_po')
+                    ->label('Cancel')
+                    ->icon('heroicon-o-x-mark')
+                    ->color('danger')
+                    ->button()
+                    ->requiresConfirmation()
+                    ->modalHeading('Cancel Purchase Order')
+                    ->modalDescription('Apakah Anda yakin ingin membatalkan Purchase Order ini?')
+                    ->action(function (PurchaseProduct $record) {
+                        $record->update(['status' => 'canceled']);
+                        \Filament\Notifications\Notification::make()->title('PO berhasil dibatalkan!')->success()->send();
+                    }),
             ]);
     }
 }
