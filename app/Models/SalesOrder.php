@@ -70,11 +70,21 @@ class SalesOrder extends Model
 
         static::saving(function ($model) {
             if ($model->customer_id && $model->delivery_date) {
-                if ($model->isDirty('customer_id') || $model->isDirty('delivery_date') || is_null($model->delivery_plan_id)) {
+                // Normalize new date to Y-m-d string
+                $normalizedDate = \Carbon\Carbon::parse($model->delivery_date)->format('Y-m-d');
+
+                // Check if date or customer actually changed
+                $dateChanged = $model->getOriginal('delivery_date')
+                    ? \Carbon\Carbon::parse($model->getOriginal('delivery_date'))->format('Y-m-d') !== $normalizedDate
+                    : true;
+                
+                $customerChanged = $model->isDirty('customer_id');
+
+                if ($dateChanged || $customerChanged || is_null($model->delivery_plan_id)) {
                     $plan = DeliveryPlan::withTrashed()->firstOrCreate(
                         [
                             'customer_id' => $model->customer_id,
-                            'delivery_date' => $model->delivery_date
+                            'delivery_date' => $normalizedDate
                         ],
                         [
                             'created_by' => auth()->id()
@@ -85,6 +95,9 @@ class SalesOrder extends Model
                     }
                     $model->delivery_plan_id = $plan->id;
                 }
+
+                // Keep the date stored in clean Y-m-d format
+                $model->delivery_date = $normalizedDate;
             }
         });
     }

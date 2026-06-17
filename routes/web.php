@@ -140,4 +140,21 @@ Route::middleware(['web', 'auth'])->group(function () {
         $item = \App\Models\TallyItem::with(['product', 'grade'])->findOrFail($id);
         return view('print.tally-item-label', compact('item'));
     })->name('tally-item.label');
+
+    // ------------------------------------------
+    // 8. MODUL PLAN DELIVERY PREVIEW
+    // ------------------------------------------
+    Route::get('/print/delivery-plan/preview', function () {
+        $tomorrow = now()->addDay()->toDateString();
+
+        $records = \App\Models\DeliveryPlan::whereDate('delivery_date', $tomorrow)
+            ->whereHas('salesOrders', function ($q) {
+                $q->whereNotIn('status', ['canceled', 'cancelled']);
+            })
+            ->with(['customer', 'salesOrders'])
+            ->get()
+            ->sortBy('customer.name');
+
+        return view('print.delivery-plan-preview', compact('records', 'tomorrow'));
+    })->name('print.delivery-plan.preview');
 });

@@ -74,7 +74,7 @@ class DeliveryPlanDetailList extends Page implements HasTable
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         $from = $data['delivery_from'] ?? now()->startOfMonth()->toDateString();
-                        $until = $data['delivery_until'] ?? now()->toDateString();
+                        $until = $data['delivery_until'] ?? null;
 
                         return $query->whereHas('deliveryPlan', function ($q) use ($from, $until) {
                             $q->when(

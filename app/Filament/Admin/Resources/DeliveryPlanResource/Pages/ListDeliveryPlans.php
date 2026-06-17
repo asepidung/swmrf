@@ -12,12 +12,26 @@ class ListDeliveryPlans extends ListRecords
 
     protected function getHeaderActions(): array
     {
+        return [];
+    }
+
+    public function getTabs(): array
+    {
         return [
-            Actions\Action::make('detail')
-                ->label(__('Detail'))
-                ->color('info')
-                ->url(fn (): string => $this->getResource()::getUrl('detail-list')),
-            Actions\CreateAction::make()->label(__('Create')),
+            'active' => \Filament\Resources\Components\Tab::make('Active')
+                ->label(__('Active'))
+                ->modifyQueryUsing(fn (\Illuminate\Database\Eloquent\Builder $query) => $query->where(function ($q) {
+                    $q->whereDate('delivery_date', '>', now()->toDateString())
+                      ->orWhere(function ($q2) {
+                          $q2->whereDate('delivery_date', '<=', now()->toDateString())
+                             ->whereHas('salesOrders', function ($q3) {
+                                 $q3->whereNotIn('status', ['on_delivery', 'completed', 'canceled', 'cancelled']);
+                             });
+                      });
+                })),
+            'history' => \Filament\Resources\Components\Tab::make('History')
+                ->label(__('History'))
+                ->modifyQueryUsing(fn (\Illuminate\Database\Eloquent\Builder $query) => $query->whereDate('delivery_date', '<=', now()->toDateString())),
         ];
     }
 }

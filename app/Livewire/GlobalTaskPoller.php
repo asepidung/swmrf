@@ -16,6 +16,9 @@ class GlobalTaskPoller extends Component
     public int $lastSalesOrderId = 0;
     public string $lastMaterialCheckAt = '';
     public string $lastProductCheckAt = '';
+    public int $lastPurchaseMaterialId = 0;
+    public int $lastPurchaseProductId = 0;
+    public int $lastLockedTallyId = 0;
 
     public function mount()
     {
@@ -26,6 +29,9 @@ class GlobalTaskPoller extends Component
             $this->lastSalesOrderId = (int) \App\Models\SalesOrder::max('id');
             $this->lastMaterialCheckAt = now()->toDateTimeString();
             $this->lastProductCheckAt = now()->toDateTimeString();
+            $this->lastPurchaseMaterialId = (int) \App\Models\PurchaseMaterial::max('id');
+            $this->lastPurchaseProductId = (int) \App\Models\PurchaseProduct::max('id');
+            $this->lastLockedTallyId = (int) \App\Models\Tally::where('status', 'locked')->max('id');
         }
     }
 
@@ -40,6 +46,39 @@ class GlobalTaskPoller extends Component
         $currentWeighingId = (int) CattleWeighing::max('id');
         $currentSalesOrderId = (int) \App\Models\SalesOrder::max('id');
         $currentMaterialRequestId = (int) \App\Models\MaterialRequisition::max('id');
+        $currentPurchaseMaterialId = (int) \App\Models\PurchaseMaterial::max('id');
+        $currentPurchaseProductId = (int) \App\Models\PurchaseProduct::max('id');
+        $currentLockedTallyId = (int) \App\Models\Tally::where('status', 'locked')->max('id');
+
+        if ($currentPurchaseMaterialId > $this->lastPurchaseMaterialId) {
+            $this->lastPurchaseMaterialId = $currentPurchaseMaterialId;
+            if (auth()->user()->hasPermission('create_gr_materials')) {
+                Notification::make()
+                    ->title(__('Ada PO Material baru yang siap diterima/dibuatkan GRM.'))
+                    ->warning()
+                    ->send();
+            }
+        }
+
+        if ($currentPurchaseProductId > $this->lastPurchaseProductId) {
+            $this->lastPurchaseProductId = $currentPurchaseProductId;
+            if (auth()->user()->hasPermission('create_goods_receipt_products')) {
+                Notification::make()
+                    ->title(__('Ada PO Beef baru yang siap diterima/dibuatkan GRB.'))
+                    ->warning()
+                    ->send();
+            }
+        }
+
+        if ($currentLockedTallyId > $this->lastLockedTallyId) {
+            $this->lastLockedTallyId = $currentLockedTallyId;
+            if (auth()->user()->hasPermission('create_delivery_orders')) {
+                Notification::make()
+                    ->title(__('Ada Tally baru yang selesai dikunci (Locked) dan siap dibuatkan DO.'))
+                    ->warning()
+                    ->send();
+            }
+        }
 
         if ($currentPoId > $this->lastPoId) {
             $this->lastPoId = $currentPoId;

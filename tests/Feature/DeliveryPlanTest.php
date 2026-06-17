@@ -202,4 +202,95 @@ class DeliveryPlanTest extends TestCase
         $plan = DeliveryPlan::find($so->delivery_plan_id);
         $this->assertEquals(55, $plan->total_qty);
     }
+
+    /** @test */
+    public function it_filters_active_and_history_delivery_plans_correctly()
+    {
+        $this->actingAs($this->adminUser);
+
+        // Plan 1: Tomorrow (Should show in active)
+        $tomorrow = now()->addDay()->format('Y-m-d');
+        $soTomorrow = SalesOrder::create([
+            'customer_id' => $this->customer1->id,
+            'delivery_date' => $tomorrow,
+            'created_by' => $this->adminUser->id,
+        ]);
+        $soTomorrow->update(['status' => 'waiting']);
+        $planTomorrow = DeliveryPlan::find($soTomorrow->delivery_plan_id);
+
+        // Plan 2: Today and status is ready (Should show in active)
+        $today = now()->format('Y-m-d');
+        $soTodayReady = SalesOrder::create([
+            'customer_id' => $this->customer1->id,
+            'delivery_date' => $today,
+            'created_by' => $this->adminUser->id,
+        ]);
+        $soTodayReady->update(['status' => 'ready']);
+        $planTodayReady = DeliveryPlan::find($soTodayReady->delivery_plan_id);
+
+        // Plan 3: Today and status is on_delivery (Should NOT show in active)
+        $soTodayOnDelivery = SalesOrder::create([
+            'customer_id' => $this->customer2->id,
+            'delivery_date' => $today,
+            'created_by' => $this->adminUser->id,
+        ]);
+        $soTodayOnDelivery->update(['status' => 'on_delivery']);
+        $planTodayOnDelivery = DeliveryPlan::find($soTodayOnDelivery->delivery_plan_id);
+
+        // Livewire test ListDeliveryPlans page
+        \Livewire\Livewire::test(\App\Filament\Admin\Resources\DeliveryPlanResource\Pages\ListDeliveryPlans::class)
+            ->assertCanSeeTableRecords([$planTomorrow, $planTodayReady])
+            ->assertCanNotSeeTableRecords([$planTodayOnDelivery]);
+
+        \Livewire\Livewire::test(\App\Filament\Admin\Resources\DeliveryPlanResource\Pages\ListDeliveryPlans::class, ['activeTab' => 'history'])
+            ->assertCanSeeTableRecords([$planTodayReady, $planTodayOnDelivery])
+            ->assertCanNotSeeTableRecords([$planTomorrow]);
+    }
+
+    /** @test */
+    public function it_can_render_the_delivery_plan_preview_page()
+    {
+        $this->actingAs($this->adminUser);
+
+        $tomorrow = now()->addDay()->format('Y-m-d');
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer1->id,
+            'delivery_date' => $tomorrow,
+            'created_by' => $this->adminUser->id,
+        ]);
+        $so->update(['status' => 'ready']);
+
+        $response = $this->get(route('print.delivery-plan.preview'));
+        $response->assertStatus(200);
+        $response->assertSee('Preview Plan Delivery');
+        $response->assertSee($this->customer1->name);
+    }
+
+    /** @test */
+    public function it_preserves_delivery_plan_details_when_sales_order_is_edited()
+    {
+        $tomorrow = now()->addDay()->format('Y-m-d');
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer1->id,
+            'delivery_date' => $tomorrow,
+            'created_by' => $this->adminUser->id,
+        ]);
+
+        $plan = DeliveryPlan::find($so->delivery_plan_id);
+        $plan->update([
+            'driver' => 'JOHN DOE',
+            'armada' => 'TRUCK A',
+            'load_time' => '08:00:00',
+        ]);
+
+        // Edit Sales Order note (non-date, non-customer edit)
+        $so->update([
+            'note' => 'Please deliver in the morning',
+        ]);
+
+        $plan = $plan->fresh();
+        $this->assertEquals('JOHN DOE', $plan->driver);
+        $this->assertEquals('TRUCK A', $plan->armada);
+        $this->assertEquals('08:00:00', $plan->load_time);
+    }
 }

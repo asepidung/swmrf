@@ -111,4 +111,44 @@ class PendingTaskWidget extends Widget
             })
             ->count();
     }
+
+    public function getPendingGrMaterialCount(): int
+    {
+        if (!auth()->user()->hasPermission('create_gr_materials')) {
+            return 0;
+        }
+        return \App\Models\PurchaseMaterial::whereIn('status', ['pending', 'partial'])->count();
+    }
+
+    public function getPendingGrProductCount(): int
+    {
+        if (!auth()->user()->hasPermission('create_goods_receipt_products')) {
+            return 0;
+        }
+        return \App\Models\PurchaseProduct::whereIn('status', ['pending', 'partial'])->count();
+    }
+
+    public function getPendingBoningLockCount(): int
+    {
+        if (!auth()->user()->hasPermission('lock_bonings')) {
+            return 0;
+        }
+        return \App\Models\Boning::where('kunci', false)->count();
+    }
+
+    public function getPendingDeliveryOrderCount(): int
+    {
+        if (!auth()->user()->hasPermission('create_delivery_orders')) {
+            return 0;
+        }
+        return \App\Models\Tally::where('status', 'locked')->whereDoesntHave('deliveryOrder')->count();
+    }
+
+    public function getPendingDeliveryReceiptCount(): int
+    {
+        if (!auth()->user()->hasPermission('view_delivery_receipts')) {
+            return 0;
+        }
+        return \App\Models\DeliveryOrder::where('status', 'Ready')->count();
+    }
 }

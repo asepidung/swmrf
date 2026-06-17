@@ -39,15 +39,12 @@ class DeliveryPlanResource extends Resource
                 Forms\Components\Section::make(__('Order Information'))
                     ->compact()
                     ->schema([
-                        Forms\Components\Select::make('customer_id')
+                        Forms\Components\Placeholder::make('customer_name')
                             ->label(__('Customer'))
-                            ->relationship('customer', 'name')
-                            ->disabled()
-                            ->dehydrated(),
-                        Forms\Components\DatePicker::make('delivery_date')
-                            ->label(__('Delivery Date'))
-                            ->disabled()
-                            ->dehydrated(),
+                            ->content(fn ($record) => $record?->customer?->name),
+                        Forms\Components\Placeholder::make('delivery_date_formatted')
+                            ->label(__('Tanggal Kirim'))
+                            ->content(fn ($record) => $record?->delivery_date ? \Carbon\Carbon::parse($record->delivery_date)->format('d-m-Y') : '-'),
                     ])->columns(2),
 
                 Forms\Components\Section::make(__('Trip Details'))
@@ -170,7 +167,7 @@ class DeliveryPlanResource extends Resource
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         $from = $data['delivery_from'] ?? now()->startOfMonth()->toDateString();
-                        $until = $data['delivery_until'] ?? now()->toDateString();
+                        $until = $data['delivery_until'] ?? null;
 
                         return $query
                             ->when(
@@ -194,27 +191,12 @@ class DeliveryPlanResource extends Resource
                     }),
             ])
             ->headerActions([
-                Tables\Actions\ActionGroup::make([
-                    Tables\Actions\ExportAction::make('excel')
-                        ->label('Excel')
-                        ->icon('heroicon-o-document-text')
-                        ->exporter(\App\Filament\Exports\DeliveryPlanExporter::class)
-                        ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
-                    Tables\Actions\Action::make('pdf')
-                        ->label('PDF')
-                        ->icon('heroicon-o-document-arrow-down')
-                        ->action(function ($livewire) {
-                            $records = $livewire->getFilteredTableQuery()->get();
-                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.delivery-plans-pdf', [
-                                'records' => $records
-                            ]);
-                            return response()->streamDownload(fn () => print($pdf->output()), 'plan-deliveries.pdf');
-                        }),
-                ])
-                ->label('Export Data')
-                ->icon('heroicon-m-arrow-down-tray')
-                ->button()
-                ->color('success'),
+                Tables\Actions\Action::make('preview')
+                    ->label(__('Preview'))
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
+                    ->url(fn (): string => route('print.delivery-plan.preview'))
+                    ->openUrlInNewTab(),
             ])
             ->actions([
                 // Rows are clickable
@@ -240,10 +222,8 @@ class DeliveryPlanResource extends Resource
     {
         return [
             'index' => Pages\ListDeliveryPlans::route('/'),
-            'create' => Pages\CreateDeliveryPlan::route('/create'),
             'edit' => Pages\EditDeliveryPlan::route('/{record}/edit'),
             'view' => Pages\ViewDeliveryPlan::route('/{record}'),
-            'detail-list' => Pages\DeliveryPlanDetailList::route('/detail-list'),
         ];
     }
 
