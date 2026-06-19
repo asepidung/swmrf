@@ -208,19 +208,38 @@ class DeliveryOrderResource extends Resource
                                     }
                                 }
 
+                                $totalBoxFormatted = number_format($totalBox, 0, ',', '.');
+                                $totalWeightFormatted = number_format($totalWeight, 2, ',', '.');
+
                                 $receivedWeightHtml = "";
                                 if ($record && $record->status === 'Approved') {
                                     $receipt = \App\Models\DeliveryOrderReceipt::where('delivery_order_id', $record->id)->first();
                                     if ($receipt) {
-                                        $receivedWeightHtml = "<div>Total Received Weight: " . number_format($receipt->total_weight, 2, ',', '.') . " Kg</div>";
+                                        $receivedWeightFormatted = number_format($receipt->total_weight, 2, ',', '.');
+                                        $receivedWeightHtml = "
+                                            <div class='h-8 w-px bg-gray-200 dark:bg-gray-700'></div>
+                                            <div class='flex flex-col items-end'>
+                                                <span class='text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider'>" . __('Total Received Weight') . "</span>
+                                                <span class='text-base font-extrabold text-emerald-600 dark:text-emerald-400'>{$receivedWeightFormatted} <span class='text-xs font-normal text-gray-400'>Kg</span></span>
+                                            </div>
+                                        ";
                                     }
                                 }
 
                                 return new \Illuminate\Support\HtmlString("
-                                    <div class='flex justify-end gap-4 font-bold text-lg mt-4'>
-                                        <div>Total Box: " . number_format($totalBox, 0, ',', '.') . "</div>
-                                        <div>Total Weight: " . number_format($totalWeight, 2, ',', '.') . " Kg</div>
-                                        {$receivedWeightHtml}
+                                    <div class='flex justify-end mt-4'>
+                                        <div class='flex flex-wrap items-center gap-6 border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50/50 dark:bg-gray-800/40 shadow-sm'>
+                                            <div class='flex flex-col items-end'>
+                                                <span class='text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider'>" . __('Total Box') . "</span>
+                                                <span class='text-base font-extrabold text-amber-600 dark:text-amber-400'>{$totalBoxFormatted}</span>
+                                            </div>
+                                            <div class='h-8 w-px bg-gray-200 dark:bg-gray-700'></div>
+                                            <div class='flex flex-col items-end'>
+                                                <span class='text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider'>" . __('Total Weight') . "</span>
+                                                <span class='text-base font-extrabold text-gray-800 dark:text-gray-200'>{$totalWeightFormatted} <span class='text-xs font-normal text-gray-400'>Kg</span></span>
+                                            </div>
+                                            {$receivedWeightHtml}
+                                        </div>
                                     </div>
                                 ");
                             }),

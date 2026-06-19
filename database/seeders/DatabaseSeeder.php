@@ -218,6 +218,18 @@ class DatabaseSeeder extends Seeder
             ['name' => 'delete_delivery_orders', 'module_name' => 'Delivery Orders', 'description' => 'Delete delivery orders'],
             ['name' => 'view_deleted_delivery_orders', 'module_name' => 'Delivery Orders', 'description' => 'View deleted delivery orders'],
             ['name' => 'view_delivery_receipts', 'module_name' => 'Delivery Orders', 'description' => 'View delivery receipts'],
+
+            // Invoices Module
+            ['name' => 'view_invoices', 'module_name' => 'Invoices', 'description' => 'View invoices'],
+            ['name' => 'create_invoices', 'module_name' => 'Invoices', 'description' => 'Create invoices'],
+            ['name' => 'edit_invoices', 'module_name' => 'Invoices', 'description' => 'Edit invoices'],
+            ['name' => 'delete_invoices', 'module_name' => 'Invoices', 'description' => 'Delete invoices'],
+            ['name' => 'view_deleted_invoices', 'module_name' => 'Invoices', 'description' => 'View deleted invoices'],
+            ['name' => 'tukar_faktur', 'module_name' => 'Invoices', 'description' => 'Perform invoice exchange (Tukar Faktur)'],
+
+            // Receivables Module
+            ['name' => 'view_receivables', 'module_name' => 'Receivables', 'description' => 'View receivables'],
+            ['name' => 'view_deleted_receivables', 'module_name' => 'Receivables', 'description' => 'View deleted receivables'],
         ];
 
         foreach ($permissions as $perm) {

@@ -52,6 +52,11 @@ class DeliveryOrder extends Model
         return $this->belongsTo(Customer::class);
     }
 
+    public function receipt(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(DeliveryOrderReceipt::class, 'delivery_order_id');
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(DeliveryOrderItem::class);

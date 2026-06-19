@@ -242,5 +242,6 @@
     "Manage Price List": "Manage Price List",
     "Head Office Address": "Head Office Address",
     "Head Office PIC": "Head Office PIC",
-    "Sales order cannot be created without any products.": "Sales order cannot be created without any products."
+    "Sales order cannot be created without any products.": "Sales order cannot be created without any products.",
+    "Invoice Exchange": "Invoice Exchange"
 }

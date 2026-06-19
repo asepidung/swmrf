@@ -1,0 +1,139 @@
+<?php
+
+namespace App\Filament\Admin\Resources\InvoiceResource\Pages;
+
+use App\Filament\Admin\Resources\InvoiceResource;
+use App\Models\InvoiceItem;
+use Filament\Resources\Pages\Page;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Table;
+use Filament\Tables;
+use Filament\Forms;
+use Illuminate\Database\Eloquent\Builder;
+
+class InvoiceDetailList extends Page implements HasTable
+{
+    use InteractsWithTable;
+
+    protected static string $resource = InvoiceResource::class;
+
+    protected static string $view = 'filament.admin.resources.invoice-resource.pages.detail-list';
+
+    protected static ?string $title = 'Invoice Items Detail';
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->query(InvoiceItem::query()->with(['invoice.customer', 'product']))
+            ->columns([
+                Tables\Columns\TextColumn::make('invoice.invoice_number')
+                    ->label(__('Invoice Number'))
+                    ->searchable()
+                    ->sortable()
+                    ->weight('bold')
+                    ->color('primary'),
+
+                Tables\Columns\TextColumn::make('invoice.customer.name')
+                    ->label(__('Customer'))
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('invoice.invoice_date')
+                    ->label(__('Invoice Date'))
+                    ->date('d M Y')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('product.name')
+                    ->label(__('Product'))
+                    ->searchable()
+                    ->sortable(),
+
+
+                Tables\Columns\TextColumn::make('weight')
+                    ->label(__('Weight (Kg)'))
+                    ->numeric(2)
+                    ->alignEnd()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('price')
+                    ->label(__('Price'))
+                    ->numeric(0, ',', '.')
+                    ->alignEnd()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('discount_percent')
+                    ->label(__('Disc %'))
+                    ->numeric()
+                    ->alignCenter()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('discount_rp')
+                    ->label(__('Disc Rp'))
+                    ->numeric(0, ',', '.')
+                    ->alignEnd()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('amount')
+                    ->label(__('Amount'))
+                    ->numeric(0, ',', '.')
+                    ->alignEnd()
+                    ->sortable(),
+            ])
+            ->filters([
+                Tables\Filters\Filter::make('invoice_date')
+                    ->form([
+                        Forms\Components\DatePicker::make('date_from')
+                            ->label(__('From Date')),
+                        Forms\Components\DatePicker::make('date_until')
+                            ->label(__('Until Date')),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        $from = $data['date_from'] ?? now()->startOfMonth()->toDateString();
+                        $until = $data['date_until'] ?? now()->toDateString();
+
+                        return $query->whereHas('invoice', function ($q) use ($from, $until) {
+                            $q->when($from, fn ($q, $date) => $q->whereDate('invoice_date', '>=', $date))
+                              ->when($until, fn ($q, $date) => $q->whereDate('invoice_date', '<=', $date));
+                        });
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if ($data['date_from'] ?? null) {
+                            $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['date_from'])->format('d M Y');
+                        }
+                        if ($data['date_until'] ?? null) {
+                            $indicators[] = 'Until: ' . \Carbon\Carbon::parse($data['date_until'])->format('d M Y');
+                        }
+                        return $indicators;
+                    }),
+            ])
+            ->headerActions([
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ExportAction::make('excel')
+                        ->label('Excel')
+                        ->icon('heroicon-o-document-text')
+                        ->color('success')
+                        ->exporter(\App\Filament\Exports\InvoiceItemExporter::class)
+                        ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
+                    Tables\Actions\Action::make('pdf')
+                        ->label('PDF')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('danger')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.invoice-details-pdf', [
+                                'records' => $records,
+                                'title' => __('Invoice Items Detail')
+                            ]);
+                            return response()->streamDownload(fn () => print($pdf->output()), 'export_invoice_items_detail.pdf');
+                        }),
+                ])
+                ->label('Export Data')
+                ->icon('heroicon-m-arrow-down-tray')
+                ->button()
+                ->color('success'),
+            ])
+            ->defaultSort('id', 'desc');
+    }
+}

@@ -18,10 +18,14 @@ class Customer extends Model
         'pic',
         'phone',
         'required_documents',
+        'invoice_exchange',
+        'is_taxable',
     ];
 
     protected $casts = [
         'required_documents' => 'array',
+        'invoice_exchange' => 'boolean',
+        'is_taxable' => 'boolean',
     ];
 
     public function group()
@@ -32,5 +36,15 @@ class Customer extends Model
     public function segment()
     {
         return $this->belongsTo(CustomerSegment::class, 'customer_segment_id');
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class, 'customer_id');
+    }
+
+    public function receivables()
+    {
+        return $this->hasMany(Receivable::class, 'customer_id');
     }
 }

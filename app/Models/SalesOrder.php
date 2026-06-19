@@ -20,9 +20,15 @@ class SalesOrder extends Model
         'shipping_address',
         'status',
         'note',
+        'down_payment',
         'created_by',
         'delivery_plan_id',
         'delivery_note',
+    ];
+
+    protected $casts = [
+        'delivery_date' => 'date',
+        'down_payment' => 'float',
     ];
 
     public function getActivitylogOptions(): LogOptions

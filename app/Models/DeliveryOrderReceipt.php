@@ -59,6 +59,7 @@ class DeliveryOrderReceipt extends Model
         return $this->belongsTo(Customer::class);
     }
 
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -67,6 +68,11 @@ class DeliveryOrderReceipt extends Model
     public function items(): HasMany
     {
         return $this->hasMany(DeliveryOrderReceiptItem::class, 'delivery_order_receipt_id');
+    }
+
+    public function invoice(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Invoice::class, 'delivery_order_receipt_id');
     }
 
     protected static function booted()

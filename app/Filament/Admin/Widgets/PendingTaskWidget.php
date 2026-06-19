@@ -151,4 +151,16 @@ class PendingTaskWidget extends Widget
         }
         return \App\Models\DeliveryOrder::where('status', 'Ready')->count();
     }
+
+    public function getPendingInvoiceExchangeCount(): int
+    {
+        $user = auth()->user();
+        if (!$user->isProgrammer() && !$user->hasPermission('tukar_faktur')) {
+            return 0;
+        }
+        return \App\Models\Invoice::whereNull('invoice_exchange_date')
+            ->whereHas('customer', function ($query) {
+                $query->where('invoice_exchange', true);
+            })->count();
+    }
 }

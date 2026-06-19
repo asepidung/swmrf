@@ -42,7 +42,7 @@ class ViewDeliveryOrder extends ViewRecord
                 ->color('danger')
                 ->icon('heroicon-o-x-circle')
                 ->iconButton()
-                ->visible(fn () => $this->record->status === 'Approved')
+                ->visible(fn () => $this->record->status === 'Approved' && !$this->record->receipt?->invoice)
                 ->requiresConfirmation()
                 ->modalHeading(__('Confirm Unapprove'))
                 ->modalDescription(__('Apakah Anda yakin ingin membatalkan persetujuan Surat Jalan ini? Tanda terima terkait akan dihapus dan barang tolakan akan dikembalikan ke Tally.'))

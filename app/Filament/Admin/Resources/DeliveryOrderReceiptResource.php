@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\DeliveryOrderReceiptResource\Pages;
 use App\Models\DeliveryOrderReceipt;
+use App\Filament\Admin\Resources\InvoiceResource;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -219,6 +220,12 @@ class DeliveryOrderReceiptResource extends Resource
                 Tables\Actions\ViewAction::make()
                     ->iconButton()
                     ->modalWidth('4xl'),
+                Tables\Actions\Action::make('create_invoice')
+                    ->label(__('Create Invoice'))
+                    ->icon('heroicon-o-document-plus')
+                    ->color('success')
+                    ->visible(fn (DeliveryOrderReceipt $record) => $record->status === 'Approved' && auth()->user()->hasPermission('create_invoices') && !$record->trashed())
+                    ->url(fn (DeliveryOrderReceipt $record) => InvoiceResource::getUrl('create', ['delivery_order_receipt_id' => $record->id])),
             ])
             ->bulkActions([]);
     }

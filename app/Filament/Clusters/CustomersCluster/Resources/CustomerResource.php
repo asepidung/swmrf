@@ -88,6 +88,9 @@ class CustomerResource extends Resource
                         Forms\Components\TextInput::make('pic')
                             ->label(__('PIC / Person In Charge'))
                             ->maxLength(255),
+                        Forms\Components\Toggle::make('invoice_exchange')
+                            ->label(__('Invoice Exchange'))
+                            ->default(false),
                     ])->columns(2),
 
                 Forms\Components\Section::make(__('Required Documents'))
@@ -130,6 +133,10 @@ class CustomerResource extends Resource
                     ->label(__('TOP (Days)'))
                     ->numeric()
                     ->sortable(),
+                Tables\Columns\IconColumn::make('invoice_exchange')
+                    ->label(__('Invoice Exchange'))
+                    ->boolean()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Created at'))
                     ->dateTime()
@@ -142,7 +149,8 @@ class CustomerResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\TernaryFilter::make('invoice_exchange')
+                    ->label(__('Invoice Exchange')),
             ])
             ->actions([
                 //

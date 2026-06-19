@@ -77,5 +77,6 @@ Setiap pengembangan fitur atau penambahan *resource* baru di Filament wajib mene
 * **Proteksi Database Utama:** Agen AI **dilarang keras** menjalankan perintah pengujian (`php artisan test`) sebelum memverifikasi secara pasti bahwa file `phpunit.xml` menggunakan environment database in-memory (SQLite `:memory:`) atau database testing terpisah. Trait `RefreshDatabase` pada proses *testing* tidak boleh menyentuh database MySQL utama.
 * **Larangan Reset Database:** Dilarang mengeksekusi perintah destruktif seperti `php artisan migrate:fresh` pada database utama kecuali diinstruksikan secara eksplisit di dalam Issue. Gunakan `php artisan migrate` standar untuk penambahan modul baru.
 * **Kredensial Akun Default Tetap:** Konfigurasi akun *default* untuk *development* tidak boleh diubah, dihapus, atau dimodifikasi oleh AI saat membuat modul atau *seeder* baru. Kredensial berikut wajib dipertahankan dan harus selalu bisa digunakan:
+  * **Name:** idung
   * **Username:** programmer
   * **Password:** programmerpassword

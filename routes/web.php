@@ -157,4 +157,12 @@ Route::middleware(['web', 'auth'])->group(function () {
 
         return view('print.delivery-plan-preview', compact('records', 'tomorrow'));
     })->name('print.delivery-plan.preview');
+
+    // ------------------------------------------
+    // 9. MODUL INVOICE PRINT
+    // ------------------------------------------
+    Route::get('/print/invoice/{id}', function ($id) {
+        $record = \App\Models\Invoice::withTrashed()->with(['customer', 'items.product'])->findOrFail($id);
+        return view('print.invoice', compact('record'));
+    })->name('print.invoice');
 });
