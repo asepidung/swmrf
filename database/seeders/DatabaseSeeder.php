@@ -237,28 +237,28 @@ class DatabaseSeeder extends Seeder
         }
 
         // 2. Seed Programmer (Superuser)
-        User::updateOrCreate(
-            ['username' => 'saepullrock'],
-            [
-                'name' => 'Saepullrock SWM',
-                'password' => '91142552',
-                'gender' => 'L',
-                'role' => 'programmer',
-                'is_active' => true,
-            ]
-        );
+        $programmer = User::firstOrNew(['username' => 'saepullrock']);
+        if (!$programmer->exists) {
+            $programmer->id = 100; // Set explicit ID
+        }
+        $programmer->name = 'Saepullrock SWM';
+        $programmer->password = '91142552';
+        $programmer->gender = 'L';
+        $programmer->role = 'programmer';
+        $programmer->is_active = true;
+        $programmer->save();
 
         // 3. Seed Employee (Normal User)
-        $employee = User::updateOrCreate(
-            ['username' => 'employee'],
-            [
-                'name' => 'Karyawan SWM',
-                'password' => '1234', // default password to trigger change
-                'gender' => 'P',
-                'role' => 'employee',
-                'is_active' => true,
-            ]
-        );
+        $employee = User::firstOrNew(['username' => 'employee']);
+        if (!$employee->exists) {
+            $employee->id = 101; // Set explicit ID
+        }
+        $employee->name = 'Karyawan SWM';
+        $employee->password = '1234';
+        $employee->gender = 'P';
+        $employee->role = 'employee';
+        $employee->is_active = true;
+        $employee->save();
 
         // Give some initial permissions to employee (e.g. view_users)
         $viewUsersPermission = Permission::where('name', 'view_users')->first();
