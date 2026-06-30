@@ -1,0 +1,40 @@
+name: Deploy Laravel App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          port: ${{ secrets.PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Pindah ke direktori project di hosting (Path harus diset di GitHub Secrets)
+            cd ${{ secrets.PROJECT_PATH }}
+            
+            # Ambil kode terbaru dari GitHub
+            git pull origin main
+            
+            # Install package PHP terbaru
+            composer install --no-interaction --prefer-dist --optimize-autoloader
+            
+            # Update database
+            php artisan migrate --force
+            
+            # Bersihkan dan refresh cache aplikasi
+            php artisan optimize:clear
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            
+            # Jika hosting Anda mensupport NodeJS dan Anda punya custom aset UI:
+            # npm ci
+            # npm run build
