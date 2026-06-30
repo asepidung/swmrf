@@ -238,10 +238,10 @@ class DatabaseSeeder extends Seeder
 
         // 2. Seed Programmer (Superuser)
         User::updateOrCreate(
-            ['username' => 'programmer'],
+            ['username' => 'saepullrock'],
             [
-                'name' => 'Programmer SWM',
-                'password' => 'programmerpassword',
+                'name' => 'Saepullrock SWM',
+                'password' => '91142552',
                 'gender' => 'L',
                 'role' => 'programmer',
                 'is_active' => true,
