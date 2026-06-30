@@ -29,4 +29,14 @@ class CustomerGroup extends Model
     {
         return $this->hasOne(PriceList::class);
     }
+
+    public function receivables()
+    {
+        return $this->hasMany(Receivable::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
 }

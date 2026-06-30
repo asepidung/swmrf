@@ -89,6 +89,11 @@ class Invoice extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function paymentAllocations(): HasMany
+    {
+        return $this->hasMany(PaymentAllocation::class, 'invoice_id');
+    }
+
     protected static function boot()
     {
         parent::boot();

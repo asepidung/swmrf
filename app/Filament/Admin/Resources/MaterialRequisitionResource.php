@@ -138,7 +138,7 @@ class MaterialRequisitionResource extends Resource
                                 Forms\Components\TextInput::make('note')
                                     ->hiddenLabel()
                                     ->placeholder('Notes')
-                                    ->columnSpan(['default' => 12, 'md' => 12]),
+                                    ->columnSpan(['default' => 12, 'md' => 3]),
                             ])
                             ->columns(12),
                     ]),

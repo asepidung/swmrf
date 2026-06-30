@@ -13,16 +13,15 @@ class ViewReceivable extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('payment')
+                ->label(__('Terima Pembayaran'))
+                ->icon('heroicon-o-banknotes')
+                ->color('success')
+                ->url(fn () => ReceivableResource::getUrl('payment', ['record' => $this->record->id])),
             Actions\Action::make('back')
                 ->label(__('Back'))
                 ->color('gray')
                 ->url($this->getResource()::getUrl('index')),
-            Actions\Action::make('print')
-                ->label(__('Print Invoice'))
-                ->icon('heroicon-o-printer')
-                ->color('info')
-                ->url(fn () => route('print.invoice', $this->record->invoice_id))
-                ->openUrlInNewTab(),
         ];
     }
 }

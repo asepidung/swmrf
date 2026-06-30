@@ -147,6 +147,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
                                 ->minValue(5.4)
                                 ->maxValue(5.7)
                                 ->placeholder(__('PH (5.4 - 5.7)'))
+                                ->required()
                                 ->extraInputAttributes([
                                     'onkeydown' => "if(event.key === ','){ event.preventDefault(); this.value = this.value + '.'; } else if(event.key === 'Enter'){ event.preventDefault(); document.getElementById('submit_btn_label').click(); }"
                                 ]),

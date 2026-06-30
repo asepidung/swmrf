@@ -19,6 +19,12 @@ class BankAccountResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
 
+    public static function canAccess(): bool
+    {
+        // Fitur bank accounts disembunyikan atas instruksi owner
+        return false;
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return __('MASTER DATA');

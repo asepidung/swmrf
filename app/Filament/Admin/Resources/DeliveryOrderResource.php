@@ -91,7 +91,6 @@ class DeliveryOrderResource extends Resource
 
                         Forms\Components\TextInput::make('po_number')
                             ->label(__('Cust PO'))
-                            ->autofocus()
                             ->default(function () {
                                 $tallyId = request()->query('tally_id');
                                 return $tallyId ? \App\Models\Tally::find($tallyId)?->salesOrder?->po_number : null;
@@ -106,6 +105,7 @@ class DeliveryOrderResource extends Resource
 
                         Forms\Components\TextInput::make('driver')
                             ->label(__('Driver'))
+                            ->autofocus()
                             ->required(),
 
                         Forms\Components\TextInput::make('police_number')
@@ -166,6 +166,7 @@ class DeliveryOrderResource extends Resource
                                     ->required()
                                     ->disabled()
                                     ->dehydrated(true)
+                                    ->extraInputAttributes(['class' => 'text-right font-bold'])
                                     ->columnSpan(2),
 
                                 Forms\Components\TextInput::make('received_weight')
@@ -261,7 +262,9 @@ class DeliveryOrderResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
-                    ->color('primary'),
+                    ->color('primary')
+                    ->url(fn (\App\Models\DeliveryOrder $record): ?string => route('print.delivery-order', ['record' => $record->id]))
+                    ->openUrlInNewTab(),
 
                 Tables\Columns\TextColumn::make('tally.tally_number')
                     ->label(__('Tally Number'))

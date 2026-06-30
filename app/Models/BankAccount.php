@@ -20,4 +20,14 @@ class BankAccount extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function transactions()
+    {
+        return $this->hasMany(BankTransaction::class);
+    }
 }

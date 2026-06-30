@@ -56,7 +56,23 @@ Setiap pengembangan fitur atau penambahan *resource* baru di Filament wajib mene
 * **Alur Wajib Eksekusi (Pre-Execution Flow):** Saat akan mengerjakan *issue* baru, implementor dilarang langsung melakukan *coding*. Anda wajib:
   1. Membaca ulang aturan global di `project.md` ini.
   2. Membaca riwayat seluruh *issue* sebelumnya untuk memahami konteks dan dependensi sistem yang sudah ada.
-  3. Mengeksekusi instruksi pada *Issue* target menggunakan format *Implementation Plan*.
+  3. Menganalisis *file* dan struktur yang berkaitan secara saksama.
+  4. Baru kemudian boleh menulis kode sesuai *issue* yang berjalan.
+* **Tanggung Jawab Penutup:** Setelah *issue* dianggap selesai, implementor harus membaca kembali instruksi awal pada *issue* tersebut dan memastikan tidak ada satu pun spesifikasi yang terlewat atau tidak berjalan semestinya sebelum menyatakan tugas selesai.
+
+### Struktur Barcode Origin (Digit Pertama)
+Sistem ini menggunakan digit pertama pada barcode untuk mendefinisikan asal-usul (origin) daging tersebut:
+- `1` = Boning
+- `2` = Repack Stock
+- `3` = Repack Import
+- `4` = Repack Return
+- `5` = Repack Trading
+- `6` = Relabel Tally
+- `7` = Pembelian Trading Lokal (Goods Receipt Beef)
+- `8` = Pembelian Trading Import (Goods Receipt Beef)
+
+## Catatan Khusus
+- **Project Structure**: Modul Filament diletakkan di `app/Filament/Admin/Resources`.
 * **Evaluasi Pasca-Pembuatan (Post-Execution Review):** Setelah modul atau *issue* disepakati selesai dibuat, implementor wajib meninjau ulang:
   * Apakah dokumen *Issue* terkait perlu direvisi untuk menyesuaikan dengan hasil akhir pengembangan?
   * Apakah ditemukan aturan main baru yang mengharuskan pembaruan/revisi pada dokumen `project.md` ini?

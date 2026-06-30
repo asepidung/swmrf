@@ -68,7 +68,23 @@ class BeefStocksRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('origin')
                     ->label(__('Origin'))
                     ->alignCenter()
-                    ->formatStateUsing(fn ($state) => __($state)),
+                    ->formatStateUsing(function ($state, $record) {
+                        if (!$record || !$record->barcode) return $state;
+                        $prefix = substr($record->barcode, 0, 1);
+                        $map = [
+                            '1' => 'BNG',
+                            '2' => 'RSTK',
+                            '3' => 'RIMP',
+                            '4' => 'RRTN',
+                            '5' => 'RTRD',
+                            '6' => 'RLBT',
+                            '7' => 'TRDL',
+                            '8' => 'TRDI',
+                        ];
+                        return $map[$prefix] ?? $state;
+                    })
+                    ->badge()
+                    ->color('gray'),
 
                 Tables\Columns\TextColumn::make('note')
                     ->label(__('Note'))

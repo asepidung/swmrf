@@ -16,9 +16,17 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ReceivableResource extends Resource
 {
-    protected static ?string $model = Receivable::class;
+    protected static ?string $model = \App\Models\CustomerGroup::class;
+
+    protected static ?string $slug = 'receivables';
 
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
+
+    public static function canAccess(): bool
+    {
+        // Fitur piutang disembunyikan atas instruksi owner
+        return false;
+    }
 
     public static function getNavigationGroup(): ?string
     {
@@ -42,255 +50,105 @@ class ReceivableResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                Forms\Components\Section::make(__('Receivable Details'))
-                    ->schema([
-                        Forms\Components\TextInput::make('invoice.invoice_number')
-                            ->label(__('Invoice Number'))
-                            ->disabled(),
-                        Forms\Components\TextInput::make('customer.name')
-                            ->label(__('Customer'))
-                            ->disabled(),
-                        Forms\Components\DatePicker::make('invoice.invoice_date')
-                            ->label(__('Invoice Date'))
-                            ->disabled(),
-                        Forms\Components\TextInput::make('invoice.term_of_payment')
-                            ->label(__('T.O.P (Days)'))
-                            ->disabled(),
-                        Forms\Components\DatePicker::make('invoice.due_date')
-                            ->label(__('Due Date'))
-                            ->disabled(),
-                        Forms\Components\TextInput::make('invoice.balance')
-                            ->label(__('Outstanding Balance'))
-                            ->disabled()
-                            ->formatStateUsing(fn ($state) => 'Rp ' . number_format((float)$state, 0, ',', '.')),
-                        Forms\Components\TextInput::make('invoice.status')
-                            ->label(__('Status'))
-                            ->disabled()
-                            ->formatStateUsing(fn ($state) => __($state)),
-                    ])->columns(3)
-            ]);
+        return $form->schema([]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('invoice.invoice_number')
-                    ->label(__('Invoice Number'))
+                Tables\Columns\TextColumn::make('name')
+                    ->label(__('Group Name'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
                     ->color('primary'),
 
-                Tables\Columns\TextColumn::make('customer.name')
-                    ->label(__('Customer'))
-                    ->searchable()
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('invoice.invoice_date')
-                    ->label(__('Invoice Date'))
-                    ->date('d M Y')
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('invoice.term_of_payment')
-                    ->label(__('T.O.P (Days)'))
-                    ->numeric()
-                    ->alignCenter()
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('due_date')
-                    ->label(__('Due Date'))
-                    ->getStateUsing(function (Receivable $record) {
-                        $invoice = $record->invoice;
-                        if (!$invoice) return '-';
-                        
-                        $tukarfaktur = $record->customer->invoice_exchange ?? false;
-                        $status = $invoice->status;
-                        $tgltf = $invoice->invoice_exchange_date;
-
-                        if ($tukarfaktur && empty($tgltf) && $status === 'Belum TF') {
-                            return 'BTF';
-                        }
-                        
-                        return $invoice->due_date ? $invoice->due_date->format('d M Y') : '-';
+                Tables\Columns\TextColumn::make('total_piutang')
+                    ->label(__('Total Piutang'))
+                    ->getStateUsing(function (\App\Models\CustomerGroup $record) {
+                        return $record->receivables()
+                            ->join('invoices', 'receivables.invoice_id', '=', 'invoices.id')
+                            ->where('invoices.status', '!=', 'Lunas')
+                            ->sum('invoices.balance');
                     })
-                    ->badge()
-                    ->color(function (Receivable $record) {
-                        $invoice = $record->invoice;
-                        if (!$invoice || $invoice->status === 'Lunas') return 'gray';
-                        
-                        $tukarfaktur = $record->customer->invoice_exchange ?? false;
-                        $tgltf = $invoice->invoice_exchange_date;
-                        if ($tukarfaktur && empty($tgltf) && $invoice->status === 'Belum TF') {
-                            return 'danger';
-                        }
-                        
-                        if (!$invoice->due_date) return 'gray';
-
-                        $today = now()->startOfDay();
-                        $due = \Carbon\Carbon::parse($invoice->due_date)->startOfDay();
-                        $diff = $today->diffInDays($due, false);
-
-                        if ($diff < 0) {
-                            return 'danger';
-                        } elseif ($diff === 0) {
-                            return 'warning';
-                        }
-                        return 'success';
-                    })
-                    ->tooltip(function (Receivable $record): ?string {
-                        $invoice = $record->invoice;
-                        if (!$invoice || !$invoice->due_date || $invoice->status === 'Lunas') return null;
-                        
-                        $today = now()->startOfDay();
-                        $due = \Carbon\Carbon::parse($invoice->due_date)->startOfDay();
-                        $diff = $today->diffInDays($due, false);
-                        
-                        if ($diff < 0) {
-                            return __('Overdue by :days days', ['days' => abs($diff)]);
-                        } elseif ($diff === 0) {
-                            return __('Due today');
-                        } else {
-                            return __('Remaining :days days', ['days' => $diff]);
-                        }
-                    }),
-
-                Tables\Columns\TextColumn::make('invoice.balance')
-                    ->label(__('Outstanding Balance'))
                     ->money('IDR', locale: 'id')
-                    ->sortable()
-                    ->alignEnd(),
+                    ->description(function (\App\Models\CustomerGroup $record) {
+                        $count = $record->receivables()
+                            ->whereHas('invoice', function ($q) {
+                                $q->where('status', '!=', 'Lunas');
+                            })->count();
+                        return $count . ' Inv';
+                    })
+                    ->alignEnd()
+                    ->weight('bold'),
 
-                Tables\Columns\TextColumn::make('invoice.status')
-                    ->label(__('Status'))
-                    ->badge()
-                    ->colors([
-                        'danger' => 'Belum TF',
-                        'success' => 'Sudah TF',
-                        'primary' => 'Lunas',
-                        'gray' => '-',
-                    ])
-                    ->formatStateUsing(fn ($state) => __($state)),
+                Tables\Columns\TextColumn::make('akan_jatuh_tempo')
+                    ->label(__('Akan Jatuh Tempo'))
+                    ->getStateUsing(function (\App\Models\CustomerGroup $record) {
+                        return $record->receivables()
+                            ->join('invoices', 'receivables.invoice_id', '=', 'invoices.id')
+                            ->where('invoices.status', '!=', 'Lunas')
+                            ->whereNotNull('invoices.due_date')
+                            ->whereBetween('invoices.due_date', [now()->toDateString(), now()->addDays(7)->toDateString()])
+                            ->sum('invoices.balance');
+                    })
+                    ->money('IDR', locale: 'id')
+                    ->description(function (\App\Models\CustomerGroup $record) {
+                        $count = $record->receivables()
+                            ->whereHas('invoice', function ($q) {
+                                $q->where('status', '!=', 'Lunas')
+                                  ->whereNotNull('due_date')
+                                  ->whereBetween('due_date', [now()->toDateString(), now()->addDays(7)->toDateString()]);
+                            })->count();
+                        return $count > 0 ? $count . ' Inv' : '';
+                    })
+                    ->alignEnd()
+                    ->color('warning'),
+
+                Tables\Columns\TextColumn::make('sudah_jatuh_tempo')
+                    ->label(__('Sudah Jatuh Tempo'))
+                    ->getStateUsing(function (\App\Models\CustomerGroup $record) {
+                        return $record->receivables()
+                            ->join('invoices', 'receivables.invoice_id', '=', 'invoices.id')
+                            ->where('invoices.status', '!=', 'Lunas')
+                            ->whereNotNull('invoices.due_date')
+                            ->whereDate('invoices.due_date', '<', now()->toDateString())
+                            ->sum('invoices.balance');
+                    })
+                    ->money('IDR', locale: 'id')
+                    ->description(function (\App\Models\CustomerGroup $record) {
+                        $count = $record->receivables()
+                            ->whereHas('invoice', function ($q) {
+                                $q->where('status', '!=', 'Lunas')
+                                  ->whereNotNull('due_date')
+                                  ->whereDate('due_date', '<', now()->toDateString());
+                            })->count();
+                        return $count > 0 ? $count . ' Inv' : '';
+                    })
+                    ->alignEnd()
+                    ->color('danger'),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_receivables')),
-
-                Tables\Filters\SelectFilter::make('customer_id')
-                    ->relationship('customer', 'name')
-                    ->label(__('Customer'))
-                    ->searchable()
-                    ->preload(),
-
-                Tables\Filters\Filter::make('invoice_date')
-                    ->form([
-                        Forms\Components\DatePicker::make('date_from')
-                            ->label(__('From Date')),
-                        Forms\Components\DatePicker::make('date_until')
-                            ->label(__('Until Date')),
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        $from = $data['date_from'] ?? now()->startOfMonth()->toDateString();
-                        $until = $data['date_until'] ?? now()->toDateString();
-
-                        return $query->whereHas('invoice', function ($q) use ($from, $until) {
-                            $q->when($from, fn ($q, $date) => $q->whereDate('invoice_date', '>=', $date))
-                              ->when($until, fn ($q, $date) => $q->whereDate('invoice_date', '<=', $date));
-                        });
-                    })
-                    ->indicateUsing(function (array $data): array {
-                        $indicators = [];
-                        if ($data['date_from'] ?? null) {
-                            $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['date_from'])->format('d M Y');
-                        }
-                        if ($data['date_until'] ?? null) {
-                            $indicators[] = 'Until: ' . \Carbon\Carbon::parse($data['date_until'])->format('d M Y');
-                        }
-                        return $indicators;
-                    }),
+                // We can add simple filters if needed, but for now we keep it clean.
             ])
             ->actions([
-                Tables\Actions\Action::make('tukar_faktur')
-                    ->label(__('Tukar Faktur'))
-                    ->icon('heroicon-o-arrow-path')
-                    ->color('warning')
-                    ->visible(fn (Receivable $record) => $record->invoice && $record->invoice->status === 'Belum TF' && auth()->user()->hasPermission('tukar_faktur') && !$record->trashed())
-                    ->form([
-                        Forms\Components\DatePicker::make('invoice_exchange_date')
-                            ->label(__('Tanggal Tukar Faktur'))
-                            ->required()
-                            ->default(now()),
-                        Forms\Components\TextInput::make('note')
-                            ->label(__('Bukti (Resi, Email, dll)'))
-                            ->required()
-                            ->maxLength(255),
-                    ])
-                    ->action(function (Receivable $record, array $data) {
-                        $invoice = $record->invoice;
-                        if ($invoice) {
-                            $tgltf = $data['invoice_exchange_date'];
-                            $note = $data['note'];
-                            
-                            $top = (int)$invoice->term_of_payment;
-                            $dueDate = \Carbon\Carbon::parse($tgltf)->addDays($top)->toDateString();
-                            
-                            $newNote = $invoice->note ? $invoice->note . ' | ' . $note : $note;
-
-                            $invoice->update([
-                                'status' => 'Sudah TF',
-                                'invoice_exchange_date' => $tgltf,
-                                'due_date' => $dueDate,
-                                'note' => $newNote,
-                            ]);
-                        }
-                    }),
-
-                Tables\Actions\Action::make('print')
-                    ->label(__('Print'))
-                    ->icon('heroicon-o-printer')
-                    ->color('info')
-                    ->url(fn (Receivable $record) => route('print.invoice', $record->invoice_id))
-                    ->openUrlInNewTab(),
+                // No static actions, we only click the row to view details.
             ])
             ->headerActions([
-                Tables\Actions\ActionGroup::make([
-                    Tables\Actions\ExportAction::make('excel')
-                        ->label('Excel')
-                        ->icon('heroicon-o-document-text')
-                        ->color('success')
-                        ->exporter(\App\Filament\Exports\ReceivableExporter::class)
-                        ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
-                    Tables\Actions\Action::make('pdf')
-                        ->label('PDF')
-                        ->icon('heroicon-o-document-arrow-down')
-                        ->color('danger')
-                        ->action(function ($livewire) {
-                            $records = $livewire->getFilteredTableQuery()->get();
-                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.receivables-pdf', [
-                                'records' => $records,
-                                'title' => __('Daftar Piutang Customer')
-                            ]);
-                            return response()->streamDownload(fn () => print($pdf->output()), 'export_receivables.pdf');
-                        }),
-                ])
-                ->label('Export Data')
-                ->icon('heroicon-m-arrow-down-tray')
-                ->button()
-                ->color('success'),
+                // 
             ])
             ->bulkActions([])
-            ->recordUrl(function (Receivable $record) {
+            ->recordUrl(function (\App\Models\CustomerGroup $record) {
                 return Pages\ViewReceivable::getUrl([$record->id]);
             })
-            ->defaultSort('id', 'desc');
+            ->defaultSort('name', 'asc');
     }
 
     public static function getRelations(): array
     {
         return [
-            //
+            \App\Filament\Admin\Resources\ReceivableResource\RelationManagers\ReceivablesRelationManager::class,
         ];
     }
 
@@ -299,14 +157,15 @@ class ReceivableResource extends Resource
         return [
             'index' => Pages\ListReceivables::route('/'),
             'view' => Pages\ViewReceivable::route('/{record}'),
+            'payment' => Pages\ReceivePayment::route('/{record}/payment'),
         ];
     }
 
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
+            ->whereHas('receivables.invoice', function (Builder $query) {
+                $query->where('status', '!=', 'Lunas');
+            });
     }
 }

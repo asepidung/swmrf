@@ -322,6 +322,23 @@ class ScanTally extends Page implements HasForms, HasTable
 
                 Tables\Columns\TextColumn::make('origin')
                     ->label(__('Origin'))
+                    ->formatStateUsing(function ($state, $record) {
+                        if (!$record || !$record->barcode) return $state;
+                        $prefix = substr($record->barcode, 0, 1);
+                        $map = [
+                            '1' => 'BNG',
+                            '2' => 'RSTK',
+                            '3' => 'RIMP',
+                            '4' => 'RRTN',
+                            '5' => 'RTRD',
+                            '6' => 'RLBT',
+                            '7' => 'TRDL',
+                            '8' => 'TRDI',
+                        ];
+                        return $map[$prefix] ?? $state;
+                    })
+                    ->badge()
+                    ->color('gray')
                     ->alignCenter(),
             ])
             ->actions([
@@ -349,12 +366,12 @@ class ScanTally extends Page implements HasForms, HasTable
             return;
         }
 
-        // 1. Cek duplikat barcode di tally_items
+        // 1. Cek duplikat barcode di tally_items (hanya dalam Tally ID yang sama)
         $exists = $this->record->items()->where('barcode', $barcode)->exists();
         if ($exists) {
             Notification::make()
                 ->title(__('Gagal Scan'))
-                ->body(__('Barang Sudah Terinput'))
+                ->body(__('Barang Sudah Terscan di Tally Ini (Duplikat)'))
                 ->warning()
                 ->send();
             $this->barcode = '';
