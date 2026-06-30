@@ -46,6 +46,7 @@ Thumbs.db
 # Temp / Internal
 /tmp/
 audit_report.md
+composer.lock
 
 # Catatan: file project.md SENGAJA TIDAK DI-IGNORE 
 # agar dokumentasi/aturan main ikut terbawa di GitHub.
