@@ -42,9 +42,47 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 ->requiresConfirmation()
                 ->hidden(fn () => $this->record->status !== 'Draft')
                 ->action(function () {
-                    $this->record->update(['status' => 'Approved']);
-                    Notification::make()->title('Return Dikunci')->success()->send();
-                    $this->redirect(SalesReturnResource::getUrl('edit', ['record' => $this->record]));
+                    try {
+                        \Illuminate\Support\Facades\DB::transaction(function () {
+                            $this->record->update(['status' => 'Approved']);
+
+                            foreach ($this->record->items as $item) {
+                                // Add to BeefStock
+                                \App\Models\BeefStock::create([
+                                    'barcode' => $item->barcode,
+                                    'product_id' => $item->product_id,
+                                    'warehouse_id' => $item->warehouse_id,
+                                    'grade_id' => $item->grade_id,
+                                    'weight' => $item->weight,
+                                    'qty_pcs' => $item->qty_pcs,
+                                    'ph_level' => $item->ph_level,
+                                    'pack_date' => $item->pack_date,
+                                    'exp_date' => $item->exp_date,
+                                    'origin' => $item->origin,
+                                    'status' => 'IN_STOCK',
+                                    'note' => 'Sales Return ' . $this->record->return_number,
+                                ]);
+
+                                // Log to BeefStockMovement
+                                \App\Models\BeefStockMovement::create([
+                                    'product_id' => $item->product_id,
+                                    'warehouse_id' => $item->warehouse_id,
+                                    'condition' => $item->grade_id,
+                                    'barcode' => $item->barcode,
+                                    'transaction_type' => 'SALES_RETURN',
+                                    'reference_document' => $this->record->return_number,
+                                    'weight_in' => $item->weight,
+                                    'pcs_in' => $item->qty_pcs,
+                                    'created_by' => \Illuminate\Support\Facades\Auth::id() ?? 1,
+                                    'note' => 'Sales Return from Customer',
+                                ]);
+                            }
+                        });
+                        Notification::make()->title('Return Dikunci & Stok Masuk')->success()->send();
+                        $this->redirect(SalesReturnResource::getUrl('view', ['record' => $this->record]));
+                    } catch (\Exception $e) {
+                        Notification::make()->title('Gagal')->body($e->getMessage())->danger()->send();
+                    }
                 }),
                 
             Actions\Action::make('back')

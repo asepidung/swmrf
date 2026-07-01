@@ -147,7 +147,7 @@ class SalesReturnResource extends Resource
                 ]),
             ])
             ->recordClasses(fn (SalesReturn $record) => $record->trashed() ? 'border-s-2 border-red-600 bg-red-50' : null)
-            ->recordUrl(fn (SalesReturn $record) => $record->trashed() ? null : static::getUrl('edit', ['record' => $record]));
+            ->recordUrl(fn (SalesReturn $record) => $record->trashed() ? null : ($record->status === 'Approved' ? static::getUrl('view', ['record' => $record]) : static::getUrl('edit', ['record' => $record])));
     }
 
     public static function getRelations(): array
@@ -163,6 +163,7 @@ class SalesReturnResource extends Resource
             'index' => Pages\ListSalesReturns::route('/'),
             'create' => Pages\CreateSalesReturn::route('/create'),
             'edit' => Pages\EditSalesReturn::route('/{record}/edit'),
+            'view' => Pages\ViewSalesReturn::route('/{record}'),
             'input-items' => Pages\InputReturnItems::route('/{record}/input-items'),
         ];
     }

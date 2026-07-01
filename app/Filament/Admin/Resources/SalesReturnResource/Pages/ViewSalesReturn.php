@@ -13,7 +13,16 @@ class ViewSalesReturn extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\EditAction::make(),
+            Actions\Action::make('Print PDF')
+                ->tooltip('Print Berita Acara')
+                ->icon('heroicon-o-printer')
+                ->color('success')
+                ->hiddenLabel()
+                ->url(fn () => route('sales-return.pdf', $this->record))
+                ->openUrlInNewTab(),
+                
+            Actions\EditAction::make()
+                ->hidden(fn () => $this->record->status === 'Approved'),
         ];
     }
 }
