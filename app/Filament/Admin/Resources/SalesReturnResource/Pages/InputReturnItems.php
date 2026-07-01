@@ -75,13 +75,12 @@ class InputReturnItems extends Page implements HasForms, HasTable
         $this->scanForm->fill([]);
 
         $this->weighForm->fill([
-            'warehouse_id' => session('sr_warehouse_id_' . $this->record->id, 1),
-            'product_id' => session('sr_product_id_' . $this->record->id),
-            'grade_id' => session('sr_grade_id_' . $this->record->id, 1),
-            'pack_date' => session('sr_pack_date_' . $this->record->id, $defaultPackDate),
-            'exp_date' => session('sr_exp_date_' . $this->record->id, Carbon::parse($defaultPackDate)->addMonths(3)->format('Y-m-d')),
-            'show_exp' => session('sr_show_exp_' . $this->record->id, true),
+            'pack_date' => $defaultPackDate,
+            'warehouse_id' => 1,
+            'grade_id' => 1,
             'ph_level' => session('sr_ph_level_' . $this->record->id),
+            'show_exp' => session('sr_show_exp_' . $this->record->id, true),
+            'exp_date' => Carbon::parse($defaultPackDate)->addMonths(3)->format('Y-m-d'),
         ]);
     }
 
@@ -306,13 +305,8 @@ class InputReturnItems extends Page implements HasForms, HasTable
             // Auto Print handled inside transaction but showExp is needed here too
             $showExp = $formData['show_exp'] ?? true;
 
-            // Set sessions
+            // Set sessions only for ph_level and show_exp, matching Boning exactly
             session([
-                'sr_warehouse_id_' . $this->record->id => $formData['warehouse_id'] ?? null,
-                'sr_product_id_' . $this->record->id => $formData['product_id'] ?? null,
-                'sr_grade_id_' . $this->record->id => $formData['grade_id'] ?? null,
-                'sr_pack_date_' . $this->record->id => $formData['pack_date'] ?? null,
-                'sr_exp_date_' . $this->record->id => $formData['exp_date'] ?? null,
                 'sr_show_exp_' . $this->record->id => $showExp,
                 'sr_ph_level_' . $this->record->id => $formData['ph_level'] ?? null,
             ]);
