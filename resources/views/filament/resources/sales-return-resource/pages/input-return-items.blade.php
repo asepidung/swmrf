@@ -18,41 +18,33 @@
             </x-filament::tabs.item>
         </x-filament::tabs>
 
-        <div style="display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-start;">
+        <div style="display: grid; grid-template-columns: 32% 1fr; gap: 1.5rem; align-items: start; width: 100%;">
             <!-- Left Column: Forms -->
-            <div style="flex: 1 1 350px;">
+            <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10" style="position: sticky; top: 1.5rem;">
                 <!-- Tab Scan Form -->
                 <div x-show="activeTab === 'scan'">
-                    <x-filament::section>
-                        <form wire:submit.prevent="processScan">
-                            {{ $this->scanForm }}
-
-                            <div class="flex justify-end hidden">
-                                <button type="submit" id="submit_scan_btn"></button>
-                            </div>
-                        </form>
-                    </x-filament::section>
+                    <form wire:submit.prevent="processScan">
+                        {{ $this->scanForm }}
+                        <div class="flex justify-end hidden">
+                            <button type="submit" id="submit_scan_btn"></button>
+                        </div>
+                    </form>
                 </div>
 
                 <!-- Tab Weigh Form -->
                 <div x-show="activeTab === 'weigh'" x-cloak>
-                    <x-filament::section>
-                        <form wire:submit.prevent="processWeigh">
-                            {{ $this->weighForm }}
-
-                            <div class="flex justify-end hidden">
-                                <button type="submit" id="submit_weigh_btn"></button>
-                            </div>
-                        </form>
-                    </x-filament::section>
+                    <form wire:submit.prevent="processWeigh">
+                        {{ $this->weighForm }}
+                        <div class="flex justify-end hidden">
+                            <button type="submit" id="submit_weigh_btn"></button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
             <!-- Right Column: Table -->
-            <div style="flex: 1 1 600px;">
-                <x-filament::section>
-                    {{ $this->table }}
-                </x-filament::section>
+            <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
+                {{ $this->table }}
             </div>
         </div>
     </div>
