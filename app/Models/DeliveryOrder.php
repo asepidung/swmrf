@@ -62,6 +62,11 @@ class DeliveryOrder extends Model
         return $this->hasMany(DeliveryOrderItem::class);
     }
 
+    public function salesReturns(): HasMany
+    {
+        return $this->hasMany(SalesReturn::class);
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

@@ -47,4 +47,9 @@ class Customer extends Model
     {
         return $this->hasMany(Receivable::class, 'customer_id');
     }
+
+    public function salesReturns()
+    {
+        return $this->hasMany(SalesReturn::class);
+    }
 }

@@ -165,4 +165,17 @@ Route::middleware(['web', 'auth'])->group(function () {
         $record = \App\Models\Invoice::withTrashed()->with(['customer', 'items.product'])->findOrFail($id);
         return view('print.invoice', compact('record'));
     })->name('print.invoice');
+
+    // ------------------------------------------
+    // 10. MODUL SALES RETURN
+    // ------------------------------------------
+    Route::get('/print-sales-return-label/{id}', function ($id) {
+        $item = \App\Models\SalesReturnItem::with(['product', 'salesReturn', 'grade'])->findOrFail($id);
+        return view('print.sales-return-label', compact('item'));
+    })->name('sales-return.label');
+
+    Route::get('/print/sales-return/{record}', function (\App\Models\SalesReturn $record) {
+        $record->load(['customer', 'items.product']);
+        return view('print.sales-return', compact('record'));
+    })->name('sales-return.pdf');
 });
