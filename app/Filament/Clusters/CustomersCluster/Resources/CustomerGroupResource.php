@@ -44,6 +44,7 @@ class CustomerGroupResource extends Resource
                             ->label(__('Name'))
                             ->required()
                             ->maxLength(255)
+                            ->autofocus()
                             ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                         
                         Forms\Components\TextInput::make('head_office_pic')

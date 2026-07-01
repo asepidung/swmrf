@@ -45,6 +45,7 @@ class CustomerResource extends Resource
                             ->label(__('Customer Name'))
                             ->required()
                             ->maxLength(255)
+                            ->autofocus()
                             ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                         Forms\Components\Select::make('customer_group_id')
                             ->relationship('group', 'name')

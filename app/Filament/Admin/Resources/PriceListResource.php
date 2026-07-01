@@ -69,14 +69,6 @@ class PriceListResource extends Resource
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                                     ->extraAttributes([
                                         'class' => 'product-select-column',
-                                        'x-on:keydown.enter.prevent' => '
-                                            let wrappers = Array.from(document.querySelectorAll(".product-select-column"));
-                                            let idx = wrappers.indexOf($el);
-                                            if (idx !== -1 && wrappers[idx + 1]) {
-                                                let nextInput = wrappers[idx + 1].querySelector("input, [role=\"combobox\"]");
-                                                if (nextInput) nextInput.focus();
-                                            }
-                                        '
                                     ])
                                     ->columnSpan(4),
 
@@ -92,16 +84,19 @@ class PriceListResource extends Resource
                                     ->default(0)
                                     ->minValue(0)
                                     ->extraInputAttributes([
-                                        'class' => 'text-right price-input-column',
+                                        'class' => 'text-right price-input-column enter-to-next-price',
                                         'onclick' => 'this.select()',
-                                        'x-on:keydown.enter.prevent' => '
-                                            let inputs = Array.from(document.querySelectorAll(".price-input-column"));
-                                            let idx = inputs.indexOf($el);
-                                            if (idx !== -1 && inputs[idx + 1]) {
-                                                inputs[idx + 1].focus();
-                                                inputs[idx + 1].select();
+                                        'onkeydown' => "
+                                            if (event.key === 'Enter') {
+                                                event.preventDefault();
+                                                let inputs = Array.from(document.querySelectorAll('.enter-to-next-price'));
+                                                let index = inputs.indexOf(this);
+                                                if (index > -1 && index + 1 < inputs.length) {
+                                                    inputs[index + 1].focus();
+                                                    inputs[index + 1].select();
+                                                }
                                             }
-                                        '
+                                        "
                                     ])
                                     ->columnSpan(4),
 
@@ -111,14 +106,17 @@ class PriceListResource extends Resource
                                     ->placeholder(__('Note (Optional)'))
                                     ->maxLength(255)
                                     ->extraInputAttributes([
-                                        'class' => 'note-input-column',
-                                        'x-on:keydown.enter.prevent' => '
-                                            let inputs = Array.from(document.querySelectorAll(".note-input-column"));
-                                            let idx = inputs.indexOf($el);
-                                            if (idx !== -1 && inputs[idx + 1]) {
-                                                inputs[idx + 1].focus();
+                                        'class' => 'note-input-column enter-to-next-note',
+                                        'onkeydown' => "
+                                            if (event.key === 'Enter') {
+                                                event.preventDefault();
+                                                let inputs = Array.from(document.querySelectorAll('.enter-to-next-note'));
+                                                let index = inputs.indexOf(this);
+                                                if (index > -1 && index + 1 < inputs.length) {
+                                                    inputs[index + 1].focus();
+                                                }
                                             }
-                                        '
+                                        "
                                     ])
                                     ->columnSpan(4),
                             ])
@@ -162,7 +160,7 @@ class PriceListResource extends Resource
                 Tables\Actions\Action::make('manage_pricelist')
                     ->label(fn (CustomerGroup $record) => ($record->priceList && $record->priceList->items()->exists()) ? __('Edit') : __('Create'))
                     ->icon(fn (CustomerGroup $record) => ($record->priceList && $record->priceList->items()->exists()) ? 'heroicon-o-pencil-square' : 'heroicon-o-document-plus')
-                    ->color(fn (CustomerGroup $record) => ($record->priceList && $record->priceList->items()->exists()) ? 'primary' : 'warning')
+                    ->color(fn (CustomerGroup $record) => ($record->priceList && $record->priceList->items()->exists()) ? 'warning' : 'success')
                     ->button()
                     ->url(fn (CustomerGroup $record): string => Pages\EditPriceList::getUrl([$record->id])),
             ])

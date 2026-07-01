@@ -42,6 +42,7 @@ class CustomerSegmentResource extends Resource
                     ->label(__('Name'))
                     ->required()
                     ->maxLength(255)
+                    ->autofocus()
                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
             ]);
     }
