@@ -94,7 +94,12 @@
 
         <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10" style="position: sticky; top: 1.5rem;">
             @if($record->kunci == 1)
-                <h3 class="text-lg font-bold mb-4">{{ __('Production Summary') }}</h3>
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold">{{ __('Production Summary') }}</h3>
+                    <x-filament::button wire:click="exportExcel" icon="heroicon-o-document-arrow-down" color="success">
+                        {{ __('Export to Excel') }}
+                    </x-filament::button>
+                </div>
                 @include('filament.resources.boning-resource.pages.view-summary', ['summary' => $this->getProductionSummary()])
             @else
                 <form wire:submit.prevent="create">
