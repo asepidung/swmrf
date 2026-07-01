@@ -18,9 +18,9 @@
             </x-filament::tabs.item>
         </x-filament::tabs>
 
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-            <!-- Left Column: Forms (col-4) -->
-            <div class="md:col-span-4 space-y-6">
+        <div style="display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-start;">
+            <!-- Left Column: Forms -->
+            <div style="flex: 1 1 350px;">
                 <!-- Tab Scan Form -->
                 <div x-show="activeTab === 'scan'">
                     <x-filament::section>
@@ -48,8 +48,8 @@
                 </div>
             </div>
 
-            <!-- Right Column: Table (col-8) -->
-            <div class="md:col-span-8">
+            <!-- Right Column: Table -->
+            <div style="flex: 1 1 600px;">
                 <x-filament::section>
                     {{ $this->table }}
                 </x-filament::section>
