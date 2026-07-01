@@ -256,7 +256,7 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                 $index++;
             }
 
-            $receipt = DeliveryOrderReceipt::updateOrCreate(
+            $receipt = DeliveryOrderReceipt::withTrashed()->updateOrCreate(
                 [
                     'receipt_number' => $receiptNumber,
                 ],
@@ -271,6 +271,7 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                     'total_weight' => $totalWeight,
                     'status' => 'Approved',
                     'created_by' => auth()->id(),
+                    'deleted_at' => null,
                 ]
             );
 
