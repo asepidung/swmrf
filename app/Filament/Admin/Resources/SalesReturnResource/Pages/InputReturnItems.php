@@ -337,7 +337,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
                                 $wt = (clone $query)->sum('weight');
                                 $pcs = (clone $query)->sum('qty_pcs');
                                 $val = number_format((float) $wt, 2) . ' / ' . $pcs;
-                                return new \Illuminate\Support\HtmlString('<span style="color: #eab308; font-weight: bold; font-size: 1rem;">' . $val . '</span>');
+                                return new \Illuminate\Support\HtmlString('<span style="color: #eab308; font-weight: bold; font-size: 0.875rem;">' . $val . '</span>');
                             })
                     ),
                 Tables\Columns\TextColumn::make('ph_level')

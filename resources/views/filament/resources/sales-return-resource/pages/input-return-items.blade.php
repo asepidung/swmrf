@@ -6,7 +6,7 @@
     }
     .fi-ta-summary-row-heading::after {
         content: "Grand Total";
-        font-size: 1rem !important;
+        font-size: 0.875rem !important;
         font-weight: bold !important;
         color: #eab308 !important;
         visibility: visible !important;
