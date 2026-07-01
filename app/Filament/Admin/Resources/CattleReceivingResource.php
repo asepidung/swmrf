@@ -145,7 +145,20 @@ class CattleReceivingResource extends Resource
                                             }
                                         },
                                     ])
-                                    ->extraInputAttributes(['style' => 'text-transform: uppercase'])
+                                    ->extraInputAttributes([
+                                        'style' => 'text-transform: uppercase',
+                                        'class' => 'enter-to-next-eartag',
+                                        'onkeydown' => "
+                                            if (event.key === 'Enter') {
+                                                event.preventDefault();
+                                                let inputs = Array.from(document.querySelectorAll('.enter-to-next-eartag'));
+                                                let index = inputs.indexOf(this);
+                                                if (index > -1 && index + 1 < inputs.length) {
+                                                    inputs[index + 1].focus();
+                                                }
+                                            }
+                                        "
+                                    ])
                                     ->label('')
                                     ->hiddenLabel(),
 
@@ -158,11 +171,37 @@ class CattleReceivingResource extends Resource
                                     ->maxValue(800)
                                     ->live(debounce: 500)
                                     ->suffix('Kg')
+                                    ->extraInputAttributes([
+                                        'class' => 'enter-to-next-weight',
+                                        'onkeydown' => "
+                                            if (event.key === 'Enter') {
+                                                event.preventDefault();
+                                                let inputs = Array.from(document.querySelectorAll('.enter-to-next-weight'));
+                                                let index = inputs.indexOf(this);
+                                                if (index > -1 && index + 1 < inputs.length) {
+                                                    inputs[index + 1].focus();
+                                                }
+                                            }
+                                        "
+                                    ])
                                     ->label('')
                                     ->hiddenLabel(),
 
                                 Forms\Components\TextInput::make('notes')
                                     ->placeholder(__('Notes'))
+                                    ->extraInputAttributes([
+                                        'class' => 'enter-to-next-notes',
+                                        'onkeydown' => "
+                                            if (event.key === 'Enter') {
+                                                event.preventDefault();
+                                                let inputs = Array.from(document.querySelectorAll('.enter-to-next-notes'));
+                                                let index = inputs.indexOf(this);
+                                                if (index > -1 && index + 1 < inputs.length) {
+                                                    inputs[index + 1].focus();
+                                                }
+                                            }
+                                        "
+                                    ])
                                     ->label('')
                                     ->hiddenLabel(),
                             ])
