@@ -34,17 +34,24 @@ class InputReturnItems extends Page implements HasForms, HasTable
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('Print PDF')
-                ->label('Print Berita Acara')
-                ->icon('heroicon-o-printer')
+            Actions\Action::make('Lock')
+                ->tooltip('Lock Return')
+                ->icon('heroicon-o-lock-closed')
                 ->color('success')
-                ->url(fn () => route('sales-return.pdf', $this->record))
-                ->openUrlInNewTab(),
+                ->hiddenLabel()
+                ->requiresConfirmation()
+                ->hidden(fn () => $this->record->status !== 'Draft')
+                ->action(function () {
+                    $this->record->update(['status' => 'Approved']);
+                    Notification::make()->title('Return Dikunci')->success()->send();
+                    $this->redirect(SalesReturnResource::getUrl('edit', ['record' => $this->record]));
+                }),
                 
             Actions\Action::make('back')
-                ->label('Kembali ke Edit')
+                ->tooltip('Kembali')
                 ->color('gray')
                 ->icon('heroicon-o-arrow-left')
+                ->hiddenLabel()
                 ->url(fn () => SalesReturnResource::getUrl('edit', ['record' => $this->record])),
         ];
     }

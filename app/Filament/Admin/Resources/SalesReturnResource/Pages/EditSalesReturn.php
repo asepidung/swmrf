@@ -17,10 +17,18 @@ class EditSalesReturn extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('Print PDF')
+                ->tooltip('Print Berita Acara')
+                ->icon('heroicon-o-printer')
+                ->color('success')
+                ->hiddenLabel()
+                ->url(fn () => route('sales-return.pdf', $this->record))
+                ->openUrlInNewTab(),
+
             Actions\Action::make('Input Return Items')
                 ->label('')
                 ->tooltip('Input / Scan Barang')
-                ->icon('heroicon-o-qr-code')
+                ->icon('heroicon-o-bars-3-bottom-left')
                 ->color('warning')
                 ->url(fn () => SalesReturnResource::getUrl('input-items', ['record' => $this->record]))
                 ->hidden(fn () => $this->record->status !== 'Draft'),
