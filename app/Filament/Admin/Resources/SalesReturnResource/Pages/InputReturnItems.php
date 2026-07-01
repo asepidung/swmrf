@@ -328,11 +328,12 @@ class InputReturnItems extends Page implements HasForms, HasTable
                     ->formatStateUsing(fn ($record) => number_format($record->weight, 2) . '/' . $record->qty_pcs)
                     ->summarize(
                         Tables\Columns\Summarizers\Summarizer::make()
-                            ->label('Total')
+                            ->label('')
                             ->using(function ($query) {
                                 $wt = (clone $query)->sum('weight');
                                 $pcs = (clone $query)->sum('qty_pcs');
-                                return number_format((float) $wt, 2) . ' / ' . $pcs;
+                                $val = number_format((float) $wt, 2) . ' / ' . $pcs;
+                                return new \Illuminate\Support\HtmlString('<span style="color: #eab308; font-weight: bold; font-size: 1rem;">' . $val . '</span>');
                             })
                     ),
                 Tables\Columns\TextColumn::make('ph_level')
