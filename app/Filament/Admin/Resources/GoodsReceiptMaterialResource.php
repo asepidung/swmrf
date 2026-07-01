@@ -102,6 +102,7 @@ class GoodsReceiptMaterialResource extends Resource
                                     ->placeholder('Price')
                                     ->disabled()
                                     ->dehydrated(false)
+                                    ->extraInputAttributes(['class' => 'text-right'])
                                     ->afterStateHydrated(function ($component, $state) {
                                         $component->state(number_format((float)$state, 0, ',', '.'));
                                     }),
@@ -111,7 +112,7 @@ class GoodsReceiptMaterialResource extends Resource
                                     ->placeholder('Qty Received')
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
                                     ->stripCharacters('.')
-                                    ->extraInputAttributes(['x-on:focus' => '$el.select()'])
+                                    ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'text-right'])
                                     ->required()
                                     ->live(onBlur: true)
                                     ->dehydrateStateUsing(fn ($state) => (float) str_replace(['.', ','], ['', '.'], $state)),

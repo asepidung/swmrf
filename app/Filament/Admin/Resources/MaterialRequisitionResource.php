@@ -107,7 +107,7 @@ class MaterialRequisitionResource extends Resource
                                     ->hiddenLabel()
                                     ->placeholder('Qty')
                                     ->default(0)
-                                    ->extraInputAttributes(['x-on:focus' => '$el.select()'])
+                                    ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'text-right'])
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                     ->stripCharacters('.')
                                     ->numeric()
@@ -118,7 +118,7 @@ class MaterialRequisitionResource extends Resource
                                     ->placeholder('Harga')
                                     ->prefix('Rp')
                                     ->default(0)
-                                    ->extraInputAttributes(['x-on:focus' => '$el.select()'])
+                                    ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'text-right'])
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                     ->stripCharacters('.')
                                     ->numeric()
@@ -129,6 +129,7 @@ class MaterialRequisitionResource extends Resource
                                     ->placeholder('Subtotal')
                                     ->prefix('Rp')
                                     ->readOnly()
+                                    ->extraInputAttributes(['class' => 'text-right'])
                                     ->hidden(fn ($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord)
                                     ->afterStateHydrated(function ($component, $get) {
                                         $qty = self::parseNumber($get('qty'));

@@ -95,6 +95,7 @@ class PurchaseMaterialResource extends Resource
                                 Forms\Components\TextInput::make('qty')
                                     ->disabled()
                                     ->hiddenLabel()
+                                    ->extraInputAttributes(['class' => 'text-right'])
                                     ->formatStateUsing(fn($state) => number_format($state ?? 0, 2, ',', '.'))
                                     ->columnSpan(['default' => 6, 'md' => 2]),
 
@@ -102,6 +103,7 @@ class PurchaseMaterialResource extends Resource
                                     ->hiddenLabel()
                                     ->prefix('Rp')
                                     ->disabled()
+                                    ->extraInputAttributes(['class' => 'text-right'])
                                     ->formatStateUsing(fn($state) => number_format($state ?? 0, 0, ',', '.'))
                                     ->columnSpan(['default' => 6, 'md' => 3]),
 
@@ -109,6 +111,7 @@ class PurchaseMaterialResource extends Resource
                                     ->hiddenLabel()
                                     ->prefix('Rp')
                                     ->disabled()
+                                    ->extraInputAttributes(['class' => 'text-right'])
                                     ->formatStateUsing(fn($state) => number_format($state ?? 0, 0, ',', '.'))
                                     ->columnSpan(['default' => 12, 'md' => 3]),
                             ])

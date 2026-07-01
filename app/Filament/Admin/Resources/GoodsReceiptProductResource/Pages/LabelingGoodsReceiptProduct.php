@@ -156,7 +156,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                                 ->required()
                                 ->extraInputAttributes([
                                     'id' => 'qty_input_field',
-                                    'class' => 'text-2xl font-black text-center text-primary-600',
+                                    'class' => 'text-2xl font-black text-right text-primary-600',
                                     'oninput' => "this.value = this.value.replace(/,/g, '.');",
                                     'onkeydown' => "if(event.key === 'Enter') { event.preventDefault(); document.getElementById('submit_btn_label').click(); }"
                                 ]),

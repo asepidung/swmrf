@@ -88,11 +88,13 @@ class GoodsReceiptProductResource extends Resource
                                     ->label('Weight')
                                     ->hiddenLabel()
                                     ->disabled()
+                                    ->extraInputAttributes(['class' => 'text-right'])
                                     ->numeric(),
                                 Forms\Components\TextInput::make('qty_pcs')
                                     ->label('Pcs')
                                     ->hiddenLabel()
                                     ->disabled()
+                                    ->extraInputAttributes(['class' => 'text-right'])
                                     ->numeric(),
                             ])
                             ->columns(7)
