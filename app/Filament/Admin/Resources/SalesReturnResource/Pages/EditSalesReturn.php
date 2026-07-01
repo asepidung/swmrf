@@ -18,7 +18,7 @@ class EditSalesReturn extends EditRecord
     {
         return [
             Actions\Action::make('Input Return Items')
-                ->iconButton()
+                ->label('')
                 ->tooltip('Input / Scan Barang')
                 ->icon('heroicon-o-qr-code')
                 ->color('warning')
@@ -26,7 +26,7 @@ class EditSalesReturn extends EditRecord
                 ->hidden(fn () => $this->record->status !== 'Draft'),
 
             Actions\Action::make('Approve Return')
-                ->iconButton()
+                ->label('')
                 ->tooltip('Approve Return')
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
@@ -77,7 +77,7 @@ class EditSalesReturn extends EditRecord
                 }),
 
             Actions\Action::make('Print PDF')
-                ->iconButton()
+                ->label('')
                 ->tooltip('PDF Berita Acara')
                 ->icon('heroicon-o-tag')
                 ->color('info')
@@ -85,17 +85,17 @@ class EditSalesReturn extends EditRecord
                 ->openUrlInNewTab(),
 
             Actions\DeleteAction::make()
-                ->iconButton()
+                ->label('')
                 ->tooltip('Delete')
                 ->icon('heroicon-o-trash'),
             
             Actions\ForceDeleteAction::make()
-                ->iconButton()
+                ->label('')
                 ->tooltip('Force Delete')
                 ->icon('heroicon-o-trash'),
             
             Actions\RestoreAction::make()
-                ->iconButton()
+                ->label('')
                 ->tooltip('Restore')
                 ->icon('heroicon-o-arrow-path'),
         ];
