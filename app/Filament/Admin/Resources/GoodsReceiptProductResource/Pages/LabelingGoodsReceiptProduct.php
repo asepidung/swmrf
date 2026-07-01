@@ -201,7 +201,10 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                     ->searchable()
                     ->weight('bold')
                     ->color('primary')
-                    ->url(fn($record) => route('goods-receipt-product.label', ['id' => $record->id]))
+                    ->url(fn($record) => route('goods-receipt-product.label', [
+                        'id' => $record->id,
+                        'show_exp' => session('gr_show_exp', true) ? 1 : 0
+                    ]))
                     ->openUrlInNewTab(),
 
                 Tables\Columns\TextColumn::make('weight')
@@ -396,7 +399,8 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
 
             if ($insertedItem) {
                 $printUrl = route('goods-receipt-product.label', [
-                    'id' => $insertedItem->id
+                    'id' => $insertedItem->id,
+                    'show_exp' => $showExp ? 1 : 0
                 ]);
                 $this->dispatch('auto-print', url: $printUrl);
             }
