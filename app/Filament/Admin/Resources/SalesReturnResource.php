@@ -130,13 +130,7 @@ class SalesReturnResource extends Resource
                     ->preload(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('Print PDF')
-                    ->label('PDF')
-                    ->icon('heroicon-o-document-text')
-                    ->color('success')
-                    ->url(fn (SalesReturn $record) => route('sales-return.pdf', $record))
-                    ->openUrlInNewTab(),
+                //
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
