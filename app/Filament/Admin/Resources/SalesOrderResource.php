@@ -93,6 +93,7 @@ class SalesOrderResource extends Resource
                             ->default(0)
                             ->disabled(fn (?SalesOrder $record) => in_array($record?->status, ['processing', 'cancelled', 'canceled', 'ready']))
                             ->dehydrated()
+                            ->extraInputAttributes(['onfocus' => 'this.select()'])
                             ->columnSpan(3),
 
                         Forms\Components\Hidden::make('created_by')
