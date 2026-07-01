@@ -30,28 +30,28 @@ class SalesReturnResource extends Resource
             ->schema([
                 Forms\Components\Section::make('Informasi Retur')
                     ->schema([
-                        Forms\Components\Select::make('delivery_order_id')
-                            ->label(__('Delivery Order'))
-                            ->relationship('deliveryOrder', 'delivery_order_number')
-                            ->searchable()
-                            ->preload()
-                            ->live()
-                            ->afterStateUpdated(function (callable $set, $state) {
-                                if ($state) {
-                                    $do = \App\Models\DeliveryOrder::find($state);
-                                    if ($do) {
-                                        $set('customer_id', $do->customer_id);
-                                    }
-                                }
-                            })
-                            ->placeholder('Pilih DO atau kosongkan untuk Unidentified'),
-
                         Forms\Components\Select::make('customer_id')
                             ->label(__('Customer'))
                             ->relationship('customer', 'name')
                             ->searchable()
                             ->preload()
+                            ->live()
+                            ->afterStateUpdated(function (callable $set) {
+                                $set('delivery_order_id', null);
+                            })
                             ->required(),
+
+                        Forms\Components\Select::make('delivery_order_id')
+                            ->label(__('Delivery Order'))
+                            ->relationship('deliveryOrder', 'delivery_order_number', function (Builder $query, callable $get) {
+                                $customerId = $get('customer_id');
+                                if ($customerId) {
+                                    $query->where('customer_id', $customerId);
+                                }
+                            })
+                            ->searchable()
+                            ->preload()
+                            ->placeholder('Pilih DO atau kosongkan untuk Unidentified'),
 
                         Forms\Components\DatePicker::make('return_date')
                             ->label(__('Return Date'))
