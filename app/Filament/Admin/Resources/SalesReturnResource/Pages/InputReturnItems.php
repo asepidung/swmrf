@@ -75,10 +75,13 @@ class InputReturnItems extends Page implements HasForms, HasTable
         $this->scanForm->fill([]);
 
         $this->weighForm->fill([
-            'pack_date' => $defaultPackDate,
-            'grade_id' => 1,
-            'show_exp' => true,
-            'exp_date' => Carbon::parse($defaultPackDate)->addMonths(3)->format('Y-m-d'),
+            'warehouse_id' => session('sr_warehouse_id_' . $this->record->id, 1),
+            'product_id' => session('sr_product_id_' . $this->record->id),
+            'grade_id' => session('sr_grade_id_' . $this->record->id, 1),
+            'pack_date' => session('sr_pack_date_' . $this->record->id, $defaultPackDate),
+            'exp_date' => session('sr_exp_date_' . $this->record->id, Carbon::parse($defaultPackDate)->addMonths(3)->format('Y-m-d')),
+            'show_exp' => session('sr_show_exp_' . $this->record->id, true),
+            'ph_level' => session('sr_ph_level_' . $this->record->id),
         ]);
     }
 
@@ -150,7 +153,6 @@ class InputReturnItems extends Page implements HasForms, HasTable
                     Forms\Components\Checkbox::make('show_exp')
                         ->label(__('Tampilkan Tanggal Expired Pada Label'))
                         ->default(true)
-                        ->dehydrated(false)
                         ->extraAttributes(['tabindex' => '-1']),
 
                     Forms\Components\Grid::make(2)->schema([
@@ -297,13 +299,25 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 $this->dispatch('auto-print', url: $printUrl);
             });
 
+            // Set sessions
+            session([
+                'sr_warehouse_id_' . $this->record->id => $formData['warehouse_id'] ?? null,
+                'sr_product_id_' . $this->record->id => $formData['product_id'] ?? null,
+                'sr_grade_id_' . $this->record->id => $formData['grade_id'] ?? null,
+                'sr_pack_date_' . $this->record->id => $formData['pack_date'] ?? null,
+                'sr_exp_date_' . $this->record->id => $formData['exp_date'] ?? null,
+                'sr_show_exp_' . $this->record->id => $showExp,
+                'sr_ph_level_' . $this->record->id => $formData['ph_level'] ?? null,
+            ]);
+
             $this->weighForm->fill([
-                'warehouse_id' => $formData['warehouse_id'],
-                'product_id' => $formData['product_id'],
-                'grade_id' => $formData['grade_id'],
-                'pack_date' => $formData['pack_date'],
-                'exp_date' => $formData['exp_date'],
-                'show_exp' => $formData['show_exp'],
+                'warehouse_id' => $formData['warehouse_id'] ?? null,
+                'product_id' => $formData['product_id'] ?? null,
+                'grade_id' => $formData['grade_id'] ?? null,
+                'pack_date' => $formData['pack_date'] ?? null,
+                'exp_date' => $formData['exp_date'] ?? null,
+                'show_exp' => $showExp,
+                'ph_level' => $formData['ph_level'] ?? null,
             ]);
         } catch (\Exception $e) {
             Notification::make()->title('Gagal')->body($e->getMessage())->danger()->send();
