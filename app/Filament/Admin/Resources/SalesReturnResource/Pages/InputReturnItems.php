@@ -321,7 +321,25 @@ class InputReturnItems extends Page implements HasForms, HasTable
                     ->label(__('POD'))
                     ->date('d/m/Y'),
                 Tables\Columns\TextColumn::make('origin')
-                    ->label(__('Origin')),
+                    ->label(__('Origin'))
+                    ->alignCenter()
+                    ->formatStateUsing(function ($state, $record) {
+                        if (!$record || !$record->barcode) return $state;
+                        $prefix = substr($record->barcode, 0, 1);
+                        $map = [
+                            '1' => 'BNG',
+                            '2' => 'RSTK',
+                            '3' => 'RIMP',
+                            '4' => 'RRTN',
+                            '5' => 'RTRD',
+                            '6' => 'RLBT',
+                            '7' => 'TRDL',
+                            '8' => 'TRDI',
+                        ];
+                        return $map[$prefix] ?? $state;
+                    })
+                    ->badge()
+                    ->color('gray'),
             ])
             ->actions([
                 Tables\Actions\DeleteAction::make()
