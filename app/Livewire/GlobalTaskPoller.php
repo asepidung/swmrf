@@ -13,7 +13,7 @@ class GlobalTaskPoller extends Component
     public int $lastPoId = 0;
     public int $lastReceivingId = 0;
     public int $lastWeighingId = 0;
-    public string $lastSalesOrderCheckAt = '';
+    public int $lastSalesOrderId = 0;
     public string $lastMaterialCheckAt = '';
     public string $lastProductCheckAt = '';
     public int $lastPurchaseMaterialId = 0;
@@ -26,7 +26,7 @@ class GlobalTaskPoller extends Component
             $this->lastPoId = (int) PurchaseCattle::max('id');
             $this->lastReceivingId = (int) CattleReceiving::max('id');
             $this->lastWeighingId = (int) CattleWeighing::max('id');
-            $this->lastSalesOrderCheckAt = now()->toDateTimeString();
+            $this->lastSalesOrderId = (int) \App\Models\SalesOrder::max('id');
             $this->lastMaterialCheckAt = now()->toDateTimeString();
             $this->lastProductCheckAt = now()->toDateTimeString();
             $this->lastPurchaseMaterialId = (int) \App\Models\PurchaseMaterial::max('id');
@@ -110,20 +110,13 @@ class GlobalTaskPoller extends Component
             }
         }
 
-        if (empty($this->lastSalesOrderCheckAt)) {
-            $this->lastSalesOrderCheckAt = now()->toDateTimeString();
-        }
-
-        $recentSalesOrders = \App\Models\SalesOrder::where('created_at', '>', $this->lastSalesOrderCheckAt)->get();
-        if ($recentSalesOrders->isNotEmpty()) {
-            $this->lastSalesOrderCheckAt = now()->toDateTimeString();
-            foreach ($recentSalesOrders as $so) {
-                if (auth()->user()->hasPermission('create_tallies')) {
-                    Notification::make()
-                        ->title(__('Ada Sales Order baru yang siap dibuatkan Tally'))
-                        ->warning()
-                        ->send();
-                }
+        if ($currentSalesOrderId > $this->lastSalesOrderId) {
+            $this->lastSalesOrderId = $currentSalesOrderId;
+            if (auth()->user()->hasPermission('create_tallies')) {
+                Notification::make()
+                    ->title(__('Ada Sales Order baru yang siap dibuatkan Tally'))
+                    ->warning()
+                    ->send();
             }
         }
 
