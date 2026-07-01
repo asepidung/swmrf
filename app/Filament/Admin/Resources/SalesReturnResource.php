@@ -20,7 +20,9 @@ class SalesReturnResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-path-rounded-square';
 
-    protected static ?string $navigationGroup = 'Warehouse';
+    protected static ?string $navigationGroup = 'WAREHOUSE';
+
+    protected static ?string $navigationLabel = 'Sales Returns';
 
     public static function form(Form $form): Form
     {
