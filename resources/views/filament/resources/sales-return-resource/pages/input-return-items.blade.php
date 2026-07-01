@@ -1,6 +1,6 @@
 <x-filament-panels::page>
     <div x-data="{ activeTab: 'scan' }">
-        <x-filament::tabs label="Content tabs" class="mb-6">
+        <x-filament::tabs label="Content tabs" class="mb-8">
             <x-filament::tabs.item
                 alpine-active="activeTab === 'scan'"
                 x-on:click="activeTab = 'scan'"
@@ -18,7 +18,7 @@
             </x-filament::tabs.item>
         </x-filament::tabs>
 
-        <div x-bind:style="activeTab === 'weigh' ? 'display: grid; grid-template-columns: 32% 1fr; gap: 1.5rem; align-items: start; width: 100%;' : 'display: flex; flex-direction: column; gap: 1.5rem; width: 100%;'">
+        <div class="mt-6" x-bind:style="activeTab === 'weigh' ? 'display: grid; grid-template-columns: 32% 1fr; gap: 1.5rem; align-items: start; width: 100%;' : 'display: flex; flex-direction: column; gap: 1.5rem; width: 100%;'">
             <!-- Left Column: Forms -->
             <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10" 
                  x-bind:style="activeTab === 'weigh' ? 'position: sticky; top: 1.5rem;' : ''">

@@ -111,6 +111,13 @@ class InputReturnItems extends Page implements HasForms, HasTable
         return $form
             ->schema([
                 Forms\Components\Group::make()->schema([
+                    Forms\Components\Select::make('warehouse_id')
+                        ->hiddenLabel()
+                        ->placeholder(__('Warehouse'))
+                        ->options(\App\Models\Warehouse::where('is_active', true)->pluck('name', 'id'))
+                        ->required()
+                        ->searchable(),
+
                     Forms\Components\Select::make('product_id')
                         ->hiddenLabel()
                         ->placeholder(__('Product'))
@@ -269,7 +276,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 $insertedItem = SalesReturnItem::create([
                     'sales_return_id' => $this->record->id,
                     'product_id' => $formData['product_id'],
-                    'warehouse_id' => 1,
+                    'warehouse_id' => $formData['warehouse_id'] ?? 1,
                     'grade_id' => $gradeId,
                     'barcode' => $barcode,
                     'weight' => $weight,
@@ -291,6 +298,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
             });
 
             $this->weighForm->fill([
+                'warehouse_id' => $formData['warehouse_id'],
                 'product_id' => $formData['product_id'],
                 'grade_id' => $formData['grade_id'],
                 'pack_date' => $formData['pack_date'],
@@ -316,12 +324,12 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 Tables\Columns\TextColumn::make('grade.name')
                     ->label(__('Grade')),
                 Tables\Columns\TextColumn::make('weight')
-                    ->label(__('Weight'))
-                    ->numeric(2)
-                    ->summarize(Tables\Columns\Summarizers\Sum::make()->label('Total Wt')),
-                Tables\Columns\TextColumn::make('qty_pcs')
-                    ->label(__('Pcs'))
-                    ->summarize(Tables\Columns\Summarizers\Sum::make()->label('Total Pcs')),
+                    ->label(__('Weight/Pcs'))
+                    ->formatStateUsing(fn ($record) => number_format($record->weight, 2) . '/' . $record->qty_pcs)
+                    ->summarize([
+                        Tables\Columns\Summarizers\Sum::make()->label('Total Wt'),
+                        Tables\Columns\Summarizers\Sum::make('qty_pcs')->label('Total Pcs'),
+                    ]),
                 Tables\Columns\TextColumn::make('ph_level')
                     ->label(__('pH')),
                 Tables\Columns\TextColumn::make('pack_date')
