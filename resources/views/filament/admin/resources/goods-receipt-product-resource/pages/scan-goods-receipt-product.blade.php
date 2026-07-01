@@ -139,10 +139,10 @@
                     <thead>
                         <tr class="border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-bold">
                             <th class="py-2">{{ __('Product') }}</th>
-                            <th class="py-2 text-right">{{ __('Order Qty') }}</th>
-                            <th class="py-2 text-right">{{ __('Receive Qty (Kg)') }}</th>
-                            <th class="py-2 text-center">{{ __('Receive Pcs') }}</th>
-                            <th class="py-2 text-right">{{ __('Balance') }}</th>
+                            <th class="py-2 px-4 text-right">{{ __('Order Qty') }}</th>
+                            <th class="py-2 px-4 text-right">{{ __('Receive Qty (Kg)') }}</th>
+                            <th class="py-2 px-4 text-center">{{ __('Receive Pcs') }}</th>
+                            <th class="py-2 pl-4 text-right">{{ __('Balance') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -159,11 +159,11 @@
                             @endphp
                             <tr class="border-b border-gray-100 dark:border-gray-800/50">
                                 <td class="py-3 font-medium text-gray-900 dark:text-white">{{ $row['product_name'] }}</td>
-                                <td class="py-3 text-right">{{ number_format($row['po_weight'], 2, '.', ',') }}</td>
-                                <td class="py-3 text-right font-semibold text-primary-600 dark:text-primary-400">{{ number_format($row['scanned_weight'], 2, '.', ',') }}</td>
-                                <td class="py-3 text-center">{{ number_format($row['scanned_pcs'], 0, '.', ',') }}</td>
-                                <td class="py-3 text-right font-medium {{ $row['balance'] > 0 ? 'text-success-600 dark:text-success-400' : ($row['balance'] < 0 ? 'text-danger-600 dark:text-danger-400' : 'text-gray-950 dark:text-white') }}">
-                                    {{ number_format($row['balance'], 2, '.', ',') }}
+                                <td class="py-3 px-4 text-right">{{ number_format($row['po_weight'], 2) }}</td>
+                                <td class="py-3 px-4 text-right font-semibold text-primary-600 dark:text-primary-400">{{ number_format($row['scanned_weight'], 2) }}</td>
+                                <td class="py-3 px-4 text-center">{{ $row['scanned_pcs'] }}</td>
+                                <td class="py-3 pl-4 text-right font-medium {{ $row['balance'] > 0 ? 'text-danger-600 dark:text-danger-400' : 'text-gray-950 dark:text-white' }}">
+                                    {{ number_format($row['balance'], 2) }}
                                 </td>
                             </tr>
                         @endforeach
@@ -172,13 +172,13 @@
                         @php
                             $totalBalance = $totalScan - $totalPo;
                         @endphp
-                        <tr class="border-t border-gray-200 dark:border-gray-800 font-bold text-gray-900 dark:text-white">
+                        <tr class="border-t-2 border-gray-200 dark:border-gray-800 font-bold text-gray-900 dark:text-white">
                             <td class="py-3">{{ __('Total') }}</td>
-                            <td class="py-3 text-right">{{ number_format($totalPo, 2, '.', ',') }}</td>
-                            <td class="py-3 text-right">{{ number_format($totalScan, 2, '.', ',') }}</td>
-                            <td class="py-3 text-center">{{ number_format($totalPcs, 0, '.', ',') }}</td>
-                            <td class="py-3 text-right {{ $totalBalance > 0 ? 'text-success-600 dark:text-success-400' : ($totalBalance < 0 ? 'text-danger-600 dark:text-danger-400' : '') }}">
-                                {{ number_format($totalBalance, 2, '.', ',') }}
+                            <td class="py-3 px-4 text-right">{{ number_format($totalPo, 2) }}</td>
+                            <td class="py-3 px-4 text-right">{{ number_format($totalScan, 2) }}</td>
+                            <td class="py-3 px-4 text-center">{{ $totalPcs }}</td>
+                            <td class="py-3 pl-4 text-right {{ $totalBalance > 0 ? 'text-danger-600 dark:text-danger-400' : '' }}">
+                                {{ number_format($totalBalance, 2) }}
                             </td>
                         </tr>
                     </tfoot>
