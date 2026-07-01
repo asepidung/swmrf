@@ -113,8 +113,13 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('submit_header')
+                ->label(__('Approve DO'))
+                ->color('success')
+                ->action(fn () => $this->submit()),
+
             Actions\Action::make('rejections')
-                ->label(__('Scan Tolakan (Rejections)'))
+                ->label(__('Tolakan'))
                 ->color('warning')
                 ->icon('heroicon-o-arrow-path')
                 ->modalWidth('4xl')
@@ -213,22 +218,17 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
 
                     $this->fillForm();
                 }),
+
+            Actions\Action::make('cancel_header')
+                ->label(__('Cancel'))
+                ->color('gray')
+                ->url(fn () => DeliveryOrderResource::getUrl('edit', ['record' => $this->record->id])),
         ];
     }
 
     protected function getFormActions(): array
     {
-        return [
-            Actions\Action::make('submit')
-                ->label(__('Approve DO'))
-                ->color('success')
-                ->submit('form'),
-
-            Actions\Action::make('cancel')
-                ->label(__('Cancel'))
-                ->color('gray')
-                ->url(fn () => DeliveryOrderResource::getUrl('edit', ['record' => $this->record->id])),
-        ];
+        return [];
     }
 
     public function submit(): void
