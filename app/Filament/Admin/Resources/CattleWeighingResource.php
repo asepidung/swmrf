@@ -19,6 +19,7 @@ class CattleWeighingResource extends Resource
     protected static ?string $model = CattleWeighing::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-scale';
+    protected static ?int $navigationSort = 2;
     public static function getNavigationGroup(): ?string
     {
         return __('CATTLE');
@@ -39,7 +40,7 @@ class CattleWeighingResource extends Resource
         return __('Cattle Weighings');
     }
 
-    protected static ?int $navigationSort = 3;
+
 
     public static function form(Form $form): Form
     {
