@@ -21,6 +21,8 @@ class MaterialUnitResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-scale';
 
+    protected static ?int $navigationSort = 3;
+
     public static function form(Form $form): Form
     {
         return $form

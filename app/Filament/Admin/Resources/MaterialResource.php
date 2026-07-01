@@ -23,6 +23,8 @@ class MaterialResource extends Resource
     
     protected static ?string $navigationLabel = 'Material Items';
 
+    protected static ?int $navigationSort = 1;
+
     protected static ?string $modelLabel = 'Material Item';
 
     public static function form(Form $form): Form
