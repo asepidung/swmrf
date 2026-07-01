@@ -66,29 +66,8 @@
 
     <!-- Auto Print Script -->
     <script>
-        document.addEventListener('livewire:initialized', () => {
-            Livewire.on('auto-print', (data) => {
-                const url = data[0].url || data.url;
-                
-                let printIframe = document.getElementById('print-iframe');
-                if (!printIframe) {
-                    printIframe = document.createElement('iframe');
-                    printIframe.id = 'print-iframe';
-                    printIframe.style.display = 'none';
-                    document.body.appendChild(printIframe);
-                }
-
-                printIframe.onload = function() {
-                    try {
-                        printIframe.contentWindow.focus();
-                        printIframe.contentWindow.print();
-                    } catch (e) {
-                        console.error('Print failed:', e);
-                    }
-                };
-
-                printIframe.src = url;
-            });
+        document.addEventListener('auto-print', (event) => {
+            window.open(event.detail.url, '_blank');
         });
     </script>
 </x-filament-panels::page>
