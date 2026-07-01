@@ -35,7 +35,7 @@ class AdminPanelProvider extends PanelProvider
                     ->url(fn (): string => \App\Filament\Admin\Pages\MyProfile::getUrl())
                     ->icon('heroicon-o-user'),
             ])
-            ->brandName('W-Apps')
+            ->brandName(config('app.name', 'WijayaApps'))
             ->brandLogo(asset('img/light.png'))
             ->darkModeBrandLogo(asset('img/dark.png'))
             ->brandLogoHeight('2.5rem')
