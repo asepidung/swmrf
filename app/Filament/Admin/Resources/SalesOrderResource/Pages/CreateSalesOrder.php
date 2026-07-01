@@ -31,6 +31,24 @@ class CreateSalesOrder extends CreateRecord
                 'note' => $item['note'] ?? '',
             ]);
         }
+
+        // Notify users who have permission to manage tallies
+        $usersToNotify = \App\Models\User::where('is_active', true)->get()->filter(function ($user) {
+            return $user->hasPermission('create_tallies') || $user->hasPermission('view_tallies');
+        });
+
+        if ($usersToNotify->isNotEmpty()) {
+            \Filament\Notifications\Notification::make()
+                ->title(__('New Sales Order Created'))
+                ->body(__('Sales Order ') . $record->so_number . __(' is ready for tally.'))
+                ->success()
+                ->actions([
+                    \Filament\Notifications\Actions\Action::make('view')
+                        ->label(__('View Sales Order'))
+                        ->url(SalesOrderResource::getUrl('index')),
+                ])
+                ->sendToDatabase($usersToNotify);
+        }
     }
 
     protected function getRedirectUrl(): string
