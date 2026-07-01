@@ -51,6 +51,20 @@ class CreateProductRequisition extends CreateRecord
             }
         }
         $this->record->updateTotalAmount();
+
+        $approvers = \App\Models\User::where('role', 'programmer')
+            ->orWhereHas('permissions', function ($q) {
+                $q->where('name', 'approve_product_requisitions');
+            })->get();
+
+        if ($approvers->count() > 0) {
+            \Filament\Notifications\Notification::make()
+                ->title('New Beef Request')
+                ->body('A new request was submitted by ' . (\Illuminate\Support\Facades\Auth::user()->name ?? 'User') . ' and requires your approval.')
+                ->info()
+                ->sendToDatabase($approvers)
+                ->broadcast($approvers);
+        }
     }
 
 

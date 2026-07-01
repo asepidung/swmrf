@@ -73,17 +73,20 @@ class ProductRequisitionResource extends Resource
                             ->schema([
                                 Forms\Components\Placeholder::make('col_product')
                                     ->label(__('Product'))
-                                    ->columnSpan(['default' => 12, 'md' => 4]),
+                                    ->columnSpan(['default' => 12, 'md' => 3]),
                                 Forms\Components\Placeholder::make('col_qty')
                                     ->label(__('Qty'))
-                                    ->columnSpan(['default' => 6, 'md' => 2]),
+                                    ->columnSpan(['default' => 6, 'md' => 1]),
                                 Forms\Components\Placeholder::make('col_price')
                                     ->label(__('Price'))
-                                    ->columnSpan(['default' => 6, 'md' => 3]),
+                                    ->columnSpan(['default' => 6, 'md' => 2]),
                                 Forms\Components\Placeholder::make('col_item_total')
                                     ->label(__('Subtotal'))
-                                    ->columnSpan(['default' => 12, 'md' => 3])
+                                    ->columnSpan(['default' => 6, 'md' => 3])
                                     ->hidden(fn ($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord),
+                                Forms\Components\Placeholder::make('col_note')
+                                    ->label(__('Notes'))
+                                    ->columnSpan(['default' => 6, 'md' => 3]),
                             ])
                             ->extraAttributes(['class' => 'hidden md:grid']),
 
@@ -97,7 +100,7 @@ class ProductRequisitionResource extends Resource
                                     ->required()
                                     ->hiddenLabel()
                                     ->placeholder('Pilih Product...')
-                                    ->columnSpan(['default' => 12, 'md' => 4]),
+                                    ->columnSpan(['default' => 12, 'md' => 3]),
 
                                 Forms\Components\TextInput::make('qty')
                                     ->required()
@@ -108,7 +111,7 @@ class ProductRequisitionResource extends Resource
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                     ->stripCharacters('.')
                                     ->numeric()
-                                    ->columnSpan(['default' => 6, 'md' => 2]),
+                                    ->columnSpan(['default' => 6, 'md' => 1]),
 
                                 Forms\Components\TextInput::make('price')
                                     ->hiddenLabel()
@@ -119,7 +122,7 @@ class ProductRequisitionResource extends Resource
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                     ->stripCharacters('.')
                                     ->numeric()
-                                    ->columnSpan(['default' => 6, 'md' => 3]),
+                                    ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('item_total')
                                     ->hiddenLabel()
@@ -134,7 +137,6 @@ class ProductRequisitionResource extends Resource
                                     })
                                     ->columnSpan(['default' => 12, 'md' => 3]),
 
-                                // Formatted notes removed from repeater to make room for subtotal. It was empty/unused mostly in legacy, or it should be added in a separate row if needed. Let's just span 12 for note if they want it.
                                 Forms\Components\TextInput::make('note')
                                     ->hiddenLabel()
                                     ->placeholder('Notes')
