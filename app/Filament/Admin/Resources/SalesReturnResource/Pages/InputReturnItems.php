@@ -303,6 +303,9 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 $this->dispatch('auto-print', url: $printUrl);
             });
 
+            // Auto Print handled inside transaction but showExp is needed here too
+            $showExp = $formData['show_exp'] ?? true;
+
             // Set sessions
             session([
                 'sr_warehouse_id_' . $this->record->id => $formData['warehouse_id'] ?? null,
