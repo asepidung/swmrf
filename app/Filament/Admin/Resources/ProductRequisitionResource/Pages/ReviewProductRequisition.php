@@ -93,20 +93,7 @@ class ReviewProductRequisition extends EditRecord
                     'reject_note' => null,
                 ]);
 
-                $approvers = \App\Models\User::where('role', 'programmer')
-                    ->orWhereHas('permissions', function ($q) {
-                        $q->where('name', 'approve_product_requisitions');
-                    })->get();
-
-                if ($approvers->count() > 0) {
-                    \Filament\Notifications\Notification::make()
-                        ->title('Beef Request Approved by Purchasing')
-                        ->body('A beef request (' . $this->record->document_number . ') has been approved by Purchasing and requires your final approval.')
-                        ->success()
-                        ->sendToDatabase($approvers)
-                        ->broadcast($approvers);
-                }
-
+                // Notifications rely on PendingTaskWidget now.
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }

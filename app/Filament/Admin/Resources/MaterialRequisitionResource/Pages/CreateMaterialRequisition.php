@@ -51,20 +51,6 @@ class CreateMaterialRequisition extends CreateRecord
             }
         }
         $this->record->updateTotalAmount();
-
-        $approvers = \App\Models\User::where('role', 'programmer')
-            ->orWhereHas('permissions', function ($q) {
-                $q->where('name', 'review_material_requisitions');
-            })->get();
-
-        if ($approvers->count() > 0) {
-            \Filament\Notifications\Notification::make()
-                ->title('New Material Request')
-                ->body('A new request was submitted by ' . (\Illuminate\Support\Facades\Auth::user()->name ?? 'User') . ' and requires your review.')
-                ->info()
-                ->sendToDatabase($approvers)
-                ->broadcast($approvers);
-        }
     }
 
 
