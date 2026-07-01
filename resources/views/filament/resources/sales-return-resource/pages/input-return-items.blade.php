@@ -18,17 +18,13 @@
             </x-filament::tabs.item>
         </x-filament::tabs>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
             <!-- Left Column: Forms (col-4) -->
-            <div class="lg:col-span-4 space-y-6">
+            <div class="md:col-span-4 space-y-6">
                 <!-- Tab Scan Form -->
                 <div x-show="activeTab === 'scan'">
                     <x-filament::section>
-                        <x-slot name="heading">
-                            Scan Barcode Karton Utuh
-                        </x-slot>
-                        
-                        <form wire:submit.prevent="processScan" class="space-y-6">
+                        <form wire:submit.prevent="processScan">
                             {{ $this->scanForm }}
 
                             <div class="flex justify-end hidden">
@@ -41,11 +37,7 @@
                 <!-- Tab Weigh Form -->
                 <div x-show="activeTab === 'weigh'" x-cloak>
                     <x-filament::section>
-                        <x-slot name="heading">
-                            Timbang & Buat Label Baru
-                        </x-slot>
-                        
-                        <form wire:submit.prevent="processWeigh" class="space-y-6">
+                        <form wire:submit.prevent="processWeigh">
                             {{ $this->weighForm }}
 
                             <div class="flex justify-end hidden">
@@ -57,12 +49,8 @@
             </div>
 
             <!-- Right Column: Table (col-8) -->
-            <div class="lg:col-span-8">
+            <div class="md:col-span-8">
                 <x-filament::section>
-                    <x-slot name="heading">
-                        Daftar Barang Retur (Sales Return No: {{ $record->return_number }})
-                    </x-slot>
-                    
                     {{ $this->table }}
                 </x-filament::section>
             </div>

@@ -174,11 +174,11 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 Forms\Components\Group::make()->schema([
                     Forms\Components\Actions::make([
                         Forms\Components\Actions\Action::make('submit_weigh')
-                            ->label('Simpan / Print Label')
-                            ->color('primary')
-                            ->icon('heroicon-o-printer')
+                            ->label('PRINT & SAVE LABEL')
+                            ->color('warning')
                             ->action('processWeigh')
-                    ]),
+                            ->extraAttributes(['class' => 'w-full'])
+                    ])->fullWidth(),
                 ]),
             ])
             ->statePath('dataWeigh');
