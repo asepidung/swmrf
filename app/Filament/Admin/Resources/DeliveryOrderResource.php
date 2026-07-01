@@ -158,6 +158,7 @@ class DeliveryOrderResource extends Resource
                                     ->required()
                                     ->disabled()
                                     ->dehydrated(true)
+                                    ->extraInputAttributes(['class' => 'text-center font-bold', 'style' => 'text-align: center;'])
                                     ->columnSpan(2),
 
                                 Forms\Components\TextInput::make('weight')
@@ -166,7 +167,7 @@ class DeliveryOrderResource extends Resource
                                     ->required()
                                     ->disabled()
                                     ->dehydrated(true)
-                                    ->extraInputAttributes(['class' => 'text-right font-bold'])
+                                    ->extraInputAttributes(['class' => 'text-right font-bold', 'style' => 'text-align: right;'])
                                     ->columnSpan(2),
 
                                 Forms\Components\TextInput::make('received_weight')
