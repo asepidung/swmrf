@@ -63,6 +63,8 @@ class SalesReturnResource extends Resource
                             ->maxLength(255)
                             ->columnSpanFull(),
                     ])->columns(3),
+                Forms\Components\View::make('filament.resources.sales-return-resource.summary')
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -106,6 +108,7 @@ class SalesReturnResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 TrashedFilter::make(),
                 Filter::make('date_range')

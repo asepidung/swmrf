@@ -19,14 +19,16 @@ class EditSalesReturn extends EditRecord
     {
         return [
             Actions\Action::make('Input Return Items')
-                ->label('Input / Scan Barang')
+                ->iconButton()
+                ->tooltip('Input / Scan Barang')
                 ->icon('heroicon-o-archive-box-arrow-down')
                 ->color('info')
                 ->url(fn () => SalesReturnResource::getUrl('input-items', ['record' => $this->record]))
                 ->hidden(fn () => $this->record->status !== 'Draft'),
 
             Actions\Action::make('Approve Return')
-                ->label('Approve Return')
+                ->iconButton()
+                ->tooltip('Approve Return')
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
                 ->requiresConfirmation()
@@ -76,7 +78,8 @@ class EditSalesReturn extends EditRecord
                 }),
 
             Actions\Action::make('Print PDF')
-                ->label('PDF Berita Acara')
+                ->iconButton()
+                ->tooltip('PDF Berita Acara')
                 ->icon('heroicon-o-document-text')
                 ->color('success')
                 ->url(fn () => route('sales-return.pdf', $this->record))
