@@ -1,4 +1,17 @@
 <x-filament-widgets::widget class="fi-wi-pending-task">
+    <style>
+        .fi-wi-pending-task a {
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease !important;
+        }
+        .fi-wi-pending-task a:hover {
+            transform: scale(1.01) !important;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+            background-color: #f9fafb !important;
+        }
+        .dark .fi-wi-pending-task a:hover {
+            background-color: rgba(255, 255, 255, 0.05) !important;
+        }
+    </style>
     @if($this->getPendingReceivingCount() > 0 || $this->getPendingWeighingCount() > 0 || $this->getPendingCarcassCount() > 0 || $this->getPendingMaterialRequestCount() > 0 || $this->getPendingMaterialFinanceCount() > 0 || $this->getPendingProductRequestCount() > 0 || $this->getPendingProductFinanceCount() > 0 || $this->getPendingRepackLockCount() > 0 || $this->getPendingTallyCount() > 0 || $this->getPendingDeliveryPlanCount() > 0 || $this->getPendingGrMaterialCount() > 0 || $this->getPendingGrProductCount() > 0 || $this->getPendingBoningLockCount() > 0 || $this->getPendingDeliveryOrderCount() > 0 || $this->getPendingDeliveryReceiptCount() > 0 || $this->getPendingInvoiceExchangeCount() > 0)
     <div class="space-y-2">
         @if($this->getPendingReceivingCount() > 0)
