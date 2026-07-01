@@ -256,19 +256,25 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                 $index++;
             }
 
-            $receipt = DeliveryOrderReceipt::create([
-                'delivery_order_id' => $this->record->id,
-                'sales_order_id' => $this->record->sales_order_id,
-                'customer_id' => $this->record->customer_id,
-                'receipt_number' => $receiptNumber,
-                'delivery_date' => $this->record->delivery_date,
-                'po_number' => $this->record->po_number,
-                'note' => $data['receipt_note'] ?? null,
-                'total_box' => $totalBox,
-                'total_weight' => $totalWeight,
-                'status' => 'Approved',
-                'created_by' => auth()->id(),
-            ]);
+            $receipt = DeliveryOrderReceipt::updateOrCreate(
+                [
+                    'receipt_number' => $receiptNumber,
+                ],
+                [
+                    'delivery_order_id' => $this->record->id,
+                    'sales_order_id' => $this->record->sales_order_id,
+                    'customer_id' => $this->record->customer_id,
+                    'delivery_date' => $this->record->delivery_date,
+                    'po_number' => $this->record->po_number,
+                    'note' => $data['receipt_note'] ?? null,
+                    'total_box' => $totalBox,
+                    'total_weight' => $totalWeight,
+                    'status' => 'Approved',
+                    'created_by' => auth()->id(),
+                ]
+            );
+
+            $receipt->items()->delete();
 
             foreach ($data['receipt_items'] as $item) {
                 $receipt->items()->create([
