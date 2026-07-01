@@ -1,17 +1,18 @@
+<x-filament-panels::page>
 <style>
     /* Replace 'Summary' text with 'Grand Total' and color it yellow */
-    .fi-ta-summary-header-cell {
+    .fi-ta-summary-row-heading {
         font-size: 0 !important;
     }
-    .fi-ta-summary-header-cell::after {
+    .fi-ta-summary-row-heading::after {
         content: "Grand Total";
         font-size: 1rem !important;
         font-weight: bold !important;
         color: #eab308 !important;
+        visibility: visible !important;
+        display: block !important;
     }
 </style>
-
-<x-filament-panels::page>
     <div x-data="{ activeTab: 'scan' }">
         <x-filament::tabs label="Content tabs" class="mb-8">
             <x-filament::tabs.item
