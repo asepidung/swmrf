@@ -87,6 +87,10 @@ class SalesReturnResource extends Resource
                     ->label(__('Customer'))
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('note')
+                    ->label(__('Note'))
+                    ->searchable()
+                    ->limit(50),
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('Status'))
                     ->badge()
