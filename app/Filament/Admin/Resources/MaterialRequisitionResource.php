@@ -73,20 +73,20 @@ class MaterialRequisitionResource extends Resource
                             ->schema([
                                 Forms\Components\Placeholder::make('col_material')
                                     ->label(__('Material'))
-                                    ->columnSpan(['default' => 12, 'md' => 3]),
+                                    ->columnSpan(fn ($livewire) => ['default' => 12, 'md' => 3]),
                                 Forms\Components\Placeholder::make('col_qty')
                                     ->label(__('Qty'))
-                                    ->columnSpan(['default' => 6, 'md' => 1]),
+                                    ->columnSpan(fn ($livewire) => ['default' => 6, 'md' => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 2 : 1]),
                                 Forms\Components\Placeholder::make('col_price')
                                     ->label(__('Price'))
-                                    ->columnSpan(['default' => 6, 'md' => 2]),
+                                    ->columnSpan(fn ($livewire) => ['default' => 6, 'md' => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 3 : 2]),
                                 Forms\Components\Placeholder::make('col_item_total')
                                     ->label(__('Subtotal'))
                                     ->columnSpan(['default' => 6, 'md' => 3])
                                     ->hidden(fn ($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord),
                                 Forms\Components\Placeholder::make('col_note')
                                     ->label(__('Notes'))
-                                    ->columnSpan(['default' => 6, 'md' => 3]),
+                                    ->columnSpan(fn ($livewire) => ['default' => 6, 'md' => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 4 : 3]),
                             ])
                             ->extraAttributes(['class' => 'hidden md:grid']),
 
@@ -100,7 +100,7 @@ class MaterialRequisitionResource extends Resource
                                     ->required()
                                     ->hiddenLabel()
                                     ->placeholder('Pilih Material...')
-                                    ->columnSpan(['default' => 12, 'md' => 3]),
+                                    ->columnSpan(fn ($livewire) => ['default' => 12, 'md' => 3]),
 
                                 Forms\Components\TextInput::make('qty')
                                     ->required()
@@ -111,7 +111,7 @@ class MaterialRequisitionResource extends Resource
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                     ->stripCharacters('.')
                                     ->numeric()
-                                    ->columnSpan(['default' => 6, 'md' => 1]),
+                                    ->columnSpan(fn ($livewire) => ['default' => 6, 'md' => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 2 : 1]),
 
                                 Forms\Components\TextInput::make('price')
                                     ->hiddenLabel()
@@ -122,7 +122,7 @@ class MaterialRequisitionResource extends Resource
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                     ->stripCharacters('.')
                                     ->numeric()
-                                    ->columnSpan(['default' => 6, 'md' => 2]),
+                                    ->columnSpan(fn ($livewire) => ['default' => 6, 'md' => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 3 : 2]),
 
                                 Forms\Components\TextInput::make('item_total')
                                     ->hiddenLabel()
@@ -140,7 +140,7 @@ class MaterialRequisitionResource extends Resource
                                 Forms\Components\TextInput::make('note')
                                     ->hiddenLabel()
                                     ->placeholder('Notes')
-                                    ->columnSpan(['default' => 12, 'md' => 3]),
+                                    ->columnSpan(fn ($livewire) => ['default' => 12, 'md' => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 4 : 3]),
                             ])
                             ->columns(12),
                     ]),
