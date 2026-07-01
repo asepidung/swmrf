@@ -119,7 +119,9 @@ class InputReturnItems extends Page implements HasForms, HasTable
                         ->placeholder(__('Warehouse'))
                         ->options(\App\Models\Warehouse::where('is_active', true)->pluck('name', 'id'))
                         ->required()
-                        ->searchable(),
+                        ->searchable()
+                        ->extraAttributes(['tabindex' => '-1'])
+                        ->extraInputAttributes(['tabindex' => '-1']),
 
                     Forms\Components\Select::make('product_id')
                         ->hiddenLabel()
@@ -127,7 +129,9 @@ class InputReturnItems extends Page implements HasForms, HasTable
                         ->options(Product::orderBy('name')->pluck('name', 'id'))
                         ->required()
                         ->searchable()
-                        ->preload(),
+                        ->preload()
+                        ->autofocus()
+                        ->extraAttributes(['class' => 'product-select-container']),
 
                     Forms\Components\Select::make('grade_id')
                         ->hiddenLabel()
@@ -318,7 +322,10 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 'exp_date' => $formData['exp_date'] ?? null,
                 'show_exp' => $showExp,
                 'ph_level' => $formData['ph_level'] ?? null,
+                'qty_pcs_combined' => null,
             ]);
+            
+            $this->dispatch('refreshTable');
         } catch (\Exception $e) {
             Notification::make()->title('Gagal')->body($e->getMessage())->danger()->send();
         }

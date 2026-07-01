@@ -66,6 +66,27 @@
 
     <!-- Auto Print Script -->
     <script>
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                const activeEl = document.activeElement;
+                if (activeEl && activeEl.closest('.product-select-container')) {
+                    e.preventDefault();
+                    const qtyInput = document.getElementById('qty_input_field');
+                    if (qtyInput) qtyInput.focus();
+                }
+            }
+        });
+
+        document.addEventListener('refreshTable', () => {
+            setTimeout(() => {
+                const productContainer = document.querySelector('.product-select-container');
+                if (productContainer) {
+                    const focusTarget = productContainer.querySelector('button, input');
+                    if (focusTarget) focusTarget.focus();
+                }
+            }, 100);
+        });
+
         document.addEventListener('auto-print', (event) => {
             window.open(event.detail.url, '_blank');
         });
