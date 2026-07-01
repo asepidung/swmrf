@@ -172,7 +172,7 @@ class CattleReceivingResource extends Resource
                                     ->live(debounce: 500)
                                     ->suffix('Kg')
                                     ->extraInputAttributes([
-                                        'class' => 'enter-to-next-weight',
+                                        'class' => 'text-center enter-to-next-weight',
                                         'onkeydown' => "
                                             if (event.key === 'Enter') {
                                                 event.preventDefault();

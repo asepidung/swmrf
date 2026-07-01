@@ -122,7 +122,7 @@ class CarcassResource extends Resource
                                 ->extraInputAttributes([
                                     'x-on:focus' => '$el.select()',
                                     'x-on:click' => '$el.select()',
-                                    'class' => 'enter-to-next-carcass-1',
+                                    'class' => 'text-center enter-to-next-carcass-1',
                                     'onkeydown' => "
                                         if (event.key === 'Enter') {
                                             event.preventDefault();
@@ -155,7 +155,7 @@ class CarcassResource extends Resource
                                 ->extraInputAttributes([
                                     'x-on:focus' => '$el.select()',
                                     'x-on:click' => '$el.select()',
-                                    'class' => 'enter-to-next-carcass-2',
+                                    'class' => 'text-center enter-to-next-carcass-2',
                                     'onkeydown' => "
                                         if (event.key === 'Enter') {
                                             event.preventDefault();
@@ -191,7 +191,7 @@ class CarcassResource extends Resource
                                 ->extraInputAttributes([
                                     'x-on:focus' => '$el.select()',
                                     'x-on:click' => '$el.select()',
-                                    'class' => 'enter-to-next-hides',
+                                    'class' => 'text-center enter-to-next-hides',
                                     'onkeydown' => "
                                         if (event.key === 'Enter') {
                                             event.preventDefault();
@@ -224,7 +224,7 @@ class CarcassResource extends Resource
                                 ->extraInputAttributes([
                                     'x-on:focus' => '$el.select()',
                                     'x-on:click' => '$el.select()',
-                                    'class' => 'enter-to-next-tail',
+                                    'class' => 'text-center enter-to-next-tail',
                                     'onkeydown' => "
                                         if (event.key === 'Enter') {
                                             event.preventDefault();

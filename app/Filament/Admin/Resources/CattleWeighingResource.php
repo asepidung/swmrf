@@ -121,6 +121,7 @@ class CattleWeighingResource extends Resource
                                     ->numeric()
                                     ->suffix('Kg')
                                     ->disabled()
+                                    ->extraInputAttributes(['class' => 'text-center'])
                                     ->dehydrated(false),
                                 Forms\Components\TextInput::make('actual_weight')
                                     ->label('Actual Weight')
@@ -133,7 +134,7 @@ class CattleWeighingResource extends Resource
                                     ->extraInputAttributes([
                                         'x-on:focus' => '$el.select()',
                                         'x-on:click' => '$el.select()',
-                                        'class' => 'enter-to-next-actual-weight',
+                                        'class' => 'text-center enter-to-next-actual-weight',
                                         'onkeydown' => "
                                             if (event.key === 'Enter') {
                                                 event.preventDefault();
