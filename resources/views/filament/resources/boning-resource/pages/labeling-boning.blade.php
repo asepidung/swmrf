@@ -93,21 +93,26 @@
     <div style="display: grid; grid-template-columns: 32% 1fr; gap: 1.5rem; align-items: start; width: 100%;">
 
         <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10" style="position: sticky; top: 1.5rem;">
-            <form wire:submit.prevent="create">
+            @if($record->kunci == 1)
+                <h3 class="text-lg font-bold mb-4">{{ __('Production Summary') }}</h3>
+                @include('filament.resources.boning-resource.pages.view-summary', ['summary' => $this->getProductionSummary()])
+            @else
+                <form wire:submit.prevent="create">
 
-                {{ $this->form }}
+                    {{ $this->form }}
 
-                <div class="mt-6 w-full">
-                    <x-filament::button
-                        id="submit_btn_label"
-                        type="submit"
-                        size="xl"
-                        class="w-full">
-                        {{ __('PRINT & SAVE LABEL') }}
-                    </x-filament::button>
-                </div>
+                    <div class="mt-6 w-full">
+                        <x-filament::button
+                            id="submit_btn_label"
+                            type="submit"
+                            size="xl"
+                            class="w-full">
+                            {{ __('PRINT & SAVE LABEL') }}
+                        </x-filament::button>
+                    </div>
 
-            </form>
+                </form>
+            @endif
         </div>
 
         <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">

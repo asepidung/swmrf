@@ -203,6 +203,9 @@ class BoningResource extends Resource
                         return $indicators;
                     }),
             ])
+            ->recordUrl(
+                fn (Boning $record): string => static::getUrl('labeling', ['record' => $record])
+            )
             ->actions([
                 /* 1. Tombol Lock */
                 Tables\Actions\Action::make('toggleLock')
@@ -234,75 +237,14 @@ class BoningResource extends Resource
                     ->url(fn(Boning $record): string => static::getUrl('labeling', ['record' => $record]))
                     ->hidden(fn(Boning $record) => $record->kunci == 1),
 
-                /* 3. Tombol View Summary Hasil Produksi (Sekaligus buat Export) */
-                Tables\Actions\Action::make('summary_view')
-                    ->icon('heroicon-o-eye')
-                    ->iconButton()
-                    ->color('info')
-                    ->tooltip(__('View Production Results'))
-                    ->modalHeading(fn(Boning $record) => __('Production Summary') . ' - ' . $record->doc_no)
-                    ->modalWidth('4xl')
-                    ->modalSubmitActionLabel(__('Export to Excel'))
-                    ->modalCancelActionLabel(__('Close'))
-                    ->modalContent(function (Boning $record) {
-                        $summary = \App\Models\BoningItem::with('product')
-                            ->where('boning_id', $record->id)
-                            ->get()
-                            ->groupBy('product_id')
-                            ->map(function ($items) {
-                                return [
-                                    'product_name' => $items->first()->product->name ?? 'Unknown',
-                                    'box' => $items->count(),
-                                    'pcs' => $items->sum('qty_pcs'),
-                                    'qty' => $items->sum('weight'),
-                                ];
-                            })->sortBy('product_name');
-
-                        return view('filament.resources.boning-resource.pages.view-summary', [
-                            'summary' => $summary,
-                        ]);
-                    })
-                    ->action(function (Boning $record) {
-                        $summary = \App\Models\BoningItem::with('product')
-                            ->where('boning_id', $record->id)
-                            ->get()
-                            ->groupBy('product_id')
-                            ->map(function ($items) {
-                                return [
-                                    'product_name' => $items->first()->product->name ?? 'Unknown',
-                                    'box' => $items->count(),
-                                    'pcs' => $items->sum('qty_pcs'),
-                                    'qty' => $items->sum('weight'),
-                                ];
-                            })->sortBy('product_name');
-
-                        $csvData = "Product,Box,Pcs,Qty (Kg)\n";
-                        $totalBox = 0;
-                        $totalPcs = 0;
-                        $totalQty = 0;
-
-                        foreach ($summary as $row) {
-                            $csvData .= "\"{$row['product_name']}\",{$row['box']},{$row['pcs']},{$row['qty']}\n";
-                            $totalBox += $row['box'];
-                            $totalPcs += $row['pcs'];
-                            $totalQty += $row['qty'];
-                        }
-
-                        $csvData .= "\"GRAND TOTAL\",{$totalBox},{$totalPcs},{$totalQty}\n";
-
-                        return response()->streamDownload(function () use ($csvData) {
-                            echo $csvData;
-                        }, 'Hasil_Produksi_' . $record->doc_no . '.csv');
-                    }),
-
-                /* 4. Tombol Edit Header */
+                /* 3. Tombol Edit Header */
                 Tables\Actions\EditAction::make()
                     ->iconButton()
                     ->color('success')
                     ->tooltip(__('Edit Boning'))
                     ->hidden(fn(Boning $record) => $record->kunci == 1),
 
-                /* 5. Tombol Hapus */
+                /* 4. Tombol Hapus */
                 Tables\Actions\DeleteAction::make()
                     ->iconButton()
                     ->tooltip(__('Delete Data'))
