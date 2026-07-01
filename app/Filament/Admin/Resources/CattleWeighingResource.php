@@ -130,9 +130,36 @@ class CattleWeighingResource extends Resource
                                     ->default(0)
                                     ->minValue(0)
                                     ->live(onBlur: true)
-                                    ->extraInputAttributes(['x-on:focus' => '$el.select()', 'x-on:click' => '$el.select()']),
+                                    ->extraInputAttributes([
+                                        'x-on:focus' => '$el.select()',
+                                        'x-on:click' => '$el.select()',
+                                        'class' => 'enter-to-next-actual-weight',
+                                        'onkeydown' => "
+                                            if (event.key === 'Enter') {
+                                                event.preventDefault();
+                                                let inputs = Array.from(document.querySelectorAll('.enter-to-next-actual-weight'));
+                                                let index = inputs.indexOf(this);
+                                                if (index > -1 && index + 1 < inputs.length) {
+                                                    inputs[index + 1].focus();
+                                                }
+                                            }
+                                        "
+                                    ]),
                                 Forms\Components\TextInput::make('notes')
                                     ->label('Notes')
+                                    ->extraInputAttributes([
+                                        'class' => 'enter-to-next-notes',
+                                        'onkeydown' => "
+                                            if (event.key === 'Enter') {
+                                                event.preventDefault();
+                                                let inputs = Array.from(document.querySelectorAll('.enter-to-next-notes'));
+                                                let index = inputs.indexOf(this);
+                                                if (index > -1 && index + 1 < inputs.length) {
+                                                    inputs[index + 1].focus();
+                                                }
+                                            }
+                                        "
+                                    ])
                                     ->nullable(),
                             ])
                             ->columns(4)
