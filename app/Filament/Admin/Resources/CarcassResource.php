@@ -119,7 +119,21 @@ class CarcassResource extends Resource
                                 ->minValue(0)
                                 ->maxValue(350)
                                 ->live(onBlur: true)
-                                ->extraInputAttributes(['x-on:focus' => '$el.select()', 'x-on:click' => '$el.select()'])
+                                ->extraInputAttributes([
+                                    'x-on:focus' => '$el.select()',
+                                    'x-on:click' => '$el.select()',
+                                    'class' => 'enter-to-next-carcass-1',
+                                    'onkeydown' => "
+                                        if (event.key === 'Enter') {
+                                            event.preventDefault();
+                                            let inputs = Array.from(document.querySelectorAll('.enter-to-next-carcass-1'));
+                                            let index = inputs.indexOf(this);
+                                            if (index > -1 && index + 1 < inputs.length) {
+                                                inputs[index + 1].focus();
+                                            }
+                                        }
+                                    "
+                                ])
                                 ->rules([
                                     fn (\Filament\Forms\Get $get) => function (string $attribute, $value, \Closure $fail) use ($get) {
                                         $c1 = (float) $value;
@@ -138,7 +152,21 @@ class CarcassResource extends Resource
                                 ->minValue(0)
                                 ->maxValue(350)
                                 ->live(onBlur: true)
-                                ->extraInputAttributes(['x-on:focus' => '$el.select()', 'x-on:click' => '$el.select()'])
+                                ->extraInputAttributes([
+                                    'x-on:focus' => '$el.select()',
+                                    'x-on:click' => '$el.select()',
+                                    'class' => 'enter-to-next-carcass-2',
+                                    'onkeydown' => "
+                                        if (event.key === 'Enter') {
+                                            event.preventDefault();
+                                            let inputs = Array.from(document.querySelectorAll('.enter-to-next-carcass-2'));
+                                            let index = inputs.indexOf(this);
+                                            if (index > -1 && index + 1 < inputs.length) {
+                                                inputs[index + 1].focus();
+                                            }
+                                        }
+                                    "
+                                ])
                                 ->rules([
                                     fn (\Filament\Forms\Get $get) => function (string $attribute, $value, \Closure $fail) use ($get) {
                                         $c1 = (float) $get('carcass_1');
@@ -160,7 +188,21 @@ class CarcassResource extends Resource
                                 ->minValue(0)
                                 ->maxValue(100)
                                 ->live(onBlur: true)
-                                ->extraInputAttributes(['x-on:focus' => '$el.select()', 'x-on:click' => '$el.select()'])
+                                ->extraInputAttributes([
+                                    'x-on:focus' => '$el.select()',
+                                    'x-on:click' => '$el.select()',
+                                    'class' => 'enter-to-next-hides',
+                                    'onkeydown' => "
+                                        if (event.key === 'Enter') {
+                                            event.preventDefault();
+                                            let inputs = Array.from(document.querySelectorAll('.enter-to-next-hides'));
+                                            let index = inputs.indexOf(this);
+                                            if (index > -1 && index + 1 < inputs.length) {
+                                                inputs[index + 1].focus();
+                                            }
+                                        }
+                                    "
+                                ])
                                 ->rules([
                                     fn (\Filament\Forms\Get $get) => function (string $attribute, $value, \Closure $fail) use ($get) {
                                         $c1 = (float) $get('carcass_1');
@@ -179,9 +221,37 @@ class CarcassResource extends Resource
                                 ->maxValue(100)
                                 ->default(0)
                                 ->live(onBlur: true)
-                                ->extraInputAttributes(['x-on:focus' => '$el.select()', 'x-on:click' => '$el.select()']),
+                                ->extraInputAttributes([
+                                    'x-on:focus' => '$el.select()',
+                                    'x-on:click' => '$el.select()',
+                                    'class' => 'enter-to-next-tail',
+                                    'onkeydown' => "
+                                        if (event.key === 'Enter') {
+                                            event.preventDefault();
+                                            let inputs = Array.from(document.querySelectorAll('.enter-to-next-tail'));
+                                            let index = inputs.indexOf(this);
+                                            if (index > -1 && index + 1 < inputs.length) {
+                                                inputs[index + 1].focus();
+                                            }
+                                        }
+                                    "
+                                ]),
                             Forms\Components\TextInput::make('notes')
-                                ->label('Note'),
+                                ->label('Note')
+                                ->columnSpan(2)
+                                ->extraInputAttributes([
+                                    'class' => 'enter-to-next-notes',
+                                    'onkeydown' => "
+                                        if (event.key === 'Enter') {
+                                            event.preventDefault();
+                                            let inputs = Array.from(document.querySelectorAll('.enter-to-next-notes'));
+                                            let index = inputs.indexOf(this);
+                                            if (index > -1 && index + 1 < inputs.length) {
+                                                inputs[index + 1].focus();
+                                            }
+                                        }
+                                    "
+                                ]),
                         ])
                         ->columns(7)
                         ->addable(false)
