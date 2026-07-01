@@ -19,7 +19,7 @@
                 x-on:click="activeTab = 'scan'"
                 icon="heroicon-o-qr-code"
             >
-                Scan Karton Utuh
+                Scan Mode
             </x-filament::tabs.item>
 
             <x-filament::tabs.item
