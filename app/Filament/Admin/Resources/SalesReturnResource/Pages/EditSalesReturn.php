@@ -14,15 +14,14 @@ use Illuminate\Support\Facades\Auth;
 class EditSalesReturn extends EditRecord
 {
     protected static string $resource = SalesReturnResource::class;
-
     protected function getHeaderActions(): array
     {
         return [
             Actions\Action::make('Input Return Items')
                 ->iconButton()
                 ->tooltip('Input / Scan Barang')
-                ->icon('heroicon-o-archive-box-arrow-down')
-                ->color('info')
+                ->icon('heroicon-o-qr-code')
+                ->color('warning')
                 ->url(fn () => SalesReturnResource::getUrl('input-items', ['record' => $this->record]))
                 ->hidden(fn () => $this->record->status !== 'Draft'),
 
@@ -80,14 +79,25 @@ class EditSalesReturn extends EditRecord
             Actions\Action::make('Print PDF')
                 ->iconButton()
                 ->tooltip('PDF Berita Acara')
-                ->icon('heroicon-o-document-text')
-                ->color('success')
+                ->icon('heroicon-o-tag')
+                ->color('info')
                 ->url(fn () => route('sales-return.pdf', $this->record))
                 ->openUrlInNewTab(),
 
-            Actions\DeleteAction::make(),
-            Actions\ForceDeleteAction::make(),
-            Actions\RestoreAction::make(),
+            Actions\DeleteAction::make()
+                ->iconButton()
+                ->tooltip('Delete')
+                ->icon('heroicon-o-trash'),
+            
+            Actions\ForceDeleteAction::make()
+                ->iconButton()
+                ->tooltip('Force Delete')
+                ->icon('heroicon-o-trash'),
+            
+            Actions\RestoreAction::make()
+                ->iconButton()
+                ->tooltip('Restore')
+                ->icon('heroicon-o-arrow-path'),
         ];
     }
 
