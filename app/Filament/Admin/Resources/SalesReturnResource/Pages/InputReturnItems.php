@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\DB;
 use Filament\Support\Enums\MaxWidth;
 use Filament\Notifications\Notification;
 use Carbon\Carbon;
+use Filament\Actions;
 
 class InputReturnItems extends Page implements HasForms, HasTable
 {
@@ -29,6 +30,24 @@ class InputReturnItems extends Page implements HasForms, HasTable
     protected static string $resource = SalesReturnResource::class;
     
     protected static string $view = 'filament.resources.sales-return-resource.pages.input-return-items';
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\Action::make('Print PDF')
+                ->label('Print Berita Acara')
+                ->icon('heroicon-o-printer')
+                ->color('success')
+                ->url(fn () => route('sales-return.pdf', $this->record))
+                ->openUrlInNewTab(),
+                
+            Actions\Action::make('back')
+                ->label('Kembali ke Edit')
+                ->color('gray')
+                ->icon('heroicon-o-arrow-left')
+                ->url(fn () => SalesReturnResource::getUrl('edit', ['record' => $this->record])),
+        ];
+    }
 
     public function getMaxContentWidth(): MaxWidth | string | null
     {
@@ -99,20 +118,26 @@ class InputReturnItems extends Page implements HasForms, HasTable
                         ->options(Grade::where('is_active', true)->pluck('name', 'id'))
                         ->required()
                         ->live()
-                        ->afterStateUpdated(fn($state, callable $set, callable $get) => \App\Filament\Admin\Resources\RepackResource\Pages\InputHasilRepack::calculateExpiry($get('pack_date'), $state, $set)),
+                        ->afterStateUpdated(fn($state, callable $set, callable $get) => \App\Filament\Admin\Resources\RepackResource\Pages\InputHasilRepack::calculateExpiry($get('pack_date'), $state, $set))
+                        ->extraAttributes(['tabindex' => '-1'])
+                        ->extraInputAttributes(['tabindex' => '-1']),
 
                     Forms\Components\DatePicker::make('pack_date')
                         ->hiddenLabel()
                         ->placeholder(__('Pack Date'))
                         ->required()
                         ->live()
-                        ->afterStateUpdated(fn($state, callable $set, callable $get) => \App\Filament\Admin\Resources\RepackResource\Pages\InputHasilRepack::calculateExpiry($state, $get('grade_id'), $set)),
+                        ->afterStateUpdated(fn($state, callable $set, callable $get) => \App\Filament\Admin\Resources\RepackResource\Pages\InputHasilRepack::calculateExpiry($state, $get('grade_id'), $set))
+                        ->extraAttributes(['tabindex' => '-1'])
+                        ->extraInputAttributes(['tabindex' => '-1']),
 
                     Forms\Components\Hidden::make('exp_date'),
 
                     Forms\Components\Checkbox::make('show_exp')
                         ->label(__('Tampilkan Tanggal Expired Pada Label'))
-                        ->default(true),
+                        ->default(true)
+                        ->dehydrated(false)
+                        ->extraAttributes(['tabindex' => '-1']),
 
                     Forms\Components\Grid::make(2)->schema([
                         Forms\Components\TextInput::make('qty_pcs_combined')
@@ -120,6 +145,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
                             ->placeholder(__('Weight/Pcs (e.g. 22.5/8)'))
                             ->required()
                             ->extraInputAttributes([
+                                'id' => 'qty_input_field',
                                 'class' => 'text-2xl font-black text-center text-primary-600',
                                 'oninput' => "this.value = this.value.replace(/,/g, '.');",
                                 'onkeydown' => "if(event.key === 'Enter') { event.preventDefault(); document.getElementById('submit_weigh_btn').click(); }"
@@ -127,11 +153,26 @@ class InputReturnItems extends Page implements HasForms, HasTable
 
                         Forms\Components\TextInput::make('ph_level')
                             ->hiddenLabel()
-                            ->placeholder(__('pH'))
                             ->numeric()
-                            ->inputMode('decimal'),
+                            ->step(0.1)
+                            ->minValue(5.4)
+                            ->maxValue(5.7)
+                            ->placeholder(__('PH (5.4 - 5.7)'))
+                            ->extraInputAttributes([
+                                'onkeydown' => "if(event.key === ','){ event.preventDefault(); this.value = this.value + '.'; } else if(event.key === 'Enter'){ event.preventDefault(); document.getElementById('submit_weigh_btn').click(); }"
+                            ]),
                     ]),
-                ])->columns(5),
+                ])->columns(1),
+
+                Forms\Components\Group::make()->schema([
+                    Forms\Components\Actions::make([
+                        Forms\Components\Actions\Action::make('submit_weigh')
+                            ->label('Simpan / Print Label')
+                            ->color('primary')
+                            ->icon('heroicon-o-printer')
+                            ->action('processWeigh')
+                    ]),
+                ]),
             ])
             ->statePath('dataWeigh');
     }
@@ -145,25 +186,14 @@ class InputReturnItems extends Page implements HasForms, HasTable
             $tallyItem = TallyItem::where('barcode', $barcode)->orderBy('id', 'desc')->first();
             
             if (!$tallyItem) {
-                // If not in TallyItem, maybe we can find it in BeefStockMovement
-                $movement = \App\Models\BeefStockMovement::where('barcode', $barcode)->orderBy('id', 'desc')->first();
-                if (!$movement) {
-                    throw new \Exception('Barcode tidak ditemukan di sistem.');
-                }
-                
-                // Construct from movement
-                $productId = $movement->product_id;
-                $gradeId = $movement->condition;
-                $weight = abs($movement->weight_in - $movement->weight_out);
-                $pcs = abs($movement->pcs_in - $movement->pcs_out) ?: 1;
-                $origin = 'Unknown';
-            } else {
-                $productId = $tallyItem->product_id;
-                $gradeId = $tallyItem->grade_id;
-                $weight = $tallyItem->weight;
-                $pcs = $tallyItem->qty_pcs;
-                $origin = $tallyItem->origin;
+                throw new \Exception('Barcode tidak ditemukan di sistem (Tally).');
             }
+            
+            $productId = $tallyItem->product_id;
+            $gradeId = $tallyItem->grade_id;
+            $weight = $tallyItem->weight;
+            $pcs = $tallyItem->qty_pcs;
+            $origin = $tallyItem->origin;
 
             if (SalesReturnItem::where('sales_return_id', $this->record->id)->where('barcode', $barcode)->exists()) {
                 throw new \Exception('Barcode sudah di-scan di retur ini.');
@@ -207,7 +237,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
             }
 
             DB::transaction(function () use ($formData, $weight, $pcs) {
-                $origin = '9'; // Return origin
+                $origin = '4'; // Repack Return origin (per project rules)
                 $dateStr = Carbon::parse($formData['pack_date'])->format('dmy');
                 
                 $product = Product::find($formData['product_id']);
