@@ -87,6 +87,14 @@ class SalesOrderResource extends Resource
                             ->rows(2)
                             ->columnSpan(1),
 
+                        Forms\Components\TextInput::make('down_payment')
+                            ->label(__('Down Payment (DP)'))
+                            ->numeric()
+                            ->default(0)
+                            ->disabled(fn (?SalesOrder $record) => in_array($record?->status, ['processing', 'cancelled', 'canceled', 'ready']))
+                            ->dehydrated()
+                            ->columnSpan(3),
+
                         Forms\Components\Hidden::make('created_by')
                             ->default(fn() => auth()->id()),
                     ])->columns(3)
