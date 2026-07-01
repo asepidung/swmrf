@@ -27,7 +27,7 @@
                 x-on:click="activeTab = 'weigh'"
                 icon="heroicon-o-scale"
             >
-                Timbang Ulang
+                Relabel Mode
             </x-filament::tabs.item>
         </x-filament::tabs>
 

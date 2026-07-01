@@ -318,13 +318,17 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 Tables\Columns\TextColumn::make('barcode')
                     ->label(__('Barcode'))
                     ->weight('bold')
+                    ->size('xs')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('product.name')
-                    ->label(__('Product')),
+                    ->label(__('Product'))
+                    ->size('xs'),
                 Tables\Columns\TextColumn::make('grade.name')
-                    ->label(__('Grade')),
+                    ->label(__('Grade'))
+                    ->size('xs'),
                 Tables\Columns\TextColumn::make('weight')
                     ->label(__('Weight/Pcs'))
+                    ->size('xs')
                     ->formatStateUsing(fn ($record) => number_format($record->weight, 2) . '/' . $record->qty_pcs)
                     ->summarize(
                         Tables\Columns\Summarizers\Summarizer::make()
@@ -337,10 +341,12 @@ class InputReturnItems extends Page implements HasForms, HasTable
                             })
                     ),
                 Tables\Columns\TextColumn::make('ph_level')
-                    ->label(__('pH')),
+                    ->label(__('pH'))
+                    ->size('xs'),
                 Tables\Columns\TextColumn::make('pack_date')
                     ->label(__('POD'))
-                    ->date('d/m/Y'),
+                    ->date('d/m/Y')
+                    ->size('xs'),
                 Tables\Columns\TextColumn::make('origin')
                     ->label(__('Origin'))
                     ->alignCenter()
