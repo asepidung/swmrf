@@ -315,23 +315,18 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 Tables\Columns\TextColumn::make('qty_pcs')
                     ->label(__('Pcs'))
                     ->summarize(Tables\Columns\Summarizers\Sum::make()->label('Total Pcs')),
-                Tables\Columns\IconColumn::make('is_repacked')
-                    ->label('New Label')
-                    ->boolean(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label(__('Scanned At'))
-                    ->dateTime('d M Y H:i:s'),
+                Tables\Columns\TextColumn::make('ph_level')
+                    ->label(__('pH')),
+                Tables\Columns\TextColumn::make('pack_date')
+                    ->label(__('POD'))
+                    ->date('d/m/Y'),
+                Tables\Columns\TextColumn::make('origin')
+                    ->label(__('Origin')),
             ])
             ->actions([
-                Tables\Actions\Action::make('Print Label')
-                    ->icon('heroicon-o-printer')
-                    ->color('success')
-                    ->hidden(fn (SalesReturnItem $record) => !$record->is_repacked)
-                    ->action(function (SalesReturnItem $record) {
-                        $printUrl = route('sales-return.label', ['id' => $record->id, 'show_exp' => 1]);
-                        $this->dispatch('auto-print', url: $printUrl);
-                    }),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->iconButton()
+                    ->tooltip('Delete'),
             ]);
     }
 }
