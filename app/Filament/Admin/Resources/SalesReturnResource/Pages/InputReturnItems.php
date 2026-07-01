@@ -325,6 +325,9 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 'qty_pcs_combined' => null,
             ]);
             
+            // Explicitly force Livewire to clear it in the state array
+            $this->dataWeigh['qty_pcs_combined'] = null;
+            
             $this->dispatch('refreshTable');
         } catch (\Exception $e) {
             Notification::make()->title('Gagal')->body($e->getMessage())->danger()->send();

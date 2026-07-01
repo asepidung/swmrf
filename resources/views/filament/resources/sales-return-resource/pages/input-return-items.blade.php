@@ -25,7 +25,7 @@
 
             <x-filament::tabs.item
                 alpine-active="activeTab === 'weigh'"
-                x-on:click="activeTab = 'weigh'"
+                x-on:click="activeTab = 'weigh'; setTimeout(() => { window.dispatchEvent(new Event('refreshTable')) }, 100)"
                 icon="heroicon-o-scale"
             >
                 Relabel Mode
@@ -66,7 +66,7 @@
 
     <!-- Auto Print Script -->
     <script>
-        document.addEventListener('keydown', function(e) {
+        window.addEventListener('keydown', function(e) {
             if (e.key === 'Tab') {
                 const activeEl = document.activeElement;
                 if (activeEl && activeEl.closest('.product-select-container')) {
@@ -77,8 +77,11 @@
             }
         });
 
-        document.addEventListener('refreshTable', () => {
+        window.addEventListener('refreshTable', () => {
             setTimeout(() => {
+                const qtyInput = document.getElementById('qty_input_field');
+                if (qtyInput) qtyInput.value = '';
+
                 const productContainer = document.querySelector('.product-select-container');
                 if (productContainer) {
                     const focusTarget = productContainer.querySelector('button, input');
@@ -87,7 +90,7 @@
             }, 100);
         });
 
-        document.addEventListener('auto-print', (event) => {
+        window.addEventListener('auto-print', (event) => {
             window.open(event.detail.url, '_blank');
         });
     </script>
