@@ -178,4 +178,12 @@ Route::middleware(['web', 'auth'])->group(function () {
         $record->load(['customer', 'items.product']);
         return view('print.sales-return', compact('record'));
     })->name('sales-return.pdf');
+
+    // ------------------------------------------
+    // 11. MODUL MUTASI
+    // ------------------------------------------
+    Route::get('/print/mutation/{record}', function (\App\Models\Mutation $record) {
+        $record->load(['fromWarehouse', 'toWarehouse', 'items.product', 'items.grade', 'createdBy', 'receivedBy']);
+        return view('print.mutation', compact('record'));
+    })->name('filament.admin.resources.mutations.print');
 });

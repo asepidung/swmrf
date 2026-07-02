@@ -1,0 +1,156 @@
+<?php
+
+namespace App\Filament\Admin\Resources\MutationResource\Pages;
+
+use App\Filament\Admin\Resources\MutationResource;
+use App\Models\Mutation;
+use App\Models\MutationItem;
+use App\Models\BeefStock;
+use Filament\Resources\Pages\Page;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Table;
+use Filament\Tables;
+use Filament\Forms;
+use Filament\Actions;
+use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\DB;
+use Filament\Support\Enums\MaxWidth;
+
+class ScanMutation extends Page implements HasForms, HasTable
+{
+    use InteractsWithForms, InteractsWithTable;
+
+    protected static string $resource = MutationResource::class;
+
+    protected static string $view = 'filament.admin.resources.mutation-resource.pages.scan-mutation';
+
+    public Mutation $record;
+    public ?string $barcode = '';
+
+    public function getMaxContentWidth(): MaxWidth | string | null
+    {
+        return MaxWidth::Full;
+    }
+
+    public function getHeading(): string
+    {
+        return 'Scan Mutasi: ' . $this->record->mutation_number;
+    }
+
+    public function mount(Mutation $record): void
+    {
+        $this->record = $record;
+
+        if ($this->record->status !== 'DRAFT') {
+            $this->redirect(MutationResource::getUrl('view', ['record' => $this->record->id]));
+            return;
+        }
+    }
+
+    protected function getFormSchema(): array
+    {
+        return [
+            Forms\Components\TextInput::make('barcode')
+                ->label('Scan Barcode (26 Digit)')
+                ->required()
+                ->autofocus()
+                ->length(26)
+                ->extraInputAttributes([
+                    'x-on:keydown.enter' => '$wire.addBarcode()',
+                    'x-ref' => 'barcodeInput',
+                ]),
+        ];
+    }
+
+    public function addBarcode(): void
+    {
+        $barcode = trim($this->barcode);
+        $this->barcode = '';
+
+        if (empty($barcode)) return;
+
+        if (strlen($barcode) !== 26) {
+            Notification::make()->title('Barcode tidak valid (harus 26 digit mutlak)')->danger()->send();
+            $this->dispatch('focus-barcode');
+            return;
+        }
+
+        if (MutationItem::where('mutation_id', $this->record->id)->where('barcode', $barcode)->exists()) {
+            Notification::make()->title('Barcode sudah di-scan di mutasi ini!')->warning()->send();
+            $this->dispatch('focus-barcode');
+            return;
+        }
+
+        $stock = BeefStock::where('barcode', $barcode)->first();
+
+        if (!$stock) {
+            Notification::make()->title('Barang tidak ditemukan di stok!')->danger()->send();
+            $this->dispatch('focus-barcode');
+            return;
+        }
+
+        if ($stock->warehouse_id !== $this->record->from_warehouse_id) {
+            Notification::make()->title('Barang ini bukan dari Gudang Asal mutasi!')->danger()->send();
+            $this->dispatch('focus-barcode');
+            return;
+        }
+
+        if ($stock->status !== 'IN_STOCK') {
+            Notification::make()->title("Status barang tidak tersedia! (Status saat ini: {$stock->status})")->danger()->send();
+            $this->dispatch('focus-barcode');
+            return;
+        }
+
+        DB::transaction(function () use ($stock, $barcode) {
+            MutationItem::create([
+                'mutation_id' => $this->record->id,
+                'barcode' => $barcode,
+                'product_id' => $stock->product_id,
+                'grade_id' => $stock->grade_id,
+                'weight' => $stock->weight,
+                'qty_pcs' => $stock->qty_pcs,
+                'ph_level' => $stock->ph_level,
+                'pack_date' => $stock->pack_date,
+                'exp_date' => $stock->exp_date,
+                'origin' => $stock->origin,
+            ]);
+
+            $stock->status = 'IN_MUTATION';
+            $stock->save();
+        });
+
+        Notification::make()->title('Sukses ditambahkan')->success()->send();
+        $this->dispatch('focus-barcode');
+    }
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->query(MutationItem::query()->where('mutation_id', $this->record->id))
+            ->columns([
+                Tables\Columns\TextColumn::make('product.name')->label('Produk'),
+                Tables\Columns\TextColumn::make('grade.name')->label('Grade'),
+                Tables\Columns\TextColumn::make('barcode')->label('Barcode'),
+                Tables\Columns\TextColumn::make('weight')->label('Berat (Kg)')->numeric(2),
+                Tables\Columns\TextColumn::make('qty_pcs')->label('Qty (Pcs)'),
+            ])
+            ->actions([
+                Tables\Actions\DeleteAction::make()
+                    ->successNotificationTitle('Barang dihapus & dikembalikan ke IN_STOCK'),
+            ])
+            ->defaultSort('created_at', 'desc');
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\Action::make('back')
+                ->label('Kembali')
+                ->url(MutationResource::getUrl('view', ['record' => $this->record->id]))
+                ->color('gray'),
+        ];
+    }
+}

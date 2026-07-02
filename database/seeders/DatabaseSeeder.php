@@ -230,6 +230,13 @@ class DatabaseSeeder extends Seeder
             // Receivables Module
             ['name' => 'view_receivables', 'module_name' => 'Receivables', 'description' => 'View receivables'],
             ['name' => 'view_deleted_receivables', 'module_name' => 'Receivables', 'description' => 'View deleted receivables'],
+
+            // Mutations Module
+            ['name' => 'view_mutations', 'module_name' => 'Mutations', 'description' => 'View mutations'],
+            ['name' => 'create_mutations', 'module_name' => 'Mutations', 'description' => 'Create mutations'],
+            ['name' => 'edit_mutations', 'module_name' => 'Mutations', 'description' => 'Edit mutations'],
+            ['name' => 'delete_mutations', 'module_name' => 'Mutations', 'description' => 'Delete mutations'],
+            ['name' => 'view_deleted_mutations', 'module_name' => 'Mutations', 'description' => 'View deleted mutations'],
         ];
 
         foreach ($permissions as $perm) {
