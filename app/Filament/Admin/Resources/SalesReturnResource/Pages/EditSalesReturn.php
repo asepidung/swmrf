@@ -18,7 +18,8 @@ class EditSalesReturn extends EditRecord
     {
         return [
             Actions\Action::make('Input Return Items')
-                ->iconButton()
+                ->label('')
+                ->extraAttributes(['style' => 'gap: 0 !important;'])
                 ->tooltip('Input / Scan Barang')
                 ->icon('heroicon-o-bars-3-bottom-left')
                 ->color('warning')
@@ -26,7 +27,8 @@ class EditSalesReturn extends EditRecord
                 ->hidden(fn () => $this->record->status !== 'Draft'),
 
             Actions\Action::make('Print PDF')
-                ->iconButton()
+                ->label('')
+                ->extraAttributes(['style' => 'gap: 0 !important;'])
                 ->tooltip('Print Berita Acara')
                 ->icon('heroicon-o-printer')
                 ->color('success')
@@ -34,7 +36,8 @@ class EditSalesReturn extends EditRecord
                 ->openUrlInNewTab(),
 
             Actions\Action::make('Approve Return')
-                ->iconButton()
+                ->label('')
+                ->extraAttributes(['style' => 'gap: 0 !important;'])
                 ->tooltip('Approve Return')
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
@@ -85,7 +88,8 @@ class EditSalesReturn extends EditRecord
                 }),
 
             Actions\Action::make('Unlock Return')
-                ->iconButton()
+                ->label('')
+                ->extraAttributes(['style' => 'gap: 0 !important;'])
                 ->tooltip('Unlock / Cancel Approval')
                 ->icon('heroicon-o-lock-open')
                 ->color('danger')
@@ -137,24 +141,28 @@ class EditSalesReturn extends EditRecord
                 }),
 
             Actions\Action::make('Back')
-                ->iconButton()
+                ->label('')
+                ->extraAttributes(['style' => 'gap: 0 !important;'])
                 ->tooltip('Back')
                 ->icon('heroicon-o-arrow-left')
                 ->color('gray')
                 ->url(fn () => $this->getResource()::getUrl('index')),
 
             Actions\DeleteAction::make()
-                ->iconButton()
+                ->label('')
+                ->extraAttributes(['style' => 'gap: 0 !important;'])
                 ->tooltip('Delete')
                 ->icon('heroicon-o-trash'),
             
             Actions\ForceDeleteAction::make()
-                ->iconButton()
+                ->label('')
+                ->extraAttributes(['style' => 'gap: 0 !important;'])
                 ->tooltip('Force Delete')
                 ->icon('heroicon-o-trash'),
             
             Actions\RestoreAction::make()
-                ->iconButton()
+                ->label('')
+                ->extraAttributes(['style' => 'gap: 0 !important;'])
                 ->tooltip('Restore')
                 ->icon('heroicon-o-arrow-path'),
         ];
