@@ -33,7 +33,8 @@ class ViewMutation extends ViewRecord
 
             Actions\EditAction::make()
                 ->hiddenLabel()
-                ->tooltip('Edit'),
+                ->tooltip('Edit')
+                ->icon('heroicon-o-pencil-square'),
 
             Actions\DeleteAction::make()
                 ->hiddenLabel()
