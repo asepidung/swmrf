@@ -29,6 +29,10 @@ class Mutation extends Model
     protected static function booted()
     {
         static::creating(function ($model) {
+            if (empty($model->created_by) && auth()->check()) {
+                $model->created_by = auth()->id();
+            }
+
             if (empty($model->mutation_number)) {
                 $year = date('y');
                 $prefix = 'MT#' . $year;
