@@ -22,13 +22,16 @@ class SalesReturnResource extends Resource
 
     protected static ?string $navigationGroup = 'WAREHOUSE';
 
-    protected static ?string $navigationLabel = 'Sales Returns';
+    public static function getNavigationLabel(): string
+    {
+        return __('Sales Returns');
+    }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Informasi Retur')
+                Forms\Components\Section::make(__('Return Information'))
                     ->schema([
                         Forms\Components\Select::make('customer_id')
                             ->label(__('Customer'))
@@ -51,7 +54,7 @@ class SalesReturnResource extends Resource
                             })
                             ->searchable()
                             ->preload()
-                            ->placeholder('Pilih DO atau kosongkan untuk Unidentified'),
+                            ->placeholder(__('Pilih DO atau kosongkan untuk Unidentified')),
 
                         Forms\Components\DatePicker::make('return_date')
                             ->label(__('Return Date'))
@@ -113,8 +116,8 @@ class SalesReturnResource extends Resource
                 TrashedFilter::make(),
                 Filter::make('date_range')
                     ->form([
-                        Forms\Components\DatePicker::make('date_from')->label('Dari Tanggal')->default(now()->startOfMonth()),
-                        Forms\Components\DatePicker::make('date_to')->label('Sampai Tanggal')->default(now()),
+                        Forms\Components\DatePicker::make('date_from')->label(__('From Date'))->default(now()->startOfMonth()),
+                        Forms\Components\DatePicker::make('date_to')->label(__('To Date'))->default(now()),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query

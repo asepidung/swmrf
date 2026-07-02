@@ -20,7 +20,7 @@ class EditSalesReturn extends EditRecord
             Actions\Action::make('Input Return Items')
                 ->label('')
                 ->extraAttributes(['style' => 'gap: 0 !important;'])
-                ->tooltip('Input / Scan Barang')
+                ->tooltip(__('Input / Scan Barang'))
                 ->icon('heroicon-o-bars-3-bottom-left')
                 ->color('warning')
                 ->url(fn () => SalesReturnResource::getUrl('input-items', ['record' => $this->record]))
@@ -29,7 +29,7 @@ class EditSalesReturn extends EditRecord
             Actions\Action::make('Print PDF')
                 ->label('')
                 ->extraAttributes(['style' => 'gap: 0 !important;'])
-                ->tooltip('Print Berita Acara')
+                ->tooltip(__('Print Berita Acara'))
                 ->icon('heroicon-o-printer')
                 ->color('success')
                 ->url(fn () => route('sales-return.pdf', $this->record))
@@ -38,12 +38,12 @@ class EditSalesReturn extends EditRecord
             Actions\Action::make('Approve Return')
                 ->label('')
                 ->extraAttributes(['style' => 'gap: 0 !important;'])
-                ->tooltip('Approve Return')
+                ->tooltip(__('Approve Return'))
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
                 ->requiresConfirmation()
-                ->modalHeading('Approve Sales Return')
-                ->modalDescription('Anda yakin ingin menyetujui retur ini? Semua barang akan dimasukkan ke stok.')
+                ->modalHeading(__('Approve Sales Return'))
+                ->modalDescription(__('Anda yakin ingin menyetujui retur ini? Semua barang akan dimasukkan ke stok.'))
                 ->hidden(fn () => $this->record->status !== 'Draft' || $this->record->items->isEmpty())
                 ->action(function () {
                     try {
@@ -82,22 +82,22 @@ class EditSalesReturn extends EditRecord
                                 ]);
                             }
                         });
-                        Notification::make()->title('Return Approved & Stock Updated')->success()->send();
+                        Notification::make()->title(__('Return Approved & Stock Updated'))->success()->send();
                         $this->redirect($this->getResource()::getUrl('view', ['record' => $this->record]));
                     } catch (\Exception $e) {
-                        Notification::make()->title('Error')->body($e->getMessage())->danger()->send();
+                        Notification::make()->title(__('Error'))->body($e->getMessage())->danger()->send();
                     }
                 }),
 
             Actions\Action::make('Unlock Return')
                 ->label('')
                 ->extraAttributes(['style' => 'gap: 0 !important;'])
-                ->tooltip('Unlock / Cancel Approval')
+                ->tooltip(__('Unlock / Cancel Approval'))
                 ->icon('heroicon-o-lock-open')
                 ->color('danger')
                 ->requiresConfirmation()
-                ->modalHeading('Unlock Sales Return')
-                ->modalDescription('Anda yakin ingin melakukan unlock? Semua barang dari retur ini yang sudah masuk ke stok akan dihapus/ditarik kembali.')
+                ->modalHeading(__('Unlock Sales Return'))
+                ->modalDescription(__('Anda yakin ingin melakukan unlock? Semua barang dari retur ini yang sudah masuk ke stok akan dihapus/ditarik kembali.'))
                 ->hidden(fn () => $this->record->status !== 'Approved')
                 ->action(function () {
                     try {
@@ -108,10 +108,10 @@ class EditSalesReturn extends EditRecord
                             foreach ($returnItems as $item) {
                                 $stock = BeefStock::where('barcode', $item->barcode)->first();
                                 if (!$stock) {
-                                    throw new \Exception("Gagal: Barang {$item->barcode} tidak ditemukan di stok (sudah terpakai/dikirim).");
+                                    throw new \Exception(__('Gagal: Barang :barcode tidak ditemukan di stok (sudah terpakai/dikirim).', ['barcode' => $item->barcode]));
                                 }
                                 if ($stock->status !== 'IN_STOCK') {
-                                    throw new \Exception("Gagal: Barang {$item->barcode} sudah tidak berada di stok (status: {$stock->status}).");
+                                    throw new \Exception(__('Gagal: Barang :barcode sudah tidak berada di stok (status: :status).', ['barcode' => $item->barcode, 'status' => $stock->status]));
                                 }
                             }
 
@@ -137,17 +137,17 @@ class EditSalesReturn extends EditRecord
 
                             $this->record->update(['status' => 'Draft']);
                         });
-                        Notification::make()->title('Return Unlocked & Stock Reverted')->success()->send();
+                        Notification::make()->title(__('Return Unlocked & Stock Reverted'))->success()->send();
                         $this->redirect($this->getResource()::getUrl('edit', ['record' => $this->record]));
                     } catch (\Exception $e) {
-                        Notification::make()->title('Error')->body($e->getMessage())->danger()->send();
+                        Notification::make()->title(__('Error'))->body($e->getMessage())->danger()->send();
                     }
                 }),
 
             Actions\Action::make('Back')
                 ->label('')
                 ->extraAttributes(['style' => 'gap: 0 !important;'])
-                ->tooltip('Back')
+                ->tooltip(__('Back'))
                 ->icon('heroicon-o-arrow-left')
                 ->color('gray')
                 ->url(fn () => $this->getResource()::getUrl('index')),
@@ -155,19 +155,19 @@ class EditSalesReturn extends EditRecord
             Actions\DeleteAction::make()
                 ->label('')
                 ->extraAttributes(['style' => 'gap: 0 !important;'])
-                ->tooltip('Delete')
+                ->tooltip(__('Delete'))
                 ->icon('heroicon-o-trash'),
             
             Actions\ForceDeleteAction::make()
                 ->label('')
                 ->extraAttributes(['style' => 'gap: 0 !important;'])
-                ->tooltip('Force Delete')
+                ->tooltip(__('Force Delete'))
                 ->icon('heroicon-o-trash'),
             
             Actions\RestoreAction::make()
                 ->label('')
                 ->extraAttributes(['style' => 'gap: 0 !important;'])
-                ->tooltip('Restore')
+                ->tooltip(__('Restore'))
                 ->icon('heroicon-o-arrow-path'),
         ];
     }

@@ -35,7 +35,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
     {
         return [
             Actions\Action::make('Lock')
-                ->tooltip('Lock Return')
+                ->tooltip(__('Lock Return'))
                 ->icon('heroicon-o-lock-closed')
                 ->color('success')
                 ->hiddenLabel()
@@ -78,15 +78,15 @@ class InputReturnItems extends Page implements HasForms, HasTable
                                 ]);
                             }
                         });
-                        Notification::make()->title('Return Dikunci & Stok Masuk')->success()->send();
+                        Notification::make()->title(__('Return Approved & Stock Updated'))->success()->send();
                         $this->redirect(SalesReturnResource::getUrl('view', ['record' => $this->record]));
                     } catch (\Exception $e) {
-                        Notification::make()->title('Gagal')->body($e->getMessage())->danger()->send();
+                        Notification::make()->title(__('Error'))->body($e->getMessage())->danger()->send();
                     }
                 }),
                 
             Actions\Action::make('back')
-                ->tooltip('Kembali')
+                ->tooltip(__('Back'))
                 ->color('gray')
                 ->icon('heroicon-o-arrow-left')
                 ->hiddenLabel()
