@@ -80,9 +80,10 @@ class MutationResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->user()->can('view_deleted_mutations')),
+                    ->visible(fn () => auth()->check() && auth()->user()->can('view_deleted_mutations')),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -149,9 +150,12 @@ class MutationResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
+        $query = parent::getEloquentQuery();
+        
+        if (auth()->check() && auth()->user()->can('view_deleted_mutations')) {
+            $query->withoutGlobalScopes([SoftDeletingScope::class]);
+        }
+        
+        return $query;
     }
 }

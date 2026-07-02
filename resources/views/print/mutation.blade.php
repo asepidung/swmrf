@@ -2,73 +2,272 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Surat Jalan Mutasi - {{ $record->mutation_number }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @media print {
-            body { font-size: 12pt; }
-            .no-print { display: none; }
-            .print-break { page-break-before: always; }
+        @page {
+            size: A4;
+            margin: 1cm;
         }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #000; padding: 6px; text-align: left; }
-        th { background-color: #f3f4f6; }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 11px;
+            color: #333;
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .logo-box {
+            width: 80px;
+            margin-right: 20px;
+        }
+
+        .logo-box img {
+            width: 100%;
+            height: auto;
+        }
+
+        .company-info {
+            flex-grow: 1;
+        }
+
+        .company-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #000;
+            margin: 0;
+        }
+
+        .company-address {
+            font-size: 10px;
+            color: #333;
+            margin-top: 3px;
+            line-height: 1.3;
+        }
+
+        .doc-title-box {
+            text-align: right;
+            min-width: 200px;
+        }
+
+        .doc-title-box h2 {
+            margin: 0;
+            font-size: 20px;
+            text-transform: uppercase;
+            color: #000;
+            border-bottom: 1px solid #333;
+            display: inline-block;
+        }
+
+        .doc-meta {
+            margin-top: 8px;
+            font-size: 11px;
+            text-align: right;
+        }
+
+        .meta-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+
+        .meta-box {
+            width: 50%;
+            border: 1px solid #000;
+            padding: 8px;
+            border-radius: 2px;
+        }
+
+        .meta-box h4 {
+            margin: 0 0 5px 0;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #555;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 2px;
+        }
+
+        .meta-content {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .meta-address {
+            font-size: 10px;
+            font-weight: normal;
+            margin-top: 4px;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+
+        table th {
+            background: #fafafa;
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 10px;
+        }
+
+        table td {
+            border: 1px solid #000;
+            padding: 6px;
+            vertical-align: top;
+            font-size: 11px;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .footer-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .note-section {
+            width: 100%;
+        }
+
+        .note-box {
+            border: 1px solid #ccc;
+            padding: 8px;
+            min-height: 40px;
+            margin-top: 5px;
+            font-size: 10px;
+            font-style: italic;
+        }
+
+        .sig-container {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .sig-box {
+            width: 30%;
+            text-align: center;
+        }
+
+        .sig-space {
+            height: 60px;
+        }
+
+        .sig-name {
+            font-weight: bold;
+            text-decoration: underline;
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+
+        .sig-role {
+            font-size: 10px;
+            color: #555;
+        }
+
+        @media print {
+            body {
+                background: none;
+            }
+
+            .no-print {
+                display: none;
+            }
+        }
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 120px;
+            color: rgba(255, 0, 0, 0.15);
+            font-weight: bold;
+            z-index: 9999;
+            pointer-events: none;
+            white-space: nowrap;
+            user-select: none;
+        }
     </style>
 </head>
-<body class="bg-white text-black p-8 font-sans">
-    <!-- Header -->
-    <div class="flex justify-between items-start mb-6 border-b-2 border-black pb-4">
-        <div>
-            <h1 class="text-3xl font-bold uppercase tracking-wider">SURAT JALAN MUTASI</h1>
-            <p class="text-lg mt-1 font-semibold">No: {{ $record->mutation_number }}</p>
-        </div>
-        <div class="text-right">
-            <h2 class="text-2xl font-bold">Wijaya Meat SWM</h2>
-            <p class="text-sm">Tanggal: {{ $record->mutation_date->format('d/m/Y') }}</p>
-            <p class="text-sm font-semibold mt-1">Status: {{ $record->status }}</p>
-        </div>
-    </div>
-
-    <!-- Info Section -->
-    <div class="grid grid-cols-2 gap-8 mb-6">
-        <div>
-            <h3 class="font-bold border-b border-gray-400 mb-2">DARI GUDANG (ASAL)</h3>
-            <p class="font-semibold text-lg">{{ $record->fromWarehouse->name }}</p>
-            <p class="text-sm text-gray-700 mt-2">Dibuat Oleh: {{ $record->createdBy->name ?? '-' }}</p>
-        </div>
-        <div>
-            <h3 class="font-bold border-b border-gray-400 mb-2">KE GUDANG (TUJUAN)</h3>
-            <p class="font-semibold text-lg">{{ $record->toWarehouse->name }}</p>
-            <p class="text-sm text-gray-700 mt-2">Diterima Oleh: {{ $record->receivedBy->name ?? 'Belum Diterima' }}</p>
-        </div>
-    </div>
-
-    @if($record->note)
-    <div class="mb-6 p-4 border border-gray-300 rounded bg-gray-50">
-        <span class="font-bold">Catatan:</span> {{ $record->note }}
-    </div>
+<body>
+    @if($record->trashed())
+        <div class="watermark">DELETED</div>
     @endif
 
-    @php
-        $summary = \App\Models\MutationItem::where('mutation_id', $record->id)
-            ->join('products', 'mutation_items.product_id', '=', 'products.id')
-            ->selectRaw('products.name as product_name, sum(weight) as total_weight, sum(qty_pcs) as total_pcs, count(barcode) as total_carton')
-            ->groupBy('products.name')
-            ->get();
-    @endphp
+    <div style="padding: 10px;">
+        <div class="header">
+            <div class="logo-box">
+                <img src="{{ asset('img/light.png') }}" alt="LOGO">
+            </div>
+            <div class="company-info">
+                <div class="company-name">PT. SANTI WIJAYA MEAT</div>
+                <div class="company-address">
+                    PERUM ASABRI RT 001/RW 005, Desa Sukasirna, Kec. Jonggol,<br>
+                    Kab. Bogor, Jawa Barat, 16830 Phone: 0813 6006 959
+                </div>
+            </div>
+            <div class="doc-title-box">
+                <h2>SURAT JALAN MUTASI</h2>
+                <div class="doc-meta">
+                    <strong>No Mutasi:</strong> {{ $record->mutation_number }}<br>
+                    <strong>Tanggal:</strong> {{ $record->mutation_date->format('d-M-Y') }}<br>
+                    <strong style="color: #d9534f;">Status:</strong> {{ $record->status }}
+                </div>
+            </div>
+        </div>
 
-    <!-- Items Table -->
-    <div class="mb-8">
-        <h3 class="font-bold text-lg mb-2">Ringkasan Barang</h3>
+        <div class="meta-container">
+            <div class="meta-box">
+                <h4>DARI GUDANG (ASAL)</h4>
+                <div class="meta-content">{{ $record->fromWarehouse->name }}</div>
+                <div class="meta-address">
+                    <strong>Dibuat Oleh:</strong> {{ $record->createdBy->name ?? '-' }}
+                </div>
+            </div>
+            <div class="meta-box">
+                <h4>TUJUAN GUDANG</h4>
+                <div class="meta-content">{{ $record->toWarehouse->name }}</div>
+                <div class="meta-address">
+                    <strong>Diterima Oleh:</strong> {{ $record->receivedBy->name ?? 'Belum Diterima' }}
+                </div>
+            </div>
+        </div>
+
+        @php
+            $summary = \App\Models\MutationItem::where('mutation_id', $record->id)
+                ->join('products', 'mutation_items.product_id', '=', 'products.id')
+                ->selectRaw('products.name as product_name, sum(weight) as total_weight, sum(qty_pcs) as total_pcs, count(barcode) as total_carton')
+                ->groupBy('products.name')
+                ->get();
+        @endphp
+
         <table>
             <thead>
                 <tr>
-                    <th class="w-12 text-center">No</th>
-                    <th>Nama Produk</th>
-                    <th class="text-right">Total Koli</th>
-                    <th class="text-right">Berat (Kg)</th>
-                    <th class="text-right">Qty (Pcs)</th>
+                    <th width="5%">No</th>
+                    <th width="45%">Nama Produk</th>
+                    <th width="15%">Total Koli</th>
+                    <th width="20%">Berat (Kg)</th>
+                    <th width="15%">Qty (Pcs)</th>
                 </tr>
             </thead>
             <tbody>
@@ -76,50 +275,60 @@
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td>{{ $item->product_name }}</td>
-                    <td class="text-right">{{ $item->total_carton }}</td>
+                    <td class="text-center">{{ $item->total_carton }}</td>
                     <td class="text-right">{{ number_format($item->total_weight, 2, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($item->total_pcs, 0, ',', '.') }}</td>
+                    <td class="text-center">{{ number_format($item->total_pcs, 0, ',', '.') }}</td>
                 </tr>
                 @endforeach
             </tbody>
             <tfoot>
-                <tr class="font-bold bg-gray-100">
+                <tr style="font-weight: bold; background-color: #f9f9f9;">
                     <td colspan="2" class="text-right">TOTAL KESELURUHAN</td>
-                    <td class="text-right">{{ number_format($summary->sum('total_carton'), 0, ',', '.') }}</td>
+                    <td class="text-center">{{ number_format($summary->sum('total_carton'), 0, ',', '.') }}</td>
                     <td class="text-right">{{ number_format($summary->sum('total_weight'), 2, ',', '.') }} Kg</td>
-                    <td class="text-right">{{ number_format($summary->sum('total_pcs'), 0, ',', '.') }} Pcs</td>
+                    <td class="text-center">{{ number_format($summary->sum('total_pcs'), 0, ',', '.') }} Pcs</td>
                 </tr>
             </tfoot>
         </table>
-    </div>
 
-    <!-- Signatures -->
-    <div class="grid grid-cols-3 gap-4 mt-12 text-center">
-        <div>
-            <p class="mb-20">Pengirim (Gudang Asal)</p>
-            <p class="font-bold underline">{{ $record->createdBy->name ?? '....................................' }}</p>
+        <div class="footer-container">
+            <div class="note-section">
+                <strong>Catatan Mutasi:</strong>
+                <div class="note-box">
+                    {{ $record->note ?? 'Tidak ada catatan tambahan.' }}
+                </div>
+            </div>
         </div>
-        <div>
-            <p class="mb-20">Mengetahui / Checker</p>
-            <p class="font-bold underline">....................................</p>
-        </div>
-        <div>
-            <p class="mb-20">Penerima (Gudang Tujuan)</p>
-            <p class="font-bold underline">{{ $record->receivedBy->name ?? '....................................' }}</p>
-        </div>
-    </div>
 
-    <div class="no-print mt-8 text-center">
-        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded shadow">
-            🖨️ Cetak Dokumen
-        </button>
+        <div class="sig-container">
+            <div class="sig-box">
+                <p>Pengirim,</p>
+                <div class="sig-space"></div>
+                <div class="sig-name">{{ $record->createdBy->name ?? '................................' }}</div>
+                <div class="sig-role">Gudang Asal</div>
+            </div>
+            <div class="sig-box">
+                <p>Mengetahui,</p>
+                <div class="sig-space"></div>
+                <div class="sig-name">................................</div>
+                <div class="sig-role">Checker</div>
+            </div>
+            <div class="sig-box">
+                <p>Penerima,</p>
+                <div class="sig-space"></div>
+                <div class="sig-name">{{ $record->receivedBy->name ?? '................................' }}</div>
+                <div class="sig-role">Gudang Tujuan</div>
+            </div>
+        </div>
     </div>
 
     <script>
         window.onload = function() {
-            // Uncomment line below if you want to auto-print when opened
-            // window.print();
-        }
+            window.print();
+        };
+        window.onafterprint = function() {
+            window.close();
+        };
     </script>
 </body>
 </html>
