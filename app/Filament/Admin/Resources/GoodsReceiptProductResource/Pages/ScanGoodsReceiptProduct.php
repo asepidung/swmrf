@@ -157,17 +157,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
             return;
         }
 
-        // Barcode standard: 25 characters
-        if (strlen($barcode) !== 25 || !is_numeric(substr($barcode, 1))) {
-            Notification::make()
-                ->title(__('Gagal Scan'))
-                ->body(__('Format barcode tidak valid (Harus 25 karakter)'))
-                ->danger()
-                ->send();
-            $this->barcode = '';
-            $this->dispatch('focus-barcode');
-            return;
-        }
+
 
         // 1. Cek duplikat barcode di goods_receipt_product_items (double scan)
         $existsInGr = $this->record->items()->where('barcode', $barcode)->exists();
@@ -272,7 +262,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
                     'ph_level' => $phVal > 0 ? $phVal : null,
                     'pack_date' => $defaultPackDate,
                     'barcode' => $barcode,
-                    'origin' => $originCode === '7' ? 'LOCAL' : 'IMPORT',
+                    'origin' => \App\Helpers\BarcodeHelper::getOrigin($barcode),
                     'price' => $price,
                     'subtotal' => $subtotal,
                 ]);
@@ -288,7 +278,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
                     'ph_level' => $phVal > 0 ? $phVal : null,
                     'pack_date' => $defaultPackDate,
                     'exp_date' => $expDate,
-                    'origin' => 'GR_BEEF',
+                    'origin' => \App\Helpers\BarcodeHelper::getOrigin($barcode),
                     'status' => 'IN_STOCK',
                 ]);
 

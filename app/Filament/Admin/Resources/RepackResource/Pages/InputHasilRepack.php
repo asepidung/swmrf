@@ -58,7 +58,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
             'pack_date' => $defaultPackDate,
             'grade_id' => $defaultGrade,
             'ph_level' => session('last_ph_' . $this->record->id),
-            'show_exp' => session('show_exp_session', true),
+            'show_exp' => session('show_exp_session', false),
             'exp_date' => Carbon::parse($defaultPackDate)->addMonths(3)->format('Y-m-d'),
         ]);
     }
@@ -130,7 +130,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
 
                         Forms\Components\Checkbox::make('show_exp')
                             ->label(__('Tampilkan Tanggal Expired Pada Label'))
-                            ->default(true)
+                            ->default(false)
                             ->dehydrated(false)
                             ->extraAttributes(['tabindex' => '-1']),
 
@@ -296,8 +296,8 @@ class InputHasilRepack extends Page implements HasForms, HasTable
 
                 $prefix = $origin . $dateStr;
                 $latestItem = RepackResult::withTrashed()->where('barcode', 'like', $prefix . '%')->orderBy('id', 'desc')->first();
-                $counter = ($latestItem && strlen($latestItem->barcode) >= 25) ? ((int) substr($latestItem->barcode, -3) + 1) : 1;
-                $counterStr = str_pad($counter, 3, '0', STR_PAD_LEFT);
+                $counter = ($latestItem && strlen($latestItem->barcode) >= 26) ? ((int) substr($latestItem->barcode, -4) + 1) : 1;
+                $counterStr = str_pad($counter, 4, '0', STR_PAD_LEFT);
 
                 $barcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
 
@@ -326,7 +326,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                     'ph_level' => $formData['ph_level'] ?? null,
                     'pack_date' => $formData['pack_date'],
                     'exp_date' => $formData['exp_date'],
-                    'origin' => 'REPACK',
+                    'origin' => \App\Helpers\BarcodeHelper::getOrigin($barcode),
                     'status' => 'IN_STOCK',
                 ]);
 

@@ -63,7 +63,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
             'grade_id' => session('gr_grade_id', $defaultGrade),
             'pack_date' => session('gr_pack_date', $defaultPackDate),
             'ph_level' => session('gr_ph_level'),
-            'show_exp' => session('gr_show_exp', true),
+            'show_exp' => session('gr_show_exp', false),
             'exp_date' => Carbon::parse(session('gr_pack_date', $defaultPackDate))->addMonths(3)->format('Y-m-d'),
         ]);
     }
@@ -145,7 +145,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
 
                         Forms\Components\Checkbox::make('show_exp')
                             ->label(__('Show Expiry Date on Label'))
-                            ->default(true)
+                            ->default(false)
                             ->dehydrated(false)
                             ->extraAttributes(['tabindex' => '-1']),
 
@@ -203,7 +203,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                     ->color('primary')
                     ->url(fn($record) => route('goods-receipt-product.label', [
                         'id' => $record->id,
-                        'show_exp' => session('gr_show_exp', true) ? 1 : 0
+                        'show_exp' => session('gr_show_exp', false) ? 1 : 0
                     ]))
                     ->openUrlInNewTab(),
 
@@ -317,8 +317,8 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
 
                 $prefix = $origin . $dateStr;
                 $latestItem = GoodsReceiptProductItem::withTrashed()->where('barcode', 'like', $prefix . '%')->orderBy('id', 'desc')->first();
-                $counter = ($latestItem && strlen($latestItem->barcode) >= 25) ? ((int) substr($latestItem->barcode, -3) + 1) : 1;
-                $counterStr = str_pad($counter, 3, '0', STR_PAD_LEFT);
+                $counter = ($latestItem && strlen($latestItem->barcode) >= 26) ? ((int) substr($latestItem->barcode, -4) + 1) : 1;
+                $counterStr = str_pad($counter, 4, '0', STR_PAD_LEFT);
 
                 $barcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
 
@@ -336,7 +336,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                     'ph_level' => $formData['ph_level'] ?? null,
                     'pack_date' => $formData['pack_date'],
                     'barcode' => $barcode,
-                    'origin' => $origin === '7' ? 'LOCAL' : 'IMPORT',
+                    'origin' => \App\Helpers\BarcodeHelper::getOrigin($barcode),
                     'price' => $price,
                     'subtotal' => $subtotal,
                 ]);
@@ -351,7 +351,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                     'ph_level' => $formData['ph_level'] ?? null,
                     'pack_date' => $formData['pack_date'],
                     'exp_date' => $formData['exp_date'],
-                    'origin' => 'GR_BEEF',
+                    'origin' => \App\Helpers\BarcodeHelper::getOrigin($barcode),
                     'status' => 'IN_STOCK',
                 ]);
 

@@ -193,7 +193,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
 
                     Forms\Components\Checkbox::make('show_exp')
                         ->label(__('Tampilkan Tanggal Expired Pada Label'))
-                        ->default(true)
+                        ->default(false)
                         ->extraAttributes(['tabindex' => '-1']),
 
                     Forms\Components\Grid::make(2)->schema([
@@ -313,8 +313,8 @@ class InputReturnItems extends Page implements HasForms, HasTable
 
                 $prefix = $origin . $dateStr;
                 $latestItem = SalesReturnItem::where('barcode', 'like', $prefix . '%')->orderBy('id', 'desc')->first();
-                $counter = ($latestItem && strlen($latestItem->barcode) >= 25) ? ((int) substr($latestItem->barcode, -3) + 1) : 1;
-                $counterStr = str_pad($counter, 3, '0', STR_PAD_LEFT);
+                $counter = ($latestItem && strlen($latestItem->barcode) >= 26) ? ((int) substr($latestItem->barcode, -4) + 1) : 1;
+                $counterStr = str_pad($counter, 4, '0', STR_PAD_LEFT);
 
                 $barcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
 
@@ -334,7 +334,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 ]);
 
                 // Auto Print
-                $showExp = $formData['show_exp'] ?? true;
+                $showExp = $formData['show_exp'] ?? false;
                 $printUrl = route('sales-return.label', [
                     'id' => $insertedItem->id,
                     'show_exp' => $showExp ? 1 : 0
@@ -343,7 +343,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
             });
 
             // Auto Print handled inside transaction but showExp is needed here too
-            $showExp = $formData['show_exp'] ?? true;
+            $showExp = $formData['show_exp'] ?? false;
 
             // Set sessions only for ph_level and show_exp, matching Boning exactly
             session([

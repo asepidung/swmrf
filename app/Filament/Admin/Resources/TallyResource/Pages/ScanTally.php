@@ -226,7 +226,7 @@ class ScanTally extends Page implements HasForms, HasTable
                                     ->live(),
                                 Forms\Components\Checkbox::make('show_exp')
                                     ->label(__('Show Expiry Date on Label'))
-                                    ->default(true),
+                                    ->default(false),
                             ])
                             ->action(function (TallyItem $record, array $data, $livewire) {
                                 $newPackDate = $data['pack_date'];
@@ -264,14 +264,14 @@ class ScanTally extends Page implements HasForms, HasTable
                                     
                                     // Find maximum counter in tally_items
                                     $latestTallyItem = \App\Models\TallyItem::where('barcode', 'like', $prefix . '%')->orderBy('id', 'desc')->first();
-                                    $counterTally = ($latestTallyItem && strlen($latestTallyItem->barcode) >= 25) ? ((int) substr($latestTallyItem->barcode, -3)) : 0;
+                                    $counterTally = ($latestTallyItem && strlen($latestTallyItem->barcode) >= 26) ? ((int) substr($latestTallyItem->barcode, -4)) : 0;
 
                                     // Find maximum counter in beef_stocks
                                     $latestBeefStock = \App\Models\BeefStock::where('barcode', 'like', $prefix . '%')->orderBy('id', 'desc')->first();
-                                    $counterStock = ($latestBeefStock && strlen($latestBeefStock->barcode) >= 25) ? ((int) substr($latestBeefStock->barcode, -3)) : 0;
+                                    $counterStock = ($latestBeefStock && strlen($latestBeefStock->barcode) >= 26) ? ((int) substr($latestBeefStock->barcode, -4)) : 0;
 
                                     $counter = max($counterTally, $counterStock) + 1;
-                                    $counterStr = str_pad($counter, 3, '0', STR_PAD_LEFT);
+                                    $counterStr = str_pad($counter, 4, '0', STR_PAD_LEFT);
                                     
                                     $newBarcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
                                     
