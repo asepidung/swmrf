@@ -100,6 +100,33 @@ class MutationResource extends Resource
             });
     }
 
+    public static function infolist(\Filament\Infolists\Infolist $infolist): \Filament\Infolists\Infolist
+    {
+        return $infolist
+            ->schema([
+                \Filament\Infolists\Components\Section::make('Header Mutasi')
+                    ->schema([
+                        \Filament\Infolists\Components\TextEntry::make('mutation_number')->label('No. Mutasi'),
+                        \Filament\Infolists\Components\TextEntry::make('mutation_date')->label('Tanggal Mutasi')->date('d M Y'),
+                        \Filament\Infolists\Components\TextEntry::make('fromWarehouse.name')->label('Dari Gudang (Asal)'),
+                        \Filament\Infolists\Components\TextEntry::make('toWarehouse.name')->label('Tujuan Gudang'),
+                        \Filament\Infolists\Components\TextEntry::make('status')->badge()->color(fn (string $state): string => match ($state) {
+                            'DRAFT' => 'warning',
+                            'COMPLETED' => 'success',
+                            default => 'gray',
+                        }),
+                        \Filament\Infolists\Components\TextEntry::make('note')->label('Catatan')->columnSpanFull(),
+                    ])->columns(3),
+
+                \Filament\Infolists\Components\Section::make('Summary Barang')
+                    ->schema([
+                        \Filament\Infolists\Components\ViewEntry::make('items_summary')
+                            ->hiddenLabel()
+                            ->view('filament.admin.resources.mutation-resource.summary')
+                    ]),
+            ]);
+    }
+
     public static function getRelations(): array
     {
         return [

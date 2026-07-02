@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -50,37 +50,44 @@
     </div>
     @endif
 
+    @php
+        $summary = \App\Models\MutationItem::where('mutation_id', $record->id)
+            ->join('products', 'mutation_items.product_id', '=', 'products.id')
+            ->selectRaw('products.name as product_name, sum(weight) as total_weight, sum(qty_pcs) as total_pcs, count(barcode) as total_carton')
+            ->groupBy('products.name')
+            ->get();
+    @endphp
+
     <!-- Items Table -->
     <div class="mb-8">
-        <h3 class="font-bold text-lg mb-2">Daftar Barang</h3>
+        <h3 class="font-bold text-lg mb-2">Ringkasan Barang</h3>
         <table>
             <thead>
                 <tr>
                     <th class="w-12 text-center">No</th>
                     <th>Nama Produk</th>
-                    <th>Grade</th>
-                    <th>Barcode</th>
+                    <th class="text-right">Total Koli</th>
                     <th class="text-right">Berat (Kg)</th>
                     <th class="text-right">Qty (Pcs)</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($record->items as $index => $item)
+                @foreach($summary as $index => $item)
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
-                    <td>{{ $item->product->name }}</td>
-                    <td>{{ $item->grade->name ?? '-' }}</td>
-                    <td class="font-mono text-sm">{{ $item->barcode }}</td>
-                    <td class="text-right">{{ number_format($item->weight, 2, ',', '.') }}</td>
-                    <td class="text-right">{{ $item->qty_pcs }}</td>
+                    <td>{{ $item->product_name }}</td>
+                    <td class="text-right">{{ $item->total_carton }}</td>
+                    <td class="text-right">{{ number_format($item->total_weight, 2, ',', '.') }}</td>
+                    <td class="text-right">{{ number_format($item->total_pcs, 0, ',', '.') }}</td>
                 </tr>
                 @endforeach
             </tbody>
             <tfoot>
                 <tr class="font-bold bg-gray-100">
-                    <td colspan="4" class="text-right">TOTAL KESELURUHAN</td>
-                    <td class="text-right">{{ number_format($record->items->sum('weight'), 2, ',', '.') }} Kg</td>
-                    <td class="text-right">{{ number_format($record->items->sum('qty_pcs'), 0, ',', '.') }} Pcs</td>
+                    <td colspan="2" class="text-right">TOTAL KESELURUHAN</td>
+                    <td class="text-right">{{ number_format($summary->sum('total_carton'), 0, ',', '.') }}</td>
+                    <td class="text-right">{{ number_format($summary->sum('total_weight'), 2, ',', '.') }} Kg</td>
+                    <td class="text-right">{{ number_format($summary->sum('total_pcs'), 0, ',', '.') }} Pcs</td>
                 </tr>
             </tfoot>
         </table>
