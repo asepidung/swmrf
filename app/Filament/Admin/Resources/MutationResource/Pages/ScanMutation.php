@@ -146,6 +146,10 @@ class ScanMutation extends Page implements HasForms, HasTable
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('back')
+                ->label('Kembali')
+                ->url(MutationResource::getUrl('view', ['record' => $this->record->id]))
+                ->color('gray'),
             Actions\Action::make('finish')
                 ->label('Selesai Scan')
                 ->url(MutationResource::getUrl('view', ['record' => $this->record->id]))
