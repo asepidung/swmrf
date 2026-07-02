@@ -162,7 +162,7 @@ class ScanMutation extends Page implements HasForms, HasTable
         return [
             Actions\Action::make('back')
                 ->label('Kembali')
-                ->url(MutationResource::getUrl('view', ['record' => $this->record->id]))
+                ->url(MutationResource::getUrl('index'))
                 ->color('gray'),
             Actions\Action::make('finish')
                 ->label('Selesai Scan')

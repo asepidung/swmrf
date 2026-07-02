@@ -36,7 +36,8 @@ class MutationResource extends Resource
                             ->label('Dari Gudang (Asal)')
                             ->options(\App\Models\Warehouse::where('is_active', true)->pluck('name', 'id'))
                             ->required()
-                            ->searchable(),
+                            ->searchable()
+                            ->disabled(fn (?\App\Models\Mutation $record) => $record && $record->items()->exists()),
                         Forms\Components\Select::make('to_warehouse_id')
                             ->label('Tujuan Gudang')
                             ->options(\App\Models\Warehouse::where('is_active', true)->pluck('name', 'id'))

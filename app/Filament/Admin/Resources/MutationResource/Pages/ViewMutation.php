@@ -39,6 +39,7 @@ class ViewMutation extends ViewRecord
             Actions\DeleteAction::make()
                 ->hiddenLabel()
                 ->tooltip('Delete')
+                ->icon('heroicon-o-trash')
                 ->visible(fn ($record) => $record->items()->count() === 0),
         ];
     }
