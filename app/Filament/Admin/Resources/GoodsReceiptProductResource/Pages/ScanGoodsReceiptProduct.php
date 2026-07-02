@@ -185,21 +185,12 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
             return;
         }
 
-        // Parse data
-        $originCode = substr($barcode, 0, 1);
-        $dateStr = substr($barcode, 1, 6);
-        $productCode = substr($barcode, 7, 6);
-        $gradeId = (int) substr($barcode, 13, 1);
-        $weightVal = ((float) substr($barcode, 14, 4)) / 100;
-        $pcsVal = (int) substr($barcode, 18, 2);
-        $phVal = ((float) substr($barcode, 20, 2)) / 10;
-
-        // Find product
-        $product = Product::where('code', $productCode)->first();
-        if (!$product) {
+        // 3. Cari data lengkap di TallyItem (Buyback scenario)
+        $tallyItem = \App\Models\TallyItem::where('barcode', $barcode)->first();
+        if (!$tallyItem) {
             Notification::make()
                 ->title(__('Gagal Scan'))
-                ->body(__('Produk tidak terdaftar'))
+                ->body(__('Barang tidak ditemukan di history Tally (Bukan barang produksi internal)'))
                 ->danger()
                 ->send();
             $this->barcode = '';
@@ -207,7 +198,16 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
             return;
         }
 
-        // 3. Pastikan product_id ada di purchase_product_items (PO)
+        $product = $tallyItem->product;
+        $gradeId = $tallyItem->grade_id;
+        $weightVal = $tallyItem->weight;
+        $pcsVal = $tallyItem->qty_pcs;
+        $phVal = $tallyItem->ph_level;
+        $defaultPackDate = $tallyItem->pack_date ? $tallyItem->pack_date->format('Y-m-d') : now()->format('Y-m-d');
+        $expDate = $tallyItem->exp_date ? $tallyItem->exp_date->format('Y-m-d') : null;
+        $originCode = $tallyItem->origin;
+
+        // 4. Pastikan product_id ada di purchase_product_items (PO)
         $poItem = $this->record->purchaseProduct->items()->where('product_id', $product->id)->first();
         if (!$poItem) {
             Notification::make()
@@ -221,11 +221,11 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
         }
 
         // Validate grade
-        $grade = Grade::find($gradeId);
+        $grade = \App\Models\Grade::find($gradeId);
         if (!$grade) {
             Notification::make()
                 ->title(__('Gagal Scan'))
-                ->body(__('Grade tidak valid'))
+                ->body(__('Grade tidak valid dari Tally'))
                 ->danger()
                 ->send();
             $this->barcode = '';
@@ -235,22 +235,9 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
 
         // Process insertion
         try {
-            DB::transaction(function () use ($barcode, $product, $gradeId, $weightVal, $pcsVal, $phVal, $originCode, $poItem, $dateStr) {
+            DB::transaction(function () use ($barcode, $product, $gradeId, $weightVal, $pcsVal, $phVal, $originCode, $poItem, $defaultPackDate, $expDate) {
                 $price = $poItem ? $poItem->price : 0;
                 $subtotal = $price * $weightVal;
-                
-                try {
-                    $defaultPackDate = Carbon::createFromFormat('dmy', $dateStr)->format('Y-m-d');
-                } catch (\Exception $e) {
-                    $defaultPackDate = now()->format('Y-m-d');
-                }
-                
-                $date = Carbon::parse($defaultPackDate);
-                if (in_array((int)$gradeId, [1, 3])) { // CHILL or A
-                    $expDate = $date->addMonths(3)->format('Y-m-d');
-                } else {
-                    $expDate = $date->addYear()->format('Y-m-d');
-                }
 
                 // 1. Create GoodsReceiptProductItem
                 GoodsReceiptProductItem::create([
