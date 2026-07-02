@@ -9,4 +9,9 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateMutation extends CreateRecord
 {
     protected static string $resource = MutationResource::class;
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('scan', ['record' => $this->record]);
+    }
 }
