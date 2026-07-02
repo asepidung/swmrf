@@ -84,6 +84,58 @@ class EditSalesReturn extends EditRecord
                     }
                 }),
 
+            Actions\Action::make('Unlock Return')
+                ->iconButton()
+                ->tooltip('Unlock / Cancel Approval')
+                ->icon('heroicon-o-lock-open')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->hidden(fn () => $this->record->status !== 'Approved')
+                ->action(function () {
+                    try {
+                        DB::transaction(function () {
+                            $returnItems = $this->record->items;
+                            
+                            // Validation: check if all barcodes still exist and are IN_STOCK
+                            foreach ($returnItems as $item) {
+                                $stock = BeefStock::where('barcode', $item->barcode)->first();
+                                if (!$stock) {
+                                    throw new \Exception("Gagal: Barang {$item->barcode} tidak ditemukan di stok (sudah terpakai/dikirim).");
+                                }
+                                if ($stock->status !== 'IN_STOCK') {
+                                    throw new \Exception("Gagal: Barang {$item->barcode} sudah tidak berada di stok (status: {$stock->status}).");
+                                }
+                            }
+
+                            // If validation passes, reverse the stock creation
+                            foreach ($returnItems as $item) {
+                                // Record reverse movement
+                                BeefStockMovement::create([
+                                    'product_id' => $item->product_id,
+                                    'warehouse_id' => $item->warehouse_id,
+                                    'condition' => $item->grade_id,
+                                    'barcode' => $item->barcode,
+                                    'transaction_type' => 'CANCEL_SALES_RETURN',
+                                    'reference_document' => $this->record->return_number,
+                                    'weight_out' => $item->weight,
+                                    'pcs_out' => $item->qty_pcs,
+                                    'created_by' => Auth::id() ?? 1,
+                                    'note' => 'Unlock/Cancel Sales Return',
+                                ]);
+
+                                // Delete from stock
+                                BeefStock::where('barcode', $item->barcode)->delete();
+                            }
+
+                            $this->record->update(['status' => 'Draft']);
+                        });
+                        Notification::make()->title('Return Unlocked & Stock Reverted')->success()->send();
+                        $this->refreshFormData(['status']);
+                    } catch (\Exception $e) {
+                        Notification::make()->title('Error')->body($e->getMessage())->danger()->send();
+                    }
+                }),
+
             Actions\Action::make('Back')
                 ->iconButton()
                 ->tooltip('Back')
