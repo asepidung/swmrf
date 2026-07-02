@@ -26,6 +26,10 @@ class AppServiceProvider extends ServiceProvider
                 ->visible(outsidePanels: true);
         });
 
+        if (config('app.env') !== 'local') {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         // \Filament\Support\Facades\FilamentAsset::register([
         //     \Filament\Support\Assets\Js::make('auto-logout', asset('js/auto-logout.js')),
         // ]);
