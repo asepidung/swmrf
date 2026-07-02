@@ -72,7 +72,7 @@ class ViewSalesReturn extends ViewRecord
                             $this->record->update(['status' => 'Draft']);
                         });
                         Notification::make()->title('Return Unlocked & Stock Reverted')->success()->send();
-                        $this->redirect(url()->current());
+                        $this->redirect($this->getResource()::getUrl('edit', ['record' => $this->record]));
                     } catch (\Exception $e) {
                         Notification::make()->title('Error')->body($e->getMessage())->danger()->send();
                     }
