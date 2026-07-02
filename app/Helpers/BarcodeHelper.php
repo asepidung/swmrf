@@ -14,9 +14,9 @@ class BarcodeHelper
     {
         $length = strlen($barcode);
         
-        // SWM standard barcode is 26 digits
+        // SWM standard barcode is exactly 26 digits
         if ($length !== 26) {
-            return 'UNIND';
+            return '-UNIND';
         }
 
         $prefix = substr($barcode, 0, 1);
@@ -32,6 +32,6 @@ class BarcodeHelper
             '8' => 'TRD-IM',
         ];
 
-        return $origins[$prefix] ?? 'UNIND';
+        return $origins[$prefix] ?? '-UNIND';
     }
 }
