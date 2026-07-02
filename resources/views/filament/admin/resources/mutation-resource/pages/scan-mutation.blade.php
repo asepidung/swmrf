@@ -1,6 +1,11 @@
 <x-filament-panels::page>
     <div x-data="{
         init() {
+            setTimeout(() => {
+                if ($refs.barcodeInput) {
+                    $refs.barcodeInput.focus();
+                }
+            }, 300);
             window.addEventListener('focus-barcode', () => {
                 setTimeout(() => {
                     if ($refs.barcodeInput) {
@@ -22,19 +27,25 @@
                         </div>
                     </x-slot>
                     
-                    <div class="flex flex-col gap-3">
-                        <div class="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-white/10">
+                    <div class="flex flex-wrap items-center gap-x-8 gap-y-4">
+                        <div>
                             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Tanggal</p>
                             <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $record->mutation_date->format('d F Y') }}</p>
                         </div>
-                        <div class="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-white/10">
+                        
+                        <div class="hidden sm:block w-px h-8 bg-gray-200 dark:bg-white/10"></div>
+                        
+                        <div>
                             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Dari Gudang</p>
                             <div class="flex items-center gap-2">
                                 <span class="flex w-2 h-2 rounded-full bg-rose-500"></span>
                                 <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $record->fromWarehouse->name }}</p>
                             </div>
                         </div>
-                        <div class="flex justify-between items-center">
+
+                        <div class="hidden sm:block w-px h-8 bg-gray-200 dark:bg-white/10"></div>
+                        
+                        <div>
                             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Ke Gudang</p>
                             <div class="flex items-center gap-2">
                                 <span class="flex w-2 h-2 rounded-full bg-emerald-500"></span>
