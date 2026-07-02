@@ -17,14 +17,6 @@ class EditSalesReturn extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('Print PDF')
-                ->tooltip('Print Berita Acara')
-                ->icon('heroicon-o-printer')
-                ->color('success')
-                ->hiddenLabel()
-                ->url(fn () => route('sales-return.pdf', $this->record))
-                ->openUrlInNewTab(),
-
             Actions\Action::make('Input Return Items')
                 ->label('')
                 ->tooltip('Input / Scan Barang')
@@ -32,6 +24,14 @@ class EditSalesReturn extends EditRecord
                 ->color('warning')
                 ->url(fn () => SalesReturnResource::getUrl('input-items', ['record' => $this->record]))
                 ->hidden(fn () => $this->record->status !== 'Draft'),
+
+            Actions\Action::make('Print PDF')
+                ->tooltip('Print Berita Acara')
+                ->icon('heroicon-o-printer')
+                ->color('success')
+                ->hiddenLabel()
+                ->url(fn () => route('sales-return.pdf', $this->record))
+                ->openUrlInNewTab(),
 
             Actions\Action::make('Approve Return')
                 ->label('')
@@ -84,6 +84,12 @@ class EditSalesReturn extends EditRecord
                     }
                 }),
 
+            Actions\Action::make('Back')
+                ->label('')
+                ->tooltip('Back')
+                ->icon('heroicon-o-arrow-left')
+                ->color('gray')
+                ->url(fn () => $this->getResource()::getUrl('index')),
 
             Actions\DeleteAction::make()
                 ->label('')
@@ -105,5 +111,12 @@ class EditSalesReturn extends EditRecord
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
+    }
+
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getSaveFormAction(),
+        ];
     }
 }
