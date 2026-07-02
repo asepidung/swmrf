@@ -299,15 +299,17 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 
                 $product = Product::find($formData['product_id']);
                 $productCode = $product->code ?? '000000';
+                if (strlen($productCode) > 6) {
+                    $productCode = substr($productCode, 0, 6);
+                } else {
+                    $productCode = str_pad($productCode, 6, '0', STR_PAD_LEFT);
+                }
+
                 $gradeId = $formData['grade_id'];
 
-                $weightStr = str_pad(number_format($weight, 2, '', ''), 5, '0', STR_PAD_LEFT);
+                $weightStr = str_pad(round($weight * 100), 4, '0', STR_PAD_LEFT);
                 $pcsStr = str_pad($pcs, 2, '0', STR_PAD_LEFT);
-
-                $phStr = '0000';
-                if (!empty($formData['ph_level'])) {
-                    $phStr = str_pad(number_format((float)$formData['ph_level'], 2, '', ''), 4, '0', STR_PAD_LEFT);
-                }
+                $phStr = !empty($formData['ph_level']) ? str_pad(round($formData['ph_level'] * 10), 2, '0', STR_PAD_LEFT) : '00';
 
                 $prefix = $origin . $dateStr;
                 $latestItem = SalesReturnItem::where('barcode', 'like', $prefix . '%')->orderBy('id', 'desc')->first();
