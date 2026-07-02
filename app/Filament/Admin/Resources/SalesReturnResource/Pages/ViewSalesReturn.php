@@ -34,6 +34,8 @@ class ViewSalesReturn extends ViewRecord
                 ->icon('heroicon-o-lock-open')
                 ->color('danger')
                 ->requiresConfirmation()
+                ->modalHeading('Unlock Sales Return')
+                ->modalDescription('Anda yakin ingin melakukan unlock? Semua barang dari retur ini yang sudah masuk ke stok akan dihapus/ditarik kembali.')
                 ->hidden(fn () => $this->record->status !== 'Approved')
                 ->action(function () {
                     try {

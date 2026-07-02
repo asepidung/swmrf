@@ -42,6 +42,8 @@ class EditSalesReturn extends EditRecord
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
                 ->requiresConfirmation()
+                ->modalHeading('Approve Sales Return')
+                ->modalDescription('Anda yakin ingin menyetujui retur ini? Semua barang akan dimasukkan ke stok.')
                 ->hidden(fn () => $this->record->status !== 'Draft' || $this->record->items->isEmpty())
                 ->action(function () {
                     try {
@@ -94,6 +96,8 @@ class EditSalesReturn extends EditRecord
                 ->icon('heroicon-o-lock-open')
                 ->color('danger')
                 ->requiresConfirmation()
+                ->modalHeading('Unlock Sales Return')
+                ->modalDescription('Anda yakin ingin melakukan unlock? Semua barang dari retur ini yang sudah masuk ke stok akan dihapus/ditarik kembali.')
                 ->hidden(fn () => $this->record->status !== 'Approved')
                 ->action(function () {
                     try {
