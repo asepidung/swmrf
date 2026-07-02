@@ -84,13 +84,6 @@ class EditSalesReturn extends EditRecord
                     }
                 }),
 
-            Actions\Action::make('Print PDF')
-                ->label('')
-                ->tooltip('PDF Berita Acara')
-                ->icon('heroicon-o-tag')
-                ->color('info')
-                ->url(fn () => route('sales-return.pdf', $this->record))
-                ->openUrlInNewTab(),
 
             Actions\DeleteAction::make()
                 ->label('')
