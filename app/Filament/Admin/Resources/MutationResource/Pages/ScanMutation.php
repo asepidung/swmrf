@@ -54,13 +54,14 @@ class ScanMutation extends Page implements HasForms, HasTable
     {
         return [
             Forms\Components\TextInput::make('barcode')
-                ->label('Scan Barcode (26 Digit)')
+                ->label('Scan Barcode')
+                ->placeholder('Arahkan kursor ke sini dan mulai scan...')
                 ->required()
                 ->autofocus()
-                ->length(26)
                 ->extraInputAttributes([
                     'x-on:keydown.enter' => '$wire.addBarcode()',
                     'x-ref' => 'barcodeInput',
+                    'class' => 'text-xl font-bold tracking-widest text-center',
                 ]),
         ];
     }
@@ -72,11 +73,7 @@ class ScanMutation extends Page implements HasForms, HasTable
 
         if (empty($barcode)) return;
 
-        if (strlen($barcode) !== 26) {
-            Notification::make()->title('Barcode tidak valid (harus 26 digit mutlak)')->danger()->send();
-            $this->dispatch('focus-barcode');
-            return;
-        }
+
 
         if (MutationItem::where('mutation_id', $this->record->id)->where('barcode', $barcode)->exists()) {
             Notification::make()->title('Barcode sudah di-scan di mutasi ini!')->warning()->send();
