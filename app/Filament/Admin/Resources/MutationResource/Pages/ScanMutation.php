@@ -145,6 +145,7 @@ class ScanMutation extends Page implements HasForms, HasTable
                 Tables\Columns\TextColumn::make('grade.name')->label('Grade'),
                 Tables\Columns\TextColumn::make('ph_level')->label('pH')->numeric(1),
                 Tables\Columns\TextColumn::make('pack_date')->label('POD')->date('d M Y'),
+                Tables\Columns\TextColumn::make('origin')->label('Origin'),
             ])
             ->actions([
                 Tables\Actions\DeleteAction::make()
