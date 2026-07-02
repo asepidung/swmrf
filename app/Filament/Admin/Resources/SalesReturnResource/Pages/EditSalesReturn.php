@@ -83,7 +83,7 @@ class EditSalesReturn extends EditRecord
                             }
                         });
                         Notification::make()->title('Return Approved & Stock Updated')->success()->send();
-                        $this->redirect(url()->current());
+                        $this->redirect($this->getResource()::getUrl('view', ['record' => $this->record]));
                     } catch (\Exception $e) {
                         Notification::make()->title('Error')->body($e->getMessage())->danger()->send();
                     }
@@ -138,7 +138,7 @@ class EditSalesReturn extends EditRecord
                             $this->record->update(['status' => 'Draft']);
                         });
                         Notification::make()->title('Return Unlocked & Stock Reverted')->success()->send();
-                        $this->redirect(url()->current());
+                        $this->redirect($this->getResource()::getUrl('edit', ['record' => $this->record]));
                     } catch (\Exception $e) {
                         Notification::make()->title('Error')->body($e->getMessage())->danger()->send();
                     }
