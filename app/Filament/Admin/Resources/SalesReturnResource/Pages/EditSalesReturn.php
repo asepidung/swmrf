@@ -18,7 +18,7 @@ class EditSalesReturn extends EditRecord
     {
         return [
             Actions\Action::make('Input Return Items')
-                ->label('')
+                ->iconButton()
                 ->tooltip('Input / Scan Barang')
                 ->icon('heroicon-o-bars-3-bottom-left')
                 ->color('warning')
@@ -26,15 +26,15 @@ class EditSalesReturn extends EditRecord
                 ->hidden(fn () => $this->record->status !== 'Draft'),
 
             Actions\Action::make('Print PDF')
+                ->iconButton()
                 ->tooltip('Print Berita Acara')
                 ->icon('heroicon-o-printer')
                 ->color('success')
-                ->hiddenLabel()
                 ->url(fn () => route('sales-return.pdf', $this->record))
                 ->openUrlInNewTab(),
 
             Actions\Action::make('Approve Return')
-                ->label('')
+                ->iconButton()
                 ->tooltip('Approve Return')
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
@@ -85,24 +85,24 @@ class EditSalesReturn extends EditRecord
                 }),
 
             Actions\Action::make('Back')
-                ->label('')
+                ->iconButton()
                 ->tooltip('Back')
                 ->icon('heroicon-o-arrow-left')
                 ->color('gray')
                 ->url(fn () => $this->getResource()::getUrl('index')),
 
             Actions\DeleteAction::make()
-                ->label('')
+                ->iconButton()
                 ->tooltip('Delete')
                 ->icon('heroicon-o-trash'),
             
             Actions\ForceDeleteAction::make()
-                ->label('')
+                ->iconButton()
                 ->tooltip('Force Delete')
                 ->icon('heroicon-o-trash'),
             
             Actions\RestoreAction::make()
-                ->label('')
+                ->iconButton()
                 ->tooltip('Restore')
                 ->icon('heroicon-o-arrow-path'),
         ];
