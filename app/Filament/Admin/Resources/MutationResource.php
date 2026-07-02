@@ -34,12 +34,12 @@ class MutationResource extends Resource
                             ->default(now()),
                         Forms\Components\Select::make('from_warehouse_id')
                             ->label('Dari Gudang (Asal)')
-                            ->relationship('fromWarehouse', 'name')
+                            ->options(\App\Models\Warehouse::where('is_active', true)->pluck('name', 'id'))
                             ->required()
                             ->searchable(),
                         Forms\Components\Select::make('to_warehouse_id')
                             ->label('Tujuan Gudang')
-                            ->relationship('toWarehouse', 'name')
+                            ->options(\App\Models\Warehouse::where('is_active', true)->pluck('name', 'id'))
                             ->required()
                             ->searchable(),
                         Forms\Components\Textarea::make('note')
