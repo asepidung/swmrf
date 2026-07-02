@@ -40,16 +40,7 @@ class ScanMutation extends Page implements HasForms, HasTable
         return 'Scan Mutasi: ' . $this->record->mutation_number;
     }
 
-    protected function getHeaderActions(): array
-    {
-        return [
-            \Filament\Actions\Action::make('finish')
-                ->label('Selesai Scan')
-                ->color('success')
-                ->icon('heroicon-o-check-circle')
-                ->url(MutationResource::getUrl('view', ['record' => $this->record->id])),
-        ];
-    }
+
 
     public function mount(Mutation $record): void
     {
@@ -155,10 +146,11 @@ class ScanMutation extends Page implements HasForms, HasTable
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('back')
-                ->label('Kembali')
+            Actions\Action::make('finish')
+                ->label('Selesai Scan')
                 ->url(MutationResource::getUrl('view', ['record' => $this->record->id]))
-                ->color('gray'),
+                ->color('success')
+                ->icon('heroicon-o-check-circle'),
         ];
     }
 }
