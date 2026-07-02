@@ -97,12 +97,6 @@ class ScanMutation extends Page implements HasForms, HasTable
             return;
         }
 
-        if ($stock->status !== 'IN_STOCK') {
-            Notification::make()->title("Status barang tidak tersedia! (Status saat ini: {$stock->status})")->danger()->send();
-            $this->dispatch('focus-barcode');
-            return;
-        }
-
         DB::transaction(function () use ($stock, $barcode) {
             MutationItem::create([
                 'mutation_id' => $this->record->id,
@@ -117,8 +111,22 @@ class ScanMutation extends Page implements HasForms, HasTable
                 'origin' => $stock->origin,
             ]);
 
-            $stock->status = 'IN_MUTATION';
-            $stock->save();
+            \App\Models\BeefStockMovement::create([
+                'product_id' => $stock->product_id,
+                'warehouse_id' => $stock->warehouse_id,
+                'condition' => $stock->grade_id,
+                'barcode' => $stock->barcode,
+                'transaction_type' => 'MUTATION_OUT',
+                'reference_document' => $this->record->mutation_number,
+                'weight_in' => 0,
+                'weight_out' => $stock->weight,
+                'pcs_in' => 0,
+                'pcs_out' => $stock->qty_pcs,
+                'note' => 'Di-scan untuk mutasi',
+                'created_by' => auth()->id(),
+            ]);
+
+            $stock->delete();
         });
 
         Notification::make()->title('Sukses ditambahkan')->success()->send();
@@ -130,14 +138,19 @@ class ScanMutation extends Page implements HasForms, HasTable
         return $table
             ->query(MutationItem::query()->where('mutation_id', $this->record->id))
             ->columns([
-                Tables\Columns\TextColumn::make('product.name')->label('Produk'),
-                Tables\Columns\TextColumn::make('grade.name')->label('Grade'),
                 Tables\Columns\TextColumn::make('barcode')->label('Barcode'),
-                Tables\Columns\TextColumn::make('weight')->label('Berat (Kg)')->numeric(2),
-                Tables\Columns\TextColumn::make('qty_pcs')->label('Qty (Pcs)'),
+                Tables\Columns\TextColumn::make('product.name')->label('Product'),
+                Tables\Columns\TextColumn::make('weight')->label('Qty')->numeric(2),
+                Tables\Columns\TextColumn::make('qty_pcs')->label('Pcs'),
+                Tables\Columns\TextColumn::make('grade.name')->label('Grade'),
+                Tables\Columns\TextColumn::make('ph_level')->label('pH')->numeric(1),
+                Tables\Columns\TextColumn::make('pack_date')->label('POD')->date('d M Y'),
             ])
             ->actions([
                 Tables\Actions\DeleteAction::make()
+                    ->label('')
+                    ->icon('heroicon-o-trash')
+                    ->tooltip('Delete')
                     ->successNotificationTitle('Barang dihapus & dikembalikan ke IN_STOCK'),
             ])
             ->defaultSort('created_at', 'desc');

@@ -50,12 +50,37 @@ class MutationItem extends Model
     protected static function booted()
     {
         static::deleted(function (MutationItem $item) {
-            // When an item is removed from a draft mutation, we unlock it in beef_stocks
-            $stock = BeefStock::where('barcode', $item->barcode)->where('status', 'IN_MUTATION')->first();
-            if ($stock) {
-                $stock->status = 'IN_STOCK';
-                $stock->save();
-            }
+            // Recreate the stock
+            $stock = \App\Models\BeefStock::create([
+                'barcode' => $item->barcode,
+                'product_id' => $item->product_id,
+                'warehouse_id' => $item->mutation->from_warehouse_id,
+                'grade_id' => $item->grade_id,
+                'weight' => $item->weight,
+                'qty_pcs' => $item->qty_pcs,
+                'ph_level' => $item->ph_level,
+                'pack_date' => $item->pack_date,
+                'exp_date' => $item->exp_date,
+                'origin' => $item->origin,
+                'status' => 'IN_STOCK',
+                'note' => 'Dikembalikan dari Mutasi Draft',
+            ]);
+
+            // Add Stock Movement for cancellation
+            \App\Models\BeefStockMovement::create([
+                'product_id' => $stock->product_id,
+                'warehouse_id' => $stock->warehouse_id,
+                'condition' => $stock->grade_id,
+                'barcode' => $stock->barcode,
+                'transaction_type' => 'MUTATION_CANCEL',
+                'reference_document' => $item->mutation->mutation_number,
+                'weight_in' => $stock->weight,
+                'weight_out' => 0,
+                'pcs_in' => $stock->qty_pcs,
+                'pcs_out' => 0,
+                'note' => 'Barang dihapus dari draft mutasi dan dikembalikan ke stok',
+                'created_by' => \Illuminate\Support\Facades\Auth::id() ?? 1,
+            ]);
         });
     }
 }
