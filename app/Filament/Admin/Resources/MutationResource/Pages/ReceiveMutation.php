@@ -55,7 +55,7 @@ class ReceiveMutation extends Page implements HasForms, HasTable
     {
         return [
             Forms\Components\TextInput::make('barcode')
-                ->label('Scan Barcode')
+                ->label(__('Scan Barcode'))
                 ->placeholder('Arahkan kursor ke sini dan mulai scan penerimaan...')
                 ->required()
                 ->autofocus()
@@ -101,14 +101,14 @@ class ReceiveMutation extends Page implements HasForms, HasTable
         return $table
             ->query(MutationItem::query()->where('mutation_id', $this->record->id)->where('is_received', true))
             ->columns([
-                Tables\Columns\TextColumn::make('barcode')->label('Barcode'),
-                Tables\Columns\TextColumn::make('product.name')->label('Product'),
-                Tables\Columns\TextColumn::make('weight')->label('Qty')->numeric(2),
-                Tables\Columns\TextColumn::make('qty_pcs')->label('Pcs'),
-                Tables\Columns\TextColumn::make('grade.name')->label('Grade'),
-                Tables\Columns\TextColumn::make('ph_level')->label('pH')->numeric(1),
-                Tables\Columns\TextColumn::make('pack_date')->label('POD')->date('d M Y'),
-                Tables\Columns\TextColumn::make('origin')->label('Origin'),
+                Tables\Columns\TextColumn::make('barcode')->label(__('Barcode')),
+                Tables\Columns\TextColumn::make('product.name')->label(__('Product')),
+                Tables\Columns\TextColumn::make('weight')->label(__('Qty'))->numeric(2),
+                Tables\Columns\TextColumn::make('qty_pcs')->label(__('Pcs')),
+                Tables\Columns\TextColumn::make('grade.name')->label(__('Grade')),
+                Tables\Columns\TextColumn::make('ph_level')->label(__('pH'))->numeric(1),
+                Tables\Columns\TextColumn::make('pack_date')->label(__('POD'))->date('d M Y'),
+                Tables\Columns\TextColumn::make('origin')->label(__('Origin')),
             ])
             ->actions([
                 Tables\Actions\Action::make('cancel_receive')
@@ -128,12 +128,12 @@ class ReceiveMutation extends Page implements HasForms, HasTable
     {
         return [
             Actions\Action::make('back')
-                ->label('Kembali')
+                ->label(__('Back'))
                 ->url(MutationResource::getUrl('view', ['record' => $this->record->id]))
                 ->color('gray'),
                 
             Actions\Action::make('receive_all')
-                ->label('Terima Semua')
+                ->label(__('Receive All'))
                 ->color('warning')
                 ->icon('heroicon-o-check-circle')
                 ->requiresConfirmation()
@@ -145,7 +145,7 @@ class ReceiveMutation extends Page implements HasForms, HasTable
                 }),
 
             Actions\Action::make('finish')
-                ->label('Selesai Penerimaan')
+                ->label(__('Complete Receiving'))
                 ->color('success')
                 ->icon('heroicon-o-inbox-arrow-down')
                 ->requiresConfirmation()
@@ -157,7 +157,7 @@ class ReceiveMutation extends Page implements HasForms, HasTable
                         ->get();
 
                     if ($receivedItems->isEmpty()) {
-                        Notification::make()->title('Belum ada barang yang di-scan!')->danger()->send();
+                        Notification::make()->title(__('No items have been scanned yet!'))->danger()->send();
                         return;
                     }
 

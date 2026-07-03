@@ -265,7 +265,7 @@
                 <tr>
                     <th width="5%">No</th>
                     <th width="45%">Nama Produk</th>
-                    <th width="15%">Total Koli</th>
+                    <th width="15%">Total BOX</th>
                     <th width="20%">Berat (Kg)</th>
                     <th width="15%">Qty (Pcs)</th>
                 </tr>

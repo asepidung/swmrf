@@ -19,32 +19,39 @@ class MutationResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-arrows-right-left';
     protected static ?string $navigationGroup = 'WAREHOUSE';
-    protected static ?string $modelLabel = 'Mutasi';
-    protected static ?string $pluralModelLabel = 'Mutasi';
+    public static function getModelLabel(): string
+    {
+        return __('Mutation');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Mutations');
+    }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Header Mutasi')
+                Forms\Components\Section::make(__('Mutation Header'))
                     ->schema([
                         Forms\Components\DatePicker::make('mutation_date')
-                            ->label('Tanggal Mutasi')
+                            ->label(__('Mutation Date'))
                             ->required()
                             ->default(now()),
                         Forms\Components\Select::make('from_warehouse_id')
-                            ->label('Dari Gudang (Asal)')
+                            ->label(__('From Warehouse'))
                             ->options(\App\Models\Warehouse::where('is_active', true)->pluck('name', 'id'))
                             ->required()
                             ->searchable()
                             ->disabled(fn (?\App\Models\Mutation $record) => $record && $record->items()->exists()),
                         Forms\Components\Select::make('to_warehouse_id')
-                            ->label('Tujuan Gudang')
+                            ->label(__('To Warehouse'))
                             ->options(\App\Models\Warehouse::where('is_active', true)->pluck('name', 'id'))
                             ->required()
                             ->searchable(),
                         Forms\Components\Textarea::make('note')
-                            ->label('Catatan')
+                            ->label(__('Note'))
                             ->columnSpanFull(),
                     ])->columns(3),
             ]);
@@ -55,24 +62,27 @@ class MutationResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('mutation_number')
-                    ->label('No. Mutasi')
+                    ->label(__('Mutation Number'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('mutation_date')
-                    ->label('Tanggal')
+                    ->label(__('Date'))
                     ->date('d M Y')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('fromWarehouse.name')
-                    ->label('Dari Gudang')
-                    ->searchable(),
+                    ->label(__('From Warehouse'))
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('toWarehouse.name')
-                    ->label('Tujuan Gudang')
-                    ->searchable(),
+                    ->label(__('To Warehouse'))
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('status')
+                    ->label(__('Status'))
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'DRAFT' => 'warning',
-                        'SENT' => 'info',
+                        'DRAFT' => 'gray',
+                        'SENT' => 'warning',
                         'COMPLETED' => 'success',
                         default => 'gray',
                     }),
@@ -107,23 +117,23 @@ class MutationResource extends Resource
     {
         return $infolist
             ->schema([
-                \Filament\Infolists\Components\Section::make('Header Mutasi')
+                \Filament\Infolists\Components\Section::make(__('Mutation Header'))
                     ->compact()
                     ->schema([
-                        \Filament\Infolists\Components\TextEntry::make('mutation_number')->label('No. Mutasi'),
-                        \Filament\Infolists\Components\TextEntry::make('mutation_date')->label('Tanggal')->date('d M Y'),
-                        \Filament\Infolists\Components\TextEntry::make('fromWarehouse.name')->label('Dari Gudang (Asal)'),
-                        \Filament\Infolists\Components\TextEntry::make('toWarehouse.name')->label('Tujuan Gudang'),
-                        \Filament\Infolists\Components\TextEntry::make('status')->badge()->color(fn (string $state): string => match ($state) {
-                            'DRAFT' => 'warning',
-                            'SENT' => 'info',
+                        \Filament\Infolists\Components\TextEntry::make('mutation_number')->label(__('Mutation Number')),
+                        \Filament\Infolists\Components\TextEntry::make('mutation_date')->label(__('Date'))->date('d M Y'),
+                        \Filament\Infolists\Components\TextEntry::make('fromWarehouse.name')->label(__('From Warehouse')),
+                        \Filament\Infolists\Components\TextEntry::make('toWarehouse.name')->label(__('To Warehouse')),
+                        \Filament\Infolists\Components\TextEntry::make('status')->label(__('Status'))->badge()->color(fn (string $state): string => match ($state) {
+                            'DRAFT' => 'gray',
+                            'SENT' => 'warning',
                             'COMPLETED' => 'success',
                             default => 'gray',
                         }),
-                        \Filament\Infolists\Components\TextEntry::make('note')->label('Catatan')->columnSpanFull(),
+                        \Filament\Infolists\Components\TextEntry::make('note')->label(__('Note'))->columnSpanFull(),
                     ])->columns(5),
 
-                \Filament\Infolists\Components\Section::make('Summary Barang')
+                \Filament\Infolists\Components\Section::make(__('Item Summary'))
                     ->schema([
                         \Filament\Infolists\Components\ViewEntry::make('items_summary')
                             ->hiddenLabel()

@@ -21,17 +21,17 @@
                 <div class="flex flex-wrap items-center justify-between gap-4 text-sm text-gray-700 dark:text-gray-300">
                     <div class="flex items-center gap-2">
                         <x-heroicon-o-information-circle class="w-5 h-5 text-gray-400" />
-                        <span class="font-medium">Tanggal:</span>
+                        <span class="font-medium">{{ __('Date:') }}</span>
                         <span class="font-bold text-gray-900 dark:text-white">{{ $record->mutation_date->format('d F Y') }}</span>
                     </div>
                     
                     <div class="flex items-center gap-2">
-                        <span class="font-medium">Dari:</span>
+                        <span class="font-medium">{{ __('From:') }}</span>
                         <span class="font-bold text-rose-600 dark:text-rose-400">{{ $record->fromWarehouse->name }}</span>
                     </div>
                     
                     <div class="flex items-center gap-2">
-                        <span class="font-medium">Tujuan:</span>
+                        <span class="font-medium">{{ __('To:') }}</span>
                         <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ $record->toWarehouse->name }}</span>
                     </div>
                 </div>
@@ -50,7 +50,7 @@
                     {{ $this->form }}
                 </div>
                 <div class="hidden sm:block text-sm text-gray-500 dark:text-gray-400">
-                    Arahkan scanner atau ketik barcode secara manual
+                    {{ __('Aim scanner or type barcode manually') }}
                 </div>
             </div>
         </div>
@@ -60,7 +60,7 @@
             <x-slot name="heading">
                 <div class="flex items-center gap-2">
                     <x-heroicon-o-list-bullet class="w-5 h-5 text-gray-500" />
-                    <span>Daftar Barang yang Di-scan</span>
+                    <span>{{ __('List of Scanned Items') }}</span>
                 </div>
             </x-slot>
             

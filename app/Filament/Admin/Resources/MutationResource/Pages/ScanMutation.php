@@ -56,7 +56,7 @@ class ScanMutation extends Page implements HasForms, HasTable
     {
         return [
             Forms\Components\TextInput::make('barcode')
-                ->label('Scan Barcode')
+                ->label(__('Scan Barcode'))
                 ->placeholder('Arahkan kursor ke sini dan mulai scan...')
                 ->required()
                 ->autofocus()
@@ -138,14 +138,14 @@ class ScanMutation extends Page implements HasForms, HasTable
         return $table
             ->query(MutationItem::query()->where('mutation_id', $this->record->id))
             ->columns([
-                Tables\Columns\TextColumn::make('barcode')->label('Barcode'),
-                Tables\Columns\TextColumn::make('product.name')->label('Product'),
-                Tables\Columns\TextColumn::make('weight')->label('Qty')->numeric(2),
-                Tables\Columns\TextColumn::make('qty_pcs')->label('Pcs'),
-                Tables\Columns\TextColumn::make('grade.name')->label('Grade'),
-                Tables\Columns\TextColumn::make('ph_level')->label('pH')->numeric(1),
-                Tables\Columns\TextColumn::make('pack_date')->label('POD')->date('d M Y'),
-                Tables\Columns\TextColumn::make('origin')->label('Origin'),
+                Tables\Columns\TextColumn::make('barcode')->label(__('Barcode')),
+                Tables\Columns\TextColumn::make('product.name')->label(__('Product')),
+                Tables\Columns\TextColumn::make('weight')->label(__('Qty'))->numeric(2),
+                Tables\Columns\TextColumn::make('qty_pcs')->label(__('Pcs')),
+                Tables\Columns\TextColumn::make('grade.name')->label(__('Grade')),
+                Tables\Columns\TextColumn::make('ph_level')->label(__('pH'))->numeric(1),
+                Tables\Columns\TextColumn::make('pack_date')->label(__('POD'))->date('d M Y'),
+                Tables\Columns\TextColumn::make('origin')->label(__('Origin')),
             ])
             ->actions([
                 Tables\Actions\DeleteAction::make()
@@ -161,11 +161,11 @@ class ScanMutation extends Page implements HasForms, HasTable
     {
         return [
             Actions\Action::make('back')
-                ->label('Kembali')
+                ->label(__('Back'))
                 ->url(MutationResource::getUrl('index'))
                 ->color('gray'),
             Actions\Action::make('finish')
-                ->label('Selesai Scan')
+                ->label(__('Complete Scan'))
                 ->color('success')
                 ->icon('heroicon-o-check-circle')
                 ->requiresConfirmation()

@@ -14,9 +14,9 @@ class ViewMutation extends ViewRecord
     {
         return [
             Actions\Action::make('receive')
-                ->label('Terima Mutasi')
+                ->label(__('Receive Mutation'))
                 ->hiddenLabel()
-                ->tooltip('Terima Mutasi')
+                ->tooltip(__('Receive Mutation'))
                 ->icon('heroicon-o-inbox-arrow-down')
                 ->color('success')
                 ->url(fn ($record) => MutationResource::getUrl('receive', ['record' => $record]))
@@ -42,7 +42,7 @@ class ViewMutation extends ViewRecord
 
             Actions\EditAction::make()
                 ->hiddenLabel()
-                ->tooltip('Edit')
+                ->tooltip(__('Edit'))
                 ->icon('heroicon-o-pencil-square')
                 ->visible(fn ($record) => $record->status === 'DRAFT'),
 
@@ -53,9 +53,9 @@ class ViewMutation extends ViewRecord
                 ->visible(fn ($record) => $record->status === 'DRAFT' && $record->items()->count() === 0),
                 
             Actions\Action::make('back')
-                ->label('Kembali')
+                ->label(__('Back'))
                 ->hiddenLabel()
-                ->tooltip('Kembali')
+                ->tooltip(__('Back'))
                 ->icon('heroicon-o-arrow-left')
                 ->color('gray')
                 ->url(MutationResource::getUrl('index')),
