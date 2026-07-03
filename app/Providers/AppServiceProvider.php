@@ -26,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
                 ->visible(outsidePanels: true);
         });
 
-        if (config('app.env') !== 'local') {
+        if (config('app.env') !== 'local' || (request()->getHost() !== 'localhost' && request()->getHost() !== '127.0.0.1')) {
             \Illuminate\Support\Facades\URL::forceScheme('https');
         }
 
