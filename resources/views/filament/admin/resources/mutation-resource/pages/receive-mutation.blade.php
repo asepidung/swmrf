@@ -42,23 +42,23 @@
             $waitingItems = $totalItems - $receivedItems;
         @endphp
         
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-6 items-stretch">
+        <div class="flex flex-col md:flex-row gap-6 mb-6 items-stretch">
             <!-- Telah Diterima -->
-            <div class="md:col-span-3 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 flex flex-col items-center justify-center relative overflow-hidden">
+            <div class="w-full md:w-1/4 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 flex flex-col items-center justify-center relative overflow-hidden">
                 <div class="absolute inset-0 bg-gradient-to-br from-emerald-50 to-transparent dark:from-emerald-900/20 opacity-50"></div>
                 <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative z-10">Telah Diterima</span>
                 <span class="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mt-2 relative z-10">{{ $receivedItems }}</span>
             </div>
             
             <!-- Menunggu -->
-            <div class="md:col-span-3 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 flex flex-col items-center justify-center relative overflow-hidden">
+            <div class="w-full md:w-1/4 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 flex flex-col items-center justify-center relative overflow-hidden">
                 <div class="absolute inset-0 bg-gradient-to-br from-rose-50 to-transparent dark:from-rose-900/20 opacity-50"></div>
                 <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative z-10">Menunggu</span>
                 <span class="text-4xl font-bold text-rose-600 dark:text-rose-400 mt-2 relative z-10">{{ $waitingItems }}</span>
             </div>
 
             <!-- Card Scan -->
-            <div class="md:col-span-6 bg-white dark:bg-gray-900 rounded-xl shadow-sm border-2 border-primary-500 relative overflow-hidden p-6 flex flex-col justify-center">
+            <div class="w-full md:w-1/2 bg-white dark:bg-gray-900 rounded-xl shadow-sm border-2 border-primary-500 relative overflow-hidden p-6 flex flex-col justify-center">
                 <div class="absolute -right-6 -top-6 w-32 h-32 bg-primary-500/10 rounded-full blur-3xl"></div>
                 
                 <div class="relative z-10 flex items-center gap-4">
