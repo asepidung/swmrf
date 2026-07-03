@@ -72,6 +72,7 @@ class MutationResource extends Resource
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'DRAFT' => 'warning',
+                        'SENT' => 'info',
                         'COMPLETED' => 'success',
                         default => 'gray',
                     }),
@@ -115,6 +116,7 @@ class MutationResource extends Resource
                         \Filament\Infolists\Components\TextEntry::make('toWarehouse.name')->label('Tujuan Gudang'),
                         \Filament\Infolists\Components\TextEntry::make('status')->badge()->color(fn (string $state): string => match ($state) {
                             'DRAFT' => 'warning',
+                            'SENT' => 'info',
                             'COMPLETED' => 'success',
                             default => 'gray',
                         }),

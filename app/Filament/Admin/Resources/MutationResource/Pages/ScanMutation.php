@@ -166,9 +166,14 @@ class ScanMutation extends Page implements HasForms, HasTable
                 ->color('gray'),
             Actions\Action::make('finish')
                 ->label('Selesai Scan')
-                ->url(MutationResource::getUrl('view', ['record' => $this->record->id]))
                 ->color('success')
-                ->icon('heroicon-o-check-circle'),
+                ->icon('heroicon-o-check-circle')
+                ->requiresConfirmation()
+                ->action(function () {
+                    $this->record->update(['status' => 'SENT']);
+                    Notification::make()->title('Mutasi dikunci & dikirim')->success()->send();
+                    $this->redirect(MutationResource::getUrl('view', ['record' => $this->record->id]));
+                }),
         ];
     }
 }

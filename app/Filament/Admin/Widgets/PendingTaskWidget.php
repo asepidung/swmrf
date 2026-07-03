@@ -169,6 +169,6 @@ class PendingTaskWidget extends Widget
         if (!auth()->user()->hasPermission('view_mutations')) {
             return 0;
         }
-        return \App\Models\Mutation::where('status', 'DRAFT')->count();
+        return \App\Models\Mutation::where('status', 'SENT')->count();
     }
 }
