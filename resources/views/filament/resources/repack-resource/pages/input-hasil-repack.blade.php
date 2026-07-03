@@ -288,17 +288,39 @@
     </div>
 
     <script>
-        function focusInput() {
-            setTimeout(() => {
-                const qtyInput = document.getElementById('qty_input_field');
-                if (qtyInput) qtyInput.focus();
-            }, 100);
-        }
-        document.addEventListener('DOMContentLoaded', focusInput);
-        window.addEventListener('auto-print', event => {
-            if (event.detail.url) window.open(event.detail.url, '_blank');
-            focusInput();
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                const activeEl = document.activeElement;
+                if (activeEl && activeEl.closest('.product-select-container')) {
+                    e.preventDefault();
+                    const qtyInput = document.getElementById('qty_input_field');
+                    if (qtyInput) qtyInput.focus();
+                }
+            }
         });
-        document.addEventListener('refreshTable', focusInput);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const productContainer = document.querySelector('.product-select-container');
+                if (productContainer) {
+                    const focusTarget = productContainer.querySelector('button, input');
+                    if (focusTarget) focusTarget.focus();
+                }
+            }, 300);
+        });
+
+        document.addEventListener('refreshTable', () => {
+            setTimeout(() => {
+                const productContainer = document.querySelector('.product-select-container');
+                if (productContainer) {
+                    const focusTarget = productContainer.querySelector('button, input');
+                    if (focusTarget) focusTarget.focus();
+                }
+            }, 100);
+        });
+
+        document.addEventListener('auto-print', (event) => {
+            if (event.detail.url) window.open(event.detail.url, '_blank');
+        });
     </script>
 </x-filament-panels::page>
