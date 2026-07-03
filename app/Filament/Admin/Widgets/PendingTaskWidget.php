@@ -162,6 +162,8 @@ class PendingTaskWidget extends Widget
             ->whereHas('customer', function ($query) {
                 $query->where('invoice_exchange', true);
             })->count();
+    }
+
     public function getPendingMutationCount(): int
     {
         if (!auth()->user()->hasPermission('view_mutations')) {
