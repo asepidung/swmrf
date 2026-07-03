@@ -110,33 +110,62 @@
 @endphp
 
 <style>
-    /* Shrink the font size and padding for the entire table */
+    /* Table Compactness */
     .fi-ta-table {
-        font-size: 0.75rem !important; /* text-xs */
+         /* text-xs */
         line-height: 1rem !important;
     }
     
-    /* Header labels font size */
-    .fi-ta-header-cell-label {
-        font-size: 0.75rem !important;
+    .fi-ta-table tbody tr {
+        height: 32px !important;
     }
 
-    /* Column group header cells (G. Jonggol / G. Perum) */
-    .fi-table-header-group-cell span {
-        font-size: 0.75rem !important;
+    .fi-ta-cell>div,
+    .fi-ta-text,
+    .fi-ta-text-item {
+        padding: 0 !important;
+        margin: 0 !important;
     }
     
-    /* Table cells vertical padding and font size */
-    .fi-ta-table th,
-    .fi-ta-table td {
-        font-size: 0.75rem !important;
-        padding-top: 0.375rem !important;
-        padding-bottom: 0.375rem !important;
+    .fi-ta-header-cell-label {
+        
+        justify-content: center !important;
+        text-align: center !important;
+        text-transform: uppercase !important;
     }
 
-    /* Category header rows font size & padding */
+    .fi-table-header-group-cell span {
+        
+        text-align: center !important;
+        text-transform: uppercase !important;
+        display: block !important;
+    }
+    
+    /* Center align column headers and uppercase */
+    .fi-ta-table thead th {
+        text-align: center !important;
+        text-transform: uppercase !important;
+    }
+
+    /* Table cells vertical padding & borders */
+    .fi-ta-table th,
+    .fi-ta-table td {
+        padding-top: 0.25rem !important;
+        padding-bottom: 0.25rem !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+        border-left: 1px solid rgb(229 231 235) !important;
+        border-right: 1px solid rgb(229 231 235) !important;
+    }
+    
+    /* Category header rows font size */
     .fi-ta-table tr td {
-        font-size: 0.75rem !important;
+        
+    }
+
+    .dark .fi-ta-table th,
+    .dark .fi-ta-table td {
+        border-color: rgb(63 63 70) !important;
     }
 
     /* Remove divide-y lines that cut through rowspanned header cells */
@@ -156,22 +185,32 @@
         border-bottom: none !important;
     }
 
-    /* Add border bottom specifically to the group headers (first row of grouped columns) */
+    /* Add border bottom specifically to the group headers */
     .fi-table-header-group-cell {
         border-bottom: 1px solid rgb(229 231 235) !important;
     }
     .dark .fi-table-header-group-cell {
         border-bottom: 1px solid rgb(63 63 70) !important;
+    }    /* Force center alignment for all header cells */
+    .fi-ta-table th .fi-ta-header-cell-label,
+    .fi-ta-table th > button,
+    .fi-ta-table th > div {
+        justify-content: center !important;
+        text-align: center !important;
     }
-
-    /* Add border bottom to bottom-row cells and rowspanned cells */
-    .fi-ta-table thead tr:first-child th[rowspan],
-    .fi-ta-table thead tr:last-child th {
-        border-bottom: 2px solid rgb(229 231 235) !important;
+    /* Force center alignment for ALL header cells inside this table */
+    .fi-ta-table th > button,
+    .fi-ta-table th > div,
+    .fi-ta-table .fi-ta-header-cell > button,
+    .fi-ta-table .fi-ta-header-cell > div {
+        justify-content: center !important;
+        align-items: center !important;
     }
-    .dark .fi-ta-table thead tr:first-child th[rowspan],
-    .dark .fi-ta-table thead tr:last-child th {
-        border-bottom: 2px solid rgb(63 63 70) !important;
+    .fi-ta-table .fi-ta-header-cell-label {
+        text-align: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        display: flex !important;
     }
 </style>
 
@@ -1128,7 +1167,7 @@
                                         @endphp
                                         
                                         @if ($extraCellsCountBefore > 0)
-                                            <td colspan="{{ $extraCellsCountBefore }}" class="bg-gray-100 dark:bg-white/5 border-b border-gray-200 dark:border-white/10" style="background-color: #6c757d;"></td>
+                                            <td colspan="{{ $extraCellsCountBefore }}" class="bg-gray-500 dark:bg-gray-600 border-b border-gray-500 dark:border-gray-600" ></td>
                                         @endif
 
                                         @php
@@ -1136,15 +1175,15 @@
                                         @endphp
                                         <td
                                             colspan="{{ $customHeaderColspan }}"
-                                            class="bg-gray-100 dark:bg-white/5 px-3 py-2 text-center align-middle font-bold border-b border-gray-200 dark:border-white/10"
-                                            style="background-color: #6c757d; color: white;"
+                                            class="bg-gray-500 dark:bg-gray-600 px-3 py-2 text-center align-middle font-bold border-b border-gray-500 dark:border-gray-600 uppercase tracking-wider" style="color: #fde047 !important; font-size: 0.875rem !important;"
+                                            
                                         >
                                             <div class="flex items-center justify-center gap-x-2">
                                                 @if ($group->isCollapsible())
                                                     <button
                                                         type="button"
                                                         x-on:click="toggleCollapseGroup(@js($recordGroupTitle))"
-                                                        class="text-white hover:opacity-75 focus:outline-none"
+                                                        class="focus:outline-none" style="color: #fde047 !important; font-size: 0.875rem !important;"
                                                     >
                                                         <x-filament::icon
                                                             icon="heroicon-m-chevron-up"
@@ -1156,19 +1195,19 @@
                                                 <span>{{ $recordGroupTitle }}</span>
                                             </div>
                                         </td>
-                                        <td class="bg-gray-100 dark:bg-white/5 px-3 py-2 text-right align-middle font-bold border-b border-gray-200 dark:border-white/10 text-gray-950 dark:text-white" style="background-color: #6c757d; color: white;">
+                                        <td class="bg-gray-500 dark:bg-gray-600 px-3 py-2 text-right align-middle font-bold border-b border-gray-500 dark:border-gray-600" style="color: #fde047 !important; font-size: 0.875rem !important;" >
                                             {{ $sums['chill_jonggol'] > 0 ? number_format($sums['chill_jonggol'], 2, '.', ',') : '' }}
                                         </td>
-                                        <td class="bg-gray-100 dark:bg-white/5 px-3 py-2 text-right align-middle font-bold border-b border-gray-200 dark:border-white/10 text-gray-950 dark:text-white" style="background-color: #6c757d; color: white;">
+                                        <td class="bg-gray-500 dark:bg-gray-600 px-3 py-2 text-right align-middle font-bold border-b border-gray-500 dark:border-gray-600" style="color: #fde047 !important; font-size: 0.875rem !important;" >
                                             {{ $sums['frozen_jonggol'] > 0 ? number_format($sums['frozen_jonggol'], 2, '.', ',') : '' }}
                                         </td>
-                                        <td class="bg-gray-100 dark:bg-white/5 px-3 py-2 text-right align-middle font-bold border-b border-gray-200 dark:border-white/10 text-gray-950 dark:text-white" style="background-color: #6c757d; color: white;">
+                                        <td class="bg-gray-500 dark:bg-gray-600 px-3 py-2 text-right align-middle font-bold border-b border-gray-500 dark:border-gray-600" style="color: #fde047 !important; font-size: 0.875rem !important;" >
                                             {{ $sums['chill_perum'] > 0 ? number_format($sums['chill_perum'], 2, '.', ',') : '' }}
                                         </td>
-                                        <td class="bg-gray-100 dark:bg-white/5 px-3 py-2 text-right align-middle font-bold border-b border-gray-200 dark:border-white/10 text-gray-950 dark:text-white" style="background-color: #6c757d; color: white;">
+                                        <td class="bg-gray-500 dark:bg-gray-600 px-3 py-2 text-right align-middle font-bold border-b border-gray-500 dark:border-gray-600" style="color: #fde047 !important; font-size: 0.875rem !important;" >
                                             {{ $sums['frozen_perum'] > 0 ? number_format($sums['frozen_perum'], 2, '.', ',') : '' }}
                                         </td>
-                                        <td class="bg-gray-100 dark:bg-white/5 px-3 py-2 text-right align-middle font-bold border-b border-gray-200 dark:border-white/10 text-gray-950 dark:text-white" style="background-color: #6c757d; color: white;">
+                                        <td class="bg-gray-500 dark:bg-gray-600 px-3 py-2 text-right align-middle font-bold border-b border-gray-500 dark:border-gray-600" style="color: #fde047 !important; font-size: 0.875rem !important;" >
                                             {{ $sums['total_qty'] > 0 ? number_format($sums['total_qty'], 2, '.', ',') : '' }}
                                         </td>
 
@@ -1182,7 +1221,7 @@
                                             }
                                         @endphp
                                         @if ($extraCellsCountAfter > 0)
-                                            <td colspan="{{ $extraCellsCountAfter }}" class="bg-gray-100 dark:bg-white/5 border-b border-gray-200 dark:border-white/10" style="background-color: #6c757d;"></td>
+                                            <td colspan="{{ $extraCellsCountAfter }}" class="bg-gray-500 dark:bg-gray-600 border-b border-gray-500 dark:border-gray-600" ></td>
                                         @endif
 
                                         @if ($isSelectionEnabled && $recordCheckboxPosition === RecordCheckboxPosition::AfterCells)

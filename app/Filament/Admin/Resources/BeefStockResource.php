@@ -169,6 +169,8 @@ class BeefStockResource extends Resource
     {
         return $table
             ->view('filament.admin.resources.beef-stock.table')
+            ->striped()
+            ->paginated(false)
             ->defaultGroup(
                 Group::make('category.name')
                     ->titlePrefixedWithLabel(false)
@@ -189,12 +191,14 @@ class BeefStockResource extends Resource
                     Tables\Columns\TextColumn::make('chill_jonggol')
                         ->label(__('CHILL'))
                         ->alignRight()
+                        ->extraHeaderAttributes(['style' => 'text-align: center; justify-content: center;'])
                         ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '')
                         ->summarize(Sum::make()->label('')),
 
                     Tables\Columns\TextColumn::make('frozen_jonggol')
                         ->label(__('FROZEN'))
                         ->alignRight()
+                        ->extraHeaderAttributes(['style' => 'text-align: center; justify-content: center;'])
                         ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '')
                         ->summarize(Sum::make()->label('')),
                 ]),
@@ -203,12 +207,14 @@ class BeefStockResource extends Resource
                     Tables\Columns\TextColumn::make('chill_perum')
                         ->label(__('CHILL'))
                         ->alignRight()
+                        ->extraHeaderAttributes(['style' => 'text-align: center; justify-content: center;'])
                         ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '')
                         ->summarize(Sum::make()->label('')),
 
                     Tables\Columns\TextColumn::make('frozen_perum')
                         ->label(__('FROZEN'))
                         ->alignRight()
+                        ->extraHeaderAttributes(['style' => 'text-align: center; justify-content: center;'])
                         ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '')
                         ->summarize(Sum::make()->label('')),
                 ]),
@@ -216,6 +222,7 @@ class BeefStockResource extends Resource
                 Tables\Columns\TextColumn::make('total_qty')
                     ->label(__('Total'))
                     ->alignRight()
+                    ->extraHeaderAttributes(['style' => 'text-align: center; justify-content: center;'])
                     ->weight('bold')
                     ->formatStateUsing(fn ($state) => $state > 0 ? number_format((float) $state, 2, '.', ',') : '')
                     ->summarize(Sum::make()->label('')),
@@ -249,7 +256,6 @@ class BeefStockResource extends Resource
             ->filters([
                 Tables\Filters\Filter::make('hide_empty')
                     ->label(__('Hide Empty Stock'))
-                    ->default(true)
                     ->query(fn (Builder $query) => $query->whereHas('beefStocks', fn ($q) => $q->where('status', 'IN_STOCK'))),
                 Tables\Filters\SelectFilter::make('category_id')
                     ->label(__('Category'))
