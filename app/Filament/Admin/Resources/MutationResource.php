@@ -147,6 +147,7 @@ class MutationResource extends Resource
             'view' => Pages\ViewMutation::route('/{record}'),
             'edit' => Pages\EditMutation::route('/{record}/edit'),
             'scan' => Pages\ScanMutation::route('/{record}/scan'),
+            'receive' => Pages\ReceiveMutation::route('/{record}/receive'),
         ];
     }
 

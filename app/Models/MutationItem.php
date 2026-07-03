@@ -22,6 +22,7 @@ class MutationItem extends Model
         'pack_date',
         'exp_date',
         'origin',
+        'is_received',
     ];
 
     protected $casts = [
@@ -30,6 +31,7 @@ class MutationItem extends Model
         'ph_level' => 'float',
         'pack_date' => 'date',
         'exp_date' => 'date',
+        'is_received' => 'boolean',
     ];
 
     public function mutation(): BelongsTo
