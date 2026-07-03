@@ -55,6 +55,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
         /* Inisialisasi nilai awal untuk form */
         $this->form->fill([
             'origin' => session('last_origin_' . $this->record->id, '2'),
+            'warehouse_id' => session('last_warehouse_' . $this->record->id, 1),
             'pack_date' => $defaultPackDate,
             'grade_id' => $defaultGrade,
             'ph_level' => session('last_ph_' . $this->record->id),
@@ -86,6 +87,14 @@ class InputHasilRepack extends Page implements HasForms, HasTable
             ->schema([
                 Forms\Components\Group::make()
                     ->schema([
+                        Forms\Components\Select::make('warehouse_id')
+                            ->hiddenLabel()
+                            ->placeholder(__('Warehouse'))
+                            ->options(\App\Models\Warehouse::where('is_active', true)->pluck('name', 'id'))
+                            ->required()
+                            ->extraAttributes(['tabindex' => '-1'])
+                            ->extraInputAttributes(['tabindex' => '-1']),
+
                         Forms\Components\Select::make('origin')
                             ->hiddenLabel()
                             ->placeholder(__('Pilih Origin Repack'))
@@ -96,7 +105,8 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                                 '5' => 'Repack Trading',
                             ])
                             ->required()
-                            ->autofocus(),
+                            ->extraAttributes(['tabindex' => '-1'])
+                            ->extraInputAttributes(['tabindex' => '-1']),
 
                         Forms\Components\Select::make('product_id')
                             ->hiddenLabel()
@@ -105,7 +115,9 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                             ->required()
                             ->searchable()
                             ->preload()
-                            ->extraAttributes(['class' => 'product-select-container']),
+                            ->autofocus()
+                            ->extraAttributes(['class' => 'product-select-container', 'tabindex' => '1'])
+                            ->extraInputAttributes(['tabindex' => '1']),
 
                         Forms\Components\Select::make('grade_id')
                             ->hiddenLabel()
@@ -114,8 +126,8 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                             ->required()
                             ->live()
                             ->afterStateUpdated(fn($state, callable $set, callable $get) => self::calculateExpiry($get('pack_date'), $state, $set))
-                            ->extraAttributes(['tabindex' => '-1'])
-                            ->extraInputAttributes(['tabindex' => '-1']),
+                            ->extraAttributes(['tabindex' => '3'])
+                            ->extraInputAttributes(['tabindex' => '3']),
 
                         Forms\Components\DatePicker::make('pack_date')
                             ->hiddenLabel()
@@ -141,6 +153,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                                 ->required()
                                 ->extraInputAttributes([
                                     'id' => 'qty_input_field',
+                                    'tabindex' => '2',
                                     'class' => 'text-2xl font-black text-center text-primary-600',
                                     'oninput' => "this.value = this.value.replace(/,/g, '.');",
                                     'onkeydown' => "if(event.key === 'Enter') { event.preventDefault(); document.getElementById('submit_btn_label').click(); }"
@@ -154,6 +167,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                                 ->maxValue(5.7)
                                 ->placeholder(__('PH (5.4 - 5.7)'))
                                 ->extraInputAttributes([
+                                    'tabindex' => '4',
                                     'onkeydown' => "if(event.key === ','){ event.preventDefault(); this.value = this.value + '.'; } else if(event.key === 'Enter'){ event.preventDefault(); document.getElementById('submit_btn_label').click(); }"
                                 ]),
                         ]),
@@ -262,6 +276,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
         /* Menyimpan state form ke session */
         session(['show_exp_session' => $showExp]);
         session(['last_origin_' . $this->record->id => $formData['origin']]);
+        session(['last_warehouse_' . $this->record->id => $formData['warehouse_id']]);
 
         if (isset($formData['ph_level'])) {
             session(['last_ph_' . $this->record->id => $formData['ph_level']]);
@@ -305,7 +320,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                 $item = RepackResult::create([
                     'repack_id' => $this->record->id,
                     'product_id' => $formData['product_id'],
-                    'warehouse_id' => 1, // Default JONGGOL
+                    'warehouse_id' => $formData['warehouse_id'],
                     'grade_id' => $formData['grade_id'],
                     'weight' => $weight,
                     'qty_pcs' => $pcs,
@@ -319,7 +334,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                 BeefStock::create([
                     'barcode' => $barcode,
                     'product_id' => $formData['product_id'],
-                    'warehouse_id' => 1,
+                    'warehouse_id' => $formData['warehouse_id'],
                     'grade_id' => $formData['grade_id'],
                     'weight' => $weight,
                     'qty_pcs' => $pcs,
@@ -333,7 +348,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                 /* Mencatat pergerakan stok masuk */
                 BeefStockMovement::create([
                     'product_id' => $formData['product_id'],
-                    'warehouse_id' => 1,
+                    'warehouse_id' => $formData['warehouse_id'],
                     'condition' => $formData['grade_id'],
                     'barcode' => $barcode,
                     'transaction_type' => 'IN_REPACK',
@@ -350,6 +365,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
 
             /* Mengembalikan state form setelah sukses input */
             $this->form->fill([
+                'warehouse_id' => $formData['warehouse_id'],
                 'origin' => $formData['origin'],
                 'product_id' => $formData['product_id'],
                 'grade_id' => $formData['grade_id'],

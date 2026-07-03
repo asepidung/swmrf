@@ -12,7 +12,7 @@
             background-color: rgba(255, 255, 255, 0.05) !important;
         }
     </style>
-    @if($this->getPendingReceivingCount() > 0 || $this->getPendingWeighingCount() > 0 || $this->getPendingCarcassCount() > 0 || $this->getPendingMaterialRequestCount() > 0 || $this->getPendingMaterialFinanceCount() > 0 || $this->getPendingProductRequestCount() > 0 || $this->getPendingProductFinanceCount() > 0 || $this->getPendingRepackLockCount() > 0 || $this->getPendingTallyCount() > 0 || $this->getPendingDeliveryPlanCount() > 0 || $this->getPendingGrMaterialCount() > 0 || $this->getPendingGrProductCount() > 0 || $this->getPendingBoningLockCount() > 0 || $this->getPendingDeliveryOrderCount() > 0 || $this->getPendingDeliveryReceiptCount() > 0 || $this->getPendingInvoiceExchangeCount() > 0)
+    @if($this->getPendingReceivingCount() > 0 || $this->getPendingWeighingCount() > 0 || $this->getPendingCarcassCount() > 0 || $this->getPendingMaterialRequestCount() > 0 || $this->getPendingMaterialFinanceCount() > 0 || $this->getPendingProductRequestCount() > 0 || $this->getPendingProductFinanceCount() > 0 || $this->getPendingRepackLockCount() > 0 || $this->getPendingTallyCount() > 0 || $this->getPendingDeliveryPlanCount() > 0 || $this->getPendingGrMaterialCount() > 0 || $this->getPendingGrProductCount() > 0 || $this->getPendingBoningLockCount() > 0 || $this->getPendingDeliveryOrderCount() > 0 || $this->getPendingDeliveryReceiptCount() > 0 || $this->getPendingInvoiceExchangeCount() > 0 || $this->getPendingMutationCount() > 0)
     <div class="space-y-2">
         @if($this->getPendingReceivingCount() > 0)
         <a href="{{ \App\Filament\Admin\Resources\CattleReceivingResource::getUrl('draft') }}" class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3 hover:bg-gray-55 dark:hover:bg-white/5 transition duration-200 block">
@@ -186,6 +186,17 @@
             </span>
             <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
                 {!! __('Ada :count invoice yang belum di-tukar faktur.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingInvoiceExchangeCount().'</strong>']) !!}
+            </p>
+        </a>
+        @endif
+
+        @if($this->getPendingMutationCount() > 0)
+        <a href="{{ \App\Filament\Admin\Resources\MutationResource::getUrl('index') }}" class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3 hover:bg-gray-55 dark:hover:bg-white/5 transition duration-200 block">
+            <span style="color: #f59e0b !important;">
+                <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
+            </span>
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
+                {!! __('Ada :count mutasi yang belum diterima.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingMutationCount().'</strong>']) !!}
             </p>
         </a>
         @endif

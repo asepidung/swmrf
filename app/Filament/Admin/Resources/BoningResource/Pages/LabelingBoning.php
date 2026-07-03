@@ -115,7 +115,8 @@ class LabelingBoning extends Page implements HasForms, HasTable
                             ->searchable()
                             ->preload()
                             ->autofocus()
-                            ->extraAttributes(['class' => 'product-select-container']),
+                            ->extraAttributes(['class' => 'product-select-container', 'tabindex' => '1'])
+                            ->extraInputAttributes(['tabindex' => '1']),
 
                         Forms\Components\Select::make('grade_id')
                             ->hiddenLabel()
@@ -124,8 +125,8 @@ class LabelingBoning extends Page implements HasForms, HasTable
                             ->required()
                             ->live()
                             ->afterStateUpdated(fn($state, callable $set, callable $get) => self::calculateExpiry($get('pack_date'), $state, $set))
-                            ->extraAttributes(['tabindex' => '-1'])
-                            ->extraInputAttributes(['tabindex' => '-1']),
+                            ->extraAttributes(['tabindex' => '3'])
+                            ->extraInputAttributes(['tabindex' => '3']),
 
                         Forms\Components\DatePicker::make('pack_date')
                             ->hiddenLabel()
@@ -151,6 +152,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
                                 ->required()
                                 ->extraInputAttributes([
                                     'id' => 'qty_input_field',
+                                    'tabindex' => '2',
                                     'class' => 'text-2xl font-black text-center text-primary-600',
                                     'oninput' => "this.value = this.value.replace(/,/g, '.');",
                                     'onkeydown' => "if(event.key === 'Enter') { event.preventDefault(); document.getElementById('submit_btn_label').click(); }"
@@ -165,6 +167,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
                                 ->placeholder(__('PH (5.4 - 5.7)'))
                                 ->required()
                                 ->extraInputAttributes([
+                                    'tabindex' => '4',
                                     'onkeydown' => "if(event.key === ','){ event.preventDefault(); this.value = this.value + '.'; } else if(event.key === 'Enter'){ event.preventDefault(); document.getElementById('submit_btn_label').click(); }"
                                 ]),
                         ]),

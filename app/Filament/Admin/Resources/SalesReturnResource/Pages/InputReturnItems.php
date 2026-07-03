@@ -168,7 +168,8 @@ class InputReturnItems extends Page implements HasForms, HasTable
                         ->searchable()
                         ->preload()
                         ->autofocus()
-                        ->extraAttributes(['class' => 'product-select-container']),
+                        ->extraAttributes(['class' => 'product-select-container', 'tabindex' => '1'])
+                        ->extraInputAttributes(['tabindex' => '1']),
 
                     Forms\Components\Select::make('grade_id')
                         ->hiddenLabel()
@@ -177,8 +178,8 @@ class InputReturnItems extends Page implements HasForms, HasTable
                         ->required()
                         ->live()
                         ->afterStateUpdated(fn($state, callable $set, callable $get) => \App\Filament\Admin\Resources\RepackResource\Pages\InputHasilRepack::calculateExpiry($get('pack_date'), $state, $set))
-                        ->extraAttributes(['tabindex' => '-1'])
-                        ->extraInputAttributes(['tabindex' => '-1']),
+                        ->extraAttributes(['tabindex' => '3'])
+                        ->extraInputAttributes(['tabindex' => '3']),
 
                     Forms\Components\DatePicker::make('pack_date')
                         ->hiddenLabel()
@@ -203,6 +204,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
                             ->required()
                             ->extraInputAttributes([
                                 'id' => 'qty_input_field',
+                                'tabindex' => '2',
                                 'class' => 'text-2xl font-black text-center text-primary-600',
                                 'oninput' => "this.value = this.value.replace(/,/g, '.');",
                                 'onkeydown' => "if(event.key === 'Enter') { event.preventDefault(); document.getElementById('submit_weigh_btn').click(); }"
@@ -216,6 +218,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
                             ->maxValue(5.7)
                             ->placeholder(__('PH (5.4 - 5.7)'))
                             ->extraInputAttributes([
+                                'tabindex' => '4',
                                 'onkeydown' => "if(event.key === ','){ event.preventDefault(); this.value = this.value + '.'; } else if(event.key === 'Enter'){ event.preventDefault(); document.getElementById('submit_weigh_btn').click(); }"
                             ]),
                     ]),
