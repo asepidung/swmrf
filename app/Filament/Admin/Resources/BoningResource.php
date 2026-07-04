@@ -228,32 +228,21 @@ class BoningResource extends Resource
                 fn (Boning $record): ?string => $record->kunci == 1 ? null : static::getUrl('edit', ['record' => $record->id])
             )
             ->actions([
-                /* 1. Tombol Lock */
-                Tables\Actions\Action::make('toggleLock')
-                    ->label(fn(Boning $record) => $record->kunci ? __('Unlock') : __('Lock'))
-                    ->icon(fn(Boning $record) => $record->kunci ? 'heroicon-m-lock-closed' : 'heroicon-m-lock-open')
-                    ->color(fn(Boning $record) => $record->kunci ? 'danger' : 'success')
+                /* 1. Tombol Input Material Usage (menggantikan Lock untuk sementara) */
+                Tables\Actions\Action::make('materialUsage')
+                    ->icon('heroicon-o-square-3-stack-3d')
+                    ->color('info')
                     ->iconButton()
-                    ->tooltip(fn(Boning $record) => $record->kunci ? __('Unlock Data') : __('Lock Data'))
-                    ->requiresConfirmation()
-                    ->visible(function () {
-                        /** @var \App\Models\User $user */
-                        $user = Auth::user();
-                        return $user?->hasPermission('lock_bonings');
-                    })
-                    ->action(function (Boning $record) {
-                        $record->update(['kunci' => ! $record->kunci]);
-                        Notification::make()
-                            ->title($record->kunci ? __('Batch Locked Successfully') : __('Batch Unlocked Successfully'))
-                            ->success()
-                            ->send();
-                    }),
+                    ->tooltip(__('Input Material Usage'))
+                    ->url(fn(Boning $record): string => static::getUrl('edit', ['record' => $record->id]))
+                    ->hidden(fn(Boning $record) => $record->kunci == 1),
 
                 /* 2. Tombol Custom Labeling (Scan) */
                 Tables\Actions\Action::make('labeling')
-                    ->label(__('Scan'))
                     ->icon('heroicon-o-qr-code')
                     ->color('warning')
+                    ->iconButton()
+                    ->tooltip(__('Scan'))
                     ->url(fn(Boning $record): string => static::getUrl('labeling', ['record' => $record]))
                     ->hidden(fn(Boning $record) => $record->kunci == 1),
 
