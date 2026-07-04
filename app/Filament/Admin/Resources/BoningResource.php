@@ -199,7 +199,7 @@ class BoningResource extends Resource
                     }),
             ])
             ->recordUrl(
-                fn (Boning $record): ?string => $record->kunci == 1 ? null : static::getUrl('edit', ['record' => $record->id])
+                fn (Boning $record): ?string => ($record->kunci == 1 || $record->items()->exists()) ? null : static::getUrl('edit', ['record' => $record->id])
             )
             ->actions([
                 /* 1. Tombol Input Material Usage (menggantikan Lock untuk sementara) */
