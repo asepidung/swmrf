@@ -41,11 +41,6 @@ class BoningResource extends Resource
         return __('Bonings');
     }
 
-    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
-    {
-        return !$record->kunci;
-    }
-
     public static function form(Form $form): Form
     {
         return $form
@@ -204,7 +199,7 @@ class BoningResource extends Resource
                     }),
             ])
             ->recordUrl(
-                fn (Boning $record): ?string => $record->kunci == 1 ? null : static::getUrl('edit', ['record' => $record->id])
+                fn (Boning $record): ?string => $record->kunci ? null : static::getUrl('edit', ['record' => $record->id])
             )
             ->actions([
                 /* 1. Tombol Lock */

@@ -15,6 +15,12 @@ class MaterialUsageBoning extends EditRecord
 
     protected static ?string $title = 'Material Usage - Boning';
 
+    public function mount(int | string $record): void
+    {
+        parent::mount($record);
+        abort_if($this->getRecord()->kunci, 403, 'Data has been locked.');
+    }
+
     public function getBreadcrumbs(): array
     {
         return [

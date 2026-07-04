@@ -47,6 +47,8 @@ class LabelingBoning extends Page implements HasForms, HasTable
 
     public function mount(Boning $record): void
     {
+        abort_if($record->kunci, 403, 'Data has been locked.');
+        
         $this->record = $record;
 
         $defaultPackDate = now()->format('Y-m-d');

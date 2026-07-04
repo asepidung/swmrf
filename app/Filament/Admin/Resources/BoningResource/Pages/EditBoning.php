@@ -10,6 +10,12 @@ class EditBoning extends EditRecord
 {
     protected static string $resource = BoningResource::class;
 
+    public function mount(int | string $record): void
+    {
+        parent::mount($record);
+        abort_if($this->getRecord()->kunci, 403, 'Data has been locked.');
+    }
+
     protected function getHeaderActions(): array
     {
         return [
