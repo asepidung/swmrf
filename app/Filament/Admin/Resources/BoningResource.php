@@ -232,7 +232,7 @@ class BoningResource extends Resource
                     }),
             ])
             ->recordUrl(
-                fn (Boning $record): string => static::getUrl('labeling', ['record' => $record])
+                fn (Boning $record): ?string => $record->kunci == 1 ? null : static::getUrl('edit', ['record' => $record->id])
             )
             ->actions([
                 /* 1. Tombol Lock */
@@ -256,28 +256,19 @@ class BoningResource extends Resource
                             ->send();
                     }),
 
-                /* 2. Tombol Custom Labeling */
+                /* 2. Tombol Custom Labeling (Scan) */
                 Tables\Actions\Action::make('labeling')
+                    ->label(__('Scan'))
                     ->icon('heroicon-o-qr-code')
-                    ->iconButton()
                     ->color('warning')
-                    ->tooltip(__('Production Labeling'))
                     ->url(fn(Boning $record): string => static::getUrl('labeling', ['record' => $record]))
                     ->hidden(fn(Boning $record) => $record->kunci == 1),
 
-                /* 3. Tombol Edit Header */
-                Tables\Actions\EditAction::make()
-                    ->iconButton()
-                    ->color('success')
-                    ->tooltip(__('Edit Boning'))
-                    ->hidden(fn(Boning $record) => $record->kunci == 1),
-
-                /* 4. Tombol Hapus */
+                /* 3. Tombol Hapus */
                 Tables\Actions\DeleteAction::make()
                     ->iconButton()
                     ->tooltip(__('Delete Data'))
-                    ->disabled(fn(Boning $record) => $record->items()->exists())
-                    ->hidden(fn(Boning $record) => $record->kunci == 1),
+                    ->hidden(fn(Boning $record) => $record->kunci == 1 || $record->items()->exists()),
             ]);
     }
 
