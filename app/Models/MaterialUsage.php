@@ -30,7 +30,8 @@ class MaterialUsage extends Model
     protected static function booted()
     {
         static::created(function ($model) {
-            $reference = class_basename($model->usageable_type) . ' #' . $model->usageable_id;
+            $docNo = $model->usageable->doc_no ?? ('#' . $model->usageable_id);
+            $reference = class_basename($model->usageable_type) . ' ' . $docNo;
             StockService::adjustStock(
                 $model->material_id,
                 -abs($model->qty), // reduce stock
@@ -42,7 +43,8 @@ class MaterialUsage extends Model
 
         static::updated(function ($model) {
             if ($model->isDirty('qty') || $model->isDirty('material_id')) {
-                $reference = class_basename($model->usageable_type) . ' #' . $model->usageable_id;
+                $docNo = $model->usageable->doc_no ?? ('#' . $model->usageable_id);
+                $reference = class_basename($model->usageable_type) . ' ' . $docNo;
                 
                 // If material changed, revert old material stock and deduct new material
                 if ($model->isDirty('material_id')) {
@@ -86,7 +88,8 @@ class MaterialUsage extends Model
         });
 
         static::deleted(function ($model) {
-            $reference = class_basename($model->usageable_type) . ' #' . $model->usageable_id;
+            $docNo = $model->usageable->doc_no ?? ('#' . $model->usageable_id);
+            $reference = class_basename($model->usageable_type) . ' ' . $docNo;
             StockService::adjustStock(
                 $model->material_id,
                 abs($model->qty), // add back stock
