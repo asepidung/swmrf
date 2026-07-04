@@ -84,14 +84,16 @@ class BoningResource extends Resource
                             ->schema([
                                 Forms\Components\Select::make('carcass_id')
                                     ->label(__('Carcass Number'))
-                                    ->options(function (?Boning $record) {
+                                    ->options(function (\Filament\Forms\Get $get, ?\Illuminate\Database\Eloquent\Model $record) {
                                         $query = Carcass::query();
                                         
+                                        $parentBoningId = $get('../../id');
+
                                         // 1. Saring karkas yang berada di batch boning yang sudah dikunci
-                                        $query->whereDoesntHave('boningCarcasses.boning', function ($q) use ($record) {
+                                        $query->whereDoesntHave('boningCarcasses.boning', function ($q) use ($parentBoningId) {
                                             $q->where('kunci', true);
-                                            if ($record) {
-                                                $q->where('id', '!=', $record->id);
+                                            if ($parentBoningId) {
+                                                $q->where('id', '!=', $parentBoningId);
                                             }
                                         });
 
@@ -99,21 +101,12 @@ class BoningResource extends Resource
                                         $threeDaysAgo = now()->subDays(3)->startOfDay();
                                         $query->where(function ($q) use ($threeDaysAgo, $record) {
                                             $q->where('kill_date', '>=', $threeDaysAgo);
-                                            if ($record) {
-                                                $currentCarcassIds = $record->carcasses()->pluck('carcass_id')->toArray();
-                                                if (!empty($currentCarcassIds)) {
-                                                    $q->orWhereIn('id', $currentCarcassIds);
-                                                }
+                                            
+                                            // 3. Selalu sertakan karkas yang saat ini sedang dipilih pada baris ini (untuk edit mode)
+                                            if ($record && $record->carcass_id) {
+                                                $q->orWhere('id', $record->carcass_id);
                                             }
                                         });
-
-                                        // 3. Selalu sertakan karkas yang saat ini sedang dipilih pada batch ini (untuk edit mode)
-                                        if ($record) {
-                                            $currentCarcassIds = $record->carcasses()->pluck('carcass_id')->toArray();
-                                            if (!empty($currentCarcassIds)) {
-                                                $query->orWhereIn('id', $currentCarcassIds);
-                                            }
-                                        }
 
                                         return $query->pluck('carcass_number', 'id');
                                     })
