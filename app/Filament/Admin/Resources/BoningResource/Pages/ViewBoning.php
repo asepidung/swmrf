@@ -17,12 +17,15 @@ class ViewBoning extends ViewRecord
     {
         return [
             Actions\Action::make('export_excel')
-                ->label(__('Export Excel'))
+                ->hiddenLabel()
+                ->tooltip(__('Export Excel'))
                 ->icon('heroicon-o-document-arrow-down')
                 ->color('success')
                 ->action(fn () => $this->exportExcel()),
                 
             Actions\EditAction::make()
+                ->hiddenLabel()
+                ->tooltip(__('Edit Header'))
                 ->hidden(fn () => $this->getRecord()->kunci),
         ];
     }

@@ -250,14 +250,13 @@ class BoningResource extends Resource
                     ->url(fn(Boning $record): string => static::getUrl('material-usage', ['record' => $record->id]))
                     ->hidden(fn(Boning $record) => $record->kunci),
 
-                /* 4. Tombol Custom Labeling (Scan) */
+                /* 4. Tombol Custom Labeling (Detail Label/Buat Label) */
                 Tables\Actions\Action::make('labeling')
                     ->icon('heroicon-o-qr-code')
                     ->color('warning')
                     ->iconButton()
-                    ->tooltip(__('Buat Label'))
-                    ->url(fn(Boning $record): string => static::getUrl('labeling', ['record' => $record]))
-                    ->hidden(fn(Boning $record) => $record->kunci),
+                    ->tooltip(fn(Boning $record) => $record->kunci ? __('Detail Label') : __('Buat Label'))
+                    ->url(fn(Boning $record): string => static::getUrl('labeling', ['record' => $record])),
 
                 /* 5. Tombol Hapus */
                 Tables\Actions\DeleteAction::make()

@@ -93,7 +93,7 @@
     <div style="display: grid; grid-template-columns: 32% 1fr; gap: 1.5rem; align-items: start; width: 100%;">
 
         <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10" style="position: sticky; top: 1.5rem;">
-            @if($record->kunci == 1)
+            @if($record->kunci)
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-bold">{{ __('Production Summary') }}</h3>
                     <x-filament::button wire:click="exportExcel" icon="heroicon-o-document-arrow-down" color="success">
