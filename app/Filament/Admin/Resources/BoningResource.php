@@ -81,6 +81,7 @@ class BoningResource extends Resource
                     ->schema([
                         Forms\Components\Repeater::make('carcasses')
                             ->relationship('carcasses')
+                            ->disabledOn('edit')
                             ->schema([
                                 Forms\Components\Select::make('carcass_id')
                                     ->label(__('Carcass Number'))
@@ -199,7 +200,7 @@ class BoningResource extends Resource
                     }),
             ])
             ->recordUrl(
-                fn (Boning $record): ?string => $record->kunci ? null : static::getUrl('edit', ['record' => $record->id])
+                fn (Boning $record): ?string => static::getUrl('view', ['record' => $record->id])
             )
             ->actions([
                 /* 1. Tombol Lock */
@@ -278,6 +279,7 @@ class BoningResource extends Resource
         return [
             'index' => Pages\ListBonings::route('/'),
             'create' => Pages\CreateBoning::route('/create'),
+            'view' => Pages\ViewBoning::route('/{record}'),
             'edit' => Pages\EditBoning::route('/{record}/edit'),
             'labeling' => Pages\LabelingBoning::route('/{record}/labeling'),
             'material-usage' => Pages\MaterialUsageBoning::route('/{record}/material-usage'),
