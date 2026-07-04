@@ -208,7 +208,7 @@ class BoningResource extends Resource
                     ->color('info')
                     ->iconButton()
                     ->tooltip(__('Input Material Usage'))
-                    ->url(fn(Boning $record): string => static::getUrl('edit', ['record' => $record->id]))
+                    ->url(fn(Boning $record): string => static::getUrl('material-usage', ['record' => $record->id]))
                     ->hidden(fn(Boning $record) => $record->kunci == 1),
 
                 /* 2. Tombol Custom Labeling (Scan) */
@@ -242,6 +242,7 @@ class BoningResource extends Resource
             'create' => Pages\CreateBoning::route('/create'),
             'edit' => Pages\EditBoning::route('/{record}/edit'),
             'labeling' => Pages\LabelingBoning::route('/{record}/labeling'),
+            'material-usage' => Pages\MaterialUsageBoning::route('/{record}/material-usage'),
         ];
     }
 }
