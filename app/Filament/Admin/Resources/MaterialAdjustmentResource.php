@@ -23,7 +23,7 @@ class MaterialAdjustmentResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('INVENTORY');
+        return __('WAREHOUSE');
     }
 
     public static function getNavigationLabel(): string

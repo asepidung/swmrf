@@ -39,7 +39,7 @@ class AdminPanelProvider extends PanelProvider
                 \Filament\Navigation\NavigationItem::make('Log Viewer')
                     ->url(fn (): string => route('log-viewer.index'))
                     ->icon('heroicon-o-document-text')
-                    ->group('Settings')
+                    ->group(__('SYSTEM'))
                     ->sort(100),
             ])
             ->brandName(config('app.name', 'WijayaApps'))
