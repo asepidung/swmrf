@@ -12,6 +12,7 @@
         "filament/filament": "^3.2",
         "laravel/framework": "^11.31",
         "laravel/tinker": "^2.9",
+        "opcodesio/log-viewer": "*",
         "openspout/openspout": "^4.32",
         "spatie/laravel-activitylog": "^4.12"
     },

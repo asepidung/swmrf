@@ -35,6 +35,13 @@ class AdminPanelProvider extends PanelProvider
                     ->url(fn (): string => \App\Filament\Admin\Pages\MyProfile::getUrl())
                     ->icon('heroicon-o-user'),
             ])
+            ->navigationItems([
+                \Filament\Navigation\NavigationItem::make('Log Viewer')
+                    ->url(fn (): string => route('log-viewer.index'))
+                    ->icon('heroicon-o-document-text')
+                    ->group('Settings')
+                    ->sort(100),
+            ])
             ->brandName(config('app.name', 'WijayaApps'))
             ->brandLogo(asset('img/light.png'))
             ->darkModeBrandLogo(asset('img/dark.png'))

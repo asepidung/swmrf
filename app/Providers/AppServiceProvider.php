@@ -26,6 +26,11 @@ class AppServiceProvider extends ServiceProvider
                 ->visible(outsidePanels: true);
         });
 
+        \Illuminate\Support\Facades\Gate::define('viewLogViewer', function (?\App\Models\User $user) {
+            // Allow any authenticated user (or limit to super_admin if desired)
+            return $user !== null;
+        });
+
         if (config('app.env') !== 'local' || (request()->getHost() !== 'localhost' && request()->getHost() !== '127.0.0.1')) {
             \Illuminate\Support\Facades\URL::forceScheme('https');
         }
