@@ -224,7 +224,7 @@ class BoningResource extends Resource
                             ->send();
                         return redirect(static::getUrl('index'));
                     })
-                    ->hidden(fn(Boning $record) => $record->kunci == 1 || !$record->materialUsages()->exists()),
+                    ->hidden(fn(Boning $record) => $record->kunci || !$record->materialUsages()->exists()),
 
                 /* 2. Tombol Unlock */
                 Tables\Actions\Action::make('unlock')
@@ -243,7 +243,7 @@ class BoningResource extends Resource
                             ->send();
                         return redirect(static::getUrl('index'));
                     })
-                    ->hidden(fn(Boning $record) => $record->kunci != 1),
+                    ->hidden(fn(Boning $record) => !$record->kunci),
 
                 /* 3. Tombol Input Material Usage */
                 Tables\Actions\Action::make('materialUsage')
@@ -252,7 +252,7 @@ class BoningResource extends Resource
                     ->iconButton()
                     ->tooltip(__('Input Material Usage'))
                     ->url(fn(Boning $record): string => static::getUrl('material-usage', ['record' => $record->id]))
-                    ->hidden(fn(Boning $record) => $record->kunci == 1),
+                    ->hidden(fn(Boning $record) => $record->kunci),
 
                 /* 4. Tombol Custom Labeling (Scan) */
                 Tables\Actions\Action::make('labeling')
@@ -261,13 +261,13 @@ class BoningResource extends Resource
                     ->iconButton()
                     ->tooltip(__('Buat Label'))
                     ->url(fn(Boning $record): string => static::getUrl('labeling', ['record' => $record]))
-                    ->hidden(fn(Boning $record) => $record->kunci == 1),
+                    ->hidden(fn(Boning $record) => $record->kunci),
 
                 /* 5. Tombol Hapus */
                 Tables\Actions\DeleteAction::make()
                     ->iconButton()
                     ->tooltip(__('Delete Data'))
-                    ->hidden(fn(Boning $record) => $record->kunci == 1 || $record->items()->exists()),
+                    ->hidden(fn(Boning $record) => $record->kunci || $record->items()->exists()),
             ]);
     }
 
