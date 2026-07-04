@@ -118,32 +118,6 @@ class BoningResource extends Resource
                             ->columns(1)
                     ]),
 
-                Forms\Components\Section::make(__('Material Usage (Bahan Penolong)'))
-                    ->schema([
-                        Forms\Components\Repeater::make('materialUsages')
-                            ->relationship('materialUsages')
-                            ->schema([
-                                Forms\Components\Select::make('material_id')
-                                    ->label(__('Material'))
-                                    ->options(Material::where('is_active', true)->pluck('name', 'id'))
-                                    ->required()
-                                    ->searchable()
-                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
-                                
-                                Forms\Components\TextInput::make('qty')
-                                    ->label(__('Qty'))
-                                    ->required()
-                                    ->numeric()
-                                    ->minValue(0.01),
-
-                                Forms\Components\TextInput::make('note')
-                                    ->label(__('Note'))
-                                    ->maxLength(255),
-                            ])
-                            ->columns(3)
-                            ->addActionLabel(__('Add Material Usage'))
-                            ->defaultItems(0)
-                    ])
             ]);
     }
 
