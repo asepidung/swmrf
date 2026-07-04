@@ -25,7 +25,8 @@ class EditBoning extends EditRecord
     protected function getFormActions(): array
     {
         return [
-            $this->getSaveFormAction(),
+            $this->getSaveFormAction()
+                ->hidden(fn () => $this->getRecord()->kunci == 1 || $this->getRecord()->items()->exists()),
         ];
     }
 
