@@ -9,17 +9,17 @@ use Filament\Actions\Exports\Models\Export;
 
 class MaterialStockExporter extends Exporter
 {
-    protected static ?string $model = MaterialStock::class;
+    protected static ?string $model = \App\Models\Material::class;
 
     public static function getColumns(): array
     {
         return [
-            ExportColumn::make('material.code')->label('Item Code'),
-            ExportColumn::make('material.name')->label('Item Name'),
-            ExportColumn::make('material.category.name')->label('Category'),
-            ExportColumn::make('material.unit.name')->label('Unit'),
+            ExportColumn::make('code')->label('Item Code'),
+            ExportColumn::make('name')->label('Item Name'),
+            ExportColumn::make('category.name')->label('Category'),
+            ExportColumn::make('unit.name')->label('Unit'),
             ExportColumn::make('qty')->label('Current Stock'),
-            ExportColumn::make('material.min_stock')->label('Min Stock'),
+            ExportColumn::make('min_stock')->label('Min Stock'),
         ];
     }
 

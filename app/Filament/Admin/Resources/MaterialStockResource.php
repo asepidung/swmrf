@@ -14,7 +14,7 @@ use Filament\Pages\SubNavigationPosition;
 
 class MaterialStockResource extends Resource
 {
-    protected static ?string $model = MaterialStock::class;
+    protected static ?string $model = \App\Models\Material::class;
 
     protected static ?string $cluster = \App\Filament\Clusters\MaterialsStock::class;
 
@@ -39,29 +39,39 @@ class MaterialStockResource extends Resource
         return __('Material Stocks');
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where('show_in_stock', true)
+            ->addSelect([
+                'qty' => \App\Models\MaterialStock::selectRaw('COALESCE(SUM(qty), 0)')
+                    ->whereColumn('material_id', 'materials.id'),
+            ]);
+    }
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\Section::make(__('Material Stock Details'))
                     ->schema([
-                        Forms\Components\TextInput::make('material.code')
+                        Forms\Components\TextInput::make('code')
                             ->label(__('Item Code'))
                             ->disabled(),
-                        Forms\Components\TextInput::make('material.name')
+                        Forms\Components\TextInput::make('name')
                             ->label(__('Item Name'))
                             ->disabled(),
-                        Forms\Components\TextInput::make('material.category.name')
+                        Forms\Components\TextInput::make('category.name')
                             ->label(__('Category'))
                             ->disabled(),
-                        Forms\Components\TextInput::make('material.unit.name')
+                        Forms\Components\TextInput::make('unit.name')
                             ->label(__('Unit'))
                             ->disabled(),
                         Forms\Components\TextInput::make('qty')
                             ->label(__('Stok Aktual'))
                             ->disabled()
                             ->formatStateUsing(fn ($state) => number_format((float) $state, 2, ',', '.')),
-                        Forms\Components\TextInput::make('material.min_stock')
+                        Forms\Components\TextInput::make('min_stock')
                             ->label(__('Min. Stock'))
                             ->disabled()
                             ->formatStateUsing(fn ($state) => number_format((float) $state, 2, ',', '.')),
@@ -72,28 +82,32 @@ class MaterialStockResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultGroup(
+                \Filament\Tables\Grouping\Group::make('category.name')
+                    ->titlePrefixedWithLabel(false)
+            )
             ->columns([
-                Tables\Columns\TextColumn::make('material.code')
+                Tables\Columns\TextColumn::make('code')
                     ->label(__('Item Code'))
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('material.name')
+                Tables\Columns\TextColumn::make('name')
                     ->label(__('Item Name'))
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('material.category.name')
+                Tables\Columns\TextColumn::make('category.name')
                     ->label(__('Category'))
                     ->sortable(),
-                Tables\Columns\TextColumn::make('material.unit.name')
+                Tables\Columns\TextColumn::make('unit.name')
                     ->label(__('Unit'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('qty')
                     ->label(__('Stok Aktual'))
                     ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')
                     ->sortable()
-                    ->color(fn (MaterialStock $record) => $record->qty < ($record->material->min_stock ?? 0) ? 'danger' : 'success')
-                    ->weight(fn (MaterialStock $record) => $record->qty < ($record->material->min_stock ?? 0) ? 'bold' : null),
-                Tables\Columns\TextColumn::make('material.min_stock')
+                    ->color(fn (\App\Models\Material $record) => $record->qty < ($record->min_stock ?? 0) ? 'danger' : 'success')
+                    ->weight(fn (\App\Models\Material $record) => $record->qty < ($record->min_stock ?? 0) ? 'bold' : null),
+                Tables\Columns\TextColumn::make('min_stock')
                     ->label(__('Min. Stock'))
                     ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')
                     ->sortable(),
@@ -126,13 +140,11 @@ class MaterialStockResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('material_category_id')
-                    ->relationship('material.category', 'name')
+                    ->relationship('category', 'name')
                     ->label(__('Category')),
                 Tables\Filters\Filter::make('below_min_stock')
                     ->label(__('Below Min. Stock'))
-                    ->query(fn (Builder $query) => $query->whereHas('material', function ($q) {
-                        $q->whereColumn('material_stocks.qty', '<', 'materials.min_stock');
-                    })),
+                    ->query(fn (Builder $query) => $query->whereRaw('(SELECT COALESCE(SUM(qty), 0) FROM material_stocks WHERE material_id = materials.id) < materials.min_stock')),
             ])
             ->actions([
                 // Read-only, clickable row handles navigation

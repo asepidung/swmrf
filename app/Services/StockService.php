@@ -42,21 +42,14 @@ class StockService
             $qtyIn = $qtyDelta > 0 ? $qtyDelta : 0.0;
             $qtyOut = $qtyDelta < 0 ? abs($qtyDelta) : 0.0;
 
-            // Update or Delete stock record
-            if ($newQty <= 0) {
-                if ($stock) {
-                    $stock->delete();
-                    $stock = null;
-                }
+            // Update or Create stock record
+            if ($stock) {
+                $stock->update(['qty' => $newQty]);
             } else {
-                if ($stock) {
-                    $stock->update(['qty' => $newQty]);
-                } else {
-                    $stock = MaterialStock::create([
-                        'material_id' => $materialId,
-                        'qty' => $newQty,
-                    ]);
-                }
+                $stock = MaterialStock::create([
+                    'material_id' => $materialId,
+                    'qty' => $newQty,
+                ]);
             }
 
             // Create movement ledger record
