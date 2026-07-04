@@ -216,12 +216,13 @@ class BoningResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading(__('Lock Boning Data'))
                     ->modalDescription(__('Are you sure you want to lock this data? Once locked, you cannot modify it.'))
-                    ->action(function (Boning $record) {
+                    ->action(function (Boning $record, \Filament\Resources\Pages\ListRecords $livewire) {
                         $record->update(['kunci' => true, 'status' => 'LOCKED']);
                         Notification::make()
                             ->title(__('Data locked successfully'))
                             ->success()
                             ->send();
+                        return redirect(static::getUrl('index'));
                     })
                     ->hidden(fn(Boning $record) => $record->kunci == 1 || !$record->materialUsages()->exists()),
 
