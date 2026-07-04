@@ -239,7 +239,7 @@ class BoningResource extends Resource
                     ->icon('heroicon-o-qr-code')
                     ->color('warning')
                     ->iconButton()
-                    ->tooltip(__('Scan'))
+                    ->tooltip(__('Buat Label'))
                     ->url(fn(Boning $record): string => static::getUrl('labeling', ['record' => $record]))
                     ->hidden(fn(Boning $record) => $record->kunci == 1),
 
