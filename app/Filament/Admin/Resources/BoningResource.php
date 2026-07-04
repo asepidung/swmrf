@@ -226,7 +226,26 @@ class BoningResource extends Resource
                     })
                     ->hidden(fn(Boning $record) => $record->kunci == 1 || !$record->materialUsages()->exists()),
 
-                /* 2. Tombol Input Material Usage */
+                /* 2. Tombol Unlock */
+                Tables\Actions\Action::make('unlock')
+                    ->icon('heroicon-o-lock-open')
+                    ->color('success')
+                    ->iconButton()
+                    ->tooltip(__('Unlock Data'))
+                    ->requiresConfirmation()
+                    ->modalHeading(__('Unlock Boning Data'))
+                    ->modalDescription(__('Are you sure you want to unlock this data? It will become editable again.'))
+                    ->action(function (Boning $record) {
+                        $record->update(['kunci' => false, 'status' => 'OPEN']);
+                        Notification::make()
+                            ->title(__('Data unlocked successfully'))
+                            ->success()
+                            ->send();
+                        return redirect(static::getUrl('index'));
+                    })
+                    ->hidden(fn(Boning $record) => $record->kunci != 1),
+
+                /* 3. Tombol Input Material Usage */
                 Tables\Actions\Action::make('materialUsage')
                     ->icon('heroicon-o-square-3-stack-3d')
                     ->color('info')
@@ -235,7 +254,7 @@ class BoningResource extends Resource
                     ->url(fn(Boning $record): string => static::getUrl('material-usage', ['record' => $record->id]))
                     ->hidden(fn(Boning $record) => $record->kunci == 1),
 
-                /* 3. Tombol Custom Labeling (Scan) */
+                /* 4. Tombol Custom Labeling (Scan) */
                 Tables\Actions\Action::make('labeling')
                     ->icon('heroicon-o-qr-code')
                     ->color('warning')
@@ -244,7 +263,7 @@ class BoningResource extends Resource
                     ->url(fn(Boning $record): string => static::getUrl('labeling', ['record' => $record]))
                     ->hidden(fn(Boning $record) => $record->kunci == 1),
 
-                /* 3. Tombol Hapus */
+                /* 5. Tombol Hapus */
                 Tables\Actions\DeleteAction::make()
                     ->iconButton()
                     ->tooltip(__('Delete Data'))
