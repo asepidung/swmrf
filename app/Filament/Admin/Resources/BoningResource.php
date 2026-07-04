@@ -191,10 +191,10 @@ class BoningResource extends Resource
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
                         if ($data['boning_from'] ?? null) {
-                            $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['boning_from'])->format('d M Y');
+                            $indicators[] = __('From Date') . ': ' . \Carbon\Carbon::parse($data['boning_from'])->format('d M Y');
                         }
                         if ($data['boning_until'] ?? null) {
-                            $indicators[] = 'Until: ' . \Carbon\Carbon::parse($data['boning_until'])->format('d M Y');
+                            $indicators[] = __('Until Date') . ': ' . \Carbon\Carbon::parse($data['boning_until'])->format('d M Y');
                         }
                         return $indicators;
                     }),
