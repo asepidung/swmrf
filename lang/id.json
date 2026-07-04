@@ -417,5 +417,10 @@
     "DATA BONING": "DATA BONING",
     "BATCH": "BATCH",
     "PRODUCTION": "PRODUKSI",
-    "No production items found.": "Tidak ada item produksi ditemukan."
+    "No production items found.": "Tidak ada item produksi ditemukan.",
+    "Repack": "Repack",
+    "Repacks": "Repack",
+    "Repack Document": "Dokumen Repack",
+    "Usage Date (Repack Date)": "Tanggal Penggunaan (Tanggal Repack)",
+    "Document Info": "Info Dokumen"
 }

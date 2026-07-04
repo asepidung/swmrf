@@ -87,33 +87,6 @@ class RepackResource extends Resource
                         Forms\Components\Hidden::make('created_by')
                             ->default(fn() => Auth::id()),
                     ])->columns(2),
-
-                Forms\Components\Section::make(__('Material Usage (Bahan Penolong)'))
-                    ->schema([
-                        Forms\Components\Repeater::make('materialUsages')
-                            ->relationship('materialUsages')
-                            ->schema([
-                                Forms\Components\Select::make('material_id')
-                                    ->label(__('Material'))
-                                    ->options(Material::where('is_active', true)->pluck('name', 'id'))
-                                    ->required()
-                                    ->searchable()
-                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
-                                
-                                Forms\Components\TextInput::make('qty')
-                                    ->label(__('Qty'))
-                                    ->required()
-                                    ->numeric()
-                                    ->minValue(0.01),
-
-                                Forms\Components\TextInput::make('note')
-                                    ->label(__('Note'))
-                                    ->maxLength(255),
-                            ])
-                            ->columns(3)
-                            ->addActionLabel(__('Add Material Usage'))
-                            ->defaultItems(0)
-                    ])
             ]);
     }
 
@@ -177,29 +150,54 @@ class RepackResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([
-                    /* Tombol Lock / Unlock */
-                    Tables\Actions\Action::make('toggleLock')
-                        ->label(fn(Repack $record) => $record->kunci ? __('Unlock') : __('Lock'))
-                        ->icon(fn(Repack $record) => $record->kunci ? 'heroicon-m-lock-closed' : 'heroicon-m-lock-open')
-                        ->color(fn(Repack $record) => $record->kunci ? 'danger' : 'success')
-                        ->tooltip(fn(Repack $record) => $record->kunci ? __('Buka Kunci') : __('Kunci Repack (Final)'))
+                    /* Tombol Lock */
+                    Tables\Actions\Action::make('lock')
+                        ->label(__('Lock'))
+                        ->icon('heroicon-o-lock-closed')
+                        ->color('danger')
+                        ->tooltip(__('Kunci Repack (Final)'))
                         ->requiresConfirmation()
+                        ->modalHeading(__('Lock Repack Data'))
+                        ->modalDescription(__('Are you sure you want to lock this data? Once locked, you cannot modify it.'))
                         ->visible(function () {
-                            /** @var \App\Models\User $user */
                             $user = Auth::user();
                             return $user?->hasPermission('lock_repacks');
                         })
                         ->action(function (Repack $record) {
-                            $newLockState = !$record->kunci;
-                            $record->update([
-                                'kunci' => $newLockState,
-                                'status' => $newLockState ? 'LOCKED' : 'OPEN'
-                            ]);
-                            Notification::make()
-                                ->title($newLockState ? __('Repack Locked') : __('Repack Unlocked'))
-                                ->success()
-                                ->send();
-                        }),
+                            $record->update(['kunci' => true, 'status' => 'LOCKED']);
+                            Notification::make()->title(__('Repack Locked'))->success()->send();
+                            return redirect(static::getUrl('index'));
+                        })
+                        ->hidden(fn(Repack $record) => $record->kunci || !$record->materialUsages()->exists()),
+
+                    /* Tombol Unlock */
+                    Tables\Actions\Action::make('unlock')
+                        ->label(__('Unlock'))
+                        ->icon('heroicon-o-lock-open')
+                        ->color('success')
+                        ->tooltip(__('Buka Kunci'))
+                        ->requiresConfirmation()
+                        ->modalHeading(__('Unlock Repack Data'))
+                        ->modalDescription(__('Are you sure you want to unlock this data? It will become editable again.'))
+                        ->visible(function () {
+                            $user = Auth::user();
+                            return $user?->hasPermission('lock_repacks');
+                        })
+                        ->action(function (Repack $record) {
+                            $record->update(['kunci' => false, 'status' => 'OPEN']);
+                            Notification::make()->title(__('Repack Unlocked'))->success()->send();
+                            return redirect(static::getUrl('index'));
+                        })
+                        ->hidden(fn(Repack $record) => !$record->kunci),
+
+                    /* Tombol Material Usage */
+                    Tables\Actions\Action::make('materialUsage')
+                        ->label(__('Material Usage'))
+                        ->icon('heroicon-o-square-3-stack-3d')
+                        ->color('info')
+                        ->tooltip(__('Input Material Usage'))
+                        ->url(fn(Repack $record): string => static::getUrl('material-usage', ['record' => $record->id]))
+                        ->hidden(fn(Repack $record) => $record->kunci),
 
                     /* Tombol Input Bahan */
                     Tables\Actions\Action::make('input_bahan')
@@ -228,6 +226,7 @@ class RepackResource extends Resource
             'edit' => Pages\EditRepack::route('/{record}/edit'),
             'input-bahan' => Pages\InputBahanRepack::route('/{record}/input-bahan'),
             'input-hasil' => Pages\InputHasilRepack::route('/{record}/input-hasil'),
+            'material-usage' => Pages\MaterialUsageRepack::route('/{record}/material-usage'),
         ];
     }
 }

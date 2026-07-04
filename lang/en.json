@@ -340,5 +340,10 @@
     "DATA BONING": "DATA BONING",
     "BATCH": "BATCH",
     "PRODUCTION": "PRODUCTION",
-    "No production items found.": "No production items found."
+    "No production items found.": "No production items found.",
+    "Repack": "Repack",
+    "Repacks": "Repacks",
+    "Repack Document": "Repack Document",
+    "Usage Date (Repack Date)": "Usage Date (Repack Date)",
+    "Document Info": "Document Info"
 }
