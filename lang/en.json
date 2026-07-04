@@ -386,5 +386,16 @@
     "TOTAL": "TOTAL",
     "HASIL KELUAR (OUTPUT)": "RESULT OUTPUT",
     "Belum ada hasil": "No results yet",
-    "SELISIH (BALANCE)": "BALANCE (DIFFERENCE)"
+    "SELISIH (BALANCE)": "BALANCE (DIFFERENCE)",
+    "Usage Date": "Usage Date",
+    "Reference": "Reference",
+    "Material Name": "Material Name",
+    "Qty (Minus)": "Qty (Minus)",
+    "View Document": "View Document",
+    "Create Manual Usage": "Create Manual Usage",
+    "Adjustment Info": "Manual Usage Info",
+    "Nomor Dokumen": "Document No.",
+    "Tanggal": "Date",
+    "Material Usage \/ Expense": "Usage Items",
+    "Add Material Usage": "Add Item"
 }

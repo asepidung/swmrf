@@ -1,0 +1,177 @@
+<?php
+
+namespace App\Filament\Admin\Resources;
+
+use App\Filament\Admin\Resources\MaterialUsageResource\Pages;
+use App\Models\MaterialUsage;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use App\Filament\Admin\Resources\BoningResource;
+use App\Filament\Admin\Resources\RepackResource;
+use Filament\Tables\Actions\ExportAction;
+use App\Filament\Exports\MaterialUsageExporter;
+
+class MaterialUsageResource extends Resource
+{
+    protected static ?string $model = MaterialUsage::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-archive-box-arrow-down';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('WAREHOUSE');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Material Usage');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('Material Usage');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Material Usages');
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->latest())
+            ->columns([
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label(__('Usage Date'))
+                    ->date('d M Y')
+                    ->sortable()
+                    ->searchable(),
+                    
+                Tables\Columns\TextColumn::make('usageable_type')
+                    ->label(__('Reference'))
+                    ->formatStateUsing(function (MaterialUsage $record) {
+                        if (!$record->usageable) {
+                            return '-';
+                        }
+                        
+                        $type = class_basename($record->usageable_type);
+                        $docNo = $record->usageable->doc_no ?? $record->usageable_id;
+                        
+                        return $type . ' (' . $docNo . ')';
+                    })
+                    ->badge()
+                    ->color(fn (MaterialUsage $record): string => match (class_basename($record->usageable_type)) {
+                        'Boning' => 'info',
+                        'Repack' => 'warning',
+                        'MaterialAdjustment' => 'danger',
+                        default => 'gray',
+                    })
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->whereHasMorph('usageable', '*', function (Builder $q, $type) use ($search) {
+                            $q->where('doc_no', 'like', "%{$search}%");
+                        });
+                    }),
+                    
+                Tables\Columns\TextColumn::make('material.name')
+                    ->label(__('Material Name'))
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('qty')
+                    ->label(__('Qty (Minus)'))
+                    ->numeric(2)
+                    ->color('danger')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('note')
+                    ->label(__('Note'))
+                    ->searchable()
+                    ->limit(50),
+            ])
+            ->filters([
+                Tables\Filters\Filter::make('usage_date')
+                    ->form([
+                        Forms\Components\DatePicker::make('from')
+                            ->label(__('From Date'))
+                            ->default(now()->startOfMonth()),
+                        Forms\Components\DatePicker::make('until')
+                            ->label(__('Until Date'))
+                            ->default(now()),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['from'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                            )
+                            ->when(
+                                $data['until'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                            );
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if ($data['from'] ?? null) {
+                            $indicators[] = __('From Date') . ': ' . Carbon::parse($data['from'])->format('d M Y');
+                        }
+                        if ($data['until'] ?? null) {
+                            $indicators[] = __('Until Date') . ': ' . Carbon::parse($data['until'])->format('d M Y');
+                        }
+                        return $indicators;
+                    }),
+            ])
+            ->actions([
+                // We won't allow editing or deleting directly from this ledger.
+                // It is view-only, except for manual usages which can be deleted if needed,
+                // but standard ERPs usually require adjusting again or soft-deleting the parent document.
+                Tables\Actions\Action::make('view_document')
+                    ->label(__('View Document'))
+                    ->icon('heroicon-o-eye')
+                    ->url(function (MaterialUsage $record) {
+                        if (!$record->usageable) return null;
+                        
+                        $type = class_basename($record->usageable_type);
+                        switch ($type) {
+                            case 'Boning':
+                                return BoningResource::getUrl('view', ['record' => $record->usageable_id]);
+                            case 'Repack':
+                                return RepackResource::getUrl('edit', ['record' => $record->usageable_id]); // Repack doesn't have view
+                            case 'MaterialAdjustment':
+                                // We will create a view or just return null
+                                return null; 
+                        }
+                        return null;
+                    })
+                    ->hidden(function (MaterialUsage $record) {
+                        $type = class_basename($record->usageable_type);
+                        return !in_array($type, ['Boning', 'Repack']);
+                    })
+            ])
+            ->bulkActions([
+                //
+            ])
+            ->headerActions([
+                // Export features
+                ExportAction::make('export_excel')
+                    ->label('Excel')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('success')
+                    ->exporter(MaterialUsageExporter::class),
+            ]);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListMaterialUsages::route('/'),
+            'create' => Pages\CreateManualUsage::route('/create-manual-usage'),
+        ];
+    }
+}
