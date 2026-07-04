@@ -41,6 +41,11 @@ class BoningResource extends Resource
         return __('Bonings');
     }
 
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return !$record->kunci;
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -202,7 +207,25 @@ class BoningResource extends Resource
                 fn (Boning $record): ?string => $record->kunci == 1 ? null : static::getUrl('edit', ['record' => $record->id])
             )
             ->actions([
-                /* 1. Tombol Input Material Usage (menggantikan Lock untuk sementara) */
+                /* 1. Tombol Lock */
+                Tables\Actions\Action::make('lock')
+                    ->icon('heroicon-o-lock-closed')
+                    ->color('danger')
+                    ->iconButton()
+                    ->tooltip(__('Lock Data'))
+                    ->requiresConfirmation()
+                    ->modalHeading(__('Lock Boning Data'))
+                    ->modalDescription(__('Are you sure you want to lock this data? Once locked, you cannot modify it.'))
+                    ->action(function (Boning $record) {
+                        $record->update(['kunci' => true, 'status' => 'LOCKED']);
+                        Notification::make()
+                            ->title(__('Data locked successfully'))
+                            ->success()
+                            ->send();
+                    })
+                    ->hidden(fn(Boning $record) => $record->kunci == 1 || !$record->materialUsages()->exists()),
+
+                /* 2. Tombol Input Material Usage */
                 Tables\Actions\Action::make('materialUsage')
                     ->icon('heroicon-o-square-3-stack-3d')
                     ->color('info')
@@ -211,7 +234,7 @@ class BoningResource extends Resource
                     ->url(fn(Boning $record): string => static::getUrl('material-usage', ['record' => $record->id]))
                     ->hidden(fn(Boning $record) => $record->kunci == 1),
 
-                /* 2. Tombol Custom Labeling (Scan) */
+                /* 3. Tombol Custom Labeling (Scan) */
                 Tables\Actions\Action::make('labeling')
                     ->icon('heroicon-o-qr-code')
                     ->color('warning')
