@@ -159,10 +159,6 @@ class RepackResource extends Resource
                         ->requiresConfirmation()
                         ->modalHeading(__('Lock Repack Data'))
                         ->modalDescription(__('Are you sure you want to lock this data? Once locked, you cannot modify it.'))
-                        ->visible(function () {
-                            $user = Auth::user();
-                            return $user?->hasPermission('lock_repacks');
-                        })
                         ->action(function (Repack $record) {
                             $record->update(['kunci' => true, 'status' => 'LOCKED']);
                             Notification::make()->title(__('Repack Locked'))->success()->send();
@@ -179,10 +175,6 @@ class RepackResource extends Resource
                         ->requiresConfirmation()
                         ->modalHeading(__('Unlock Repack Data'))
                         ->modalDescription(__('Are you sure you want to unlock this data? It will become editable again.'))
-                        ->visible(function () {
-                            $user = Auth::user();
-                            return $user?->hasPermission('lock_repacks');
-                        })
                         ->action(function (Repack $record) {
                             $record->update(['kunci' => false, 'status' => 'OPEN']);
                             Notification::make()->title(__('Repack Unlocked'))->success()->send();
