@@ -17,7 +17,8 @@ class EditBoning extends EditRecord
                 ->label(__('Cancel'))
                 ->color('gray')
                 ->url($this->getResource()::getUrl('index')),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->hidden(fn () => $this->getRecord()->kunci == 1 || $this->getRecord()->items()->exists()),
         ];
     }
 
