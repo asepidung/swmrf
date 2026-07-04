@@ -10,6 +10,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Boning extends Model
 {
@@ -58,6 +59,11 @@ class Boning extends Model
     public function carcasses(): HasMany
     {
         return $this->hasMany(BoningCarcass::class, 'boning_id');
+    }
+
+    public function materialUsages(): MorphMany
+    {
+        return $this->morphMany(MaterialUsage::class, 'usageable');
     }
 
     public function items(): HasMany

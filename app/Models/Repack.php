@@ -10,6 +10,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Repack extends Model
 {
@@ -71,5 +72,10 @@ class Repack extends Model
     public function results(): HasMany
     {
         return $this->hasMany(RepackResult::class, 'repack_id');
+    }
+
+    public function materialUsages(): MorphMany
+    {
+        return $this->morphMany(MaterialUsage::class, 'usageable');
     }
 }
