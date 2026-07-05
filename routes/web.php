@@ -186,4 +186,12 @@ Route::middleware(['web', 'auth'])->group(function () {
         $record->load(['fromWarehouse', 'toWarehouse', 'items.product', 'items.grade', 'createdBy', 'receivedBy']);
         return view('print.mutation', compact('record'));
     })->name('filament.admin.resources.mutations.print');
+
+    // ------------------------------------------
+    // 12. MODUL MATERIAL USAGE
+    // ------------------------------------------
+    Route::get('/print/material-usage/{id}', function ($id) {
+        $record = \App\Models\MaterialUsageHeader::with(['usages.material'])->findOrFail($id);
+        return view('print.material-usage', compact('record'));
+    })->name('material-usage.print');
 });

@@ -7,10 +7,27 @@ use Filament\Resources\Pages\ViewRecord;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
 use Illuminate\Database\Eloquent\Model;
+use Filament\Actions;
 
 class ViewMaterialUsage extends ViewRecord
 {
     protected static string $resource = MaterialUsageResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\Action::make('cancel')
+                ->label(__('Cancel'))
+                ->url(fn() => static::getResource()::getUrl('index'))
+                ->color('gray'),
+            Actions\Action::make('print')
+                ->label(__('Print'))
+                ->color('warning')
+                ->icon('heroicon-o-printer')
+                ->url(fn ($record): string => route('material-usage.print', $record->id))
+                ->openUrlInNewTab(),
+        ];
+    }
 
     public function infolist(Infolist $infolist): Infolist
     {
