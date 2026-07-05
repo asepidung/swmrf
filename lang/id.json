@@ -474,5 +474,12 @@
     "Nomor Dokumen": "Nomor Dokumen",
     "Tanggal": "Tanggal",
     "Material Usage \/ Expense": "Item Pemakaian",
-    "Add Material Usage": "Tambah Item"
+    "Add Material Usage": "Tambah Item",
+    "Process Details": "Detail Proses",
+    "Process Type": "Tipe Proses",
+    "Material Items Count": "Jumlah Item Material",
+    "Total Qty": "Total Kuantitas",
+    "Material Usage Details": "Rincian Pemakaian Material",
+    "Material Count": "Jumlah Item",
+    "Total Qty (Minus)": "Total Qty (Minus)"
 }

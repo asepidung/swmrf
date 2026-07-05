@@ -397,5 +397,12 @@
     "Nomor Dokumen": "Document No.",
     "Tanggal": "Date",
     "Material Usage \/ Expense": "Usage Items",
-    "Add Material Usage": "Add Item"
+    "Add Material Usage": "Add Item",
+    "Process Details": "Process Details",
+    "Process Type": "Process Type",
+    "Material Items Count": "Material Items Count",
+    "Total Qty": "Total Qty",
+    "Material Usage Details": "Material Usage Details",
+    "Material Count": "Material Count",
+    "Total Qty (Minus)": "Total Qty (Minus)"
 }

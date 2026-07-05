@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\MaterialUsageResource\Pages;
+use App\Models\MaterialUsageHeader;
 use App\Models\MaterialUsage;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -19,7 +20,7 @@ use App\Filament\Exports\MaterialUsageExporter;
 
 class MaterialUsageResource extends Resource
 {
-    protected static ?string $model = MaterialUsage::class;
+    protected static ?string $model = MaterialUsageHeader::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-archive-box-arrow-down';
 
@@ -56,7 +57,7 @@ class MaterialUsageResource extends Resource
                     
                 Tables\Columns\TextColumn::make('usageable_type')
                     ->label(__('Reference'))
-                    ->formatStateUsing(function (MaterialUsage $record) {
+                    ->formatStateUsing(function (MaterialUsageHeader $record) {
                         if (!$record->usageable) {
                             return '-';
                         }
@@ -67,7 +68,7 @@ class MaterialUsageResource extends Resource
                         return $type . ' (' . $docNo . ')';
                     })
                     ->badge()
-                    ->color(fn (MaterialUsage $record): string => match (class_basename($record->usageable_type)) {
+                    ->color(fn (MaterialUsageHeader $record): string => match (class_basename($record->usageable_type)) {
                         'Boning' => 'info',
                         'Repack' => 'warning',
                         'MaterialAdjustment' => 'danger',
@@ -79,21 +80,16 @@ class MaterialUsageResource extends Resource
                         });
                     }),
                     
-                Tables\Columns\TextColumn::make('material.name')
-                    ->label(__('Material Name'))
-                    ->searchable()
+                Tables\Columns\TextColumn::make('material_count')
+                    ->label(__('Material Count'))
+                    ->numeric()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('qty')
-                    ->label(__('Qty (Minus)'))
+                Tables\Columns\TextColumn::make('total_qty')
+                    ->label(__('Total Qty (Minus)'))
                     ->numeric(2)
                     ->color('danger')
                     ->sortable(),
-
-                Tables\Columns\TextColumn::make('note')
-                    ->label(__('Note'))
-                    ->searchable()
-                    ->limit(50),
             ])
             ->filters([
                 Tables\Filters\Filter::make('usage_date')
@@ -129,19 +125,8 @@ class MaterialUsageResource extends Resource
                 // We won't allow editing or deleting directly from this ledger.
                 // It is view-only, except for manual usages which can be deleted if needed.
             ])
-            ->recordUrl(function (MaterialUsage $record) {
-                if (!$record->usageable) return null;
-                
-                $type = class_basename($record->usageable_type);
-                switch ($type) {
-                    case 'Boning':
-                        return BoningResource::getUrl('view', ['record' => $record->usageable_id]);
-                    case 'Repack':
-                        return RepackResource::getUrl('edit', ['record' => $record->usageable_id]);
-                    case 'MaterialAdjustment':
-                        return null; 
-                }
-                return null;
+            ->recordUrl(function (MaterialUsageHeader $record) {
+                return static::getUrl('view', ['record' => $record->id]);
             })
             ->bulkActions([
                 //
@@ -161,6 +146,7 @@ class MaterialUsageResource extends Resource
         return [
             'index' => Pages\ListMaterialUsages::route('/'),
             'create' => Pages\CreateManualUsage::route('/create-manual-usage'),
+            'view' => Pages\ViewMaterialUsage::route('/{record}'),
         ];
     }
 }
