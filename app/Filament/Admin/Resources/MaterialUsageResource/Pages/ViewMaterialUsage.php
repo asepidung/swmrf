@@ -24,7 +24,7 @@ class ViewMaterialUsage extends ViewRecord
                 ->label(__('Print'))
                 ->color('warning')
                 ->icon('heroicon-o-printer')
-                ->url(fn ($record): string => route('material-usage.print', $record->id))
+                ->url(fn ($record): string => route('material-usage.print', ['id' => $record->id]))
                 ->openUrlInNewTab(),
         ];
     }

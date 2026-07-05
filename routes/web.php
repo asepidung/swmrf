@@ -190,8 +190,18 @@ Route::middleware(['web', 'auth'])->group(function () {
     // ------------------------------------------
     // 12. MODUL MATERIAL USAGE
     // ------------------------------------------
-    Route::get('/print/material-usage/{id}', function ($id) {
-        $record = \App\Models\MaterialUsageHeader::with(['usages.material'])->findOrFail($id);
+    Route::get('/print/material-usage', function (\Illuminate\Http\Request $request) {
+        $id = $request->query('id');
+        $record = \App\Models\MaterialUsageHeader::findOrFail($id);
+        
+        // Manual fetch to avoid composite key relation issues
+        $usages = \App\Models\MaterialUsage::with('material')
+            ->where('usageable_type', $record->usageable_type)
+            ->where('usageable_id', $record->usageable_id)
+            ->get();
+            
+        $record->setRelation('usages', $usages);
+        
         return view('print.material-usage', compact('record'));
     })->name('material-usage.print');
 });
