@@ -212,10 +212,6 @@
 
 <body>
 
-    @if($record->trashed())
-        <div class="watermark">DELETED</div>
-    @endif
-
     <div style="padding: 10px;">
         <div class="header">
             <div class="logo-box">
