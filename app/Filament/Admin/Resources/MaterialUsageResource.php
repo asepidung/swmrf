@@ -99,11 +99,9 @@ class MaterialUsageResource extends Resource
                 Tables\Filters\Filter::make('usage_date')
                     ->form([
                         Forms\Components\DatePicker::make('from')
-                            ->label(__('From Date'))
-                            ->default(now()->startOfMonth()),
+                            ->label(__('From Date')),
                         Forms\Components\DatePicker::make('until')
-                            ->label(__('Until Date'))
-                            ->default(now()),
+                            ->label(__('Until Date')),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
@@ -129,31 +127,22 @@ class MaterialUsageResource extends Resource
             ])
             ->actions([
                 // We won't allow editing or deleting directly from this ledger.
-                // It is view-only, except for manual usages which can be deleted if needed,
-                // but standard ERPs usually require adjusting again or soft-deleting the parent document.
-                Tables\Actions\Action::make('view_document')
-                    ->label(__('View Document'))
-                    ->icon('heroicon-o-eye')
-                    ->url(function (MaterialUsage $record) {
-                        if (!$record->usageable) return null;
-                        
-                        $type = class_basename($record->usageable_type);
-                        switch ($type) {
-                            case 'Boning':
-                                return BoningResource::getUrl('view', ['record' => $record->usageable_id]);
-                            case 'Repack':
-                                return RepackResource::getUrl('edit', ['record' => $record->usageable_id]); // Repack doesn't have view
-                            case 'MaterialAdjustment':
-                                // We will create a view or just return null
-                                return null; 
-                        }
-                        return null;
-                    })
-                    ->hidden(function (MaterialUsage $record) {
-                        $type = class_basename($record->usageable_type);
-                        return !in_array($type, ['Boning', 'Repack']);
-                    })
+                // It is view-only, except for manual usages which can be deleted if needed.
             ])
+            ->recordUrl(function (MaterialUsage $record) {
+                if (!$record->usageable) return null;
+                
+                $type = class_basename($record->usageable_type);
+                switch ($type) {
+                    case 'Boning':
+                        return BoningResource::getUrl('view', ['record' => $record->usageable_id]);
+                    case 'Repack':
+                        return RepackResource::getUrl('edit', ['record' => $record->usageable_id]);
+                    case 'MaterialAdjustment':
+                        return null; 
+                }
+                return null;
+            })
             ->bulkActions([
                 //
             ])
