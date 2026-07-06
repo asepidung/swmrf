@@ -7,10 +7,30 @@ use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Services\WarehouseFreezeService;
 
 class BeefStock extends Model
 {
     use HasFactory, LogsActivity;
+
+    protected static function booted()
+    {
+        static::creating(function ($model) {
+            WarehouseFreezeService::check($model->warehouse_id);
+        });
+
+        static::updating(function ($model) {
+            WarehouseFreezeService::check($model->warehouse_id);
+            // If they change warehouse, check the old one too
+            if ($model->isDirty('warehouse_id')) {
+                WarehouseFreezeService::check($model->getOriginal('warehouse_id'));
+            }
+        });
+
+        static::deleting(function ($model) {
+            WarehouseFreezeService::check($model->warehouse_id);
+        });
+    }
 
     protected $table = 'beef_stocks';
 

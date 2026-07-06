@@ -29,6 +29,20 @@ class DatabaseSeeder extends Seeder
             ['name' => 'edit_suppliers', 'module_name' => 'Suppliers', 'description' => 'Edit suppliers'],
             ['name' => 'delete_suppliers', 'module_name' => 'Suppliers', 'description' => 'Delete suppliers'],
 
+            // Material Adjustments Module
+            ['name' => 'view_material_adjustments', 'module_name' => 'Material Adjustments', 'description' => 'View material adjustments'],
+            ['name' => 'create_material_adjustments', 'module_name' => 'Material Adjustments', 'description' => 'Create material adjustments'],
+            ['name' => 'edit_material_adjustments', 'module_name' => 'Material Adjustments', 'description' => 'Edit material adjustments'],
+            ['name' => 'delete_material_adjustments', 'module_name' => 'Material Adjustments', 'description' => 'Delete material adjustments'],
+            ['name' => 'view_deleted_material_adjustments', 'module_name' => 'Material Adjustments', 'description' => 'View deleted material adjustments'],
+
+            // Stock Takes Module
+            ['name' => 'view_stock_takes', 'module_name' => 'Stock Takes', 'description' => 'View stock takes'],
+            ['name' => 'create_stock_takes', 'module_name' => 'Stock Takes', 'description' => 'Create stock takes'],
+            ['name' => 'edit_stock_takes', 'module_name' => 'Stock Takes', 'description' => 'Edit stock takes'],
+            ['name' => 'delete_stock_takes', 'module_name' => 'Stock Takes', 'description' => 'Delete stock takes'],
+            ['name' => 'view_deleted_stock_takes', 'module_name' => 'Stock Takes', 'description' => 'View deleted stock takes'],
+
             // Material Requisition Module
             ['name' => 'view_material_requisitions', 'module_name' => 'Material Requisition', 'description' => 'View material requisitions'],
             ['name' => 'create_material_requisitions', 'module_name' => 'Material Requisition', 'description' => 'Create material requisitions'],
