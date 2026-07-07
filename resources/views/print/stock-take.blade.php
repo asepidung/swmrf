@@ -287,7 +287,7 @@
                 <tr>
                     <th width="5%">{{ __('No') }}</th>
                     <th width="25%">{{ __('Item Name') }}</th>
-                    <th width="12%">{{ __('System Stock') }}</th>
+                    <th width="12%">{{ __('Stock') }}</th>
                     <th width="12%">{{ __('Matched') }}</th>
                     <th width="11%">{{ __('Found (+)') }}</th>
                     <th width="11%">{{ __('Missing (-)') }}</th>

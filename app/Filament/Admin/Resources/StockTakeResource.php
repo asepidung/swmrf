@@ -23,7 +23,7 @@ class StockTakeResource extends Resource
     protected static ?string $model = StockTake::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
-    protected static ?string $navigationGroup = 'Warehouse';
+    protected static ?string $navigationGroup = 'WAREHOUSE';
 
     public static function getModelLabel(): string
     {

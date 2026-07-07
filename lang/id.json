@@ -527,5 +527,9 @@
     "Warehouse SPV": "SPV Gudang",
     "Prepared by": "Dibuat oleh",
     "OFFICER": "PETUGAS",
-    "Officer / Admin": "Petugas / Admin"
+    "Officer / Admin": "Petugas / Admin",
+    "Aging > 60 Days": "Umur > 60 Hari",
+    "Aging Stock": "Stok Lama",
+    "Umur (Hari)": "Umur (Hari)",
+    "P.O.D": "Tanggal Pack"
 }
