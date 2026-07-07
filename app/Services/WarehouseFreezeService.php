@@ -10,29 +10,23 @@ class WarehouseFreezeService
     public static bool $bypassed = false;
 
     /**
-     * Check if a warehouse is currently frozen (in the middle of a stock take).
+     * Check if ANY warehouse is currently frozen (in the middle of a global stock take).
      * Throws an exception if it is frozen.
      *
-     * @param int|null $warehouseId
+     * @param int|null $warehouseId (Kept for backward compatibility, but ignored)
      * @throws ValidationException
      */
-    public static function check(?int $warehouseId)
+    public static function check(?int $warehouseId = null)
     {
         if (self::$bypassed) {
             return;
         }
 
-        if (!$warehouseId) {
-            return;
-        }
-
-        $activeOpname = StockTake::where('warehouse_id', $warehouseId)
-            ->where('status', 'IN_PROGRESS')
-            ->first();
+        $activeOpname = StockTake::where('status', 'IN_PROGRESS')->first();
 
         if ($activeOpname) {
             throw ValidationException::withMessages([
-                'warehouse_id' => __('Transaksi ditolak: Gudang ini sedang dalam proses Stock Opname (:doc). Harap selesaikan Opname terlebih dahulu.', [
+                'warehouse_id' => __('Transaksi ditolak: Sedang berlangsung Stock Opname Global (:doc). Harap selesaikan Opname terlebih dahulu.', [
                     'doc' => $activeOpname->document_number
                 ])
             ]);

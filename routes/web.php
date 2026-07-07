@@ -76,7 +76,20 @@ Route::middleware(['web', 'auth'])->group(function () {
     })->name('boning.label');
 
     // ------------------------------------------
-    // 4. MODUL REPACK
+    // 4. MODUL STOCK TAKE
+    // ------------------------------------------
+    Route::get('/stock-take/{id}/print', function ($id) {
+        $record = \App\Models\StockTake::with(['items.product', 'items.grade'])->findOrFail($id);
+        return view('print.stock-take', compact('record'));
+    })->name('stock-take.print');
+
+    Route::get('/print-stock-take-label/{id}', function ($id) {
+        $item = \App\Models\StockTakeItem::with(['product', 'stockTake', 'grade'])->findOrFail($id);
+        return view('print.stock-take-label', compact('item'));
+    })->name('stock-take.label');
+
+    // ------------------------------------------
+    // 5. MODUL REPACK
     // ------------------------------------------
     Route::get('/print-repack-label/{id}', function ($id) {
         $item = \App\Models\RepackResult::with(['product', 'repack', 'grade'])->findOrFail($id);

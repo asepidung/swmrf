@@ -30,6 +30,19 @@ class BeefStocksRelationManager extends RelationManager
                     ->label(__('Barcode'))
                     ->weight('bold')
                     ->alignCenter()
+                    ->formatStateUsing(function ($state) {
+                        if (!is_string($state)) return $state;
+                        
+                        // Cek apakah ada Stock Opname yang sedang berjalan
+                        $isStockOpnameActive = \App\Models\StockTake::whereIn('status', ['DRAFT', 'IN_PROGRESS'])->exists();
+                        
+                        // Mask 6 digit terakhir (pH & Counter) jika ada SO aktif dan panjang barcode >= 6
+                        if ($isStockOpnameActive && strlen($state) >= 10) {
+                            return substr($state, 0, -6) . '******';
+                        }
+                        
+                        return $state;
+                    })
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('warehouse.name')

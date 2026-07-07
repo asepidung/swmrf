@@ -62,8 +62,8 @@ Setiap pengembangan fitur atau penambahan *resource* baru di Filament wajib mene
 
 ### Struktur Barcode Origin (Digit Pertama)
 Sistem ini menggunakan digit pertama pada barcode untuk mendefinisikan asal-usul (origin) daging tersebut:
-- `1` = Boning
-- `2` = Repack Stock
+- `1` = Boning -> Boning
+- `2` = Repack Stock -> R-STCK
 - `3` = Repack Import
 - `4` = Repack Return
 - `5` = Repack Trading

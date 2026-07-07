@@ -19,11 +19,19 @@ class CreateStockTake extends CreateRecord
         return $this->getResource()::getUrl('index');
     }
 
+    public static function canCreateAnother(): bool
+    {
+        return false;
+    }
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $dateStr = \Carbon\Carbon::parse($data['date'])->format('ymd');
+        $date = \Carbon\Carbon::parse($data['date']);
+        $yymm = $date->format('ym');
         
-        $latest = StockTake::whereDate('date', $data['date'])
+        $latest = StockTake::withTrashed()
+            ->whereYear('date', $date->year)
+            ->whereMonth('date', $date->month)
             ->orderBy('id', 'desc')
             ->first();
             
@@ -33,7 +41,7 @@ class CreateStockTake extends CreateRecord
             $counter = 1;
         }
         
-        $data['document_number'] = 'ST-' . $dateStr . '-' . str_pad($counter, 3, '0', STR_PAD_LEFT);
+        $data['document_number'] = 'ST#' . $yymm . str_pad($counter, 3, '0', STR_PAD_LEFT);
         $data['created_by'] = auth()->id();
         $data['status'] = 'IN_PROGRESS';
         
@@ -44,12 +52,10 @@ class CreateStockTake extends CreateRecord
     {
         $record = $this->record;
         
-        // Take a snapshot of the current warehouse stock
+        // Take a snapshot of ALL active warehouse stock (Global Stock Take)
         // Insert them as MISSING into stock_take_items
         
-        $stocks = BeefStock::where('warehouse_id', $record->warehouse_id)
-            ->where('status', '!=', 'dispatched') // Assuming available stock only
-            ->get();
+        $stocks = BeefStock::where('status', 'IN_STOCK')->get();
             
         $itemsToInsert = [];
         foreach ($stocks as $stock) {
@@ -57,6 +63,7 @@ class CreateStockTake extends CreateRecord
                 'stock_take_id' => $record->id,
                 'barcode' => $stock->barcode,
                 'product_id' => $stock->product_id,
+                'warehouse_id' => $stock->warehouse_id,
                 'grade_id' => $stock->grade_id,
                 'weight' => $stock->weight,
                 'qty_pcs' => $stock->qty_pcs,

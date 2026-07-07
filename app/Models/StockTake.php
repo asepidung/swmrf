@@ -16,7 +16,7 @@ class StockTake extends Model
 
     protected $fillable = [
         'document_number',
-        'warehouse_id',
+        'period',
         'date',
         'status',
         'summary_note',
@@ -33,11 +33,6 @@ class StockTake extends Model
             ->logAll()
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
-    }
-
-    public function warehouse(): BelongsTo
-    {
-        return $this->belongsTo(Warehouse::class, 'warehouse_id');
     }
 
     public function creator(): BelongsTo

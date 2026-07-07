@@ -30,6 +30,7 @@ class BarcodeHelper
             '6' => 'RLB-TL',
             '7' => 'TRD-LC',
             '8' => 'TRD-IM',
+            '0' => '-FOUND',
         ];
 
         return $origins[$prefix] ?? '-UNIND';
