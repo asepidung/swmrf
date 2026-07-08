@@ -16,10 +16,15 @@ use App\Models\Warehouse;
 use App\Models\Grade;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Carbon;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Table;
+use Filament\Tables;
 
-class FoundItemScanner extends Page implements HasForms
+class FoundItemScanner extends Page implements HasForms, HasTable
 {
     use InteractsWithForms;
+    use InteractsWithTable;
 
     protected static ?string $navigationIcon = 'heroicon-o-viewfinder-circle';
     protected static ?string $cluster = BeefStocks::class;
@@ -311,5 +316,60 @@ class FoundItemScanner extends Page implements HasForms
                     
                 $this->dispatch('focus-barcode');
             });
+    }
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->query(
+                BeefStockMovement::query()
+                    ->where('transaction_type', 'FOUND_ITEM')
+            )
+            ->defaultSort('created_at', 'desc')
+            ->columns([
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label(__('Waktu Temuan'))
+                    ->dateTime('d/m/Y H:i')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('barcode')
+                    ->label(__('Barcode Baru'))
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('product.name')
+                    ->label(__('Produk'))
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('weight_in')
+                    ->label(__('Berat'))
+                    ->numeric(2)
+                    ->suffix(' Kg'),
+                Tables\Columns\TextColumn::make('warehouse.name')
+                    ->label(__('Gudang')),
+                Tables\Columns\TextColumn::make('note')
+                    ->label(__('Catatan'))
+                    ->wrap(),
+            ])
+            ->actions([
+                Tables\Actions\Action::make('print')
+                    ->label(__('Cetak Ulang'))
+                    ->icon('heroicon-o-printer')
+                    ->color('gray')
+                    ->iconButton()
+                    ->action(function (BeefStockMovement $record) {
+                        // Find the actual BeefStock record to print
+                        $stock = BeefStock::where('barcode', $record->barcode)->first();
+                        if ($stock) {
+                            $printUrl = route('beef-stock.label', [
+                                'id' => $stock->id,
+                                'show_exp' => 0
+                            ]);
+                            $this->dispatch('auto-print', url: $printUrl);
+                        } else {
+                            Notification::make()
+                                ->title(__('Barang sudah tidak ada di stok'))
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+            ]);
     }
 }
