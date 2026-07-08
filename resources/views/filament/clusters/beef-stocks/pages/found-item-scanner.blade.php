@@ -2,11 +2,15 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Left Side: Barcode Scanner -->
         <div class="space-y-6 md:col-span-1">
-            <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
-                <div class="text-center mb-6">
-                    <h2 class="text-xl font-bold">{{ __('Scan Barcode Temuan Barang') }}</h2>
-                    <p class="text-sm text-gray-500 mt-2">{{ __('Gunakan scanner untuk memindai barcode fisik pada barang yang tidak ada di stok.') }}</p>
-                </div>
+            <div class="relative rounded-2xl bg-gradient-to-tr from-primary-500/20 via-transparent to-primary-500/10 p-[1px] shadow-sm">
+                <div class="rounded-2xl bg-white p-6 dark:bg-gray-900">
+                    <div class="text-center mb-6">
+                        <div class="inline-flex items-center justify-center p-3 mb-4 rounded-full bg-primary-100 text-primary-600 dark:bg-primary-500/20 dark:text-primary-400">
+                            <x-heroicon-o-viewfinder-circle class="w-8 h-8" />
+                        </div>
+                        <h2 class="text-xl font-bold">{{ __('Scan Barcode Temuan') }}</h2>
+                        <p class="text-sm text-gray-500 mt-2">{{ __('Gunakan scanner untuk memindai barcode fisik pada barang yang tidak ada di stok.') }}</p>
+                    </div>
 
                 <form wire:submit.prevent="scan" x-data="{
                     focusInput() {
@@ -39,6 +43,7 @@
                         <x-heroicon-o-pencil-square class="w-5 h-5 transition-transform" />
                         {{ __('Label Rusak') }}
                     </button>
+                </div>
                 </div>
             </div>
         </div>
