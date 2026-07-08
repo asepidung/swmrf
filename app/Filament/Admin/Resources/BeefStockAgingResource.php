@@ -52,11 +52,8 @@ class BeefStockAgingResource extends Resource
             ->modifyQueryUsing(function (Builder $query) {
                 return $query->where('status', 'IN_STOCK')
                     ->where('pack_date', '<=', Carbon::now()->subDays(60))
-                    ->whereHas('product', function ($q) {
-                        $q->where('name', 'like', '%CHILL%')
-                          ->orWhereHas('category', function ($qc) {
-                              $qc->where('name', 'like', '%CHILL%');
-                          });
+                    ->whereHas('grade', function ($q) {
+                        $q->where('name', 'like', '%CHILL%');
                     })
                     ->orderBy('pack_date', 'asc');
             })
