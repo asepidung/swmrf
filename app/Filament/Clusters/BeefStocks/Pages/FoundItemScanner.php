@@ -133,7 +133,7 @@ class FoundItemScanner extends Page implements HasForms
             ->modalDescription(fn (array $arguments) => $arguments['historyMessage'] ?? '')
             ->modalSubmitActionLabel(__('Lanjutkan Stock In'))
             ->action(function (array $arguments) {
-                $this->mountAction('manualInput', $arguments);
+                $this->replaceMountedAction('manualInput', $arguments);
             });
     }
 
