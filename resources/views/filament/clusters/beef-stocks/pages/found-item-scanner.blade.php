@@ -1,13 +1,9 @@
 <x-filament-panels::page>
     <style>
-        /* Force compact table rows on this page */
-        .fi-ta-table td, 
-        .fi-ta-table th, 
-        .fi-ta-table .fi-ta-cell,
-        .fi-ta-table td > div,
-        .fi-ta-table th > div {
-            padding-top: 0.25rem !important;
-            padding-bottom: 0.25rem !important;
+        /* Force compact table rows on this page by overriding Tailwind's py-4 */
+        .fi-ta-table .py-4 {
+            padding-top: 0.5rem !important;
+            padding-bottom: 0.5rem !important;
         }
     </style>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
