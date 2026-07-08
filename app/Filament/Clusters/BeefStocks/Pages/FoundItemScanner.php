@@ -59,40 +59,62 @@ class FoundItemScanner extends Page implements HasForms
             return;
         }
 
-        // 2. Jika 26 digit, cari riwayat
+        // 2. Jika 26 digit, parse barcode dan cari riwayat
         $historyMessage = null;
-        $foundData = null;
+        $foundData = [];
 
         if (strlen($barcode) >= 26) {
+            // Parse barcode
+            $dateStr = substr($barcode, 1, 6);
+            $productCode = substr($barcode, 7, 6);
+            $gradeId = substr($barcode, 13, 1);
+            $weightStr = substr($barcode, 14, 4);
+            $pcsStr = substr($barcode, 18, 2);
+            $phStr = substr($barcode, 20, 2);
+
+            try {
+                $productCodeTrimmed = ltrim($productCode, '0');
+                if (empty($productCodeTrimmed)) $productCodeTrimmed = $productCode;
+
+                $product = Product::where('code', $productCode)
+                    ->orWhere('code', $productCodeTrimmed)
+                    ->first();
+
+                $foundData['pack_date'] = Carbon::createFromFormat('dmy', $dateStr)->format('Y-m-d');
+                $foundData['weight'] = ((float) $weightStr) / 100;
+                $foundData['qty_pcs'] = (int) $pcsStr;
+                $foundData['ph_level'] = ((float) $phStr) / 10;
+                $foundData['product_id'] = $product ? $product->id : null;
+                $foundData['grade_id'] = (int) $gradeId;
+            } catch (\Exception $e) {
+                // Ignore parse errors, let user fill manually
+            }
+
             // Cek di BeefStockMovement
             $lastMovement = BeefStockMovement::where('barcode', $barcode)->orderBy('created_at', 'desc')->first();
             if ($lastMovement) {
                 $warehouseName = $lastMovement->warehouse ? $lastMovement->warehouse->name : '-';
-                $historyMessage = "Terakhir tercatat di: Gudang {$warehouseName} (Proses: {$lastMovement->transaction_type})";
-                
-                // Get complete data from TallyItem to prefill if possible
-                $tally = TallyItem::where('barcode', $barcode)->first();
-                if ($tally) {
-                    $foundData = $tally->toArray();
-                } else {
-                    $foundData = [
-                        'product_id' => $lastMovement->product_id,
-                        'grade_id' => null, 
-                    ];
-                }
+                $historyMessage = "Histori Barang ditemukan. Posisi Terakhir di Gudang {$warehouseName} (Proses: {$lastMovement->transaction_type}).";
             } else {
                 // Cek di TallyItem
                 $tally = TallyItem::where('barcode', $barcode)->first();
                 if ($tally) {
                     $warehouseName = $tally->warehouse ? $tally->warehouse->name : '-';
-                    $historyMessage = "Terakhir tercatat di: Gudang {$warehouseName} (Proses: Penerimaan/Tally)";
-                    $foundData = $tally->toArray();
+                    $historyMessage = "Histori Barang ditemukan. Posisi Terakhir di Gudang {$warehouseName} (Proses: Penerimaan/Tally).";
+                    // Fallback pre-fill from tally if parse failed
+                    if (empty($foundData['product_id'])) $foundData['product_id'] = $tally->product_id;
+                    if (empty($foundData['weight'])) $foundData['weight'] = $tally->weight;
+                    if (empty($foundData['qty_pcs'])) $foundData['qty_pcs'] = $tally->qty_pcs;
                 }
             }
         }
 
-        // 3. Tampilkan modal manualInput
-        $this->mountAction('manualInput', [
+        if (!$historyMessage) {
+            $historyMessage = "Histori Barang tidak ditemukan.";
+        }
+
+        // 3. Tampilkan modal konfirmasi
+        $this->mountAction('confirmStockIn', [
             'historyMessage' => $historyMessage,
             'barcode' => $barcode, 
             'product_id' => $foundData['product_id'] ?? null,
@@ -102,6 +124,17 @@ class FoundItemScanner extends Page implements HasForms
             'ph_level' => $foundData['ph_level'] ?? null,
             'pack_date' => $foundData['pack_date'] ?? now()->format('Y-m-d'),
         ]);
+    }
+
+    public function confirmStockInAction(): Action
+    {
+        return Action::make('confirmStockIn')
+            ->modalHeading(__('Konfirmasi Temuan'))
+            ->modalDescription(fn (array $arguments) => $arguments['historyMessage'] ?? '')
+            ->modalSubmitActionLabel(__('Lanjutkan Stock In'))
+            ->action(function (array $arguments) {
+                $this->mountAction('manualInput', $arguments);
+            });
     }
 
     public function manualInputAction(): Action
