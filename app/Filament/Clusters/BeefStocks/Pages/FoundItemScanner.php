@@ -162,7 +162,7 @@ class FoundItemScanner extends Page implements HasForms
             ->form([
                 Forms\Components\Placeholder::make('historyMessage')
                     ->label('')
-                    ->content(fn ($get) => $get('historyMessage') ? \Illuminate\Support\HtmlString::make('<div class="p-4 mb-4 text-sm text-blue-800 rounded-lg bg-blue-50 dark:bg-gray-800 dark:text-blue-400" role="alert"><span class="font-medium">Info Riwayat:</span> ' . $get('historyMessage') . '</div>') : '')
+                    ->content(fn ($get) => $get('historyMessage') ? new \Illuminate\Support\HtmlString('<div class="p-4 mb-4 text-sm text-blue-800 rounded-lg bg-blue-50 dark:bg-gray-800 dark:text-blue-400" role="alert"><span class="font-medium">Info Riwayat:</span> ' . $get('historyMessage') . '</div>') : '')
                     ->hidden(fn ($get) => empty($get('historyMessage'))),
 
                 Forms\Components\Grid::make(2)
