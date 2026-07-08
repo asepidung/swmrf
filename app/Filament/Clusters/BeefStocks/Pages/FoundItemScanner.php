@@ -163,7 +163,7 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                     'qty_pcs_combined' => $combined,
                     'ph_level' => $arguments['ph_level'] ?? null,
                     'pack_date' => $arguments['pack_date'] ?? now()->format('Y-m-d'),
-                    'note' => 'Barang Temuan',
+                    'note' => null,
                 ];
             })
             ->form([
@@ -300,7 +300,7 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                     'weight_out' => 0,
                     'pcs_in' => $stock->qty_pcs,
                     'pcs_out' => 0,
-                    'note' => 'Barang Temuan di Gudang',
+                    'note' => $stock->note,
                     'created_by' => auth()->id(),
                 ]);
 
@@ -325,7 +325,7 @@ class FoundItemScanner extends Page implements HasForms, HasTable
         return $table
             ->query(
                 BeefStockMovement::query()
-                    ->where('transaction_type', 'FOUND_ITEM')
+                    ->whereIn('transaction_type', ['FOUND_ITEM', 'STOCK_TAKE_FOUND'])
             )
             ->defaultSort('created_at', 'desc')
             ->columns([
@@ -344,7 +344,13 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                     ->label(__('Gudang')),
                 Tables\Columns\TextColumn::make('note')
                     ->label(__('Catatan'))
-                    ->wrap(),
+                    ->getStateUsing(fn ($record) => $record->transaction_type === 'STOCK_TAKE_FOUND' ? 'ST' : 'PF')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'ST' => 'warning',
+                        'PF' => 'info',
+                        default => 'gray',
+                    }),
             ])
             ->actions([
             ]);
