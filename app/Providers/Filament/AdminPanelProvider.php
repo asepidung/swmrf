@@ -96,8 +96,8 @@ class AdminPanelProvider extends PanelProvider
                 fn (): string => '<style>
                     /* Compact sidebar spacing */
                     .fi-sidebar-nav-groups { gap: 0.25rem !important; }
-                    .fi-sidebar-nav-group { margin-top: 0.25rem !important; }
-                    .fi-sidebar-nav-group-label { margin-bottom: 0.1rem !important; padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; text-transform: uppercase !important; }
+                    .fi-sidebar-group { margin-top: 0.25rem !important; }
+                    .fi-sidebar-group-label { margin-bottom: 0.1rem !important; padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; text-transform: uppercase !important; }
                     .fi-sidebar-item { margin-top: 0 !important; margin-bottom: 0 !important; }
                     .fi-sidebar-item-button { padding-top: 0.35rem !important; padding-bottom: 0.35rem !important; gap: 0.5rem !important; }
                     .fi-sidebar-item-label { font-size: 0.875rem !important; }
