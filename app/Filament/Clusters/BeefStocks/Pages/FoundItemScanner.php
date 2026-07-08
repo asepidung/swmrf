@@ -206,6 +206,10 @@ class FoundItemScanner extends Page implements HasForms
                         Forms\Components\DatePicker::make('pack_date')
                             ->label(__('Pack Date'))
                             ->required(),
+                        Forms\Components\Toggle::make('show_exp')
+                            ->label(__('Tampilkan Exp Date di Label?'))
+                            ->default(false)
+                            ->columnSpanFull(),
                         Forms\Components\Textarea::make('note')
                             ->label(__('Catatan'))
                             ->rows(2)
@@ -295,7 +299,7 @@ class FoundItemScanner extends Page implements HasForms
 
                 $printUrl = route('beef-stock.label', [
                     'id' => $stock->id,
-                    'show_exp' => 0 // Set to 1 if we want to show expiry date on label
+                    'show_exp' => ($data['show_exp'] ?? false) ? 1 : 0
                 ]);
                 $this->dispatch('auto-print', url: $printUrl);
 
