@@ -18,7 +18,6 @@ class GoodsReceiptProductResource extends Resource
     protected static ?string $model = GoodsReceiptProduct::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-inbox-arrow-down';
-    protected static ?string $navigationGroup = 'GOODS RECEIPT';
     protected static ?int $navigationSort = 16;
     protected static ?string $navigationLabel = 'Beef Receipt';
     protected static ?string $modelLabel = 'Beef Receipt';
@@ -211,5 +210,10 @@ class GoodsReceiptProductResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('GOODS RECEIPT');
     }
 }

@@ -20,22 +20,22 @@ class TallyResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'WAREHOUSE';
+        return __('WAREHOUSE');
     }
 
     public static function getNavigationLabel(): string
     {
-        return 'Tally';
+        return __('Tally');
     }
 
     public static function getModelLabel(): string
     {
-        return 'Tally';
+        return __('Tally');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Tallies';
+        return __('Tallies');
     }
 
     public static function form(Form $form): Form

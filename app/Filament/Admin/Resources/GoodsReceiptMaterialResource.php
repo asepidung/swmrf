@@ -21,7 +21,6 @@ class GoodsReceiptMaterialResource extends Resource
     protected static ?string $model = GoodsReceiptMaterial::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-truck';
-    protected static ?string $navigationGroup = 'GOODS RECEIPT';
     protected static ?int $navigationSort = 15;
     protected static ?string $navigationLabel = 'Material Receipt';
     protected static ?string $modelLabel = 'Material Receipt';
@@ -341,5 +340,10 @@ class GoodsReceiptMaterialResource extends Resource
             'view' => Pages\ViewGoodsReceiptMaterial::route('/{record}'),
             'edit' => Pages\EditGoodsReceiptMaterial::route('/{record}/edit'),
         ];
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('GOODS RECEIPT');
     }
 }

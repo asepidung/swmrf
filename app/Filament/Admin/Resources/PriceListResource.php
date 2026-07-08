@@ -17,7 +17,6 @@ class PriceListResource extends Resource
     protected static ?string $model = CustomerGroup::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
-    protected static ?string $navigationGroup = 'SALES';
     protected static ?string $navigationLabel = 'Price List';
     protected static ?string $pluralModelLabel = 'Price Lists';
     protected static ?string $modelLabel = 'Price List';
@@ -185,5 +184,10 @@ class PriceListResource extends Resource
             'view' => Pages\ViewPriceList::route('/{record}'),
             'edit' => Pages\EditPriceList::route('/{record}/edit'),
         ];
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('SALES');
     }
 }

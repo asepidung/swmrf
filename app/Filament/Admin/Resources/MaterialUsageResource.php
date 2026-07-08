@@ -26,22 +26,22 @@ class MaterialUsageResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'WAREHOUSE';
+        return __('WAREHOUSE');
     }
 
     public static function getNavigationLabel(): string
     {
-        return 'Material Usage';
+        return __('Material Usage');
     }
 
     public static function getModelLabel(): string
     {
-        return 'Material Usage';
+        return __('Material Usage');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Material Usages';
+        return __('Material Usages');
     }
 
     public static function table(Table $table): Table
@@ -59,7 +59,7 @@ class MaterialUsageResource extends Resource
                     ->label(__('Reference'))
                     ->formatStateUsing(function (MaterialUsageHeader $record) {
                         if (!$record->usageable) {
-                            return '-';
+                            return __('-');
                         }
                         
                         $type = class_basename($record->usageable_type);

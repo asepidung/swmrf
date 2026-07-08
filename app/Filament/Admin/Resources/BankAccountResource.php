@@ -27,17 +27,17 @@ class BankAccountResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'MASTER DATA';
+        return __('MASTER DATA');
     }
 
     public static function getModelLabel(): string
     {
-        return 'Bank Account';
+        return __('Bank Account');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Bank Accounts';
+        return __('Bank Accounts');
     }
 
     public static function form(Form $form): Form

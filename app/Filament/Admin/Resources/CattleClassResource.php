@@ -21,17 +21,17 @@ class CattleClassResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'MASTER DATA';
+        return __('MASTER DATA');
     }
 
     public static function getModelLabel(): string
     {
-        return 'Cattle Class';
+        return __('Cattle Class');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Cattle Classes';
+        return __('Cattle Classes');
     }
 
     public static function form(Form $form): Form

@@ -23,8 +23,6 @@ class StockTakeResource extends Resource
     protected static ?string $model = StockTake::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
-    protected static ?string $navigationGroup = 'WAREHOUSE';
-
     public static function getModelLabel(): string
     {
         return __('Stock Opname');
@@ -300,5 +298,10 @@ class StockTakeResource extends Resource
             'edit' => Pages\EditStockTake::route('/{record}/edit'),
             'scan' => Pages\ScanStockTake::route('/{record}/scan'),
         ];
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('WAREHOUSE');
     }
 }

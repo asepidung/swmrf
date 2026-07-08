@@ -22,22 +22,22 @@ class CattleWeighingResource extends Resource
     protected static ?int $navigationSort = 2;
     public static function getNavigationGroup(): ?string
     {
-        return 'CATTLE';
+        return __('CATTLE');
     }
 
     public static function getNavigationLabel(): string
     {
-        return 'Weighing';
+        return __('Weighing');
     }
 
     public static function getModelLabel(): string
     {
-        return 'Cattle Weighing';
+        return __('Cattle Weighing');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Cattle Weighings';
+        return __('Cattle Weighings');
     }
 
 

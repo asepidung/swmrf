@@ -25,7 +25,6 @@ class SalesOrderResource extends Resource
     protected static ?string $model = SalesOrder::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
-    protected static ?string $navigationGroup = 'SALES';
     protected static ?string $navigationLabel = 'Sales Order';
     protected static ?string $pluralModelLabel = 'Sales Orders';
 
@@ -501,5 +500,10 @@ class SalesOrderResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('SALES');
     }
 }

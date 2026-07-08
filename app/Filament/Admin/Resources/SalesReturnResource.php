@@ -20,8 +20,6 @@ class SalesReturnResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-path-rounded-square';
 
-    protected static ?string $navigationGroup = 'WAREHOUSE';
-
     public static function getNavigationLabel(): string
     {
         return __('Sales Returns');
@@ -177,5 +175,10 @@ class SalesReturnResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('WAREHOUSE');
     }
 }

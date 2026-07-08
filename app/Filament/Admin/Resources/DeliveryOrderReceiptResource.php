@@ -23,22 +23,22 @@ class DeliveryOrderReceiptResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'DISTRIBUTION';
+        return __('DISTRIBUTION');
     }
 
     public static function getNavigationLabel(): string
     {
-        return 'Delivery Receipts';
+        return __('Delivery Receipts');
     }
 
     public static function getModelLabel(): string
     {
-        return 'Delivery Receipt';
+        return __('Delivery Receipt');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Delivery Receipts';
+        return __('Delivery Receipts');
     }
 
     public static function form(Form $form): Form

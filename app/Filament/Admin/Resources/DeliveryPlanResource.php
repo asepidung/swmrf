@@ -18,7 +18,6 @@ class DeliveryPlanResource extends Resource
     protected static ?string $model = DeliveryPlan::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-truck';
-    protected static ?string $navigationGroup = 'DISTRIBUTION';
     protected static ?string $navigationLabel = 'Plan Delivery';
     protected static ?string $pluralModelLabel = 'Plan Deliveries';
 
@@ -234,5 +233,10 @@ class DeliveryPlanResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('DISTRIBUTION');
     }
 }

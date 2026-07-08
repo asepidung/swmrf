@@ -16,7 +16,6 @@ class PurchaseMaterialResource extends Resource
     protected static ?string $model = PurchaseMaterial::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
-    protected static ?string $navigationGroup = 'PURCHASE ORDER';
     protected static ?int $navigationSort = 11;
     protected static ?string $navigationLabel = 'PO Material';
     protected static ?string $modelLabel = 'PO Material';
@@ -221,5 +220,10 @@ class PurchaseMaterialResource extends Resource
             'detail-list' => Pages\PurchaseMaterialDetailList::route('/detail-list'),
             'view' => Pages\ViewPurchaseMaterial::route('/{record}'),
         ];
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('PURCHASE ORDER');
     }
 }

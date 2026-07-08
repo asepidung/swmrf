@@ -18,7 +18,6 @@ class MutationResource extends Resource
     protected static ?string $model = Mutation::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-arrows-right-left';
-    protected static ?string $navigationGroup = 'WAREHOUSE';
     public static function getModelLabel(): string
     {
         return __('Mutation');
@@ -170,5 +169,10 @@ class MutationResource extends Resource
         }
         
         return $query;
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('WAREHOUSE');
     }
 }

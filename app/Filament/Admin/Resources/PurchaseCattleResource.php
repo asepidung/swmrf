@@ -25,17 +25,17 @@ class PurchaseCattleResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'PURCHASE ORDER';
+        return __('PURCHASE ORDER');
     }
 
     public static function getModelLabel(): string
     {
-        return 'PO Cattle';
+        return __('PO Cattle');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'PO Cattles';
+        return __('PO Cattles');
     }
 
     public static function form(Form $form): Form

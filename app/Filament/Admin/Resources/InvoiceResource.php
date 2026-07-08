@@ -22,22 +22,22 @@ class InvoiceResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'FINANCE';
+        return __('FINANCE');
     }
 
     public static function getNavigationLabel(): string
     {
-        return 'Invoices';
+        return __('Invoices');
     }
 
     public static function getModelLabel(): string
     {
-        return 'Invoice';
+        return __('Invoice');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Invoices';
+        return __('Invoices');
     }
 
     public static function form(Form $form): Form
@@ -547,7 +547,7 @@ class InvoiceResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->formatStateUsing(function ($state) {
-                        if (!$state) return '-';
+                        if (!$state) return __('-');
                         preg_match_all('/\d+/', $state, $matches);
                         $digits = implode('', $matches[0]);
                         if (strlen($digits) >= 6) {
@@ -571,7 +571,7 @@ class InvoiceResource extends Resource
                     ->label(__('TTF'))
                     ->getStateUsing(function (Invoice $record) {
                         if ($record->customer?->invoice_exchange && is_null($record->invoice_exchange_date)) {
-                            return 'TTF';
+                            return __('TTF');
                         }
                         return null;
                     })

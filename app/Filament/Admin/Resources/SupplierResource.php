@@ -21,22 +21,22 @@ class SupplierResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'MASTER DATA';
+        return __('MASTER DATA');
     }
 
     public static function getNavigationLabel(): string
     {
-        return 'Suppliers';
+        return __('Suppliers');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Suppliers';
+        return __('Suppliers');
     }
 
     public static function getModelLabel(): string
     {
-        return 'Supplier';
+        return __('Supplier');
     }
 
     public static function form(Form $form): Form

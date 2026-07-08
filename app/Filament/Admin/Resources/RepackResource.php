@@ -22,22 +22,22 @@ class RepackResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'PRODUCTION';
+        return __('PRODUCTION');
     }
 
     public static function getNavigationLabel(): string
     {
-        return 'Repack';
+        return __('Repack');
     }
 
     public static function getModelLabel(): string
     {
-        return 'Repack';
+        return __('Repack');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Repacks';
+        return __('Repacks');
     }
 
     public static function form(Form $form): Form

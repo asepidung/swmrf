@@ -30,22 +30,22 @@ class ReceivableResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'FINANCE';
+        return __('FINANCE');
     }
 
     public static function getNavigationLabel(): string
     {
-        return 'Receivables';
+        return __('Receivables');
     }
 
     public static function getModelLabel(): string
     {
-        return 'Receivable';
+        return __('Receivable');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Receivables';
+        return __('Receivables');
     }
 
     public static function form(Form $form): Form

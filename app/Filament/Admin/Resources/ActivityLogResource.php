@@ -22,17 +22,17 @@ class ActivityLogResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'SYSTEM';
+        return __('SYSTEM');
     }
 
     public static function getModelLabel(): string
     {
-        return 'Activity Log';
+        return __('Activity Log');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Activity Logs';
+        return __('Activity Logs');
     }
 
     public static function getSubjectLabel(?Model $subject): ?string

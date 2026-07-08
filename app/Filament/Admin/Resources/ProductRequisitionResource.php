@@ -15,7 +15,6 @@ use Filament\Support\RawJs;
 class ProductRequisitionResource extends Resource
 {
     protected static ?string $model = ProductRequisition::class;
-    protected static ?string $navigationGroup = 'REQUEST';
     protected static ?int $navigationSort = 11;
     protected static ?string $navigationIcon = 'heroicon-o-document-duplicate';
     protected static ?string $navigationLabel = 'Beef Request';
@@ -338,5 +337,10 @@ class ProductRequisitionResource extends Resource
             'finance-approve' => Pages\ApproveFinanceProductRequisition::route('/{record}/finance-approve'),
             'edit' => Pages\EditProductRequisition::route('/{record}/edit'),
         ];
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('REQUEST');
     }
 }

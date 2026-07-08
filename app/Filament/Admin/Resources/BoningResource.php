@@ -23,22 +23,22 @@ class BoningResource extends Resource
     
     public static function getNavigationGroup(): ?string
     {
-        return 'PRODUCTION';
+        return __('PRODUCTION');
     }
 
     public static function getNavigationLabel(): string
     {
-        return 'Boning';
+        return __('Boning');
     }
 
     public static function getModelLabel(): string
     {
-        return 'Boning';
+        return __('Boning');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Bonings';
+        return __('Bonings');
     }
 
     public static function form(Form $form): Form
@@ -143,7 +143,7 @@ class BoningResource extends Resource
                     ->label(__('Supplier'))
                     ->getStateUsing(function (Boning $record) {
                         $carcassIds = $record->carcasses->pluck('carcass_id')->toArray();
-                        if (empty($carcassIds)) return '-';
+                        if (empty($carcassIds)) return __('-');
                         $suppliers = DB::table('carcasses')
                             ->whereIn('carcasses.id', $carcassIds)
                             ->join('cattle_weighings', 'carcasses.cattle_weighing_id', '=', 'cattle_weighings.id')

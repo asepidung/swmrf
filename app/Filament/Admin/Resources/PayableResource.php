@@ -26,22 +26,22 @@ class PayableResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'FINANCE';
+        return __('FINANCE');
     }
 
     public static function getNavigationLabel(): string
     {
-        return 'Payables';
+        return __('Payables');
     }
 
     public static function getModelLabel(): string
     {
-        return 'Payable';
+        return __('Payable');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Payables';
+        return __('Payables');
     }
 
     public static function form(Form $form): Form
@@ -127,13 +127,13 @@ class PayableResource extends Resource
                         $diff = $today->diffInDays($due, false);
                         
                         if ($record->status === 'paid') {
-                            return 'Paid';
+                            return __('Paid');
                         }
 
                         if ($diff < 0) {
                             return __('Overdue by :days days', ['days' => abs($diff)]);
                         } elseif ($diff === 0) {
-                            return 'Due today';
+                            return __('Due today');
                         } else {
                             return __('Remaining :days days', ['days' => $diff]);
                         }
