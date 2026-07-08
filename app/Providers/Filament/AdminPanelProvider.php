@@ -42,6 +42,26 @@ class AdminPanelProvider extends PanelProvider
                     ->group(__('SYSTEM'))
                     ->sort(100),
             ])
+            ->navigationGroups([
+                \Filament\Navigation\NavigationGroup::make('MASTER DATA')
+                    ->label(__('MASTER DATA')),
+                \Filament\Navigation\NavigationGroup::make('REQUEST')
+                    ->label(__('REQUEST')),
+                \Filament\Navigation\NavigationGroup::make('PURCHASE ORDER')
+                    ->label(__('PURCHASE ORDER')),
+                \Filament\Navigation\NavigationGroup::make('GOODS RECEIPT')
+                    ->label(__('GOODS RECEIPT')),
+                \Filament\Navigation\NavigationGroup::make('STOCKS')
+                    ->label(__('STOCKS')),
+                \Filament\Navigation\NavigationGroup::make('WAREHOUSE')
+                    ->label(__('WAREHOUSE')),
+                \Filament\Navigation\NavigationGroup::make('SALES')
+                    ->label(__('SALES')),
+                \Filament\Navigation\NavigationGroup::make('DISTRIBUTION')
+                    ->label(__('DISTRIBUTION')),
+                \Filament\Navigation\NavigationGroup::make('SYSTEM')
+                    ->label(__('SYSTEM')),
+            ])
             ->brandName(config('app.name', 'WijayaApps'))
             ->brandLogo(asset('img/light.png'))
             ->darkModeBrandLogo(asset('img/dark.png'))

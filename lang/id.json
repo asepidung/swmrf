@@ -551,5 +551,14 @@
     "Tampilkan Exp Date di Label?": "Tampilkan Exp Date di Label?",
     "Temuan Barang": "Temuan Barang",
     "Temuan Barang Berhasil Disimpan": "Temuan Barang Berhasil Disimpan",
-    "Waktu Temuan": "Waktu Temuan"
+    "Waktu Temuan": "Waktu Temuan",
+    "MASTER DATA": "Master Data",
+    "REQUEST": "Permintaan",
+    "PURCHASE ORDER": "Pesanan Pembelian",
+    "GOODS RECEIPT": "Penerimaan Barang",
+    "STOCKS": "Stok",
+    "WAREHOUSE": "Gudang",
+    "SALES": "Penjualan",
+    "DISTRIBUTION": "Distribusi",
+    "SYSTEM": "Sistem"
 }
