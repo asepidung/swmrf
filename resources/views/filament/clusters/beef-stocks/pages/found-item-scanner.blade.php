@@ -33,4 +33,15 @@
     </div>
 
     <x-filament-actions::modals />
+
+    <script>
+        document.addEventListener('livewire:init', () => {
+            document.addEventListener('auto-print', (event) => {
+                const printUrl = event.detail[0]?.url || event.detail?.url;
+                if (printUrl) {
+                    window.open(printUrl, '_blank');
+                }
+            });
+        });
+    </script>
 </x-filament-panels::page>
