@@ -43,28 +43,28 @@ class AdminPanelProvider extends PanelProvider
                     ->sort(100),
             ])
             ->navigationGroups([
-                \Filament\Navigation\NavigationGroup::make('MASTER DATA')
-                    ->label(__('MASTER DATA')),
-                \Filament\Navigation\NavigationGroup::make('CATTLE')
-                    ->label(__('CATTLE')),
                 \Filament\Navigation\NavigationGroup::make('REQUEST')
                     ->label(__('REQUEST')),
                 \Filament\Navigation\NavigationGroup::make('PURCHASE ORDER')
                     ->label(__('PURCHASE ORDER')),
                 \Filament\Navigation\NavigationGroup::make('GOODS RECEIPT')
                     ->label(__('GOODS RECEIPT')),
+                \Filament\Navigation\NavigationGroup::make('CATTLE')
+                    ->label(__('CATTLE')),
                 \Filament\Navigation\NavigationGroup::make('PRODUCTION')
                     ->label(__('PRODUCTION')),
-                \Filament\Navigation\NavigationGroup::make('STOCKS')
-                    ->label(__('STOCKS')),
                 \Filament\Navigation\NavigationGroup::make('WAREHOUSE')
                     ->label(__('WAREHOUSE')),
-                \Filament\Navigation\NavigationGroup::make('SALES')
-                    ->label(__('SALES')),
+                \Filament\Navigation\NavigationGroup::make('STOCKS')
+                    ->label(__('STOCKS')),
                 \Filament\Navigation\NavigationGroup::make('DISTRIBUTION')
                     ->label(__('DISTRIBUTION')),
+                \Filament\Navigation\NavigationGroup::make('SALES')
+                    ->label(__('SALES')),
                 \Filament\Navigation\NavigationGroup::make('FINANCE')
                     ->label(__('FINANCE')),
+                \Filament\Navigation\NavigationGroup::make('MASTER DATA')
+                    ->label(__('MASTER DATA')),
                 \Filament\Navigation\NavigationGroup::make('SYSTEM')
                     ->label(__('SYSTEM')),
             ])
