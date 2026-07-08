@@ -21,12 +21,12 @@ class UserResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('SYSTEM');
+        return 'SYSTEM';
     }
 
     public static function getNavigationLabel(): string
     {
-        return __('User Management');
+        return 'User Management';
     }
 
     public static function getEloquentQuery(): Builder

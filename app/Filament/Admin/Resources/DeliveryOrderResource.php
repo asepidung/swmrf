@@ -22,22 +22,22 @@ class DeliveryOrderResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('DISTRIBUTION');
+        return 'DISTRIBUTION';
     }
 
     public static function getNavigationLabel(): string
     {
-        return __('Delivery Order');
+        return 'Delivery Order';
     }
 
     public static function getModelLabel(): string
     {
-        return __('Delivery Order');
+        return 'Delivery Order';
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('Delivery Orders');
+        return 'Delivery Orders';
     }
 
     public static function form(Form $form): Form

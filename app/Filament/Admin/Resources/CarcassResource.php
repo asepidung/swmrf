@@ -20,7 +20,7 @@ class CarcassResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-scissors';
     public static function getNavigationGroup(): ?string
     {
-        return __('CATTLE');
+        return 'CATTLE';
     }
     protected static ?int $navigationSort = 3;
 

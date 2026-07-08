@@ -10,11 +10,11 @@ class ProductsCluster extends Cluster
     
     public static function getNavigationGroup(): ?string
     {
-        return __('MASTER DATA');
+        return 'MASTER DATA';
     }
 
     public static function getNavigationLabel(): string
     {
-        return __('Products');
+        return 'Products';
     }
 }

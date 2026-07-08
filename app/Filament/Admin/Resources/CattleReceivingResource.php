@@ -24,22 +24,22 @@ class CattleReceivingResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('CATTLE');
+        return 'CATTLE';
     }
 
     public static function getNavigationLabel(): string
     {
-        return __('Receive');
+        return 'Receive';
     }
 
     public static function getModelLabel(): string
     {
-        return __('Cattle Receiving');
+        return 'Cattle Receiving';
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('Cattle Receivings');
+        return 'Cattle Receivings';
     }
 
     public static function form(Form $form): Form

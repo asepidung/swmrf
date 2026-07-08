@@ -22,22 +22,22 @@ class InvoiceResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('FINANCE');
+        return 'FINANCE';
     }
 
     public static function getNavigationLabel(): string
     {
-        return __('Invoices');
+        return 'Invoices';
     }
 
     public static function getModelLabel(): string
     {
-        return __('Invoice');
+        return 'Invoice';
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('Invoices');
+        return 'Invoices';
     }
 
     public static function form(Form $form): Form

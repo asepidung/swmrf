@@ -22,17 +22,17 @@ class FinancialLossResource extends Resource
     
     public static function getNavigationGroup(): ?string
     {
-        return __('FINANCE');
+        return 'FINANCE';
     }
 
     public static function getModelLabel(): string
     {
-        return __('Financial Loss');
+        return 'Financial Loss';
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('Financial Losses');
+        return 'Financial Losses';
     }
 
     public static function canCreate(): bool

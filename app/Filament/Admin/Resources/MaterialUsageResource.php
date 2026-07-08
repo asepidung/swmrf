@@ -26,22 +26,22 @@ class MaterialUsageResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('WAREHOUSE');
+        return 'WAREHOUSE';
     }
 
     public static function getNavigationLabel(): string
     {
-        return __('Material Usage');
+        return 'Material Usage';
     }
 
     public static function getModelLabel(): string
     {
-        return __('Material Usage');
+        return 'Material Usage';
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('Material Usages');
+        return 'Material Usages';
     }
 
     public static function table(Table $table): Table

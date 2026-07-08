@@ -23,22 +23,22 @@ class BoningResource extends Resource
     
     public static function getNavigationGroup(): ?string
     {
-        return __('PRODUCTION');
+        return 'PRODUCTION';
     }
 
     public static function getNavigationLabel(): string
     {
-        return __('Boning');
+        return 'Boning';
     }
 
     public static function getModelLabel(): string
     {
-        return __('Boning');
+        return 'Boning';
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('Bonings');
+        return 'Bonings';
     }
 
     public static function form(Form $form): Form
