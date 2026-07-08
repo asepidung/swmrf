@@ -333,7 +333,6 @@ class FoundItemScanner extends Page implements HasForms, HasTable
             ->emptyStateHeading(__('Belum ada histori temuan'))
             ->emptyStateIcon('heroicon-o-viewfinder-circle')
             ->striped()
-            ->compact()
             ->paginated([5, 10, 25, 50])
             ->defaultPaginationPageOption(5)
             ->columns([
