@@ -333,10 +333,6 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                     ->label(__('Waktu Temuan'))
                     ->dateTime('d/m/Y H:i')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('barcode')
-                    ->label(__('Barcode Baru'))
-                    ->searchable()
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('product.name')
                     ->label(__('Produk'))
                     ->searchable(),
@@ -351,27 +347,6 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                     ->wrap(),
             ])
             ->actions([
-                Tables\Actions\Action::make('print')
-                    ->label(__('Cetak Ulang'))
-                    ->icon('heroicon-o-printer')
-                    ->color('gray')
-                    ->iconButton()
-                    ->action(function (BeefStockMovement $record) {
-                        // Find the actual BeefStock record to print
-                        $stock = BeefStock::where('barcode', $record->barcode)->first();
-                        if ($stock) {
-                            $printUrl = route('beef-stock.label', [
-                                'id' => $stock->id,
-                                'show_exp' => 0
-                            ]);
-                            $this->dispatch('auto-print', url: $printUrl);
-                        } else {
-                            Notification::make()
-                                ->title(__('Barang sudah tidak ada di stok'))
-                                ->danger()
-                                ->send();
-                        }
-                    }),
             ]);
     }
 }
