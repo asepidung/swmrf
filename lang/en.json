@@ -437,5 +437,6 @@
     "WAREHOUSE": "Warehouse",
     "SALES": "Sales",
     "DISTRIBUTION": "Distribution",
-    "SYSTEM": "System"
+    "SYSTEM": "System",
+    "CATTLE": "Cattle"
 }

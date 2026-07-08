@@ -215,7 +215,7 @@
     "Periode Awal": "Periode Awal",
     "Periode Akhir": "Periode Akhir",
     "Detail": "Detail",
-    "FINANCE": "KEUANGAN",
+    "FINANCE": "Keuangan",
     "Payable": "Hutang",
     "Payables": "Hutang",
     "Payable Details": "Detail Hutang",
@@ -416,7 +416,7 @@
     "Export to Excel": "Ekspor ke Excel",
     "DATA BONING": "DATA BONING",
     "BATCH": "BATCH",
-    "PRODUCTION": "PRODUKSI",
+    "PRODUCTION": "Produksi",
     "No production items found.": "Tidak ada item produksi ditemukan.",
     "Repack": "Repack",
     "Repacks": "Repack",
@@ -560,5 +560,6 @@
     "WAREHOUSE": "Gudang",
     "SALES": "Penjualan",
     "DISTRIBUTION": "Distribusi",
-    "SYSTEM": "Sistem"
+    "SYSTEM": "Sistem",
+    "CATTLE": "Sapi"
 }
