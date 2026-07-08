@@ -20,6 +20,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Table;
 use Filament\Tables;
+use Filament\Pages\SubNavigationPosition;
 
 class FoundItemScanner extends Page implements HasForms, HasTable
 {
@@ -28,6 +29,7 @@ class FoundItemScanner extends Page implements HasForms, HasTable
 
     protected static ?string $navigationIcon = 'heroicon-o-viewfinder-circle';
     protected static ?string $cluster = BeefStocks::class;
+    protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
     protected static ?int $navigationSort = 4;
 
     protected static string $view = 'filament.clusters.beef-stocks.pages.found-item-scanner';
