@@ -88,6 +88,11 @@ Route::middleware(['web', 'auth'])->group(function () {
         return view('print.stock-take-label', compact('item'));
     })->name('stock-take.label');
 
+    Route::get('/print-beef-stock-label/{id}', function ($id) {
+        $item = \App\Models\BeefStock::with(['product', 'warehouse', 'grade'])->findOrFail($id);
+        return view('print.beef-stock-label', compact('item'));
+    })->name('beef-stock.label');
+
     // ------------------------------------------
     // 5. MODUL REPACK
     // ------------------------------------------

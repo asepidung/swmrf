@@ -293,6 +293,12 @@ class FoundItemScanner extends Page implements HasForms
                     'created_by' => auth()->id(),
                 ]);
 
+                $printUrl = route('beef-stock.label', [
+                    'id' => $stock->id,
+                    'show_exp' => 0 // Set to 1 if we want to show expiry date on label
+                ]);
+                $this->dispatch('auto-print', url: $printUrl);
+
                 Notification::make()
                     ->title(__('Temuan Barang Berhasil Disimpan'))
                     ->body(__('Label baru (prefix 0) dibuat: ') . $finalBarcode)
