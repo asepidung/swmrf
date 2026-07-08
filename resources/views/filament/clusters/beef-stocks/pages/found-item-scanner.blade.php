@@ -1,4 +1,15 @@
 <x-filament-panels::page>
+    <style>
+        /* Force compact table rows on this page */
+        .fi-ta-table td {
+            padding-top: 0.5rem !important;
+            padding-bottom: 0.5rem !important;
+        }
+        .fi-ta-table th {
+            padding-top: 0.5rem !important;
+            padding-bottom: 0.5rem !important;
+        }
+    </style>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Left Side: Barcode Scanner -->
         <div class="space-y-6 md:col-span-1">
