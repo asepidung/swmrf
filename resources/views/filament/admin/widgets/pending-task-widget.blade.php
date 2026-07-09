@@ -15,7 +15,7 @@
     @if($this->getPendingReceivingCount() > 0 || $this->getPendingWeighingCount() > 0 || $this->getPendingCarcassCount() > 0 || $this->getPendingMaterialRequestCount() > 0 || $this->getPendingMaterialFinanceCount() > 0 || $this->getPendingProductRequestCount() > 0 || $this->getPendingProductFinanceCount() > 0 || $this->getPendingRepackLockCount() > 0 || $this->getPendingTallyCount() > 0 || $this->getPendingDeliveryPlanCount() > 0 || $this->getPendingGrMaterialCount() > 0 || $this->getPendingGrProductCount() > 0 || $this->getPendingBoningLockCount() > 0 || $this->getPendingDeliveryOrderCount() > 0 || $this->getPendingDeliveryReceiptCount() > 0 || $this->getPendingInvoiceExchangeCount() > 0 || $this->getPendingMutationCount() > 0 || $this->getPendingBeefStockTakeCount() > 0 || $this->getPendingMaterialStockTakeCount() > 0)
     <div class="space-y-2">
         @if($this->getPendingBeefStockTakeCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\StockTakeResource::getUrl('index') }}" class="p-4 rounded-lg shadow-md border-2 border-red-500 bg-red-50 dark:bg-red-900/30 flex items-center gap-x-4 hover:bg-red-100 dark:hover:bg-red-900/50 transition duration-200 block animate-pulse">
+        <div class="p-4 rounded-lg shadow-md border-2 border-red-500 bg-red-50 dark:bg-red-900/30 flex items-center gap-x-4 transition duration-200 block animate-pulse">
             <span class="text-red-600 dark:text-red-400">
                 <x-filament::icon icon="heroicon-s-exclamation-circle" class="w-8 h-8" />
             </span>
@@ -27,11 +27,11 @@
                     Beberapa transaksi tidak bisa dilakukan (terkunci) selama proses Stock Opname belum selesai.
                 </p>
             </div>
-        </a>
+        </div>
         @endif
 
         @if($this->getPendingMaterialStockTakeCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\MaterialStockTakeResource::getUrl('index') }}" class="p-4 rounded-lg shadow-md border-2 border-red-500 bg-red-50 dark:bg-red-900/30 flex items-center gap-x-4 hover:bg-red-100 dark:hover:bg-red-900/50 transition duration-200 block animate-pulse">
+        <div class="p-4 rounded-lg shadow-md border-2 border-red-500 bg-red-50 dark:bg-red-900/30 flex items-center gap-x-4 transition duration-200 block animate-pulse">
             <span class="text-red-600 dark:text-red-400">
                 <x-filament::icon icon="heroicon-s-exclamation-circle" class="w-8 h-8" />
             </span>
@@ -43,7 +43,7 @@
                     Beberapa transaksi tidak bisa dilakukan (terkunci) selama proses Stock Opname belum selesai.
                 </p>
             </div>
-        </a>
+        </div>
         @endif
 
         @if($this->getPendingReceivingCount() > 0)
