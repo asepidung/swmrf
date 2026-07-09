@@ -98,12 +98,33 @@ class AdminPanelProvider extends PanelProvider
                     .fi-sidebar-nav-groups { gap: 0.15rem !important; }
                     .fi-sidebar-group { margin-top: 0.1rem !important; }
                     .fi-sidebar-group-items { gap: 0.1rem !important; }
-                    .fi-sidebar-group-label { margin-bottom: 0 !important; padding-top: 0.1rem !important; padding-bottom: 0.1rem !important; text-transform: uppercase !important; font-size: 0.75rem !important; }
+                    .fi-sidebar-group-label { margin-bottom: 0 !important; padding-top: 0.1rem !important; padding-bottom: 0.1rem !important; text-transform: uppercase !important; font-size: 0.875rem !important; }
                     .fi-sidebar-item { margin-top: 0 !important; margin-bottom: 0 !important; }
                     .fi-sidebar-item-button { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; min-height: 2rem !important; gap: 0.4rem !important; }
-                    .fi-sidebar-item-label { font-size: 0.8rem !important; }
+                    .fi-sidebar-item-label { font-size: 0.875rem !important; }
                     .fi-sidebar-item-icon { width: 1rem !important; height: 1rem !important; }
-                </style>',
+                </style>' . '
+                <script>
+                    document.addEventListener("alpine:initialized", () => {
+                        const sidebar = window.Alpine.store("sidebar");
+                        if (sidebar) {
+                            sidebar.toggleCollapsedGroup = function (group) {
+                                const isCurrentlyCollapsed = this.collapsedGroups.includes(group);
+                                const allGroups = Array.from(document.querySelectorAll(".fi-sidebar-group"))
+                                    .map(el => el.getAttribute("data-group-label"))
+                                    .filter(Boolean);
+                                
+                                if (isCurrentlyCollapsed) {
+                                    // Open this group, close all others
+                                    this.collapsedGroups = allGroups.filter(g => g !== group);
+                                } else {
+                                    // Close this group, meaning all are closed
+                                    this.collapsedGroups = allGroups;
+                                }
+                            };
+                        }
+                    });
+                </script>',
             )
 
             ->renderHook(
