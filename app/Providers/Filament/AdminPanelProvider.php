@@ -43,18 +43,18 @@ class AdminPanelProvider extends PanelProvider
                     ->sort(100),
             ])
             ->navigationGroups([
-                'REQUEST',
-                'PURCHASE ORDER',
-                'GOODS RECEIPT',
-                'CATTLE',
-                'PRODUCTION',
-                'WAREHOUSE',
-                'STOCKS',
-                'DISTRIBUTION',
-                'SALES',
-                'FINANCE',
-                'MASTER DATA',
-                'SYSTEM',
+                \Filament\Navigation\NavigationGroup::make('REQUEST')->label(fn() => __('REQUEST')),
+                \Filament\Navigation\NavigationGroup::make('PURCHASE ORDER')->label(fn() => __('PURCHASE ORDER')),
+                \Filament\Navigation\NavigationGroup::make('GOODS RECEIPT')->label(fn() => __('GOODS RECEIPT')),
+                \Filament\Navigation\NavigationGroup::make('CATTLE')->label(fn() => __('CATTLE')),
+                \Filament\Navigation\NavigationGroup::make('PRODUCTION')->label(fn() => __('PRODUCTION')),
+                \Filament\Navigation\NavigationGroup::make('WAREHOUSE')->label(fn() => __('WAREHOUSE')),
+                \Filament\Navigation\NavigationGroup::make('STOCKS')->label(fn() => __('STOCKS')),
+                \Filament\Navigation\NavigationGroup::make('DISTRIBUTION')->label(fn() => __('DISTRIBUTION')),
+                \Filament\Navigation\NavigationGroup::make('SALES')->label(fn() => __('SALES')),
+                \Filament\Navigation\NavigationGroup::make('FINANCE')->label(fn() => __('FINANCE')),
+                \Filament\Navigation\NavigationGroup::make('MASTER DATA')->label(fn() => __('MASTER DATA')),
+                \Filament\Navigation\NavigationGroup::make('SYSTEM')->label(fn() => __('SYSTEM')),
             ])
             ->brandName(config('app.name', 'WijayaApps'))
             ->brandLogo(asset('img/light.png'))
