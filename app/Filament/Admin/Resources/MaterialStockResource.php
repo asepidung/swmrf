@@ -70,7 +70,10 @@ class MaterialStockResource extends Resource
                         Forms\Components\TextInput::make('qty')
                             ->label(__('Stok Aktual'))
                             ->disabled()
-                            ->formatStateUsing(fn ($state) => number_format((float) $state, 2, ',', '.')),
+                            ->formatStateUsing(function ($state) {
+                                $isOpnameRunning = \App\Models\MaterialStockTake::whereIn('status', ['IN_PROGRESS', 'REVIEW'])->exists();
+                                return $isOpnameRunning ? '***' : number_format((float) $state, 2, ',', '.');
+                            }),
                         Forms\Components\TextInput::make('min_stock')
                             ->label(__('Min. Stock'))
                             ->disabled()
@@ -103,10 +106,28 @@ class MaterialStockResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('qty')
                     ->label(__('Stok Aktual'))
-                    ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')
+                    ->getStateUsing(function (\App\Models\Material $record) {
+                        static $isOpnameRunning = null;
+                        if ($isOpnameRunning === null) {
+                            $isOpnameRunning = \App\Models\MaterialStockTake::whereIn('status', ['IN_PROGRESS', 'REVIEW'])->exists();
+                        }
+                        return $isOpnameRunning ? '***' : number_format((float) $record->qty, 2, ',', '.');
+                    })
                     ->sortable()
-                    ->color(fn (\App\Models\Material $record) => $record->qty < ($record->min_stock ?? 0) ? 'danger' : 'success')
-                    ->weight(fn (\App\Models\Material $record) => $record->qty < ($record->min_stock ?? 0) ? 'bold' : null),
+                    ->color(function (\App\Models\Material $record) {
+                        static $isOpnameRunning = null;
+                        if ($isOpnameRunning === null) {
+                            $isOpnameRunning = \App\Models\MaterialStockTake::whereIn('status', ['IN_PROGRESS', 'REVIEW'])->exists();
+                        }
+                        return $isOpnameRunning ? 'gray' : ($record->qty < ($record->min_stock ?? 0) ? 'danger' : 'success');
+                    })
+                    ->weight(function (\App\Models\Material $record) {
+                        static $isOpnameRunning = null;
+                        if ($isOpnameRunning === null) {
+                            $isOpnameRunning = \App\Models\MaterialStockTake::whereIn('status', ['IN_PROGRESS', 'REVIEW'])->exists();
+                        }
+                        return $isOpnameRunning ? null : ($record->qty < ($record->min_stock ?? 0) ? 'bold' : null);
+                    }),
                 Tables\Columns\TextColumn::make('min_stock')
                     ->label(__('Min. Stock'))
                     ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')
