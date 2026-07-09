@@ -23,7 +23,7 @@ class BoningResource extends Resource
     
     public static function getNavigationGroup(): ?string
     {
-        return __('PRODUCTION');
+        return 'PRODUCTION';
     }
 
     public static function getNavigationLabel(): string

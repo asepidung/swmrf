@@ -22,7 +22,7 @@ class InvoiceResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('FINANCE');
+        return 'FINANCE';
     }
 
     public static function getNavigationLabel(): string

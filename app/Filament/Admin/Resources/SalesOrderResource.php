@@ -504,6 +504,6 @@ class SalesOrderResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('SALES');
+        return 'SALES';
     }
 }

@@ -22,7 +22,7 @@ class DeliveryOrderResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('DISTRIBUTION');
+        return 'DISTRIBUTION';
     }
 
     public static function getNavigationLabel(): string

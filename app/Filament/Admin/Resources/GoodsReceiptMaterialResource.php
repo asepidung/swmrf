@@ -346,6 +346,6 @@ class GoodsReceiptMaterialResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('GOODS RECEIPT');
+        return 'GOODS RECEIPT';
     }
 }

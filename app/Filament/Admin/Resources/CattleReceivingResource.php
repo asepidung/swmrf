@@ -24,7 +24,7 @@ class CattleReceivingResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('CATTLE');
+        return 'CATTLE';
     }
 
     public static function getNavigationLabel(): string

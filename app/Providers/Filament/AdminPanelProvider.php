@@ -43,18 +43,18 @@ class AdminPanelProvider extends PanelProvider
                     ->sort(100),
             ])
             ->navigationGroups([
-                __('REQUEST'),
-                __('PURCHASE ORDER'),
-                __('GOODS RECEIPT'),
-                __('CATTLE'),
-                __('PRODUCTION'),
-                __('WAREHOUSE'),
-                __('STOCKS'),
-                __('DISTRIBUTION'),
-                __('SALES'),
-                __('FINANCE'),
-                __('MASTER DATA'),
-                __('SYSTEM'),
+                'REQUEST',
+                'PURCHASE ORDER',
+                'GOODS RECEIPT',
+                'CATTLE',
+                'PRODUCTION',
+                'WAREHOUSE',
+                'STOCKS',
+                'DISTRIBUTION',
+                'SALES',
+                'FINANCE',
+                'MASTER DATA',
+                'SYSTEM',
             ])
             ->brandName(config('app.name', 'WijayaApps'))
             ->brandLogo(asset('img/light.png'))

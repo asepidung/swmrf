@@ -9,6 +9,6 @@ class Materials extends Cluster
     protected static ?string $navigationIcon = 'heroicon-o-archive-box';
     public static function getNavigationGroup(): ?string
     {
-        return __('MASTER DATA');
+        return 'MASTER DATA';
     }
 }

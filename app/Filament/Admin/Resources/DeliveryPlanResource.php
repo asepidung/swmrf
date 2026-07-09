@@ -237,6 +237,6 @@ class DeliveryPlanResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('DISTRIBUTION');
+        return 'DISTRIBUTION';
     }
 }

@@ -302,7 +302,7 @@ class StockTakeResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('STOCKS');
+        return 'STOCKS';
     }
 
     public static function getNavigationLabel(): string

@@ -21,7 +21,7 @@ class CattleClassResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('MASTER DATA');
+        return 'MASTER DATA';
     }
 
     public static function getModelLabel(): string
