@@ -58,7 +58,7 @@ class MaterialRequisition extends Model
     {
         $total = $this->items()->sum('subtotal');
         $tax = 0;
-        if ($this->supplier && $this->supplier->has_tax) {
+        if ($this->supplier && $this->supplier->is_tax_11) {
             $tax = $total * 0.11;
         }
         $this->update([
@@ -95,7 +95,8 @@ class MaterialRequisition extends Model
             $currentYear2Digit = date('y');
             $currentYear4Digit = date('Y');
 
-            $countThisYear = PurchaseMaterial::whereYear('created_at', $currentYear4Digit)
+            $countThisYear = PurchaseMaterial::withTrashed()
+                ->whereYear('created_at', $currentYear4Digit)
                 ->lockForUpdate()
                 ->count();
             

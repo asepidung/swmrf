@@ -87,6 +87,7 @@ class GoodsReceiptMaterialResource extends Resource
                                     ->placeholder('Qty PO')
                                     ->disabled()
                                     ->dehydrated(false)
+                                    ->suffix(fn ($record) => $record?->material?->unit?->name)
                                     ->afterStateHydrated(function ($component, $record) {
                                         if ($record && $record->goodsReceiptMaterial) {
                                             $poItem = \App\Models\PurchaseMaterialItem::where('purchase_material_id', $record->goodsReceiptMaterial->purchase_material_id)
@@ -114,6 +115,7 @@ class GoodsReceiptMaterialResource extends Resource
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'text-right'])
                                     ->required()
                                     ->live(onBlur: true)
+                                    ->suffix(fn ($record) => $record?->material?->unit?->name)
                                     ->dehydrateStateUsing(fn ($state) => (float) str_replace(['.', ','], ['', '.'], $state)),
                                 Forms\Components\Placeholder::make('item_subtotal')
                                     ->label('Subtotal')

@@ -101,6 +101,8 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                     ->label(__('Item Name'))
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('material.unit.name')
+                    ->label(__('Unit')),
                 Tables\Columns\TextColumn::make('system_qty')
                     ->label(__('System Qty'))
                     ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')

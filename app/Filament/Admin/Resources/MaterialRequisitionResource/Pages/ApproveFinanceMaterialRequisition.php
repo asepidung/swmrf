@@ -87,12 +87,14 @@ class ApproveFinanceMaterialRequisition extends EditRecord
             ->action(function () {
                 $this->save(false); // Make sure to save any changes made by Finance, if any
 
-                $this->record->update([
-                    'status' => 'PO Created',
-                    'reject_note' => null,
-                ]);
-                
-                $this->record->generatePurchaseOrder();
+                \Illuminate\Support\Facades\DB::transaction(function () {
+                    $this->record->update([
+                        'status' => 'PO Created',
+                        'reject_note' => null,
+                    ]);
+                    
+                    $this->record->generatePurchaseOrder();
+                });
                 
                 // Notifications rely on PendingTaskWidget now.
                 $this->redirect($this->getResource()::getUrl('index'));

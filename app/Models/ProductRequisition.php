@@ -95,7 +95,8 @@ class ProductRequisition extends Model
             $currentYear2Digit = date('y');
             $currentYear4Digit = date('Y');
 
-            $countThisYear = PurchaseProduct::whereYear('created_at', $currentYear4Digit)
+            $countThisYear = PurchaseProduct::withTrashed()
+                ->whereYear('created_at', $currentYear4Digit)
                 ->lockForUpdate()
                 ->count();
             

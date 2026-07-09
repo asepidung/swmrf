@@ -121,6 +121,24 @@ class PurchaseMaterialResource extends Resource
                     ->schema([
                         Forms\Components\Grid::make(3)
                             ->schema([
+                                Forms\Components\Placeholder::make('subtotal_display')
+                                    ->label('Subtotal')
+                                    ->content(function ($record) {
+                                        $subtotal = $record ? $record->items()->sum('subtotal') : 0;
+                                        return 'Rp ' . number_format($subtotal, 0, ',', '.');
+                                    }),
+
+                                Forms\Components\Placeholder::make('tax_display')
+                                    ->label('Tax / PPN (11%)')
+                                    ->content(function ($record) {
+                                        if (!$record) return 'Rp 0';
+                                        if ($record->supplier && !$record->supplier->is_tax_11) return 'Rp 0 (Non-PKP)';
+                                        
+                                        $subtotal = $record->items()->sum('subtotal');
+                                        $tax = $record->total_amount - $subtotal;
+                                        return 'Rp ' . number_format($tax, 0, ',', '.');
+                                    }),
+
                                 Forms\Components\Placeholder::make('grand_total_display')
                                     ->label('Grand Total')
                                     ->content(function ($record) {

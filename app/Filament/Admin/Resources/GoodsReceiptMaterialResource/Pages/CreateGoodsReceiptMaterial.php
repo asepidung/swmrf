@@ -59,6 +59,7 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
                 $itemsData[] = [
                     'material_id' => $item->material_id,
                     'material_name' => $item->material->name,
+                    'unit_name' => $item->material->unit?->name ?? '',
                     'po_qty' => number_format($remainingQty, 2, ',', '.'),
                     'qty_received' => number_format($remainingQty, 2, ',', '.'),
                     'price' => $item->price,
@@ -135,13 +136,15 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
                                     ->disabled()
                                     ->dehydrated(false),
                                 Forms\Components\Hidden::make('material_id'),
+                                Forms\Components\Hidden::make('unit_name'),
                                 Forms\Components\Hidden::make('price'),
                                 Forms\Components\TextInput::make('po_qty')
                                     ->label('Qty in PO')
                                     ->hiddenLabel()
                                     ->placeholder('Qty in PO')
                                     ->disabled()
-                                    ->dehydrated(true),
+                                    ->dehydrated(true)
+                                    ->suffix(fn (Forms\Get $get) => $get('unit_name')),
                                 Forms\Components\TextInput::make('qty_received')
                                     ->label('Qty Received')
                                     ->hiddenLabel()
@@ -150,7 +153,8 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
                                     ->stripCharacters('.')
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()'])
                                     ->required()
-                                    ->live(onBlur: true),
+                                    ->live(onBlur: true)
+                                    ->suffix(fn (Forms\Get $get) => $get('unit_name')),
                             ])
                             ->columns(3)
                             ->disableItemCreation()

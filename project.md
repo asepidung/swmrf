@@ -98,3 +98,9 @@ Sistem ini menggunakan digit pertama pada barcode untuk mendefinisikan asal-usul
   * **Password:** 91142552
 * **Auto-Deploy (Otomasi Github):** Server *hosting / production* telah menggunakan konfigurasi *auto-deploy* (Webhook / Github pintar). Segala perubahan kode dan penambahan tabel (lewat *migration* biasa) yang di-push ke branch main akan secara otomatis ditarik (git pull) ke *server production*. Perlu dicatat: *auto-deploy* ini **tidak akan** menjalankan perintah destruktif seperti migrate:fresh. Eksekusi reset database (fresh migration) hanya boleh dilakukan secara manual oleh *Project Owner* / Administrator langsung di dalam *server*.
 
+## 7. Blueprint UI & Notifikasi (PENTING)
+
+* **Notifikasi Real-time Filament (Blueprint):** Jika ingin mengimplementasikan notifikasi *toast* real-time berbasis *polling* di masa mendatang tanpa menggunakan *Websockets*, gunakan pendekatan di `GlobalTaskPoller.php` (Livewire Component) sebagai *blueprint* sempurna. 
+  * **Konfigurasi Poller:** Tambahkan tag `<div wire:poll.5s="checkTasks" class="hidden"></div>` di *view* komponen agar memicu pengecekan di sisi *server* setiap 5 detik.
+  * **Logika Notifikasi:** Pada method `checkTasks`, ambil data terbaru dari database (mengacu pada `$lastCheckAt`), bandingkan *status* dokumen (seperti 'Requested', 'Pending Finance'), dan kondisikan dengan kewenangan user `auth()->user()->hasPermission(...)`.
+  * **Trigger Toast:** Panggil notifikasi standar seperti `Notification::make()->title('...')->success()->send()` secara langsung di dalam kondisi tersebut. Filament otomatis akan meneruskan *trigger* ini sebagai notifikasi *toast* real-time ke *browser* pengguna yang bersangkutan tanpa perlu me-reload halaman.

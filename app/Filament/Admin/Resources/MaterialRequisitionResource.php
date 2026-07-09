@@ -75,13 +75,13 @@ class MaterialRequisitionResource extends Resource
                                     ->columnSpan(['default' => 12, 'md' => 3]),
                                 Forms\Components\Placeholder::make('col_qty')
                                     ->label(__('Qty'))
-                                    ->columnSpan(['default' => 6, 'md' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 2 : 1]),
+                                    ->columnSpan(['default' => 6, 'md' => 2]),
                                 Forms\Components\Placeholder::make('col_price')
                                     ->label(__('Price'))
                                     ->columnSpan(['default' => 6, 'md' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 3 : 2]),
                                 Forms\Components\Placeholder::make('col_item_total')
                                     ->label(__('Subtotal'))
-                                    ->columnSpan(['default' => 6, 'md' => 3])
+                                    ->columnSpan(['default' => 6, 'md' => 2])
                                     ->hidden(fn ($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord),
                                 Forms\Components\Placeholder::make('col_note')
                                     ->label(__('Notes'))
@@ -99,18 +99,25 @@ class MaterialRequisitionResource extends Resource
                                     ->required()
                                     ->hiddenLabel()
                                     ->placeholder('Pilih Material...')
-                                    ->columnSpan(['default' => 12, 'md' => 3]),
+                                    ->columnSpan(['default' => 12, 'md' => 3])
+                                    ->live(),
 
                                 Forms\Components\TextInput::make('qty')
                                     ->required()
                                     ->hiddenLabel()
                                     ->placeholder('Qty')
                                     ->default(0)
+                                    ->suffix(function (Forms\Get $get) {
+                                        if ($get('material_id')) {
+                                            return \App\Models\Material::find($get('material_id'))?->unit?->name;
+                                        }
+                                        return null;
+                                    })
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'text-right'])
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                     ->stripCharacters('.')
                                     ->numeric()
-                                    ->columnSpan(['default' => 6, 'md' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 2 : 1]),
+                                    ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('price')
                                     ->hiddenLabel()
@@ -135,7 +142,7 @@ class MaterialRequisitionResource extends Resource
                                         $price = self::parseNumber($get('price'));
                                         $component->state(number_format($qty * $price, 0, ',', '.'));
                                     })
-                                    ->columnSpan(['default' => 12, 'md' => 3]),
+                                    ->columnSpan(['default' => 12, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('note')
                                     ->hiddenLabel()
@@ -166,7 +173,7 @@ class MaterialRequisitionResource extends Resource
                                     ->content(function ($get) {
                                         $supplierId = $get('supplier_id');
                                         $supplier = \App\Models\Supplier::find($supplierId);
-                                        $hasTax = $supplier ? $supplier->has_tax : false;
+                                        $hasTax = $supplier ? $supplier->is_tax_11 : false;
 
                                         if (!$hasTax) return 'Rp 0 (Non-PKP)';
 
@@ -184,7 +191,7 @@ class MaterialRequisitionResource extends Resource
                                     ->content(function ($get) {
                                         $supplierId = $get('supplier_id');
                                         $supplier = \App\Models\Supplier::find($supplierId);
-                                        $hasTax = $supplier ? $supplier->has_tax : false;
+                                        $hasTax = $supplier ? $supplier->is_tax_11 : false;
 
                                         $items = $get('items') ?? [];
                                         $total = 0;

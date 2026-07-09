@@ -20,6 +20,20 @@ class ViewPurchaseMaterial extends ViewRecord
                 ->url(fn() => route('print.po-material', ['id' => $this->record->id]))
                 ->openUrlInNewTab(),
                 
+            Actions\DeleteAction::make()
+                ->tooltip('Delete PO')
+                ->icon('heroicon-o-trash')
+                ->visible(fn() => $this->record->goodsReceipts()->count() === 0)
+                ->action(function () {
+                    if ($this->record->materialRequisition) {
+                        $this->record->materialRequisition->update([
+                            'status' => 'Pending Finance'
+                        ]);
+                    }
+                    $this->record->delete();
+                    $this->redirect($this->getResource()::getUrl('index'));
+                }),
+
             Actions\Action::make('back')
                 ->label('Back to List')
                 ->color('gray')
