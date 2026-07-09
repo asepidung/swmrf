@@ -269,23 +269,7 @@ class DatabaseSeeder extends Seeder
         $programmer->is_active = true;
         $programmer->save();
 
-        // 3. Seed Employee (Normal User)
-        $employee = User::firstOrNew(['username' => 'employee']);
-        if (!$employee->exists) {
-            $employee->id = 101; // Set explicit ID
-        }
-        $employee->name = 'Karyawan SWM';
-        $employee->password = '1234';
-        $employee->gender = 'P';
-        $employee->role = 'employee';
-        $employee->is_active = true;
-        $employee->save();
 
-        // Give some initial permissions to employee (e.g. view_users)
-        $viewUsersPermission = Permission::where('name', 'view_users')->first();
-        if ($viewUsersPermission) {
-            $employee->permissions()->sync([$viewUsersPermission->id]);
-        }
 
         // Seed Warehouses
         \App\Models\Warehouse::updateOrCreate(['code' => 'JONGGOL'], ['name' => 'JONGGOL', 'is_active' => true]);
