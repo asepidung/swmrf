@@ -39,7 +39,7 @@ class AdminPanelProvider extends PanelProvider
                 \Filament\Navigation\NavigationItem::make('Log Viewer')
                     ->url(fn (): string => route('log-viewer.index'))
                     ->icon('heroicon-o-document-text')
-                    ->group('SYSTEM')
+                    ->group(__('SYSTEM'))
                     ->sort(100),
             ])
             ->navigationGroups([
@@ -95,13 +95,14 @@ class AdminPanelProvider extends PanelProvider
                 \Filament\View\PanelsRenderHook::HEAD_START,
                 fn (): string => '<style>
                     /* Compact sidebar spacing */
-                    .fi-sidebar-nav-groups { gap: 0.25rem !important; }
-                    .fi-sidebar-group { margin-top: 0.25rem !important; }
-                    .fi-sidebar-group-label { margin-bottom: 0.1rem !important; padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; text-transform: uppercase !important; }
+                    .fi-sidebar-nav-groups { gap: 0.15rem !important; }
+                    .fi-sidebar-group { margin-top: 0.1rem !important; }
+                    .fi-sidebar-group-items { gap: 0.1rem !important; }
+                    .fi-sidebar-group-label { margin-bottom: 0 !important; padding-top: 0.1rem !important; padding-bottom: 0.1rem !important; text-transform: uppercase !important; font-size: 0.75rem !important; }
                     .fi-sidebar-item { margin-top: 0 !important; margin-bottom: 0 !important; }
-                    .fi-sidebar-item-button { padding-top: 0.35rem !important; padding-bottom: 0.35rem !important; gap: 0.5rem !important; }
-                    .fi-sidebar-item-label { font-size: 0.875rem !important; }
-                    .fi-sidebar-item-icon { width: 1.25rem !important; height: 1.25rem !important; }
+                    .fi-sidebar-item-button { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; min-height: 2rem !important; gap: 0.4rem !important; }
+                    .fi-sidebar-item-label { font-size: 0.8rem !important; }
+                    .fi-sidebar-item-icon { width: 1rem !important; height: 1rem !important; }
                 </style>',
             )
 
