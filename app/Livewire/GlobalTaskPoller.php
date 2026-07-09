@@ -10,30 +10,29 @@ use App\Models\CattleWeighing;
 
 class GlobalTaskPoller extends Component
 {
-    public int $lastPoId = 0;
-    public int $lastReceivingId = 0;
-    public int $lastWeighingId = 0;
-    public int $lastSalesOrderId = 0;
+    public string $lastPurchaseCattleCheckAt = '';
+    public string $lastCattleReceivingCheckAt = '';
+    public string $lastCattleWeighingCheckAt = '';
     public string $lastSalesOrderCheckAt = '';
     public string $lastMaterialCheckAt = '';
     public string $lastProductCheckAt = '';
-    public int $lastPurchaseMaterialId = 0;
-    public int $lastPurchaseProductId = 0;
-    public int $lastLockedTallyId = 0;
+    public string $lastPurchaseMaterialCheckAt = '';
+    public string $lastPurchaseProductCheckAt = '';
+    public string $lastTallyCheckAt = '';
 
     public function mount()
     {
         if (auth()->check()) {
-            $this->lastPoId = (int) PurchaseCattle::max('id');
-            $this->lastReceivingId = (int) CattleReceiving::max('id');
-            $this->lastWeighingId = (int) CattleWeighing::max('id');
-            $this->lastSalesOrderId = (int) \App\Models\SalesOrder::max('id');
-            $this->lastSalesOrderCheckAt = now()->toDateTimeString();
-            $this->lastMaterialCheckAt = now()->toDateTimeString();
-            $this->lastProductCheckAt = now()->toDateTimeString();
-            $this->lastPurchaseMaterialId = (int) \App\Models\PurchaseMaterial::max('id');
-            $this->lastPurchaseProductId = (int) \App\Models\PurchaseProduct::max('id');
-            $this->lastLockedTallyId = (int) \App\Models\Tally::where('status', 'locked')->max('id');
+            $now = now()->toDateTimeString();
+            $this->lastPurchaseCattleCheckAt = $now;
+            $this->lastCattleReceivingCheckAt = $now;
+            $this->lastCattleWeighingCheckAt = $now;
+            $this->lastSalesOrderCheckAt = $now;
+            $this->lastMaterialCheckAt = $now;
+            $this->lastProductCheckAt = $now;
+            $this->lastPurchaseMaterialCheckAt = $now;
+            $this->lastPurchaseProductCheckAt = $now;
+            $this->lastTallyCheckAt = $now;
         }
     }
 
@@ -43,88 +42,81 @@ class GlobalTaskPoller extends Component
             return;
         }
 
-        $currentPoId = (int) PurchaseCattle::max('id');
-        $currentReceivingId = (int) CattleReceiving::max('id');
-        $currentWeighingId = (int) CattleWeighing::max('id');
-        $currentSalesOrderId = (int) \App\Models\SalesOrder::max('id');
-        $currentMaterialRequestId = (int) \App\Models\MaterialRequisition::max('id');
-        $currentPurchaseMaterialId = (int) \App\Models\PurchaseMaterial::max('id');
-        $currentPurchaseProductId = (int) \App\Models\PurchaseProduct::max('id');
-        $currentLockedTallyId = (int) \App\Models\Tally::where('status', 'locked')->max('id');
-
-        if ($currentPurchaseMaterialId > $this->lastPurchaseMaterialId) {
-            $this->lastPurchaseMaterialId = $currentPurchaseMaterialId;
+        if (empty($this->lastPurchaseMaterialCheckAt)) $this->lastPurchaseMaterialCheckAt = now()->toDateTimeString();
+        $recentPurchaseMaterials = \App\Models\PurchaseMaterial::where('created_at', '>', $this->lastPurchaseMaterialCheckAt)->get();
+        if ($recentPurchaseMaterials->isNotEmpty()) {
+            $this->lastPurchaseMaterialCheckAt = now()->toDateTimeString();
             if (auth()->user()->hasPermission('create_gr_materials')) {
-                Notification::make()
-                    ->title(__('Ada PO Material baru yang siap diterima/dibuatkan GRM.'))
-                    ->warning()
-                    ->send();
+                foreach ($recentPurchaseMaterials as $item) {
+                    Notification::make()->title(__('Ada PO Material baru yang siap diterima/dibuatkan GRM.'))->warning()->send();
+                }
             }
         }
 
-        if ($currentPurchaseProductId > $this->lastPurchaseProductId) {
-            $this->lastPurchaseProductId = $currentPurchaseProductId;
+        if (empty($this->lastPurchaseProductCheckAt)) $this->lastPurchaseProductCheckAt = now()->toDateTimeString();
+        $recentPurchaseProducts = \App\Models\PurchaseProduct::where('created_at', '>', $this->lastPurchaseProductCheckAt)->get();
+        if ($recentPurchaseProducts->isNotEmpty()) {
+            $this->lastPurchaseProductCheckAt = now()->toDateTimeString();
             if (auth()->user()->hasPermission('create_goods_receipt_products')) {
-                Notification::make()
-                    ->title(__('Ada PO Beef baru yang siap diterima/dibuatkan GRB.'))
-                    ->warning()
-                    ->send();
+                foreach ($recentPurchaseProducts as $item) {
+                    Notification::make()->title(__('Ada PO Beef baru yang siap diterima/dibuatkan GRB.'))->warning()->send();
+                }
             }
         }
 
-        if ($currentLockedTallyId > $this->lastLockedTallyId) {
-            $this->lastLockedTallyId = $currentLockedTallyId;
+        if (empty($this->lastTallyCheckAt)) $this->lastTallyCheckAt = now()->toDateTimeString();
+        $recentTallies = \App\Models\Tally::where('updated_at', '>', $this->lastTallyCheckAt)->get();
+        if ($recentTallies->isNotEmpty()) {
+            $this->lastTallyCheckAt = now()->toDateTimeString();
             if (auth()->user()->hasPermission('create_delivery_orders')) {
-                Notification::make()
-                    ->title(__('Ada Tally baru yang selesai dikunci (Locked) dan siap dibuatkan DO.'))
-                    ->warning()
-                    ->send();
+                foreach ($recentTallies as $item) {
+                    if ($item->status === 'locked') {
+                        Notification::make()->title(__('Ada Tally baru yang selesai dikunci (Locked) dan siap dibuatkan DO.'))->warning()->send();
+                    }
+                }
             }
         }
 
-        if ($currentPoId > $this->lastPoId) {
-            $this->lastPoId = $currentPoId;
+        if (empty($this->lastPurchaseCattleCheckAt)) $this->lastPurchaseCattleCheckAt = now()->toDateTimeString();
+        $recentPurchaseCattles = PurchaseCattle::where('created_at', '>', $this->lastPurchaseCattleCheckAt)->get();
+        if ($recentPurchaseCattles->isNotEmpty()) {
+            $this->lastPurchaseCattleCheckAt = now()->toDateTimeString();
             if (auth()->user()->hasPermission('create_cattle_receivings')) {
-                Notification::make()
-                    ->title(__('Ada tugas penerimaan sapi baru', ['name' => auth()->user()->name]))
-                    ->warning()
-                    ->send();
+                foreach ($recentPurchaseCattles as $item) {
+                    Notification::make()->title(__('Ada tugas penerimaan sapi baru', ['name' => auth()->user()->name]))->warning()->send();
+                }
             }
         }
 
-        if ($currentReceivingId > $this->lastReceivingId) {
-            $this->lastReceivingId = $currentReceivingId;
+        if (empty($this->lastCattleReceivingCheckAt)) $this->lastCattleReceivingCheckAt = now()->toDateTimeString();
+        $recentReceivings = CattleReceiving::where('created_at', '>', $this->lastCattleReceivingCheckAt)->get();
+        if ($recentReceivings->isNotEmpty()) {
+            $this->lastCattleReceivingCheckAt = now()->toDateTimeString();
             if (auth()->user()->hasPermission('create_cattle_weighings')) {
-                Notification::make()
-                    ->title(__('Ada tugas timbang baru', ['name' => auth()->user()->name]))
-                    ->warning()
-                    ->send();
+                foreach ($recentReceivings as $item) {
+                    Notification::make()->title(__('Ada tugas timbang baru', ['name' => auth()->user()->name]))->warning()->send();
+                }
             }
         }
 
-        if ($currentWeighingId > $this->lastWeighingId) {
-            $this->lastWeighingId = $currentWeighingId;
+        if (empty($this->lastCattleWeighingCheckAt)) $this->lastCattleWeighingCheckAt = now()->toDateTimeString();
+        $recentWeighings = CattleWeighing::where('created_at', '>', $this->lastCattleWeighingCheckAt)->get();
+        if ($recentWeighings->isNotEmpty()) {
+            $this->lastCattleWeighingCheckAt = now()->toDateTimeString();
             if (auth()->user()->hasPermission('create_carcasses')) {
-                Notification::make()
-                    ->title(__(':name, ada tugas karkas baru', ['name' => auth()->user()->name]))
-                    ->warning()
-                    ->send();
+                foreach ($recentWeighings as $item) {
+                    Notification::make()->title(__(':name, ada tugas karkas baru', ['name' => auth()->user()->name]))->warning()->send();
+                }
             }
         }
 
-        if (empty($this->lastSalesOrderCheckAt)) {
-            $this->lastSalesOrderCheckAt = now()->toDateTimeString();
-        }
-
+        if (empty($this->lastSalesOrderCheckAt)) $this->lastSalesOrderCheckAt = now()->toDateTimeString();
         $recentSalesOrders = \App\Models\SalesOrder::where('created_at', '>', $this->lastSalesOrderCheckAt)->get();
         if ($recentSalesOrders->isNotEmpty()) {
             $this->lastSalesOrderCheckAt = now()->toDateTimeString();
-            foreach ($recentSalesOrders as $so) {
-                if (auth()->user()->hasPermission('create_tallies')) {
-                    Notification::make()
-                        ->title(__('Ada Sales Order baru yang siap dibuatkan Tally'))
-                        ->warning()
-                        ->send();
+            if (auth()->user()->hasPermission('create_tallies')) {
+                foreach ($recentSalesOrders as $so) {
+                    Notification::make()->title(__('Ada Sales Order baru yang siap dibuatkan Tally'))->warning()->send();
                 }
             }
         }
