@@ -158,9 +158,14 @@ class MaterialStockTakeResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->withoutGlobalScopes([
+        $query = parent::getEloquentQuery();
+        
+        if (auth()->check() && auth()->user()->can('view_deleted_material_stock_takes')) {
+            $query->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+        }
+
+        return $query;
     }
 }
