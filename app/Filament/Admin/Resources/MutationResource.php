@@ -173,6 +173,6 @@ class MutationResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'WAREHOUSE';
+        return __('WAREHOUSE');
     }
 }

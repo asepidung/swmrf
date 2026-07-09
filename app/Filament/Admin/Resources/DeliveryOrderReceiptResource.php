@@ -23,7 +23,7 @@ class DeliveryOrderReceiptResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'DISTRIBUTION';
+        return __('DISTRIBUTION');
     }
 
     public static function getNavigationLabel(): string

@@ -348,6 +348,6 @@ class MaterialRequisitionResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'REQUEST';
+        return __('REQUEST');
     }
 }

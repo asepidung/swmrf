@@ -22,7 +22,7 @@ class ActivityLogResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'SYSTEM';
+        return __('SYSTEM');
     }
 
     public static function getModelLabel(): string

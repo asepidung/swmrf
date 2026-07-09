@@ -15,6 +15,6 @@ class MaterialsStock extends Cluster
 
     public static function getNavigationGroup(): ?string
     {
-        return 'STOCKS';
+        return __('STOCKS');
     }
 }

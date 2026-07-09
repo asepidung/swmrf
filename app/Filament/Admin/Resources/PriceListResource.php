@@ -188,6 +188,6 @@ class PriceListResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'SALES';
+        return __('SALES');
     }
 }

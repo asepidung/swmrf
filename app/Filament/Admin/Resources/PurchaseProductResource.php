@@ -235,6 +235,6 @@ class PurchaseProductResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'PURCHASE ORDER';
+        return __('PURCHASE ORDER');
     }
 }

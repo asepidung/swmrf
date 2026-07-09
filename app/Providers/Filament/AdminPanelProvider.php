@@ -39,7 +39,7 @@ class AdminPanelProvider extends PanelProvider
                 \Filament\Navigation\NavigationItem::make('Log Viewer')
                     ->url(fn (): string => route('log-viewer.index'))
                     ->icon('heroicon-o-document-text')
-                    ->group(__('SYSTEM'))
+                    ->group(fn() => __('SYSTEM'))
                     ->sort(100),
             ])
             ->navigationGroups([

@@ -26,7 +26,7 @@ class MaterialUsageResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'WAREHOUSE';
+        return __('WAREHOUSE');
     }
 
     public static function getNavigationLabel(): string

@@ -179,6 +179,6 @@ class SalesReturnResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'WAREHOUSE';
+        return __('WAREHOUSE');
     }
 }

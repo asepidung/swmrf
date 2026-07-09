@@ -32,7 +32,7 @@ class MaterialStockTakeResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'STOCKS';
+        return __('STOCKS');
     }
 
     public static function getNavigationLabel(): string

@@ -26,7 +26,7 @@ class PayableResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'FINANCE';
+        return __('FINANCE');
     }
 
     public static function getNavigationLabel(): string

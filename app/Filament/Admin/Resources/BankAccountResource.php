@@ -27,7 +27,7 @@ class BankAccountResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'MASTER DATA';
+        return __('MASTER DATA');
     }
 
     public static function getModelLabel(): string
