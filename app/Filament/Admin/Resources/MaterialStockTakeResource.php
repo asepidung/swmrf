@@ -22,18 +22,24 @@ class MaterialStockTakeResource extends Resource
 
     public static function getModelLabel(): string
     {
-        return __('Material Stock Opname');
+        return __('Opname Material');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('Material Stock Opnames');
+        return __('Opname Material');
     }
 
     public static function getNavigationGroup(): ?string
     {
-        return __('WAREHOUSE');
+        return __('STOCKS');
     }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Opname Material');
+    }
+
 
     public static function form(Form $form): Form
     {
@@ -125,12 +131,20 @@ class MaterialStockTakeResource extends Resource
                                 fn (Builder $query, $date): Builder => $query->whereDate('date', '<=', $date),
                             );
                     })
-            ])
-            ->actions([
-                Tables\Actions\ViewAction::make()->iconButton(),
-                Tables\Actions\EditAction::make()->iconButton(),
-            ])
-            ->bulkActions([
+    ])
+    ->actions([
+        Tables\Actions\Action::make('input_stock')
+            ->label(__('Input Stock'))
+            ->icon('heroicon-o-pencil-square')
+            ->color('warning')
+            ->button()
+            ->url(fn (MaterialStockTake $record): string => static::getUrl('items', ['record' => $record]))
+            ->visible(fn (MaterialStockTake $record) => in_array($record->status, ['DRAFT', 'IN_PROGRESS'])),
+
+        Tables\Actions\DeleteAction::make()
+            ->visible(fn (MaterialStockTake $record) => in_array($record->status, ['DRAFT', 'IN_PROGRESS'])),
+    ])
+    ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                     Tables\Actions\ForceDeleteBulkAction::make(),
@@ -153,6 +167,7 @@ class MaterialStockTakeResource extends Resource
             'create' => Pages\CreateMaterialStockTake::route('/create'),
             'view' => Pages\ViewMaterialStockTake::route('/{record}'),
             'edit' => Pages\EditMaterialStockTake::route('/{record}/edit'),
+            'items' => Pages\ManageMaterialStockTakeItems::route('/{record}/items'),
         ];
     }
 

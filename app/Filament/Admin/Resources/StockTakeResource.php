@@ -25,12 +25,12 @@ class StockTakeResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
     public static function getModelLabel(): string
     {
-        return __('Stock Opname');
+        return __('Opname Beef');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('Stock Opnames');
+        return __('Opname Beef');
     }
 
     public static function form(Form $form): Form
@@ -302,6 +302,12 @@ class StockTakeResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('WAREHOUSE');
+        return __('STOCKS');
     }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Opname Beef');
+    }
+
 }

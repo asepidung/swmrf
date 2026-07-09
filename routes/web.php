@@ -83,6 +83,11 @@ Route::middleware(['web', 'auth'])->group(function () {
         return view('print.stock-take', compact('record'));
     })->name('stock-take.print');
 
+    Route::get('/material-stock-take/{id}/print', function ($id) {
+        $record = \App\Models\MaterialStockTake::with(['items.material'])->findOrFail($id);
+        return view('print.material-stock-take', compact('record'));
+    })->name('material-stock-take.print');
+
     Route::get('/print-stock-take-label/{id}', function ($id) {
         $item = \App\Models\StockTakeItem::with(['product', 'stockTake', 'grade'])->findOrFail($id);
         return view('print.stock-take-label', compact('item'));

@@ -28,7 +28,7 @@ class CreateMaterialStockTake extends CreateRecord
         $items = [];
         foreach ($materials as $material) {
             // Get current system stock
-            $systemQty = $material->stocks()->sum('qty') ?? 0;
+            $systemQty = \App\Models\MaterialStock::where('material_id', $material->id)->sum('qty') ?? 0;
 
             $items[] = [
                 'material_stock_take_id' => $record->id,

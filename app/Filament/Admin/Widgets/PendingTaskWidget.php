@@ -171,4 +171,14 @@ class PendingTaskWidget extends Widget
         }
         return \App\Models\Mutation::where('status', 'SENT')->count();
     }
+
+    public function getPendingBeefStockTakeCount(): int
+    {
+        return \App\Models\StockTake::whereIn('status', ['DRAFT', 'IN_PROGRESS'])->count();
+    }
+
+    public function getPendingMaterialStockTakeCount(): int
+    {
+        return \App\Models\MaterialStockTake::whereIn('status', ['DRAFT', 'IN_PROGRESS'])->count();
+    }
 }

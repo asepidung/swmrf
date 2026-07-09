@@ -561,5 +561,13 @@
     "SALES": "Penjualan",
     "DISTRIBUTION": "Distribusi",
     "SYSTEM": "Sistem",
-    "CATTLE": "Sapi"
+    "CATTLE": "Sapi",
+    "Opname Material": "Opname Material",
+    "Opname Beef": "Opname Daging",
+    "Finish Stock Opname": "Selesaikan Opname",
+    "Input Stock": "Input Fisik",
+    "Difference Qty": "Selisih",
+    "Physical Qty": "Qty Fisik",
+    "System Qty": "Qty Sistem",
+    "Variance Status": "Status Selisih"
 }

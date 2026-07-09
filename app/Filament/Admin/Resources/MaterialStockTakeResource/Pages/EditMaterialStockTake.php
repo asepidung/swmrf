@@ -14,6 +14,11 @@ class EditMaterialStockTake extends EditRecord
 {
     protected static string $resource = MaterialStockTakeResource::class;
 
+    public function getTitle(): string
+    {
+        return __('Input / Review Stock Opname');
+    }
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
