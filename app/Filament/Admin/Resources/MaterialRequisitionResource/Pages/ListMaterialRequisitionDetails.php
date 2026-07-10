@@ -102,37 +102,74 @@ class ListMaterialRequisitionDetails extends Page implements HasTable
             ])
             ->headerActions([
                 Tables\Actions\Action::make('pdf')
-                    ->label('PDF')
+                    ->label(fn() => __('PDF'))
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('danger')
                     ->action(function ($livewire) {
                         $records = $livewire->getFilteredTableQuery()->get();
                         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.material-requisition-details-pdf', ['records' => $records]);
-                        return response()->streamDownload(fn () => print($pdf->output()), 'detail-request-material.pdf');
+                        return response()->streamDownload(fn () => print($pdf->output()), 'Detail_Material' . '_' . now()->format('Y-m-d') . '.pdf');
                     }),
-                Tables\Actions\ExportAction::make('excel')
-                    ->label('Excel')
-                    ->icon('heroicon-o-document-text')
+                                \Filament\Tables\Actions\Action::make('excel')
+                    ->label(fn() => __('Excel'))
                     ->color('success')
-                    ->exporter(\App\Filament\Exports\MaterialRequisitionItemExporter::class)
-                    ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->action(function ($livewire) {
+                        $records = $livewire->getFilteredTableQuery()->get();
+                        return response()->streamDownload(function () use ($records) {
+                            $writer = new \OpenSpout\Writer\XLSX\Writer();
+                            $writer->openToFile('php://output');
+                            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Request Date', 'No Request', 'Supplier', 'Item Name', 'Qty', 'Price', 'Status', 'User']));
+                            foreach ($records as $record) {
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    $record->requisition->created_at ? $record->requisition->created_at->format('Y-m-d') : '',
+                                    $record->requisition->document_number ?? '',
+                                    $record->requisition->supplier->name ?? '',
+                                    $record->material->name ?? '',
+                                    (string) $record->qty,
+                                    (string) $record->price,
+                                    $record->requisition->status ?? '',
+                                    $record->requisition->user->name ?? '',
+                                ]));
+                            }
+                            $writer->close();
+                        }, 'Detail_Material' . '_' . now()->format('Y-m-d') . '.xlsx');
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\BulkAction::make('pdf_bulk')
-                        ->label('PDF')
+                        ->label(fn() => __('PDF'))
                         ->icon('heroicon-o-document-arrow-down')
                         ->color('danger')
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
                             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.material-requisition-details-pdf', ['records' => $records]);
-                            return response()->streamDownload(fn () => print($pdf->output()), 'detail-request-material.pdf');
+                            return response()->streamDownload(fn () => print($pdf->output()), 'Detail_Material' . '_' . now()->format('Y-m-d') . '.pdf');
                         }),
-                    Tables\Actions\ExportBulkAction::make('excel_bulk')
-                        ->label('Excel')
+                                        \Filament\Tables\Actions\BulkAction::make('excel_bulk')
+                        ->label(fn() => __('Excel'))
                         ->icon('heroicon-o-document-text')
                         ->color('success')
-                        ->exporter(\App\Filament\Exports\MaterialRequisitionItemExporter::class)
-                        ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            return response()->streamDownload(function () use ($records) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Request Date', 'No Request', 'Supplier', 'Item Name', 'Qty', 'Price', 'Status', 'User']));
+                                foreach ($records as $record) {
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $record->requisition->created_at ? $record->requisition->created_at->format('Y-m-d') : '',
+                                        $record->requisition->document_number ?? '',
+                                        $record->requisition->supplier->name ?? '',
+                                        $record->material->name ?? '',
+                                        (string) $record->qty,
+                                        (string) $record->price,
+                                        $record->requisition->status ?? '',
+                                        $record->requisition->user->name ?? '',
+                                    ]));
+                                }
+                                $writer->close();
+                            }, 'Detail_Material' . '_' . now()->format('Y-m-d') . '.xlsx');
+                        }),
                 ]),
             ]);
     }

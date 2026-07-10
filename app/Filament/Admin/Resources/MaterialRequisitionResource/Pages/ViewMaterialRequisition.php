@@ -33,15 +33,15 @@ class ViewMaterialRequisition extends ViewRecord
     {
         return [
             Actions\Action::make('print')
-                ->tooltip('Print')
+                ->tooltip(fn() => __('Print'))
                 ->hiddenLabel()
                 ->icon('heroicon-o-printer')
                 ->color('gray')
                 ->url(fn() => route('print.material-request', ['id' => $this->record->id]))
                 ->openUrlInNewTab(),
 
-            Actions\Action::make('review')
-                ->tooltip('Review')
+                        \Filament\Actions\Action::make('review')
+                ->tooltip(fn() => __('Review'))
                 ->hiddenLabel()
                 ->icon('heroicon-o-clipboard-document-check')
                 ->color('warning')
@@ -49,10 +49,41 @@ class ViewMaterialRequisition extends ViewRecord
                     $user = auth()->user();
                     return in_array($this->record->status, ['Requested', 'Returned to Purchasing']) && ($user->isProgrammer() || $user->hasPermission('review_material_requisitions'));
                 })
-                ->url(fn() => $this->getResource()::getUrl('review', ['record' => $this->record])),
+                ->modalHeading(fn() => __('Review Request'))
+                ->modalDescription(fn() => __('Review request ini dan setujui untuk dilanjutkan ke Finance, atau reject ke pembuat.'))
+                ->modalSubmitActionLabel(fn() => __('Submit Review'))
+                ->modalIcon('heroicon-o-clipboard-document-check')
+                ->form([
+                    \Filament\Forms\Components\Radio::make('decision')
+                        ->label(fn() => __('Decision'))
+                        ->options([
+                            'approve' => 'Approve (Send to Finance)',
+                            'reject' => 'Reject',
+                        ])
+                        ->required()
+                        ->live(),
+                    \Filament\Forms\Components\Textarea::make('reject_note')
+                        ->label(fn() => __('Reason for Rejection'))
+                        ->required(fn (\Filament\Forms\Get $get) => $get('decision') === 'reject')
+                        ->visible(fn (\Filament\Forms\Get $get) => $get('decision') === 'reject'),
+                ])
+                ->action(function (array $data) {
+                    if ($data['decision'] === 'approve') {
+                        $this->record->update([
+                            'status' => 'Pending Finance',
+                            'reject_note' => null,
+                        ]);
+                    } else {
+                        $this->record->update([
+                            'status' => 'Rejected',
+                            'reject_note' => $data['reject_note'],
+                        ]);
+                    }
+                    $this->redirect($this->getResource()::getUrl('index'));
+                }),
 
             Actions\Action::make('resubmit')
-                ->tooltip('Resubmit Request')
+                ->tooltip(fn() => __('Resubmit Request'))
                 ->hiddenLabel()
                 ->icon('heroicon-o-arrow-path')
                 ->color('success')
@@ -67,7 +98,7 @@ class ViewMaterialRequisition extends ViewRecord
                 }),
 
             Actions\Action::make('finance_approval')
-                ->tooltip('Finance Approval')
+                ->tooltip(fn() => __('Finance Approval'))
                 ->hiddenLabel()
                 ->icon('heroicon-o-shield-check')
                 ->color('success')
@@ -75,22 +106,56 @@ class ViewMaterialRequisition extends ViewRecord
                     $user = auth()->user();
                     return $this->record->status === 'Pending Finance' && ($user->isProgrammer() || $user->hasPermission('approve_material_requisitions'));
                 })
-                ->url(fn() => $this->getResource()::getUrl('finance-approve', ['record' => $this->record])),
+                                ->modalHeading(fn() => __('Finance Approval'))
+                ->modalDescription(fn() => __('Silakan setujui untuk lanjut dibuatkan PO, atau kembalikan ke Purchasing.'))
+                ->modalSubmitActionLabel(fn() => __('Submit Decision'))
+                ->modalIcon('heroicon-o-shield-check')
+                ->form([
+                    \Filament\Forms\Components\Radio::make('decision')
+                        ->label(fn() => __('Decision'))
+                        ->options([
+                            'approve' => 'Approve & Generate PO',
+                            'reject' => 'Reject (Return to Purchasing)',
+                        ])
+                        ->required()
+                        ->live(),
+                    \Filament\Forms\Components\Textarea::make('reject_note')
+                        ->label(fn() => __('Reason for Rejection'))
+                        ->required(fn (\Filament\Forms\Get $get) => $get('decision') === 'reject')
+                        ->visible(fn (\Filament\Forms\Get $get) => $get('decision') === 'reject'),
+                ])
+                ->action(function (array $data) {
+                    if ($data['decision'] === 'approve') {
+                        \Illuminate\Support\Facades\DB::transaction(function () {
+                            $this->record->update([
+                                'status' => 'PO Created',
+                                'reject_note' => null,
+                            ]);
+                            $this->record->generatePurchaseOrder();
+                        });
+                    } else {
+                        $this->record->update([
+                            'status' => 'Returned to Purchasing',
+                            'reject_note' => $data['reject_note'],
+                        ]);
+                    }
+                    $this->redirect($this->getResource()::getUrl('index'));
+                }),
 
             Actions\EditAction::make()
-                ->tooltip('Edit')
+                ->tooltip(fn() => __('Edit'))
                 ->icon('heroicon-o-pencil')
                 ->hiddenLabel()
                 ->visible(fn() => in_array($this->record->status, ['Requested', 'Returned to Purchasing'])),
 
             Actions\DeleteAction::make()
-                ->tooltip('Delete')
+                ->tooltip(fn() => __('Delete'))
                 ->icon('heroicon-o-trash')
                 ->hiddenLabel()
                 ->visible(fn() => $this->record->status === 'Requested'),
 
             Actions\Action::make('back')
-                ->tooltip('Back to List')
+                ->tooltip(fn() => __('Back to List'))
                 ->hiddenLabel()
                 ->icon('heroicon-o-arrow-left')
                 ->color('gray')

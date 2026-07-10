@@ -267,7 +267,7 @@
 
                 @php
                 $taxAmount = 0;
-                if ($record->supplier && $record->supplier->has_tax) {
+                if ($record->supplier && $record->supplier->is_tax_11) {
                 $taxAmount = $record->total_amount * 0.11;
                 }
                 $grandTotal = $record->total_amount + $taxAmount;

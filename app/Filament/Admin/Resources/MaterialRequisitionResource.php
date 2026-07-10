@@ -38,17 +38,17 @@ class MaterialRequisitionResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Header Information')
+                Forms\Components\Section::make(fn() => __('Header Information'))
                     ->schema([
                         Forms\Components\DatePicker::make('due_date')
-                            ->label('Due Date')
+                            ->label(fn() => __('Due Date'))
                             ->required()
                             ->default(now())
                             ->disabled(fn($record) => $record && $record->status !== 'Requested')
                             ->columnSpan(['default' => 12, 'md' => 6]),
 
                         Forms\Components\Select::make('supplier_id')
-                            ->label('Supplier')
+                            ->label(fn() => __('Supplier'))
                             ->relationship('supplier', 'name')
                             ->searchable()
                             ->preload()
@@ -57,7 +57,7 @@ class MaterialRequisitionResource extends Resource
                             ->columnSpan(['default' => 12, 'md' => 6]),
 
                         Forms\Components\Textarea::make('note')
-                            ->label('Note')
+                            ->label(fn() => __('Note'))
                             ->columnSpan(12),
 
                         Forms\Components\Hidden::make('user_id')->default(fn() => Auth::id()),
@@ -65,26 +65,26 @@ class MaterialRequisitionResource extends Resource
                         Forms\Components\Hidden::make('tax_amount')->default(0),
                     ])->columns(12),
 
-                Forms\Components\Section::make('Item Details')
+                Forms\Components\Section::make(fn() => __('Item Details'))
                     ->schema([
                         // Clean Repeater Header UI
                         Forms\Components\Grid::make(12)
                             ->schema([
                                 Forms\Components\Placeholder::make('col_material')
-                                    ->label(__('Material'))
-                                    ->columnSpan(['default' => 12, 'md' => 3]),
+                                    ->label(fn() => __('Material'))
+                                    ->columnSpan(['default' => 12, 'md' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 4 : 3]),
                                 Forms\Components\Placeholder::make('col_qty')
-                                    ->label(__('Qty'))
+                                    ->label(fn() => __('Qty'))
                                     ->columnSpan(['default' => 6, 'md' => 2]),
                                 Forms\Components\Placeholder::make('col_price')
-                                    ->label(__('Price'))
-                                    ->columnSpan(['default' => 6, 'md' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 3 : 2]),
+                                    ->label(fn() => __('Price'))
+                                    ->columnSpan(['default' => 6, 'md' => 2]),
                                 Forms\Components\Placeholder::make('col_item_total')
-                                    ->label(__('Subtotal'))
+                                    ->label(fn() => __('Subtotal'))
                                     ->columnSpan(['default' => 6, 'md' => 2])
                                     ->hidden(fn ($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord),
                                 Forms\Components\Placeholder::make('col_note')
-                                    ->label(__('Notes'))
+                                    ->label(fn() => __('Notes'))
                                     ->columnSpan(['default' => 6, 'md' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 4 : 3]),
                             ])
                             ->extraAttributes(['class' => 'hidden md:grid']),
@@ -98,14 +98,15 @@ class MaterialRequisitionResource extends Resource
                                     ->searchable()
                                     ->required()
                                     ->hiddenLabel()
-                                    ->placeholder('Pilih Material...')
-                                    ->columnSpan(['default' => 12, 'md' => 3])
+                                    ->placeholder(fn() => __('Pilih Material...'))
+                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                    ->columnSpan(['default' => 12, 'md' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 4 : 3])
                                     ->live(),
 
                                 Forms\Components\TextInput::make('qty')
                                     ->required()
                                     ->hiddenLabel()
-                                    ->placeholder('Qty')
+                                    ->placeholder(fn() => __('Qty'))
                                     ->default(0)
                                     ->suffix(function (Forms\Get $get) {
                                         if ($get('material_id')) {
@@ -121,18 +122,18 @@ class MaterialRequisitionResource extends Resource
 
                                 Forms\Components\TextInput::make('price')
                                     ->hiddenLabel()
-                                    ->placeholder('Harga')
+                                    ->placeholder(fn() => __('Harga'))
                                     ->prefix('Rp')
                                     ->default(0)
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'text-right'])
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                     ->stripCharacters('.')
                                     ->numeric()
-                                    ->columnSpan(['default' => 6, 'md' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 3 : 2]),
+                                    ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('item_total')
                                     ->hiddenLabel()
-                                    ->placeholder('Subtotal')
+                                    ->placeholder(fn() => __('Subtotal'))
                                     ->prefix('Rp')
                                     ->readOnly()
                                     ->extraInputAttributes(['class' => 'text-right'])
@@ -146,19 +147,19 @@ class MaterialRequisitionResource extends Resource
 
                                 Forms\Components\TextInput::make('note')
                                     ->hiddenLabel()
-                                    ->placeholder('Notes')
+                                    ->placeholder(fn() => __('Notes'))
                                     ->columnSpan(['default' => 12, 'md' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 4 : 3]),
                             ])
                             ->columns(12),
                     ]),
 
-                Forms\Components\Section::make('Summary')
+                Forms\Components\Section::make(fn() => __('Summary'))
                     ->hidden(fn ($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord)
                     ->schema([
                         Forms\Components\Grid::make(3)
                             ->schema([
                                 Forms\Components\Placeholder::make('subtotal_display')
-                                    ->label('Subtotal')
+                                    ->label(fn() => __('Subtotal'))
                                     ->content(function ($get) {
                                         $items = $get('items') ?? [];
                                         $total = 0;
@@ -169,7 +170,7 @@ class MaterialRequisitionResource extends Resource
                                     }),
 
                                 Forms\Components\Placeholder::make('tax_display')
-                                    ->label('Tax / PPN (11%)')
+                                    ->label(fn() => __('Tax / PPN (11%)'))
                                     ->content(function ($get) {
                                         $supplierId = $get('supplier_id');
                                         $supplier = \App\Models\Supplier::find($supplierId);
@@ -187,7 +188,7 @@ class MaterialRequisitionResource extends Resource
                                     }),
 
                                 Forms\Components\Placeholder::make('grand_total_display')
-                                    ->label('Grand Total')
+                                    ->label(fn() => __('Grand Total'))
                                     ->content(function ($get) {
                                         $supplierId = $get('supplier_id');
                                         $supplier = \App\Models\Supplier::find($supplierId);
@@ -209,12 +210,12 @@ class MaterialRequisitionResource extends Resource
                             ->columnSpan(12),
                     ])->columns(12),
 
-                Forms\Components\Section::make('Rejection Info')
+                Forms\Components\Section::make(fn() => __('Rejection Info'))
                     ->description('Informasi alasan penolakan atau revisi request ini.')
                     ->aside()
                     ->schema([
                         Forms\Components\Placeholder::make('reject_note')
-                            ->label('Alasan')
+                            ->label(fn() => __('Alasan'))
                             ->content(fn($record) => $record ? $record->reject_note : '-')
                             ->extraAttributes(['class' => 'text-danger-600 font-bold px-4 py-3 bg-danger-50 border border-danger-300 rounded-lg']),
                     ])
@@ -237,23 +238,23 @@ class MaterialRequisitionResource extends Resource
             })
             ->columns([
                 Tables\Columns\TextColumn::make('document_number')
-                    ->label('No.')
+                    ->label(fn() => __('No.'))
                     ->searchable()
                     ->weight('bold'),
 
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Request Date')
+                    ->label(fn() => __('Request Date'))
                     ->date('d-M-Y')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('user.name')
-                    ->label('Requester'),
+                    ->label(fn() => __('Requester')),
 
                 Tables\Columns\TextColumn::make('supplier.name')
-                    ->label('Supplier'),
+                    ->label(fn() => __('Supplier')),
 
                 Tables\Columns\TextColumn::make('note')
-                    ->label('Note')
+                    ->label(fn() => __('Note'))
                     ->limit(50)
                     ->searchable(),
 
@@ -270,12 +271,12 @@ class MaterialRequisitionResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('supplier_id')
-                    ->label('Supplier')
+                    ->label(fn() => __('Supplier'))
                     ->relationship('supplier', 'name')
                     ->searchable()
                     ->preload(),
                 Tables\Filters\SelectFilter::make('user_id')
-                    ->label('Requester')
+                    ->label(fn() => __('Requester'))
                     ->relationship('user', 'name')
                     ->searchable()
                     ->preload(),
@@ -290,10 +291,10 @@ class MaterialRequisitionResource extends Resource
                 Tables\Filters\Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')
-                            ->label('From Date')
+                            ->label(fn() => __('From Date'))
                             ->default(now()->startOfMonth()),
                         Forms\Components\DatePicker::make('created_until')
-                            ->label('Until Date')
+                            ->label(fn() => __('Until Date'))
                             ->default(now()),
                     ])
                     ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
@@ -303,30 +304,47 @@ class MaterialRequisitionResource extends Resource
                     })
             ])
             ->headerActions([
-                \Filament\Tables\Actions\ActionGroup::make([
-                    \Filament\Tables\Actions\ExportAction::make('excel')
-                        ->label('Excel')
-                        ->icon('heroicon-o-document-text')
-                        ->color('success')
-                        ->exporter(\App\Filament\Exports\MaterialRequisitionExporter::class)
-                        ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
-                    \Filament\Tables\Actions\Action::make('pdf')
-                        ->label('PDF')
-                        ->icon('heroicon-o-document-arrow-down')
-                        ->color('danger')
-                        ->action(function ($livewire) {
-                            $records = $livewire->getFilteredTableQuery()->get();
-                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.parent-records-pdf', [
-                                'records' => $records,
-                                'title' => 'Material Requisitions'
-                            ]);
-                            return response()->streamDownload(fn () => print($pdf->output()), 'export.pdf');
-                        }),
-                ])
-                ->label('Export Data')
-                ->icon('heroicon-m-arrow-down-tray')
-                ->button()
-                ->color('success'),
+                \Filament\Tables\Actions\Action::make('detail')
+                    ->label(fn() => __('Detail'))
+                    ->icon('heroicon-o-list-bullet')
+                    ->color('info')
+                    ->url(fn() => static::getUrl('detail-list')),
+                \Filament\Tables\Actions\Action::make('export_excel')
+                    ->label(fn() => __('Excel'))
+                    ->color('success')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->action(function ($livewire) {
+                        $records = $livewire->getFilteredTableQuery()->get();
+                        return response()->streamDownload(function () use ($records) {
+                            $writer = new \OpenSpout\Writer\XLSX\Writer();
+                            $writer->openToFile('php://output');
+                            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['No', 'Date', 'Requester', 'Supplier', 'Note', 'Status', 'Total Amount']));
+                            foreach ($records as $record) {
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    $record->document_number ?? '',
+                                    $record->created_at ? $record->created_at->format('Y-m-d') : '',
+                                    $record->user->name ?? '',
+                                    $record->supplier->name ?? '',
+                                    $record->note ?? '',
+                                    $record->status ?? '',
+                                    (string) $record->total_amount
+                                ]));
+                            }
+                            $writer->close();
+                        }, 'Material_Requests' . '_' . now()->format('Y-m-d') . '.xlsx');
+                    }),
+                \Filament\Tables\Actions\Action::make('pdf')
+                    ->label(fn() => __('PDF'))
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('danger')
+                    ->action(function ($livewire) {
+                        $records = $livewire->getFilteredTableQuery()->get();
+                        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.parent-records-pdf', [
+                            'records' => $records,
+                            'title' => 'Material Requisitions'
+                        ]);
+                        return response()->streamDownload(fn () => print($pdf->output()), 'Material_Requests' . '_' . now()->format('Y-m-d') . '.pdf');
+                    }),
             ])
             ->actions([
                 // Clean UI: Actions moved to View Page
@@ -341,7 +359,6 @@ class MaterialRequisitionResource extends Resource
             'detail-list' => Pages\ListMaterialRequisitionDetails::route('/detail-list'),
             'view' => Pages\ViewMaterialRequisition::route('/{record}'),
             'review' => Pages\ReviewMaterialRequisition::route('/{record}/review'),
-            'finance-approve' => Pages\ApproveFinanceMaterialRequisition::route('/{record}/finance-approve'),
             'edit' => Pages\EditMaterialRequisition::route('/{record}/edit'),
         ];
     }

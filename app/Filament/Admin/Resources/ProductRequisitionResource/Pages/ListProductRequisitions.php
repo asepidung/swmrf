@@ -13,11 +13,7 @@ class ListProductRequisitions extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('detailList')
-                ->label(__('Detail'))
-                ->icon('heroicon-o-list-bullet')
-                ->color('info')
-                ->url(fn (): string => ProductRequisitionResource::getUrl('detail-list')),
+
             Actions\CreateAction::make()->label(__('Create')),
         ];
     }
