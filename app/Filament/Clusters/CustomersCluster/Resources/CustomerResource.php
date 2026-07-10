@@ -171,10 +171,32 @@ class CustomerResource extends Resource
                     ->label(fn() => __('Segment')),
             ])
             ->headerActions([
-                Tables\Actions\ExportAction::make('excel')
-                    ->label('Excel')
+                Tables\Actions\Action::make('export_excel')
+                    ->label(fn() => __('Excel'))
                     ->color('success')
-                    ->exporter(\App\Filament\Exports\CustomerExporter::class),
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->action(function ($livewire) {
+                        $records = $livewire->getFilteredTableQuery()->get();
+                        return response()->streamDownload(function () use ($records) {
+                            $writer = new \OpenSpout\Writer\XLSX\Writer();
+                            $writer->openToFile('php://output');
+                            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Customer Name', 'Group', 'Segment', 'Address', 'TOP', 'PIC', 'Phone', 'Invoice Exchange', 'Active']));
+                            foreach ($records as $record) {
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    $record->name ?? '',
+                                    $record->group?->name ?? '',
+                                    $record->segment?->name ?? '',
+                                    $record->address ?? '',
+                                    $record->top ?? 0,
+                                    $record->pic ?? '',
+                                    $record->phone ?? '',
+                                    $record->invoice_exchange ? 'Yes' : 'No',
+                                    $record->is_active ? 'Yes' : 'No',
+                                ]));
+                            }
+                            $writer->close();
+                        }, 'Customers.xlsx');
+                    }),
             ])
             ->actions([
                 //

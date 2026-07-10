@@ -12,12 +12,15 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Pages\SubNavigationPosition;
 
 class MaterialUnitResource extends Resource
 {
     protected static ?string $model = MaterialUnit::class;
 
     protected static ?string $cluster = \App\Filament\Clusters\Materials::class;
+
+    protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 
     protected static ?string $navigationIcon = 'heroicon-o-scale';
 
@@ -28,7 +31,7 @@ class MaterialUnitResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
-                    ->label(__('Unit Name'))
+                    ->label(fn() => __('Unit Name'))
                     ->required()
                     ->maxLength(255),
             ]);
@@ -39,7 +42,7 @@ class MaterialUnitResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->label(__('Unit Name'))
+                    ->label(fn() => __('Unit Name'))
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()

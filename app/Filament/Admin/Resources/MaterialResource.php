@@ -19,6 +19,8 @@ class MaterialResource extends Resource
 
     protected static ?string $cluster = \App\Filament\Clusters\Materials::class;
 
+    protected static \Filament\Pages\SubNavigationPosition $subNavigationPosition = \Filament\Pages\SubNavigationPosition::Top;
+
     protected static ?string $navigationIcon = 'heroicon-o-cube';
     
     protected static ?string $navigationLabel = 'Material Items';
@@ -34,18 +36,20 @@ class MaterialResource extends Resource
                 Forms\Components\Section::make(__('Logistic Item Information'))
                     ->schema([
                         Forms\Components\TextInput::make('code')
-                            ->label(__('Item Code'))
+                            ->label(fn() => __('Item Code'))
                             ->placeholder(__('Auto-generated'))
+                            ->visibleOn('view')
                             ->disabled()
                             ->dehydrated(false),
                         Forms\Components\TextInput::make('name')
-                            ->label(__('Item Name'))
+                            ->label(fn() => __('Item Name'))
+                            ->autofocus()
                             ->required()
                             ->maxLength(255)
                             ->extraInputAttributes(['style' => 'text-transform:uppercase'])
                             ->dehydrateStateUsing(fn ($state) => strtoupper($state)),
                         Forms\Components\Select::make('material_unit_id')
-                            ->label(__('Unit'))
+                            ->label(fn() => __('Unit'))
                             ->relationship('unit', 'name')
                             ->required()
                             ->createOptionForm([
@@ -54,7 +58,7 @@ class MaterialResource extends Resource
                                     ->maxLength(255),
                             ]),
                         Forms\Components\Select::make('material_category_id')
-                            ->label(__('Category'))
+                            ->label(fn() => __('Category'))
                             ->relationship('category', 'name')
                             ->required()
                             ->createOptionForm([
@@ -65,16 +69,16 @@ class MaterialResource extends Resource
                                     ->dehydrateStateUsing(fn ($state) => strtoupper($state)),
                             ]),
                         Forms\Components\TextInput::make('min_stock')
-                            ->label(__('Min. Stock'))
+                            ->label(fn() => __('Min. Stock'))
                             ->numeric()
-                            ->default(0),
+                            ->required(),
                         Forms\Components\Toggle::make('show_in_stock')
-                            ->label(__('Show in Stock List?'))
+                            ->label(fn() => __('Show in Stock List?'))
                             ->helperText(__('Turn OFF for non-inventory items like Office Supplies.'))
                             ->default(true)
                             ->columnSpanFull(),
                         Forms\Components\Toggle::make('is_active')
-                            ->label(__('Is Active'))
+                            ->label(fn() => __('Is Active'))
                             ->default(true)
                             ->columnSpanFull(),
                     ])->columns(2),
@@ -86,26 +90,26 @@ class MaterialResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('code')
-                    ->label(__('Item Code'))
+                    ->label(fn() => __('Item Code'))
                     ->searchable(),
                 Tables\Columns\TextColumn::make('name')
-                    ->label(__('Item Name'))
+                    ->label(fn() => __('Item Name'))
                     ->searchable(),
                 Tables\Columns\TextColumn::make('category.name')
-                    ->label(__('Category'))
+                    ->label(fn() => __('Category'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('unit.name')
-                    ->label(__('Unit'))
+                    ->label(fn() => __('Unit'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('min_stock')
-                    ->label(__('Min. Stock'))
+                    ->label(fn() => __('Min. Stock'))
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\IconColumn::make('is_active')
-                    ->label(__('Active'))
+                    ->label(fn() => __('Active'))
                     ->boolean(),
                 Tables\Columns\IconColumn::make('show_in_stock')
-                    ->label(__('Show in Stock'))
+                    ->label(fn() => __('Show in Stock'))
                     ->boolean(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -117,10 +121,40 @@ class MaterialResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('material_category_id')
+                    ->relationship('category', 'name')
+                    ->label(fn() => __('Category')),
+                Tables\Filters\TernaryFilter::make('show_in_stock')
+                    ->label(fn() => __('Show In Stock')),
             ])
             ->actions([
                 //
+            ])
+            ->headerActions([
+                Tables\Actions\Action::make('export_excel')
+                    ->label(fn() => __('Excel'))
+                    ->color('success')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->action(function ($livewire) {
+                        $records = $livewire->getFilteredTableQuery()->get();
+                        return response()->streamDownload(function () use ($records) {
+                            $writer = new \OpenSpout\Writer\XLSX\Writer();
+                            $writer->openToFile('php://output');
+                            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Item Code', 'Item Name', 'Category', 'Unit', 'Min. Stock', 'Active', 'Show in Stock']));
+                            foreach ($records as $record) {
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    $record->code ?? '',
+                                    $record->name ?? '',
+                                    $record->category?->name ?? '',
+                                    $record->unit?->name ?? '',
+                                    $record->min_stock ?? 0,
+                                    $record->is_active ? 'Yes' : 'No',
+                                    $record->show_in_stock ? 'Yes' : 'No',
+                                ]));
+                            }
+                            $writer->close();
+                        }, 'Materials.xlsx');
+                    }),
             ])
             ->recordUrl(
                 fn (\Illuminate\Database\Eloquent\Model $record): string => Pages\EditMaterial::getUrl([$record->id])

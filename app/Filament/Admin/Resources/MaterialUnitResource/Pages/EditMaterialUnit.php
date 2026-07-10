@@ -10,9 +10,13 @@ class EditMaterialUnit extends EditRecord
 {
     protected static string $resource = MaterialUnitResource::class;
 
-    protected function getHeaderActions(): array
+        protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('back')
+                ->label(__('Back'))
+                ->url(fn () => $this->getResource()::getUrl('index'))
+                ->color('gray'),
             Actions\DeleteAction::make(),
         ];
     }
@@ -20,5 +24,12 @@ class EditMaterialUnit extends EditRecord
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
+    }
+
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getSaveFormAction(),
+        ];
     }
 }
