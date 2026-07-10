@@ -13,7 +13,13 @@ class CreateCustomer extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         if (empty($data['customer_group_id'])) {
-            $group = \App\Models\CustomerGroup::firstOrCreate(['name' => strtoupper($data['name'])]);
+            $group = \App\Models\CustomerGroup::firstOrCreate(
+                ['name' => strtoupper($data['name'])],
+                [
+                    'head_office_pic' => $data['pic'] ?? null,
+                    'head_office_address' => $data['address'] ?? null,
+                ]
+            );
             $data['customer_group_id'] = $group->id;
         }
         

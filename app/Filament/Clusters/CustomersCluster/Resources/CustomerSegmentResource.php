@@ -13,6 +13,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Pages\SubNavigationPosition;
 
 class CustomerSegmentResource extends Resource
 {
@@ -23,6 +24,8 @@ class CustomerSegmentResource extends Resource
     protected static ?int $navigationSort = 3;
 
     protected static ?string $cluster = CustomersCluster::class;
+
+    protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 
     public static function getModelLabel(): string
     {
@@ -39,7 +42,7 @@ class CustomerSegmentResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
-                    ->label(__('Name'))
+                    ->label(fn() => __('Name'))
                     ->required()
                     ->maxLength(255)
                     ->autofocus()
@@ -52,15 +55,15 @@ class CustomerSegmentResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->label(__('Name'))
+                    ->label(fn() => __('Name'))
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label(__('Created at'))
+                    ->label(fn() => __('Created at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
-                    ->label(__('Updated at'))
+                    ->label(fn() => __('Updated at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

@@ -13,6 +13,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Pages\SubNavigationPosition;
 
 class CustomerResource extends Resource
 {
@@ -23,6 +24,8 @@ class CustomerResource extends Resource
     protected static ?int $navigationSort = 1;
 
     protected static ?string $cluster = CustomersCluster::class;
+
+    protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 
     public static function getModelLabel(): string
     {
@@ -42,56 +45,62 @@ class CustomerResource extends Resource
                     ->description(__('Customer profile and relations data.'))
                     ->schema([
                         Forms\Components\TextInput::make('name')
-                            ->label(__('Customer Name'))
+                            ->label(fn() => __('Customer Name'))
                             ->required()
                             ->maxLength(255)
                             ->autofocus()
                             ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                         Forms\Components\Select::make('customer_group_id')
                             ->relationship('group', 'name')
-                            ->label(__('Customer Group'))
+                            ->label(fn() => __('Customer Group'))
                             ->createOptionForm([
                                 Forms\Components\TextInput::make('name')
-                                    ->label(__('Name'))
+                                    ->label(fn() => __('Name'))
                                     ->required()
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                                 Forms\Components\TextInput::make('head_office_pic')
-                                    ->label(__('Head Office PIC'))
+                                    ->label(fn() => __('Head Office PIC'))
                                     ->maxLength(255),
                                 Forms\Components\Textarea::make('head_office_address')
-                                    ->label(__('Head Office Address'))
+                                    ->label(fn() => __('Head Office Address'))
                                     ->columnSpanFull(),
                             ])
                             ->helperText(__('Leave empty if Customer does not have a Group.')),
                         Forms\Components\Select::make('customer_segment_id')
                             ->relationship('segment', 'name')
-                            ->label(__('Segment'))
+                            ->label(fn() => __('Segment'))
                             ->required()
                             ->createOptionForm([
                                 Forms\Components\TextInput::make('name')
-                                    ->label(__('Name'))
+                                    ->label(fn() => __('Name'))
                                     ->required()
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                             ]),
                         Forms\Components\TextInput::make('top')
-                            ->label(__('TOP (Term of Payment) / Days'))
+                            ->label(fn() => __('TOP (Term of Payment) / Days'))
                             ->required()
-                            ->numeric()
-                            ->default(0),
+                            ->numeric(),
                         Forms\Components\Textarea::make('address')
-                            ->label(__('Full Address'))
+                            ->label(fn() => __('Full Address'))
                             ->required()
                             ->columnSpanFull(),
                         Forms\Components\TextInput::make('phone')
-                            ->label(__('Phone Number'))
+                            ->label(fn() => __('Phone Number'))
                             ->tel()
                             ->maxLength(255),
                         Forms\Components\TextInput::make('pic')
-                            ->label(__('PIC / Person In Charge'))
+                            ->label(fn() => __('PIC / Person In Charge'))
                             ->maxLength(255),
-                        Forms\Components\Toggle::make('invoice_exchange')
-                            ->label(__('Invoice Exchange'))
-                            ->default(false),
+                        Forms\Components\Select::make('invoice_exchange')
+                            ->label(fn() => __('Invoice Exchange'))
+                            ->options([
+                                '1' => __('Yes'),
+                                '0' => __('No'),
+                            ])
+                            ->required(),
+                        Forms\Components\Toggle::make('is_active')
+                            ->label(fn() => __('Active'))
+                            ->default(true),
                     ])->columns(2),
 
                 Forms\Components\Section::make(__('Required Documents'))
@@ -120,38 +129,52 @@ class CustomerResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->label(__('Customer Name'))
+                    ->label(fn() => __('Customer Name'))
                     ->searchable(),
                 Tables\Columns\TextColumn::make('group.name')
-                    ->label(__('Customer Group'))
+                    ->label(fn() => __('Customer Group'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('segment.name')
-                    ->label(__('Segment'))
+                    ->label(fn() => __('Segment'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('top')
-                    ->label(__('TOP (Days)'))
+                    ->label(fn() => __('TOP (Days)'))
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\IconColumn::make('invoice_exchange')
-                    ->label(__('Invoice Exchange'))
+                Tables\Columns\TextColumn::make('invoice_exchange')
+                    ->label(fn() => __('I-Ex'))
+                    ->formatStateUsing(fn ($state) => $state ? __('YES') : __('NO'))
+                    ->sortable(),
+                Tables\Columns\IconColumn::make('is_active')
+                    ->label(fn() => __('Active'))
                     ->boolean()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label(__('Created at'))
+                    ->label(fn() => __('Created at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
-                    ->label(__('Updated at'))
+                    ->label(fn() => __('Updated at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('invoice_exchange')
-                    ->label(__('Invoice Exchange')),
+                Tables\Filters\SelectFilter::make('customer_group_id')
+                    ->relationship('group', 'name')
+                    ->label(fn() => __('Customer Group')),
+                Tables\Filters\SelectFilter::make('customer_segment_id')
+                    ->relationship('segment', 'name')
+                    ->label(fn() => __('Segment')),
+            ])
+            ->headerActions([
+                Tables\Actions\ExportAction::make('excel')
+                    ->label('Excel')
+                    ->color('success')
+                    ->exporter(\App\Filament\Exports\CustomerExporter::class),
             ])
             ->actions([
                 //

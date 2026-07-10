@@ -20,12 +20,14 @@ class Customer extends Model
         'required_documents',
         'invoice_exchange',
         'is_taxable',
+        'is_active',
     ];
 
     protected $casts = [
         'required_documents' => 'array',
         'invoice_exchange' => 'boolean',
         'is_taxable' => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     public function group()
@@ -51,5 +53,10 @@ class Customer extends Model
     public function salesReturns()
     {
         return $this->hasMany(SalesReturn::class);
+    }
+
+    public function salesOrders()
+    {
+        return $this->hasMany(SalesOrder::class, 'customer_id');
     }
 }

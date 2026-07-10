@@ -37,7 +37,7 @@ class SalesOrderResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('customer_id')
                             ->label(__('Customer'))
-                            ->relationship('customer', 'name')
+                            ->relationship('customer', 'name', fn (Builder $query) => $query->where('is_active', true))
                             ->searchable()
                             ->preload()
                             ->required()

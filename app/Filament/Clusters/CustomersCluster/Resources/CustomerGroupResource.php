@@ -13,6 +13,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Pages\SubNavigationPosition;
 
 class CustomerGroupResource extends Resource
 {
@@ -23,6 +24,8 @@ class CustomerGroupResource extends Resource
     protected static ?int $navigationSort = 2;
 
     protected static ?string $cluster = CustomersCluster::class;
+
+    protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 
     public static function getModelLabel(): string
     {
@@ -41,18 +44,18 @@ class CustomerGroupResource extends Resource
                 Forms\Components\Section::make(__('Basic Information'))
                     ->schema([
                         Forms\Components\TextInput::make('name')
-                            ->label(__('Name'))
+                            ->label(fn() => __('Name'))
                             ->required()
                             ->maxLength(255)
                             ->autofocus()
                             ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                         
                         Forms\Components\TextInput::make('head_office_pic')
-                            ->label(__('Head Office PIC'))
+                            ->label(fn() => __('Head Office PIC'))
                             ->maxLength(255),
                             
                         Forms\Components\Textarea::make('head_office_address')
-                            ->label(__('Head Office Address'))
+                            ->label(fn() => __('Head Office Address'))
                             ->columnSpanFull(),
                     ])->columns(2),
             ]);
@@ -63,24 +66,24 @@ class CustomerGroupResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->label(__('Name'))
+                    ->label(fn() => __('Name'))
                     ->searchable(),
                 Tables\Columns\TextColumn::make('head_office_pic')
-                    ->label(__('Head Office PIC'))
+                    ->label(fn() => __('Head Office PIC'))
                     ->searchable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('head_office_address')
-                    ->label(__('Head Office Address'))
+                    ->label(fn() => __('Head Office Address'))
                     ->searchable()
                     ->limit(50)
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label(__('Created at'))
+                    ->label(fn() => __('Created at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
-                    ->label(__('Updated at'))
+                    ->label(fn() => __('Updated at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
