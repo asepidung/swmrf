@@ -24,12 +24,12 @@ class ProductResource extends Resource
 
     public static function getModelLabel(): string
     {
-        return __('Product');
+        return __('Beef');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('Products');
+        return __('Beef');
     }
 
     public static function form(Form $form): Form
@@ -39,10 +39,10 @@ class ProductResource extends Resource
                 Forms\Components\Section::make(__('Basic Information'))
                     ->schema([
                         Forms\Components\Radio::make('structure_type')
-                            ->label(__('Product Structure'))
+                            ->label(fn() => __('Product Structure'))
                             ->options([
-                                'main' => __('Main Product'),
-                                'sub' => __('Sub Product / Variant'),
+                                'main' => __('Main Beef'),
+                                'sub' => __('Sub Beef / Variant'),
                             ])
                             ->default('main')
                             ->live()
@@ -55,7 +55,7 @@ class ProductResource extends Resource
                             }),
 
                         Forms\Components\Select::make('parent_id')
-                            ->label(__('Parent Product'))
+                            ->label(fn() => __('Parent Beef'))
                             ->relationship(
                                 name: 'parent',
                                 titleAttribute: 'name',
@@ -78,7 +78,7 @@ class ProductResource extends Resource
                             }),
 
                         Forms\Components\Select::make('category_id')
-                            ->label(__('Category'))
+                            ->label(fn() => __('Category'))
                             ->relationship('category', 'name')
                             ->searchable()
                             ->preload()
@@ -91,13 +91,13 @@ class ProductResource extends Resource
                             })
                             ->createOptionForm([
                                 Forms\Components\TextInput::make('name')
-                                    ->label(__('Category Name'))
+                                    ->label(fn() => __('Category Name'))
                                     ->required()
                                     ->unique('product_categories', 'name')
                                     ->maxLength(255)
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                                 Forms\Components\TextInput::make('prefix')
-                                    ->label(__('Prefix (Kode)'))
+                                    ->label(fn() => __('Prefix (Kode)'))
                                     ->required()
                                     ->numeric()
                                     ->unique('product_categories', 'prefix')
@@ -107,15 +107,9 @@ class ProductResource extends Resource
                                 fn (Forms\Components\Actions\Action $action) => $action->modalWidth('md')->color('warning')
                             ),
 
-                        Forms\Components\TextInput::make('code')
-                            ->label(__('Product Code'))
-                            ->required()
-                            ->disabled()
-                            ->dehydrated()
-                            ->unique(ignorable: fn ($record) => $record),
-
                         Forms\Components\TextInput::make('name')
-                            ->label(__('Product Name'))
+                            ->label(fn() => __('Beef Name'))
+                            ->autofocus()
                             ->required()
                             ->unique(ignorable: fn ($record) => $record)
                             ->validationMessages([
@@ -124,8 +118,15 @@ class ProductResource extends Resource
                             ->maxLength(255)
                             ->extraInputAttributes(['style' => 'text-transform:uppercase']),
 
+                        Forms\Components\TextInput::make('code')
+                            ->label(fn() => __('Beef Code'))
+                            ->required()
+                            ->disabled()
+                            ->dehydrated()
+                            ->unique(ignorable: fn ($record) => $record),
+
                         Forms\Components\Toggle::make('is_active')
-                            ->label(__('Status'))
+                            ->label(fn() => __('Set Active'))
                             ->default(true),
                     ])->columns(2)
             ]);
@@ -136,17 +137,17 @@ class ProductResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('code')
-                    ->label(__('Product Code'))
+                    ->label(fn() => __('Beef Code'))
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('name')
-                    ->label(__('Product Name'))
+                    ->label(fn() => __('Beef Name'))
                     ->searchable()
                     ->sortable()
                     ->description(function (Product $record) {
                         if ($record->structure_type === 'main') {
-                            return __('Main Product');
+                            return __('Main Beef');
                         }
                         if ($record->structure_type === 'sub' && $record->parent) {
                             return __('Variant of') . ': ' . $record->parent->name;
@@ -155,15 +156,41 @@ class ProductResource extends Resource
                     }),
 
                 Tables\Columns\TextColumn::make('category.name')
-                    ->label(__('Category'))
+                    ->label(fn() => __('Category'))
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\ToggleColumn::make('is_active')
-                    ->label(__('Status')),
+                    ->label(fn() => __('Set Active')),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('category_id')
+                    ->relationship('category', 'name')
+                    ->label(fn() => __('Category')),
+            ])
+            ->headerActions([
+                Tables\Actions\Action::make('export_excel')
+                    ->label(fn() => __('Excel'))
+                    ->color('success')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->action(function ($livewire) {
+                        $records = $livewire->getFilteredTableQuery()->get();
+                        return response()->streamDownload(function () use ($records) {
+                            $writer = new \OpenSpout\Writer\XLSX\Writer();
+                            $writer->openToFile('php://output');
+                            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Beef Code', 'Beef Name', 'Structure', 'Category', 'Active']));
+                            foreach ($records as $record) {
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    $record->code ?? '',
+                                    $record->name ?? '',
+                                    $record->structure_type === 'main' ? 'Main' : 'Variant of: ' . ($record->parent?->name ?? ''),
+                                    $record->category?->name ?? '',
+                                    $record->is_active ? 'Yes' : 'No',
+                                ]));
+                            }
+                            $writer->close();
+                        }, 'Beefs.xlsx');
+                    }),
             ])
             ->actions([
                 // Clickable rows handles edit redirection, actions left clean per project rules

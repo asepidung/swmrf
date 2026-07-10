@@ -23,12 +23,12 @@ class ProductCategoryResource extends Resource
 
     public static function getModelLabel(): string
     {
-        return __('Product Category');
+        return __('Beef Category');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('Product Categories');
+        return __('Beef Categories');
     }
 
     public static function form(Form $form): Form
@@ -38,13 +38,13 @@ class ProductCategoryResource extends Resource
                 Forms\Components\Card::make()
                     ->schema([
                         Forms\Components\TextInput::make('name')
-                            ->label(__('Category Name'))
+                            ->label(fn() => __('Category Name'))
                             ->required()
                             ->unique(ignorable: fn ($record) => $record)
                             ->maxLength(255)
                             ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                         Forms\Components\TextInput::make('prefix')
-                            ->label(__('Prefix (Kode)'))
+                            ->label(fn() => __('Prefix (Kode)'))
                             ->required()
                             ->numeric()
                             ->unique(ignorable: fn ($record) => $record)
@@ -58,20 +58,20 @@ class ProductCategoryResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->label(__('Category Name'))
+                    ->label(fn() => __('Category Name'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('prefix')
-                    ->label(__('Prefix'))
+                    ->label(fn() => __('Prefix'))
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label(__('Created at'))
+                    ->label(fn() => __('Created at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
-                    ->label(__('Updated at'))
+                    ->label(fn() => __('Updated at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
