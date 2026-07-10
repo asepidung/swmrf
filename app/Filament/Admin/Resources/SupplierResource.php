@@ -48,19 +48,23 @@ class SupplierResource extends Resource
                         Forms\Components\Section::make(__('Supplier Information'))
                             ->schema([
                                 Forms\Components\TextInput::make('name')
-                                    ->label(__('Supplier Name'))
+                                    ->label(fn() => __('Supplier Name'))
+                                    ->autofocus()
                                     ->required()
                                     ->maxLength(255),
                                 Forms\Components\TextInput::make('pic')
-                                    ->label(__('PIC / Person In Charge'))
+                                    ->label(fn() => __('PIC / Person In Charge'))
                                     ->required()
                                     ->maxLength(255),
                                 Forms\Components\TextInput::make('phone')
-                                    ->label(__('Phone Number'))
+                                    ->label(fn() => __('Phone Number'))
                                     ->tel()
                                     ->maxLength(255),
+                                Forms\Components\TextInput::make('supplied_goods')
+                                    ->label(fn() => __('Supplied Goods'))
+                                    ->maxLength(255),
                                 Forms\Components\Textarea::make('address')
-                                    ->label(__('Address'))
+                                    ->label(fn() => __('Address'))
                                     ->required()
                                     ->columnSpanFull(),
                             ])->columns(2),
@@ -69,13 +73,13 @@ class SupplierResource extends Resource
                             ->description(__('Supplier bank transfer account information'))
                             ->schema([
                                 Forms\Components\TextInput::make('bank_name')
-                                    ->label(__('Bank Name'))
+                                    ->label(fn() => __('Bank Name'))
                                     ->maxLength(255),
                                 Forms\Components\TextInput::make('account_number')
-                                    ->label(__('Account Number'))
+                                    ->label(fn() => __('Account Number'))
                                     ->maxLength(255),
                                 Forms\Components\TextInput::make('account_name')
-                                    ->label(__('Account Name'))
+                                    ->label(fn() => __('Account Name'))
                                     ->maxLength(255),
                             ])->columns(3),
                     ])->columnSpan(['lg' => 2]),
@@ -85,16 +89,17 @@ class SupplierResource extends Resource
                         Forms\Components\Section::make(__('Settings & Tax'))
                             ->schema([
                                 Forms\Components\TextInput::make('top_days')
-                                    ->label(__('Term of Payment (Days)'))
+                                    ->label(fn() => __('Term of Payment (Days)'))
                                     ->numeric()
-                                    ->default(0)
                                     ->required(),
-                                Forms\Components\Toggle::make('is_tax_11')
-                                    ->label(__('Tax 11%'))
-                                    ->helperText(__('Enable 11% value-added tax for this supplier'))
-                                    ->default(false),
+                                                                Forms\Components\Radio::make('is_tax_11')
+                                    ->label(fn() => __('Tax 11%'))
+                                    ->boolean()
+                                    ->required()
+                                    ->inline()
+                                    ->helperText(fn() => __('Enable 11% value-added tax for this supplier')),
                                 Forms\Components\Toggle::make('is_active')
-                                    ->label(__('Active Status'))
+                                    ->label(fn() => __('Active Status'))
                                     ->helperText(__('Toggle supplier active state'))
                                     ->default(true),
                             ]),
@@ -107,34 +112,38 @@ class SupplierResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->label(__('Supplier Name'))
+                    ->label(fn() => __('Supplier Name'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('pic')
-                    ->label(__('PIC'))
+                    ->label(fn() => __('PIC'))
+                    ->searchable()
+                    ->sortable(),
+                                Tables\Columns\TextColumn::make('supplied_goods')
+                    ->label(fn() => __('Supplied Goods'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('phone')
-                    ->label(__('Phone Number'))
+                    ->label(fn() => __('Phone Number'))
                     ->searchable(),
                 Tables\Columns\TextColumn::make('top_days')
-                    ->label(__('T.O.P (Days)'))
+                    ->label(fn() => __('T.O.P (Days)'))
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\IconColumn::make('is_tax_11')
-                    ->label(__('Tax 11%'))
+                    ->label(fn() => __('Tax 11%'))
                     ->boolean()
                     ->sortable(),
                 Tables\Columns\IconColumn::make('is_active')
-                    ->label(__('Active Status'))
+                    ->label(fn() => __('Active Status'))
                     ->boolean()
                     ->sortable(),
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_active')
-                    ->label(__('Active Status')),
+                    ->label(fn() => __('Active Status')),
                 Tables\Filters\TernaryFilter::make('is_tax_11')
-                    ->label(__('Tax 11%')),
+                    ->label(fn() => __('Tax 11%')),
             ])
             ->actions([
                 // No action columns to keep clean, clickable rows are used instead.

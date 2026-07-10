@@ -14,6 +14,7 @@ class Supplier extends Model
         'top_days',
         'is_tax_11',
         'is_active',
+        'supplied_goods',
         'bank_name',
         'account_number',
         'account_name',

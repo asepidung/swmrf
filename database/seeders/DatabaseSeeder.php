@@ -262,7 +262,7 @@ class DatabaseSeeder extends Seeder
         if (!$programmer->exists) {
             $programmer->id = 100; // Set explicit ID
         }
-        $programmer->name = 'Saepullrock SWM';
+        $programmer->name = 'Asep Idung';
         $programmer->password = '91142552';
         $programmer->gender = 'L';
         $programmer->role = 'programmer';
