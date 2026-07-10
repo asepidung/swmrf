@@ -39,7 +39,8 @@ class CattleClassResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
-                    ->label(__('Name'))
+                    ->label(fn() => __('Name'))
+                    ->autofocus()
                     ->required()
                     ->maxLength(255)
                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
@@ -51,22 +52,43 @@ class CattleClassResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->label(__('Name'))
+                    ->label(fn() => __('Name'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label(__('Created at'))
+                    ->label(fn() => __('Created at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
-                    ->label(__('Updated at'))
+                    ->label(fn() => __('Updated at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 //
+            ])
+            ->headerActions([
+                Tables\Actions\Action::make('export_excel')
+                    ->label(fn() => __('Excel'))
+                    ->color('success')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->action(function ($livewire) {
+                        $records = $livewire->getFilteredTableQuery()->get();
+                        return response()->streamDownload(function () use ($records) {
+                            $writer = new \OpenSpout\Writer\XLSX\Writer();
+                            $writer->openToFile('php://output');
+                            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Name', 'Created At']));
+                            foreach ($records as $record) {
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    $record->name ?? '',
+                                    $record->created_at ? $record->created_at->format('Y-m-d H:i:s') : '',
+                                ]));
+                            }
+                            $writer->close();
+                        }, 'Cattle_Classes.xlsx');
+                    }),
             ])
             ->actions([
                 // 

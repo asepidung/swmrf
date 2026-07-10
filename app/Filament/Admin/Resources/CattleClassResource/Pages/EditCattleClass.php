@@ -10,9 +10,13 @@ class EditCattleClass extends EditRecord
 {
     protected static string $resource = CattleClassResource::class;
 
-    protected function getHeaderActions(): array
+        protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('back')
+                ->label(fn() => __('Back'))
+                ->url(fn () => $this->getResource()::getUrl('index'))
+                ->color('gray'),
             Actions\DeleteAction::make(),
         ];
     }
@@ -20,5 +24,12 @@ class EditCattleClass extends EditRecord
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
+    }
+
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getSaveFormAction(),
+        ];
     }
 }
