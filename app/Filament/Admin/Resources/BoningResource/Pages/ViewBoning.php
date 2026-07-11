@@ -100,11 +100,14 @@ class ViewBoning extends ViewRecord
 
                         Infolists\Components\TextEntry::make('carcasses_processed')
                             ->label(__('Carcasses Processed'))
-                            ->state(fn ($record) => $record->carcasses->map(fn($c) => $c->carcass->carcass_number ?? '-')->join(', '))
+                            ->state(fn ($record) => $record->carcasses->map(fn($c) => $c->carcass->carcass_number ?? '-')->toArray())
+                            ->badge()
+                            ->color('success')
                             ->columnSpan(2),
                             
                         Infolists\Components\TextEntry::make('note')
                             ->label(__('Note'))
+                            ->default('-')
                             ->columnSpan(2),
                     ])->columns(4),
 
