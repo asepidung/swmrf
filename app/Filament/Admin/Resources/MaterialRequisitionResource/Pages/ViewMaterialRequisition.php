@@ -73,11 +73,13 @@ class ViewMaterialRequisition extends ViewRecord
                             'status' => 'Pending Finance',
                             'reject_note' => null,
                         ]);
+                        \Filament\Notifications\Notification::make()->title('Request sent to Finance')->success()->send();
                     } else {
                         $this->record->update([
                             'status' => 'Rejected',
                             'reject_note' => $data['reject_note'],
                         ]);
+                        \Filament\Notifications\Notification::make()->title('Request rejected')->warning()->send();
                     }
                     $this->redirect($this->getResource()::getUrl('index'));
                 }),
@@ -133,11 +135,13 @@ class ViewMaterialRequisition extends ViewRecord
                             ]);
                             $this->record->generatePurchaseOrder();
                         });
+                        \Filament\Notifications\Notification::make()->title('PO Created Successfully')->success()->send();
                     } else {
                         $this->record->update([
                             'status' => 'Returned to Purchasing',
                             'reject_note' => $data['reject_note'],
                         ]);
+                        \Filament\Notifications\Notification::make()->title('Returned to Purchasing')->warning()->send();
                     }
                     $this->redirect($this->getResource()::getUrl('index'));
                 }),

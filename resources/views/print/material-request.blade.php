@@ -258,28 +258,26 @@
             </tbody>
         </table>
 
-        <div class="totals">
+                <div class="totals">
             <table>
+                @php
+                $taxAmount = $record->tax_amount ?? 0;
+                $subtotal = $record->total_amount - $taxAmount;
+                @endphp
                 <tr>
                     <th>Subtotal</th>
-                    <td>Rp {{ number_format($record->total_amount, 0, ',', '.') }}</td>
+                    <td>Rp {{ number_format($subtotal, 0, ',', '.') }}</td>
                 </tr>
 
-                @php
-                $taxAmount = 0;
-                if ($record->supplier && $record->supplier->is_tax_11) {
-                $taxAmount = $record->total_amount * 0.11;
-                }
-                $grandTotal = $record->total_amount + $taxAmount;
-                @endphp
-
+                @if($taxAmount > 0)
                 <tr>
                     <th>Tax (11%)</th>
                     <td>Rp {{ number_format($taxAmount, 0, ',', '.') }}</td>
                 </tr>
+                @endif
                 <tr>
                     <th>Grand Total</th>
-                    <td><strong>Rp {{ number_format($grandTotal, 0, ',', '.') }}</strong></td>
+                    <td><strong>Rp {{ number_format($record->total_amount, 0, ',', '.') }}</strong></td>
                 </tr>
             </table>
         </div>
