@@ -213,11 +213,11 @@ class GoodsReceiptProductResource extends Resource
         return [
             'index' => Pages\ListGoodsReceiptProducts::route('/'),
             'drafts' => Pages\ListPendingPoProducts::route('/drafts'),
+            'detail-list' => Pages\GoodsReceiptProductDetailList::route('/detail-list'),
             'input' => Pages\InputGoodsReceiptProduct::route('/{record}/input'),
             'view' => Pages\ViewGoodsReceiptProduct::route('/{record}'),
             'labeling' => Pages\LabelingGoodsReceiptProduct::route('/{record}/labeling'),
             'scan' => Pages\ScanGoodsReceiptProduct::route('/{record}/scan'),
-            'detail-list' => Pages\GoodsReceiptProductDetailList::route('/detail-list'),
         ];
     }
 
