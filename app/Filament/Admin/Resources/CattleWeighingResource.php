@@ -194,7 +194,7 @@ class CattleWeighingResource extends Resource
                                 return number_format($total, 2) . ' Kg';
                             }),
                         Forms\Components\Placeholder::make('total_variance')
-                            ->label('Total Variance (Loss)')
+                            ->label(__('Total Shrinkage'))
                             ->content(function (Forms\Get $get) {
                                 $items = $get('items') ?? [];
                                 $totalInitial = 0;

@@ -268,7 +268,7 @@
                     <th>Eartag Number</th>
                     <th style="width:100px;">Initial Weight</th>
                     <th style="width:100px;">Actual Weight</th>
-                    <th style="width:100px;">Variance</th>
+                    <th style="width:100px;">Shrinkage</th>
                     <th>Notes</th>
                 </tr>
             </thead>
