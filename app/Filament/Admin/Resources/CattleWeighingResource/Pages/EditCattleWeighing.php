@@ -23,14 +23,20 @@ class EditCattleWeighing extends EditRecord
                 ->icon('heroicon-o-printer')
                 ->url(fn ($record): string => route('cattle-weighing.print', $record))
                 ->openUrlInNewTab(),
-            Actions\DeleteAction::make(),
-            Actions\ForceDeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->disabled(fn ($record) => \App\Models\Carcass::where('cattle_weighing_id', $record->id)->exists()),
+            Actions\ForceDeleteAction::make()
+                ->disabled(fn ($record) => \App\Models\Carcass::where('cattle_weighing_id', $record->id)->exists()),
             Actions\RestoreAction::make(),
         ];
     }
 
     protected function getFormActions(): array
     {
+        if (\App\Models\Carcass::where('cattle_weighing_id', $this->getRecord()->id)->exists()) {
+            return [];
+        }
+
         return [
             $this->getSaveFormAction(),
         ];
@@ -47,10 +53,9 @@ class EditCattleWeighing extends EditRecord
 
         if (\App\Models\Carcass::where('cattle_weighing_id', $this->getRecord()->id)->exists()) {
             \Filament\Notifications\Notification::make()
-                ->title(__('This Cattle Weighing cannot be edited or deleted because it has already been processed into Carcass.'))
-                ->danger()
+                ->title(__('This Cattle Weighing has been processed into Carcass and is now read-only.'))
+                ->warning()
                 ->send();
-            $this->redirect($this->getResource()::getUrl('index'));
         }
     }
 
