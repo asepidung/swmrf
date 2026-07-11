@@ -46,3 +46,7 @@ Modul **Customers** digunakan untuk mengelola data pelanggan, termasuk pembagian
    - Ditambahkan fitur Ekspor tabel Kustomer ke dalam format Excel pada antarmuka *List Customers* dengan warna hijau (`success`), sesuai standar tombol ekspor proyek.
 3. **Penerjemahan Bahasa (Bilingual)**:
    - Pengaturan Label pada *Table* dan *Form* menggunakan `fn() => __('...')` (Closure) untuk memastikan penerjemahan label (*Indonesian* / *English*) terjadi tepat saat *render* halaman (*runtime*), bukan saat proses inisialisasi awal.
+
+
+### Pencegahan Duplikasi Data (Unique Validation)
+- Semua *field* utama pengenal identitas seperti `name` (dan `code` jika ada) pada form *Create/Edit* telah dilengkapi dengan atribut `->unique(ignoreRecord: true)`. Hal ini bertujuan untuk menangkap kesalahan input data ganda (duplikat) secara elegan (*graceful validation error*) di sisi UI Form, sehingga mencegah *fatal error 500* (Constraint Violation) di level *Database Hosting/Production*.

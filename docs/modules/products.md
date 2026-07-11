@@ -24,3 +24,7 @@ Meskipun secara visual di antarmuka (UI) seluruh label dan terminologi menggunak
    - Fitur ekspor ini merender dan menyajikan unduhan file `.xlsx` secara seketika (*synchronous stream download*), melewati *Queue/Modal* bawaan Filament Exporter agar pengalaman pengguna jauh lebih cepat (hanya *one-click download*).
 5. **Fitur Filter Halaman Index (Tabel)**:
    - **Category Filter**: Pengguna dapat memilah (*filter*) daftar daging berdasarkan kategori. Filter ini dipasang menggunakan komponen `SelectFilter` bereferensi `category_id`.
+
+
+### Pencegahan Duplikasi Data (Unique Validation)
+- Semua *field* utama pengenal identitas seperti `name` (dan `code` jika ada) pada form *Create/Edit* telah dilengkapi dengan atribut `->unique(ignoreRecord: true)`. Hal ini bertujuan untuk menangkap kesalahan input data ganda (duplikat) secara elegan (*graceful validation error*) di sisi UI Form, sehingga mencegah *fatal error 500* (Constraint Violation) di level *Database Hosting/Production*.

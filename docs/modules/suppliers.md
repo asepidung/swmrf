@@ -24,3 +24,7 @@ Tabel `suppliers` memiliki atribut dasar profil dan juga telah diperluas untuk m
    - Sistem unduhan bekerja secara seketika (*synchronous stream download*), melewati *Queue/Modal* bawaan Filament Exporter sehingga menyajikan pengalaman *one-click download* file `.xlsx` yang mulus dan cepat.
 6. **Search & Filter Interaktif**:
    - Kolom baru `Supplied Goods` diintegrasikan pada komponen tabel dengan sifat *Searchable*. Hal ini memungkinkan pencarian teks (*text filtering*) yang fleksibel untuk memilah supplier berdasarkan komoditas yang disuplainya.
+
+
+### Pencegahan Duplikasi Data (Unique Validation)
+- Semua *field* utama pengenal identitas seperti `name` (dan `code` jika ada) pada form *Create/Edit* telah dilengkapi dengan atribut `->unique(ignoreRecord: true)`. Hal ini bertujuan untuk menangkap kesalahan input data ganda (duplikat) secara elegan (*graceful validation error*) di sisi UI Form, sehingga mencegah *fatal error 500* (Constraint Violation) di level *Database Hosting/Production*.

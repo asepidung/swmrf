@@ -19,3 +19,7 @@ Modul **Cattle Class** merupakan bagian dari Master Data yang digunakan untuk me
 4. **Fitur Ekspor Langsung (*Direct Stream*)**:
    - Diimplementasikan sesuai standar terbaru: Penggunaan *Custom Action* ekspor tabel Cattle Class ke format `.xlsx` menggunakan library **OpenSpout**.
    - Sistem unduhan seketika ini (*stream download*) menghindari *polling modal* atau antrean antarmuka *Queue* yang lama, dan memberikan pengalaman klik-unduh (*one-click download*) secara *seamless*.
+
+
+### Pencegahan Duplikasi Data (Unique Validation)
+- Semua *field* utama pengenal identitas seperti `name` (dan `code` jika ada) pada form *Create/Edit* telah dilengkapi dengan atribut `->unique(ignoreRecord: true)`. Hal ini bertujuan untuk menangkap kesalahan input data ganda (duplikat) secara elegan (*graceful validation error*) di sisi UI Form, sehingga mencegah *fatal error 500* (Constraint Violation) di level *Database Hosting/Production*.

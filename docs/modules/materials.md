@@ -35,3 +35,7 @@ Modul **Materials** digunakan untuk mengelola data bahan penolong (non-daging) y
 ## 5. Fitur Filter Halaman Index (Tabel)
 - **Kategori (*Category*)**: Pengguna dapat menyaring data tabel bahan berdasarkan kategori melalui `SelectFilter`.
 - **Visibilitas Stok (*Show In Stock*)**: Pengguna dapat memisahkan tabel untuk menampilkan hanya barang yang perlu masuk inventaris atau tidak menggunakan `TernaryFilter` (*Yes / No / All*).
+
+
+### Pencegahan Duplikasi Data (Unique Validation)
+- Semua *field* utama pengenal identitas seperti `name` (dan `code` jika ada) pada form *Create/Edit* telah dilengkapi dengan atribut `->unique(ignoreRecord: true)`. Hal ini bertujuan untuk menangkap kesalahan input data ganda (duplikat) secara elegan (*graceful validation error*) di sisi UI Form, sehingga mencegah *fatal error 500* (Constraint Violation) di level *Database Hosting/Production*.
