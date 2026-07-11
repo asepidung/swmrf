@@ -29,35 +29,35 @@ class GoodsReceiptMaterialResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Goods Receipt Information')
+                Forms\Components\Section::make(__('Goods Receipt Information'))
                     ->schema([
                         Forms\Components\TextInput::make('gr_number')
-                            ->label('GR Number')
+                            ->label(__('GR Number'))
                             ->disabled()
                             ->dehydrated(false)
                             ->visibleOn(['view', 'edit']),
                         Forms\Components\TextInput::make('po_number_display')
-                            ->label('PO Number')
+                            ->label(__('PO Number'))
                             ->disabled()
                             ->dehydrated(false)
                             ->formatStateUsing(fn ($record) => $record?->purchaseMaterial?->po_number ?? '-'),
                         Forms\Components\TextInput::make('supplier_name_display')
-                            ->label('Supplier')
+                            ->label(__('Supplier'))
                             ->disabled()
                             ->dehydrated(false)
                             ->formatStateUsing(fn ($record) => $record?->supplier?->name ?? '-'),
                         Forms\Components\DatePicker::make('receive_date')
-                            ->label('Receive Date')
+                            ->label(__('Receive Date'))
                             ->required(),
                         Forms\Components\TextInput::make('sj_number')
-                            ->label('Surat Jalan Number')
+                            ->label(__('Surat Jalan Number'))
                             ->required(),
                         Forms\Components\Textarea::make('note')
-                            ->label('Note')
+                            ->label(__('Note'))
                             ->columnSpanFull(),
                     ])->columns(3),
                 
-                Forms\Components\Section::make('Materials Received')
+                Forms\Components\Section::make(__('Materials Received'))
                     ->schema([
                         // Clean Repeater Header UI
                         Forms\Components\Grid::make(5)
@@ -76,15 +76,15 @@ class GoodsReceiptMaterialResource extends Resource
                             ->schema([
                                 Forms\Components\Select::make('material_id')
                                     ->relationship('material', 'name')
-                                    ->label('Material')
+                                    ->label(__('Material'))
                                     ->hiddenLabel()
-                                    ->placeholder('Material')
+                                    ->placeholder(__('Material'))
                                     ->disabled()
                                     ->dehydrated(false),
                                 Forms\Components\TextInput::make('po_qty')
-                                    ->label('Qty PO')
+                                    ->label(__('Qty PO'))
                                     ->hiddenLabel()
-                                    ->placeholder('Qty PO')
+                                    ->placeholder(__('Qty PO'))
                                     ->disabled()
                                     ->dehydrated(false)
                                     ->suffix(fn ($record) => $record?->material?->unit?->name)
@@ -97,9 +97,9 @@ class GoodsReceiptMaterialResource extends Resource
                                         }
                                     }),
                                 Forms\Components\TextInput::make('price')
-                                    ->label('Price')
+                                    ->label(__('Price'))
                                     ->hiddenLabel()
-                                    ->placeholder('Price')
+                                    ->placeholder(__('Price'))
                                     ->disabled()
                                     ->dehydrated(false)
                                     ->extraInputAttributes(['class' => 'text-right'])
@@ -107,9 +107,9 @@ class GoodsReceiptMaterialResource extends Resource
                                         $component->state(number_format((float)$state, 0, ',', '.'));
                                     }),
                                 Forms\Components\TextInput::make('qty_received')
-                                    ->label('Qty Received')
+                                    ->label(__('Qty Received'))
                                     ->hiddenLabel()
-                                    ->placeholder('Qty Received')
+                                    ->placeholder(__('Qty Received'))
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
                                     ->stripCharacters('.')
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'text-right'])
@@ -118,7 +118,7 @@ class GoodsReceiptMaterialResource extends Resource
                                     ->suffix(fn ($record) => $record?->material?->unit?->name)
                                     ->dehydrateStateUsing(fn ($state) => (float) str_replace(['.', ','], ['', '.'], $state)),
                                 Forms\Components\Placeholder::make('item_subtotal')
-                                    ->label('Subtotal')
+                                    ->label(__('Subtotal'))
                                     ->hiddenLabel()
                                     ->content(function (Forms\Get $get) {
                                         $qty = (float) str_replace(['.', ','], ['', '.'], $get('qty_received') ?? '0');
@@ -132,7 +132,7 @@ class GoodsReceiptMaterialResource extends Resource
                             ->disableItemMovement(),
                     ]),
 
-                Forms\Components\Section::make('Summary & Actions')
+                Forms\Components\Section::make(__('Summary & Actions'))
                     ->schema([
                         Forms\Components\Placeholder::make('grand_total_summary')
                             ->label('')
@@ -184,7 +184,7 @@ class GoodsReceiptMaterialResource extends Resource
                             }),
 
                         Forms\Components\Radio::make('po_status_action')
-                            ->label('Tindakan untuk Sisa PO')
+                            ->label(__('Tindakan untuk Sisa PO'))
                             ->options([
                                 'partial' => 'Tetap Partial (Sisa barang akan ditunggu di penerimaan berikutnya)',
                                 'completed' => 'Tutup PO (Sisa barang dianggap hangus / selesai)',
@@ -224,32 +224,32 @@ class GoodsReceiptMaterialResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('gr_number')
-                    ->label('GR Number')
+                    ->label(__('GR Number'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
                     ->color(fn (GoodsReceiptMaterial $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('receive_date')
-                    ->label('Receive Date')
+                    ->label(__('Receive Date'))
                     ->date('d M Y')
                     ->sortable()
                     ->color(fn (GoodsReceiptMaterial $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('sj_number')
-                    ->label('Surat Jalan')
+                    ->label(__('Surat Jalan'))
                     ->searchable()
                     ->color(fn (GoodsReceiptMaterial $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('purchaseMaterial.po_number')
-                    ->label('PO Number')
+                    ->label(__('PO Number'))
                     ->searchable()
                     ->sortable()
                     ->color(fn (GoodsReceiptMaterial $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('supplier.name')
-                    ->label('Supplier')
+                    ->label(__('Supplier'))
                     ->searchable()
                     ->sortable()
                     ->color(fn (GoodsReceiptMaterial $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('createdBy.name')
-                    ->label('Created By')
+                    ->label(__('Created By'))
                     ->badge()
                     ->color(fn (GoodsReceiptMaterial $record) => $record->trashed() ? 'danger' : 'gray'),
                 Tables\Columns\TextColumn::make('created_at')
@@ -265,13 +265,13 @@ class GoodsReceiptMaterialResource extends Resource
             ->headerActions([
                 \Filament\Tables\Actions\ActionGroup::make([
                     \Filament\Tables\Actions\ExportAction::make('excel')
-                        ->label('Excel')
+                        ->label(__('Excel'))
                         ->icon('heroicon-o-document-text')
                         ->color('success')
                         ->exporter(\App\Filament\Exports\GoodsReceiptMaterialExporter::class)
                         ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
                     \Filament\Tables\Actions\Action::make('pdf')
-                        ->label('PDF')
+                        ->label(__('PDF'))
                         ->icon('heroicon-o-document-arrow-down')
                         ->color('danger')
                         ->action(function ($livewire) {
@@ -280,7 +280,7 @@ class GoodsReceiptMaterialResource extends Resource
                             // return response()->streamDownload(fn () => print($pdf->output()), 'export.pdf');
                         }),
                 ])
-                ->label('Export Data')
+                ->label(__('Export Data'))
                 ->icon('heroicon-m-arrow-down-tray')
                 ->button()
             ])
@@ -289,14 +289,14 @@ class GoodsReceiptMaterialResource extends Resource
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_gr_materials')),
                 Tables\Filters\SelectFilter::make('supplier_id')
                     ->relationship('supplier', 'name')
-                    ->label('Supplier'),
+                    ->label(__('Supplier')),
                 Tables\Filters\Filter::make('receive_date')
                     ->form([
                         Forms\Components\DatePicker::make('from')
-                            ->label('From')
+                            ->label(__('From'))
                             ->default(now()->startOfMonth()),
                         Forms\Components\DatePicker::make('until')
-                            ->label('Until')
+                            ->label(__('Until'))
                             ->default(now()),
                     ])
                     ->query(function (Builder $query, array $data): Builder {

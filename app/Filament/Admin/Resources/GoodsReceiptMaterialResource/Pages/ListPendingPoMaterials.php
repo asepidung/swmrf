@@ -24,9 +24,9 @@ class ListPendingPoMaterials extends Page implements HasTable
         return $table
             ->query(PurchaseMaterial::query()->whereIn('status', ['pending', 'partial']))
             ->columns([
-                TextColumn::make('po_number')->label('PO Number')->searchable()->sortable(),
-                TextColumn::make('po_date')->label('PO Date')->date()->sortable(),
-                TextColumn::make('supplier.name')->label('Supplier')->searchable(),
+                TextColumn::make('po_number')->label(__('PO Number'))->searchable()->sortable(),
+                TextColumn::make('po_date')->label(__('PO Date'))->date()->sortable(),
+                TextColumn::make('supplier.name')->label(__('Supplier'))->searchable(),
                 TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
@@ -34,15 +34,27 @@ class ListPendingPoMaterials extends Page implements HasTable
                         'partial' => 'info',
                         default => 'gray',
                     }),
-                TextColumn::make('approvedBy.name')->label('Approved By'),
+                TextColumn::make('approvedBy.name')->label(__('Approved By')),
             ])
             ->actions([
                 Action::make('process_gr')
-                    ->label('Process GR')
+                    ->label(__('Process GR'))
                     ->icon('heroicon-o-truck')
                     ->color('success')
                     ->button()
                     ->url(fn (PurchaseMaterial $record): string => GoodsReceiptMaterialResource::getUrl('create', ['po_id' => $record->id])),
+                Action::make('cancel_po')
+                    ->label(__('Cancel'))
+                    ->icon('heroicon-o-x-mark')
+                    ->color('danger')
+                    ->button()
+                    ->requiresConfirmation()
+                    ->modalHeading(__('Cancel Purchase Order'))
+                    ->modalDescription(__('Apakah Anda yakin ingin membatalkan Purchase Order ini?'))
+                    ->action(function (PurchaseMaterial $record) {
+                        $record->update(['status' => 'canceled']);
+                        \Filament\Notifications\Notification::make()->title(__('PO berhasil dibatalkan!'))->success()->send();
+                    }),
             ]);
     }
 }

@@ -42,7 +42,7 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
         $this->purchaseMaterial = PurchaseMaterial::with('items.material')->findOrFail($this->poId);
 
         if (!in_array($this->purchaseMaterial->status, ['pending', 'partial'])) {
-            Notification::make()->title('PO is already completed!')->danger()->send();
+            Notification::make()->title(__('PO is already completed!'))->danger()->send();
             $this->redirect(GoodsReceiptMaterialResource::getUrl('index'));
             return;
         }
@@ -69,7 +69,7 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
 
         if (empty($itemsData)) {
             $this->purchaseMaterial->update(['status' => 'completed']);
-            Notification::make()->title('All items for this PO have already been completely received!')->warning()->send();
+            Notification::make()->title(__('All items for this PO have already been completely received!'))->warning()->send();
             $this->redirect(GoodsReceiptMaterialResource::getUrl('index'));
             return;
         }
@@ -87,7 +87,7 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
     {
         return [
             Action::make('cancel')
-                ->label('Cancel')
+                ->label(__('Cancel'))
                 ->color('gray')
                 ->url(GoodsReceiptMaterialResource::getUrl('drafts')),
         ];
@@ -97,25 +97,25 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Purchase Order Information')
+                Forms\Components\Section::make(__('Purchase Order Information'))
                     ->description('PO Number: ' . ($this->purchaseMaterial->po_number ?? '-'))
                     ->schema([
                         Forms\Components\TextInput::make('supplier_name')
-                            ->label('Supplier')
+                            ->label(__('Supplier'))
                             ->disabled()
                             ->dehydrated(false),
                         Forms\Components\DatePicker::make('receive_date')
-                            ->label('Receive Date')
+                            ->label(__('Receive Date'))
                             ->required(),
                         Forms\Components\TextInput::make('sj_number')
-                            ->label('Surat Jalan Number')
+                            ->label(__('Surat Jalan Number'))
                             ->nullable(),
                         Forms\Components\Textarea::make('note')
-                            ->label('Note')
+                            ->label(__('Note'))
                             ->columnSpanFull(),
                     ])->columns(3),
 
-                Forms\Components\Section::make('Materials to Receive')
+                Forms\Components\Section::make(__('Materials to Receive'))
                     ->schema([
                         // Clean Repeater Header UI
                         Forms\Components\Grid::make(3)
@@ -130,25 +130,25 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
                             ->hiddenLabel()
                             ->schema([
                                 Forms\Components\TextInput::make('material_name')
-                                    ->label('Material')
+                                    ->label(__('Material'))
                                     ->hiddenLabel()
-                                    ->placeholder('Material')
+                                    ->placeholder(__('Material'))
                                     ->disabled()
                                     ->dehydrated(false),
                                 Forms\Components\Hidden::make('material_id'),
                                 Forms\Components\Hidden::make('unit_name'),
                                 Forms\Components\Hidden::make('price'),
                                 Forms\Components\TextInput::make('po_qty')
-                                    ->label('Qty in PO')
+                                    ->label(__('Qty in PO'))
                                     ->hiddenLabel()
-                                    ->placeholder('Qty in PO')
+                                    ->placeholder(__('Qty in PO'))
                                     ->disabled()
                                     ->dehydrated(true)
                                     ->suffix(fn (Forms\Get $get) => $get('unit_name')),
                                 Forms\Components\TextInput::make('qty_received')
-                                    ->label('Qty Received')
+                                    ->label(__('Qty Received'))
                                     ->hiddenLabel()
-                                    ->placeholder('Qty Received')
+                                    ->placeholder(__('Qty Received'))
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
                                     ->stripCharacters('.')
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()'])
@@ -253,7 +253,7 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
 
             DB::commit();
 
-            Notification::make()->title('Goods Receipt created successfully!')->success()->send();
+            Notification::make()->title(__('Goods Receipt created successfully!'))->success()->send();
             $this->redirect(GoodsReceiptMaterialResource::getUrl('index'));
 
         } catch (\Exception $e) {
@@ -266,7 +266,7 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
     {
         return [
             Action::make('save')
-                ->label('Save Goods Receipt')
+                ->label(__('Save Goods Receipt'))
                 ->color('primary')
                 ->submit('processSave')
         ];

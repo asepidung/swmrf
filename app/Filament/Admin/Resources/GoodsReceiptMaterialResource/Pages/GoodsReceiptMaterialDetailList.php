@@ -19,7 +19,7 @@ class GoodsReceiptMaterialDetailList extends Page implements HasTable
 
     protected static string $view = 'filament.admin.resources.goods-receipt-material-resource.pages.detail-list';
 
-    protected static ?string $title = 'Material Receipt Items Detail';
+    public function getTitle(): string { return __('Material Receipt Items Detail'); }
 
     public function table(Table $table): Table
     {
@@ -106,12 +106,12 @@ class GoodsReceiptMaterialDetailList extends Page implements HasTable
             ->headerActions([
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\ExportAction::make('excel')
-                        ->label('Excel')
+                        ->label(__('Excel'))
                         ->icon('heroicon-o-document-text')
                         ->exporter(\App\Filament\Exports\GoodsReceiptMaterialItemExporter::class)
                         ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
                     Tables\Actions\Action::make('pdf')
-                        ->label('PDF')
+                        ->label(__('PDF'))
                         ->icon('heroicon-o-document-arrow-down')
                         ->action(function ($livewire) {
                             $records = $livewire->getFilteredTableQuery()->get();
@@ -121,7 +121,7 @@ class GoodsReceiptMaterialDetailList extends Page implements HasTable
                             return response()->streamDownload(fn () => print($pdf->output()), 'goods-receipt-material-details.pdf');
                         }),
                 ])
-                ->label('Export Data')
+                ->label(__('Export Data'))
                 ->icon('heroicon-m-arrow-down-tray')
                 ->button()
                 ->color('success'),

@@ -14,7 +14,7 @@ class ViewGoodsReceiptMaterial extends ViewRecord
     {
         return [
             Actions\Action::make('print')
-                ->tooltip('Print')
+                ->tooltip(__('Print'))
                 ->hiddenLabel()
                 ->icon('heroicon-o-printer')
                 ->color('gray')
@@ -22,7 +22,7 @@ class ViewGoodsReceiptMaterial extends ViewRecord
                 ->openUrlInNewTab(),
 
             Actions\Action::make('back')
-                ->tooltip('Back to List')
+                ->tooltip(__('Back to List'))
                 ->hiddenLabel()
                 ->icon('heroicon-o-arrow-left')
                 ->color('gray')
