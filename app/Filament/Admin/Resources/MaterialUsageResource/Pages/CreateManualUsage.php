@@ -27,19 +27,14 @@ class CreateManualUsage extends CreateRecord
             ->schema([
                 Forms\Components\Section::make(__('Adjustment Info'))
                     ->schema([
-                        Forms\Components\TextInput::make('doc_no')
-                            ->label(__('Nomor Dokumen'))
-                            ->required()
-                            ->unique(ignoreRecord: true)
+                        Forms\Components\Hidden::make('doc_no')
                             ->default(function () {
                                 $currentYear = date('Y');
                                 $prefix = 'MA#' . date('y');
                                 $count = MaterialAdjustment::withTrashed()->whereYear('adjustment_date', $currentYear)->count();
                                 $sequence = $count + 1;
                                 return $prefix . str_pad($sequence, 3, '0', STR_PAD_LEFT);
-                            })
-                            ->readOnly()
-                            ->columnSpan(1),
+                            }),
 
                         Forms\Components\DatePicker::make('adjustment_date')
                             ->label(__('Tanggal'))

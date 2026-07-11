@@ -122,8 +122,7 @@ class MaterialUsageResource extends Resource
                     }),
             ])
             ->actions([
-                // We won't allow editing or deleting directly from this ledger.
-                // It is view-only, except for manual usages which can be deleted if needed.
+                Tables\Actions\ViewAction::make(),
             ])
             ->recordUrl(function (MaterialUsageHeader $record) {
                 return static::getUrl('view', ['record' => $record->id]);
@@ -134,10 +133,58 @@ class MaterialUsageResource extends Resource
             ->headerActions([
                 // Export features
                 ExportAction::make('export_excel')
-                    ->label('Excel')
+                    ->label(__('Excel'))
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('success')
                     ->exporter(MaterialUsageExporter::class),
+            ]);
+    }
+
+    public static function infolist(\Filament\Infolists\Infolist $infolist): \Filament\Infolists\Infolist
+    {
+        return $infolist
+            ->schema([
+                \Filament\Infolists\Components\Section::make(__('Usage Info'))
+                    ->schema([
+                        \Filament\Infolists\Components\TextEntry::make('usageable_type')
+                            ->label(__('Reference Document'))
+                            ->formatStateUsing(function (MaterialUsageHeader $record) {
+                                if (!$record->usageable) {
+                                    return __('-');
+                                }
+                                $type = class_basename($record->usageable_type);
+                                $docNo = $record->usageable->doc_no ?? $record->usageable_id;
+                                return $type . ' (' . $docNo . ')';
+                            }),
+                        
+                        \Filament\Infolists\Components\TextEntry::make('created_at')
+                            ->label(__('Usage Date'))
+                            ->date('d M Y'),
+
+                        \Filament\Infolists\Components\TextEntry::make('total_qty')
+                            ->label(__('Total Qty (Minus)'))
+                            ->color('danger')
+                            ->numeric(2),
+                    ])->columns(3),
+
+                \Filament\Infolists\Components\Section::make(__('Materials'))
+                    ->schema([
+                        \Filament\Infolists\Components\RepeatableEntry::make('materialUsages')
+                            ->label('')
+                            ->schema([
+                                \Filament\Infolists\Components\TextEntry::make('material.name')
+                                    ->label(__('Material')),
+                                \Filament\Infolists\Components\TextEntry::make('qty')
+                                    ->label(__('Quantity'))
+                                    ->numeric(),
+                                \Filament\Infolists\Components\TextEntry::make('unit')
+                                    ->label(__('Unit'))
+                                    ->state(fn ($record) => $record->material->unit->name ?? '-'),
+                                \Filament\Infolists\Components\TextEntry::make('note')
+                                    ->label(__('Note'))
+                                    ->default('-'),
+                            ])->columns(4)
+                    ]),
             ]);
     }
 
