@@ -75,6 +75,7 @@ class PurchaseCattleResource extends Resource
                             Forms\Components\Select::make('cattle_class_id')
                                 ->relationship('cattleClass', 'name')
                                 ->required()
+                                ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                                 ->createOptionForm([
                                     Forms\Components\TextInput::make('name')
                                         ->required()
@@ -241,6 +242,7 @@ class PurchaseCattleResource extends Resource
             'create' => Pages\CreatePurchaseCattle::route('/create'),
             'view' => Pages\ViewPurchaseCattle::route('/{record}'),
             'edit' => Pages\EditPurchaseCattle::route('/{record}/edit'),
+            'detail-list' => Pages\PurchaseCattleDetailList::route('/detail-list'),
         ];
     }
 

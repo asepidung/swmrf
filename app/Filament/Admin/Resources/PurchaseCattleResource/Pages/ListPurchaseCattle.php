@@ -13,7 +13,13 @@ class ListPurchaseCattle extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->label('Create'),
+            Actions\Action::make('detail-list')
+                ->label('Detail')
+                ->color('info')
+                ->icon('heroicon-o-bars-3-bottom-left')
+                ->url(fn (): string => static::getResource()::getUrl('detail-list')),
         ];
     }
 }
