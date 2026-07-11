@@ -278,22 +278,25 @@
                 @endforelse
             </tbody>
             <tfoot>
+                @php
+                    $groups = $record->items->groupBy('cattle_class_id');
+                    $overallTotal = $record->items->sum('initial_weight');
+                @endphp
                 <tr>
-                    <td colspan="3" style="text-align: right; text-transform: uppercase; font-size: 11px;">Total ({{ $record->items->count() }} Heads)</td>
-                    <td class="num">
-                        @php
-                            $groups = $record->items->groupBy('cattle_class_id');
-                            $groupLines = [];
-                            foreach ($groups as $classId => $groupItems) {
-                                $className = $groupItems->first()->cattleClass->name ?? 'Unknown';
-                                $sum = $groupItems->sum('initial_weight');
-                                $groupLines[] = "{$className}: " . number_format($sum, 0, ',', '.') . " Kg";
-                            }
-                            $overallTotal = $record->items->sum('initial_weight');
-                        @endphp
-                        {!! implode('<br>', $groupLines) !!}
-                        <br>
-                        <strong>Total: {{ number_format($overallTotal, 0, ',', '.') }} Kg</strong>
+                    <td colspan="3" style="text-align: right; text-transform: uppercase; font-size: 11px; vertical-align: bottom;">
+                        @foreach ($groups as $classId => $groupItems)
+                            <div style="margin-bottom: 4px; color: var(--muted);">
+                                {{ $groupItems->first()->cattleClass->name ?? 'Unknown' }} 
+                                <span style="text-transform: none;">({{ $groupItems->count() }} ekor)</span>
+                            </div>
+                        @endforeach
+                        <div style="margin-top: 8px; font-weight: bold; font-size: 12px;">Total ({{ $record->items->count() }} Heads)</div>
+                    </td>
+                    <td class="num" style="vertical-align: bottom;">
+                        @foreach ($groups as $classId => $groupItems)
+                            <div style="margin-bottom: 4px; color: var(--muted);">{{ number_format($groupItems->sum('initial_weight'), 0, ',', '.') }} Kg</div>
+                        @endforeach
+                        <div style="margin-top: 8px; font-weight: bold; font-size: 12px;">{{ number_format($overallTotal, 0, ',', '.') }} Kg</div>
                     </td>
                     <td></td>
                 </tr>
