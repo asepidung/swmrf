@@ -43,7 +43,7 @@ class CustomerGroupResource extends Resource
             ->schema([
                 Forms\Components\Section::make(__('Basic Information'))
                     ->schema([
-                        Forms\Components\TextInput::make('name')
+                        Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
                             ->label(fn() => __('Name'))
                             ->required()
                             ->maxLength(255)

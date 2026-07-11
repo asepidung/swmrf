@@ -35,13 +35,13 @@ class MaterialResource extends Resource
             ->schema([
                 Forms\Components\Section::make(__('Logistic Item Information'))
                     ->schema([
-                        Forms\Components\TextInput::make('code')
+                        Forms\Components\TextInput::make('code')->unique(ignoreRecord: true)
                             ->label(fn() => __('Item Code'))
                             ->placeholder(__('Auto-generated'))
                             ->visibleOn('view')
                             ->disabled()
                             ->dehydrated(false),
-                        Forms\Components\TextInput::make('name')
+                        Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
                             ->label(fn() => __('Item Name'))
                             ->autofocus()
                             ->required()
@@ -53,7 +53,7 @@ class MaterialResource extends Resource
                             ->relationship('unit', 'name')
                             ->required()
                             ->createOptionForm([
-                                Forms\Components\TextInput::make('name')
+                                Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
                                     ->required()
                                     ->maxLength(255),
                             ]),
@@ -62,7 +62,7 @@ class MaterialResource extends Resource
                             ->relationship('category', 'name')
                             ->required()
                             ->createOptionForm([
-                                Forms\Components\TextInput::make('name')
+                                Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
                                     ->required()
                                     ->maxLength(255)
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase'])

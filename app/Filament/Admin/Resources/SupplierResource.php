@@ -47,7 +47,7 @@ class SupplierResource extends Resource
                     ->schema([
                         Forms\Components\Section::make(__('Supplier Information'))
                             ->schema([
-                                Forms\Components\TextInput::make('name')
+                                Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
                                     ->label(fn() => __('Supplier Name'))
                                     ->autofocus()
                                     ->required()

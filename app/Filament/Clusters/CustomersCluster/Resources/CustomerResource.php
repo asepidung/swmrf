@@ -44,7 +44,7 @@ class CustomerResource extends Resource
                 Forms\Components\Section::make(__('Basic Information'))
                     ->description(__('Customer profile and relations data.'))
                     ->schema([
-                        Forms\Components\TextInput::make('name')
+                        Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
                             ->label(fn() => __('Customer Name'))
                             ->required()
                             ->maxLength(255)
@@ -54,7 +54,7 @@ class CustomerResource extends Resource
                             ->relationship('group', 'name')
                             ->label(fn() => __('Customer Group'))
                             ->createOptionForm([
-                                Forms\Components\TextInput::make('name')
+                                Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
                                     ->label(fn() => __('Name'))
                                     ->required()
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
@@ -71,7 +71,7 @@ class CustomerResource extends Resource
                             ->label(fn() => __('Segment'))
                             ->required()
                             ->createOptionForm([
-                                Forms\Components\TextInput::make('name')
+                                Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
                                     ->label(fn() => __('Name'))
                                     ->required()
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),

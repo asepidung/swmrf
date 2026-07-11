@@ -41,7 +41,7 @@ class CustomerSegmentResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
+                Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
                     ->label(fn() => __('Name'))
                     ->required()
                     ->maxLength(255)
