@@ -81,7 +81,6 @@ class ViewProductRequisition extends ViewRecord
                         ]);
                         \Filament\Notifications\Notification::make()->title('Request rejected')->warning()->send();
                     }
-                    $this->redirect($this->getResource()::getUrl('index'));
                 }),
 
             Actions\Action::make('resubmit')
@@ -96,7 +95,6 @@ class ViewProductRequisition extends ViewRecord
                         'status' => 'Requested',
                         'reject_note' => null,
                     ]);
-                    $this->redirect($this->getResource()::getUrl('index'));
                 }),
 
             Actions\Action::make('finance_approval')
@@ -143,7 +141,6 @@ class ViewProductRequisition extends ViewRecord
                         ]);
                         \Filament\Notifications\Notification::make()->title('Returned to Purchasing')->warning()->send();
                     }
-                    $this->redirect($this->getResource()::getUrl('index'));
                 }),
 
             Actions\EditAction::make()
