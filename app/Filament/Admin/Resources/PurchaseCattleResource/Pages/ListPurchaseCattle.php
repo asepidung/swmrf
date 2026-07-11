@@ -14,9 +14,9 @@ class ListPurchaseCattle extends ListRecords
     {
         return [
             Actions\CreateAction::make()
-                ->label('Create'),
+                ->label(__('Create')),
             Actions\Action::make('detail-list')
-                ->label('Detail')
+                ->label(__('Detail'))
                 ->color('info')
                 ->icon('heroicon-o-bars-3-bottom-left')
                 ->url(fn (): string => static::getResource()::getUrl('detail-list')),

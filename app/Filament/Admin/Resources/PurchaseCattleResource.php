@@ -42,7 +42,7 @@ class PurchaseCattleResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Header Info')->schema([
+                Forms\Components\Section::make(__('Header Info'))->schema([
                     Forms\Components\Select::make('supplier_id')
                         ->relationship('supplier', 'name')
                         ->required()
@@ -56,7 +56,7 @@ class PurchaseCattleResource extends Resource
                         ->columnSpanFull(),
                 ])->columns(2),
                 
-                Forms\Components\Section::make('Cattle Details')->schema([
+                Forms\Components\Section::make(__('Cattle Details'))->schema([
                     // Clean Repeater Header UI
                     Forms\Components\Grid::make(4)
                         ->schema([
@@ -194,13 +194,13 @@ class PurchaseCattleResource extends Resource
                         ->headerActions([
                 \Filament\Tables\Actions\ActionGroup::make([
                     \Filament\Tables\Actions\ExportAction::make('excel')
-                        ->label('Excel')
+                        ->label(__('Excel'))
                         ->icon('heroicon-o-document-text')
                         ->color('success')
                         ->exporter(\App\Filament\Exports\PurchaseCattleExporter::class)
                         ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
                     \Filament\Tables\Actions\Action::make('pdf')
-                        ->label('PDF')
+                        ->label(__('PDF'))
                         ->icon('heroicon-o-document-arrow-down')
                         ->color('danger')
                         ->action(function ($livewire) {
@@ -212,7 +212,7 @@ class PurchaseCattleResource extends Resource
                             return response()->streamDownload(fn () => print($pdf->output()), 'export.pdf');
                         }),
                 ])
-                ->label('Export Data')
+                ->label(__('Export Data'))
                 ->icon('heroicon-m-arrow-down-tray')
                 ->button()
                 ->color('success'),

@@ -25,11 +25,11 @@ class EditPurchaseCattle extends EditRecord
     {
         return [
             Actions\Action::make('cancel')
-                ->label('Cancel')
+                ->label(__('Cancel'))
                 ->color('gray')
                 ->url(fn (): string => $this->getResource()::getUrl('index')),
             Actions\Action::make('print')
-                ->label('Print')
+                ->label(__('Print'))
                 ->color('warning')
                 ->icon('heroicon-o-printer')
                 ->url(fn ($record): string => route('po-cattle.print', $record))
