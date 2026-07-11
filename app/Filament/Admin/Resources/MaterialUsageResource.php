@@ -122,7 +122,6 @@ class MaterialUsageResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
             ])
             ->recordUrl(function (MaterialUsageHeader $record) {
                 return static::getUrl('view', ['record' => $record->id]);
@@ -133,7 +132,7 @@ class MaterialUsageResource extends Resource
             ->headerActions([
                 // Export features
                 ExportAction::make('export_excel')
-                    ->label(__('Excel'))
+                    ->label('Excel')
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('success')
                     ->exporter(MaterialUsageExporter::class),
@@ -169,7 +168,7 @@ class MaterialUsageResource extends Resource
 
                 \Filament\Infolists\Components\Section::make(__('Materials'))
                     ->schema([
-                        \Filament\Infolists\Components\RepeatableEntry::make('materialUsages')
+                        \Filament\Infolists\Components\RepeatableEntry::make('usages')
                             ->label('')
                             ->schema([
                                 \Filament\Infolists\Components\TextEntry::make('material.name')
