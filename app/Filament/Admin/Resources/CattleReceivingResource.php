@@ -70,7 +70,7 @@ class CattleReceivingResource extends Resource
 
                         Forms\Components\TextInput::make('doc_no')
                             ->label(__('Document Number'))
-                            ->placeholder('E.g. SV/2026/001'),
+                            ->placeholder(__('E.g. SV/2026/001')),
 
                         Forms\Components\Group::make()
                             ->schema([
@@ -350,12 +350,12 @@ class CattleReceivingResource extends Resource
             ->headerActions([
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\ExportAction::make('excel')
-                        ->label('Excel')
+                        ->label(__('Excel'))
                         ->icon('heroicon-o-document-text')
                         ->exporter(\App\Filament\Exports\CattleReceivingExporter::class)
                         ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
                     Tables\Actions\Action::make('pdf')
-                        ->label('PDF')
+                        ->label(__('PDF'))
                         ->icon('heroicon-o-document-arrow-down')
                         ->action(function ($livewire) {
                             $records = $livewire->getFilteredTableQuery()->withCount('items')->get();
@@ -365,7 +365,7 @@ class CattleReceivingResource extends Resource
                             return response()->streamDownload(fn () => print($pdf->output()), 'cattle-receivings.pdf');
                         }),
                 ])
-                ->label('Export Data')
+                ->label(__('Export Data'))
                 ->icon('heroicon-m-arrow-down-tray')
                 ->button()
                 ->color('success'),

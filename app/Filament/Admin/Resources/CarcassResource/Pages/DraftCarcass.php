@@ -20,7 +20,7 @@ class DraftCarcass extends Page implements HasTable
 
     protected static string $view = 'filament.admin.resources.carcass-resource.pages.draft-carcass';
 
-    protected static ?string $title = 'Draft Carcass (Weighings)';
+    public function getTitle(): string { return __('Draft Carcass (Weighings)'); }
 
     public function table(Table $table): Table
     {

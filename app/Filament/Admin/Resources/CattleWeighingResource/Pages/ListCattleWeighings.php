@@ -14,7 +14,7 @@ class ListCattleWeighings extends ListRecords
     {
         return [
             Actions\Action::make('draft')
-                ->label('Draft Weighing')
+                ->label(__('Draft Weighing'))
                 ->icon('heroicon-o-document-plus')
                 ->color('warning')
                 ->url(fn (): string => CattleWeighingResource::getUrl('draft')),

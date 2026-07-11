@@ -41,6 +41,19 @@ class EditCattleWeighing extends EditRecord
         return $this->getResource()::getUrl('index');
     }
 
+    public function mount($record): void
+    {
+        parent::mount($record);
+
+        if (\App\Models\Carcass::where('cattle_weighing_id', $this->getRecord()->id)->exists()) {
+            \Filament\Notifications\Notification::make()
+                ->title(__('This Cattle Weighing cannot be edited or deleted because it has already been processed into Carcass.'))
+                ->danger()
+                ->send();
+            $this->redirect($this->getResource()::getUrl('index'));
+        }
+    }
+
     protected function afterSave(): void
     {
         $record = $this->record;

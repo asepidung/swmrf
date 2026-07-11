@@ -19,7 +19,7 @@ class DraftCattleWeighing extends Page implements HasTable
 
     protected static string $view = 'filament.admin.resources.cattle-weighing-resource.pages.draft-cattle-weighing';
 
-    protected static ?string $title = 'Draft Cattle Weighing';
+    public function getTitle(): string { return __('Draft Cattle Weighing'); }
 
     public function table(Table $table): Table
     {
@@ -31,30 +31,30 @@ class DraftCattleWeighing extends Page implements HasTable
             )
             ->columns([
                 Tables\Columns\TextColumn::make('receive_date')
-                    ->label('Receive Date')
+                    ->label(__('Receive Date'))
                     ->date()
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('receiving_number')
-                    ->label('Receive Number')
+                    ->label(__('Receive Number'))
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('purchaseCattle.document_number')
-                    ->label('PO Number')
+                    ->label(__('PO Number'))
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('supplier.name')
-                    ->label('Supplier')
+                    ->label(__('Supplier'))
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('items_count')
                     ->counts('items')
-                    ->label('Heads')
+                    ->label(__('Heads'))
                     ->formatStateUsing(fn ($state) => $state . ' Heads'),
             ])
             ->actions([
                 Tables\Actions\Action::make('process')
-                    ->label('Process')
+                    ->label(__('Process'))
                     ->icon('heroicon-o-scale')
                     ->color('success')
                     ->url(fn (CattleReceiving $record): string => CattleWeighingResource::getUrl('create', ['receiving_id' => $record->id])),

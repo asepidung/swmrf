@@ -74,6 +74,12 @@ class CattleWeighing extends Model
             }
         });
 
+        static::deleting(function ($model) {
+            if (\App\Models\Carcass::where('cattle_weighing_id', $model->id)->exists()) {
+                throw new \Exception(__('Cannot delete Cattle Weighing because it has already been processed into Carcass.'));
+            }
+        });
+
         static::deleted(function ($model) {
             if ($model->isForceDeleting()) {
                 $model->financialLoss()->forceDelete();

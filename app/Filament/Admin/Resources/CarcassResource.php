@@ -28,11 +28,11 @@ class CarcassResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Carcass Information')->schema([
+                Forms\Components\Section::make(__('Carcass Information'))->schema([
                     Forms\Components\Hidden::make('cattle_weighing_id')
                         ->default(fn() => request()->query('weighing_id')),
                     Forms\Components\TextInput::make('weighing_number')
-                        ->label('Weighing Number')
+                        ->label(__('Weighing Number'))
                         ->disabled()
                         ->dehydrated(false)
                         ->default(function() {
@@ -45,7 +45,7 @@ class CarcassResource extends Resource
                             }
                         }),
                     Forms\Components\TextInput::make('po_number')
-                        ->label('PO Number')
+                        ->label(__('PO Number'))
                         ->disabled()
                         ->dehydrated(false)
                         ->default(function() {
@@ -58,7 +58,7 @@ class CarcassResource extends Resource
                             }
                         }),
                     Forms\Components\TextInput::make('supplier_name')
-                        ->label('Supplier')
+                        ->label(__('Supplier'))
                         ->disabled()
                         ->dehydrated(false)
                         ->default(function() {
@@ -77,7 +77,7 @@ class CarcassResource extends Resource
                         ->columnSpanFull(),
                 ])->columns(2),
 
-                Forms\Components\Section::make('Carcass Details')->schema([
+                Forms\Components\Section::make(__('Carcass Details'))->schema([
                     Forms\Components\Repeater::make('items')
                         ->relationship()
                         ->default(function () {
@@ -107,7 +107,7 @@ class CarcassResource extends Resource
                             Forms\Components\TextInput::make('eartag')
                                 ->disabled()
                                 ->dehydrated(false)
-                                ->label('Eartag')
+                                ->label(__('Eartag'))
                                 ->afterStateHydrated(function (Forms\Components\TextInput $component, $state, $record) {
                                     if ($record && ! $state) {
                                         $component->state($record->weighingItem?->eartag);
@@ -237,7 +237,7 @@ class CarcassResource extends Resource
                                     "
                                 ]),
                             Forms\Components\TextInput::make('notes')
-                                ->label('Note')
+                                ->label(__('Note'))
                                 ->columnSpan(2)
                                 ->extraInputAttributes([
                                     'class' => 'enter-to-next-notes',
@@ -259,10 +259,10 @@ class CarcassResource extends Resource
                         ->label('')
                 ]),
 
-                Forms\Components\Section::make('Calculation Results')
+                Forms\Components\Section::make(__('Calculation Results'))
                     ->schema([
                         Forms\Components\Placeholder::make('total_carcass_1')
-                            ->label('Total Carcass 1')
+                            ->label(__('Total Carcass 1'))
                             ->content(function (Forms\Get $get) {
                                 $items = $get('items') ?? [];
                                 $total = 0;
@@ -272,7 +272,7 @@ class CarcassResource extends Resource
                                 return number_format($total, 2) . ' Kg';
                             }),
                         Forms\Components\Placeholder::make('total_carcass_2')
-                            ->label('Total Carcass 2')
+                            ->label(__('Total Carcass 2'))
                             ->content(function (Forms\Get $get) {
                                 $items = $get('items') ?? [];
                                 $total = 0;
@@ -282,7 +282,7 @@ class CarcassResource extends Resource
                                 return number_format($total, 2) . ' Kg';
                             }),
                         Forms\Components\Placeholder::make('total_hides')
-                            ->label('Total Hides')
+                            ->label(__('Total Hides'))
                             ->content(function (Forms\Get $get) {
                                 $items = $get('items') ?? [];
                                 $total = 0;
@@ -292,7 +292,7 @@ class CarcassResource extends Resource
                                 return number_format($total, 2) . ' Kg';
                             }),
                         Forms\Components\Placeholder::make('total_tail')
-                            ->label('Total Tail')
+                            ->label(__('Total Tail'))
                             ->content(function (Forms\Get $get) {
                                 $items = $get('items') ?? [];
                                 $total = 0;
@@ -302,7 +302,7 @@ class CarcassResource extends Resource
                                 return number_format($total, 2) . ' Kg';
                             }),
                         Forms\Components\Placeholder::make('total_offal')
-                            ->label('Total Offal')
+                            ->label(__('Total Offal'))
                             ->content(function (Forms\Get $get) {
                                 $items = $get('items') ?? [];
                                 $total = 0;
@@ -321,29 +321,29 @@ class CarcassResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('carcass_number')
-                    ->label('Carcass No')
+                    ->label(__('Carcass No'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('weighing.weighing_number')
-                    ->label('Weighing No')
+                    ->label(__('Weighing No'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('weighing.receiving.supplier.name')
-                    ->label('Supplier')
+                    ->label(__('Supplier'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('kill_date')
-                    ->label('Kill Date')
+                    ->label(__('Kill Date'))
                     ->date('d M Y')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('items_count')
                     ->counts('items')
-                    ->label('Heads')
+                    ->label(__('Heads'))
                     ->formatStateUsing(fn ($state) => $state . ' Heads')
                     ->badge()
                     ->color('warning'),
                 Tables\Columns\TextColumn::make('creator.name')
-                    ->label('Prepared By')
+                    ->label(__('Prepared By'))
                     ->sortable(),
             ])
             ->recordUrl(

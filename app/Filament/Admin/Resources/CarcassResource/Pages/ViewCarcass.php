@@ -14,7 +14,7 @@ class ViewCarcass extends ViewRecord
     {
         return [
             Actions\Action::make('print')
-                ->label('Print')
+                ->label(__('Print'))
                 ->icon('heroicon-o-printer')
                 ->color('gray')
                 ->url(fn (): string => CarcassResource::getUrl('print', ['record' => $this->record]))

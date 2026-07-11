@@ -14,11 +14,11 @@ class EditCarcass extends EditRecord
     {
         return [
             Actions\Action::make('cancel')
-                ->label('Cancel')
+                ->label(__('Cancel'))
                 ->color('gray')
                 ->url($this->getResource()::getUrl('index')),
             Actions\Action::make('print')
-                ->label('Print')
+                ->label(__('Print'))
                 ->icon('heroicon-o-printer')
                 ->color('gray')
                 ->url(fn (): string => CarcassResource::getUrl('print', ['record' => $this->record]))

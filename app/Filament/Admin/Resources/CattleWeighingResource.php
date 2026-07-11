@@ -46,7 +46,7 @@ class CattleWeighingResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Weighing Header')
+                Forms\Components\Section::make(__('Weighing Header'))
                     ->schema([
                         Forms\Components\Hidden::make('cattle_receiving_id')
                             ->default(fn() => request()->query('receiving_id'))
@@ -54,7 +54,7 @@ class CattleWeighingResource extends Resource
                                 return $rule->whereNull('deleted_at');
                             }),
                         Forms\Components\TextInput::make('receiving_number')
-                            ->label('Receive Number')
+                            ->label(__('Receive Number'))
                             ->disabled()
                             ->dehydrated(false)
                             ->default(function() {
@@ -62,7 +62,7 @@ class CattleWeighingResource extends Resource
                                 return $receivingId ? \App\Models\CattleReceiving::find($receivingId)?->receiving_number : null;
                             }),
                         Forms\Components\TextInput::make('po_number')
-                            ->label('PO Number')
+                            ->label(__('PO Number'))
                             ->disabled()
                             ->dehydrated(false)
                             ->default(function() {
@@ -70,7 +70,7 @@ class CattleWeighingResource extends Resource
                                 return $receivingId ? \App\Models\CattleReceiving::with('purchaseCattle')->find($receivingId)?->purchaseCattle?->document_number : null;
                             }),
                         Forms\Components\TextInput::make('supplier_name')
-                            ->label('Supplier')
+                            ->label(__('Supplier'))
                             ->disabled()
                             ->dehydrated(false)
                             ->default(function() {
@@ -78,15 +78,15 @@ class CattleWeighingResource extends Resource
                                 return $receivingId ? \App\Models\CattleReceiving::with('supplier')->find($receivingId)?->supplier?->name : null;
                             }),
                         Forms\Components\DatePicker::make('weighing_date')
-                            ->label('Weighing Date')
+                            ->label(__('Weighing Date'))
                             ->required()
                             ->default(now()),
                         Forms\Components\Textarea::make('note')
-                            ->label('General Note')
+                            ->label(__('General Note'))
                             ->columnSpanFull(),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Cattle List (Actual Weight)')
+                Forms\Components\Section::make(__('Cattle List (Actual Weight)'))
                     ->schema([
                         Forms\Components\Repeater::make('items')
                             ->relationship('items')
@@ -113,18 +113,18 @@ class CattleWeighingResource extends Resource
                                 Forms\Components\Hidden::make('cattle_receiving_item_id'),
                                 Forms\Components\Hidden::make('cattle_class_id')->dehydrated(false),
                                 Forms\Components\TextInput::make('eartag')
-                                    ->label('Eartag')
+                                    ->label(__('Eartag'))
                                     ->disabled()
                                     ->dehydrated(false),
                                 Forms\Components\TextInput::make('initial_weight')
-                                    ->label('Initial Weight')
+                                    ->label(__('Initial Weight'))
                                     ->numeric()
                                     ->suffix('Kg')
                                     ->disabled()
                                     ->extraInputAttributes(['class' => 'text-center'])
                                     ->dehydrated(false),
                                 Forms\Components\TextInput::make('actual_weight')
-                                    ->label('Actual Weight')
+                                    ->label(__('Actual Weight'))
                                     ->numeric()
                                     ->suffix('Kg')
                                     ->required()
@@ -147,7 +147,7 @@ class CattleWeighingResource extends Resource
                                         "
                                     ]),
                                 Forms\Components\TextInput::make('notes')
-                                    ->label('Notes')
+                                    ->label(__('Notes'))
                                     ->extraInputAttributes([
                                         'class' => 'enter-to-next-notes',
                                         'onkeydown' => "
@@ -171,10 +171,10 @@ class CattleWeighingResource extends Resource
                             ->itemLabel(fn (array $state): ?string => $state['eartag'] ?? null),
                     ]),
 
-                Forms\Components\Section::make('Calculation Results')
+                Forms\Components\Section::make(__('Calculation Results'))
                     ->schema([
                         Forms\Components\Placeholder::make('total_initial')
-                            ->label('Total Initial Weight')
+                            ->label(__('Total Initial Weight'))
                             ->content(function (Forms\Get $get) {
                                 $items = $get('items') ?? [];
                                 $total = 0;
@@ -184,7 +184,7 @@ class CattleWeighingResource extends Resource
                                 return number_format($total, 2) . ' Kg';
                             }),
                         Forms\Components\Placeholder::make('total_actual')
-                            ->label('Total Actual Weight')
+                            ->label(__('Total Actual Weight'))
                             ->content(function (Forms\Get $get) {
                                 $items = $get('items') ?? [];
                                 $total = 0;
@@ -216,37 +216,37 @@ class CattleWeighingResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('weighing_number')
-                    ->label('Weighing No')
+                    ->label(__('Weighing No'))
                     ->searchable()
                     ->sortable()
                     ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('receiving.receiving_number')
-                    ->label('Receive No')
+                    ->label(__('Receive No'))
                     ->searchable()
                     ->sortable()
                     ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('receiving.purchaseCattle.document_number')
-                    ->label('PO No')
+                    ->label(__('PO No'))
                     ->searchable()
                     ->sortable()
                     ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('receiving.supplier.name')
-                    ->label('Supplier')
+                    ->label(__('Supplier'))
                     ->searchable()
                     ->sortable()
                     ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('weighing_date')
-                    ->label('Date')
+                    ->label(__('Date'))
                     ->date()
                     ->sortable()
                     ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('creator.name')
-                    ->label('Weigher')
+                    ->label(__('Weigher'))
                     ->badge()
                     ->color(fn (Model $record) => $record->trashed() ? 'danger' : 'success'),
                 Tables\Columns\TextColumn::make('items_count')
                     ->counts('items')
-                    ->label('Heads')
+                    ->label(__('Heads'))
                     ->formatStateUsing(fn ($state) => $state . ' Heads')
                     ->color(fn (Model $record) => $record->trashed() ? 'danger' : null),
             ])
