@@ -107,7 +107,7 @@ class ProductRequisitionResource extends Resource
                                     ->hiddenLabel()
                                     ->placeholder(fn() => __('Qty'))
                                     ->default(0)
-                                    ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'text-right', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll('input[id^="data.items."][id$=".qty"]')); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
+                                    ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'text-right', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll("input[id^="data.items."][id$=".qty"]")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                     ->stripCharacters('.')
                                     ->numeric()
@@ -118,7 +118,7 @@ class ProductRequisitionResource extends Resource
                                     ->placeholder(fn() => __('Harga'))
                                     ->prefix('Rp')
                                     ->default(0)
-                                    ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'text-right', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll('input[id^="data.items."][id$=".price"]')); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
+                                    ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'text-right', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll("input[id^="data.items."][id$=".price"]")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                     ->stripCharacters('.')
                                     ->numeric()
@@ -141,7 +141,7 @@ class ProductRequisitionResource extends Resource
                                 Forms\Components\TextInput::make('note')
                                     ->hiddenLabel()
                                     ->placeholder(fn() => __('Notes'))
-                                    ->extraInputAttributes(['x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll('input[id^="data.items."][id$=".note"]')); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
+                                    ->extraInputAttributes(['x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll("input[id^="data.items."][id$=".note"]")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
                                     ->columnSpan(['default' => 12, 'md' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 4 : 3]),
                             ])
                             ->columns(12),
