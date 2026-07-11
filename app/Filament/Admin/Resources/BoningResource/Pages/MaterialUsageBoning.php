@@ -13,7 +13,7 @@ class MaterialUsageBoning extends EditRecord
 {
     protected static string $resource = BoningResource::class;
 
-    protected static ?string $title = 'Material Usage - Boning';
+    public function getTitle(): string { return __('Material Usage - Boning'); }
 
     public function mount(int | string $record): void
     {
@@ -60,6 +60,7 @@ class MaterialUsageBoning extends EditRecord
                                     ->options(Material::pluck('name', 'id'))
                                     ->required()
                                     ->searchable()
+                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                                     ->live()
                                     ->afterStateUpdated(fn ($state, Forms\Set $set) => $set('unit', Material::find($state)?->unit?->name)),
                                 

@@ -24,18 +24,35 @@ class EditCarcass extends EditRecord
                 ->url(fn (): string => CarcassResource::getUrl('print', ['record' => $this->record]))
                 ->openUrlInNewTab(),
             Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
-            Actions\ForceDeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->disabled(fn ($record) => \App\Models\BoningCarcass::where('carcass_id', $record->id)->exists()),
+            Actions\ForceDeleteAction::make()
+                ->disabled(fn ($record) => \App\Models\BoningCarcass::where('carcass_id', $record->id)->exists()),
             Actions\RestoreAction::make(),
         ];
     }
 
     protected function getFormActions(): array
     {
-        // Menyembunyikan tombol cancel bawaan
+        if (\App\Models\BoningCarcass::where('carcass_id', $this->getRecord()->id)->exists()) {
+            return [];
+        }
+
         return [
             $this->getSaveFormAction(),
         ];
+    }
+
+    public function mount($record): void
+    {
+        parent::mount($record);
+
+        if (\App\Models\BoningCarcass::where('carcass_id', $this->getRecord()->id)->exists()) {
+            \Filament\Notifications\Notification::make()
+                ->title(__('This Carcass has been processed into Boning and is now read-only.'))
+                ->warning()
+                ->send();
+        }
     }
 
     protected function getRedirectUrl(): string

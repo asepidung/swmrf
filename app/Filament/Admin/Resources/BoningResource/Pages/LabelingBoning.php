@@ -272,7 +272,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
             ])
             ->actions([
                 Tables\Actions\Action::make('repack_status')
-                    ->label('R')
+                    ->label(__('R'))
                     ->color('warning')
                     ->tooltip(__('Barang sudah masuk bahan repack'))
                     ->visible(fn (BoningItem $record) => DB::table('repack_materials')->where('barcode', $record->barcode)->exists())
@@ -281,7 +281,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
                         'style' => 'cursor: not-allowed;',
                     ]),
                 Tables\Actions\Action::make('tally_status')
-                    ->label('D')
+                    ->label(__('D'))
                     ->color('info')
                     ->tooltip(__('Barang sudah masuk tally'))
                     ->visible(fn (BoningItem $record) => DB::table('tally_items')->where('barcode', $record->barcode)->exists())

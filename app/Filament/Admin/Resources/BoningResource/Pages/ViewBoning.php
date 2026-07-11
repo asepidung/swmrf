@@ -16,16 +16,18 @@ class ViewBoning extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('back')
+                ->label(__('Back'))
+                ->color('gray')
+                ->url(fn (): string => $this->getResource()::getUrl('index')),
             Actions\Action::make('export_excel')
-                ->hiddenLabel()
-                ->tooltip(__('Export Excel'))
+                ->label(__('Export Excel'))
                 ->icon('heroicon-o-document-arrow-down')
                 ->color('success')
                 ->action(fn () => $this->exportExcel()),
                 
             Actions\EditAction::make()
-                ->hiddenLabel()
-                ->tooltip(__('Edit Header'))
+                ->label(__('Edit'))
                 ->hidden(fn () => $this->getRecord()->kunci),
         ];
     }

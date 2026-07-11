@@ -71,6 +71,10 @@ class Carcass extends Model
 
         // Cascading Delete
         static::deleting(function ($carcass) {
+            if (\App\Models\BoningCarcass::where('carcass_id', $carcass->id)->exists()) {
+                throw new \Exception(__('Cannot delete Carcass because it has already been processed into Boning.'));
+            }
+
             if ($carcass->isForceDeleting()) {
                 $carcass->items()->forceDelete();
             } else {
