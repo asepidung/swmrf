@@ -390,7 +390,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
             if (app()->runningUnitTests()) {
                 throw $e;
             }
-            Notification::make()->title('Error!')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('Error!'))->body($e->getMessage())->danger()->send();
         }
     }
 }

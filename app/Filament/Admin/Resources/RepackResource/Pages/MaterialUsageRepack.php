@@ -13,7 +13,7 @@ class MaterialUsageRepack extends EditRecord
 {
     protected static string $resource = RepackResource::class;
 
-    protected static ?string $title = 'Material Usage - Repack';
+    public function getTitle(): string { return __('Material Usage - Repack'); }
 
     public function mount(int | string $record): void
     {
