@@ -97,6 +97,11 @@ class ViewBoning extends ViewRecord
                                 'LOCKED' => 'danger',
                                 default => 'gray',
                             }),
+
+                        Infolists\Components\TextEntry::make('carcasses_processed')
+                            ->label(__('Carcasses Processed'))
+                            ->state(fn ($record) => $record->carcasses->map(fn($c) => $c->carcass->carcass_number ?? '-')->join(', '))
+                            ->columnSpanFull(),
                             
                         Infolists\Components\TextEntry::make('note')
                             ->label(__('Note'))

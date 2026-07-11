@@ -20,7 +20,8 @@ class ViewCarcass extends ViewRecord
                 ->url(fn (): string => CarcassResource::getUrl('print', ['record' => $this->record]))
                 ->openUrlInNewTab(),
             Actions\EditAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->disabled(fn ($record) => \App\Models\BoningCarcass::where('carcass_id', $record->id)->exists()),
         ];
     }
 }
