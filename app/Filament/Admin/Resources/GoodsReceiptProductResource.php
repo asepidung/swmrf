@@ -26,32 +26,32 @@ class GoodsReceiptProductResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Goods Receipt Information')
+                Forms\Components\Section::make(__('Goods Receipt Information'))
                     ->schema([
                         Forms\Components\TextInput::make('gr_number')
-                            ->label('GR Number')
+                            ->label(__('GR Number'))
                             ->disabled(),
                         Forms\Components\TextInput::make('po_number_display')
-                            ->label('PO Number')
+                            ->label(__('PO Number'))
                             ->disabled()
                             ->formatStateUsing(fn ($record) => $record?->purchaseProduct?->po_number ?? '-'),
                         Forms\Components\TextInput::make('supplier_name_display')
-                            ->label('Supplier')
+                            ->label(__('Supplier'))
                             ->disabled()
                             ->formatStateUsing(fn ($record) => $record?->supplier?->name ?? '-'),
                         Forms\Components\DatePicker::make('receive_date')
-                            ->label('Receive Date')
+                            ->label(__('Receive Date'))
                             ->disabled(),
                         Forms\Components\TextInput::make('sj_number')
-                            ->label('Surat Jalan Number')
+                            ->label(__('Surat Jalan Number'))
                             ->disabled(),
                         Forms\Components\Textarea::make('note')
-                            ->label('Note')
+                            ->label(__('Note'))
                             ->disabled()
                             ->columnSpanFull(),
                     ])->columns(3),
 
-                Forms\Components\Section::make('Products Received')
+                Forms\Components\Section::make(__('Products Received'))
                     ->schema([
                         Forms\Components\Grid::make(7)
                             ->schema([
@@ -68,29 +68,29 @@ class GoodsReceiptProductResource extends Resource
                             ->hiddenLabel()
                             ->schema([
                                 Forms\Components\TextInput::make('barcode')
-                                    ->label('Barcode')
+                                    ->label(__('Barcode'))
                                     ->hiddenLabel()
                                     ->disabled()
                                     ->columnSpan(2),
                                 Forms\Components\Select::make('product_id')
                                     ->relationship('product', 'name')
-                                    ->label('Product')
+                                    ->label(__('Product'))
                                     ->hiddenLabel()
                                     ->disabled()
                                     ->columnSpan(2),
                                 Forms\Components\Select::make('grade_id')
                                     ->relationship('grade', 'name')
-                                    ->label('Grade')
+                                    ->label(__('Grade'))
                                     ->hiddenLabel()
                                     ->disabled(),
                                 Forms\Components\TextInput::make('weight')
-                                    ->label('Weight')
+                                    ->label(__('Weight'))
                                     ->hiddenLabel()
                                     ->disabled()
                                     ->extraInputAttributes(['class' => 'text-right'])
                                     ->numeric(),
                                 Forms\Components\TextInput::make('qty_pcs')
-                                    ->label('Pcs')
+                                    ->label(__('Pcs'))
                                     ->hiddenLabel()
                                     ->disabled()
                                     ->extraInputAttributes(['class' => 'text-right'])
@@ -109,32 +109,32 @@ class GoodsReceiptProductResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('gr_number')
-                    ->label('GR Number')
+                    ->label(__('GR Number'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
                     ->color(fn (GoodsReceiptProduct $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('receive_date')
-                    ->label('Receive Date')
+                    ->label(__('Receive Date'))
                     ->date('d M Y')
                     ->sortable()
                     ->color(fn (GoodsReceiptProduct $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('sj_number')
-                    ->label('Delivery Number')
+                    ->label(__('Delivery Number'))
                     ->searchable()
                     ->color(fn (GoodsReceiptProduct $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('purchaseProduct.po_number')
-                    ->label('PO Number')
+                    ->label(__('PO Number'))
                     ->searchable()
                     ->sortable()
                     ->color(fn (GoodsReceiptProduct $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('supplier.name')
-                    ->label('Supplier')
+                    ->label(__('Supplier'))
                     ->searchable()
                     ->sortable()
                     ->color(fn (GoodsReceiptProduct $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('createdBy.name')
-                    ->label('Created By')
+                    ->label(__('Created By'))
                     ->badge()
                     ->color(fn (GoodsReceiptProduct $record) => $record->trashed() ? 'danger' : 'gray'),
                 Tables\Columns\TextColumn::make('created_at')
@@ -150,13 +150,13 @@ class GoodsReceiptProductResource extends Resource
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_goods_receipt_products')),
                 Tables\Filters\SelectFilter::make('supplier_id')
                     ->relationship('supplier', 'name')
-                    ->label('Supplier'),
+                    ->label(__('Supplier')),
                 Tables\Filters\Filter::make('receive_date')
                     ->form([
                         Forms\Components\DatePicker::make('from')
-                            ->label('From'),
+                            ->label(__('From')),
                         Forms\Components\DatePicker::make('until')
-                            ->label('Until'),
+                            ->label(__('Until')),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         $from = $data['from'] ?? now()->startOfMonth()->toDateString();
@@ -172,7 +172,24 @@ class GoodsReceiptProductResource extends Resource
                             );
                     }),
             ])
-            ->actions([])
+            ->actions([
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('scan')
+                        ->label(__('Scan'))
+                        ->icon('heroicon-o-qr-code')
+                        ->color('warning')
+                        ->hidden(fn (GoodsReceiptProduct $record) => $record->is_locked)
+                        ->url(fn (GoodsReceiptProduct $record) => Pages\ScanGoodsReceiptProduct::getUrl(['record' => $record])),
+                    Tables\Actions\Action::make('label')
+                        ->label(__('Label'))
+                        ->icon('heroicon-o-tag')
+                        ->color('info')
+                        ->hidden(fn (GoodsReceiptProduct $record) => $record->is_locked)
+                        ->url(fn (GoodsReceiptProduct $record) => Pages\LabelingGoodsReceiptProduct::getUrl(['record' => $record])),
+                ])
+                ->icon('heroicon-m-ellipsis-vertical')
+                ->tooltip(__('Options')),
+            ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),

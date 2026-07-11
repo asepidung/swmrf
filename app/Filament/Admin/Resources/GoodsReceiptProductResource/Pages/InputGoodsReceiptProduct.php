@@ -44,24 +44,24 @@ class InputGoodsReceiptProduct extends Page implements HasForms
                 Forms\Components\Grid::make(2)
                     ->schema([
                         Forms\Components\DatePicker::make('receive_date')
-                            ->label('Receiving Date')
+                            ->label(__('Receiving Date'))
                             ->required()
                             ->disabled(fn () => $this->record->is_locked),
                         Forms\Components\TextInput::make('supplier_name')
-                            ->label('Supplier Name')
+                            ->label(__('Supplier Name'))
                             ->disabled()
                             ->dehydrated(false),
                         Forms\Components\TextInput::make('sj_number')
-                            ->label('Delivery Number')
-                            ->placeholder('Biarkan Kosong Jika Tidak Ada')
+                            ->label(__('Delivery Number'))
+                            ->placeholder(__('Biarkan Kosong Jika Tidak Ada'))
                             ->disabled(fn () => $this->record->is_locked),
                         Forms\Components\TextInput::make('po_number')
-                            ->label('PO Number')
+                            ->label(__('PO Number'))
                             ->disabled()
                             ->dehydrated(false),
                         Forms\Components\TextInput::make('note')
-                            ->label('Catatan Untuk GR')
-                            ->placeholder('Catatan Untuk GR')
+                            ->label(__('Catatan Untuk GR'))
+                            ->placeholder(__('Catatan Untuk GR'))
                             ->columnSpanFull()
                             ->disabled(fn () => $this->record->is_locked),
                     ])
@@ -72,35 +72,25 @@ class InputGoodsReceiptProduct extends Page implements HasForms
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('back')
+                ->label(__('Back'))
+                ->icon('heroicon-o-arrow-left')
+                ->color('gray')
+                ->url(fn () => GoodsReceiptProductResource::getUrl('index')),
+
             Actions\Action::make('lock')
-                ->tooltip('Lock')
+                ->tooltip(__('Lock'))
                 ->icon('heroicon-o-lock-closed')
                 ->color('success')
                 ->hiddenLabel()
                 ->requiresConfirmation()
-                ->modalHeading('Lock Goods Receipt')
-                ->modalDescription('Apakah Anda yakin ingin mengunci GR ini? Data tidak akan bisa diubah setelah dikunci (GR Selesai).')
+                ->modalHeading(__('Lock Goods Receipt'))
+                ->modalDescription(__('Apakah Anda yakin ingin mengunci GR ini? Data tidak akan bisa diubah setelah dikunci (GR Selesai).'))
                 ->hidden(fn () => $this->record->is_locked || ! $this->record->items()->exists())
                 ->action(fn () => $this->lockGr()),
 
-            Actions\Action::make('scan')
-                ->tooltip('Scan')
-                ->icon('heroicon-o-qr-code')
-                ->color('warning')
-                ->hiddenLabel()
-                ->hidden(fn () => $this->record->is_locked)
-                ->action(fn () => $this->goScan()),
-
-            Actions\Action::make('label')
-                ->tooltip('Label')
-                ->icon('heroicon-o-tag')
-                ->color('info')
-                ->hiddenLabel()
-                ->hidden(fn () => $this->record->is_locked)
-                ->url(fn () => GoodsReceiptProductResource::getUrl('labeling', ['record' => $this->record->id])),
-
             Actions\Action::make('print')
-                ->tooltip('Print')
+                ->tooltip(__('Print'))
                 ->icon('heroicon-o-printer')
                 ->color('gray')
                 ->hiddenLabel()
@@ -110,13 +100,13 @@ class InputGoodsReceiptProduct extends Page implements HasForms
                 ->openUrlInNewTab(),
 
             Actions\Action::make('delete')
-                ->tooltip('Delete')
+                ->tooltip(__('Delete'))
                 ->icon('heroicon-o-trash')
                 ->color('danger')
                 ->hiddenLabel()
                 ->requiresConfirmation()
-                ->modalHeading('Delete Goods Receipt')
-                ->modalDescription('Apakah Anda yakin ingin menghapus GR ini?')
+                ->modalHeading(__('Delete Goods Receipt'))
+                ->modalDescription(__('Apakah Anda yakin ingin menghapus GR ini?'))
                 ->hidden(fn () => $this->record->items()->exists())
                 ->action(fn () => $this->deleteGr()),
         ];
@@ -170,9 +160,8 @@ class InputGoodsReceiptProduct extends Page implements HasForms
 
             DB::commit();
 
-            Notification::make()->title('Goods Receipt berhasil dikunci (gr selesai)!')->success()->send();
-            $this->record->refresh();
-            $this->mount($this->record);
+            Notification::make()->title(__('Goods Receipt berhasil dikunci (gr selesai)!'))->success()->send();
+            $this->redirect(GoodsReceiptProductResource::getUrl('index'));
         } catch (\Exception $e) {
             DB::rollBack();
             Notification::make()->title('Error: ' . $e->getMessage())->danger()->send();
