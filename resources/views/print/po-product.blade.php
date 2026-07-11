@@ -269,7 +269,7 @@
                     <th width="30%">Beef Name</th>
                     <th width="10%">Qty</th>
                     <th width="15%">Unit Price</th>
-                    <th width="20%">Subtotal</th>
+                    <th width="20%">Total</th>
                     <th width="20%">Item Note</th>
                 </tr>
             </thead>
@@ -295,8 +295,22 @@
                 </div>
             </div>
             
-            <div style="width: 300px; margin-top: 10px;">
+                        <div style="width: 300px; margin-top: 10px;">
                 <table style="border: none; margin: 0;">
+                    @php
+                    $taxAmount = $record->productRequisition->tax_amount ?? 0;
+                    $subtotal = $record->total_amount - $taxAmount;
+                    @endphp
+                    <tr>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px;">Subtotal:</td>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; font-size: 14px;">Rp {{ number_format($subtotal, 0, ',', '.') }}</td>
+                    </tr>
+                    @if($taxAmount > 0)
+                    <tr>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px;">Tax 11%:</td>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; font-size: 14px;">Rp {{ number_format($taxAmount, 0, ',', '.') }}</td>
+                    </tr>
+                    @endif
                     <tr>
                         <td style="border: none; text-align: right; font-weight: bold; padding: 4px;">Grand Total:</td>
                         <td style="border: none; text-align: right; font-weight: bold; padding: 4px; font-size: 14px;">Rp {{ number_format($record->total_amount, 0, ',', '.') }}</td>
