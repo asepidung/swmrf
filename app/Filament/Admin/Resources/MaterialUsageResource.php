@@ -145,6 +145,7 @@ class MaterialUsageResource extends Resource
     {
         return [
             'index' => Pages\ListMaterialUsages::route('/'),
+            'detail-list' => Pages\MaterialUsageDetailList::route('/detail-list'),
             'create' => Pages\CreateManualUsage::route('/create-manual-usage'),
             'view' => Pages\ViewMaterialUsage::route('/{record}'),
         ];

@@ -14,6 +14,11 @@ class ListMaterialUsages extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('detail-list')
+                ->label(__('Detail List'))
+                ->icon('heroicon-o-list-bullet')
+                ->color('info')
+                ->url(static::$resource::getUrl('detail-list')),
             Actions\CreateAction::make()
                 ->label(__('Create Manual Usage'))
                 ->icon('heroicon-o-plus'),
