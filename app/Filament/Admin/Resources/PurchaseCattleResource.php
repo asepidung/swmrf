@@ -240,9 +240,9 @@ class PurchaseCattleResource extends Resource
         return [
             'index' => Pages\ListPurchaseCattle::route('/'),
             'create' => Pages\CreatePurchaseCattle::route('/create'),
+            'detail-list' => Pages\PurchaseCattleDetailList::route('/detail-list'),
             'view' => Pages\ViewPurchaseCattle::route('/{record}'),
             'edit' => Pages\EditPurchaseCattle::route('/{record}/edit'),
-            'detail-list' => Pages\PurchaseCattleDetailList::route('/detail-list'),
         ];
     }
 
