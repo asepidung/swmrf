@@ -1,52 +1,20 @@
-# UI/UX & Logic Documentation: Customers Module
+# Modul Customers (Pelanggan)
 
-## 1. Ikhtisar Modul
-Modul **Customers** digunakan untuk mengelola data pelanggan, termasuk pembagian berdasarkan grup (*Customer Group*) dan segmen (*Customer Segment*). Modul ini terintegrasi erat dengan modul transaksi seperti *Sales Order*, *Invoice*, dan *Receivable*.
+Modul **Customers** adalah manajemen basis data pelanggan yang menyimpan seluruh identitas pembeli B2B (Bisnis) maupun B2C (Konsumen Akhir). Data dari modul ini menjadi tulang punggung bagi seluruh modul hilir seperti *Sales Orders*, *Delivery Orders*, dan *Invoices*.
 
-## 2. Struktur Database Utama
-- **Tabel `customers`**:
-  - `name` (string): Nama pelanggan (Wajib).
-  - `customer_group_id` (foreign key): Grup pelanggan (Opsional saat input).
-  - `customer_segment_id` (foreign key): Segmen pelanggan (Wajib).
-  - `address` (text): Alamat lengkap pelanggan (Wajib).
-  - `top` (integer): *Term of Payment* / Batas waktu pembayaran dalam hari (Wajib, tidak ada *default* 0).
-  - `pic` (string): *Person in Charge* (Opsional).
-  - `phone` (string): Nomor telepon (Opsional).
-  - `invoice_exchange` (boolean): Tukar faktur (Wajib isi Yes/No).
-  - `required_documents` (array/json): Daftar dokumen wajib saat pengiriman (Opsional).
-  - `is_active` (boolean): Status aktif pelanggan. *Default* `true`.
+## 1. Arsitektur & Relasi Database
+Model utama `Customer` bertindak sebagai entitas sentral (*Master Data*) untuk operasional penjualan:
+- **Tabel `customers`**: Menyimpan data esensial seperti Nama, PIC (*Person In Charge*), Email, Nomor Telepon, Alamat, serta pengaturan status Aktif/Nonaktif.
+- **Relasi Sentral**: Pelanggan memiliki relasi `HasMany` secara ekstensif terhadap tabel `sales_orders`, `delivery_orders`, `invoices`, `receivables` (Piutang), dan log `payments`.
 
-## 3. UI/UX Rules & Behavior
-1. **Aturan Field Input**:
-   - `top` (*Term of Payment*): Sengaja tidak diberikan nilai bawaan (*default*) agar pengguna tidak lupa dan mengosongkan/membiarkan nilainya 0. Pengguna wajib mengetikkan angka.
-   - `invoice_exchange`: Berbentuk `Select` (Yes/No) tanpa *default* 'No', agar pengguna diwajibkan untuk memilih secara sadar.
-   - `name`: Teks otomatis diubah menjadi huruf kapital (*uppercase*) sebelum disimpan ke database menggunakan `mutateFormDataBeforeCreate` dan `mutateFormDataBeforeSave`.
-2. **Tombol Navigasi Halaman Edit**:
-   - Tombol pembatalan bawaan (*Cancel Button*) di bawah formulir disembunyikan.
-   - Tombol **Back** diletakkan di *Header Actions* (Kanan Atas) berdampingan dengan tombol *Delete*.
-3. **Penyembunyian Tombol Delete (Safeguard)**:
-   - Tombol **Delete** di halaman Edit akan disembunyikan secara otomatis (`hidden()`) jika pelanggan tersebut telah memiliki minimal satu riwayat *Sales Order*. Hal ini mencegah penghapusan data yang memiliki keterkaitan finansial historis.
-4. **Status Inaktif (`is_active`)**:
-   - Pelanggan yang sudah tidak bertransaksi tidak boleh dihapus, melainkan cukup *Toggle* status `Active` menjadi mati (Inaktif).
-   - Pelanggan Inaktif **tidak akan muncul** di *dropdown* pengisian *Sales Order* baru, namun tetap muncul di pencarian *Invoice*, *Sales Return*, dan riwayat tagihan lainnya demi menjaga keutuhan data transaksi lanjutan.
+## 2. Alur Logika (Business Logic)
+1. **Lifecycle Pelanggan (Active/Inactive State)**: Pelanggan tidak dihancurkan dari database (*Hard Delete*) jika mereka berhenti bertransaksi. Sebaliknya, modul ini menggunakan *boolean toggle* `is_active`. Pelanggan yang tidak aktif secara otomatis disembunyikan (*filtered out*) dari *dropdown* pembuatan *Sales Order* atau faktur baru, namun riwayat transaksi masa lalu mereka tetap utuh di laporan keuangan.
+2. **Standardisasi Format Kontak**: Sistem secara internal memformat atau memberikan validasi ketat terhadap pengisian struktur Email (wajib *valid email format*) dan format Nomor Telepon, mencegah *error* ketika sistem akan mengeksekusi integrasi notifikasi (misal: pengiriman faktur via email atau WhatsApp di masa depan).
+3. **Penyimpanan Alamat yang Ekstensif**: Karena industri daging melibatkan pengiriman logistik (*Cold Chain*), modul mewajibkan *field* alamat untuk bisa menyimpan input teks panjang (*Long Text/Textarea*) agar memuat *waypoint* yang jelas.
 
-## 4. Logika Bisnis (*Business Logic*)
-1. **Auto-Create Customer Group**:
-   - Jika pengguna membiarkan field **Customer Group** kosong saat membuat kustomer baru, sistem akan otomatis membuatkan `CustomerGroup` baru menggunakan nama kustomer tersebut.
-   - **Injeksi Data Grup**: Sistem juga akan secara cerdas menyalin nilai `pic` kustomer menjadi `head_office_pic` pada grup, dan menyalin `address` kustomer menjadi `head_office_address` pada grup.
-
-## 5. Fitur Filter Halaman Index (Tabel)
-- **Select Filter**: Pengguna hanya dapat melakukan penyaringan (*filter*) data kustomer berdasarkan relasi **Customer Group** dan **Segment**.
-- Filter untuk elemen-elemen minor seperti *Invoice Exchange* telah ditiadakan agar antarmuka penyaringan tetap bersih dan relevan dengan segmentasi bisnis.
-
-## 6. Fitur Tambahan UI/UX
-1. **Navigasi Cluster (Tabs)**:
-   - Menu modul turunan seperti *Customer Group* dan *Customer Segment* yang tergabung dalam *CustomersCluster* ditampilkan sebagai **Top Tabs** (Pills) di bagian atas halaman (menggunakan `SubNavigationPosition::Top` pada masing-masing *Resource*), membuat ruang kerja utama lebih luas.
-2. **Export Excel**:
-   - Ditambahkan fitur Ekspor tabel Kustomer ke dalam format Excel pada antarmuka *List Customers* dengan warna hijau (`success`), sesuai standar tombol ekspor proyek.
-3. **Penerjemahan Bahasa (Bilingual)**:
-   - Pengaturan Label pada *Table* dan *Form* menggunakan `fn() => __('...')` (Closure) untuk memastikan penerjemahan label (*Indonesian* / *English*) terjadi tepat saat *render* halaman (*runtime*), bukan saat proses inisialisasi awal.
-
-
-### Pencegahan Duplikasi Data (Unique Validation)
-- Semua *field* utama pengenal identitas seperti `name` (dan `code` jika ada) pada form *Create/Edit* telah dilengkapi dengan atribut `->unique(ignoreRecord: true)`. Hal ini bertujuan untuk menangkap kesalahan input data ganda (duplikat) secara elegan (*graceful validation error*) di sisi UI Form, sehingga mencegah *fatal error 500* (Constraint Violation) di level *Database Hosting/Production*.
+## 3. UI/UX (Antarmuka Pengguna)
+- **Pencarian Agresif (Global Search)**: Modul ini diintegrasikan secara penuh ke *Global Search* bawaan Filament. *User* bisa mencari "Nama Pelanggan" dari *bar* navigasi manapun (bahkan saat berada di modul lain) untuk menemukan profil pelanggan dalam sedetik.
+- **Grid Layout pada Form**: Formulir pengisian profil menggunakan struktur *Grid* (2 atau 3 kolom). Detail seperti Nama, Email, dan Telepon disajikan berdampingan di bagian atas, sementara area *Address* disajikan merentang penuh (*columnSpanFull*) di bagian bawah, mencerminkan hierarki visual yang natural.
+- **Visualisasi Status (Toggle)**: Menggunakan elemen *Toggle* UI untuk status aktif/nonaktif. Berbeda dengan *checkbox* kaku, *toggle* memberi kesan umpan balik (*feedback*) instan seperti aplikasi *mobile*.
+- **List & Infolist Kompak**: Tabel data dirancang *responsive*. Informasi sekunder seperti Alamat dipotong (*truncated*) dengan `limit()` pada *Table View* agar tidak menghabiskan baris layar, namun bisa dibaca secara penuh pada halaman *View/Infolist*.
+- **Dukungan Bilingual Terpadu**: Seperti standar ERP ini, semua antarmuka (nama form, kolom, error) diatur mengikuti preferensi bahasa lokal tanpa perlu penyetelan manual dari sisi *user*.

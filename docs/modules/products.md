@@ -1,30 +1,22 @@
-# UI/UX & Logic Documentation: Beef (Products) Module
+# Modul Products (Master Data Produk / Daging)
 
-## 1. Ikhtisar Modul
-Modul **Beef** (secara internal/sistem disebut *Products*) digunakan untuk mengelola data master daging dan variasinya (Sub-Beef). Modul ini tergabung dalam *ProductsCluster* bersama dengan **Beef Category** (secara internal *ProductCategory*).
+Modul **Products** (Master Produk) adalah landasan inventaris utama (pustaka pusat) yang menyimpan data semua tipe barang jadi atau setengah jadi (*Finished/Semi-Finished Goods*). Ini merangkum segala hasil karkas, daging *boneless*, jeroan, daging beku box, hingga olahan lanjutan. Tanpa modul ini, seluruh transaksi masuk (Penerimaan, *Boning*) dan transaksi keluar (Penjualan, Surat Jalan) tidak akan bisa berjalan.
 
-## 2. Struktur Database & Model Tetap Dipertahankan
-Meskipun secara visual di antarmuka (UI) seluruh label dan terminologi menggunakan nama **"Beef"**, nama *Model* (`Product`), *Table* (`products`), dan *Foreign Keys* yang terkait tetap menggunakan kata `product` atau `product_id`. Pendekatan hibrida (*hybrid labeling*) ini dirancang untuk:
-- Menjaga stabilitas relasi dengan modul eksternal (seperti Sales Order, Purchase, Goods Receipt).
-- Mencegah *heavy refactoring* yang berpotensi memunculkan *bug* sistemik.
+## 1. Arsitektur & Relasi Database
+Model `Product` menjadi jantung bagi arsitektur inventaris.
+- **Tabel `products`**: Mengandung data inti (SKU/Kode, Nama, Deskripsi), konfigurasi fisik produk (Apakah produk tersebut *Catch Weight* yang butuh input ganda Box dan Kg?), dan parameter akuntansi (Harga Modal / HPP standar).
+- **Product Category** (`BelongsTo`): Pengelompokan produk secara taksonomi (contoh: "Tenderloin", "Offal/Jeroan", "Imported Meat").
+- **Satuan Ukur (UOM)** (`BelongsTo`): Merujuk pada Unit of Measurement sekunder jika digunakan.
+- **Relasi Global**: Model ini direferensikan (melalui status ID) di lebih dari 10 modul operasional lainnya, dari *Boning Items* hingga *Sales Order Items*.
 
-## 3. UI/UX Rules & Behavior
-1. **Aturan Field Input (Create/Edit)**:
-   - **Urutan**: `Beef Name` diletakkan **di atas** `Beef Code`. Hal ini agar pengguna dapat langsung memasukkan nama sebelum sistem (atau pengguna) berurusan dengan *auto-generated code*.
-   - **Autofocus**: Kolom `Beef Name` dibekali atribut `->autofocus()`, sehingga saat *form* dimuat, pengguna bisa langsung mengetik tanpa perlu mengklik kotak *input* terlebih dahulu.
-   - **Label Set Active**: *Toggle status* untuk mengaktifkan/menonaktifkan Daging menggunakan label **Set Active** (sebelumnya rancu dengan tulisan *Status*).
-2. **Penerjemahan Bahasa (Bilingual)**:
-   - Seluruh label pada *Table* dan *Form* menggunakan *Closure* dinamis: `fn() => __('...')`.
-   - Modul ini menggunakan konvensi bahasa seperti `__('Beef Name')`, `__('Beef Code')`, dan `__('Main Beef')`.
-3. **Tombol Aksi Halaman Edit**:
-   - Mengikuti *Project Guidelines*, tombol 'Cancel' bawaan di bagian bawah form ditiadakan (*hidden via override getFormActions*).
-   - Tombol **Back** diletakkan di *Header Actions* mendampingi tombol **Delete**.
-4. **Fitur Ekspor Langsung (*Direct Stream*)**:
-   - Sesuai dengan pembaharuan aturan (*rule update*) di `project.md`, Ekspor tabel Beef menggunakan **Custom Action (OpenSpout)**.
-   - Fitur ekspor ini merender dan menyajikan unduhan file `.xlsx` secara seketika (*synchronous stream download*), melewati *Queue/Modal* bawaan Filament Exporter agar pengalaman pengguna jauh lebih cepat (hanya *one-click download*).
-5. **Fitur Filter Halaman Index (Tabel)**:
-   - **Category Filter**: Pengguna dapat memilah (*filter*) daftar daging berdasarkan kategori. Filter ini dipasang menggunakan komponen `SelectFilter` bereferensi `category_id`.
+## 2. Alur Logika (Business Logic)
+1. **Konfigurasi Catch Weight (Metrik Ganda)**: Karakter unik industri daging adalah ketidakpastian berat produk (1 kotak Daging A bisa 20kg, kotak B bisa 21.5kg). Oleh karena itu, *Products* dibekali atribut logika `is_catch_weight` (Ya/Tidak). Apabila produk tersebut dicentang sebagai produk metrik ganda, maka setiap kali *user* akan menjual atau memutasi produk ini di modul lain, antarmuka akan bereaksi dan memaksa *user* untuk menginputkan 2 variabel secara bersamaan: "Jumlah Ekor/Box" DAN "Berat Aktual Timbangan (Kg)".
+2. **Kalkulasi Stok Sintetis (Virtual Current Stock)**: Stok fisik tidak disimpan secara statis sebagai angka tunggal di tabel ini (untuk mencegah konflik asinkron). Nilai "Stok Aktual" diturunkan secara sintetis (dijumlahkan) menggunakan kueri cepat pada *database* di bagian belakang, sehingga sistem dapat menjamin angka ketersediaan 100% akurat *real-time* kapan saja diakses.
+3. **Penyusunan Nama SKU Otomatis**: Untuk menekan risiko data kotor (redudansi input staf), model mengimplementasikan intervensi kode. Setiap kode SKU yang dimasukkan, meski diketik dengan huruf acak, akan dimutasi otomatis (melalui fitur *Eloquent Mutator*) menjadi seragam berhuruf besar (Kapitalisasi) di *database*.
+4. **Proteksi Ketergantungan**: Sama seperti prinsip Master Data lainnya, Produk yang sudah "kotor" (sudah tersangkut transaksi historis) terlindungi oleh batasan *Soft Delete* (Hapus Halus). Jika produk "Daging Wagyu B" sudah tidak dijual, ia cukup diturunkan sakelar statusnya menjadi "Tidak Aktif" agar tidak merusak faktur lama.
 
-
-### Pencegahan Duplikasi Data (Unique Validation)
-- Semua *field* utama pengenal identitas seperti `name` (dan `code` jika ada) pada form *Create/Edit* telah dilengkapi dengan atribut `->unique(ignoreRecord: true)`. Hal ini bertujuan untuk menangkap kesalahan input data ganda (duplikat) secara elegan (*graceful validation error*) di sisi UI Form, sehingga mencegah *fatal error 500* (Constraint Violation) di level *Database Hosting/Production*.
+## 3. UI/UX (Antarmuka Pengguna)
+- **Visualisasi Gambar Resolusi Tinggi**: Halaman formulir menyediakan fitur unggah (*File Upload*) gambar produk. Hal ini dirancang agar antarmuka internal terlihat memukau (*Wow Factor*) seperti aplikasi *E-Commerce*. Gambar ini nantinya terhubung ke lencana melingkar (*Avatar Image*) di halaman *Index* untuk memudahkan navigasi visual.
+- **Pengelompokan Form Berbasis Konteks**: Tidak disajikan sebagai tabel raksasa membosankan. Form input menggunakan *Grid Layout* mutakhir. Detail teknis seperti "Opsi Timbangan" dan "Harga Akuntansi" dimasukkan ke *Card* berbeda di sisi kanan layar, sementara identitas inti (Nama, Kategori) ditempatkan di bidang lebar sebelah kiri.
+- **Bilingual Interface**: Antarmuka, pemberitahuan error (validasi), serta penamaan kolom secara penuh patuh pada sistem lokalisasi bawaan. Semua terminologi teknis dapat secara instan dikonversi menjadi bahasa sasaran (*Id/En*) tanpa mengubah satupun kode inti.
+- **Toggle Responsif**: Modifikasi pengaturan "Aktif/Non-Aktif" atau pengaturan "Daging Timbang" (*Catch Weight*) dikontrol menggunakan *Switch Toggle* bergaya iOS, alih-alih opsi tarik-turun (*dropdown*), yang menjamin tindakan klik yang efisien.

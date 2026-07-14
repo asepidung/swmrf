@@ -1,30 +1,21 @@
-# UI/UX & Logic Documentation: Supplier Module
+# Modul Suppliers (Pemasok)
 
-## 1. Ikhtisar Modul
-Modul **Supplier** adalah bagian dari *Master Data* yang digunakan untuk mencatat dan mengelola profil pemasok/vendor yang bekerja sama dengan perusahaan. Modul ini penting sebagai fondasi relasi pada proses pembelian (Purchase) dan penerimaan barang (Goods Receipt).
+Modul **Suppliers** (Pemasok/Vendor) adalah pangkalan sentral (*Master Data*) untuk semua entitas eksternal yang memasok barang dan jasa ke dalam perusahaan. Ini meliputi peternak sapi, penyedia *packaging*, hingga vendor layanan eksternal. Semua aliran masuk pembelian hulu (Sapi & Barang) secara mutlak harus bersandar pada profil vendor yang divalidasi di dalam modul ini.
 
-## 2. Struktur Database
-Tabel `suppliers` memiliki atribut dasar profil dan juga telah diperluas untuk mengakomodasi pencatatan tipe barang yang disuplai:
-- **Pembaruan Migration**: Ditambahkan kolom `supplied_goods` bertipe `string` (nullable).
-- **Fungsi Kolom Baru**: Digunakan untuk mencatat komoditas atau jenis barang (*notes*) yang biasa dikirimkan oleh pemasok terkait (contoh: Sapi Hidup, Karton, Plastik Kemasan, Tali, dsb).
+## 1. Arsitektur & Relasi Database
+Model `Supplier` berstatus sebagai entitas akar bagi semua modul rantai pasok masuk (*Inbound Logistics*):
+- **Tabel `suppliers`**: Menyimpan identitas legal (Nama PT/Orang, PIC, NPWP/Nomor Pajak jika ada), kontak operasional (Alamat, Telepon, Email), dan sakelar ketersediaan (Aktif/Non-Aktif).
+- **Purchase Orders (Cattle / Material / Product)** (`HasMany`): Relasi transaksi pembelian yang membanjiri sistem ERP ini semuanya merujuk pada satu *Supplier*.
+- **Goods Receipts & Cattle Weighing** (`HasMany` / `HasManyThrough`): Dokumen fisik saat sapi dan barang tiba juga menautkan diri pada profil *Supplier* untuk verifikasi hutang dagang (*Accounts Payable*).
 
-## 3. UI/UX Rules & Behavior
-1. **Autofocus Form**:
-   - Kolom `name` dibekali atribut `->autofocus()`. Saat pengguna menekan tombol Create, kursor akan otomatis siaga pada input Nama, memangkas kebutuhan klik ekstra.
-2. **Penerjemahan Bahasa (Bilingual)**:
-   - Seluruh elemen antarmuka (label *Table*, *Form*, *Radio Button*, dan notifikasi) dibungkus menggunakan *Closure* dinamis: `fn() => __('...')`. Memastikan proses pergantian bahasa (*runtime translation*) beroperasi optimal tanpa isu *caching*.
-3. **Validasi Wajib Isi (No Default Value)**:
-   - **Term of Payment (TOP)**: Nilai bawaan (default `0`) pada input bilangan bulat `top_days` ditiadakan. Kolom ini dipaksa (*required*) untuk diisi guna mencegah data masuk secara tidak disengaja tanpa kejelasan TOP.
-   - **Pajak (Tax 11%)**: Status pajak `is_tax_11` sebelumnya menggunakan komponen *Toggle*. Karena sifatnya krusial, komponen diubah menjadi **Radio Button** (Yes/No) tanpa nilai *default* dan diatur menjadi wajib diisi (*required*). Hal ini memaksa *user* untuk secara sadar menentukan status pajak pemasok.
-4. **Standarisasi Tombol Aksi Halaman Edit**:
-   - Mengikuti *Project Guidelines*, tombol 'Cancel' standar di bagian bawah form dinonaktifkan (*hidden via override getFormActions*).
-   - Tombol pembatalan dipindah ke *Header Actions* berwujud tombol **Back** berwarna *gray*, mendampingi tombol aksi **Delete**.
-5. **Fitur Ekspor Langsung (*Direct Stream*)**:
-   - Implementasi ekspor data (*custom action*) diletakkan pada Header tabel menggunakan library **OpenSpout**.
-   - Sistem unduhan bekerja secara seketika (*synchronous stream download*), melewati *Queue/Modal* bawaan Filament Exporter sehingga menyajikan pengalaman *one-click download* file `.xlsx` yang mulus dan cepat.
-6. **Search & Filter Interaktif**:
-   - Kolom baru `Supplied Goods` diintegrasikan pada komponen tabel dengan sifat *Searchable*. Hal ini memungkinkan pencarian teks (*text filtering*) yang fleksibel untuk memilah supplier berdasarkan komoditas yang disuplainya.
+## 2. Alur Logika (Business Logic)
+1. **Dinding Penahan Transaksi (Lifecycle Status)**: Seorang *Supplier* dapat ditandai sebagai `is_active` (Ya/Tidak) atau *Non-Aktif* karena alasan performa pengiriman buruk atau masa kontrak habis. Saat *Supplier* dinonaktifkan, profil mereka langsung dilenyapkan dari *dropdown* pilihan pada layar pembuatan *Purchase Order* baru, mencegah pembelian liar oleh staf pengadaan. 
+2. **Kekebalan Arsip Historis (Immunity on Soft Delete)**: Untuk *Supplier* yang dinonaktifkan, sejarah panjang tagihan faktur dan PO mereka di masa lalu tetap aman dan bisa ditarik laporannya. 
+3. **Ketertiban Format Kontak (Standardisasi)**: Kolom isian Email (memaksa domain yang sah) dan Nomor Handphone ditata untuk seragam demi menjaga keabsahan kontak, krusial saat modul ini dihubungkan dengan integrasi eksternal ke depannya (seperti kirim notifikasi pencairan dana otomatis via API ke pemasok).
+4. **Pencegahan Pembaruan Ganda Secara Bebas**: Penghapusan mutlak sebuah profil pemasok ditolak jika sistem menemukan ikatan antara pemasok tersebut dengan dokumen hutang atau tagihan. Opsi satu-satunya adalah mematikan sakelar (status).
 
-
-### Pencegahan Duplikasi Data (Unique Validation)
-- Semua *field* utama pengenal identitas seperti `name` (dan `code` jika ada) pada form *Create/Edit* telah dilengkapi dengan atribut `->unique(ignoreRecord: true)`. Hal ini bertujuan untuk menangkap kesalahan input data ganda (duplikat) secara elegan (*graceful validation error*) di sisi UI Form, sehingga mencegah *fatal error 500* (Constraint Violation) di level *Database Hosting/Production*.
+## 3. UI/UX (Antarmuka Pengguna)
+- **Akses Pencarian Kilat (Global Integration)**: Disematkan secara utuh ke balok penelusuran global (pencarian utama) pada atap aplikasi. Jika divisi Keuangan sedang ingin mencari data kontak pemasok untuk ditagih, mereka cukup mengetik nama PT di *search bar* manapun untuk langsung meluncur ke profil *Supplier* bersangkutan.
+- **Form Struktur Grid Lebar**: Tata letak isian dirancang lapang. Identitas inti ditempatkan bersebelahan di blok atas, disusul informasi alamat berukuran lebar (*columnSpanFull*) di bawah. Model blok *Grid* ini mereplika kenyamanan visual *file* laci dokumen.
+- **Desain Interaksi Tombol (Toggle)**: *Switch* (Toggle) geser dipakai untuk menggantikan desain kotak centang (*Checkbox*) tradisional pada atribut Aktif/Tidak. Sentuhan kecil ini meningkatkan persepsi kemewahan (*premium feel*) aplikasi *web*.
+- **Transparansi Visual pada Daftar**: Halaman indeks (Daftar Tabel) mereduksi kebisingan informasi (*information overload*). *Field* tambahan seperti Alamat sengaja dipotong menggunakan logika pembatas huruf (`limit(50)`). Informasi diletakkan secukupnya agar *User* bisa mengekspor atau melihat baris ratusan vendor tanpa perlu menekan tombol penggulung halaman terlalu sering. Tentu dengan pelabelan dwibahasa bawaan untuk pasar Indonesia.

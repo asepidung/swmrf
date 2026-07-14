@@ -1,25 +1,18 @@
-# UI/UX & Logic Documentation: Cattle Class Module
+# Modul Cattle Class (Kelas Sapi)
 
-## 1. Ikhtisar Modul
-Modul **Cattle Class** merupakan bagian dari Master Data yang digunakan untuk mendefinisikan kelas atau kategori dari hewan ternak (sapi) yang dikelola di dalam sistem. Modul ini bersifat sederhana dan berfokus pada manajemen nama kelas ternak.
+Modul **Cattle Class** merupakan komponen fondasi dalam sistem Master Data yang digunakan untuk mengkategorikan dan mendefinisikan kelas/jenis kelamin ternak (misalnya: *Steer*, *Heifer*, *Cow*, *Bull*). Modul ini sangat vital karena klasifikasi sapi berdampak pada penentuan harga, kualitas karkas, dan analisis data produksi hilir.
 
-## 2. Struktur Database
-- **Tabel `cattle_classes`**:
-  - `name` (string): Nama kelas sapi (Wajib, diubah otomatis menjadi *uppercase* di form).
+## 1. Arsitektur & Relasi Database
+Modul ini bertumpu pada model `CattleClass`. Walaupun strukturnya sederhana, tabel ini menjadi rujukan (*foreign key*) yang sangat krusial bagi modul lain:
+- **Tabel `cattle_classes`**: Hanya berisi ID, nama kelas (`name`), dan stempel waktu.
+- **Relasi ke Modul Lain**: Model ini diwariskan ke `CattleReceiving` dan `CattleWeighing` untuk menandai identitas biologis setiap individu sapi yang masuk ke RPH (Rumah Potong Hewan).
 
-## 3. UI/UX Rules & Behavior
-1. **Autofocus Form**:
-   - Kolom `name` dibekali atribut `->autofocus()`. Saat pengguna menekan tombol Create, kursor akan langsung berada pada *input* Nama, sehingga mempercepat proses *data entry*.
-2. **Penerjemahan Bahasa (Bilingual)**:
-   - Seluruh elemen antarmuka (label *Table* dan *Form*) menggunakan *Closure* dinamis: `fn() => __('...')`.
-   - Hal ini memastikan terjemahan antar bahasa beroperasi lancar (*runtime translation*) tanpa risiko *cache-trap*.
-3. **Standarisasi Tombol Aksi Halaman Edit**:
-   - Menyelaraskan dengan tata letak modul lainnya, tombol 'Cancel' bawaan di bagian bawah form telah dihilangkan (*hidden via override getFormActions*).
-   - Fungsi pembatalan digantikan dengan tombol **Back** berwarna *gray* yang diposisikan di *Header Actions* mendampingi tombol **Delete**.
-4. **Fitur Ekspor Langsung (*Direct Stream*)**:
-   - Diimplementasikan sesuai standar terbaru: Penggunaan *Custom Action* ekspor tabel Cattle Class ke format `.xlsx` menggunakan library **OpenSpout**.
-   - Sistem unduhan seketika ini (*stream download*) menghindari *polling modal* atau antrean antarmuka *Queue* yang lama, dan memberikan pengalaman klik-unduh (*one-click download*) secara *seamless*.
+## 2. Alur Logika (Business Logic)
+1. **Pusat Referensi (Single Source of Truth)**: Kelas sapi dikonfigurasi di satu tempat. Perubahan nama kelas di modul ini akan langsung tercermin secara global pada seluruh dokumen *Purchase Order*, *Receiving*, dan *Weighing*.
+2. **Standardisasi Data**: Untuk menjaga konsistensi laporan pencarian (mencegah duplikasi akibat *case-sensitive*), *business logic* pada model memaksa (*mutator*) setiap nama kelas yang dimasukkan untuk diformat menjadi huruf kapital secara otomatis (*uppercase*) sebelum disimpan ke dalam *database*.
+3. **Pencegahan Penghapusan Data (Hard Delete)**: Karena posisinya sebagai referensi absolut, penghapusan pada *Cattle Class* akan ditolak oleh *database* (melalui *Foreign Key Constraint*) jika kelas tersebut sudah pernah digunakan oleh sapi yang terdaftar dalam sistem.
 
-
-### Pencegahan Duplikasi Data (Unique Validation)
-- Semua *field* utama pengenal identitas seperti `name` (dan `code` jika ada) pada form *Create/Edit* telah dilengkapi dengan atribut `->unique(ignoreRecord: true)`. Hal ini bertujuan untuk menangkap kesalahan input data ganda (duplikat) secara elegan (*graceful validation error*) di sisi UI Form, sehingga mencegah *fatal error 500* (Constraint Violation) di level *Database Hosting/Production*.
+## 3. UI/UX (Antarmuka Pengguna)
+- **Manajemen Simpel (CRUD Tunggal)**: Karena entitas datanya sangat minim, UI dirancang sangat sederhana menggunakan form standar Filament tanpa *tabs* atau *steps*. Admin dapat menambahkan kelas sapi hanya dalam waktu kurang dari 5 detik.
+- **Validasi Wajib**: Form dilengkapi dengan validasi *Required* dan pengecekan unik (*Unique Validation*) agar tidak ada administrator yang memasukkan kelas dengan nama ganda.
+- **Bilingual Terintegrasi**: Seluruh antarmuka (*Resource*, Tabel, Form, Navigasi) telah dibungkus dengan metode terjemahan `__()` sehingga dapat beradaptasi ketika *user* mengganti bahasa preferensi dari Inggris ke Indonesia.

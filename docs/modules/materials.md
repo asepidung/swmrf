@@ -1,41 +1,21 @@
-# UI/UX & Logic Documentation: Materials Module
+# Modul Materials (Master Data Material)
 
-## 1. Ikhtisar Modul
-Modul **Materials** digunakan untuk mengelola data bahan penolong (non-daging) yang digunakan dalam proses produksi, pengemasan, atau persediaan umum. Modul ini tergabung dalam satu *Cluster* utama bersama dengan **Material Category** dan **Material Unit**.
+Modul **Materials** adalah ensiklopedia pusat (*Master Data*) untuk semua barang *non-daging* dan *non-sapi* yang digunakan dalam ekosistem Rumah Potong Hewan (RPH). Ini mencakup bahan pengemasan (*Packaging* seperti kardus, plastik vakum), bumbu, perlengkapan higienitas (sarung tangan, masker), dan alat-alat operasional (pisau, dll).
 
-## 2. Struktur Database Utama
-- **Tabel `materials`**:
-  - `code` (string): Kode bahan (Dihasilkan secara otomatis, format: `MTR001`).
-  - `name` (string): Nama bahan (Wajib, diubah otomatis menjadi *uppercase*).
-  - `material_category_id` (foreign key): Kategori bahan (Wajib).
-  - `material_unit_id` (foreign key): Satuan ukur bahan (Wajib).
-  - `min_stock` (integer): Batas minimum stok peringatan (Wajib, tidak ada *default* 0).
-  - `show_in_stock` (boolean): Menentukan apakah barang ini ditampilkan di daftar opname/stok. *Default* `true`.
-  - `is_active` (boolean): Status aktif bahan. *Default* `true`.
+## 1. Arsitektur & Relasi Database
+Model `Material` merupakan akar (pondasi) dari segala pergerakan barang non-daging di seluruh sistem:
+- **Tabel `materials`**: Menyimpan spesifikasi esensial barang seperti SKU/Kode Barang, Nama, Kategori, Satuan Ukur Utama (UOM - misal: *Pcs*, *Roll*, *Pack*), dan Harga Satuan Dasar (HPP).
+- **Material Category** (`BelongsTo`): Pengelompokan jenis barang (misal: "Packaging", "Ingredients", "Consumables").
+- **Relasi Transaksional**: Digunakan secara masif sebagai titik acuan (Foreign Key) pada dokumen *Purchase Order*, *Goods Receipt Material*, dan *Material Usage*.
 
-## 3. UI/UX Rules & Behavior
-1. **Aturan Field Input**:
-   - `code` (*Item Code*): Karena sistem sudah menghasilkan kode secara otomatis (*auto-generated* di dalam `booted()` model menggunakan `str_pad`), input form untuk kode disembunyikan secara diam-diam (*silent*) saat melakukan pembuatan data baru (*Create*) maupun pengubahan data (*Edit*). Kode ini menggunakan perintah `->visibleOn('view')` sehingga hanya bisa dilihat melalui halaman detail khusus (View).
-   - `min_stock`: Sengaja tidak diberikan nilai bawaan (*default*) agar pengguna tidak abai dan membiarkan nilainya 0. Pengguna wajib mengetikkan batas stok minimal sesuai realita.
-   - `name`: Teks otomatis diubah menjadi huruf kapital (*uppercase*) sebelum disimpan.
-2. **Navigasi Cluster (Tabs)**:
-   - Menu modul turunan seperti *Material Category* dan *Material Unit* yang tergabung dalam *MaterialsCluster* ditampilkan sebagai **Top Tabs** (Pills) di bagian atas halaman (menggunakan `SubNavigationPosition::Top` pada masing-masing *Resource*), membuat antarmuka lebih bersih.
-3. **Penerjemahan Bahasa (Bilingual)**:
-   - Pengaturan Label pada *Table* dan *Form* (untuk *Material*, *Category*, dan *Unit*) menggunakan skema `fn() => __('...')` (Closure). Hal ini untuk menjamin agar penggantian bahasa (*Indonesian / English*) tereksekusi pada saat halaman dimuat (*runtime*) dan tidak tersangkut di *cache*.
-4. **Tombol Aksi Halaman Edit**:
-   - Mengikuti *Project Guidelines*, tombol 'Cancel' bawaan di bagian bawah form telah disembunyikan menggunakan *override* metode `getFormActions()`.
-   - Sebagai gantinya, tombol **Back** diletakkan di *Header Actions* (sebelah kanan atas) mendampingi tombol **Delete**.
-5. **Fitur Ekspor**:
-   - Ditambahkan tombol **Excel** berwarna hijau (`success`) di antarmuka tabel (*List Materials*) untuk mempermudah pelaporan data bahan penolong (menggunakan *Exporter* bawaan Filament).
+## 2. Alur Logika (Business Logic)
+1. **Single Point of Control**: Data pada modul ini bersifat murni administratif. Karena merupakan data statis, pembuatan atau pengeditan nama material di sini akan otomatis memperbarui tampilan di semua dokumen sejarah maupun dokumen baru (kecuali pada cetakan faktur historis/nota yang menggunakan data arsip tersendiri).
+2. **Kalkulasi Stok Instan**: Meskipun saldo stok sejati dihasilkan dari kalkulasi transaksi keluar-masuk (GRM dikurangi Material Usage), profil Master Material ini dapat menyertakan fungsi agregat/pembantu (seperti *Accessor*) untuk dengan cepat memunculkan "Current Stock" tanpa memaksa sistem memproses ulang jutaan baris *log* transaksi secara memberatkan.
+3. **Penghapusan Bersyarat (Protected Delete)**: Untuk memastikan sistem tetap kohesif, material yang sudah pernah dibeli (masuk PO) atau dipakai (*Usage*) dilarang dihapus dari *database* (Hard Delete). Jika barang tidak lagi diproduksi/dibeli, administrator hanya diperbolehkan mengubah statusnya menjadi *Inactive/Discontinued* (bersembunyi secara *soft-delete* atau *toggle*).
+4. **Pencegahan Redundansi**: Logika sistem memaksa pembuatan *Kode Material* (SKU) harus 100% unik dan distandardisasi menjadi huruf kapital secara otomatis melalui *Mutator*.
 
-## 4. Logika Bisnis (*Business Logic*)
-1. **Auto-Generate Code**: Saat `Material` baru disimpan, model akan memicu *event* `creating` dan menghasilkan `code` dengan menghitung ID terakhir di tabel ditambah 1, kemudian menambahkan awalan `MTR` dan *padding* nol (contoh: `MTR001`).
-2. **Show In Stock**: Parameter boolean ini krusial untuk memisahkan barang-barang habis pakai (*office supplies*, sabun) yang tidak perlu dihitung (*stock opname*) dengan bahan penolong utama produksi (plastik kemasan, lakban).
-
-## 5. Fitur Filter Halaman Index (Tabel)
-- **Kategori (*Category*)**: Pengguna dapat menyaring data tabel bahan berdasarkan kategori melalui `SelectFilter`.
-- **Visibilitas Stok (*Show In Stock*)**: Pengguna dapat memisahkan tabel untuk menampilkan hanya barang yang perlu masuk inventaris atau tidak menggunakan `TernaryFilter` (*Yes / No / All*).
-
-
-### Pencegahan Duplikasi Data (Unique Validation)
-- Semua *field* utama pengenal identitas seperti `name` (dan `code` jika ada) pada form *Create/Edit* telah dilengkapi dengan atribut `->unique(ignoreRecord: true)`. Hal ini bertujuan untuk menangkap kesalahan input data ganda (duplikat) secara elegan (*graceful validation error*) di sisi UI Form, sehingga mencegah *fatal error 500* (Constraint Violation) di level *Database Hosting/Production*.
+## 3. UI/UX (Antarmuka Pengguna)
+- **Visualisasi Gambar dan Status**: Pada halaman tabel (List/Index), selain memunculkan kode dan nama, modul ini dapat menampilkan kolom khusus (seperti kolom *Image Avatar* untuk foto kotak kemasan atau logo barang) untuk mempercepat pengenalan visual bagi staf gudang baru.
+- **Filter Agresif & Pencarian Global**: Karena material bisa mencapai ratusan *item*, tabel dilengkapi filter *Sidebar* khusus (Filter berdasarkan "Kategori" atau "Satuan"). Material ini juga terindeks dalam *Global Search* di pojok kanan atas layar (*top navigation*).
+- **Pengaturan *Card* pada Form**: Saat menambah barang baru (*Create*), isian dibagi menjadi beberapa *Card* (Kartu): "Informasi Utama" (Nama, SKU), "Atribut Logistik" (UOM, Kategori), dan "Akuntansi" (Harga HPP standar). Pemecahan *layout* ini mengurangi beban kognitif pada administrator.
+- **Penggunaan Bilingual**: Teks, opsi status (Aktif/Nonaktif), dan notifikasi validasi telah ditautkan pada *dictionary/lang* yang mendukung fitur ganti bahasa (Inggris - Indonesia).
