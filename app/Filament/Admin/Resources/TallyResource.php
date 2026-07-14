@@ -138,6 +138,37 @@ class TallyResource extends Resource
                 $record->trashed() => 'bg-danger-50 dark:bg-danger-900/20',
                 default => null,
             })
+            ->headerActions([
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('excel')
+                        ->label(__('Excel'))
+                        ->icon('heroicon-o-document-text')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            return response()->streamDownload(function () use ($records) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Tally Number', 'SO Number', 'Customer', 'Delivery Date', 'Status', 'Created At', 'Created By']));
+                                foreach ($records as $record) {
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $record->tally_number ?? '',
+                                        $record->salesOrder?->so_number ?? '',
+                                        $record->salesOrder?->customer?->name ?? '',
+                                        $record->salesOrder?->delivery_date ? \Carbon\Carbon::parse($record->salesOrder->delivery_date)->format('Y-m-d') : '',
+                                        $record->status ?? '',
+                                        $record->created_at ? $record->created_at->format('Y-m-d H:i') : '',
+                                        $record->creator?->name ?? '',
+                                    ]));
+                                }
+                                $writer->close();
+                            }, 'Tallies.xlsx');
+                        }),
+                ])
+                ->label(__('Export Data'))
+                ->icon('heroicon-m-arrow-down-tray')
+                ->button()
+                ->color('success'),
+            ])
             ->actions([
                 Tables\Actions\Action::make('scan')
                     ->label('')

@@ -100,7 +100,7 @@ class DeliveryPlanDetailList extends Page implements HasTable
             ->headerActions([
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\Action::make('excel')
-                        ->label('Excel')
+                        ->label(__('Excel'))
                         ->icon('heroicon-o-document-text')
                         ->action(function ($livewire) {
                             // Using standard csv/xlsx export or custom action to print
@@ -139,7 +139,7 @@ class DeliveryPlanDetailList extends Page implements HasTable
                             return response()->stream($callback, 200, $headers);
                         }),
                     Tables\Actions\Action::make('pdf')
-                        ->label('PDF')
+                        ->label(__('PDF'))
                         ->icon('heroicon-o-document-arrow-down')
                         ->action(function ($livewire) {
                             $records = $livewire->getFilteredTableQuery()->get();
@@ -149,7 +149,7 @@ class DeliveryPlanDetailList extends Page implements HasTable
                             return response()->streamDownload(fn () => print($pdf->output()), 'plan-delivery-details.pdf');
                         }),
                 ])
-                ->label('Export Data')
+                ->label(__('Export Data'))
                 ->icon('heroicon-m-arrow-down-tray')
                 ->button()
                 ->color('success'),
