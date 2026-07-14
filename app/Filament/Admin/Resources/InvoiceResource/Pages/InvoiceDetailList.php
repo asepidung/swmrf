@@ -111,13 +111,13 @@ class InvoiceDetailList extends Page implements HasTable
             ->headerActions([
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\ExportAction::make('excel')
-                        ->label('Excel')
+                        ->label(__('Excel'))
                         ->icon('heroicon-o-document-text')
                         ->color('success')
                         ->exporter(\App\Filament\Exports\InvoiceItemExporter::class)
                         ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
                     Tables\Actions\Action::make('pdf')
-                        ->label('PDF')
+                        ->label(__('PDF'))
                         ->icon('heroicon-o-document-arrow-down')
                         ->color('danger')
                         ->action(function ($livewire) {
@@ -129,7 +129,7 @@ class InvoiceDetailList extends Page implements HasTable
                             return response()->streamDownload(fn () => print($pdf->output()), 'export_invoice_items_detail.pdf');
                         }),
                 ])
-                ->label('Export Data')
+                ->label(__('Export Data'))
                 ->icon('heroicon-m-arrow-down-tray')
                 ->button()
                 ->color('success'),

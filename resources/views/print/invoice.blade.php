@@ -98,22 +98,65 @@
         }
 
         .floating-controls .btn {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-weight: bold;
             border-radius: 20px;
             padding: 10px 15px;
-            font-size: 11px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: all 0.2s ease;
+            font-size: 14px;
+            transition: all 0.3s;
         }
 
         .floating-controls .btn:hover {
-            transform: scale(1.05);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        /* Table Styling */
+        .table-collapse {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 12px;
+        }
+
+        .table-collapse th, .table-collapse td {
+            border: 1px solid #333;
+            padding: 6px;
+            vertical-align: middle;
+        }
+
+        .table-collapse th {
+            background-color: #e9ecef;
+        }
+
+        .says-box {
+            background-color: #e9ecef;
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .page-container {
+                padding: 15px;
+            }
+            .floating-controls {
+                position: static;
+                transform: none;
+                flex-direction: row;
+                width: 100%;
+                justify-content: center;
+                margin-top: 20px;
+            }
+            .company-name { font-size: 14px; }
+            .doc-title-box h2 { font-size: 18px; }
+            .table-collapse { font-size: 10px; }
         }
 
         @media print {
-            .no-print {
+            .floating-controls {
                 display: none !important;
             }
-
             body {
                 background-color: white;
                 margin: 0;
@@ -192,7 +235,7 @@
 
                 <!-- Invoice Details -->
                 <div class="row mb-3">
-                    <div class="col-6">
+                    <div class="col-md-6 mb-3 mb-md-0">
                         <table class="table table-borderless table-sm">
                             <tr>
                                 <td style="width: 120px;" class="text-muted">Do Number</td>
@@ -231,7 +274,7 @@
                             </tr>
                         </table>
                     </div>
-                    <div class="col-6">
+                    <div class="col-md-6">
                         <table class="table table-borderless table-sm">
                             <tr>
                                 <td class="text-muted">Cust PO</td>
@@ -258,8 +301,9 @@
                 </div>
 
                 <!-- Products Table -->
-                <table class="table table-sm table-bordered table-collapse mt-3">
-                    <thead class="text-center">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered table-collapse mt-3">
+                        <thead class="text-center">
                         <tr>
                             <th style="width: 5%">#</th>
                             <th style="width: 33%">Prod Descriptions</th>
@@ -313,6 +357,7 @@
                         </tr>
                     </tfoot>
                 </table>
+                </div>
 
                 <!-- Says Box -->
                 <div class="says-box mb-3">
