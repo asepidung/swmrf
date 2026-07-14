@@ -8,10 +8,11 @@
     <!-- For printing, we still load Bootstrap to render tables correctly -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" media="print">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         body {
             background-color: #f4f6f9;
-            font-family: 'Arial', sans-serif;
+            font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             font-size: 12px;
             color: #333;
         }
@@ -75,7 +76,7 @@
             margin: 0;
             font-size: 22px;
             font-weight: 800;
-            color: #007bff;
+            color: #111;
             letter-spacing: 1px;
         }
 
@@ -202,6 +203,13 @@
                                 <td class="text-muted">:</td>
                                 <th class="text-dark">{{ \Carbon\Carbon::parse($record->delivery_date)->format('d-M-Y') }}</th>
                             </tr>
+                            @if($record->down_payment > 0)
+                            <tr>
+                                <td class="text-muted">Down Payment</td>
+                                <td class="text-muted">:</td>
+                                <th class="text-dark">Rp {{ number_format($record->down_payment, 0, ',', '.') }}</th>
+                            </tr>
+                            @endif
                         </table>
                     </div>
                 </div>
