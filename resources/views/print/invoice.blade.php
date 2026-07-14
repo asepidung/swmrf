@@ -224,10 +224,20 @@
                                     @endif
                                 </th>
                             </tr>
+                            <tr>
+                                <td class="text-muted">Sales Ref</td>
+                                <td class="text-muted">:</td>
+                                <th>Muryani</th>
+                            </tr>
                         </table>
                     </div>
                     <div class="col-6">
                         <table class="table table-borderless table-sm">
+                            <tr>
+                                <td class="text-muted">Cust PO</td>
+                                <td class="text-muted">:</td>
+                                <th>{{ $record->po_number ?? '-' }}</th>
+                            </tr>
                             <tr>
                                 <td style="width: 120px;" class="text-muted">Invoice Date</td>
                                 <td style="width: 15px;" class="text-muted">:</td>
@@ -243,16 +253,6 @@
                                 <td valign="top" class="text-muted">:</td>
                                 <td valign="top" align="justify" style="font-weight: bold;">{{ $record->customer->address ?? '-' }}</td>
                             </tr>
-                            <tr>
-                                <td class="text-muted">Sales Ref</td>
-                                <td class="text-muted">:</td>
-                                <th>Muryani</th>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Cust PO</td>
-                                <td class="text-muted">:</td>
-                                <th>{{ $record->po_number ?? '-' }}</th>
-                            </tr>
                         </table>
                     </div>
                 </div>
@@ -262,12 +262,12 @@
                     <thead class="text-center">
                         <tr>
                             <th style="width: 5%">#</th>
-                            <th style="width: 40%">Prod Descriptions</th>
+                            <th style="width: 33%">Prod Descriptions</th>
                             <th style="width: 10%">Weight</th>
-                            <th style="width: 13%">Price</th>
+                            <th style="width: 12%">Price</th>
                             <th style="width: 7%">Disc %</th>
-                            <th style="width: 12%">Disc Rp</th>
-                            <th style="width: 13%">Total</th>
+                            <th style="width: 11%">Disc Rp</th>
+                            <th style="width: 22%">Total</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -282,6 +282,20 @@
                             <td class="text-right">Rp {{ number_format($item->amount, 2, ',', '.') }}</td>
                         </tr>
                         @endforeach
+                        
+                        @if(is_array($record->additional_charges) && count($record->additional_charges) > 0)
+                            @foreach($record->additional_charges as $charge)
+                            <tr>
+                                <td></td>
+                                <td>{{ $charge['name'] ?? '-' }}</td>
+                                <td class="text-right">{{ $charge['qty'] ?? 1 }}</td>
+                                <td class="text-right">Rp {{ number_format($charge['price'] ?? 0, 0, ',', '.') }}</td>
+                                <td class="text-center">{{ $charge['discount_percent'] ?? 0 }}%</td>
+                                <td class="text-right">Rp {{ number_format($charge['discount_rp'] ?? 0, 0, ',', '.') }}</td>
+                                <td class="text-right">Rp {{ number_format($charge['amount'] ?? 0, 2, ',', '.') }}</td>
+                            </tr>
+                            @endforeach
+                        @endif
                     </tbody>
                     <tfoot>
                         <tr>
