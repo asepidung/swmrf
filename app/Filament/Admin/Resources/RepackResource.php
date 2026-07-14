@@ -242,7 +242,7 @@ class RepackResource extends Resource
                         }
                         return $indicators;
                     })
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    // ->toggleable(isToggledHiddenByDefault: true), // Removed because Filter doesn't have toggleable method
             ])
             ->headerActions([
                 Tables\Actions\Action::make('export_excel')
