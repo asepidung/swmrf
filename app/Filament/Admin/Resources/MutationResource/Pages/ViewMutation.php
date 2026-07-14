@@ -23,7 +23,7 @@ class ViewMutation extends ViewRecord
                 ->visible(fn ($record) => $record->status === 'SENT'),
 
             Actions\Action::make('print')
-                ->label('Cetak Laporan')
+                ->label(__('Cetak Laporan'))
                 ->hiddenLabel()
                 ->tooltip('Cetak Laporan')
                 ->icon('heroicon-o-printer')
@@ -32,7 +32,7 @@ class ViewMutation extends ViewRecord
                 ->openUrlInNewTab(),
 
             Actions\Action::make('scan')
-                ->label('Scan Barang')
+                ->label(__('Scan Barang'))
                 ->hiddenLabel()
                 ->tooltip('Scan Barang')
                 ->icon('heroicon-o-qr-code')
