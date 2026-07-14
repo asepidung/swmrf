@@ -34,14 +34,6 @@ class EditDeliveryOrder extends EditRecord
                 ->iconButton()
                 ->url($this->getResource()::getUrl('index')),
 
-            Actions\Action::make('print')
-                ->label('')
-                ->tooltip(__('Print'))
-                ->color('info')
-                ->icon('heroicon-o-printer')
-                ->iconButton()
-                ->url(fn () => route('print.delivery-order', ['record' => $this->record->id]))
-                ->openUrlInNewTab(),
 
             Actions\Action::make('approve')
                 ->label('')
