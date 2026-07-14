@@ -7,5 +7,9 @@
         </span>
         <span class="text-gray-300 dark:text-gray-700 hidden sm:inline">|</span>
         <span title="Asep Idung" class="cursor-help hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Copyright &copy; {{ date('Y') }}</span>
+        <span class="text-gray-300 dark:text-gray-700 hidden sm:inline">|</span>
+        <a href="https://trakteer.id/saepullrock" target="_blank" rel="noopener noreferrer" class="hover:text-primary-500 dark:hover:text-primary-400 transition-colors inline-flex items-center gap-1 font-medium">
+            ☕ Support me on Trakteer
+        </a>
     </div>
 </footer>
