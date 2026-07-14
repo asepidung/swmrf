@@ -137,6 +137,11 @@ class DeliveryOrderResource extends Resource
                                             $aggregated[$item->product_id]['box'] += 1;
                                             $aggregated[$item->product_id]['weight'] += (float)$item->weight;
                                         }
+                                        
+                                        foreach ($aggregated as &$agg) {
+                                            $agg['weight'] = round($agg['weight'], 2);
+                                        }
+                                        
                                         return array_values($aggregated);
                                     }
                                 }
