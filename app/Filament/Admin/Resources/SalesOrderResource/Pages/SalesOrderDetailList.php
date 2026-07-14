@@ -47,6 +47,20 @@ class SalesOrderDetailList extends Page implements HasTable
                     ->numeric()
                     ->alignRight()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('do_sent')
+                    ->label(__('DO Sent'))
+                    ->state(function (SalesOrderItem $record) {
+                        $sentWeight = \App\Models\DeliveryOrderItem::whereHas('deliveryOrder', function ($q) use ($record) {
+                            $q->where('sales_order_id', $record->sales_order_id)
+                              ->whereNotIn('status', ['cancelled', 'canceled']);
+                        })
+                        ->where('product_id', $record->product_id)
+                        ->sum('weight');
+
+                        return $sentWeight > 0 ? number_format($sentWeight, 2, ',', '.') : '-';
+                    })
+                    ->alignRight()
+                    ->sortable(false),
                 Tables\Columns\TextColumn::make('price')
                     ->label(__('Price'))
                     ->numeric()
