@@ -57,6 +57,8 @@ class MaterialUsageRepack extends EditRecord
                             ->schema([
                                 Forms\Components\Select::make('material_id')
                                     ->label(__('Material'))
+                                    ->hiddenLabel()
+                                    ->placeholder(__('Material'))
                                     ->options(Material::where('is_active', true)->pluck('name', 'id'))
                                     ->required()
                                     ->searchable()
@@ -66,18 +68,24 @@ class MaterialUsageRepack extends EditRecord
                                 
                                 Forms\Components\TextInput::make('qty')
                                     ->label(__('Quantity'))
+                                    ->hiddenLabel()
+                                    ->placeholder(__('Quantity'))
                                     ->numeric()
                                     ->required()
                                     ->minValue(0.01),
 
                                 Forms\Components\TextInput::make('unit')
                                     ->label(__('Unit'))
+                                    ->hiddenLabel()
+                                    ->placeholder(__('Unit'))
                                     ->disabled()
                                     ->dehydrated(false)
                                     ->formatStateUsing(fn ($get) => Material::find($get('material_id'))?->unit?->name),
 
                                 Forms\Components\TextInput::make('note')
                                     ->label(__('Note'))
+                                    ->hiddenLabel()
+                                    ->placeholder(__('Note'))
                                     ->maxLength(255),
                             ])
                             ->columns(4)

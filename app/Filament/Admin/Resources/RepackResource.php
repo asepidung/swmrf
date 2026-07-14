@@ -207,6 +207,71 @@ class RepackResource extends Resource
                         ->hidden(fn(Repack $record) => $record->kunci == 1)
                         ->url(fn(Repack $record) => static::getUrl('input-hasil', ['record' => $record->id])),
                 ]),
+            ])
+            ->filters([
+                Tables\Filters\Filter::make('repack_date')
+                    ->form([
+                        Forms\Components\DatePicker::make('created_from')
+                            ->label(__('From Date')),
+                        Forms\Components\DatePicker::make('created_until')
+                            ->label(__('Until Date')),
+                    ])
+                    ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
+                        $from = $data['created_from'] ?? now()->startOfMonth()->toDateString();
+                        $until = $data['created_until'] ?? now()->toDateString();
+
+                        return $query
+                            ->when(
+                                $from,
+                                fn(\Illuminate\Database\Eloquent\Builder $query, $date): \Illuminate\Database\Eloquent\Builder => $query->whereDate('repack_date', '>=', $date),
+                            )
+                            ->when(
+                                $until,
+                                fn(\Illuminate\Database\Eloquent\Builder $query, $date): \Illuminate\Database\Eloquent\Builder => $query->whereDate('repack_date', '<=', $date),
+                            );
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if ($data['created_from'] ?? null) {
+                            $indicators[] = Tables\Filters\Indicator::make('From: ' . \Carbon\Carbon::parse($data['created_from'])->toFormattedDateString())
+                                ->removeField('created_from');
+                        }
+                        if ($data['created_until'] ?? null) {
+                            $indicators[] = Tables\Filters\Indicator::make('Until: ' . \Carbon\Carbon::parse($data['created_until'])->toFormattedDateString())
+                                ->removeField('created_until');
+                        }
+                        return $indicators;
+                    })
+                    ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->headerActions([
+                Tables\Actions\Action::make('export_excel')
+                    ->label(__('Excel'))
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('success')
+                    ->action(function ($livewire) {
+                        $records = $livewire->getFilteredTableQuery()->get();
+                        return response()->streamDownload(function () use ($records) {
+                            $writer = new \OpenSpout\Writer\XLSX\Writer();
+                            $writer->openToFile('php://output');
+                            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['No. Proses', 'Tgl. Proses', 'Total Bahan', 'Total Hasil', 'Lost', 'Catatan', 'Status']));
+                            foreach ($records as $record) {
+                                $bahan = \Illuminate\Support\Facades\DB::table('repack_materials')->where('repack_id', $record->id)->sum('weight');
+                                $hasil = \Illuminate\Support\Facades\DB::table('repack_results')->where('repack_id', $record->id)->whereNull('deleted_at')->sum('weight');
+                                $lost = $hasil - $bahan;
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    $record->doc_no ?? '',
+                                    $record->repack_date ?? '',
+                                    $bahan,
+                                    $hasil,
+                                    $lost,
+                                    $record->note ?? '',
+                                    $record->status ?? '',
+                                ]));
+                            }
+                            $writer->close();
+                        }, 'Repack.xlsx');
+                    }),
             ]);
     }
 
