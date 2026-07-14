@@ -77,8 +77,6 @@ class PriceListResource extends Resource
                                     ->required()
                                     ->prefix('Rp')
                                     ->placeholder(__('Price'))
-                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                                    ->stripCharacters('.')
                                     ->numeric()
                                     ->default(0)
                                     ->minValue(0)
@@ -132,7 +130,7 @@ class PriceListResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('row_index')
-                    ->label('#')
+                    ->label(__('#'))
                     ->rowIndex(),
 
                 Tables\Columns\TextColumn::make('name')
@@ -162,6 +160,28 @@ class PriceListResource extends Resource
                     ->color(fn (CustomerGroup $record) => ($record->priceList && $record->priceList->items()->exists()) ? 'warning' : 'success')
                     ->button()
                     ->url(fn (CustomerGroup $record): string => Pages\EditPriceList::getUrl([$record->id])),
+            ])
+            ->headerActions([
+                Tables\Actions\Action::make('export_excel')
+                    ->label(__('Excel'))
+                    ->icon('heroicon-o-document-text')
+                    ->color('success')
+                    ->action(function ($livewire) {
+                        $records = $livewire->getFilteredTableQuery()->get();
+                        return response()->streamDownload(function () use ($records) {
+                            $writer = new \OpenSpout\Writer\XLSX\Writer();
+                            $writer->openToFile('php://output');
+                            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Customer Group', 'Last Updated', 'Created By']));
+                            foreach ($records as $record) {
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    $record->name ?? '',
+                                    ($record->priceList && $record->priceList->items()->exists()) ? $record->priceList->updated_at->format('d M Y, H:i') : '-',
+                                    ($record->priceList && $record->priceList->creator) ? $record->priceList->creator->name : '-',
+                                ]));
+                            }
+                            $writer->close();
+                        }, 'PriceLists.xlsx');
+                    }),
             ])
             ->recordUrl(fn (CustomerGroup $record) => Pages\ViewPriceList::getUrl([$record->id]))
             ->bulkActions([
