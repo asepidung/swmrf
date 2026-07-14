@@ -276,6 +276,8 @@ class DeliveryOrderResource extends Resource
                     ->label(__('Tally Number'))
                     ->searchable()
                     ->sortable()
+                    ->color('info')
+                    ->weight('bold')
                     ->url(fn (DeliveryOrder $record): ?string => $record->tally_id ? route('print.tally', ['record' => $record->tally_id]) : null)
                     ->openUrlInNewTab(),
 
@@ -364,15 +366,40 @@ class DeliveryOrderResource extends Resource
                 $record->trashed() => 'bg-danger-50 dark:bg-danger-900/20',
                 default => null,
             })
+            ->headerActions([
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('excel')
+                        ->label(__('Excel'))
+                        ->icon('heroicon-o-document-text')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            return response()->streamDownload(function () use ($records) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['DO Number', 'Tally Number', 'Customer', 'Delivery Date', 'PO Number', 'Status', 'Created At', 'Created By']));
+                                foreach ($records as $record) {
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $record->delivery_order_number ?? '',
+                                        $record->tally?->tally_number ?? '',
+                                        $record->customer?->name ?? '',
+                                        $record->delivery_date ? \Carbon\Carbon::parse($record->delivery_date)->format('Y-m-d') : '',
+                                        $record->po_number ?? '',
+                                        $record->status ?? '',
+                                        $record->created_at ? $record->created_at->format('Y-m-d H:i') : '',
+                                        $record->creator?->name ?? '',
+                                    ]));
+                                }
+                                $writer->close();
+                            }, 'DeliveryOrders.xlsx');
+                        }),
+                ])
+                ->label(__('Export Data'))
+                ->icon('heroicon-m-arrow-down-tray')
+                ->button()
+                ->color('success'),
+            ])
             ->actions([
-                Tables\Actions\Action::make('print')
-                    ->label('')
-                    ->tooltip(__('Print'))
-                    ->color('info')
-                    ->icon('heroicon-o-printer')
-                    ->iconButton()
-                    ->url(fn (\App\Models\DeliveryOrder $record) => route('print.delivery-order', ['record' => $record->id]))
-                    ->openUrlInNewTab(),
+                //
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
