@@ -2,14 +2,14 @@
 
 namespace App\Filament\Exports;
 
-use App\Models\InvoiceItem;
+use App\Models\InvoiceReconciliation;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
 
 class InvoiceItemExporter extends Exporter
 {
-    protected static ?string $model = InvoiceItem::class;
+    protected static ?string $model = InvoiceReconciliation::class;
 
     public static function modifyQuery(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
@@ -22,8 +22,8 @@ class InvoiceItemExporter extends Exporter
             ExportColumn::make('invoice.invoice_number')->label('Invoice Number'),
             ExportColumn::make('invoice.customer.name')->label('Customer'),
             ExportColumn::make('invoice.invoice_date')->label('Invoice Date'),
-            ExportColumn::make('product.name')->label('Product'),
-            ExportColumn::make('weight')->label('Weight (Kg)'),
+            ExportColumn::make('item_name')->label('Product / Charge')->state(fn ($record) => $record->row_type === 'product' ? ($record->product?->name ?? '-') : $record->charge_name),
+            ExportColumn::make('weight')->label('Weight / Qty'),
             ExportColumn::make('price')->label('Price (Rp)'),
             ExportColumn::make('discount_percent')->label('Disc %'),
             ExportColumn::make('discount_rp')->label('Disc Rp'),

@@ -227,7 +227,8 @@ class InvoiceResource extends Resource
 
                 Forms\Components\Section::make(__('Biaya Lain-lain (Ongkir, dll)'))
                     ->schema([
-                        Forms\Components\Repeater::make('additional_charges')
+                        Forms\Components\Repeater::make('additionalCharges')
+                            ->relationship('additionalCharges')
                             ->hiddenLabel()
                             ->addActionLabel(__('Add to additional charges'))
                             ->schema([
@@ -481,7 +482,7 @@ class InvoiceResource extends Resource
             $rootSet("items.{$key}.amount", $amount);
         }
 
-        $additionalCharges = $rootGet('additional_charges') ?? [];
+        $additionalCharges = $rootGet('additionalCharges') ?? [];
         $totalCharges = 0.0;
         foreach ($additionalCharges as $key => $chargeItem) {
             $qtyStr = (string)($chargeItem['qty'] ?? '1');
@@ -499,8 +500,8 @@ class InvoiceResource extends Resource
             
             $totalCharges += $amount;
             
-            $rootSet("additional_charges.{$key}.discount_rp", $discRp);
-            $rootSet("additional_charges.{$key}.amount", $amount);
+            $rootSet("additionalCharges.{$key}.discount_rp", $discRp);
+            $rootSet("additionalCharges.{$key}.amount", $amount);
         }
         
         $downPaymentStr = (string)($rootGet('down_payment') ?? '0');

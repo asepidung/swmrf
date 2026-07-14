@@ -3,7 +3,7 @@
 namespace App\Filament\Admin\Resources\InvoiceResource\Pages;
 
 use App\Filament\Admin\Resources\InvoiceResource;
-use App\Models\InvoiceItem;
+use App\Models\InvoiceReconciliation;
 use Filament\Resources\Pages\Page;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -25,7 +25,7 @@ class InvoiceDetailList extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(InvoiceItem::query()->with(['invoice.customer', 'product']))
+            ->query(InvoiceReconciliation::query()->with(['invoice.customer', 'product']))
             ->columns([
                 Tables\Columns\TextColumn::make('invoice.invoice_number')
                     ->label(__('Invoice Number'))
@@ -44,14 +44,20 @@ class InvoiceDetailList extends Page implements HasTable
                     ->date('d M Y')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('product.name')
-                    ->label(__('Product'))
-                    ->searchable()
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('item_name')
+                    ->label(__('Product / Charge'))
+                    ->state(fn ($record) => $record->row_type === 'product' ? ($record->product?->name ?? '-') : $record->charge_name)
+                    ->searchable(query: function (Builder $query, string $search) {
+                        $query->whereHas('product', fn ($q) => $q->where('name', 'like', "%{$search}%"))
+                              ->orWhere('charge_name', 'like', "%{$search}%");
+                    })
+                    ->sortable(query: function (Builder $query, string $direction) {
+                        return $query->orderBy('row_type', $direction)->orderBy('charge_name', $direction);
+                    }),
 
 
                 Tables\Columns\TextColumn::make('weight')
-                    ->label(__('Weight (Kg)'))
+                    ->label(__('Weight / Qty'))
                     ->numeric(2)
                     ->alignEnd()
                     ->sortable(),

@@ -327,8 +327,8 @@
                         </tr>
                         @endforeach
                         
-                        @if(is_array($record->additional_charges) && count($record->additional_charges) > 0)
-                            @foreach($record->additional_charges as $charge)
+                        @if($record->additionalCharges && count($record->additionalCharges) > 0)
+                            @foreach($record->additionalCharges as $charge)
                             <tr>
                                 <td></td>
                                 <td>{{ $charge['name'] ?? '-' }}</td>
