@@ -165,7 +165,6 @@ class MaterialStockMovementResource extends Resource
                                 $writer->close();
                             }, 'excel.xlsx');
                         }),
-                        ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
                     \Filament\Tables\Actions\Action::make('pdf')
                         ->label('PDF')
                         ->icon('heroicon-o-document-arrow-down')

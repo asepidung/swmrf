@@ -120,7 +120,6 @@ class PurchaseMaterialDetailList extends Page implements HasTable
                                 $writer->close();
                             }, 'excel.xlsx');
                         }),
-                        ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
                     Tables\Actions\Action::make('pdf')
                         ->label('PDF')
                         ->icon('heroicon-o-document-arrow-down')
