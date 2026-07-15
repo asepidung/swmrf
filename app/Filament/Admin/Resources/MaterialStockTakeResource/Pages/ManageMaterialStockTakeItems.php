@@ -112,7 +112,7 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                 Tables\Columns\TextInputColumn::make('physical_qty')
                     ->label(__('Physical Qty'))
                     ->type('text')
-                    ->mask(\Filament\Support\RawJs::make('$money($input, \'.\', \',\', 0)'))
+                    ->numeric()
                     ->visible($isInProgress)
                     ->updateStateUsing(function ($record, $state) {
                         if ($state === '' || $state === null) {

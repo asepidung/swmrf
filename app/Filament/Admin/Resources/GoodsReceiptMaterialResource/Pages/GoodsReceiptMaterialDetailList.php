@@ -105,10 +105,35 @@ class GoodsReceiptMaterialDetailList extends Page implements HasTable
             ])
             ->headerActions([
                 Tables\Actions\ActionGroup::make([
-                    Tables\Actions\ExportAction::make('excel')
+                    \Filament\Tables\Actions\Action::make('excel')
                         ->label(__('Excel'))
                         ->icon('heroicon-o-document-text')
-                        ->exporter(\App\Filament\Exports\GoodsReceiptMaterialItemExporter::class)
+                        ->color('success')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            return response()->streamDownload(function () use ($records) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    'GR Number', 'Receive Date', 'Surat Jalan', 'PO Number', 'Supplier', 'Material', 'Qty Received', 'Price', 'Subtotal', 'Created By'
+                                ]));
+                                foreach ($records as $record) {
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $record->goodsReceiptMaterial?->gr_number ?? '',
+                                        $record->goodsReceiptMaterial?->receive_date ?? '',
+                                        $record->goodsReceiptMaterial?->sj_number ?? '',
+                                        $record->goodsReceiptMaterial?->purchaseMaterial?->po_number ?? '',
+                                        $record->goodsReceiptMaterial?->supplier?->name ?? '',
+                                        $record->material?->name ?? '',
+                                        $record->qty_received ?? '',
+                                        $record->price ?? '',
+                                        $record->subtotal ?? '',
+                                        $record->goodsReceiptMaterial?->createdBy?->name ?? ''
+                                    ]));
+                                }
+                                $writer->close();
+                            }, 'excel.xlsx');
+                        }),
                         ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
                     Tables\Actions\Action::make('pdf')
                         ->label(__('PDF'))

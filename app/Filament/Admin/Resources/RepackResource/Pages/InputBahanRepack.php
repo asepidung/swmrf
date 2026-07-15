@@ -81,11 +81,15 @@ class InputBahanRepack extends Page implements HasForms, HasTable
         $data = $this->form->getState();
         $scannedBarcode = $data['barcode'];
 
-        // Mencari barang di tabel beef_stocks berdasarkan barcode
-        $stock = BeefStock::where('barcode', $scannedBarcode)->first();
+        try {
+            DB::transaction(function () use ($scannedBarcode) {
+                // Mencari barang di tabel beef_stocks berdasarkan barcode dengan lockForUpdate
+                $stock = BeefStock::where('barcode', $scannedBarcode)->lockForUpdate()->first();
 
-        if ($stock) {
-            DB::transaction(function () use ($stock) {
+                if (!$stock) {
+                    throw new \Exception(__('Barcode tidak ditemukan di stok!'));
+                }
+
                 // Memasukkan data ke material repack
                 RepackMaterial::create([
                     'repack_id' => $this->record->id,
@@ -130,10 +134,10 @@ class InputBahanRepack extends Page implements HasForms, HasTable
             // Memperbarui tabel histori dan mengembalikan fokus kursor ke scanner
             $this->dispatch('refreshTable');
             $this->dispatch('focus-scanner');
-        } else {
-            // Menampilkan notifikasi jika barcode tidak ditemukan
+        } catch (\Exception $e) {
+            // Menampilkan notifikasi jika barcode tidak ditemukan atau gagal
             Notification::make()
-                ->title(__('Barcode tidak ditemukan di stok!'))
+                ->title($e->getMessage())
                 ->danger()
                 ->send();
         }

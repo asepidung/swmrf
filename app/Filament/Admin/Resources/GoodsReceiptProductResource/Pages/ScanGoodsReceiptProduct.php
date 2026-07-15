@@ -117,7 +117,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
                     ->tooltip(__('Delete Data'))
                     ->action(function (GoodsReceiptProductItem $item) {
                         DB::transaction(function () use ($item) {
-                            $stock = BeefStock::where('barcode', $item->barcode)->first();
+                            $stock = BeefStock::where('barcode', $item->barcode)->lockForUpdate()->first();
                             $warehouseId = $stock ? $stock->warehouse_id : 1;
 
                             BeefStockMovement::create([
@@ -172,18 +172,6 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
             return;
         }
 
-        // 2. Cek duplikat barcode di beef_stocks (double scan di stock secara umum)
-        $existsInStock = BeefStock::where('barcode', $barcode)->exists();
-        if ($existsInStock) {
-            Notification::make()
-                ->title(__('Gagal Scan'))
-                ->body(__('Barcode sudah terdaftar di stock (Duplikat)'))
-                ->warning()
-                ->send();
-            $this->barcode = '';
-            $this->dispatch('focus-barcode');
-            return;
-        }
 
         // 3. Cari data lengkap di TallyItem (Buyback scenario)
         $tallyItem = \App\Models\TallyItem::where('barcode', $barcode)->first();
@@ -236,6 +224,11 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
         // Process insertion
         try {
             DB::transaction(function () use ($barcode, $product, $gradeId, $weightVal, $pcsVal, $phVal, $originCode, $poItem, $defaultPackDate, $expDate) {
+                // TOCTOU Fix: Pindahkan pengecekan duplikat ke dalam transaksi dan gunakan lock
+                if (BeefStock::where('barcode', $barcode)->lockForUpdate()->exists()) {
+                    throw new \Exception(__('Barcode sudah terdaftar di stock (Duplikat)'));
+                }
+
                 $price = $poItem ? $poItem->price : 0;
                 $subtotal = $price * $weightVal;
 

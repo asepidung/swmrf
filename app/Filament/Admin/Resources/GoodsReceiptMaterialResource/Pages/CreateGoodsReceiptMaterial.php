@@ -149,9 +149,8 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
                                     ->label(__('Qty Received'))
                                     ->hiddenLabel()
                                     ->placeholder(__('Qty Received'))
-                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
-                                    ->stripCharacters('.')
-                                    ->extraInputAttributes(['x-on:focus' => '$el.select()'])
+                                    ->numeric()
+                                                                        ->extraInputAttributes(['x-on:focus' => '$el.select()'])
                                     ->required()
                                     ->live(onBlur: true)
                                     ->suffix(fn (Forms\Get $get) => $get('unit_name')),

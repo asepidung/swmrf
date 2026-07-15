@@ -176,11 +176,38 @@ class BeefStockMovementResource extends Resource
             ])
             ->headerActions([
                 Tables\Actions\ActionGroup::make([
-                    Tables\Actions\ExportAction::make('excel')
-                        ->label('Excel')
+                    \Filament\Tables\Actions\Action::make('excel')
+                        ->label(__('Excel'))
                         ->icon('heroicon-o-document-text')
                         ->color('success')
-                        ->exporter(\App\Filament\Exports\BeefStockMovementExporter::class)
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            return response()->streamDownload(function () use ($records) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    'Timestamp', 'Reference Document', 'Barcode', 'Product', 'Warehouse', 'Grade', 'Transaction Type', 'Weight In', 'Weight Out', 'Pcs In', 'Pcs Out', 'Note', 'Operator'
+                                ]));
+                                foreach ($records as $record) {
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $record->created_at ?? '',
+                                        $record->reference_document ?? '',
+                                        $record->barcode ?? '',
+                                        $record->product?->name ?? '',
+                                        $record->warehouse?->name ?? '',
+                                        $record->grade?->name ?? '',
+                                        $record->transaction_type ?? '',
+                                        $record->weight_in ?? '',
+                                        $record->weight_out ?? '',
+                                        $record->pcs_in ?? '',
+                                        $record->pcs_out ?? '',
+                                        $record->note ?? '',
+                                        $record->creator?->name ?? ''
+                                    ]));
+                                }
+                                $writer->close();
+                            }, 'excel.xlsx');
+                        }),
                         ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
                     Tables\Actions\Action::make('pdf')
                         ->label('PDF')

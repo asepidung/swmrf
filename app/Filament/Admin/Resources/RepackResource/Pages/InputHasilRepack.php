@@ -310,7 +310,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                 $phStr = isset($formData['ph_level']) ? str_pad(round($formData['ph_level'] * 10), 2, '0', STR_PAD_LEFT) : '00';
 
                 $prefix = $origin . $dateStr;
-                $latestItem = RepackResult::withTrashed()->where('barcode', 'like', $prefix . '%')->orderBy('id', 'desc')->first();
+                $latestItem = RepackResult::withTrashed()->where('barcode', 'like', $prefix . '%')->lockForUpdate()->orderBy('id', 'desc')->first();
                 $counter = ($latestItem && strlen($latestItem->barcode) >= 26) ? ((int) substr($latestItem->barcode, -4) + 1) : 1;
                 $counterStr = str_pad($counter, 4, '0', STR_PAD_LEFT);
 

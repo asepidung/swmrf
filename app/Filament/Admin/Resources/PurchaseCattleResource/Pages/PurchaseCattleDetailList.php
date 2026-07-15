@@ -99,10 +99,33 @@ class PurchaseCattleDetailList extends Page implements HasTable
             ])
             ->headerActions([
                 Tables\Actions\ActionGroup::make([
-                    Tables\Actions\ExportAction::make('excel')
+                    \Filament\Tables\Actions\Action::make('excel')
                         ->label(__('Excel'))
                         ->icon('heroicon-o-document-text')
-                        ->exporter(\App\Filament\Exports\PurchaseCattleItemExporter::class)
+                        ->color('success')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            return response()->streamDownload(function () use ($records) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    'PO Number', 'PO Date', 'Supplier', 'Cattle Class', 'Qty (Head)', 'Price', 'Subtotal', 'Item Note'
+                                ]));
+                                foreach ($records as $record) {
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $record->purchaseCattle?->document_number ?? '',
+                                        $record->purchaseCattle?->created_at ?? '',
+                                        $record->purchaseCattle?->supplier?->name ?? '',
+                                        $record->cattleClass?->name ?? '',
+                                        $record->qty ?? '',
+                                        $record->price ?? '',
+                                        $record->subtotal ?? '',
+                                        $record->item_notes ?? ''
+                                    ]));
+                                }
+                                $writer->close();
+                            }, 'excel.xlsx');
+                        }),
                         ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
                     Tables\Actions\Action::make('pdf')
                         ->label(__('PDF'))

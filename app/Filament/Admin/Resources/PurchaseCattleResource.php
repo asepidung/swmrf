@@ -193,11 +193,32 @@ class PurchaseCattleResource extends Resource
             ])
                         ->headerActions([
                 \Filament\Tables\Actions\ActionGroup::make([
-                    \Filament\Tables\Actions\ExportAction::make('excel')
+                    \Filament\Tables\Actions\Action::make('excel')
                         ->label(__('Excel'))
                         ->icon('heroicon-o-document-text')
                         ->color('success')
-                        ->exporter(\App\Filament\Exports\PurchaseCattleExporter::class)
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            return response()->streamDownload(function () use ($records) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    'Date', 'Document No.', 'Supplier', 'Status', 'User', 'Total Amount (Rp)', 'Notes'
+                                ]));
+                                foreach ($records as $record) {
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $record->created_at ?? '',
+                                        $record->document_number ?? '',
+                                        $record->supplier?->name ?? '',
+                                        $record->status ?? '',
+                                        $record->user?->name ?? '',
+                                        $record->total_amount ?? '',
+                                        $record->note ?? ''
+                                    ]));
+                                }
+                                $writer->close();
+                            }, 'excel.xlsx');
+                        }),
                         ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
                     \Filament\Tables\Actions\Action::make('pdf')
                         ->label(__('PDF'))

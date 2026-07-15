@@ -263,11 +263,11 @@ class ScanTally extends Page implements HasForms, HasTable
                                     $prefix = $origin . $dateStr;
                                     
                                     // Find maximum counter in tally_items
-                                    $latestTallyItem = \App\Models\TallyItem::where('barcode', 'like', $prefix . '%')->orderBy('id', 'desc')->first();
+                                    $latestTallyItem = \App\Models\TallyItem::where('barcode', 'like', $prefix . '%')->lockForUpdate()->orderBy('id', 'desc')->first();
                                     $counterTally = ($latestTallyItem && strlen($latestTallyItem->barcode) >= 26) ? ((int) substr($latestTallyItem->barcode, -4)) : 0;
 
                                     // Find maximum counter in beef_stocks
-                                    $latestBeefStock = \App\Models\BeefStock::where('barcode', 'like', $prefix . '%')->orderBy('id', 'desc')->first();
+                                    $latestBeefStock = \App\Models\BeefStock::where('barcode', 'like', $prefix . '%')->lockForUpdate()->orderBy('id', 'desc')->first();
                                     $counterStock = ($latestBeefStock && strlen($latestBeefStock->barcode) >= 26) ? ((int) substr($latestBeefStock->barcode, -4)) : 0;
 
                                     $counter = max($counterTally, $counterStock) + 1;
@@ -379,35 +379,20 @@ class ScanTally extends Page implements HasForms, HasTable
             return;
         }
 
-        // 2. Ambil data dari stock (beef_stocks)
-        $stock = BeefStock::where('barcode', $barcode)->first();
-        if (!$stock) {
-            Notification::make()
-                ->title(__('Gagal Scan'))
-                ->body(__('BARANG TIDAK TERDAFTAR di Stock'))
-                ->danger()
-                ->send();
-            $this->barcode = '';
-            $this->dispatch('focus-barcode');
-            return;
-        }
-
-        // 3. Pastikan product_id ada di sales_order_items
-        $soItemExists = $this->record->salesOrder->items()->where('product_id', $stock->product_id)->exists();
-        if (!$soItemExists) {
-            Notification::make()
-                ->title(__('Gagal Scan'))
-                ->body(__('Barang Tidak ada di PO'))
-                ->danger()
-                ->send();
-            $this->barcode = '';
-            $this->dispatch('focus-barcode');
-            return;
-        }
-
         // 4. Proses pemindahan stock
         try {
-            DB::transaction(function () use ($stock) {
+            DB::transaction(function () use ($barcode) {
+                // 2. Ambil data dari stock (beef_stocks) dengan lockForUpdate
+                $stock = BeefStock::where('barcode', $barcode)->lockForUpdate()->first();
+                if (!$stock) {
+                    throw new \Exception(__('BARANG TIDAK TERDAFTAR di Stock'));
+                }
+
+                // 3. Pastikan product_id ada di sales_order_items
+                $soItemExists = $this->record->salesOrder->items()->where('product_id', $stock->product_id)->exists();
+                if (!$soItemExists) {
+                    throw new \Exception(__('Barang Tidak ada di PO'));
+                }
                 // Buat TallyItem
                 TallyItem::create([
                     'tally_id' => $this->record->id,

@@ -153,11 +153,34 @@ class PayableResource extends Resource
             )
             ->headerActions([
                 \Filament\Tables\Actions\ActionGroup::make([
-                    \Filament\Tables\Actions\ExportAction::make('excel')
-                        ->label('Excel')
+                    \Filament\Tables\Actions\Action::make('excel')
+                        ->label(__('Excel'))
                         ->icon('heroicon-o-document-text')
                         ->color('success')
-                        ->exporter(\App\Filament\Exports\PayableExporter::class)
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            return response()->streamDownload(function () use ($records) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    'Date', 'Document No.', 'Supplier', 'Total Amount (Rp)', 'Paid Amount (Rp)', 'Outstanding Balance (Rp)', 'Due Date', 'Status', 'Notes'
+                                ]));
+                                foreach ($records as $record) {
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $record->created_at ?? '',
+                                        $record->document_number ?? '',
+                                        $record->supplier?->name ?? '',
+                                        $record->amount ?? '',
+                                        $record->paid_amount ?? '',
+                                        $record->balance ?? '',
+                                        $record->due_date ?? '',
+                                        $record->status ?? '',
+                                        $record->note ?? ''
+                                    ]));
+                                }
+                                $writer->close();
+                            }, 'excel.xlsx');
+                        }),
                         ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
                     \Filament\Tables\Actions\Action::make('pdf')
                         ->label('PDF')

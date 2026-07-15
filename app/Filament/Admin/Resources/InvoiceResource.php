@@ -137,9 +137,8 @@ class InvoiceResource extends Resource
                                     ->placeholder(__('Price (Rp)'))
                                     ->numeric()
                                     ->required()
-                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                                    ->stripCharacters('.')
-                                    ->live(onBlur: true)
+                                    ->numeric()
+                                                                        ->live(onBlur: true)
                                     ->afterStateUpdated(fn (callable $get, callable $set) => self::updateTotals($get, $set))
                                     ->extraInputAttributes(['class' => 'text-right', 'onfocus' => 'this.select()'])
                                     ->columnSpan(2),
@@ -161,9 +160,8 @@ class InvoiceResource extends Resource
                                     ->default(0)
                                     ->disabled()
                                     ->dehydrated(true)
-                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                                    ->stripCharacters('.')
-                                    ->extraInputAttributes(['class' => 'text-right'])
+                                    ->numeric()
+                                                                        ->extraInputAttributes(['class' => 'text-right'])
                                     ->columnSpan(2),
 
                                 Forms\Components\TextInput::make('amount')
@@ -173,9 +171,8 @@ class InvoiceResource extends Resource
                                     ->default(0)
                                     ->disabled()
                                     ->dehydrated(true)
-                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                                    ->stripCharacters('.')
-                                    ->extraInputAttributes(['class' => 'text-right'])
+                                    ->numeric()
+                                                                        ->extraInputAttributes(['class' => 'text-right'])
                                     ->columnSpan(2),
                              ])
                              ->columns(12)
@@ -313,9 +310,8 @@ class InvoiceResource extends Resource
                                     ->disabled()
                                     ->dehydrated(true)
                                     ->extraInputAttributes(['class' => 'text-right'])
-                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                                    ->stripCharacters('.')
-                                    ->default(function () {
+                                    ->numeric()
+                                                                        ->default(function () {
                                         $receiptId = request()->query('delivery_order_receipt_id');
                                         if (!$receiptId) return 0.0;
                                         $receipt = \App\Models\DeliveryOrderReceipt::find($receiptId);
@@ -347,9 +343,8 @@ class InvoiceResource extends Resource
                                     ->disabled()
                                     ->dehydrated(true)
                                     ->extraInputAttributes(['class' => 'text-right'])
-                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                                    ->stripCharacters('.')
-                                    ->default(function () {
+                                    ->numeric()
+                                                                        ->default(function () {
                                         $receiptId = request()->query('delivery_order_receipt_id');
                                         if (!$receiptId) return 0.0;
                                         $receipt = \App\Models\DeliveryOrderReceipt::find($receiptId);
@@ -391,9 +386,8 @@ class InvoiceResource extends Resource
                                         if (!$receiptId) return 0.0;
                                         return \App\Models\DeliveryOrderReceipt::find($receiptId)?->salesOrder?->down_payment ?? 0.0;
                                     })
-                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                                    ->stripCharacters('.')
-                                    ->live(onBlur: true)
+                                    ->numeric()
+                                                                        ->live(onBlur: true)
                                     ->afterStateUpdated(fn (callable $get, callable $set) => self::updateTotals($get, $set))
                                     ->columnSpan(4),
                             ]),
@@ -434,9 +428,8 @@ class InvoiceResource extends Resource
                                         $downPayment = \App\Models\DeliveryOrderReceipt::find($receiptId)?->salesOrder?->down_payment ?? 0.0;
                                         return round($subtotal - $downPayment, 0);
                                     })
-                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                                    ->stripCharacters('.')
-                                    ->columnSpan(4),
+                                    ->numeric()
+                                                                        ->columnSpan(4),
                             ]),
                     ]),
             ]);
@@ -656,11 +649,41 @@ class InvoiceResource extends Resource
             ->actions([])
             ->headerActions([
                 Tables\Actions\ActionGroup::make([
-                    Tables\Actions\ExportAction::make('excel')
+                    \Filament\Tables\Actions\Action::make('excel')
                         ->label(__('Excel'))
                         ->icon('heroicon-o-document-text')
                         ->color('success')
-                        ->exporter(\App\Filament\Exports\InvoiceExporter::class)
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            return response()->streamDownload(function () use ($records) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    'Invoice Number', 'Customer', 'Invoice Date', 'Due Date', 'PO Number', 'DO Number', 'Status', 'Total Weight (Kg)', 'Subtotal (Rp)', 'Discount (Rp)', 'Tax (Rp)', 'Charge (Rp)', 'Down Payment (Rp)', 'Balance (Rp)', 'Created By', 'Created At'
+                                ]));
+                                foreach ($records as $record) {
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $record->invoice_number ?? '',
+                                        $record->customer?->name ?? '',
+                                        $record->invoice_date ?? '',
+                                        $record->due_date ?? '',
+                                        $record->po_number ?? '',
+                                        $record->delivery_order_number ?? '',
+                                        $record->status ?? '',
+                                        $record->total_weight ?? '',
+                                        $record->subtotal ?? '',
+                                        $record->total_discount ?? '',
+                                        $record->tax ?? '',
+                                        $record->charge ?? '',
+                                        $record->down_payment ?? '',
+                                        $record->balance ?? '',
+                                        $record->creator?->name ?? '',
+                                        $record->created_at ?? ''
+                                    ]));
+                                }
+                                $writer->close();
+                            }, 'excel.xlsx');
+                        }),
                         ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
                     Tables\Actions\Action::make('pdf')
                         ->label(__('PDF'))

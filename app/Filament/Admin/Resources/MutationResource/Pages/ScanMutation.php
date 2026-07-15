@@ -83,53 +83,54 @@ class ScanMutation extends Page implements HasForms, HasTable
             return;
         }
 
-        $stock = BeefStock::where('barcode', $barcode)->first();
+        try {
+            DB::transaction(function () use ($barcode) {
+                $stock = BeefStock::where('barcode', $barcode)->lockForUpdate()->first();
 
-        if (!$stock) {
-            Notification::make()->title('Barang tidak ditemukan di stok!')->danger()->send();
-            $this->dispatch('focus-barcode');
-            return;
+                if (!$stock) {
+                    throw new \Exception('Barang tidak ditemukan di stok!');
+                }
+
+                if ($stock->warehouse_id !== $this->record->from_warehouse_id) {
+                    throw new \Exception('Barang ini bukan dari Gudang Asal mutasi!');
+                }
+
+                MutationItem::create([
+                    'mutation_id' => $this->record->id,
+                    'barcode' => $barcode,
+                    'product_id' => $stock->product_id,
+                    'grade_id' => $stock->grade_id,
+                    'weight' => $stock->weight,
+                    'qty_pcs' => $stock->qty_pcs,
+                    'ph_level' => $stock->ph_level,
+                    'pack_date' => $stock->pack_date,
+                    'exp_date' => $stock->exp_date,
+                    'origin' => $stock->origin,
+                ]);
+
+                \App\Models\BeefStockMovement::create([
+                    'product_id' => $stock->product_id,
+                    'warehouse_id' => $stock->warehouse_id,
+                    'condition' => $stock->grade_id,
+                    'barcode' => $stock->barcode,
+                    'transaction_type' => 'MUTATION_OUT',
+                    'reference_document' => $this->record->mutation_number,
+                    'weight_in' => 0,
+                    'weight_out' => $stock->weight,
+                    'pcs_in' => 0,
+                    'pcs_out' => $stock->qty_pcs,
+                    'note' => 'Di-scan untuk mutasi',
+                    'created_by' => auth()->id(),
+                ]);
+
+                $stock->delete();
+            });
+
+            Notification::make()->title('Sukses ditambahkan')->success()->send();
+        } catch (\Exception $e) {
+            Notification::make()->title('Gagal Scan')->body($e->getMessage())->danger()->send();
         }
-
-        if ($stock->warehouse_id !== $this->record->from_warehouse_id) {
-            Notification::make()->title('Barang ini bukan dari Gudang Asal mutasi!')->danger()->send();
-            $this->dispatch('focus-barcode');
-            return;
-        }
-
-        DB::transaction(function () use ($stock, $barcode) {
-            MutationItem::create([
-                'mutation_id' => $this->record->id,
-                'barcode' => $barcode,
-                'product_id' => $stock->product_id,
-                'grade_id' => $stock->grade_id,
-                'weight' => $stock->weight,
-                'qty_pcs' => $stock->qty_pcs,
-                'ph_level' => $stock->ph_level,
-                'pack_date' => $stock->pack_date,
-                'exp_date' => $stock->exp_date,
-                'origin' => $stock->origin,
-            ]);
-
-            \App\Models\BeefStockMovement::create([
-                'product_id' => $stock->product_id,
-                'warehouse_id' => $stock->warehouse_id,
-                'condition' => $stock->grade_id,
-                'barcode' => $stock->barcode,
-                'transaction_type' => 'MUTATION_OUT',
-                'reference_document' => $this->record->mutation_number,
-                'weight_in' => 0,
-                'weight_out' => $stock->weight,
-                'pcs_in' => 0,
-                'pcs_out' => $stock->qty_pcs,
-                'note' => 'Di-scan untuk mutasi',
-                'created_by' => auth()->id(),
-            ]);
-
-            $stock->delete();
-        });
-
-        Notification::make()->title('Sukses ditambahkan')->success()->send();
+        
         $this->dispatch('focus-barcode');
     }
 

@@ -110,13 +110,11 @@ class GoodsReceiptMaterialResource extends Resource
                                     ->label(__('Qty Received'))
                                     ->hiddenLabel()
                                     ->placeholder(__('Qty Received'))
-                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
-                                    ->stripCharacters('.')
+                                    ->numeric()
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'text-right'])
                                     ->required()
                                     ->live(onBlur: true)
-                                    ->suffix(fn ($record) => $record?->material?->unit?->name)
-                                    ->dehydrateStateUsing(fn ($state) => (float) str_replace(['.', ','], ['', '.'], $state)),
+                                    ->suffix(fn ($record) => $record?->material?->unit?->name),
                                 Forms\Components\Placeholder::make('item_subtotal')
                                     ->label(__('Subtotal'))
                                     ->hiddenLabel()
@@ -264,11 +262,36 @@ class GoodsReceiptMaterialResource extends Resource
             )
             ->headerActions([
                 \Filament\Tables\Actions\ActionGroup::make([
-                    \Filament\Tables\Actions\ExportAction::make('excel')
+                    \Filament\Tables\Actions\Action::make('excel')
                         ->label(__('Excel'))
                         ->icon('heroicon-o-document-text')
                         ->color('success')
-                        ->exporter(\App\Filament\Exports\GoodsReceiptMaterialExporter::class)
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            return response()->streamDownload(function () use ($records) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    'id', 'gr_number', 'purchase_material_id', 'supplier_id', 'receive_date', 'sj_number', 'note', 'created_by', 'deleted_at', 'created_at', 'updated_at'
+                                ]));
+                                foreach ($records as $record) {
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $record->id ?? '',
+                                        $record->gr_number ?? '',
+                                        $record->purchase_material_id ?? '',
+                                        $record->supplier_id ?? '',
+                                        $record->receive_date ?? '',
+                                        $record->sj_number ?? '',
+                                        $record->note ?? '',
+                                        $record->created_by ?? '',
+                                        $record->deleted_at ?? '',
+                                        $record->created_at ?? '',
+                                        $record->updated_at ?? ''
+                                    ]));
+                                }
+                                $writer->close();
+                            }, 'excel.xlsx');
+                        }),
                         ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
                     \Filament\Tables\Actions\Action::make('pdf')
                         ->label(__('PDF'))

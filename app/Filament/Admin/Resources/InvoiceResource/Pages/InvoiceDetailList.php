@@ -116,11 +116,34 @@ class InvoiceDetailList extends Page implements HasTable
             ])
             ->headerActions([
                 Tables\Actions\ActionGroup::make([
-                    Tables\Actions\ExportAction::make('excel')
+                    \Filament\Tables\Actions\Action::make('excel')
                         ->label(__('Excel'))
                         ->icon('heroicon-o-document-text')
                         ->color('success')
-                        ->exporter(\App\Filament\Exports\InvoiceItemExporter::class)
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            return response()->streamDownload(function () use ($records) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    'Invoice Number', 'Customer', 'Invoice Date', 'Product / Charge', 'Weight / Qty', 'Price (Rp)', 'Disc %', 'Disc Rp', 'Amount (Rp)'
+                                ]));
+                                foreach ($records as $record) {
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $record->invoice?->invoice_number ?? '',
+                                        $record->invoice?->customer?->name ?? '',
+                                        $record->invoice?->invoice_date ?? '',
+                                        $record->item_name ?? '',
+                                        $record->weight ?? '',
+                                        $record->price ?? '',
+                                        $record->discount_percent ?? '',
+                                        $record->discount_rp ?? '',
+                                        $record->amount ?? ''
+                                    ]));
+                                }
+                                $writer->close();
+                            }, 'excel.xlsx');
+                        }),
                         ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
                     Tables\Actions\Action::make('pdf')
                         ->label(__('PDF'))

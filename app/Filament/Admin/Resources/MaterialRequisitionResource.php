@@ -115,9 +115,8 @@ class MaterialRequisitionResource extends Resource
                                         return null;
                                     })
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'qty-input text-right', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll(".qty-input")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
-                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                                    ->stripCharacters('.')
                                     ->numeric()
+                                                                        ->numeric()
                                     ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('price')
@@ -126,9 +125,8 @@ class MaterialRequisitionResource extends Resource
                                     ->prefix('Rp')
                                     ->default(0)
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'price-input text-right', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll(".price-input")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
-                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
-                                    ->stripCharacters('.')
                                     ->numeric()
+                                                                        ->numeric()
                                     ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('item_total')

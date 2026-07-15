@@ -301,46 +301,48 @@ class LabelingBoning extends Page implements HasForms, HasTable
                     ->tooltip(__('Delete Data'))
                     ->requiresConfirmation()
                     ->action(function (BoningItem $record) {
-                        // Cek pengaman ganda sebelum menghapus
-                        if (DB::table('repack_materials')->where('barcode', $record->barcode)->exists()) {
+                        try {
+                            DB::transaction(function () use ($record) {
+                                // Cek pengaman ganda sebelum menghapus (TOCTOU Fixed)
+                                if (DB::table('repack_materials')->where('barcode', $record->barcode)->lockForUpdate()->exists()) {
+                                    throw new \Exception(__('Barang sudah digunakan di modul Repack.'));
+                                }
+
+                                if (DB::table('tally_items')->where('barcode', $record->barcode)->lockForUpdate()->exists()) {
+                                    throw new \Exception(__('Barang sudah digunakan di modul Tally.'));
+                                }
+
+                                $stock = BeefStock::where('barcode', $record->barcode)->lockForUpdate()->first();
+
+                                BeefStockMovement::create([
+                                    'product_id' => $record->product_id,
+                                    'warehouse_id' => $record->warehouse_id,
+                                    'condition' => $record->grade_id,
+                                    'barcode' => $record->barcode,
+                                    'transaction_type' => 'VOID_BONING',
+                                    'reference_document' => $record->boning->doc_no ?? 'DELETED',
+                                    'weight_in' => -$record->weight,
+                                    'pcs_in' => -$record->qty_pcs,
+                                    'created_by' => Auth::id(),
+                                ]);
+
+                                if ($stock) {
+                                    $stock->delete();
+                                }
+                                $record->delete();
+                            });
+
+                            Notification::make()
+                                ->title(__('Data voided and removed from stock!'))
+                                ->success()
+                                ->send();
+                        } catch (\Exception $e) {
                             Notification::make()
                                 ->title(__('Gagal!'))
-                                ->body(__('Barang sudah digunakan di modul Repack.'))
+                                ->body($e->getMessage())
                                 ->danger()
                                 ->send();
-                            return;
                         }
-
-                        if (DB::table('tally_items')->where('barcode', $record->barcode)->exists()) {
-                            Notification::make()
-                                ->title(__('Gagal!'))
-                                ->body(__('Barang sudah digunakan di modul Tally.'))
-                                ->danger()
-                                ->send();
-                            return;
-                        }
-
-                        DB::transaction(function () use ($record) {
-                            BeefStockMovement::create([
-                                'product_id' => $record->product_id,
-                                'warehouse_id' => $record->warehouse_id,
-                                'condition' => $record->grade_id,
-                                'barcode' => $record->barcode,
-                                'transaction_type' => 'VOID_BONING',
-                                'reference_document' => $record->boning->doc_no ?? 'DELETED',
-                                'weight_in' => -$record->weight,
-                                'pcs_in' => -$record->qty_pcs,
-                                'created_by' => Auth::id(),
-                            ]);
-
-                            BeefStock::where('barcode', $record->barcode)->delete();
-                            $record->delete();
-                        });
-
-                        Notification::make()
-                            ->title(__('Data voided and removed from stock!'))
-                            ->success()
-                            ->send();
                     }),
             ]);
     }

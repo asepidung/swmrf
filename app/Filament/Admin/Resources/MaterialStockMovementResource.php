@@ -137,11 +137,34 @@ class MaterialStockMovementResource extends Resource
             ])
             ->headerActions([
                 \Filament\Tables\Actions\ActionGroup::make([
-                    \Filament\Tables\Actions\ExportAction::make('excel')
-                        ->label('Excel')
+                    \Filament\Tables\Actions\Action::make('excel')
+                        ->label(__('Excel'))
                         ->icon('heroicon-o-document-text')
                         ->color('success')
-                        ->exporter(\App\Filament\Exports\MaterialStockMovementExporter::class)
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            return response()->streamDownload(function () use ($records) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    'Timestamp', 'Reference Document', 'Material', 'Transaction Type', 'Qty In', 'Qty Out', 'Balance', 'Note', 'Operator'
+                                ]));
+                                foreach ($records as $record) {
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $record->created_at ?? '',
+                                        $record->reference_document ?? '',
+                                        $record->material?->name ?? '',
+                                        $record->transaction_type ?? '',
+                                        $record->qty_in ?? '',
+                                        $record->qty_out ?? '',
+                                        $record->balance ?? '',
+                                        $record->note ?? '',
+                                        $record->creator?->name ?? ''
+                                    ]));
+                                }
+                                $writer->close();
+                            }, 'excel.xlsx');
+                        }),
                         ->formats([\Filament\Actions\Exports\Enums\ExportFormat::Xlsx]),
                     \Filament\Tables\Actions\Action::make('pdf')
                         ->label('PDF')

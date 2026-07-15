@@ -133,11 +133,31 @@ class MaterialUsageResource extends Resource
             ])
             ->headerActions([
                 // Export features
-                ExportAction::make('export_excel')
+                \Filament\Tables\Actions\Action::make('export_excel')
                     ->label(__('Excel'))
-                    ->icon('heroicon-o-document-arrow-down')
+                    ->icon('heroicon-o-document-text')
                     ->color('success')
-                    ->exporter(MaterialUsageExporter::class),
+                    ->action(function ($livewire) {
+                        $records = $livewire->getFilteredTableQuery()->get();
+                        return response()->streamDownload(function () use ($records) {
+                            $writer = new \OpenSpout\Writer\XLSX\Writer();
+                            $writer->openToFile('php://output');
+                            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                'Usage Date', 'Reference Type', 'Reference ID', 'Material', 'Qty (Minus)', 'Note'
+                            ]));
+                            foreach ($records as $record) {
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    $record->created_at ?? '',
+                                    $record->usageable_type ?? '',
+                                    $record->usageable_id ?? '',
+                                    $record->material?->name ?? '',
+                                    $record->qty ?? '',
+                                    $record->note ?? ''
+                                ]));
+                            }
+                            $writer->close();
+                        }, 'export_excel.xlsx');
+                    }),
             ]);
     }
 
