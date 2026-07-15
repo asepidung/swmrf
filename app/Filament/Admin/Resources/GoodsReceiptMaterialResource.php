@@ -260,7 +260,7 @@ class GoodsReceiptMaterialResource extends Resource
                     ? Pages\ViewGoodsReceiptMaterial::getUrl(['record' => $record]) 
                     : Pages\EditGoodsReceiptMaterial::getUrl([$record->id]),
             )
-            ->headerActions([]))
+            ->headerActions([])
             ->filters([
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_gr_materials')),

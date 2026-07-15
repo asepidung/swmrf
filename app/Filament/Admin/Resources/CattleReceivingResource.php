@@ -347,7 +347,7 @@ class CattleReceivingResource extends Resource
                         return $indicators;
                     }),
             ])
-            ->headerActions([]))
+            ->headerActions([])
             ->actions([
                 // Actions moved to Edit/View page header actions per project guidelines
             ])

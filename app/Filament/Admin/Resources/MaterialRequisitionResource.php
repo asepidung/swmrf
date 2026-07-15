@@ -302,7 +302,7 @@ class MaterialRequisitionResource extends Resource
                             ->when($data['created_until'], fn($q, $date) => $q->whereDate('created_at', '<=', $date));
                     })
             ])
-            ->headerActions([]))
+            ->headerActions([])
             ->actions([
                 // Clean UI: Actions moved to View Page
             ]);

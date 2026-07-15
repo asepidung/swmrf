@@ -189,7 +189,7 @@ class DeliveryPlanResource extends Resource
                         return $indicators;
                     }),
             ])
-            ->headerActions([]))
+            ->headerActions([])
             ->actions([
                 // Rows are clickable
             ])

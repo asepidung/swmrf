@@ -647,7 +647,7 @@ class InvoiceResource extends Resource
                     }),
             ])
             ->actions([])
-            ->headerActions([]))
+            ->headerActions([])
             ->bulkActions([])
             ->recordUrl(function (Invoice $record) {
                 if ($record->trashed()) {

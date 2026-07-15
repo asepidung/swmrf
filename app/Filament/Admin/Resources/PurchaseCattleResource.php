@@ -191,7 +191,7 @@ class PurchaseCattleResource extends Resource
                             );
                     }),
             ])
-                        ->headerActions([]))
+                        ->headerActions([])
             ->actions([
                 // No action buttons on index page
             ])

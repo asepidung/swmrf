@@ -200,7 +200,7 @@ class PurchaseMaterialResource extends Resource
                             ->when($data['created_until'], fn($q, $date) => $q->whereDate('po_date', '<=', $date));
                     })
             ])
-                        ->headerActions([]))
+                        ->headerActions([])
             ->actions([
                 // Clean table UI
             ]);

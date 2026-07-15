@@ -193,7 +193,7 @@ class PurchaseProductResource extends Resource
                         return $indicators;
                     })
             ])
-                        ->headerActions([]))
+                        ->headerActions([])
             ->actions([
                 // Clean table UI
             ]);
