@@ -260,52 +260,7 @@ class GoodsReceiptMaterialResource extends Resource
                     ? Pages\ViewGoodsReceiptMaterial::getUrl(['record' => $record]) 
                     : Pages\EditGoodsReceiptMaterial::getUrl([$record->id]),
             )
-            ->headerActions([
-                \Filament\Tables\Actions\ActionGroup::make([
-                    \Filament\Tables\Actions\Action::make('excel')
-                        ->label(__('Excel'))
-                        ->icon('heroicon-o-document-text')
-                        ->color('success')
-                        ->action(function ($livewire) {
-                            $records = $livewire->getFilteredTableQuery()->get();
-                            return response()->streamDownload(function () use ($records) {
-                                $writer = new \OpenSpout\Writer\XLSX\Writer();
-                                $writer->openToFile('php://output');
-                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                    'id', 'gr_number', 'purchase_material_id', 'supplier_id', 'receive_date', 'sj_number', 'note', 'created_by', 'deleted_at', 'created_at', 'updated_at'
-                                ]));
-                                foreach ($records as $record) {
-                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                        $record->id ?? '',
-                                        $record->gr_number ?? '',
-                                        $record->purchase_material_id ?? '',
-                                        $record->supplier_id ?? '',
-                                        $record->receive_date ?? '',
-                                        $record->sj_number ?? '',
-                                        $record->note ?? '',
-                                        $record->created_by ?? '',
-                                        $record->deleted_at ?? '',
-                                        $record->created_at ?? '',
-                                        $record->updated_at ?? ''
-                                    ]));
-                                }
-                                $writer->close();
-                            }, 'excel.xlsx');
-                        }),
-                    \Filament\Tables\Actions\Action::make('pdf')
-                        ->label(__('PDF'))
-                        ->icon('heroicon-o-document-arrow-down')
-                        ->color('danger')
-                        ->action(function ($livewire) {
-                            $records = $livewire->getFilteredTableQuery()->get();
-                            // Optional: Implement PDF generation
-                            // return response()->streamDownload(fn () => print($pdf->output()), 'export.pdf');
-                        }),
-                ])
-                ->label(__('Export Data'))
-                ->icon('heroicon-m-arrow-down-tray')
-                ->button()
-            ])
+            ->headerActions([]))
             ->filters([
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_gr_materials')),

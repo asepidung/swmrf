@@ -200,52 +200,7 @@ class PurchaseMaterialResource extends Resource
                             ->when($data['created_until'], fn($q, $date) => $q->whereDate('po_date', '<=', $date));
                     })
             ])
-                        ->headerActions([
-                \Filament\Tables\Actions\ActionGroup::make([
-                    \Filament\Tables\Actions\Action::make('excel')
-                        ->label(__('Excel'))
-                        ->icon('heroicon-o-document-text')
-                        ->color('success')
-                        ->action(function ($livewire) {
-                            $records = $livewire->getFilteredTableQuery()->get();
-                            return response()->streamDownload(function () use ($records) {
-                                $writer = new \OpenSpout\Writer\XLSX\Writer();
-                                $writer->openToFile('php://output');
-                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                    'Date', 'Document No.', 'Supplier', 'Status', 'User', 'Total Amount (Rp)', 'Notes'
-                                ]));
-                                foreach ($records as $record) {
-                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                        $record->created_at ?? '',
-                                        $record->document_number ?? '',
-                                        $record->supplier?->name ?? '',
-                                        $record->status ?? '',
-                                        $record->user?->name ?? '',
-                                        $record->total_amount ?? '',
-                                        $record->note ?? ''
-                                    ]));
-                                }
-                                $writer->close();
-                            }, 'excel.xlsx');
-                        }),
-                    \Filament\Tables\Actions\Action::make('pdf')
-                        ->label('PDF')
-                        ->icon('heroicon-o-document-arrow-down')
-                        ->color('danger')
-                        ->action(function ($livewire) {
-                            $records = $livewire->getFilteredTableQuery()->get();
-                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.parent-records-pdf', [
-                                'records' => $records,
-                                'title' => 'Purchase Materials'
-                            ]);
-                            return response()->streamDownload(fn () => print($pdf->output()), 'export.pdf');
-                        }),
-                ])
-                ->label('Export Data')
-                ->icon('heroicon-m-arrow-down-tray')
-                ->button()
-                ->color('success'),
-            ])
+                        ->headerActions([]))
             ->actions([
                 // Clean table UI
             ]);

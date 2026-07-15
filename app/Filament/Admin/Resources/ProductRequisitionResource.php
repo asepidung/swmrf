@@ -295,49 +295,7 @@ class ProductRequisitionResource extends Resource
                             ->when($data['created_until'], fn($q, $date) => $q->whereDate('created_at', '<=', $date));
                     })
             ])
-            ->headerActions([
-                \Filament\Tables\Actions\Action::make('detail')
-                    ->label(fn() => __('Detail'))
-                    ->icon('heroicon-o-list-bullet')
-                    ->color('info')
-                    ->url(fn() => static::getUrl('detail-list')),
-                \Filament\Tables\Actions\Action::make('export_excel')
-                    ->label(fn() => __('Excel'))
-                    ->color('success')
-                    ->icon('heroicon-o-document-arrow-down')
-                    ->action(function ($livewire) {
-                        $records = $livewire->getFilteredTableQuery()->get();
-                        return response()->streamDownload(function () use ($records) {
-                            $writer = new \OpenSpout\Writer\XLSX\Writer();
-                            $writer->openToFile('php://output');
-                            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['No', 'Date', 'Requester', 'Supplier', 'Note', 'Status', 'Total Amount']));
-                            foreach ($records as $record) {
-                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                    $record->document_number ?? '',
-                                    $record->created_at ? $record->created_at->format('Y-m-d') : '',
-                                    $record->user->name ?? '',
-                                    $record->supplier->name ?? '',
-                                    $record->note ?? '',
-                                    $record->status ?? '',
-                                    (string) $record->total_amount
-                                ]));
-                            }
-                            $writer->close();
-                        }, 'Beef_Requests' . '_' . now()->format('Y-m-d') . '.xlsx');
-                    }),
-                \Filament\Tables\Actions\Action::make('pdf')
-                    ->label(fn() => __('PDF'))
-                    ->icon('heroicon-o-document-arrow-down')
-                    ->color('danger')
-                    ->action(function ($livewire) {
-                        $records = $livewire->getFilteredTableQuery()->get();
-                        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.parent-records-pdf', [
-                            'records' => $records,
-                            'title' => 'Product Requisitions'
-                        ]);
-                        return response()->streamDownload(fn () => print($pdf->output()), 'Beef_Requests' . '_' . now()->format('Y-m-d') . '.pdf');
-                    }),
-            ])
+            ->headerActions([]))
             ->actions([
                 // Clean UI: Actions moved to View Page
             ]);

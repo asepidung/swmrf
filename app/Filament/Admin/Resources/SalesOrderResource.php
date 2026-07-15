@@ -440,48 +440,7 @@ class SalesOrderResource extends Resource
                 $record->trashed() => 'bg-danger-50 dark:bg-danger-900/20',
                 default => null,
             })
-            ->headerActions([
-                Tables\Actions\ActionGroup::make([
-                    Tables\Actions\Action::make('excel')
-                        ->label(__('Excel'))
-                        ->icon('heroicon-o-document-text')
-                        ->action(function ($livewire) {
-                            $records = $livewire->getFilteredTableQuery()->get();
-                            return response()->streamDownload(function () use ($records) {
-                                $writer = new \OpenSpout\Writer\XLSX\Writer();
-                                $writer->openToFile('php://output');
-                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['SO Number', 'Customer', 'Delivery Date', 'PO Number', 'Status', 'Total Weight', 'Down Payment']));
-                                foreach ($records as $record) {
-                                    $weight = $record->items()->sum('weight');
-                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                        $record->so_number ?? '',
-                                        $record->customer?->name ?? '',
-                                        $record->delivery_date ? \Carbon\Carbon::parse($record->delivery_date)->format('Y-m-d') : '',
-                                        $record->po_number ?? '',
-                                        $record->status ?? '',
-                                        $weight,
-                                        $record->down_payment ?? 0,
-                                    ]));
-                                }
-                                $writer->close();
-                            }, 'SalesOrders.xlsx');
-                        }),
-                    Tables\Actions\Action::make('pdf')
-                        ->label(__('PDF'))
-                        ->icon('heroicon-o-document-arrow-down')
-                        ->action(function ($livewire) {
-                            $records = $livewire->getFilteredTableQuery()->get();
-                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.sales-orders-pdf', [
-                                'records' => $records
-                            ]);
-                            return response()->streamDownload(fn () => print($pdf->output()), 'sales-orders.pdf');
-                        }),
-                ])
-                ->label(__('Export Data'))
-                ->icon('heroicon-m-arrow-down-tray')
-                ->button()
-                ->color('success'),
-            ])
+            ->headerActions([])
             ->actions([
                 // Clickable rows handle editing; no action buttons displayed on the index table.
             ])

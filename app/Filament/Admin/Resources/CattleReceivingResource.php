@@ -347,52 +347,7 @@ class CattleReceivingResource extends Resource
                         return $indicators;
                     }),
             ])
-            ->headerActions([
-                Tables\Actions\ActionGroup::make([
-                    \Filament\Tables\Actions\Action::make('excel')
-                        ->label(__('Excel'))
-                        ->icon('heroicon-o-document-text')
-                        ->color('success')
-                        ->action(function ($livewire) {
-                            $records = $livewire->getFilteredTableQuery()->get();
-                            return response()->streamDownload(function () use ($records) {
-                                $writer = new \OpenSpout\Writer\XLSX\Writer();
-                                $writer->openToFile('php://output');
-                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                    'Receive Number', 'PO Number', 'Supplier', 'Receive Date', 'Document Number', 'sv_ok', 'skkh_ok', 'Note', 'Received By'
-                                ]));
-                                foreach ($records as $record) {
-                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                        $record->receiving_number ?? '',
-                                        $record->purchaseCattle?->document_number ?? '',
-                                        $record->supplier?->name ?? '',
-                                        $record->receive_date ?? '',
-                                        $record->doc_no ?? '',
-                                        $record->sv_ok ?? '',
-                                        $record->skkh_ok ?? '',
-                                        $record->note ?? '',
-                                        $record->creator?->name ?? ''
-                                    ]));
-                                }
-                                $writer->close();
-                            }, 'excel.xlsx');
-                        }),
-                    Tables\Actions\Action::make('pdf')
-                        ->label(__('PDF'))
-                        ->icon('heroicon-o-document-arrow-down')
-                        ->action(function ($livewire) {
-                            $records = $livewire->getFilteredTableQuery()->withCount('items')->get();
-                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.cattle-receivings-pdf', [
-                                'records' => $records
-                            ]);
-                            return response()->streamDownload(fn () => print($pdf->output()), 'cattle-receivings.pdf');
-                        }),
-                ])
-                ->label(__('Export Data'))
-                ->icon('heroicon-m-arrow-down-tray')
-                ->button()
-                ->color('success'),
-            ])
+            ->headerActions([]))
             ->actions([
                 // Actions moved to Edit/View page header actions per project guidelines
             ])

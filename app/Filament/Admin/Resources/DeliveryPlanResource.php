@@ -189,43 +189,7 @@ class DeliveryPlanResource extends Resource
                         return $indicators;
                     }),
             ])
-            ->headerActions([
-                Tables\Actions\ActionGroup::make([
-                    Tables\Actions\Action::make('excel')
-                        ->label(__('Excel'))
-                        ->icon('heroicon-o-document-text')
-                        ->action(function ($livewire) {
-                            $records = $livewire->getFilteredTableQuery()->get();
-                            return response()->streamDownload(function () use ($records) {
-                                $writer = new \OpenSpout\Writer\XLSX\Writer();
-                                $writer->openToFile('php://output');
-                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Delivery Date', 'Customer', 'Total PO', 'Qty (Kg)', 'Driver', 'Armada', 'Jam Loading', 'Notes']));
-                                foreach ($records as $record) {
-                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                        $record->delivery_date ? \Carbon\Carbon::parse($record->delivery_date)->format('Y-m-d') : '',
-                                        $record->customer?->name ?? '',
-                                        $record->sales_orders_count ?? 0,
-                                        $record->total_qty ?? 0,
-                                        $record->driver ?? '',
-                                        $record->armada ?? '',
-                                        $record->load_time ?? '',
-                                        $record->notes ?? '',
-                                    ]));
-                                }
-                                $writer->close();
-                            }, 'DeliveryPlans.xlsx');
-                        }),
-                    Tables\Actions\Action::make('preview')
-                        ->label(__('Preview'))
-                        ->icon('heroicon-o-eye')
-                        ->url(fn (): string => route('print.delivery-plan.preview'))
-                        ->openUrlInNewTab(),
-                ])
-                ->label(__('Export & Print'))
-                ->icon('heroicon-m-arrow-down-tray')
-                ->button()
-                ->color('success'),
-            ])
+            ->headerActions([]))
             ->actions([
                 // Rows are clickable
             ])
