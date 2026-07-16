@@ -25,7 +25,10 @@ class ListProductRequisitionDetails extends Page implements HasTable
 
     protected static string $view = 'filament.admin.resources.product-requisition-resource.pages.list-product-requisition-details';
 
-    protected static ?string $title = 'Detail Request Beef List';
+    public function getTitle(): string | \Illuminate\Contracts\Support\Htmlable
+    {
+        return __('Detail Request Beef List');
+    }
 
     public function table(Table $table): Table
     {

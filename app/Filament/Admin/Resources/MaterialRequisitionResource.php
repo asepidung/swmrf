@@ -330,4 +330,19 @@ class MaterialRequisitionResource extends Resource
     {
         return __('REQUEST');
     }
+
+    public static function getModelLabel(): string
+    {
+        return __('Material Request');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Material Requests');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Material Requests');
+    }
 }

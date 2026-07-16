@@ -323,4 +323,19 @@ class ProductRequisitionResource extends Resource
     {
         return __('REQUEST');
     }
+
+    public static function getModelLabel(): string
+    {
+        return __('Beef Request');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Beef Requests');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Beef Requests');
+    }
 }

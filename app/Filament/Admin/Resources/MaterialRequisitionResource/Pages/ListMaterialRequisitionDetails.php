@@ -22,7 +22,10 @@ class ListMaterialRequisitionDetails extends Page implements HasTable
 
     protected static string $view = 'filament.admin.resources.product-requisition-resource.pages.list-product-requisition-details'; // we can reuse the same empty view
 
-    protected static ?string $title = 'Detail Request Material List';
+    public function getTitle(): string | \Illuminate\Contracts\Support\Htmlable
+    {
+        return __('Detail Request Material List');
+    }
 
     public function table(Table $table): Table
     {
