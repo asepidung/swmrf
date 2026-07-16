@@ -24,6 +24,16 @@ class UserResource extends Resource
         return __('SYSTEM');
     }
 
+    public static function getModelLabel(): string
+    {
+        return __('User');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Users');
+    }
+
     public static function getNavigationLabel(): string
     {
         return __('User Management');
@@ -74,7 +84,7 @@ class UserResource extends Resource
                                 ->schema([
                                     Forms\Components\CheckboxList::make('permissions_' . $moduleName)
                                         ->hiddenLabel()
-                                        ->options($permissions->pluck('description', 'id')->toArray())
+                                        ->options($permissions->mapWithKeys(fn ($p) => [$p->id => __($p->description)])->toArray())
                                         ->bulkToggleable()
                                         ->columns(4)
                                         ->dehydrated(false)

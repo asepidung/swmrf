@@ -25,6 +25,11 @@ class ActivityLogResource extends Resource
         return __('SYSTEM');
     }
 
+    public static function getNavigationLabel(): string
+    {
+        return __('Activity Log');
+    }
+
     public static function getModelLabel(): string
     {
         return __('Activity Log');
