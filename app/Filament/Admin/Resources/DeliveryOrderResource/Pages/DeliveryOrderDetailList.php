@@ -115,6 +115,54 @@ class DeliveryOrderDetailList extends Page implements HasTable
                     ->icon('heroicon-o-arrow-left')
                     ->color('secondary')
                     ->url(static::getResource()::getUrl('index')),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('pdf')
+                        ->label(fn() => __('PDF'))
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('danger')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.delivery-order-details-pdf', ['records' => $records])->setPaper('a4', 'landscape');
+                            return response()->streamDownload(fn () => print($pdf->output()), 'Detail_Delivery_Order_' . now()->format('Y-m-d') . '.pdf');
+                        }),
+                    \Filament\Tables\Actions\Action::make('excel')
+                        ->label(fn() => __('Excel'))
+                        ->color('success')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            return response()->streamDownload(function () use ($records) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['DO Number', 'Customer', 'Delivery Date', 'Product', 'Shipped Box', 'Shipped Weight', 'Received Box', 'Received Weight']));
+                                foreach ($records as $record) {
+                                    $receipt = \App\Models\DeliveryOrderReceipt::where('delivery_order_id', $record->delivery_order_id)->first();
+                                    $receiptItem = null;
+                                    if ($receipt) {
+                                        $receiptItem = \App\Models\DeliveryOrderReceiptItem::where('delivery_order_receipt_id', $receipt->id)
+                                            ->where('product_id', $record->product_id)
+                                            ->first();
+                                    }
+                                    
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $record->deliveryOrder->delivery_order_number ?? '',
+                                        $record->deliveryOrder->customer->name ?? '',
+                                        $record->deliveryOrder->delivery_date ? \Carbon\Carbon::parse($record->deliveryOrder->delivery_date)->format('Y-m-d') : '',
+                                        $record->product->name ?? '',
+                                        (string) $record->box,
+                                        (string) $record->weight,
+                                        $receiptItem ? (string) $receiptItem->received_box : '-',
+                                        $receiptItem ? (string) $receiptItem->received_weight : '-',
+                                    ]));
+                                }
+                                $writer->close();
+                            }, 'Detail_Delivery_Order_' . now()->format('Y-m-d') . '.xlsx');
+                        }),
+                ])
+                ->label(__('Export Data'))
+                ->icon('heroicon-m-arrow-down-tray')
+                ->button()
+                ->color('success'),
             ])
             ->defaultSort('id', 'desc');
     }

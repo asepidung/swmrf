@@ -14,6 +14,10 @@ class ListMutations extends ListRecords
     {
         return [
             Actions\CreateAction::make(),
+            Actions\Action::make('detail_list')
+                ->label(__('Detail List'))
+                ->color('info')
+                ->url(static::getResource()::getUrl('detail-list')),
         ];
     }
 }

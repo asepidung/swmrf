@@ -201,6 +201,7 @@ class PriceListResource extends Resource
     {
         return [
             'index' => Pages\ListPriceLists::route('/'),
+            'detail-list' => Pages\PriceListDetailList::route('/detail-list'),
             'view' => Pages\ViewPriceList::route('/{record}'),
             'edit' => Pages\EditPriceList::route('/{record}/edit'),
         ];

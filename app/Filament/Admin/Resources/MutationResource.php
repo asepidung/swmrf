@@ -153,6 +153,7 @@ class MutationResource extends Resource
         return [
             'index' => Pages\ListMutations::route('/'),
             'create' => Pages\CreateMutation::route('/create'),
+            'detail-list' => Pages\MutationDetailList::route('/detail-list'),
             'view' => Pages\ViewMutation::route('/{record}'),
             'edit' => Pages\EditMutation::route('/{record}/edit'),
             'scan' => Pages\ScanMutation::route('/{record}/scan'),

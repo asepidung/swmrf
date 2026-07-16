@@ -12,7 +12,7 @@
             background-color: rgba(255, 255, 255, 0.05) !important;
         }
     </style>
-    @if($this->getPendingReceivingCount() > 0 || $this->getPendingWeighingCount() > 0 || $this->getPendingCarcassCount() > 0 || $this->getPendingMaterialRequestCount() > 0 || $this->getPendingMaterialFinanceCount() > 0 || $this->getPendingProductRequestCount() > 0 || $this->getPendingProductFinanceCount() > 0 || $this->getPendingRepackLockCount() > 0 || $this->getPendingTallyCount() > 0 || $this->getPendingDeliveryPlanCount() > 0 || $this->getPendingGrMaterialCount() > 0 || $this->getPendingGrProductCount() > 0 || $this->getPendingBoningLockCount() > 0 || $this->getPendingDeliveryOrderCount() > 0 || $this->getPendingDeliveryReceiptCount() > 0 || $this->getPendingInvoiceExchangeCount() > 0 || $this->getPendingMutationCount() > 0 || $this->getPendingBeefStockTakeCount() > 0 || $this->getPendingMaterialStockTakeCount() > 0)
+    @if($this->getPendingReceivingCount() > 0 || $this->getPendingWeighingCount() > 0 || $this->getPendingCarcassCount() > 0 || $this->getPendingMaterialRequestCount() > 0 || $this->getPendingMaterialFinanceCount() > 0 || $this->getPendingProductRequestCount() > 0 || $this->getPendingProductFinanceCount() > 0 || $this->getPendingRepackLockCount() > 0 || $this->getPendingTallyCount() > 0 || $this->getPendingDeliveryPlanCount() > 0 || $this->getPendingGrMaterialCount() > 0 || $this->getPendingGrProductCount() > 0 || $this->getPendingBoningLockCount() > 0 || $this->getPendingDeliveryOrderCount() > 0 || $this->getPendingDeliveryReceiptCount() > 0 || $this->getPendingInvoiceExchangeCount() > 0 || $this->getPendingMutationCount() > 0 || $this->getPendingBeefStockTakeCount() > 0 || $this->getPendingMaterialStockTakeCount() > 0 || $this->getAging60DaysCount() > 0)
     <div class="space-y-2">
         @if($this->getPendingBeefStockTakeCount() > 0)
         <div class="p-4 rounded-lg shadow-md border-2 border-red-500 bg-red-50 dark:bg-red-900/30 flex items-center gap-x-4 transition duration-200 block animate-pulse">
@@ -229,6 +229,16 @@
             </span>
             <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
                 {!! __('Ada :count mutasi yang belum diterima.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingMutationCount().'</strong>']) !!}
+            </p>
+        </a>
+        @endif
+        @if($this->getAging60DaysCount() > 0)
+        <a href="{{ \App\Filament\Admin\Resources\BeefStockAgingResource::getUrl('index') }}" class="p-3 rounded-lg shadow-sm border border-red-500 dark:border-red-800 bg-red-50 dark:bg-red-900/30 flex items-center gap-x-3 hover:bg-red-100 dark:hover:bg-red-900/50 transition duration-200 block">
+            <span class="text-red-600 dark:text-red-400">
+                <x-filament::icon icon="heroicon-s-exclamation-circle" class="w-5 h-5" />
+            </span>
+            <p class="text-sm font-medium text-red-700 dark:text-red-400">
+                {!! __('Ada :count barang yang sudah lebih dari 60 hari.', ['count' => '<strong class="text-red-700 dark:text-red-400">'.$this->getAging60DaysCount().'</strong>']) !!}
             </p>
         </a>
         @endif

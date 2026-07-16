@@ -100,6 +100,47 @@ class BeefStockAgingResource extends Resource
                     ->label(__('Warehouse'))
                     ->relationship('warehouse', 'name'),
             ])
+            ->headerActions([
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('pdf')
+                        ->label(fn() => __('PDF'))
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('danger')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.beef-stock-aging-pdf', ['records' => $records])->setPaper('a4', 'landscape');
+                            return response()->streamDownload(fn () => print($pdf->output()), 'Aging_Beef_Stock_' . now()->format('Y-m-d') . '.pdf');
+                        }),
+                    \Filament\Tables\Actions\Action::make('excel')
+                        ->label(fn() => __('Excel'))
+                        ->color('success')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            return response()->streamDownload(function () use ($records) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Barcode', 'Product', 'Warehouse', 'Grade', 'Weight (Kg)', 'P.O.D', 'Age (Days)']));
+                                foreach ($records as $record) {
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $record->barcode ?? '',
+                                        $record->product->name ?? '',
+                                        $record->warehouse->name ?? '',
+                                        $record->grade->name ?? '',
+                                        (string) $record->weight,
+                                        $record->pack_date ? \Carbon\Carbon::parse($record->pack_date)->format('Y-m-d') : '',
+                                        (string) ($record->pack_date ? abs((int) now()->diffInDays($record->pack_date)) : ''),
+                                    ]));
+                                }
+                                $writer->close();
+                            }, 'Aging_Beef_Stock_' . now()->format('Y-m-d') . '.xlsx');
+                        }),
+                ])
+                ->label(__('Export Data'))
+                ->icon('heroicon-m-arrow-down-tray')
+                ->button()
+                ->color('success'),
+            ])
             ->actions([])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

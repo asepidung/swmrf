@@ -181,4 +181,14 @@ class PendingTaskWidget extends Widget
     {
         return \App\Models\MaterialStockTake::whereIn('status', ['DRAFT', 'IN_PROGRESS'])->count();
     }
+
+    public function getAging60DaysCount(): int
+    {
+        return \App\Models\BeefStock::where('status', 'IN_STOCK')
+            ->where('pack_date', '<=', \Carbon\Carbon::now()->subDays(60))
+            ->whereHas('grade', function ($q) {
+                $q->where('name', 'like', '%CHILL%');
+            })
+            ->count();
+    }
 }

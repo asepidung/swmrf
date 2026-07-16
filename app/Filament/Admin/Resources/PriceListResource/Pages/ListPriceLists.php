@@ -12,6 +12,11 @@ class ListPriceLists extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            Actions\Action::make('detail_list')
+                ->label(__('Detail List'))
+                ->color('info')
+                ->url(static::getResource()::getUrl('detail-list')),
+        ];
     }
 }
