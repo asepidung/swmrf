@@ -56,6 +56,13 @@ class MaterialUsageDetailList extends Page implements HasTable
                     ->label(__('Note'))
                     ->searchable(),
             ])
+            ->headerActions([
+                \Filament\Tables\Actions\Action::make('back')
+                    ->label(__('Back'))
+                    ->icon('heroicon-o-arrow-left')
+                    ->color('secondary')
+                    ->url(static::getResource()::getUrl('index')),
+            ])
             ->filters([
                 //
             ]);

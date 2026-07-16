@@ -109,6 +109,13 @@ class DeliveryOrderDetailList extends Page implements HasTable
                         return $indicators;
                     }),
             ])
+            ->headerActions([
+                \Filament\Tables\Actions\Action::make('back')
+                    ->label(__('Back'))
+                    ->icon('heroicon-o-arrow-left')
+                    ->color('secondary')
+                    ->url(static::getResource()::getUrl('index')),
+            ])
             ->defaultSort('id', 'desc');
     }
 }

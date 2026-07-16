@@ -107,6 +107,11 @@ class SalesOrderDetailList extends Page implements HasTable
                     }),
             ])
             ->headerActions([
+                \Filament\Tables\Actions\Action::make('back')
+                    ->label(__('Back'))
+                    ->icon('heroicon-o-arrow-left')
+                    ->color('secondary')
+                    ->url(static::getResource()::getUrl('index')),
                 Tables\Actions\ActionGroup::make([
                     \Filament\Tables\Actions\Action::make('excel')
                         ->label(__('Excel'))
