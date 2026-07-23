@@ -60,13 +60,6 @@ class UserResource extends Resource
                             ->required()
                             ->unique(ignoreRecord: true)
                             ->maxLength(255),
-                        Forms\Components\Select::make('gender')
-                            ->label(__('Gender'))
-                            ->options([
-                                'L' => __('Male'),
-                                'P' => __('Female'),
-                            ])
-                            ->required(),
                         Forms\Components\Toggle::make('is_active')
                             ->label(__('Active Status'))
                             ->default(true)
@@ -132,14 +125,6 @@ class UserResource extends Resource
                     ->label(__('Username'))
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('gender')
-                    ->label(__('Gender'))
-                    ->badge()
-                    ->colors([
-                        'primary' => 'L',
-                        'warning' => 'P',
-                    ])
-                    ->formatStateUsing(fn ($state) => $state === 'L' ? __('Male') : __('Female')),
                 Tables\Columns\IconColumn::make('is_active')
                     ->label(__('Active Status'))
                     ->boolean(),
