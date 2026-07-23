@@ -24,6 +24,16 @@ class BeefStockAgingResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasPermission('view_beef_stock_aging');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
+
     protected static ?string $navigationIcon = 'heroicon-o-clock';
 
     public static function getNavigationLabel(): string

@@ -40,6 +40,7 @@ class AdminPanelProvider extends PanelProvider
                     ->url(fn (): string => route('log-viewer.index'))
                     ->icon('heroicon-o-document-text')
                     ->group(fn() => __('SYSTEM'))
+                    ->visible(fn (): bool => auth()->user() && auth()->user()->hasPermission('view_activity_logs'))
                     ->sort(100),
             ])
             ->navigationGroups([

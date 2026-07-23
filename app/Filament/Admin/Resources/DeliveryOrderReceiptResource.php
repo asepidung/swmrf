@@ -26,6 +26,11 @@ class DeliveryOrderReceiptResource extends Resource
         return __('DISTRIBUTION');
     }
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasPermission('view_delivery_receipts');
+    }
+
     public static function getNavigationLabel(): string
     {
         return __('Delivery Receipts');

@@ -251,6 +251,36 @@ class DatabaseSeeder extends Seeder
             ['name' => 'edit_mutations', 'module_name' => 'Mutations', 'description' => 'Edit mutations'],
             ['name' => 'delete_mutations', 'module_name' => 'Mutations', 'description' => 'Delete mutations'],
             ['name' => 'view_deleted_mutations', 'module_name' => 'Mutations', 'description' => 'View deleted mutations'],
+            
+            // Material Usages Module
+            ['name' => 'view_material_usages', 'module_name' => 'Material Usages', 'description' => 'View material usages'],
+            ['name' => 'create_material_usages', 'module_name' => 'Material Usages', 'description' => 'Create material usages'],
+            ['name' => 'edit_material_usages', 'module_name' => 'Material Usages', 'description' => 'Edit material usages'],
+            ['name' => 'delete_material_usages', 'module_name' => 'Material Usages', 'description' => 'Delete material usages'],
+            
+            // Material Stock Takes Module
+            ['name' => 'view_material_stock_takes', 'module_name' => 'Material Stock Takes', 'description' => 'View material stock takes'],
+            ['name' => 'create_material_stock_takes', 'module_name' => 'Material Stock Takes', 'description' => 'Create material stock takes'],
+            ['name' => 'edit_material_stock_takes', 'module_name' => 'Material Stock Takes', 'description' => 'Edit material stock takes'],
+            ['name' => 'delete_material_stock_takes', 'module_name' => 'Material Stock Takes', 'description' => 'Delete material stock takes'],
+            
+            // Stock Takes (Beef) Module
+            ['name' => 'view_stock_takes', 'module_name' => 'Stock Takes', 'description' => 'View stock takes'],
+            ['name' => 'create_stock_takes', 'module_name' => 'Stock Takes', 'description' => 'Create stock takes'],
+            ['name' => 'edit_stock_takes', 'module_name' => 'Stock Takes', 'description' => 'Edit stock takes'],
+            ['name' => 'delete_stock_takes', 'module_name' => 'Stock Takes', 'description' => 'Delete stock takes'],
+            
+            // Sales Returns Module
+            ['name' => 'view_sales_returns', 'module_name' => 'Sales Returns', 'description' => 'View sales returns'],
+            ['name' => 'create_sales_returns', 'module_name' => 'Sales Returns', 'description' => 'Create sales returns'],
+            ['name' => 'edit_sales_returns', 'module_name' => 'Sales Returns', 'description' => 'Edit sales returns'],
+            ['name' => 'delete_sales_returns', 'module_name' => 'Sales Returns', 'description' => 'Delete sales returns'],
+            
+            // Beef Stock Aging Module
+            ['name' => 'view_beef_stock_aging', 'module_name' => 'Beef Stock Aging', 'description' => 'View beef stock aging'],
+            
+            // System/Activity Logs
+            ['name' => 'view_activity_logs', 'module_name' => 'System', 'description' => 'View activity logs'],
         ];
 
         foreach ($permissions as $perm) {
@@ -262,7 +292,7 @@ class DatabaseSeeder extends Seeder
         if (!$programmer->exists) {
             $programmer->id = 100; // Set explicit ID
         }
-        $programmer->name = 'Asep Idung';
+        $programmer->name = 'Saepullrock';
         $programmer->password = '91142552';
         $programmer->gender = 'L';
         $programmer->role = 'programmer';
@@ -275,10 +305,10 @@ class DatabaseSeeder extends Seeder
         \App\Models\Warehouse::updateOrCreate(['code' => 'JONGGOL'], ['name' => 'JONGGOL', 'is_active' => true]);
         \App\Models\Warehouse::updateOrCreate(['code' => 'PERUM'], ['name' => 'PERUM', 'is_active' => true]);
 
-        // Seed Grades
-        $grades = ['CHILL', 'FROZEN', 'A', 'B', 'R'];
-        foreach ($grades as $gradeName) {
-            \App\Models\Grade::updateOrCreate(['name' => $gradeName], ['is_active' => true]);
-        }
+        // Seed Grades (Commented out temporarily to avoid ID conflicts during data migration)
+        // $grades = ['CHILL', 'FROZEN', 'A', 'B', 'R'];
+        // foreach ($grades as $gradeName) {
+        //     \App\Models\Grade::updateOrCreate(['name' => $gradeName], ['is_active' => true]);
+        // }
     }
 }

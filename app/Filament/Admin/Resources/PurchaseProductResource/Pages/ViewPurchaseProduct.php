@@ -15,6 +15,7 @@ class ViewPurchaseProduct extends ViewRecord
         return [
             Actions\Action::make('print')
                 ->label('Print PO')
+                ->visible(fn () => auth()->user()->hasPermission('print_purchase_products'))
                 ->icon('heroicon-o-printer')
                 ->color('gray')
                 ->url(fn() => route('print.po-product', ['id' => $this->record->id]))

@@ -576,6 +576,7 @@ class InvoiceResource extends Resource
                     ->action(
                         Tables\Actions\Action::make('tukar_faktur')
                             ->modalHeading(__('Tukar Faktur'))
+                            ->visible(fn () => auth()->user()->hasPermission('tukar_faktur'))
                             ->form([
                                 Forms\Components\DatePicker::make('invoice_exchange_date')
                                     ->label(__('Tanggal Tukar Faktur'))

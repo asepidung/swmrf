@@ -220,7 +220,7 @@ class BoningResource extends Resource
                             ->send();
                         return redirect(static::getUrl('index'));
                     })
-                    ->hidden(fn(Boning $record) => $record->kunci || !$record->materialUsages()->exists()),
+                    ->hidden(fn(Boning $record) => !auth()->user()->hasPermission('lock_bonings') || $record->kunci || !$record->materialUsages()->exists()),
 
                 /* 2. Tombol Unlock */
                 Tables\Actions\Action::make('unlock')
@@ -239,7 +239,7 @@ class BoningResource extends Resource
                             ->send();
                         return redirect(static::getUrl('index'));
                     })
-                    ->hidden(fn(Boning $record) => !$record->kunci),
+                    ->hidden(fn(Boning $record) => !auth()->user()->hasPermission('lock_bonings') || !$record->kunci),
 
                 /* 3. Tombol Input Material Usage */
                 Tables\Actions\Action::make('materialUsage')

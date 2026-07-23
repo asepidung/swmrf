@@ -26,7 +26,9 @@ class BeefStockResource extends Resource
 
     protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 3;
+
+
 
     protected static ?string $navigationIcon = 'heroicon-o-circle-stack';
 
@@ -48,6 +50,11 @@ class BeefStockResource extends Resource
     public static function canViewAny(): bool
     {
         return auth()->user()->isProgrammer() || auth()->user()->hasPermission('view_beef_stocks');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
     }
 
     public static function canCreate(): bool

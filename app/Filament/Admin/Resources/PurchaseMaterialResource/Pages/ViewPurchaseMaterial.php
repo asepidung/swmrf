@@ -15,6 +15,7 @@ class ViewPurchaseMaterial extends ViewRecord
         return [
             Actions\Action::make('print')
                 ->label('Print PO')
+                ->visible(fn () => auth()->user()->hasPermission('print_purchase_materials'))
                 ->icon('heroicon-o-printer')
                 ->color('gray')
                 ->url(fn() => route('print.po-material', ['id' => $this->record->id]))

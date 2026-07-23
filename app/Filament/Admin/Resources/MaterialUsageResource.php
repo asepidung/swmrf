@@ -29,6 +29,11 @@ class MaterialUsageResource extends Resource
         return __('WAREHOUSE');
     }
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasPermission('view_material_usages');
+    }
+
     public static function getNavigationLabel(): string
     {
         return __('Material Usage');

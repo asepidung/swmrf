@@ -17,4 +17,14 @@ class MaterialsStock extends Cluster
     {
         return __('STOCKS');
     }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->isProgrammer() || auth()->user()->hasPermission('view_material_stocks') || auth()->user()->hasPermission('view_material_stock_movements');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
 }

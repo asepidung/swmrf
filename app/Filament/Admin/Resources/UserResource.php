@@ -84,7 +84,21 @@ class UserResource extends Resource
                                 ->schema([
                                     Forms\Components\CheckboxList::make('permissions_' . $moduleName)
                                         ->hiddenLabel()
-                                        ->options($permissions->mapWithKeys(fn ($p) => [$p->id => __($p->description)])->toArray())
+                                        ->options($permissions->mapWithKeys(function ($p) {
+                                            $desc = $p->description;
+                                            $label = __($desc);
+                                            $prefixes = ['View deleted', 'View', 'Create', 'Edit', 'Delete', 'Review', 'Approve', 'Print', 'Lock/Unlock', 'Lock', 'Reset password'];
+                                            foreach ($prefixes as $prefix) {
+                                                if (str_starts_with($desc, $prefix)) {
+                                                    $label = __($prefix);
+                                                    break;
+                                                }
+                                            }
+                                            if (str_starts_with($desc, 'Perform invoice exchange')) {
+                                                $label = __('Tukar Faktur');
+                                            }
+                                            return [$p->id => $label];
+                                        })->toArray())
                                         ->bulkToggleable()
                                         ->columns(4)
                                         ->dehydrated(false)

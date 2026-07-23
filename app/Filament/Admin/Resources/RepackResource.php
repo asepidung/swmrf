@@ -164,7 +164,7 @@ class RepackResource extends Resource
                             Notification::make()->title(__('Repack Locked'))->success()->send();
                             return redirect(static::getUrl('index'));
                         })
-                        ->hidden(fn(Repack $record) => $record->kunci || !$record->materialUsages()->exists()),
+                        ->hidden(fn(Repack $record) => !auth()->user()->hasPermission('lock_repacks') || $record->kunci || !$record->materialUsages()->exists()),
 
                     /* Tombol Unlock */
                     Tables\Actions\Action::make('unlock')
@@ -180,7 +180,7 @@ class RepackResource extends Resource
                             Notification::make()->title(__('Repack Unlocked'))->success()->send();
                             return redirect(static::getUrl('index'));
                         })
-                        ->hidden(fn(Repack $record) => !$record->kunci),
+                        ->hidden(fn(Repack $record) => !auth()->user()->hasPermission('lock_repacks') || !$record->kunci),
 
                     /* Tombol Material Usage */
                     Tables\Actions\Action::make('materialUsage')

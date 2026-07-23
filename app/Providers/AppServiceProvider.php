@@ -27,8 +27,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         \Illuminate\Support\Facades\Gate::define('viewLogViewer', function (?\App\Models\User $user) {
-            // Allow any authenticated user (or limit to super_admin if desired)
-            return $user !== null;
+            return $user ? $user->hasPermission('view_activity_logs') : false;
         });
 
         if (config('app.env') !== 'local' || (request()->getHost() !== 'localhost' && request()->getHost() !== '127.0.0.1')) {
@@ -44,5 +43,6 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Gate::policy(\App\Models\BeefStock::class, \App\Policies\BeefStockPolicy::class);
         \Illuminate\Support\Facades\Gate::policy(\App\Models\BeefStockMovement::class, \App\Policies\BeefStockMovementPolicy::class);
         \Illuminate\Support\Facades\Gate::policy(\App\Models\DeliveryOrderReceipt::class, \App\Policies\DeliveryOrderReceiptPolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(\Spatie\Activitylog\Models\Activity::class, \App\Policies\ActivityPolicy::class);
     }
 }

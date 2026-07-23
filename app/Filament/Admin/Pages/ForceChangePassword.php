@@ -68,6 +68,10 @@ class ForceChangePassword extends Page
             'password' => Hash::make($data['new_password']),
         ]);
 
+        request()->session()->put([
+            'password_hash_web' => $user->getAuthPassword(),
+        ]);
+
         Notification::make()
             ->title(__('Password Updated successfully'))
             ->body(__('Please continue using the application with your new password.'))

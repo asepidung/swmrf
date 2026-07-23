@@ -22,6 +22,16 @@ class MaterialStockMovementResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasPermission('view_material_stock_movements');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
+
     protected static ?string $navigationIcon = 'heroicon-o-arrow-path-rounded-square';
 
     public static function getNavigationLabel(): string

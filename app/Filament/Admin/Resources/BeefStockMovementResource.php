@@ -22,6 +22,8 @@ class BeefStockMovementResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+
+
     protected static ?string $navigationIcon = 'heroicon-o-arrow-path-rounded-square';
 
     public static function getNavigationLabel(): string
@@ -42,6 +44,11 @@ class BeefStockMovementResource extends Resource
     public static function canViewAny(): bool
     {
         return auth()->user()->isProgrammer() || auth()->user()->hasPermission('view_beef_stock_movements');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
     }
 
     public static function canCreate(): bool
