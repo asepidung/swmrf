@@ -70,10 +70,11 @@ class UserResource extends Resource
                     ->description(__('Define custom permissions for this employee.'))
                     ->schema(function () {
                         $schema = [];
-                        $modules = \App\Models\Permission::all()->groupBy('module_name');
+                        $modules = \App\Models\Permission::all()->groupBy('module_name')->sortKeys();
 
                         foreach ($modules as $moduleName => $permissions) {
                             $schema[] = Forms\Components\Section::make(__($moduleName))
+                                ->collapsed()
                                 ->schema([
                                     Forms\Components\CheckboxList::make('permissions_' . $moduleName)
                                         ->hiddenLabel()
