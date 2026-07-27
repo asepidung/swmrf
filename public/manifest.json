@@ -1,0 +1,23 @@
+{
+    "name": "SWM ERP",
+    "short_name": "SWM ERP",
+    "start_url": "/admin",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#000080",
+    "description": "SWM ERP Progressive Web App",
+    "icons": [
+        {
+            "src": "/img/pwalogo.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/img/pwalogo.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
