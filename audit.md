@@ -76,17 +76,39 @@ Pola generator barcode kini seragam dengan `LabelingGoodsReceiptProduct` dan `In
 
 ---
 
+## Keputusan Desain: Barcode Sengaja Tanpa Index Unique
+
+Kolom `barcode` pada `sales_return_items`, `mutation_items`, `repack_results`, dan `repack_materials` **sengaja tidak diberi index unique**. Keputusan Project Owner, 21 Agustus 2026.
+
+Alasannya: tabel-tabel itu bersifat transaksional. Satu barang fisik bisa keluar-masuk berkali-kali — diretur, dimutasi, di-repack ulang — sehingga barcode yang sama sah muncul berulang kali lintas dokumen. Index unique global justru akan memblokir alur bisnis yang benar.
+
+Bandingkan dengan tabel lain agar tidak keliru menyamakan:
+
+| Tabel | Bentuk | Alasan |
+|---|---|---|
+| `beef_stocks` | `unique(barcode)` | Tabel stok berjalan: satu baris per barang yang sedang ada di gudang, dihapus saat keluar |
+| `tally_items` | `unique(tally_id, barcode)` | Unique **berlingkup dokumen** |
+| `stock_take_items` | `unique(stock_take_id, barcode)` | Unique **berlingkup dokumen** |
+| `sales_return_items`, `mutation_items`, `repack_results`, `repack_materials` | tanpa unique | Transaksional, barang berulang lintas dokumen |
+
+**Implikasi untuk implementor:** pencegahan duplikat sepenuhnya berada di level aplikasi dan **wajib berlingkup per dokumen** (`where('mutation_id', ...)`, `where('sales_return_id', ...)`), bukan global. Jaga lingkup ini saat menyentuh pengecekan duplikat — itulah sebabnya cek berkunci yang ditambahkan di #45 semuanya memakai penyaring dokumen induk.
+
+---
+
 ## Utang Teknis Terbuka
 
-### Index unique yang hilang pada kolom `barcode`
+### PPN belum diimplementasikan di modul Invoice
 
-Kolom `barcode` pada tabel berikut **belum** punya index unique:
+Model `Customer` punya flag `is_taxable`, model `Invoice` punya kolom `tax`, dan `InvoiceExporter` mengekspor kolom itu — tetapi **tidak ada satu baris pun yang menghitung pajak**. `InvoiceResource::updateTotals()` hanya menghitung `subtotal + biaya tambahan - uang muka`.
 
-- `sales_return_items`
-- `mutation_items`
-- `repack_results`
-- `repack_materials`
+Akibatnya invoice untuk customer yang seharusnya kena PPN tetap terbit tanpa pajak. Ditemukan saat menutup #47: test `it_applies_dca_discount_and_sets_due_date_to_null_for_exchange_customer` semula mengharapkan `tax` 215600 (11% dari 1.960.000). Ekspektasi itu diturunkan ke perilaku yang berlaku sekarang **dengan catatan eksplisit di test**, bukan dihapus, supaya tidak hilang dari pandangan.
 
-Padahal `beef_stocks`, `boning_items`, dan `tally_items` sudah punya. Index unique adalah jaring pengaman terakhir bila logika aplikasi bocor.
+Perlu keputusan Project Owner: tarif berapa, dikenakan atas nilai sebelum atau sesudah diskon, dan apakah ikut masuk ke `balance`.
 
-**Status**: **Ditunda** atas keputusan Project Owner. Butuh migrasi, dan bila data yang ada sudah mengandung barcode kembar, `php artisan migrate --force` di pipeline auto-deploy akan gagal di tengah jalan. Sebelum dikerjakan, wajib dicek dulu ada-tidaknya duplikat di database lokal maupun server.
+### Kolom `charge` sudah mati tapi masih diekspor
+
+Kolom skalar `invoices.charge` sudah digantikan repeater relasi `additionalCharges` (tabel `invoice_additional_charges`). Tidak ada lagi yang menulis ke `charge`, namun `InvoiceExporter` masih mengekspor kolomnya sehingga hasil ekspor selalu bernilai nol untuk kolom itu.
+
+### Status Test Suite
+
+**Sudah pulih.** Sebelum #47: 73 gagal / 2 lolos. Sesudah: **75 lolos, 0 gagal, 424 assertions.**

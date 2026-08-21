@@ -489,9 +489,12 @@ class TallyTest extends TestCase
         ]);
 
         $poller = Livewire::test(\App\Livewire\GlobalTaskPoller::class);
-        
-        $latestId = SalesOrder::max('id');
-        $this->assertEquals($latestId, $poller->get('lastSalesOrderId'));
+
+        // mount() menandai waktu awal pengecekan. Mundurkan penanda itu supaya
+        // Sales Order yang dibuat setelah ini terhitung sebagai data baru
+        // (perbandingan created_at hanya berpresisi detik).
+        $checkpoint = now()->subMinute()->toDateTimeString();
+        $poller->set('lastSalesOrderCheckAt', $checkpoint);
 
         SalesOrder::create([
             'customer_id' => $this->customer->id,
@@ -501,7 +504,12 @@ class TallyTest extends TestCase
         ]);
 
         $poller->call('checkTasks');
-        $this->assertEquals(SalesOrder::max('id'), $poller->get('lastSalesOrderId'));
+
+        $poller->assertNotified(__('Ada Sales Order baru yang siap dibuatkan Tally'));
+
+        // Penanda waktu wajib ikut maju, supaya Sales Order yang sama tidak
+        // dinotifikasi berulang pada polling berikutnya.
+        $this->assertGreaterThan($checkpoint, $poller->get('lastSalesOrderCheckAt'));
     }
 
     /** @test */
@@ -864,8 +872,21 @@ class TallyTest extends TestCase
         $item->refresh();
         $movement->refresh();
 
-        // New barcode should start with '6' + new pack date '150626'
-        $expectedNewBarcode = '6150626MT0010122500800001';
+        // Barcode relabel disusun ulang dari data item, bukan disalin dari
+        // barcode lama. Susun ekspektasinya dari komponen yang sama supaya
+        // strukturnya terbaca dan tidak bisa salah ketik:
+        // origin(1) + tanggal(6) + kode produk(6) + grade(1) + berat(4) +
+        // pcs(2) + pH(2) + counter(4) = 26 karakter.
+        $expectedNewBarcode = '6'                                              // origin: Relabel Tally
+            . '150626'                                                          // pack date baru
+            . substr($this->product->code, 0, 6)                                // MT00100 -> MT0010
+            . $this->grade->id
+            . str_pad((string) round(22.50 * 100), 4, '0', STR_PAD_LEFT)        // 2250
+            . str_pad('8', 2, '0', STR_PAD_LEFT)                                // 08
+            . '00'                                                              // ph_level null
+            . str_pad('1', 4, '0', STR_PAD_LEFT);                               // counter pertama
+
+        $this->assertSame(26, strlen($expectedNewBarcode));
         
         $this->assertEquals($expectedNewBarcode, $item->barcode);
         $this->assertEquals($newPackDate, $item->pack_date->format('Y-m-d'));

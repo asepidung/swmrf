@@ -201,7 +201,7 @@ class RepackTest extends TestCase
             'weight' => 10.50,
             'qty_pcs' => 2,
             'ph_level' => 5.5,
-            'origin' => 'REPACK',
+            'origin' => 'R-STCK', // barcode diawali '2' = Repack Stock (lihat project.md)
             'status' => 'IN_STOCK',
         ]);
 

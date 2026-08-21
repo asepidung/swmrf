@@ -11,8 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        DB::statement("DROP VIEW IF EXISTS invoice_reconciliation_view");
+
         DB::statement("
-            CREATE OR REPLACE VIEW invoice_reconciliation_view AS
+            CREATE VIEW invoice_reconciliation_view AS
             SELECT 
                 CONCAT('item_', invoice_items.id) AS id,
                 invoice_items.invoice_id,

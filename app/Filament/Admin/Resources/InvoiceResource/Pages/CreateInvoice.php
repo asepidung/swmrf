@@ -42,11 +42,17 @@ class CreateInvoice extends CreateRecord
             $data['term_of_payment'] = 0;
         }
 
-        $data['status'] = 'Belum Dibayar';
+        // Customer tukar faktur wajib mulai dari 'Belum TF', bukan 'Belum Dibayar'.
+        // Status inilah yang dibaca hook saving() di model Invoice untuk menahan
+        // due_date tetap null sampai fakturnya benar-benar ditukar, dan yang
+        // dipakai modul Receivable untuk menandai piutang yang belum bisa ditagih.
+        $isExchange = (bool) ($receipt?->customer?->invoice_exchange);
+        $data['status'] = $isExchange ? 'Belum TF' : 'Belum Dibayar';
 
-        if ($receipt && $receipt->customer && !$receipt->customer->invoice_exchange) {
-            $data['due_date'] = \Carbon\Carbon::parse($data['invoice_date'])->addDays($data['term_of_payment'])->toDateString();
-        }
+        // due_date sengaja tidak dihitung di sini. Hook saving() di model Invoice
+        // sudah menjadi satu-satunya pemilik logika itu dan akan menimpa nilai
+        // apa pun yang diisi dari sini, jadi menghitungnya dua kali hanya
+        // membuka peluang kedua rumus berbeda arah.
 
         return $data;
     }

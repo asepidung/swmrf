@@ -10,8 +10,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        DB::statement("DROP VIEW IF EXISTS material_usage_headers");
+
         DB::statement("
-            CREATE OR REPLACE VIEW material_usage_headers AS
+            CREATE VIEW material_usage_headers AS
             SELECT 
                 CONCAT(usageable_type, '_', usageable_id) as id,
                 usageable_type,
