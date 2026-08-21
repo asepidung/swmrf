@@ -254,13 +254,12 @@ class InvoiceTest extends TestCase
                 // DCA customer gets 2% discount: gross 20 * 100000 = 2000000, disc 40000, subtotal = 1960000
                 'subtotal' => 1960000.0,
                 'total_discount' => 40000.0,
-                // CATATAN: PPN belum diimplementasikan di modul invoice.
-                // Customer punya flag is_taxable dan invoice punya kolom tax,
-                // tetapi updateTotals() hanya menghitung subtotal + biaya
-                // tambahan - uang muka, tanpa pajak sama sekali. Test ini
-                // sengaja menguji perilaku yang berlaku sekarang; ekspektasi
-                // lama (tax 215600, balance 2175600) dipindahkan menjadi
-                // pertanyaan terbuka ke Project Owner, bukan disembunyikan.
+                // Tidak ada baris 'tax' di sini karena memang tidak boleh ada:
+                // Wijaya Meat berstatus nonPKP, sehingga invoice dan penjualan
+                // tidak dikenai PPN. Pajak hanya relevan pada pembelian
+                // material. Kolom invoices.tax dan flag customers.is_taxable
+                // adalah sisa desain lama yang tidak terpakai di sisi
+                // penjualan, jadi balance = subtotal tanpa tambahan pajak.
                 'balance' => 1960000.0,
             ]);
 
