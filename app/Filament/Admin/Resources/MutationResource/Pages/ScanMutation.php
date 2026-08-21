@@ -77,6 +77,7 @@ class ScanMutation extends Page implements HasForms, HasTable
 
 
 
+        // Fast-path agar pesannya ramah; penjagaan yang mengikat ada di dalam transaksi.
         if (MutationItem::where('mutation_id', $this->record->id)->where('barcode', $barcode)->exists()) {
             Notification::make()->title('Barcode sudah di-scan di mutasi ini!')->warning()->send();
             $this->dispatch('focus-barcode');
@@ -85,6 +86,17 @@ class ScanMutation extends Page implements HasForms, HasTable
 
         try {
             DB::transaction(function () use ($barcode) {
+                // TOCTOU: cek duplikat harus di dalam transaksi dan terkunci, supaya
+                // dua scan berbarengan tidak sama-sama lolos.
+                $alreadyScanned = MutationItem::where('mutation_id', $this->record->id)
+                    ->where('barcode', $barcode)
+                    ->lockForUpdate()
+                    ->exists();
+
+                if ($alreadyScanned) {
+                    throw new \Exception('Barcode sudah di-scan di mutasi ini!');
+                }
+
                 $stock = BeefStock::where('barcode', $barcode)->lockForUpdate()->first();
 
                 if (!$stock) {
