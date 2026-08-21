@@ -227,15 +227,14 @@ class Finding6NotificationsTest extends TestCase
             'status' => 'locked',
         ]);
 
-        // Start poller instance (captures current max IDs)
+        // Start poller instance. mount() menandai waktu awal pengecekan;
+        // mundurkan penandanya supaya data yang dibuat setelah ini terhitung
+        // baru (perbandingan created_at/updated_at hanya berpresisi detik).
         $poller = Livewire::test(GlobalTaskPoller::class);
-        $initialMaterialId = PurchaseMaterial::max('id');
-        $initialProductId = PurchaseProduct::max('id');
-        $initialTallyId = Tally::where('status', 'locked')->max('id');
-
-        $this->assertEquals($initialMaterialId, $poller->get('lastPurchaseMaterialId'));
-        $this->assertEquals($initialProductId, $poller->get('lastPurchaseProductId'));
-        $this->assertEquals($initialTallyId, $poller->get('lastLockedTallyId'));
+        $checkpoint = now()->subMinute()->toDateTimeString();
+        $poller->set('lastPurchaseMaterialCheckAt', $checkpoint);
+        $poller->set('lastPurchaseProductCheckAt', $checkpoint);
+        $poller->set('lastTallyCheckAt', $checkpoint);
 
         // Insert new records to trigger poller
         PurchaseMaterial::create([
@@ -270,9 +269,20 @@ class Finding6NotificationsTest extends TestCase
         // Run checking
         $poller->call('checkTasks');
 
-        // Check that last tracked IDs were updated
-        $this->assertEquals(PurchaseMaterial::max('id'), $poller->get('lastPurchaseMaterialId'));
-        $this->assertEquals(PurchaseProduct::max('id'), $poller->get('lastPurchaseProductId'));
-        $this->assertEquals(Tally::where('status', 'locked')->max('id'), $poller->get('lastLockedTallyId'));
+        // Ketiga aliran notifikasi harus terpicu. Session dibaca langsung, bukan
+        // lewat assertNotified(), karena helper itu memakai session()->pull()
+        // yang menguras notifikasi sehingga hanya panggilan pertama yang
+        // melihat isinya.
+        $titles = collect(session('filament.notifications', []))->pluck('title')->all();
+
+        $this->assertContains(__('Ada PO Material baru yang siap diterima/dibuatkan GRM.'), $titles);
+        $this->assertContains(__('Ada PO Beef baru yang siap diterima/dibuatkan GRB.'), $titles);
+        $this->assertContains(__('Ada Tally baru yang selesai dikunci (Locked) dan siap dibuatkan DO.'), $titles);
+
+        // Penanda waktu wajib ikut maju, supaya data yang sama tidak
+        // dinotifikasi berulang pada polling berikutnya.
+        $this->assertGreaterThan($checkpoint, $poller->get('lastPurchaseMaterialCheckAt'));
+        $this->assertGreaterThan($checkpoint, $poller->get('lastPurchaseProductCheckAt'));
+        $this->assertGreaterThan($checkpoint, $poller->get('lastTallyCheckAt'));
     }
 }
