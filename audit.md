@@ -97,8 +97,18 @@ Bandingkan dengan tabel lain agar tidak keliru menyamakan:
 
 ## Utang Teknis Terbuka
 
-### Test suite gagal total di SQLite
+### PPN belum diimplementasikan di modul Invoice
 
-`php artisan test` menghasilkan 73 gagal / 2 lolos. `phpunit.xml` memakai SQLite `:memory:`, sementara dua migrasi memakai `CREATE OR REPLACE VIEW` yang tidak dikenali SQLite (`create_material_usage_headers_view`, `create_invoice_reconciliation_view`), sehingga setiap test ber-`RefreshDatabase` mati di tahap migrasi.
+Model `Customer` punya flag `is_taxable`, model `Invoice` punya kolom `tax`, dan `InvoiceExporter` mengekspor kolom itu — tetapi **tidak ada satu baris pun yang menghitung pajak**. `InvoiceResource::updateTotals()` hanya menghitung `subtotal + biaya tambahan - uang muka`.
 
-Uji coba menunjukkan penggantian menjadi `DROP VIEW IF EXISTS` + `CREATE VIEW` (didukung MySQL maupun SQLite) memulihkan hasil menjadi **7 gagal / 68 lolos**. Tujuh sisanya adalah kegagalan yang selama ini tersembunyi di balik error migrasi dan perlu didiagnosis satu per satu.
+Akibatnya invoice untuk customer yang seharusnya kena PPN tetap terbit tanpa pajak. Ditemukan saat menutup #47: test `it_applies_dca_discount_and_sets_due_date_to_null_for_exchange_customer` semula mengharapkan `tax` 215600 (11% dari 1.960.000). Ekspektasi itu diturunkan ke perilaku yang berlaku sekarang **dengan catatan eksplisit di test**, bukan dihapus, supaya tidak hilang dari pandangan.
+
+Perlu keputusan Project Owner: tarif berapa, dikenakan atas nilai sebelum atau sesudah diskon, dan apakah ikut masuk ke `balance`.
+
+### Kolom `charge` sudah mati tapi masih diekspor
+
+Kolom skalar `invoices.charge` sudah digantikan repeater relasi `additionalCharges` (tabel `invoice_additional_charges`). Tidak ada lagi yang menulis ke `charge`, namun `InvoiceExporter` masih mengekspor kolomnya sehingga hasil ekspor selalu bernilai nol untuk kolom itu.
+
+### Status Test Suite
+
+**Sudah pulih.** Sebelum #47: 73 gagal / 2 lolos. Sesudah: **75 lolos, 0 gagal, 424 assertions.**
