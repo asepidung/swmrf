@@ -19,6 +19,7 @@ use App\Models\Receivable;
 use App\Filament\Admin\Widgets\PendingTaskWidget;
 use App\Filament\Admin\Resources\InvoiceResource;
 use App\Filament\Admin\Resources\InvoiceResource\Pages\CreateInvoice;
+use App\Filament\Admin\Resources\InvoiceResource\Pages\ListInvoices;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -290,6 +291,45 @@ class InvoiceTest extends TestCase
             'discount_rp' => 40000.0,
             'amount' => 1960000.0,
         ]);
+    }
+
+    /** @test */
+    public function it_sets_due_date_from_exchange_date_when_running_the_tukar_faktur_action()
+    {
+        $this->actingAs($this->user);
+
+        $invoice = Invoice::create([
+            'customer_id' => $this->customerExchange->id,
+            'sales_order_id' => $this->receiptExchange->sales_order_id,
+            'delivery_order_receipt_id' => $this->receiptExchange->id,
+            'invoice_date' => now()->toDateString(),
+            'term_of_payment' => 14,
+            'status' => 'Belum TF',
+            'subtotal' => 1960000.0,
+            'total_discount' => 40000.0,
+            'balance' => 1960000.0,
+        ]);
+
+        // Sebelum ditukar, jatuh tempo belum berjalan.
+        $this->assertNull($invoice->fresh()->due_date);
+
+        $tgltf = now()->addDays(2)->toDateString();
+
+        Livewire::test(ListInvoices::class)
+            ->callTableAction('tukar_faktur', $invoice, [
+                'invoice_exchange_date' => $tgltf,
+                'exchange_by' => 'Budi',
+                'exchange_note' => 'Resi #7788',
+            ]);
+
+        $invoice->refresh();
+
+        // Jatuh tempo dihitung dari TANGGAL TUKAR FAKTUR, bukan tanggal invoice.
+        $expectedDueDate = \Carbon\Carbon::parse($tgltf)->addDays(14)->toDateString();
+
+        $this->assertEquals($tgltf, $invoice->invoice_exchange_date->toDateString());
+        $this->assertNotNull($invoice->due_date, 'Jatuh tempo wajib terisi setelah tukar faktur.');
+        $this->assertEquals($expectedDueDate, $invoice->due_date->toDateString());
     }
 
     /** @test */

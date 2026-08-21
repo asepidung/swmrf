@@ -592,15 +592,20 @@ class InvoiceResource extends Resource
                                     ->maxLength(255),
                             ])
                             ->action(function (Invoice $record, array $data) {
-                                $tgltf = $data['invoice_exchange_date'];
-                                $top = (int)$record->term_of_payment;
-                                $dueDate = \Carbon\Carbon::parse($tgltf)->addDays($top)->toDateString();
-
+                                // Status WAJIB ikut berpindah ke 'Sudah TF'. Hook saving()
+                                // di model Invoice bercabang pada status: selama masih
+                                // 'Belum TF' ia memaksa due_date kembali null, sehingga
+                                // jatuh tempo yang diisi di sini akan terhapus lagi.
+                                //
+                                // due_date sengaja tidak dihitung di sini. Cabang
+                                // 'Sudah TF' pada hook itulah yang menghitungnya dari
+                                // invoice_exchange_date + term_of_payment, jadi rumusnya
+                                // cukup hidup di satu tempat.
                                 $record->update([
-                                    'invoice_exchange_date' => $tgltf,
+                                    'status' => 'Sudah TF',
+                                    'invoice_exchange_date' => $data['invoice_exchange_date'],
                                     'exchange_by' => $data['exchange_by'],
                                     'exchange_note' => $data['exchange_note'],
-                                    'due_date' => $dueDate,
                                 ]);
                             })
                             ->disabled(fn (Invoice $record) => !($record->customer?->invoice_exchange && is_null($record->invoice_exchange_date)) || $record->trashed())
