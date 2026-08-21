@@ -76,17 +76,29 @@ Pola generator barcode kini seragam dengan `LabelingGoodsReceiptProduct` dan `In
 
 ---
 
+## Keputusan Desain: Barcode Sengaja Tanpa Index Unique
+
+Kolom `barcode` pada `sales_return_items`, `mutation_items`, `repack_results`, dan `repack_materials` **sengaja tidak diberi index unique**. Keputusan Project Owner, 21 Agustus 2026.
+
+Alasannya: tabel-tabel itu bersifat transaksional. Satu barang fisik bisa keluar-masuk berkali-kali — diretur, dimutasi, di-repack ulang — sehingga barcode yang sama sah muncul berulang kali lintas dokumen. Index unique global justru akan memblokir alur bisnis yang benar.
+
+Bandingkan dengan tabel lain agar tidak keliru menyamakan:
+
+| Tabel | Bentuk | Alasan |
+|---|---|---|
+| `beef_stocks` | `unique(barcode)` | Tabel stok berjalan: satu baris per barang yang sedang ada di gudang, dihapus saat keluar |
+| `tally_items` | `unique(tally_id, barcode)` | Unique **berlingkup dokumen** |
+| `stock_take_items` | `unique(stock_take_id, barcode)` | Unique **berlingkup dokumen** |
+| `sales_return_items`, `mutation_items`, `repack_results`, `repack_materials` | tanpa unique | Transaksional, barang berulang lintas dokumen |
+
+**Implikasi untuk implementor:** pencegahan duplikat sepenuhnya berada di level aplikasi dan **wajib berlingkup per dokumen** (`where('mutation_id', ...)`, `where('sales_return_id', ...)`), bukan global. Jaga lingkup ini saat menyentuh pengecekan duplikat — itulah sebabnya cek berkunci yang ditambahkan di #45 semuanya memakai penyaring dokumen induk.
+
+---
+
 ## Utang Teknis Terbuka
 
-### Index unique yang hilang pada kolom `barcode`
+### Test suite gagal total di SQLite
 
-Kolom `barcode` pada tabel berikut **belum** punya index unique:
+`php artisan test` menghasilkan 73 gagal / 2 lolos. `phpunit.xml` memakai SQLite `:memory:`, sementara dua migrasi memakai `CREATE OR REPLACE VIEW` yang tidak dikenali SQLite (`create_material_usage_headers_view`, `create_invoice_reconciliation_view`), sehingga setiap test ber-`RefreshDatabase` mati di tahap migrasi.
 
-- `sales_return_items`
-- `mutation_items`
-- `repack_results`
-- `repack_materials`
-
-Padahal `beef_stocks`, `boning_items`, dan `tally_items` sudah punya. Index unique adalah jaring pengaman terakhir bila logika aplikasi bocor.
-
-**Status**: **Ditunda** atas keputusan Project Owner. Butuh migrasi, dan bila data yang ada sudah mengandung barcode kembar, `php artisan migrate --force` di pipeline auto-deploy akan gagal di tengah jalan. Sebelum dikerjakan, wajib dicek dulu ada-tidaknya duplikat di database lokal maupun server.
+Uji coba menunjukkan penggantian menjadi `DROP VIEW IF EXISTS` + `CREATE VIEW` (didukung MySQL maupun SQLite) memulihkan hasil menjadi **7 gagal / 68 lolos**. Tujuh sisanya adalah kegagalan yang selama ini tersembunyi di balik error migrasi dan perlu didiagnosis satu per satu.
