@@ -43,7 +43,7 @@ class ViewSalesReturn extends ViewRecord
                             $returnItems = $this->record->items;
                             
                             foreach ($returnItems as $item) {
-                                $stock = BeefStock::where('barcode', $item->barcode)->first();
+                                $stock = BeefStock::where('barcode', $item->barcode)->lockForUpdate()->first();
                                 if (!$stock) {
                                     throw new \Exception(__('Gagal: Barang :barcode tidak ditemukan di stok (sudah terpakai/dikirim).', ['barcode' => $item->barcode]));
                                 }
