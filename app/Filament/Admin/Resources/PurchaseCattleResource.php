@@ -16,7 +16,6 @@ use Illuminate\Database\Eloquent\Model;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Carbon\Carbon;
-use Filament\Support\RawJs;
 class PurchaseCattleResource extends Resource
 {
     protected static ?string $model = PurchaseCattle::class;
@@ -98,7 +97,6 @@ class PurchaseCattleResource extends Resource
                                 ->required()
                                 ->default(0)
                                 ->prefix('Rp')
-                                ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                 ->stripCharacters('.')
                                 ->numeric()
                                 ->rules(['integer', 'min:0'])

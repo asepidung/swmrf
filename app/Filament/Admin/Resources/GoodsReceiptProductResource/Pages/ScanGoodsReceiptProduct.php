@@ -159,7 +159,9 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
 
 
 
-        // 1. Cek duplikat barcode di goods_receipt_product_items (double scan)
+        // 1. Cek duplikat barcode di goods_receipt_product_items (double scan).
+        //    Ini sekadar fast-path agar pesannya ramah; penjagaan yang mengikat
+        //    ada di dalam transaksi di bawah.
         $existsInGr = $this->record->items()->where('barcode', $barcode)->exists();
         if ($existsInGr) {
             Notification::make()
@@ -224,7 +226,11 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
         // Process insertion
         try {
             DB::transaction(function () use ($barcode, $product, $gradeId, $weightVal, $pcsVal, $phVal, $originCode, $poItem, $defaultPackDate, $expDate) {
-                // TOCTOU Fix: Pindahkan pengecekan duplikat ke dalam transaksi dan gunakan lock
+                // TOCTOU Fix: pengecekan duplikat wajib di dalam transaksi dan terkunci.
+                if ($this->record->items()->where('barcode', $barcode)->lockForUpdate()->exists()) {
+                    throw new \Exception(__('Barang Sudah Terinput'));
+                }
+
                 if (BeefStock::where('barcode', $barcode)->lockForUpdate()->exists()) {
                     throw new \Exception(__('Barcode sudah terdaftar di stock (Duplikat)'));
                 }

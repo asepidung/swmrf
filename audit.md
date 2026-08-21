@@ -1,57 +1,92 @@
-# 🕵️‍♂️ Comprehensive Audit Report: SWM Refactory (D:\WebApps\swmrf)
+# 🕵️ Audit Report: SWM Refactory (D:\WebApps\swmrf)
 
-Laporan audit ini disusun berdasarkan **Global Rules & Project Overview** (`project.md`) yang menjadi acuan mutlak proyek ini. Secara arsitektur, proyek ini sudah berjalan dengan baik, namun ditemukan beberapa **pelanggaran aturan UI/UX dan Kinerja** yang berpotensi menimbulkan *bug* atau memperlambat pengguna.
+Laporan ini disusun berdasarkan **Global Rules & Project Overview** (`project.md`).
+Diverifikasi ulang dan ditutup pada **21 Agustus 2026** lewat issue #45.
 
-Berikut adalah temuan utama yang tidak sesuai dengan instruksi `project.md`:
+**Status keseluruhan: SELESAI.** Seluruh temuan yang masih berlaku sudah diperbaiki.
+
+---
+
+## Ringkasan Temuan
+
+| # | Temuan | Status |
+|---|--------|--------|
+| 1 | Ekspor Excel memakai Filament Exporter | ✅ Selesai (sebelum #45) |
+| 2 | RawJs mask di dalam Repeater (zombie row) | ✅ Selesai di #45 |
+| 3 | Filter tanggal tidak *silent* | ⛔ Ditolak — kode dipertahankan |
+| 4 | TOCTOU: cek duplikat barcode di luar transaksi | ✅ Selesai di #45 |
+| 5 | Tidak adanya `lockForUpdate` | ✅ Selesai di #45 |
 
 ---
 
-## 1. 🚨 Pelanggaran Kinerja: Ekspor Excel Menggunakan Filament Exporter
-**Aturan `project.md`**: Ekspor Excel **DILARANG** menggunakan bawaan Filament Exporter karena memicu modal/queue yang lambat. Wajib menggunakan `OpenSpout\Writer\XLSX\Writer` (Direct Stream Download).
-**Fakta Temuan**: 
-Ditemukan **19 lokasi** yang masih menggunakan method `->exporter()` bawaan Filament, sehingga akan memicu Job Queue yang dilarang.
-**Contoh Lokasi Terdampak**:
-- `SalesOrderDetailList.php` (Line 114)
-- `PurchaseProductResource.php` (Line 202)
-- `PurchaseMaterialResource.php` (Line 209)
-- `InvoiceResource.php` (Line 663)
-- `BeefStockResource.php` (Line 236)
-**Tindakan Perbaikan**: Ganti seluruh `\Filament\Tables\Actions\ExportAction` yang menggunakan `->exporter()` dengan aksi kustom `\Filament\Tables\Actions\Action::make('excel')` yang merender *stream download* secara langsung menggunakan OpenSpout (seperti yang dilakukan pada export PDF).
+## 1. ✅ Ekspor Excel Menggunakan Filament Exporter
 
-## 2. 🚨 Pelanggaran Bug UI (Zombie Row): Penggunaan RawJs Mask pada Repeater
-**Aturan `project.md`**: Dilarang keras menggunakan `RawJs::make('$money(...)')` di dalam form **Repeater** karena memicu *bug* Livewire Morphdom (baris tidak bisa dihapus di browser). Cukup gunakan `->numeric()`.
-**Fakta Temuan**: 
-Ditemukan **16 lokasi** yang masih memaksakan penggunaan *masking* ini untuk *currency/numeric*. Mayoritas berada di form transaksi yang kompleks.
-**Contoh Lokasi Terdampak**:
-- `InvoiceResource.php` (Lines 140, 164, 176, 316, 350, 394, 437)
-- `ProductRequisitionResource.php` (Lines 111, 122)
-- `MaterialRequisitionResource.php` (Lines 118, 129)
-- `GoodsReceiptMaterialResource.php` (Line 113)
-**Tindakan Perbaikan**: Hapus `->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))` pada elemen `TextInput` yang berada di dalam skema `Repeater::make()`.
+**Aturan**: Ekspor Excel dilarang memakai Filament Exporter (memicu modal/queue yang lambat); wajib `OpenSpout\Writer\XLSX\Writer` dengan *direct stream download*.
 
-## 3. ⚠️ [REJECTED] Pelanggaran UX: Filter Tanggal Tidak *Silent* (Ada Indikator Badge)
-**Aturan `project.md`**: Filter tanggal bawaan (awal bulan hingga hari ini) harus bersifat *silent filtering*.
-**Fakta Temuan Asli**: Ditemukan method `->indicateUsing()` pada filter tanggal yang dianggap melanggar *silent filtering*.
-**Analisis Ulang & Keputusan**: Poin audit ini **DITOLAK**. Implementasi saat ini menggunakan blok kondisional `if ($data['delivery_from'] ?? null)` di dalam `indicateUsing()`. Artinya, *badge* TIDAK akan muncul saat filter berjalan secara *default* (karena input kosong/null), sehingga *silent filtering* sesungguhnya SUDAH BERJALAN dengan benar sesuai `project.md`. 
-Jika kita menghapus `indicateUsing()` secara total, *badge* tidak akan muncul saat *user* **secara manual** memfilter tanggal, yang mana merusak pengalaman pengguna (UX) standar Filament.
-**Tindakan Perbaikan**: **TIDAK ADA**. Kode dipertahankan.
+**Temuan awal**: 19 lokasi memakai `->exporter()`.
+
+**Status**: **Selesai** sebelum issue #45. Verifikasi ulang: `->exporter(` tidak ditemukan lagi di `app/Filament`.
+
+## 2. ✅ Bug UI (Zombie Row): RawJs Mask pada Repeater
+
+**Aturan**: Dilarang memakai `RawJs::make('$money(...)')` di dalam `Repeater` — memicu bug Livewire Morphdom yang menyisakan baris "zombie".
+
+**Temuan awal**: 16 lokasi.
+
+**Status**: **Selesai**. Saat verifikasi ulang tersisa 3 pemakaian `$money()`, dan hanya **satu** yang benar-benar berada di dalam Repeater:
+
+- `PurchaseCattleResource.php` — field `price` di dalam `Repeater::make('items')` → mask dihapus, cukup `->numeric()`.
+
+Dua sisanya (`FinancialLossResource`, `SalesOrderResource`) berada di form level atas, bukan di dalam Repeater. Itu **justru sesuai** aturan `project.md` dan sengaja dipertahankan.
+
+## 3. ⛔ [DITOLAK] Filter Tanggal Tidak *Silent*
+
+**Temuan awal**: `->indicateUsing()` pada filter tanggal dianggap melanggar *silent filtering*.
+
+**Keputusan**: **Ditolak.** Implementasi memakai blok kondisional `if ($data['delivery_from'] ?? null)`, sehingga badge tidak muncul saat filter berjalan default (input kosong) — *silent filtering* sudah berjalan benar. Menghapus `indicateUsing()` justru merusak UX saat user memfilter secara manual.
+
+**Tindakan**: Tidak ada. Kode dipertahankan.
+
+## 4. ✅ TOCTOU: Pengecekan Barcode di Luar Transaksi
+
+**Masalah**: Pengecekan duplikasi barcode dilakukan **sebelum** `DB::transaction()`, sehingga dua permintaan bersamaan (klik ganda / glitch scanner) bisa sama-sama lolos.
+
+**Status**: **Selesai**. Sebagian sudah diperbaiki sebelum #45; sisanya ditutup di #45:
+
+| Lokasi | Tindakan |
+|---|---|
+| `InputReturnItems::processScan()` | Tidak punya transaksi sama sekali → dibungkus `DB::transaction` + cek berkunci |
+| `ScanGoodsReceiptProduct` | Ditambah cek `items()` ber-`lockForUpdate` di dalam transaksi |
+| `ScanMutation` | Ditambah cek `MutationItem` ber-`lockForUpdate` di dalam transaksi |
+
+**Pola yang dipakai** (lebih baik daripada sekadar memindahkan cek ke dalam transaksi): pengecekan di luar transaksi **dipertahankan sebagai fast-path** agar pesan ke operator tetap ramah dan spesifik, lalu ditambahkan pengecekan **otoritatif ber-`lockForUpdate` di dalam transaksi** sebagai penjagaan yang sebenarnya.
+
+## 5. ✅ Concurrency: Mekanisme Pesimistik (`lockForUpdate`)
+
+**Catatan koreksi**: klaim audit awal ("sama sekali tidak menggunakan `lockForUpdate`") **tidak akurat**. Saat verifikasi ulang, `lockForUpdate` sudah dipakai di 25 lokasi. Yang tersisa adalah 4 celah spesifik, dan semuanya sudah ditutup di #45:
+
+| Lokasi | Masalah | Tindakan |
+|---|---|---|
+| `LabelingBoning.php` | Counter barcode dibaca tanpa lock | + `lockForUpdate()` |
+| `InputReturnItems.php` | Counter barcode dibaca tanpa lock | + `lockForUpdate()` |
+| `EditSalesReturn.php` | Validasi stok sebelum dihapus tanpa lock | + `lockForUpdate()` |
+| `ViewSalesReturn.php` | Validasi stok sebelum dihapus tanpa lock | + `lockForUpdate()` |
+
+Pola generator barcode kini seragam dengan `LabelingGoodsReceiptProduct` dan `InputHasilRepack` yang sejak awal sudah benar.
 
 ---
-**Status Audit Tambahan**: Menunggu perbaikan.
 
-## 4. 🚨 Logika Database (TOCTOU Race Condition): Pengecekan Barcode di Luar Transaksi
-**Lokasi Temuan**: `ScanGoodsReceiptProduct.php`, `LabelingGoodsReceiptProduct.php` (dan modul pindai lainnya).
-**Masalah**: Anda melakukan pengecekan duplikasi *barcode* (seperti `BeefStock::where('barcode', $barcode)->exists()`) **SEBELUM** memasuki blok `DB::transaction()`.
-**Dampak**: Jika dua permintaan (misal klik ganda atau *glitch* jaringan dari *scanner API*) masuk di detik yang bersamaan, keduanya akan melihat *barcode* belum ada, lalu keduanya masuk ke dalam transaksi dan berhasil menyimpan dua *barcode* yang sama persis secara berbarengan.
-**Tindakan Perbaikan**: Pindahkan semua *query* pengecekan duplikasi ke **dalam** blok `DB::transaction()` agar terlindungi oleh antrean koneksi.
+## Utang Teknis Terbuka
 
-## 5. 🚨 Concurrency: Tidak Adanya Mekanisme Pesimistik (`lockForUpdate`)
-**Lokasi Temuan**: Seluruh file *Resource* (Terutama saat memotong stok atau mengecek sisa PO).
-**Masalah**: Meskipun Anda sudah menggunakan `DB::transaction()` di seluruh aplikasi (yang merupakan perbaikan bagus dari versi lawas), Anda **sama sekali tidak menggunakan `lockForUpdate()`**.
-**Dampak**: `DB::transaction()` tanpa *locking* hanya mencegah data sebagian tersimpan (*rollback* jika *error*). Transaksi **tidak mencegah** dua *user* membaca sisa stok (misal sisa PO = 100Kg) secara bersamaan. Jika dua admin Gudang men- *submit* penerimaan 100Kg di waktu bersamaan, total yang tersimpan menjadi 200Kg karena keduanya merasa stok masih 100Kg.
-**Tindakan Perbaikan**: Saat melakukan operasi mutasi stok yang bergantung pada nilai batas atas, *query* pembacaan wajib dikunci dengan `->lockForUpdate()`, misalnya:
-`$poItem = PurchaseProductItem::where('id', $id)->lockForUpdate()->first();`
+### Index unique yang hilang pada kolom `barcode`
 
----
-**Status Audit**: Selesai.
-**Tindakan yang Dibutuhkan**: Laporan ini siap diserahkan kepada pengembang atau *AI Model* berikutnya untuk segera melakukan *refactoring* massal terhadap ke-5 pelanggaran krusial di atas.
+Kolom `barcode` pada tabel berikut **belum** punya index unique:
+
+- `sales_return_items`
+- `mutation_items`
+- `repack_results`
+- `repack_materials`
+
+Padahal `beef_stocks`, `boning_items`, dan `tally_items` sudah punya. Index unique adalah jaring pengaman terakhir bila logika aplikasi bocor.
+
+**Status**: **Ditunda** atas keputusan Project Owner. Butuh migrasi, dan bila data yang ada sudah mengandung barcode kembar, `php artisan migrate --force` di pipeline auto-deploy akan gagal di tengah jalan. Sebelum dikerjakan, wajib dicek dulu ada-tidaknya duplikat di database lokal maupun server.

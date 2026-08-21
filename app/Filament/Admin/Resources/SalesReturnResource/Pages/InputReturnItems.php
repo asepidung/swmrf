@@ -255,24 +255,34 @@ class InputReturnItems extends Page implements HasForms, HasTable
             $pcs = $tallyItem->qty_pcs;
             $origin = $tallyItem->origin;
 
-            if (SalesReturnItem::where('sales_return_id', $this->record->id)->where('barcode', $barcode)->exists()) {
-                throw new \Exception('Barcode sudah di-scan di retur ini.');
-            }
+            DB::transaction(function () use ($barcode, $productId, $gradeId, $weight, $pcs, $origin, $tallyItem) {
+                // Cek duplikat wajib berada di dalam transaksi dan terkunci, supaya
+                // dua scan berbarengan (klik ganda / glitch scanner) tidak sama-sama
+                // lolos pengecekan lalu menyisipkan barcode kembar.
+                $alreadyScanned = SalesReturnItem::where('sales_return_id', $this->record->id)
+                    ->where('barcode', $barcode)
+                    ->lockForUpdate()
+                    ->exists();
 
-            SalesReturnItem::create([
-                'sales_return_id' => $this->record->id,
-                'product_id' => $productId,
-                'warehouse_id' => 1,
-                'grade_id' => $gradeId,
-                'barcode' => $barcode,
-                'weight' => $weight,
-                'qty_pcs' => $pcs,
-                'ph_level' => $tallyItem->ph_level ?? null,
-                'pack_date' => $tallyItem->pack_date ?? null,
-                'exp_date' => $tallyItem->exp_date ?? null,
-                'origin' => $origin,
-                'is_repacked' => false,
-            ]);
+                if ($alreadyScanned) {
+                    throw new \Exception('Barcode sudah di-scan di retur ini.');
+                }
+
+                SalesReturnItem::create([
+                    'sales_return_id' => $this->record->id,
+                    'product_id' => $productId,
+                    'warehouse_id' => 1,
+                    'grade_id' => $gradeId,
+                    'barcode' => $barcode,
+                    'weight' => $weight,
+                    'qty_pcs' => $pcs,
+                    'ph_level' => $tallyItem->ph_level ?? null,
+                    'pack_date' => $tallyItem->pack_date ?? null,
+                    'exp_date' => $tallyItem->exp_date ?? null,
+                    'origin' => $origin,
+                    'is_repacked' => false,
+                ]);
+            });
 
             $this->scanForm->fill([]);
             Notification::make()->title('Sukses scan barcode!')->success()->send();
@@ -315,7 +325,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 $phStr = !empty($formData['ph_level']) ? str_pad(round($formData['ph_level'] * 10), 2, '0', STR_PAD_LEFT) : '00';
 
                 $prefix = $origin . $dateStr;
-                $latestItem = SalesReturnItem::where('barcode', 'like', $prefix . '%')->orderBy('id', 'desc')->first();
+                $latestItem = SalesReturnItem::where('barcode', 'like', $prefix . '%')->lockForUpdate()->orderBy('id', 'desc')->first();
                 $counter = ($latestItem && strlen($latestItem->barcode) >= 26) ? ((int) substr($latestItem->barcode, -4) + 1) : 1;
                 $counterStr = str_pad($counter, 4, '0', STR_PAD_LEFT);
 
