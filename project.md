@@ -84,6 +84,7 @@ Sistem ini menggunakan digit pertama pada barcode untuk mendefinisikan asal-usul
 - `8` = Pembelian Trading Import (Goods Receipt Beef)
 
 ## Catatan Khusus
+- **Status Pajak Perusahaan (nonPKP):** Wijaya Meat adalah produsen daging berstatus **nonPKP**. **Invoice dan penjualan tidak dikenai PPN sama sekali** — ini benar secara desain, bukan fitur yang belum dikerjakan. Pajak hanya relevan pada **pembelian material lain** di sisi procurement. Kolom `invoices.tax` dan flag `customers.is_taxable` adalah sisa desain lama yang tidak terpakai di sisi penjualan; jangan menambahkan perhitungan pajak pada modul Invoice/Sales dan jangan menandai absennya sebagai bug.
 - **Project Structure**: Modul Filament diletakkan di `app/Filament/Admin/Resources`.
 * **Evaluasi Pasca-Pembuatan (Post-Execution Review):** Setelah modul atau *issue* disepakati selesai dibuat, implementor wajib meninjau ulang:
   * Apakah dokumen *Issue* terkait perlu direvisi untuk menyesuaikan dengan hasil akhir pengembangan?

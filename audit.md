@@ -97,13 +97,13 @@ Bandingkan dengan tabel lain agar tidak keliru menyamakan:
 
 ## Utang Teknis Terbuka
 
-### PPN belum diimplementasikan di modul Invoice
+### ~~PPN belum diimplementasikan di modul Invoice~~ — DIBATALKAN, memang benar
 
-Model `Customer` punya flag `is_taxable`, model `Invoice` punya kolom `tax`, dan `InvoiceExporter` mengekspor kolom itu — tetapi **tidak ada satu baris pun yang menghitung pajak**. `InvoiceResource::updateTotals()` hanya menghitung `subtotal + biaya tambahan - uang muka`.
+Sempat dicatat sebagai utang teknis, lalu **dibatalkan** atas keterangan Project Owner (21 Agustus 2026).
 
-Akibatnya invoice untuk customer yang seharusnya kena PPN tetap terbit tanpa pajak. Ditemukan saat menutup #47: test `it_applies_dca_discount_and_sets_due_date_to_null_for_exchange_customer` semula mengharapkan `tax` 215600 (11% dari 1.960.000). Ekspektasi itu diturunkan ke perilaku yang berlaku sekarang **dengan catatan eksplisit di test**, bukan dihapus, supaya tidak hilang dari pandangan.
+Wijaya Meat adalah produsen daging berstatus **nonPKP**, sehingga **invoice dan penjualan memang tidak dikenai PPN**. Pajak hanya relevan pada pembelian material lain di sisi procurement. Jadi absennya perhitungan pajak di `InvoiceResource::updateTotals()` adalah perilaku yang benar, bukan fitur yang tertinggal.
 
-Perlu keputusan Project Owner: tarif berapa, dikenakan atas nilai sebelum atau sesudah diskon, dan apakah ikut masuk ke `balance`.
+Kolom `invoices.tax` dan flag `customers.is_taxable` merupakan sisa desain lama yang tidak terpakai di sisi penjualan. Jangan diperlakukan sebagai fitur yang menunggu dikerjakan.
 
 ### Kolom `charge` sudah mati tapi masih diekspor
 
