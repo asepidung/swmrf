@@ -102,6 +102,7 @@ Setiap Resource atau Cluster baru wajib:
 - **Warna dan posisi:** Create `Primary` di Page Header, Detail `Info` di sampingnya, Export `Success` di header tabel.
 - **Halaman Detail (Flat List):** modul Induk-Anak wajib punya Custom Page `detail-list` berisi rekap seluruh item anak dalam tabel datar, lengkap dengan silent date filter dan Export.
 - **Halaman bertipe paksaan** yang menahan pengguna sampai suatu tindakan selesai wajib memakai layout `simple` agar sidebar tidak tampil, dengan topbar tetap ada supaya pengguna masih bisa Sign out.
+- **Sub-menu cluster wajib di ATAS, bukan di samping.** Setiap Cluster wajib menyetel `protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;` sehingga sub-menunya tampil sebagai tab horizontal di bagian atas halaman, bukan sebagai daftar vertikal di sisi kiri.
 - **Dashboard minimalis.** Dilarang menampilkan widget bawaan framework seperti `FilamentInfoWidget`.
 
 ### Lain-lain
