@@ -3,6 +3,8 @@
 > **Untuk agen/implementor yang baru masuk.** Dokumen ini menjelaskan **apa yang sudah diputuskan dan kenapa**.
 >
 > - Aturan main yang wajib dipatuhi ada di [`project.md`](../project.md).
+>
+> **Repositori ini sengaja tidak punya `CLAUDE.md`.** Konsekuensinya dokumen ini tidak termuat otomatis di sesi baru, jadi Project Owner yang akan mengarahkan agen membacanya. Kalau suatu saat itu terasa merepotkan, cukup buat `CLAUDE.md` berisi beberapa baris penunjuk ke sini.
 > - Penjelasan rinci tiap modul ada di [`docs/modules/`](../docs/modules/).
 > - Dokumen ini adalah **konteks**: alasan, riwayat, dan jebakan yang sudah pernah kami tabrak.
 >

@@ -61,7 +61,6 @@ Test berjalan di atas SQLite `:memory:` (lihat `phpunit.xml`) dan tidak menyentu
 
 | Dokumen | Isi |
 |---|---|
-| [`CLAUDE.md`](CLAUDE.md) | Ringkasan cepat untuk agen AI |
 | [`project.md`](project.md) | Aturan main pengembangan — wajib dibaca sebelum berkontribusi |
 | [`.agents/agents.md`](.agents/agents.md) | Riwayat keputusan beserta alasannya |
 | [`docs/modules/`](docs/modules/) | Penjelasan rinci tiap modul |
