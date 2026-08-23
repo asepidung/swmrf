@@ -105,10 +105,11 @@ Sistem ini menggunakan digit pertama pada barcode untuk mendefinisikan asal-usul
 
 * **Proteksi Database Utama:** Agen AI **dilarang keras** menjalankan perintah pengujian (`php artisan test`) sebelum memverifikasi secara pasti bahwa file `phpunit.xml` menggunakan environment database in-memory (SQLite `:memory:`) atau database testing terpisah. Trait `RefreshDatabase` pada proses *testing* tidak boleh menyentuh database MySQL utama.
 * **Larangan Reset Database:** Dilarang mengeksekusi perintah destruktif seperti `php artisan migrate:fresh` pada database utama kecuali diinstruksikan secara eksplisit di dalam Issue. Gunakan `php artisan migrate` standar untuk penambahan modul baru.
-* **Kredensial Akun Default Tetap:** Konfigurasi akun *default* untuk *development* tidak boleh diubah, dihapus, atau dimodifikasi oleh AI saat membuat modul atau *seeder* baru. Kredensial berikut wajib dipertahankan dan harus selalu bisa digunakan:
-  * **Name:** idung
+* **Kredensial Akun Default:** Akun superuser bawaan di `DatabaseSeeder` wajib dipertahankan dan harus selalu bisa dipakai untuk *development*:
   * **Username:** saepullrock
-  * **Password:** 91142552
+  * **Password bawaan:** `1234`
+  
+  **Password bawaan WAJIB tetap `1234`** dan dilarang diganti menjadi password yang benar-benar dipakai. Repositori ini **publik**, sehingga apa pun yang ditulis di seeder otomatis terpublikasi. Nilai `1234` dipilih justru karena ia sepele: *middleware* `CheckPasswordChange` mendeteksinya dan langsung memaksa pengguna mengganti password pada login pertama, sebelum sempat membuka menu apa pun. Jangan pernah menuliskan password sungguhan di `project.md`, di *seeder*, atau di file mana pun dalam repositori.
 * **Auto-Deploy (Otomasi Github):** Server *hosting / production* telah menggunakan konfigurasi *auto-deploy* (Webhook / Github pintar). Segala perubahan kode dan penambahan tabel (lewat *migration* biasa) yang di-push ke branch main akan secara otomatis ditarik (git pull) ke *server production*. Perlu dicatat: *auto-deploy* ini **tidak akan** menjalankan perintah destruktif seperti migrate:fresh. Eksekusi reset database (fresh migration) hanya boleh dilakukan secara manual oleh *Project Owner* / Administrator langsung di dalam *server*.
 
 ## 7. Blueprint UI & Notifikasi (PENTING)
