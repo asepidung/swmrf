@@ -61,7 +61,8 @@ class GradeResource extends Resource
 
                 Forms\Components\Toggle::make('is_active')
                     ->label(fn () => __('Active'))
-                    ->default(true),
+                    ->default(true)
+                            ->visibleOn('edit'),
             ]);
     }
 

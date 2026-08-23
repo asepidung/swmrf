@@ -66,7 +66,8 @@ class BankAccountResource extends Resource
                 Forms\Components\Toggle::make('is_active')
                     ->label(__('Is Active'))
                     ->default(true)
-                    ->required(),
+                    ->required()
+                            ->visibleOn('edit'),
             ]);
     }
 

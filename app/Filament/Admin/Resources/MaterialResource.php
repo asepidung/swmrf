@@ -80,7 +80,8 @@ class MaterialResource extends Resource
                         Forms\Components\Toggle::make('is_active')
                             ->label(fn() => __('Is Active'))
                             ->default(true)
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->visibleOn('edit'),
                     ])->columns(2),
             ]);
     }

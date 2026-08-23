@@ -613,5 +613,11 @@
     "Sub Beef / Variant": "Sub Produk / Varian",
     "Prefix (Code)": "Prefix (Kode)",
     "Set Active": "Aktifkan",
-    "Suggested from the highest existing prefix. Change it if needed.": "Usulan dari prefix tertinggi yang sudah ada. Ubah bila perlu."
+    "Suggested from the highest existing prefix. Change it if needed.": "Usulan dari prefix tertinggi yang sudah ada. Ubah bila perlu.",
+    "I-Ex": "Impor/Ekspor",
+    "NO": "TIDAK",
+    "YES": "YA",
+    "Show In Stock": "Tampilkan Yang Ada Stok",
+    "Supplied Goods": "Barang yang Dipasok",
+    "Tukar Faktur": "Tukar Faktur"
 }

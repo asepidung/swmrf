@@ -100,17 +100,9 @@ protected static SubNavigationPosition $subNavigationPosition = SubNavigationPos
 
 **Pasang di setiap RESOURCE di dalam cluster, bukan di kelas Cluster.** Filament membacanya lewat `Resource::getSubNavigationPosition()`; menyetelnya di kelas Cluster saja **tidak mengubah tampilan sama sekali**. Ini sempat menipu: percobaan pertama hanya menyetel di kelas Cluster, test-nya hijau karena ikut memeriksa lapis yang salah, tapi menunya tetap di samping. Pelajarannya — kalau menguji perilaku UI, pastikan test memeriksa lapis yang benar-benar dibaca framework.
 
-Berlaku untuk **semua** cluster, tapi dibenahi sambil menyisir modulnya masing-masing.
+**Status per 24 Agustus 2026: seluruh Resource di semua cluster sudah menyetelnya.** Karena yang menentukan tampilan adalah Resource, tidak ada lagi cluster yang sub-menunya di samping.
 
-| Cluster | Status |
-|---|---|
-| `CustomersCluster` | sudah benar (jadi rujukan) |
-| `ProductsCluster` | sudah diperbaiki (Product, ProductCategory, Grade) |
-| `BeefStocks` | **belum** |
-| `Materials` | **belum** |
-| `MaterialsStock` | **belum** |
-
-Saat menyisir modul mana pun, periksa dulu apakah cluster-nya sudah menyetel ini.
+Saat menambah Resource baru ke dalam cluster mana pun, jangan lupa menyetel properti ini — ada test yang menjaganya.
 
 ### UTANG TEKNIS: urutan Tab belum wajar di banyak form
 
@@ -126,7 +118,9 @@ Penyebabnya kombinasi tiga hal:
 
 Owner menilai membetulkannya satu per satu per modul akan makan waktu terlalu lama, jadi sengaja ditunda. Saat dikerjakan nanti, perlakukan sebagai **satu pekerjaan lintas modul**: tentukan dulu urutan baku entri data, baru sesuaikan susunan field dan kolomnya.
 
-Penambal sementara yang sudah dipasang: toggle **Set Active dihilangkan dari halaman Create** (hanya muncul di Edit), karena produk yang baru dibuat sudah pasti aktif dan togglenya cuma menambah satu perhentian Tab yang tidak berguna.
+Penambal yang sudah dipasang di **seluruh master data**: toggle **Set Active dihilangkan dari halaman Create** (hanya muncul di Edit). Data master yang baru dibuat sudah pasti aktif, seluruh kolom `is_active` memang `DEFAULT 1` di database, dan togglenya cuma menambah satu perhentian Tab yang tidak berguna.
+
+Berlaku di: BankAccount, Grade, Material, Supplier, User, Warehouse, Customer, dan Product. Ada test yang menjaganya.
 
 ### autofocus wajib di field pertama, bukan sekadar ada
 
