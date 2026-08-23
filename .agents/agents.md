@@ -148,7 +148,23 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 ## 5. Status Saat Ini
 
 - **Test suite: 76 lolos, 0 gagal.** Sebelumnya praktis mati total. Jaga tetap hijau.
-- **Modul yang belum selesai** (lihat catatan Owner di `checklist_modul.md`, file lokal yang tidak masuk repo): QC/QA Monitoring Produksi, Accounts Receivable, serta laporan Fast Moving Products, Sales Report, dan Stock Gudang.
+- **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; UI untuk Warehouse dan Grade; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
+
+### Tiga modul Finance sengaja dimatikan
+
+`BankAccountResource`, `PayableResource`, dan `ReceivableResource` sama-sama punya `canAccess()` yang mengembalikan `false`, dengan komentar "disembunyikan atas instruksi owner". **Ketiganya sudah dibangun lengkap** — Receivable bahkan punya halaman Receive Payment — dan tinggal dinyalakan bila Owner membutuhkannya.
+
+Jangan memperlakukan ini sebagai bug atau modul yang belum jadi. Kalau perlu diaktifkan, cukup ubah `canAccess()`, tapi **tanyakan dulu kepada Owner**.
+
+### Financial Loss baru menampung satu jenis kerugian
+
+`FinancialLoss` hanya ditulis dari satu tempat: `CattleWeighing::financialLoss()` dengan `transaction_type = 'Cattle Weighing'` (susut timbang ulang sapi). Filter di `FinancialLossResource` pun cuma punya satu opsi, dengan komentar *"More can be added here later"*.
+
+Karena `canCreate()` mengembalikan `false` dan tidak ada halaman Create, jenis kerugian lain — Killing Lost dan Lost Cost — **tidak bisa masuk sama sekali, bahkan secara manual**. Modul ini praktis baru separuh jalan meski di checklist lama tertulis selesai.
+
+### Warehouse dan Grade tidak punya UI
+
+Keduanya master data yang dipakai hampir di seluruh transaksi (setiap baris stok punya `warehouse_id` dan `grade_id`), tapi tidak ada Resource untuk mengelolanya. Warehouse hanya di-*seed* dua baris (`JONGGOL`, `PERUM`), sedangkan blok seeder Grade masih dikomentari. Menambah gudang atau grade baru saat ini harus lewat database langsung.
 - **Utang teknis yang diketahui:** kolom skalar `invoices.charge` sudah mati — digantikan repeater relasi `additionalCharges` — tetapi masih diekspor `InvoiceExporter`, sehingga kolom itu selalu bernilai nol di hasil ekspor.
 - **Langkah berikutnya:** menyisir setiap modul satu per satu untuk pengecekan dan perbaikan.
 
