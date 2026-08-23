@@ -165,6 +165,22 @@ Karena `canCreate()` mengembalikan `false` dan tidak ada halaman Create, jenis k
 ### Warehouse dan Grade tidak punya UI
 
 Keduanya master data yang dipakai hampir di seluruh transaksi (setiap baris stok punya `warehouse_id` dan `grade_id`), tapi tidak ada Resource untuk mengelolanya. Warehouse hanya di-*seed* dua baris (`JONGGOL`, `PERUM`), sedangkan blok seeder Grade masih dikomentari. Menambah gudang atau grade baru saat ini harus lewat database langsung.
+### Halaman cetak masih bergantung pada CDN (ditunda)
+
+Aset panel Filament sudah lokal, dan **Tailwind tidak lewat CDN** — satu-satunya jejak "tailwindcss.com" cuma komentar di dalam CSS terkompilasi yang di-*inline* ke `welcome.blade.php`, halaman bawaan Laravel yang tidak dipakai.
+
+Yang benar-benar memuat dari CDN semuanya ada di `resources/views/print/`:
+
+| Pustaka | Dipakai di | Jumlah view |
+|---|---|---|
+| JsBarcode (jsdelivr) | Label barcode: beef stock, boning, GR product, repack, sales return, stock take, tally | 7 |
+| Bootstrap 4.6.2 (jsdelivr) | Print invoice dan sales order | 3 |
+| Font Awesome 5.15.4 (cdnjs) | Print invoice dan sales order | 2 |
+
+**JsBarcode yang berisiko.** Bila jsdelivr tidak terjangkau, **label barcode tercetak kosong** — dan gejalanya menyesatkan karena halamannya tetap terbuka normal, hanya barcode-nya yang hilang. Di lantai produksi yang sedang menimbang dan melabeli daging, itu menghentikan pekerjaan.
+
+Perbaikannya sepele: unduh pustakanya ke `public/js` dan `public/css`, lalu ganti tautannya jadi lokal. **Ditunda atas keputusan Owner** — dicatat supaya tidak hilang.
+
 - **Utang teknis yang diketahui:** kolom skalar `invoices.charge` sudah mati — digantikan repeater relasi `additionalCharges` — tetapi masih diekspor `InvoiceExporter`, sehingga kolom itu selalu bernilai nol di hasil ekspor.
 - **Langkah berikutnya:** menyisir setiap modul satu per satu untuk pengecekan dan perbaikan.
 
