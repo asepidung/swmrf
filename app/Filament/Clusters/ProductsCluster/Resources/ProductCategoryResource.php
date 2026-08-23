@@ -44,11 +44,14 @@ class ProductCategoryResource extends Resource
                             ->maxLength(255)
                             ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                         Forms\Components\TextInput::make('prefix')
-                            ->label(fn() => __('Prefix (Kode)'))
+                            ->label(fn() => __('Prefix (Code)'))
                             ->required()
                             ->numeric()
                             ->unique(ignorable: fn ($record) => $record)
-                            ->hint(__('Contoh: 1 untuk kategori A, 2 untuk kategori B')),
+                            // Usulkan prefix berikutnya supaya operator tidak perlu
+                            // menyisir daftar kategori untuk mencari yang masih kosong.
+                            ->default(fn () => \App\Models\ProductCategory::max('prefix') + 1)
+                            ->helperText(fn () => __('Suggested from the highest existing prefix. Change it if needed.')),
                     ])
             ]);
     }

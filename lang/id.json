@@ -610,5 +610,8 @@
     "Beef Receipt Items Detail": "Rincian Item Penerimaan Produk Sapi",
     "Main Beef": "Produk Induk",
     "Parent Beef": "Produk Induk",
-    "Sub Beef / Variant": "Sub Produk / Varian"
+    "Sub Beef / Variant": "Sub Produk / Varian",
+    "Prefix (Code)": "Prefix (Kode)",
+    "Set Active": "Aktifkan",
+    "Suggested from the highest existing prefix. Change it if needed.": "Usulan dari prefix tertinggi yang sudah ada. Ubah bila perlu."
 }

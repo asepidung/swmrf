@@ -19,6 +19,10 @@ class GradeResource extends Resource
 
     protected static ?string $cluster = ProductsCluster::class;
 
+    // Paling bawah: isinya paling jarang berubah, sementara Beef dan Beef
+    // Categories jauh lebih sering dibuka.
+    protected static ?int $navigationSort = 3;
+
     public static function canViewAny(): bool
     {
         return auth()->user()->hasPermission('view_grades');

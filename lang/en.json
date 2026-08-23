@@ -445,5 +445,16 @@
     "Grade Digit": "Grade Digit",
     "This number is embedded in the barcode. Do not change it.": "This number is embedded in the barcode. Do not change it.",
     "Excel": "Excel",
-    "Cattle Products": "Cattle Products"
+    "Cattle Products": "Cattle Products",
+    "Beef": "Beef",
+    "Beef Categories": "Beef Categories",
+    "Beef Category": "Beef Category",
+    "Beef Code": "Beef Code",
+    "Beef Name": "Beef Name",
+    "Main Beef": "Main Beef",
+    "Parent Beef": "Parent Beef",
+    "Sub Beef / Variant": "Sub Beef / Variant",
+    "Prefix (Code)": "Prefix (Code)",
+    "Set Active": "Set Active",
+    "Suggested from the highest existing prefix. Change it if needed.": "Suggested from the highest existing prefix. Change it if needed."
 }

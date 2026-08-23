@@ -40,6 +40,7 @@ class ProductResource extends Resource
                     ->schema([
                         Forms\Components\Radio::make('structure_type')
                             ->label(fn() => __('Product Structure'))
+                            ->autofocus()
                             ->options([
                                 'main' => __('Main Beef'),
                                 'sub' => __('Sub Beef / Variant'),
@@ -97,11 +98,14 @@ class ProductResource extends Resource
                                     ->maxLength(255)
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                                 Forms\Components\TextInput::make('prefix')
-                                    ->label(fn() => __('Prefix (Kode)'))
+                                    ->label(fn() => __('Prefix (Code)'))
                                     ->required()
                                     ->numeric()
                                     ->unique('product_categories', 'prefix')
-                                    ->hint(__('Contoh: 1 untuk kategori A, 2 untuk kategori B')),
+                                    // Usulkan prefix berikutnya supaya operator tidak perlu
+                                    // membuka daftar kategori dulu untuk mencari yang terpakai.
+                                    ->default(fn () => \App\Models\ProductCategory::max('prefix') + 1)
+                                    ->helperText(fn () => __('Suggested from the highest existing prefix. Change it if needed.')),
                             ])
                             ->createOptionAction(
                                 fn (Forms\Components\Actions\Action $action) => $action->modalWidth('md')->color('warning')
@@ -109,7 +113,6 @@ class ProductResource extends Resource
 
                         Forms\Components\TextInput::make('name')
                             ->label(fn() => __('Beef Name'))
-                            ->autofocus()
                             ->required()
                             ->unique(ignorable: fn ($record) => $record)
                             ->validationMessages([
