@@ -50,6 +50,18 @@ Migrasi tetap ikut jalan di langkah itu, jadi tulis migrasi yang aman. Workflow 
 
 ## 2. Keputusan yang sudah diambil
 
+### Master data WAJIB punya index unique; barcode transaksional TIDAK
+
+Dua aturan ini berlawanan dan gampang tertukar, jadi perhatikan bedanya.
+
+**Master data** — nama, kode, prefix, username, nomor rekening — **wajib** punya index unique di database. Validasi `->unique()` di form Filament saja tidak mengikat: dua permintaan yang tiba bersamaan bisa sama-sama lolos, dan penyisipan lewat seeder, import, atau tinker melewatinya sama sekali.
+
+Sebelum 24 Agustus 2026, `suppliers.name`, `customers.name`, dan `materials.name` hanya dijaga di form tanpa pengaman database, sementara `warehouses.name` tidak dijaga sama sekali. Sudah ditutup.
+
+**Pengecualian yang disengaja: `users.name`.** Dua orang boleh bernama sama; yang menjadi identitas adalah `username`, dan kolom itu sudah unique. Ada test yang menegaskan ini keputusan, bukan kelalaian.
+
+`MasterDataUniquenessTest` memeriksa 19 kolom identitas sekaligus. Saat menambah master data baru, daftarkan kolom identitasnya di test itu.
+
 ### Barcode sengaja tanpa index unique
 
 Kolom `barcode` pada `sales_return_items`, `mutation_items`, `repack_results`, dan `repack_materials` **sengaja tidak diberi index unique**.

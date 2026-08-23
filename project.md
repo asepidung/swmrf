@@ -69,7 +69,8 @@ Setiap operasi yang menyisipkan barcode atau memutasi stok:
 2. Pengecekan di luar transaksi **boleh dipertahankan sebagai *fast-path*** agar pesan ke operator tetap ramah dan spesifik. Anggap itu lapisan UX, bukan penjagaan.
 3. **Generator nomor urut barcode wajib dikunci** dengan `->lockForUpdate()`.
 4. **Pembacaan yang menjadi dasar keputusan mutasi wajib dikunci.**
-5. Kolom `barcode` pada tabel transaksional **sengaja tanpa index unique** — barang keluar-masuk berkali-kali lintas dokumen. Karena itu pencegahan duplikat **wajib berlingkup per dokumen** (`where('mutation_id', ...)`), bukan global.
+5. **Master data wajib punya index unique di database** pada kolom identitasnya (nama, kode, prefix, username, nomor rekening). Validasi `->unique()` di form saja tidak mengikat karena bisa dilewati seeder, import, atau permintaan bersamaan. Pengecualian yang disengaja: `users.name`, karena identitas pengguna adalah `username`.
+6. Kolom `barcode` pada tabel transaksional **sengaja tanpa index unique** — barang keluar-masuk berkali-kali lintas dokumen. Karena itu pencegahan duplikat **wajib berlingkup per dokumen** (`where('mutation_id', ...)`), bukan global.
 
 ### Hak akses
 
