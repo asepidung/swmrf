@@ -53,32 +53,77 @@ class CattleProductsFormTest extends TestCase
     }
 
     /**
-     * autofocus wajib berada di field PERTAMA. Sebelumnya autofocus dipasang di
-     * field 'name' yang berada di urutan keempat, sehingga menekan Tab dari
-     * sana melewatkan tiga field di atasnya dan langsung menuju tombol.
+     * Owner ingin kursor mendarat langsung di Beef Name saat membuat produk.
+     *
+     * Catatan: urutan Tab pada form ini masih belum wajar secara keseluruhan
+     * dan sudah dicatat sebagai utang teknis di .agents/agents.md.
      *
      * @test
      */
-    public function it_autofocuses_the_first_field_so_tab_sweeps_every_field_before_the_buttons()
+    public function it_autofocuses_the_beef_name_field()
     {
         $page = Livewire::actingAs($this->user)->test(CreateProduct::class)->instance();
 
-        $schema = ProductResource::form(\Filament\Forms\Form::make($page))->getComponents();
+        $fields = ProductResource::form(\Filament\Forms\Form::make($page))
+            ->getComponents()[0]
+            ->getChildComponents();
 
-        $section = $schema[0];
-        $fields = $section->getChildComponents();
-
-        $this->assertSame('structure_type', $fields[0]->getName());
-        $this->assertTrue($fields[0]->isAutofocused(), 'Field pertama wajib autofocus.');
-
+        $autofocused = [];
         foreach ($fields as $field) {
-            if ($field->getName() !== 'structure_type') {
-                $this->assertFalse(
-                    $field->isAutofocused(),
-                    "Hanya field pertama yang boleh autofocus, tapi '{$field->getName()}' ikut autofocus."
-                );
+            if ($field->isAutofocused()) {
+                $autofocused[] = $field->getName();
             }
         }
+
+        $this->assertSame(['name'], $autofocused);
+    }
+
+    /**
+     * Produk yang baru dibuat sudah pasti aktif, jadi toggle ini hanya bikin
+     * satu perhentian Tab yang tidak perlu. Kolomnya sendiri sudah default
+     * aktif di database.
+     *
+     * @test
+     */
+    public function it_hides_the_active_toggle_on_create_but_keeps_it_on_edit()
+    {
+        Livewire::actingAs($this->user)
+            ->test(CreateProduct::class)
+            ->assertFormFieldIsHidden('is_active');
+
+        $category = ProductCategory::create(['name' => 'PRIME CUTS', 'prefix' => 1]);
+        $product = \App\Models\Product::create([
+            'name' => 'TENDERLOIN',
+            'code' => 'MT00100',
+            'category_id' => $category->id,
+            'structure_type' => 'main',
+            'is_active' => true,
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(\App\Filament\Clusters\ProductsCluster\Resources\ProductResource\Pages\EditProduct::class, ['record' => $product->id])
+            ->assertFormFieldExists('is_active');
+    }
+
+    /** @test */
+    public function it_creates_a_product_as_active_even_though_the_toggle_is_hidden()
+    {
+        $category = ProductCategory::create(['name' => 'PRIME CUTS', 'prefix' => 1]);
+
+        Livewire::actingAs($this->user)
+            ->test(CreateProduct::class)
+            ->fillForm([
+                'structure_type' => 'main',
+                'category_id' => $category->id,
+                'name' => 'tenderloin',
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $product = \App\Models\Product::where('name', 'TENDERLOIN')->first();
+
+        $this->assertNotNull($product);
+        $this->assertTrue((bool) $product->is_active, 'Produk baru wajib langsung aktif.');
     }
 
     /** @test */
