@@ -20,9 +20,13 @@ class ViewMaterialRequisition extends ViewRecord
         $data['items'] = $this->record->items->mapWithKeys(function ($item) {
             return [(string) \Illuminate\Support\Str::uuid() => [
                 'material_id' => $item->material_id,
-                'qty' => number_format($item->qty, 2, ',', '.'),
-                'price' => number_format($item->price, 0, ',', '.'),
-                'item_total' => number_format($item->qty * $item->price, 0, ',', '.'),
+                // Jangan diformat. Ketiga field ini ->numeric() alias
+                // <input type="number">, yang tidak bisa menampung string
+                // ber-pemisah ribuan seperti "1.234,50" sehingga isiannya
+                // justru tampil kosong.
+                'qty' => $item->qty,
+                'price' => $item->price,
+                'item_total' => $item->qty * $item->price,
                 'note' => $item->note,
             ]];
         })->toArray();

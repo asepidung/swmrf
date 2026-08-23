@@ -109,7 +109,6 @@ class ProductRequisitionResource extends Resource
                                     ->default(0)
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'qty-input text-right', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll(".qty-input")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
                                     ->numeric()
-                                                                        ->numeric()
                                     ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('price')
@@ -119,7 +118,6 @@ class ProductRequisitionResource extends Resource
                                     ->default(0)
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'price-input text-right', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll(".price-input")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
                                     ->numeric()
-                                                                        ->numeric()
                                     ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('item_total')
