@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\GradeResource\Pages;
+use App\Filament\Clusters\ProductsCluster;
 use App\Models\Grade;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -16,6 +17,8 @@ class GradeResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-swatch';
 
+    protected static ?string $cluster = ProductsCluster::class;
+
     public static function canViewAny(): bool
     {
         return auth()->user()->hasPermission('view_grades');
@@ -24,11 +27,6 @@ class GradeResource extends Resource
     public static function shouldRegisterNavigation(): bool
     {
         return auth()->check() && auth()->user()->hasPermission('view_grades');
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return __('MASTER DATA');
     }
 
     public static function getModelLabel(): string
