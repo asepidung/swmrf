@@ -30,7 +30,19 @@ Sedang dimigrasikan dari sistem PHP prosedural ke Laravel 11 + Filament v3 denga
 | Uji coba | `coba.wijayameat.co.id` (shared hosting Hostinger), **auto-deploy dari `main`**, isinya **data dummy** |
 | Produksi | **VPS terpisah**, di luar jangkauan pekerjaan sehari-hari |
 
-**Yang paling penting dipahami:** merge ke `main` memicu GitHub Actions yang menjalankan `git pull`, `composer install`, **`php artisan migrate --force`**, lalu cache warming ke server uji coba. Jadi migrasi ikut jalan otomatis. Tulis migrasi yang aman dijalankan tanpa pengawasan — kalau satu migrasi gagal di tengah, deploy berhenti dan situs bisa tertinggal setengah jadi.
+**Sejak 24 Agustus 2026, deploy otomatis DIMATIKAN.** Koneksi SSH dari GitHub Actions ke Hostinger berulang kali gagal dengan `dial tcp: i/o timeout` (setidaknya dua kali), sehingga merge ke `main` kadang tidak benar-benar sampai ke server tanpa ada yang menyadarinya. Auto-deploy bawaan Hostinger juga dimatikan Owner.
+
+**Konsekuensinya: merge saja tidak membuat perubahan sampai ke server.** Setelah merge, deploy manual lewat SSH:
+
+```
+cd /home/u525862761/domains/coba.wijayameat.co.id/public_html
+git pull origin main
+composer install --no-interaction --prefer-dist --optimize-autoloader
+php artisan migrate --force
+php artisan optimize:clear && php artisan config:cache && php artisan route:cache && php artisan view:cache
+```
+
+Migrasi tetap ikut jalan di langkah itu, jadi tulis migrasi yang aman. Workflow GitHub Actions dipertahankan tapi hanya bisa dipicu manual dari tab Actions.
 
 `migrate:fresh` **tidak pernah** dijalankan otomatis, dan memang dilarang.
 
@@ -80,18 +92,20 @@ Untuk scan barcode dan mutasi stok, polanya:
 
 ### Sub-menu cluster wajib di atas, bukan di samping
 
-Keputusan Owner: sub-menu sebuah Cluster harus tampil sebagai **tab horizontal di bagian atas** halaman, bukan daftar vertikal di sisi kiri. Caranya satu baris di kelas Cluster:
+Keputusan Owner: sub-menu sebuah Cluster harus tampil sebagai **tab horizontal di bagian atas** halaman, bukan daftar vertikal di sisi kiri.
 
 ```php
 protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 ```
+
+**Pasang di setiap RESOURCE di dalam cluster, bukan di kelas Cluster.** Filament membacanya lewat `Resource::getSubNavigationPosition()`; menyetelnya di kelas Cluster saja **tidak mengubah tampilan sama sekali**. Ini sempat menipu: percobaan pertama hanya menyetel di kelas Cluster, test-nya hijau karena ikut memeriksa lapis yang salah, tapi menunya tetap di samping. Pelajarannya — kalau menguji perilaku UI, pastikan test memeriksa lapis yang benar-benar dibaca framework.
 
 Berlaku untuk **semua** cluster, tapi dibenahi sambil menyisir modulnya masing-masing.
 
 | Cluster | Status |
 |---|---|
 | `CustomersCluster` | sudah benar (jadi rujukan) |
-| `ProductsCluster` | sudah diperbaiki |
+| `ProductsCluster` | sudah diperbaiki (Product, ProductCategory, Grade) |
 | `BeefStocks` | **belum** |
 | `Materials` | **belum** |
 | `MaterialsStock` | **belum** |

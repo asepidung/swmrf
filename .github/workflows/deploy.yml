@@ -1,9 +1,17 @@
 name: Deploy Laravel App
 
+# Deploy otomatis DIMATIKAN atas keputusan Project Owner (24 Agustus 2026).
+#
+# Koneksi SSH dari GitHub Actions ke Hostinger berulang kali gagal dengan
+# "dial tcp: i/o timeout", sehingga merge ke main kadang tidak benar-benar
+# sampai ke server tanpa ada yang menyadarinya. Auto-deploy bawaan Hostinger
+# juga dimatikan.
+#
+# Sebagai gantinya, deploy dilakukan manual lewat SSH. Workflow ini
+# dipertahankan dan masih bisa dijalankan sewaktu-waktu dari tab Actions
+# (Run workflow), tapi tidak lagi terpicu otomatis oleh push.
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   deploy:

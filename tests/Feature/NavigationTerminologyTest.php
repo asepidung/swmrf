@@ -145,26 +145,30 @@ class NavigationTerminologyTest extends TestCase
 
     /**
      * Sub-menu cluster wajib tampil di ATAS (tab horizontal), bukan di samping.
-     * Aturan ini berlaku untuk semua cluster; yang belum diperbaiki dibenahi
-     * sambil menyisir modulnya masing-masing.
+     *
+     * PENTING: Filament membaca setelan ini dari RESOURCE, bukan dari kelas
+     * Cluster. Menyetelnya di Cluster saja tidak mengubah tampilan sama sekali.
+     * Versi awal test ini keliru memeriksa kelas Cluster, sehingga lolos
+     * padahal menunya masih di samping.
      *
      * @test
      */
     public function it_places_cluster_sub_navigation_on_top()
     {
-        $clusters = [
-            \App\Filament\Clusters\ProductsCluster::class,
-            \App\Filament\Clusters\CustomersCluster::class,
+        $resources = [
+            \App\Filament\Clusters\ProductsCluster\Resources\ProductResource::class,
+            \App\Filament\Clusters\ProductsCluster\Resources\ProductCategoryResource::class,
+            \App\Filament\Admin\Resources\GradeResource::class,
+            \App\Filament\Clusters\CustomersCluster\Resources\CustomerResource::class,
+            \App\Filament\Clusters\CustomersCluster\Resources\CustomerGroupResource::class,
+            \App\Filament\Clusters\CustomersCluster\Resources\CustomerSegmentResource::class,
         ];
 
-        foreach ($clusters as $cluster) {
-            $position = (new \ReflectionClass($cluster))
-                ->getStaticPropertyValue('subNavigationPosition');
-
+        foreach ($resources as $resource) {
             $this->assertSame(
                 \Filament\Pages\SubNavigationPosition::Top,
-                $position,
-                "Sub-menu {$cluster} harus berada di atas, bukan di samping."
+                $resource::getSubNavigationPosition(),
+                "Sub-menu {$resource} harus berada di atas, bukan di samping."
             );
         }
     }
