@@ -143,6 +143,32 @@ class NavigationTerminologyTest extends TestCase
         }
     }
 
+    /**
+     * Sub-menu cluster wajib tampil di ATAS (tab horizontal), bukan di samping.
+     * Aturan ini berlaku untuk semua cluster; yang belum diperbaiki dibenahi
+     * sambil menyisir modulnya masing-masing.
+     *
+     * @test
+     */
+    public function it_places_cluster_sub_navigation_on_top()
+    {
+        $clusters = [
+            \App\Filament\Clusters\ProductsCluster::class,
+            \App\Filament\Clusters\CustomersCluster::class,
+        ];
+
+        foreach ($clusters as $cluster) {
+            $position = (new \ReflectionClass($cluster))
+                ->getStaticPropertyValue('subNavigationPosition');
+
+            $this->assertSame(
+                \Filament\Pages\SubNavigationPosition::Top,
+                $position,
+                "Sub-menu {$cluster} harus berada di atas, bukan di samping."
+            );
+        }
+    }
+
     /** @test */
     public function it_names_the_master_data_cluster_cattle_products()
     {

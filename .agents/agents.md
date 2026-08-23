@@ -78,6 +78,26 @@ Untuk scan barcode dan mutasi stok, polanya:
 
 **Sumber kebenaran `due_date`:** hook `saving()` di `app/Models/Invoice.php` adalah **satu-satunya** pemilik logika perhitungan `due_date`. Ia bercabang berdasarkan `status`. Jangan menghitung `due_date` di tempat lain — pernah ada dua perhitungan paralel dan keduanya saling menimpa.
 
+### Sub-menu cluster wajib di atas, bukan di samping
+
+Keputusan Owner: sub-menu sebuah Cluster harus tampil sebagai **tab horizontal di bagian atas** halaman, bukan daftar vertikal di sisi kiri. Caranya satu baris di kelas Cluster:
+
+```php
+protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
+```
+
+Berlaku untuk **semua** cluster, tapi dibenahi sambil menyisir modulnya masing-masing.
+
+| Cluster | Status |
+|---|---|
+| `CustomersCluster` | sudah benar (jadi rujukan) |
+| `ProductsCluster` | sudah diperbaiki |
+| `BeefStocks` | **belum** |
+| `Materials` | **belum** |
+| `MaterialsStock` | **belum** |
+
+Saat menyisir modul mana pun, periksa dulu apakah cluster-nya sudah menyetel ini.
+
 ### UTANG TEKNIS: urutan Tab belum wajar di banyak form
 
 **Belum dibereskan. Perlu satu sapuan tersendiri, jangan ditambal per modul.**
