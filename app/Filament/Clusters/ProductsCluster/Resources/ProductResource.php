@@ -40,7 +40,6 @@ class ProductResource extends Resource
                     ->schema([
                         Forms\Components\Radio::make('structure_type')
                             ->label(fn() => __('Product Structure'))
-                            ->autofocus()
                             ->options([
                                 'main' => __('Main Beef'),
                                 'sub' => __('Sub Beef / Variant'),
@@ -113,6 +112,7 @@ class ProductResource extends Resource
 
                         Forms\Components\TextInput::make('name')
                             ->label(fn() => __('Beef Name'))
+                            ->autofocus()
                             ->required()
                             ->unique(ignorable: fn ($record) => $record)
                             ->validationMessages([
@@ -130,7 +130,8 @@ class ProductResource extends Resource
 
                         Forms\Components\Toggle::make('is_active')
                             ->label(fn() => __('Set Active'))
-                            ->default(true),
+                            ->default(true)
+                            ->visibleOn('edit'),
                     ])->columns(2)
             ]);
     }
