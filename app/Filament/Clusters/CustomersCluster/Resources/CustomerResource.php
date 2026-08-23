@@ -100,7 +100,8 @@ class CustomerResource extends Resource
                             ->required(),
                         Forms\Components\Toggle::make('is_active')
                             ->label(fn() => __('Active'))
-                            ->default(true),
+                            ->default(true)
+                            ->visibleOn('edit'),
                     ])->columns(2),
 
                 Forms\Components\Section::make(__('Required Documents'))

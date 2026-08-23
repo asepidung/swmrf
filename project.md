@@ -92,6 +92,7 @@ Setiap Resource atau Cluster baru wajib:
 
 - `autofocus()` pada field pertama. Urutan field harus nyaman dinavigasi murni dengan `Tab`.
 - **Setelah Create atau Edit berhasil, alihkan kembali ke halaman Index.**
+- **Toggle status aktif hanya di halaman Edit**, tidak di Create. Pakai `->visibleOn('edit')`. Data yang baru dibuat sudah pasti aktif dan kolomnya `DEFAULT 1` di database, jadi togglenya di Create hanya menambah perhentian Tab yang tidak berguna.
 - **Masking angka:** pakai `RawJs::make('$money(...)')` pada form biasa. **DILARANG KERAS di dalam `Repeater`** karena memicu bug Livewire Morphdom yang menyisakan baris "zombie" yang tidak bisa dihapus di browser. Di dalam Repeater cukup `->numeric()`.
 - **Repeater bersih:** sembunyikan label tiap baris dengan `->label('')` dan `->hiddenLabel()`, cukup pakai `->placeholder()`.
 - Pada halaman Edit, sembunyikan tombol Cancel bawaan lewat `getFormActions()` dan letakkan Cancel di Header Actions.

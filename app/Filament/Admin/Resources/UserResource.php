@@ -63,7 +63,8 @@ class UserResource extends Resource
                         Forms\Components\Toggle::make('is_active')
                             ->label(__('Active Status'))
                             ->default(true)
-                            ->required(),
+                            ->required()
+                            ->visibleOn('edit'),
                     ])->columns(2),
 
                 Forms\Components\Section::make(__('Permissions (Hak Akses)'))

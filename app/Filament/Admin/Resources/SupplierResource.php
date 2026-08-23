@@ -101,7 +101,8 @@ class SupplierResource extends Resource
                                 Forms\Components\Toggle::make('is_active')
                                     ->label(fn() => __('Active Status'))
                                     ->helperText(__('Toggle supplier active state'))
-                                    ->default(true),
+                                    ->default(true)
+                            ->visibleOn('edit'),
                             ]),
                     ])->columnSpan(['lg' => 1]),
             ])->columns(3);

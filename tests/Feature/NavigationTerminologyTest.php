@@ -96,14 +96,26 @@ class NavigationTerminologyTest extends TestCase
      */
     public function it_registers_every_translation_key_used_by_these_modules_in_both_languages()
     {
-        $paths = [
-            app_path('Filament/Clusters/ProductsCluster.php'),
-            app_path('Filament/Clusters/ProductsCluster'),
-            app_path('Filament/Admin/Resources/GradeResource.php'),
-            app_path('Filament/Admin/Resources/GradeResource'),
-            app_path('Filament/Admin/Resources/WarehouseResource.php'),
-            app_path('Filament/Admin/Resources/WarehouseResource'),
+        $modules = [
+            'Filament/Clusters/ProductsCluster',
+            'Filament/Clusters/CustomersCluster',
+            'Filament/Clusters/Materials',
+            'Filament/Admin/Resources/GradeResource',
+            'Filament/Admin/Resources/WarehouseResource',
+            'Filament/Admin/Resources/BankAccountResource',
+            'Filament/Admin/Resources/SupplierResource',
+            'Filament/Admin/Resources/UserResource',
+            'Filament/Admin/Resources/MaterialResource',
+            'Filament/Admin/Resources/MaterialCategoryResource',
+            'Filament/Admin/Resources/MaterialUnitResource',
+            'Filament/Admin/Resources/CattleClassResource',
         ];
+
+        $paths = [];
+        foreach ($modules as $module) {
+            $paths[] = app_path($module . '.php');
+            $paths[] = app_path($module);
+        }
 
         $files = [];
         foreach ($paths as $path) {
@@ -169,6 +181,43 @@ class NavigationTerminologyTest extends TestCase
                 \Filament\Pages\SubNavigationPosition::Top,
                 $resource::getSubNavigationPosition(),
                 "Sub-menu {$resource} harus berada di atas, bukan di samping."
+            );
+        }
+    }
+
+    /**
+     * Data master yang baru dibuat sudah pasti aktif, dan seluruh kolom
+     * is_active-nya memang DEFAULT 1 di database. Togglenya di halaman Create
+     * hanya menambah satu perhentian Tab yang tidak berguna.
+     *
+     * @test
+     */
+    public function it_hides_the_active_toggle_on_every_master_data_create_form()
+    {
+        $files = [
+            'Filament/Admin/Resources/BankAccountResource.php',
+            'Filament/Admin/Resources/GradeResource.php',
+            'Filament/Admin/Resources/MaterialResource.php',
+            'Filament/Admin/Resources/SupplierResource.php',
+            'Filament/Admin/Resources/UserResource.php',
+            'Filament/Admin/Resources/WarehouseResource.php',
+            'Filament/Clusters/CustomersCluster/Resources/CustomerResource.php',
+            'Filament/Clusters/ProductsCluster/Resources/ProductResource.php',
+        ];
+
+        foreach ($files as $file) {
+            $source = file_get_contents(app_path($file));
+
+            if (! str_contains($source, "Toggle::make('is_active')")) {
+                continue;
+            }
+
+            $chain = substr($source, strpos($source, "Toggle::make('is_active')"), 400);
+
+            $this->assertStringContainsString(
+                "->visibleOn('edit')",
+                $chain,
+                "Toggle is_active di {$file} masih tampil di halaman Create."
             );
         }
     }
