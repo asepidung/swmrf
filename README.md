@@ -1,70 +1,73 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
-
 <p align="center">
 <a href="https://trakteer.id/saepullrock"><img src="https://img.shields.io/badge/Support_me-Trakteer-red?style=for-the-badge&logo=ko-fi" alt="Support on Trakteer"></a>
 </p>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+# Wijaya Meat (SWM)
 
-## About Laravel
+Sistem ERP untuk **Wijaya Meat**, produsen daging sapi. Menangani seluruh siklus operasional mengikuti perjalanan barang secara fisik:
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+```
+Sapi hidup → Terima & Timbang → Karkas → Boning → Repack/Relabel
+          → Stok → Tally → Delivery Order → Invoice → Piutang
+```
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Proyek ini adalah modernisasi sistem lama berbasis PHP prosedural + AdminLTE 3, dikerjakan bertahap dengan **Strangler Pattern**.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Tech Stack
 
-## Learning Laravel
+- **Laravel 11** — Eloquent ORM dan Migration
+- **Filament v3** — panel admin
+- **MySQL** — basis data
+- **Tailwind CSS** + **Vite**
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Modul
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+| Kelompok | Isi |
+|---|---|
+| **Master Data** | Users, Suppliers, Customers, Products, Materials, Cattle Class, Bank Account |
+| **Procurement** | Requisition, PO Cattle/Beef/Material, Goods Receipt |
+| **Production** | Cattle Receive, Weighing, Carcass, Boning, Repack, Relabel |
+| **Inventory** | Beef Stock, Material Stock, Mutation, Stock Take |
+| **Sales** | Sales Order, Tally, Delivery Order, Delivery Plan, Sales Return, Price List |
+| **Finance** | Invoice, Payment, Receivable, Payable, Bank Transaction |
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Penjelasan rinci tiap modul ada di [`docs/modules/`](docs/modules/).
 
-## Laravel Sponsors
+## Menjalankan Secara Lokal
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+npm run build
+php artisan serve
+```
 
-### Premium Partners
+Akun superuser bawaan: username `saepullrock`, password `1234`. Aplikasi akan **memaksa penggantian password pada login pertama**.
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+> Password bawaan sengaja dibuat sepele dan **wajib tetap `1234`**. Repositori ini publik, jadi tidak boleh ada password sungguhan di dalamnya.
 
-## Contributing
+## Testing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+php artisan test
+```
 
-## Code of Conduct
+Test berjalan di atas SQLite `:memory:` (lihat `phpunit.xml`) dan tidak menyentuh database MySQL utama. Karena itu **seluruh migrasi wajib memakai sintaks yang didukung MySQL maupun SQLite**.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Dokumentasi
 
-## Security Vulnerabilities
+| Dokumen | Isi |
+|---|---|
+| [`CLAUDE.md`](CLAUDE.md) | Ringkasan cepat untuk agen AI |
+| [`project.md`](project.md) | Aturan main pengembangan — wajib dibaca sebelum berkontribusi |
+| [`.agents/agents.md`](.agents/agents.md) | Riwayat keputusan beserta alasannya |
+| [`docs/modules/`](docs/modules/) | Penjelasan rinci tiap modul |
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Kontribusi
 
-## License
+Kerjakan di branch `feature/issue-[nomor]` dan ajukan sebagai Pull Request. **Dilarang commit langsung ke `main`** — push ke `main` memicu auto-deploy beserta `php artisan migrate --force` ke server uji coba.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Baca [`project.md`](project.md) lebih dulu.
