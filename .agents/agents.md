@@ -116,6 +116,29 @@ protected static SubNavigationPosition $subNavigationPosition = SubNavigationPos
 
 Saat menambah Resource baru ke dalam cluster mana pun, jangan lupa menyetel properti ini — ada test yang menjaganya.
 
+### Jangan number_format() nilai yang masuk ke field ->numeric()
+
+Field `->numeric()` dirender sebagai `<input type="number">`, yang **tidak bisa menampung string ber-pemisah ribuan** seperti `"1.234,50"`. Browser menolaknya dan fieldnya tampil **kosong** — bukan error, jadi gejalanya menyesatkan.
+
+Terjadi di halaman View Request Beef dan Request Material: `mutateFormDataBeforeFill()` memformat `qty`, `price`, dan `item_total` dengan `number_format()`, sehingga ketiganya kosong saat halaman dibuka. Kirim angka mentah ke form; pemformatan adalah urusan tampilan, bukan isian.
+
+Ada test yang menjaganya (`RequisitionViewFormTest`).
+
+### RENCANA BERIKUTNYA: modul Request Beef
+
+Daftar dari Owner, 24 Agustus 2026. Nomor 2 sudah selesai; sisanya menunggu.
+
+| No | Kebutuhan | Ukuran |
+|---|---|---|
+| 1 | Pemisah ribuan otomatis pada input **price** saat mengisi request (ketik `250000` jadi `250.000`) | sedang — terhalang larangan `RawJs` mask di dalam Repeater, perlu cara lain yang tidak memicu bug Morphdom |
+| 2 | ~~Qty tidak ter-load di halaman View~~ | **selesai** |
+| 3 | Setelah approve purchasing dan approve finance, balik ke Index | perlu repro — kodenya **sudah** memanggil `$this->redirect()`, tapi `$this->save(false)` dipanggil lebih dulu; bila save gagal validasi, redirect tidak pernah jalan dan pengguna tertinggal di halaman **tanpa pesan apa pun** |
+| 4 | Cara menolak saat review purchasing bila ada barang tanpa harga: reject saja, atau purchasing boleh mengisi harganya? | **keputusan Owner**, belum diputuskan |
+| 5 | Input pembayaran saat approve finance: tunai/transfer, pilih akun bank, kode pembayaran, tanggal bayar. Bila nilainya 0 semua, dilewati dan langsung jadi utang dengan TOP mulai berjalan | **besar**, satu sesi sendiri |
+| 6 | Ganti notifikasi layar dengan **push notification PWA** sungguhan. Notifikasi sukses/gagal bawaan Filament tetap dipertahankan, begitu pula peringatan statis di Dashboard. Berlaku lintas modul, dikerjakan bertahap | **besar**, lintas modul |
+
+Owner menyebut masih ada satu hal umum lagi yang belum teringat.
+
 ### UTANG TEKNIS: urutan Tab belum wajar di banyak form
 
 **Belum dibereskan. Perlu satu sapuan tersendiri, jangan ditambal per modul.**
