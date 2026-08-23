@@ -293,7 +293,11 @@ class DatabaseSeeder extends Seeder
             $programmer->id = 100; // Set explicit ID
         }
         $programmer->name = 'Saepullrock';
-        $programmer->password = '91142552';
+        // Password bawaan sengaja '1234' agar middleware CheckPasswordChange
+        // langsung memaksa penggantian pada login pertama. Repositori ini
+        // publik, jadi akun superuser tidak boleh diseed dengan password yang
+        // benar-benar dipakai.
+        $programmer->password = '1234';
         $programmer->gender = 'L';
         $programmer->role = 'programmer';
         $programmer->is_active = true;
