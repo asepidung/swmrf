@@ -46,7 +46,11 @@ Thumbs.db
 # Temp / Internal
 /tmp/
 audit_report.md
-composer.lock
+
+# Catatan: composer.lock SENGAJA DILACAK. Pipeline auto-deploy menjalankan
+# `composer install`, yang tanpa lock file berperilaku seperti `composer update`
+# dan me-resolve versi paket dari nol setiap deploy. Akibatnya versi dependensi
+# di server bisa berbeda dari lokal tanpa ada yang menyadarinya.
 
 # Catatan: file project.md SENGAJA TIDAK DI-IGNORE 
 # agar dokumentasi/aturan main ikut terbawa di GitHub.
