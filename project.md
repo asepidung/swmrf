@@ -39,7 +39,7 @@ Sistem ERP untuk **Wijaya Meat**, produsen daging. Merupakan modernisasi sistem 
 
 - Kerjakan di branch `feature/issue-[nomor]`. **Dilarang commit langsung ke `main`.**
 - Setiap rencana yang disetujui wajib punya GitHub Issue. Setiap branch yang selesai diajukan sebagai Pull Request.
-- **Push ke `main` sama dengan deploy.** GitHub Actions otomatis menjalankan `git pull`, `composer install`, **`php artisan migrate --force`**, lalu cache warming ke server uji coba. Perlakukan merge sebagai aksi deploy ke lingkungan hidup.
+- **Deploy dilakukan MANUAL lewat SSH.** Deploy otomatis (GitHub Actions maupun bawaan Hostinger) sudah dimatikan karena koneksi SSH dari GitHub ke Hostinger berulang kali gagal. Setelah merge ke `main`, jalankan sendiri di server: `git pull`, `composer install`, **`php artisan migrate --force`**, lalu `optimize:clear` dan cache warming. **Merge saja tidak membuat perubahan sampai ke server.**
 - Kode PHP mengikuti PSR-12.
 
 ### Setelah selesai
@@ -102,7 +102,7 @@ Setiap Resource atau Cluster baru wajib:
 - **Warna dan posisi:** Create `Primary` di Page Header, Detail `Info` di sampingnya, Export `Success` di header tabel.
 - **Halaman Detail (Flat List):** modul Induk-Anak wajib punya Custom Page `detail-list` berisi rekap seluruh item anak dalam tabel datar, lengkap dengan silent date filter dan Export.
 - **Halaman bertipe paksaan** yang menahan pengguna sampai suatu tindakan selesai wajib memakai layout `simple` agar sidebar tidak tampil, dengan topbar tetap ada supaya pengguna masih bisa Sign out.
-- **Sub-menu cluster wajib di ATAS, bukan di samping.** Setiap Cluster wajib menyetel `protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;` sehingga sub-menunya tampil sebagai tab horizontal di bagian atas halaman, bukan sebagai daftar vertikal di sisi kiri.
+- **Sub-menu cluster wajib di ATAS, bukan di samping.** Setel `protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;` pada **setiap Resource di dalam cluster** — Filament membaca setelan ini dari Resource, bukan dari kelas Cluster. Menyetelnya di kelas Cluster saja tidak mengubah tampilan sama sekali.
 - **Dashboard minimalis.** Dilarang menampilkan widget bawaan framework seperti `FilamentInfoWidget`.
 
 ### Lain-lain

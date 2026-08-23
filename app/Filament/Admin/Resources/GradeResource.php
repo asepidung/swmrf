@@ -10,12 +10,16 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Pages\SubNavigationPosition;
 
 class GradeResource extends Resource
 {
     protected static ?string $model = Grade::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-swatch';
+
+    // Sub-menu cluster wajib di atas, bukan di samping.
+    protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 
     protected static ?string $cluster = ProductsCluster::class;
 
