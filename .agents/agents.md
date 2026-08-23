@@ -151,3 +151,24 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 - **Modul yang belum selesai** (lihat catatan Owner di `checklist_modul.md`, file lokal yang tidak masuk repo): QC/QA Monitoring Produksi, Accounts Receivable, serta laporan Fast Moving Products, Sales Report, dan Stock Gudang.
 - **Utang teknis yang diketahui:** kolom skalar `invoices.charge` sudah mati — digantikan repeater relasi `additionalCharges` — tetapi masih diekspor `InvoiceExporter`, sehingga kolom itu selalu bernilai nol di hasil ekspor.
 - **Langkah berikutnya:** menyisir setiap modul satu per satu untuk pengecekan dan perbaikan.
+
+### Alur menyisir modul
+
+Disepakati 23 Agustus 2026. **Project Owner yang menentukan modul mana digarap, satu per satu** — jangan memilih sendiri urutannya.
+
+Pembagian tugas per modul:
+
+| Siapa | Mengerjakan apa |
+|---|---|
+| Implementor | Menyisir kode dan **menulis test otomatis** untuk alur yang belum tercakup |
+| Project Owner | **Memverifikasi langsung di browser** |
+
+Langkah untuk tiap modul:
+
+1. Baca `docs/modules/<modul>.md` lebih dulu.
+2. Telusuri Resource, Pages, Model, dan Policy terkait.
+3. Periksa kepatuhan terhadap standar wajib di `project.md` — silent date filter, export Excel/PDF, clickable rows, permission, activity log, aturan Repeater, pola konkurensi.
+4. **Tulis test otomatis** untuk alur yang belum terjaga. Untuk fitur yang dipicu dari UI, panggil aksinya sungguhan lewat `callTableAction()` atau `callAction()`, jangan menirukan logikanya — lihat jebakan "test hijau bukan jaminan fitur jalan" di atas.
+5. Laporkan temuan ke Owner, lalu Owner memverifikasi perilakunya di browser.
+
+Alasan pembagian ini: bug Tukar Faktur membuktikan membaca kode saja tidak cukup, sementara Owner memang perlu membuka aplikasinya sendiri untuk menyegarkan ingatan terhadap alur bisnis. Keduanya saling menutupi titik buta.
