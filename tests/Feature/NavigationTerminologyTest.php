@@ -86,6 +86,63 @@ class NavigationTerminologyTest extends TestCase
         $this->assertNotSame('Stok Sapi', $id['Beef Stock']);
     }
 
+    /**
+     * Menjaga aturan bilingual di project.md secara otomatis: setiap teks yang
+     * dibungkus __() pada modul Produk Sapi, Grade, dan Warehouse wajib
+     * terdaftar di kedua berkas bahasa. Tanpa test ini, label baru gampang
+     * lolos dan menu tampil setengah Inggris saat aplikasi berbahasa Indonesia.
+     *
+     * @test
+     */
+    public function it_registers_every_translation_key_used_by_these_modules_in_both_languages()
+    {
+        $paths = [
+            app_path('Filament/Clusters/ProductsCluster.php'),
+            app_path('Filament/Clusters/ProductsCluster'),
+            app_path('Filament/Admin/Resources/GradeResource.php'),
+            app_path('Filament/Admin/Resources/GradeResource'),
+            app_path('Filament/Admin/Resources/WarehouseResource.php'),
+            app_path('Filament/Admin/Resources/WarehouseResource'),
+        ];
+
+        $files = [];
+        foreach ($paths as $path) {
+            if (is_file($path)) {
+                $files[] = $path;
+                continue;
+            }
+
+            if (! is_dir($path)) {
+                continue;
+            }
+
+            $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path));
+            foreach ($iterator as $file) {
+                if ($file->isFile() && $file->getExtension() === 'php') {
+                    $files[] = $file->getPathname();
+                }
+            }
+        }
+
+        $this->assertNotEmpty($files, 'Tidak ada berkas yang diperiksa.');
+
+        $keys = [];
+        foreach ($files as $file) {
+            preg_match_all("/__\('([^']*)'\)/", file_get_contents($file), $matches);
+            foreach ($matches[1] as $key) {
+                $keys[$key] = true;
+            }
+        }
+
+        $id = $this->translations('id');
+        $en = $this->translations('en');
+
+        foreach (array_keys($keys) as $key) {
+            $this->assertArrayHasKey($key, $id, "Kunci '{$key}' belum terdaftar di lang/id.json.");
+            $this->assertArrayHasKey($key, $en, "Kunci '{$key}' belum terdaftar di lang/en.json.");
+        }
+    }
+
     /** @test */
     public function it_names_the_master_data_cluster_cattle_products()
     {
