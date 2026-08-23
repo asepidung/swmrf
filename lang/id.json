@@ -591,5 +591,11 @@
     "Causer": "Penyebab (User)",
     "Old Values": "Nilai Lama",
     "New Values": "Nilai Baru",
-    "Roles": "Peran"
+    "Roles": "Peran",
+    "Grades": "Grade",
+    "Warehouses": "Gudang",
+    "Code": "Kode",
+    "Grade Digit": "Digit Grade",
+    "This number is embedded in the barcode. Do not change it.": "Angka ini tertanam di dalam barcode. Jangan diubah.",
+    "Excel": "Excel"
 }

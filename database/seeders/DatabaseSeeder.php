@@ -281,6 +281,18 @@ class DatabaseSeeder extends Seeder
             
             // System/Activity Logs
             ['name' => 'view_activity_logs', 'module_name' => 'System', 'description' => 'View activity logs'],
+
+            // Grade Module
+            ['name' => 'view_grades', 'module_name' => 'Grades', 'description' => 'View grades'],
+            ['name' => 'create_grades', 'module_name' => 'Grades', 'description' => 'Create grades'],
+            ['name' => 'edit_grades', 'module_name' => 'Grades', 'description' => 'Edit grades'],
+            ['name' => 'delete_grades', 'module_name' => 'Grades', 'description' => 'Delete grades'],
+
+            // Warehouse Module
+            ['name' => 'view_warehouses', 'module_name' => 'Warehouses', 'description' => 'View warehouses'],
+            ['name' => 'create_warehouses', 'module_name' => 'Warehouses', 'description' => 'Create warehouses'],
+            ['name' => 'edit_warehouses', 'module_name' => 'Warehouses', 'description' => 'Edit warehouses'],
+            ['name' => 'delete_warehouses', 'module_name' => 'Warehouses', 'description' => 'Delete warehouses'],
         ];
 
         foreach ($permissions as $perm) {
@@ -309,10 +321,24 @@ class DatabaseSeeder extends Seeder
         \App\Models\Warehouse::updateOrCreate(['code' => 'JONGGOL'], ['name' => 'JONGGOL', 'is_active' => true]);
         \App\Models\Warehouse::updateOrCreate(['code' => 'PERUM'], ['name' => 'PERUM', 'is_active' => true]);
 
-        // Seed Grades (Commented out temporarily to avoid ID conflicts during data migration)
-        // $grades = ['CHILL', 'FROZEN', 'A', 'B', 'R'];
-        // foreach ($grades as $gradeName) {
-        //     \App\Models\Grade::updateOrCreate(['name' => $gradeName], ['is_active' => true]);
-        // }
+        // Seed Grades.
+        //
+        // ID DIKUNCI SECARA EKSPLISIT DAN TIDAK BOLEH BERUBAH. Digit grade pada
+        // barcode 26 karakter mengacu langsung ke id di tabel ini, sehingga
+        // menukar urutannya akan membuat seluruh barcode lama salah arti.
+        $grades = [
+            1 => 'CHILL',
+            2 => 'FROZEN',
+            3 => 'A',
+            4 => 'B',
+            5 => 'R',
+        ];
+
+        foreach ($grades as $gradeId => $gradeName) {
+            \App\Models\Grade::updateOrCreate(
+                ['id' => $gradeId],
+                ['name' => $gradeName, 'is_active' => true]
+            );
+        }
     }
 }
