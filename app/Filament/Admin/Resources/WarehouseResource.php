@@ -56,6 +56,7 @@ class WarehouseResource extends Resource
                     ->label(fn () => __('Name'))
                     ->required()
                     ->maxLength(255)
+                    ->unique(ignoreRecord: true)
                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
 
                 Forms\Components\Toggle::make('is_active')
