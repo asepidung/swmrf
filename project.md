@@ -94,7 +94,12 @@ Setiap Resource atau Cluster baru wajib:
 - `autofocus()` pada field pertama. Urutan field harus nyaman dinavigasi murni dengan `Tab`.
 - **Setelah Create atau Edit berhasil, alihkan kembali ke halaman Index.**
 - **Toggle status aktif hanya di halaman Edit**, tidak di Create. Pakai `->visibleOn('edit')`. Data yang baru dibuat sudah pasti aktif dan kolomnya `DEFAULT 1` di database, jadi togglenya di Create hanya menambah perhentian Tab yang tidak berguna.
-- **Masking angka:** pakai `RawJs::make('$money(...)')` pada form biasa. **DILARANG KERAS di dalam `Repeater`** karena memicu bug Livewire Morphdom yang menyisakan baris "zombie" yang tidak bisa dihapus di browser. Di dalam Repeater cukup `->numeric()`.
+- **Masking angka:**
+  - Pada form biasa (di luar Repeater), pakai `RawJs::make('$money(...)')`.
+  - **Di dalam `Repeater`, `$money()` DILARANG KERAS** karena memasang Alpine `x-mask` pada setiap input di dalam baris. Saat baris dihapus, Morphdom gagal membersihkan elemennya karena tertahan proses teardown Alpine, menyisakan baris "zombie".
+  - **Pemisah ribuan di dalam Repeater tetap BISA**, lewat satu listener `x-on:input` pada `Section` pembungkus — di luar baris Repeater — yang memformat berdasarkan CSS class. Alpine tidak pernah menempel ke elemen baris, jadi tidak ada yang perlu di-teardown. Rujukannya `SalesOrderResource` dan `ProductRequisitionResource`.
+  - Field yang diformat **tidak boleh** `->numeric()`: itu membuat `<input type="number">` yang menolak pemisah ribuan sehingga isiannya tampil kosong. Pakai `->extraInputAttributes(['inputmode' => 'numeric'])`.
+  - Nilai berformat **wajib di-parse sebelum disimpan** (`parseNumber()`). Tanpa itu, `"250.000"` terbaca PHP sebagai `250.0` dan tersimpan menyusut tanpa error apa pun.
 - **Repeater bersih:** sembunyikan label tiap baris dengan `->label('')` dan `->hiddenLabel()`, cukup pakai `->placeholder()`.
 - Pada halaman Edit, sembunyikan tombol Cancel bawaan lewat `getFormActions()` dan letakkan Cancel di Header Actions.
 
