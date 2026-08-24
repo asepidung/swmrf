@@ -20,7 +20,7 @@ ERP untuk **Wijaya Meat**, produsen daging sapi. Alurnya mengikuti perjalanan ba
 Sapi hidup → Terima & Timbang → Karkas → Boning → Repack/Relabel → Stok → Tally → Delivery Order → Invoice → Piutang
 ```
 
-Sedang dimigrasikan dari sistem PHP prosedural ke Laravel 11 + Filament v3 dengan **Strangler Pattern**, jadi selama masa transisi kedua sistem berbagi database yang sama. Itulah alasan banyak nama tabel dan konvensi terasa "warisan" — memang sengaja, jangan dirapikan sepihak.
+Sedang dimigrasikan dari sistem PHP prosedural ke Laravel 12 + Filament v3 dengan **Strangler Pattern**, jadi selama masa transisi kedua sistem berbagi database yang sama. Itulah alasan banyak nama tabel dan konvensi terasa "warisan" — memang sengaja, jangan dirapikan sepihak.
 
 ### Lingkungan
 
@@ -161,7 +161,7 @@ Keputusan Owner, 24 Agustus 2026, untuk poin 6 pada #77.
 
 **Dikerjakan bertahap.** Baru modul Request Beef yang dipindahkan; 15 toast milik modul lain masih di poller dan menyusul sambil disisir.
 
-Paket: `laravel-notification-channels/webpush`. Perhatikan **versi ^10.0**, bukan ^11.0 — versi 11 mensyaratkan Laravel 12/13 sementara proyek ini Laravel 11.
+Paket: `laravel-notification-channels/webpush`, terpasang di `^10.0` (v10.5.0). **Alasan aslinya sudah tidak berlaku:** dulu ^11.0 dihindari karena mensyaratkan Laravel 12/13 sementara proyek masih Laravel 11 — sejak naik ke Laravel 12, penghalang itu hilang. Pin `^10.0` dipertahankan karena v10.5.0 sendiri sudah mendukung `illuminate/notifications ^11.0|^12.0|^13.0`, jadi naik ke 11.x atau 12.x sifatnya opsional, bukan kebutuhan keamanan.
 
 **Keputusan ShouldQueue: TIDAK dipakai.** `QUEUE_CONNECTION` masih `sync` dan tidak ada queue worker di shared hosting. Notifikasi yang diantre tanpa worker justru menumpuk diam-diam tanpa error — persis jebakan yang diperingatkan Owner dari proyek sebelumnya. Penerimanya pun cuma segelintir orang. Bila kelak jumlah penerima membengkak atau approve terasa lambat, pindah ke queue **berbarengan** dengan menyiapkan workernya, jangan salah satu saja.
 
@@ -391,8 +391,8 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 76 lolos, 0 gagal.** Sebelumnya praktis mati total. Jaga tetap hijau.
-- **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; UI untuk Warehouse dan Grade; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
+- **Test suite: 166 lolos, 0 gagal** (942 assertion, diverifikasi 24 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Tiga modul Finance sengaja dimatikan
 
