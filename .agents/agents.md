@@ -124,6 +124,25 @@ Terjadi di halaman View Request Beef dan Request Material: `mutateFormDataBefore
 
 Ada test yang menjaganya (`RequisitionViewFormTest`).
 
+### Satu jalur per tahap keputusan — halaman View wajib baca-saja
+
+Penjagaan tidak ada gunanya bila ada jalur pintas yang melewatinya. Ini pernah terjadi dan memakan waktu untuk ketahuan.
+
+Modul Requisition dulu punya **dua jalur** untuk tiap tahap:
+
+1. Halaman khusus (`ReviewXxx`, `ApproveFinanceXxx`) — form bisa diedit, ada validasi
+2. **Modal di halaman View** — menulis status langsung, tanpa validasi apa pun
+
+Yang dipakai operator justru yang kedua, karena tombolnya ada di halaman yang dia buka. Padahal di halaman View harga tidak bisa dilihat apalagi diperbaiki, sehingga dokumen berharga nol lolos ke finance meski penjagaannya sudah dipasang.
+
+Lebih parah: **`ApproveFinanceProductRequisition` dan `ApproveFinanceMaterialRequisition` tidak terdaftar di `getPages()`** sehingga tidak punya rute sama sekali. Seluruh isinya, termasuk penjagaan harga, adalah kode mati. Semua persetujuan finance mengalir lewat modal View.
+
+**Aturannya sekarang:** halaman View murni baca-saja. Tombol keputusan **mengarahkan** ke halaman khususnya, tidak membuka modal. Keputusan yang bergantung pada data harus diambil di tempat data itu bisa dilihat dan diperbaiki.
+
+Ada test yang menjaga dua hal sekaligus: halaman View tidak boleh menulis `Pending Finance` atau `PO Created`, dan halaman Finance Approval wajib punya rute terdaftar.
+
+**Pelajaran umum:** saat memasang validasi, cari dulu **semua** jalur yang bisa mengubah status yang sama. Grep `'status' =>` di seluruh modul, jangan cuma di halaman yang sedang dikerjakan.
+
 ### Harga kosong di Request: purchasing yang mengisi, bukan pemohon
 
 Keputusan Owner, 24 Agustus 2026. Tiga situasi yang dulu dipaksa masuk dua tombol:

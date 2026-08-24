@@ -393,6 +393,7 @@ class ProductRequisitionResource extends Resource
             'create' => Pages\CreateProductRequisition::route('/create'),
             'view' => Pages\ViewProductRequisition::route('/{record}'),
             'review' => Pages\ReviewProductRequisition::route('/{record}/review'),
+            'approve-finance' => Pages\ApproveFinanceProductRequisition::route('/{record}/finance-approval'),
             'edit' => Pages\EditProductRequisition::route('/{record}/edit'),
         ];
     }

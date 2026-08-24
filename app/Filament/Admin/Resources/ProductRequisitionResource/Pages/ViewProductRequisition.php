@@ -43,48 +43,20 @@ class ViewProductRequisition extends ViewRecord
                 ->url(fn() => route('print.product-request', ['id' => $this->record->id]))
                 ->openUrlInNewTab(),
 
-                        \Filament\Actions\Action::make('review')
+            // Diarahkan ke halaman Review, BUKAN modal. Keputusan purchasing bergantung
+            // pada harga, dan harga hanya bisa dilihat serta diisi di halaman itu.
+            // Modal di halaman View dulu melewati seluruh validasi harga.
+            \Filament\Actions\Action::make('review')
                 ->tooltip(fn() => __('Review'))
                 ->hiddenLabel()
                 ->icon('heroicon-o-clipboard-document-check')
                 ->color('warning')
                 ->visible(function () {
-                    $user = auth()->user();
-                    return in_array($this->record->status, ['Requested', 'Returned to Purchasing']) && ($user->isProgrammer() || $user->hasPermission('review_product_requisitions'));
-                })
-                ->modalHeading(fn() => __('Review Request'))
-                ->modalDescription(fn() => __('Review request ini dan setujui untuk dilanjutkan ke Finance, atau reject ke pembuat.'))
-                ->modalSubmitActionLabel(fn() => __('Submit Review'))
-                ->modalIcon('heroicon-o-clipboard-document-check')
-                ->form([
-                    \Filament\Forms\Components\Radio::make('decision')
-                        ->label(fn() => __('Decision'))
-                        ->options([
-                            'approve' => 'Approve (Send to Finance)',
-                            'reject' => 'Reject',
-                        ])
-                        ->required()
-                        ->live(),
-                    \Filament\Forms\Components\Textarea::make('reject_note')
-                        ->label(fn() => __('Reason for Rejection'))
-                        ->required(fn (\Filament\Forms\Get $get) => $get('decision') === 'reject')
-                        ->visible(fn (\Filament\Forms\Get $get) => $get('decision') === 'reject'),
-                ])
-                ->action(function (array $data) {
-                    if ($data['decision'] === 'approve') {
-                        $this->record->update([
-                            'status' => 'Pending Finance',
-                            'reject_note' => null,
-                        ]);
-                        \Filament\Notifications\Notification::make()->title('Request sent to Finance')->success()->send();
-                    } else {
-                        $this->record->update([
-                            'status' => 'Rejected',
-                            'reject_note' => $data['reject_note'],
-                        ]);
-                        \Filament\Notifications\Notification::make()->title('Request rejected')->warning()->send();
-                    }
-                }),
+                        $user = auth()->user();
+                        return in_array($this->record->status, ['Requested', 'Returned to Purchasing']) && ($user->isProgrammer() || $user->hasPermission('review_product_requisitions'));
+                    })
+                ->url(fn() => ProductRequisitionResource::getUrl('review', ['record' => $this->record])),
+
 
             Actions\Action::make('resubmit')
                 ->tooltip(fn() => __('Resubmit Request'))
@@ -100,51 +72,19 @@ class ViewProductRequisition extends ViewRecord
                     ]);
                 }),
 
-            Actions\Action::make('finance_approval')
+            // Diarahkan ke halaman Finance Approval, BUKAN modal, dengan alasan yang
+            // sama seperti tombol Review di atas.
+            \Filament\Actions\Action::make('finance_approval')
                 ->tooltip(fn() => __('Finance Approval'))
                 ->hiddenLabel()
                 ->icon('heroicon-o-shield-check')
                 ->color('success')
                 ->visible(function () {
-                    $user = auth()->user();
-                    return $this->record->status === 'Pending Finance' && ($user->isProgrammer() || $user->hasPermission('approve_product_requisitions'));
-                })
-                                ->modalHeading(fn() => __('Finance Approval'))
-                ->modalDescription(fn() => __('Silakan setujui untuk lanjut dibuatkan PO, atau kembalikan ke Purchasing.'))
-                ->modalSubmitActionLabel(fn() => __('Submit Decision'))
-                ->modalIcon('heroicon-o-shield-check')
-                ->form([
-                    \Filament\Forms\Components\Radio::make('decision')
-                        ->label(fn() => __('Decision'))
-                        ->options([
-                            'approve' => 'Approve & Generate PO',
-                            'reject' => 'Reject (Return to Purchasing)',
-                        ])
-                        ->required()
-                        ->live(),
-                    \Filament\Forms\Components\Textarea::make('reject_note')
-                        ->label(fn() => __('Reason for Rejection'))
-                        ->required(fn (\Filament\Forms\Get $get) => $get('decision') === 'reject')
-                        ->visible(fn (\Filament\Forms\Get $get) => $get('decision') === 'reject'),
-                ])
-                ->action(function (array $data) {
-                    if ($data['decision'] === 'approve') {
-                        \Illuminate\Support\Facades\DB::transaction(function () {
-                            $this->record->update([
-                                'status' => 'PO Created',
-                                'reject_note' => null,
-                            ]);
-                            $this->record->generatePurchaseOrder();
-                        });
-                        \Filament\Notifications\Notification::make()->title('PO Created Successfully')->success()->send();
-                    } else {
-                        $this->record->update([
-                            'status' => 'Returned to Purchasing',
-                            'reject_note' => $data['reject_note'],
-                        ]);
-                        \Filament\Notifications\Notification::make()->title('Returned to Purchasing')->warning()->send();
-                    }
-                }),
+                        $user = auth()->user();
+                        return $this->record->status === 'Pending Finance' && ($user->isProgrammer() || $user->hasPermission('approve_product_requisitions'));
+                    })
+                ->url(fn() => ProductRequisitionResource::getUrl('approve-finance', ['record' => $this->record])),
+
 
             Actions\EditAction::make()
                 ->tooltip(fn() => __('Edit'))
