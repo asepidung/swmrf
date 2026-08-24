@@ -624,5 +624,16 @@
     "Isi dulu harga untuk barang berikut": "Isi dulu harga untuk barang berikut",
     "Harga belum lengkap, PO belum bisa diterbitkan": "Harga belum lengkap, PO belum bisa diterbitkan",
     "PO bernilai nol akan menciptakan utang palsu dan mengacaukan perhitungan TOP. Barang yang harganya masih kosong": "PO bernilai nol akan menciptakan utang palsu dan mengacaukan perhitungan TOP. Barang yang harganya masih kosong",
-    "Price is required and cannot be zero.": "Harga wajib diisi dan tidak boleh nol."
+    "Price is required and cannot be zero.": "Harga wajib diisi dan tidak boleh nol.",
+    "Payment (Optional)": "Pembayaran (Opsional)",
+    "Fill this in only if the goods were paid or partially paid up front. Leave the amount at 0 to record it purely as a payable.": "Isi hanya bila barang sudah dibayar atau di-DP. Biarkan nilainya 0 bila murni dicatat sebagai utang.",
+    "Payment Amount": "Nilai Pembayaran",
+    "Leave at 0 if nothing has been paid yet.": "Biarkan 0 bila belum ada pembayaran.",
+    "Payment Method": "Metode Pembayaran",
+    "Cash": "Tunai",
+    "Transfer": "Transfer",
+    "Payment Date": "Tanggal Bayar",
+    "Payment Reference": "Kode Pembayaran",
+    "Payment Note": "Catatan Pembayaran",
+    "Approve & Generate PO": "Setujui & Terbitkan PO"
 }

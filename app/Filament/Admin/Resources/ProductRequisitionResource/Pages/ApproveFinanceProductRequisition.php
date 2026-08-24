@@ -85,6 +85,48 @@ class ApproveFinanceProductRequisition extends EditRecord
         return $missing;
     }
 
+    /** Nilai pembayaran dianggap ada bila lebih dari nol setelah di-parse. */
+    protected static function hasPaymentAmount($value): bool
+    {
+        return ProductRequisitionResource::parseNumber($value) > 0;
+    }
+
+    /**
+     * Catat pembayaran di muka bila finance mengisi nilainya.
+     *
+     * Bila nilainya 0 seluruh bagian ini dilewati: dokumen murni menjadi utang
+     * dan TOP mulai berjalan saat barang diterima. Itu keputusan Project Owner
+     * dan alasan tidak ada dokumen pembayaran bernilai nol di sistem.
+     *
+     * Pembayaran disimpan sebagai dokumen tersendiri, bukan kolom di tabel
+     * request, karena utang baru lahir saat barang diterima. Saat itulah uang
+     * muka ini ditelusuri kembali dan dipotongkan ke utangnya.
+     */
+    protected function recordAdvancePayment(array $data): ?\App\Models\SupplierPayment
+    {
+        $amount = ProductRequisitionResource::parseNumber($data['payment_amount'] ?? 0);
+
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $method = $data['payment_method'] ?? \App\Models\SupplierPayment::METHOD_TRANSFER;
+
+        return \App\Models\SupplierPayment::create([
+            'supplier_id' => $this->record->supplier_id,
+            'source_type' => get_class($this->record),
+            'source_id' => $this->record->getKey(),
+            'payment_date' => $data['payment_date'] ?? now()->toDateString(),
+            'method' => $method,
+            'bank_account_id' => $method === \App\Models\SupplierPayment::METHOD_TRANSFER
+                ? ($data['bank_account_id'] ?? null)
+                : null,
+            'reference_number' => $data['payment_reference'] ?? null,
+            'amount' => $amount,
+            'note' => $data['payment_note'] ?? null,
+        ]);
+    }
+
     protected function afterSave(): void
     {
         $this->record->items()->delete();
@@ -121,8 +163,63 @@ class ApproveFinanceProductRequisition extends EditRecord
             ->label('Approve & Generate PO')
             ->color('success')
             ->icon('heroicon-s-check-circle')
-            ->requiresConfirmation()
-            ->action(function () {
+            ->modalWidth('lg')
+            ->modalSubmitActionLabel(__('Approve & Generate PO'))
+            ->form([
+                \Filament\Forms\Components\Section::make(__('Payment (Optional)'))
+                    ->description(__('Fill this in only if the goods were paid or partially paid up front. Leave the amount at 0 to record it purely as a payable.'))
+                    ->schema([
+                        \Filament\Forms\Components\TextInput::make('payment_amount')
+                            ->label(__('Payment Amount'))
+                            ->prefix('Rp')
+                            ->default(0)
+                            ->live(onBlur: true)
+                            ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right'])
+                            ->helperText(__('Leave at 0 if nothing has been paid yet.')),
+
+                        \Filament\Forms\Components\Radio::make('payment_method')
+                            ->label(__('Payment Method'))
+                            ->options([
+                                'cash' => __('Cash'),
+                                'transfer' => __('Transfer'),
+                            ])
+                            ->inline()
+                            ->default('transfer')
+                            ->required(fn (\Filament\Forms\Get $get) => static::hasPaymentAmount($get('payment_amount')))
+                            ->visible(fn (\Filament\Forms\Get $get) => static::hasPaymentAmount($get('payment_amount')))
+                            ->live(),
+
+                        \Filament\Forms\Components\Select::make('bank_account_id')
+                            ->label(__('Bank Account'))
+                            ->options(fn () => \App\Models\BankAccount::query()
+                                ->orderBy('initial')
+                                ->get()
+                                ->mapWithKeys(fn ($account) => [
+                                    $account->id => trim($account->initial . ' - ' . $account->account_number . ' (' . $account->account_holder . ')'),
+                                ])
+                                ->all())
+                            ->searchable()
+                            ->required(fn (\Filament\Forms\Get $get) => static::hasPaymentAmount($get('payment_amount')) && $get('payment_method') === 'transfer')
+                            ->visible(fn (\Filament\Forms\Get $get) => static::hasPaymentAmount($get('payment_amount')) && $get('payment_method') === 'transfer'),
+
+                        \Filament\Forms\Components\DatePicker::make('payment_date')
+                            ->label(__('Payment Date'))
+                            ->default(now())
+                            ->required(fn (\Filament\Forms\Get $get) => static::hasPaymentAmount($get('payment_amount')))
+                            ->visible(fn (\Filament\Forms\Get $get) => static::hasPaymentAmount($get('payment_amount'))),
+
+                        \Filament\Forms\Components\TextInput::make('payment_reference')
+                            ->label(__('Payment Reference'))
+                            ->maxLength(255)
+                            ->visible(fn (\Filament\Forms\Get $get) => static::hasPaymentAmount($get('payment_amount'))),
+
+                        \Filament\Forms\Components\Textarea::make('payment_note')
+                            ->label(__('Payment Note'))
+                            ->rows(2)
+                            ->visible(fn (\Filament\Forms\Get $get) => static::hasPaymentAmount($get('payment_amount'))),
+                    ]),
+            ])
+            ->action(function (array $data) {
                 $missing = $this->itemsMissingPrice();
 
                 if ($missing !== []) {
@@ -138,13 +235,17 @@ class ApproveFinanceProductRequisition extends EditRecord
 
                 $this->save(false); // Make sure to save any changes made by Finance, if any
 
-                \Illuminate\Support\Facades\DB::transaction(function () {
+                \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
                     $this->record->update([
                         'status' => 'PO Created',
                         'reject_note' => null,
                     ]);
-                    
+
                     $this->record->generatePurchaseOrder();
+
+                    // Dicatat di dalam transaksi yang sama: PO terbit dan uang
+                    // muka tercatat sekaligus, atau dua-duanya batal.
+                    $this->recordAdvancePayment($data);
                 });
                 
                 // Notifications rely on PendingTaskWidget now.
