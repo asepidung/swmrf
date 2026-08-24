@@ -136,6 +136,10 @@ Keputusan Owner, 24 Agustus 2026. Tiga situasi yang dulu dipaksa masuk dua tombo
 
 Owner memutuskan **tidak** menambah tombol "Kembalikan ke Pemohon"; Reject dianggap cukup.
 
+**Penyempurnaan skema (keputusan lanjutan Owner):** harga adalah tanggung jawab **purchasing**, bukan pemohon. Kolom harga tetap ada di form pemohon sebagai perkiraan opsional, tetapi di halaman review purchasing kolom itu **wajib** terisi dan tidak boleh nol — ditandai `required` sehingga kesalahannya muncul langsung di kolomnya, bukan sekadar toast setelah menekan Approve. Dengan begitu finance tidak pernah menerima dokumen berharga kosong.
+
+Catatan penting soal alur: **tombol "reject" di halaman finance sebenarnya BUKAN reject.** Ia menyetel status ke `Returned to Purchasing`, jadi jalur pulang ke purchasing sudah tersedia. Kalau kunci di finance sampai berbunyi karena data lama, finance tinggal memakai tombol itu.
+
 Tombol Approve dikunci selama masih ada harga 0, **di purchasing maupun di finance**. Finance dikunci sebagai lapis kedua karena data lama atau perubahan langsung lewat database bisa lolos dari lapis pertama, dan PO bernilai nol akan menciptakan utang palsu yang mengacaukan perhitungan TOP.
 
 Pemeriksaan membaca isi **form**, bukan record di database, supaya harga yang baru diketik purchasing langsung terhitung tanpa perlu menyimpan lebih dulu. Pesannya menyebut nama barang yang kosong, bukan sekadar "ada harga yang belum diisi".

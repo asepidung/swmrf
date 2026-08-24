@@ -130,6 +130,59 @@ class RequisitionPriceGuardTest extends TestCase
     }
 
     /**
+     * Kolom harga ditandai wajib HANYA di halaman review purchasing, sehingga
+     * kesalahan muncul langsung di kolomnya, bukan sekadar toast setelah
+     * menekan Approve. Di form pemohon kolom itu tetap opsional.
+     *
+     * @test
+     */
+    public function it_marks_price_as_required_only_on_the_purchasing_review_page()
+    {
+        $requisition = $this->makeRequisition('Requested', 0);
+
+        $page = Livewire::actingAs($this->user)
+            ->test(ReviewProductRequisition::class, ['record' => $requisition->id])
+            ->instance();
+
+        $price = null;
+        foreach ($page->form->getFlatFields(withHidden: true) as $key => $field) {
+            if (str_ends_with($key, 'price')) {
+                $price = $field;
+                break;
+            }
+        }
+
+        $this->assertNotNull($price, 'Kolom price tidak ditemukan di halaman review.');
+        $this->assertTrue($price->isRequired(), 'Harga wajib ditandai required di review purchasing.');
+    }
+
+    /**
+     * Di form pemohon harga tetap boleh kosong; itu tanggung jawab purchasing.
+     *
+     * @test
+     */
+    public function it_keeps_price_optional_on_the_requester_form()
+    {
+        $page = Livewire::actingAs($this->user)
+            ->test(\App\Filament\Admin\Resources\ProductRequisitionResource\Pages\CreateProductRequisition::class)
+            ->instance();
+
+        $price = null;
+        foreach ($page->form->getFlatFields(withHidden: true) as $key => $field) {
+            if (str_ends_with($key, 'price')) {
+                $price = $field;
+                break;
+            }
+        }
+
+        if ($price === null) {
+            $this->markTestSkipped('Baris item belum terbentuk di form create.');
+        }
+
+        $this->assertFalse($price->isRequired(), 'Harga tidak boleh wajib di form pemohon.');
+    }
+
+    /**
      * Lapis kedua: meski purchasing sudah dikunci, finance tetap memeriksa.
      * Data lama atau perubahan langsung lewat database bisa lolos dari lapis
      * pertama.
