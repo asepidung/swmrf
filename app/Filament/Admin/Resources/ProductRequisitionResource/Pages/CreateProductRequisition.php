@@ -56,6 +56,15 @@ class CreateProductRequisition extends CreateRecord
             }
         }
         $this->record->updateTotalAmount();
+
+        \App\Support\TaskNotifier::notifyPermissionHolders(
+            'review_product_requisitions',
+            __('New Beef Request'),
+            __('Request :number is waiting for your review.', ['number' => $this->record->document_number]),
+            \App\Filament\Admin\Resources\ProductRequisitionResource::getUrl('review', ['record' => $this->record]),
+            'beef-request-' . $this->record->id,
+            auth()->id(),
+        );
     }
 
 

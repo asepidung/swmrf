@@ -170,54 +170,14 @@ class GlobalTaskPoller extends Component
             }
         }
 
-        if (empty($this->lastProductCheckAt)) {
-            $this->lastProductCheckAt = now()->toDateTimeString();
-        }
-
-        $recentProductUpdates = \App\Models\ProductRequisition::where('updated_at', '>', $this->lastProductCheckAt)->get();
-        if ($recentProductUpdates->isNotEmpty()) {
-            $this->lastProductCheckAt = now()->toDateTimeString();
-            foreach ($recentProductUpdates as $req) {
-                if ($req->status === 'Requested' && $req->created_at->diffInSeconds($req->updated_at) <= 2) {
-                    if (auth()->user()->isProgrammer() || auth()->user()->hasPermission('review_product_requisitions')) {
-                        Notification::make()->title('ada request beef baru')->warning()->icon('heroicon-o-document-text')->send();
-                    }
-                }
-                
-                if ($req->status === 'Pending Finance') {
-                    if ($req->user_id === auth()->id()) {
-                        Notification::make()->title('Request Beef kamu sudah disetujui oleh purchasing dan diteruskan ke finance')->success()->icon('heroicon-o-check-circle')->send();
-                    }
-                    if (auth()->user()->isProgrammer() || auth()->user()->hasPermission('approve_product_requisitions')) {
-                        Notification::make()->title('ada request beef baru yang menunggu persetujuanmu')->warning()->icon('heroicon-o-document-text')->send();
-                    }
-                }
-                
-                if ($req->status === 'Rejected') {
-                    if ($req->user_id === auth()->id()) {
-                        Notification::make()->title('Request beef anda ditolak')->danger()->icon('heroicon-o-x-circle')->send();
-                    }
-                }
-                
-                if (in_array($req->status, ['Approved', 'PO Generated'])) {
-                    if ($req->user_id === auth()->id()) {
-                        Notification::make()->title('request beef kamu disetujui finance')->success()->icon('heroicon-o-check-circle')->send();
-                    }
-                    if (auth()->user()->isProgrammer() || auth()->user()->hasPermission('review_product_requisitions')) {
-                        Notification::make()->title('request beef di setujui finance')->success()->icon('heroicon-o-check-circle')->send();
-                    }
-                }
-                
-                if ($req->status === 'Returned to Purchasing') {
-                    if ($req->user_id === auth()->id()) {
-                        Notification::make()->title('Request beef anda dikembalikan oleh Finance')->danger()->icon('heroicon-o-x-circle')->send();
-                    }
-                    if (auth()->user()->isProgrammer() || auth()->user()->hasPermission('review_product_requisitions')) {
-                        Notification::make()->title('Request beef dikembalikan oleh Finance')->danger()->icon('heroicon-o-x-circle')->send();
-                    }
-                }
-            }
-        }
+        // Notifikasi Request Beef sudah PINDAH ke Web Push (TaskAlert),
+        // dikirim langsung dari halaman yang mengubah statusnya. Toast
+        // lintas-pengguna di sini dihapus supaya pemberitahuan tidak
+        // datang dua kali.
+        //
+        // Modul lain masih memakai poller ini dan akan menyusul sambil
+        // disisir, sesuai keputusan Owner untuk tidak mengubah semuanya
+        // sekaligus.
     }
 
     public function render()

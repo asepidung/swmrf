@@ -124,6 +124,30 @@ Terjadi di halaman View Request Beef dan Request Material: `mutateFormDataBefore
 
 Ada test yang menjaganya (`RequisitionViewFormTest`).
 
+### Notifikasi: Web Push (PWA), bukan toast lintas-pengguna
+
+Keputusan Owner, 24 Agustus 2026, untuk poin 6 pada #77.
+
+**Yang diganti:** toast yang muncul di layar ORANG LAIN — pemberitahuan antar-peran seperti "ada request beef baru" untuk purchasing. Dulu dipancarkan `GlobalTaskPoller` yang mem-polling setiap 5 detik.
+
+**Yang TIDAK diganti:** toast bawaan Filament untuk pelaku aksinya sendiri — "berhasil disimpan", "gagal". Itu umpan balik untuk dirinya sendiri, bukan pemberitahuan untuk orang lain. Peringatan statis di Dashboard juga dipertahankan.
+
+**Dikerjakan bertahap.** Baru modul Request Beef yang dipindahkan; 15 toast milik modul lain masih di poller dan menyusul sambil disisir.
+
+Paket: `laravel-notification-channels/webpush`. Perhatikan **versi ^10.0**, bukan ^11.0 — versi 11 mensyaratkan Laravel 12/13 sementara proyek ini Laravel 11.
+
+**Keputusan ShouldQueue: TIDAK dipakai.** `QUEUE_CONNECTION` masih `sync` dan tidak ada queue worker di shared hosting. Notifikasi yang diantre tanpa worker justru menumpuk diam-diam tanpa error — persis jebakan yang diperingatkan Owner dari proyek sebelumnya. Penerimanya pun cuma segelintir orang. Bila kelak jumlah penerima membengkak atau approve terasa lambat, pindah ke queue **berbarengan** dengan menyiapkan workernya, jangan salah satu saja.
+
+Pengiriman dibungkus try/catch di `TaskNotifier`: **notifikasi tidak boleh menggagalkan aksi bisnis yang memicunya.** Kalau layanan push mati, dokumen tetap harus tersimpan.
+
+**Penghitung langganan di Dashboard adalah bagian penting, bukan hiasan.** Pelajaran Owner dari proyek presensi: fiturnya sempurna secara teknis, tetapi hanya **3 dari 193 orang** yang menekan "Izinkan" — berbulan-bulan tidak ada notifikasi yang sampai ke siapa pun dan tidak ada yang menyadarinya karena tidak ada yang menghitung. `PushSubscriptionCoverageWidget` menampilkan angkanya sejak hari pertama.
+
+**Izin sengaja TIDAK diminta saat halaman dibuka.** Browser hanya memberi satu kesempatan: begitu pengguna menekan "Blokir", tidak ada cara memintanya lagi dari kode. Karena itu izin diminta lewat tombol lonceng di topbar, setelah pengguna sadar sedang menyalakan sesuatu.
+
+**Syarat yang tidak bisa ditawar:** HTTPS wajib (kecuali localhost), iOS baru bisa sejak 16.4 dan **hanya bila aplikasinya dipasang ke layar utama** — dibuka lewat Safari biasa notifikasi tidak akan pernah muncul meski kodenya benar.
+
+**Kunci VAPID bersifat rahasia** dan hanya ada di `.env` masing-masing lingkungan. `.env.example` sengaja diisi placeholder kosong. Membuatnya: `php artisan webpush:vapid`. Di Windows/Laragon perintah itu gagal dengan "Unable to create the key" bila `OPENSSL_CONF` belum diset ke `openssl.cnf` bawaan PHP.
+
 ### Uang muka ke supplier: dokumen tersendiri, bukan kolom di request
 
 Keputusan Owner, 24 Agustus 2026, untuk poin 5 pada #77.
@@ -201,7 +225,7 @@ Daftar dari Owner, 24 Agustus 2026. Nomor 2 sudah selesai; sisanya menunggu.
 | 3 | Setelah approve purchasing dan approve finance, balik ke Index | perlu repro — kodenya **sudah** memanggil `$this->redirect()`, tapi `$this->save(false)` dipanggil lebih dulu; bila save gagal validasi, redirect tidak pernah jalan dan pengguna tertinggal di halaman **tanpa pesan apa pun** |
 | 4 | ~~Cara menolak bila ada barang tanpa harga~~ | **selesai** — purchasing mengisi sendiri, Approve dikunci di dua tahap |
 | 5 | ~~Input pembayaran saat approve finance~~ | **selesai** — tersimpan sebagai dokumen `supplier_payments` dan otomatis memotong utang |
-| 6 | Ganti notifikasi layar dengan **push notification PWA** sungguhan. Notifikasi sukses/gagal bawaan Filament tetap dipertahankan, begitu pula peringatan statis di Dashboard. Berlaku lintas modul, dikerjakan bertahap | **besar**, lintas modul |
+| 6 | ~~Notifikasi PWA~~ | **fondasi selesai**, Request Beef sudah pindah; modul lain menyusul sambil disisir |
 
 Owner menyebut masih ada satu hal umum lagi yang belum teringat.
 
