@@ -322,6 +322,7 @@ class MaterialRequisitionResource extends Resource
             'detail-list' => Pages\ListMaterialRequisitionDetails::route('/detail-list'),
             'view' => Pages\ViewMaterialRequisition::route('/{record}'),
             'review' => Pages\ReviewMaterialRequisition::route('/{record}/review'),
+            'approve-finance' => Pages\ApproveFinanceMaterialRequisition::route('/{record}/finance-approval'),
             'edit' => Pages\EditMaterialRequisition::route('/{record}/edit'),
         ];
     }

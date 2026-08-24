@@ -183,6 +183,60 @@ class RequisitionPriceGuardTest extends TestCase
     }
 
     /**
+     * Penjagaan harga tidak ada gunanya bila ada jalur pintas yang melewatinya.
+     *
+     * Dulu halaman View memuat modal Approve/Reject yang menulis status
+     * langsung tanpa memeriksa harga sama sekali — dan justru itulah jalur
+     * yang dipakai operator. Halaman View kini murni baca-saja: tombolnya
+     * mengarahkan ke halaman Review dan Finance Approval.
+     *
+     * @test
+     *
+     * @dataProvider viewPages
+     */
+    public function it_keeps_view_pages_free_of_decision_shortcuts(string $file)
+    {
+        $source = file_get_contents(app_path($file));
+
+        foreach (["'Pending Finance'", "'PO Created'"] as $status) {
+            $writes = preg_match_all("/'status'\s*=>\s*" . preg_quote($status, '/') . "/", $source);
+
+            $this->assertSame(
+                0,
+                $writes,
+                "Halaman View {$file} menulis status {$status} langsung. "
+                . 'Itu jalur pintas yang melewati seluruh validasi harga.'
+            );
+        }
+    }
+
+    /** @return array<string, array<int, string>> */
+    public static function viewPages(): array
+    {
+        return [
+            'Request Beef' => ['Filament/Admin/Resources/ProductRequisitionResource/Pages/ViewProductRequisition.php'],
+            'Request Material' => ['Filament/Admin/Resources/MaterialRequisitionResource/Pages/ViewMaterialRequisition.php'],
+        ];
+    }
+
+    /**
+     * Halaman Finance Approval sempat TIDAK terdaftar di getPages(), sehingga
+     * tidak punya rute sama sekali dan penjagaan di dalamnya menjadi kode mati.
+     * Seluruh persetujuan finance mengalir lewat modal di halaman View.
+     *
+     * @test
+     */
+    public function it_registers_a_route_for_the_finance_approval_page()
+    {
+        foreach (['product-requisitions', 'material-requisitions'] as $slug) {
+            $this->assertTrue(
+                \Illuminate\Support\Facades\Route::has("filament.admin.resources.{$slug}.approve-finance"),
+                "Halaman Finance Approval untuk {$slug} tidak punya rute, jadi penjagaannya tidak pernah terpakai."
+            );
+        }
+    }
+
+    /**
      * Lapis kedua: meski purchasing sudah dikunci, finance tetap memeriksa.
      * Data lama atau perubahan langsung lewat database bisa lolos dari lapis
      * pertama.
