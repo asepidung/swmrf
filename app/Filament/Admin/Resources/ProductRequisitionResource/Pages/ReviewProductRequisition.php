@@ -26,8 +26,8 @@ class ReviewProductRequisition extends EditRecord
         $data['items'] = $this->record->items->mapWithKeys(function ($item) {
             return [(string) \Illuminate\Support\Str::uuid() => [
                 'product_id' => $item->product_id,
-                'qty' => (float) $item->qty,
-                'price' => (float) $item->price,
+                'qty' => number_format((float) $item->qty, 2, ',', '.'),
+                'price' => number_format((float) $item->price, 0, ',', '.'),
                 'item_total' => (float) ($item->qty * $item->price),
                 'note' => $item->note,
             ]];
@@ -60,8 +60,10 @@ class ReviewProductRequisition extends EditRecord
             if (!empty($item['product_id'])) {
                 $this->record->items()->create([
                     'product_id' => $item['product_id'],
-                    'qty' => $item['qty'] ?? 0,
-                    'price' => $item['price'] ?? 0,
+                    // WAJIB di-parse: input menampilkan pemisah ribuan ("250.000"),
+                    // yang bila disimpan mentah akan terbaca 250.
+                    'qty' => ProductRequisitionResource::parseNumber($item['qty'] ?? 0),
+                    'price' => ProductRequisitionResource::parseNumber($item['price'] ?? 0),
                     'subtotal' => ($item['qty'] ?? 0) * ($item['price'] ?? 0),
                     'note' => $item['note'] ?? null,
                 ]);

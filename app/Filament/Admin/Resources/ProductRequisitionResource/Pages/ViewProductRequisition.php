@@ -20,13 +20,12 @@ class ViewProductRequisition extends ViewRecord
         $data['items'] = $this->record->items->mapWithKeys(function ($item) {
             return [(string) \Illuminate\Support\Str::uuid() => [
                 'product_id' => $item->product_id,
-                // Jangan diformat. Ketiga field ini ->numeric() alias
-                // <input type="number">, yang tidak bisa menampung string
-                // ber-pemisah ribuan seperti "1.234,50" sehingga isiannya
-                // justru tampil kosong.
-                'qty' => $item->qty,
-                'price' => $item->price,
-                'item_total' => $item->qty * $item->price,
+                // Boleh diformat karena qty dan price BUKAN lagi ->numeric().
+                // Selama masih <input type="number">, string ber-pemisah ribuan
+                // ditolak browser dan fieldnya tampil kosong.
+                'qty' => number_format((float) $item->qty, 2, ',', '.'),
+                'price' => number_format((float) $item->price, 0, ',', '.'),
+                'item_total' => number_format((float) $item->qty * (float) $item->price, 0, ',', '.'),
                 'note' => $item->note,
             ]];
         })->toArray();

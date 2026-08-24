@@ -5,41 +5,63 @@ namespace Tests\Feature;
 use Tests\TestCase;
 
 /**
- * Halaman View menyalin data item ke dalam form Repeater. Field qty, price,
- * dan item_total di form itu memakai ->numeric(), yang dirender sebagai
- * <input type="number">.
+ * Aturan yang dijaga di sini: sebuah field boleh diberi nilai berformat
+ * (ber-pemisah ribuan) HANYA bila field itu bukan `->numeric()`.
  *
- * Input bertipe number TIDAK BISA menampung string ber-pemisah ribuan seperti
- * "1.234,50" — browser menolaknya dan field tampil KOSONG. Karena itu nilai
- * yang dikirim ke form wajib berupa angka mentah, bukan hasil number_format().
+ * `->numeric()` dirender sebagai `<input type="number">`, dan input bertipe
+ * number tidak bisa menampung string seperti "1.234,50" — browser menolaknya
+ * dan fieldnya tampil KOSONG. Bukan error, jadi gejalanya menyesatkan.
+ *
+ * Keduanya harus bergerak bersamaan. Memformat tanpa melepas `->numeric()`
+ * membuat field kosong; melepas `->numeric()` tanpa mem-parse saat menyimpan
+ * membuat "250.000" tersimpan sebagai 250.
  */
 class RequisitionViewFormTest extends TestCase
 {
     /** @return array<string, array<int, string>> */
-    public static function viewPages(): array
+    public static function requisitionModules(): array
     {
         return [
-            'Request Beef' => ['Filament/Admin/Resources/ProductRequisitionResource/Pages/ViewProductRequisition.php'],
-            'Request Material' => ['Filament/Admin/Resources/MaterialRequisitionResource/Pages/ViewMaterialRequisition.php'],
+            'Request Beef' => [
+                'Filament/Admin/Resources/ProductRequisitionResource.php',
+                'Filament/Admin/Resources/ProductRequisitionResource/Pages/ViewProductRequisition.php',
+            ],
+            'Request Material' => [
+                'Filament/Admin/Resources/MaterialRequisitionResource.php',
+                'Filament/Admin/Resources/MaterialRequisitionResource/Pages/ViewMaterialRequisition.php',
+            ],
         ];
     }
 
     /**
      * @test
      *
-     * @dataProvider viewPages
+     * @dataProvider requisitionModules
      */
-    public function it_does_not_format_numeric_fields_before_filling_the_form(string $file)
+    public function it_only_formats_fields_that_are_not_native_number_inputs(string $resourceFile, string $viewFile)
     {
-        $source = file_get_contents(app_path($file));
+        $resource = file_get_contents(app_path($resourceFile));
+        $view = file_get_contents(app_path($viewFile));
 
         foreach (['qty', 'price', 'item_total'] as $field) {
-            $this->assertDoesNotMatchRegularExpression(
-                "/'{$field}'\s*=>\s*number_format\(/",
-                $source,
-                "Field '{$field}' di {$file} diformat sebelum mengisi form. "
-                . 'Field itu <input type="number"> dan akan tampil kosong bila diberi string ber-pemisah ribuan.'
-            );
+            $start = strpos($resource, "TextInput::make('{$field}')");
+
+            if ($start === false) {
+                continue;
+            }
+
+            $isNativeNumberInput = str_contains(substr($resource, $start, 900), '->numeric()');
+            $isFormattedOnFill = (bool) preg_match("/'{$field}'\s*=>\s*number_format\(/", $view);
+
+            if ($isNativeNumberInput) {
+                $this->assertFalse(
+                    $isFormattedOnFill,
+                    "Field '{$field}' memakai ->numeric() tapi diberi nilai berformat di {$viewFile}. "
+                    . 'Input bertipe number menolak pemisah ribuan, jadi fieldnya akan tampil kosong.'
+                );
+            } else {
+                $this->assertTrue(true);
+            }
         }
     }
 }

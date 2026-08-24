@@ -208,6 +208,21 @@ Sempat masuk `.gitignore`. Itu keliru: pipeline deploy menjalankan `composer ins
 
 ## 3. Jebakan yang sudah pernah menggigit
 
+### Pemisah ribuan di dalam Repeater: BISA, asal listenernya di luar baris
+
+Aturan lama di `project.md` menyiratkan pemformatan hidup mustahil di dalam Repeater. **Itu keliru** — yang terlarang hanya caranya, bukan tujuannya.
+
+`RawJs::make('$money(...)')` memasang Alpine `x-mask` pada **setiap input di dalam baris**. Itulah yang tersangkut saat baris dihapus.
+
+Cara yang benar, dan sudah lama dipakai `SalesOrderResource` tanpa masalah: **satu listener `x-on:input` pada `Section` pembungkus**, di luar baris Repeater, yang memformat berdasarkan CSS class lewat event delegation. Alpine tidak pernah menempel ke elemen baris, jadi tidak ada yang perlu di-teardown dan bug zombie tidak pernah terjadi.
+
+Dua hal yang wajib ikut, kalau tidak justru menimbulkan bug baru:
+
+1. **Lepas `->numeric()`** dari field yang diformat. Itu membuat `<input type="number">`, dan browser **menolak** pemisah ribuan di dalamnya sehingga fieldnya tampil kosong. Ganti dengan `->extraInputAttributes(['inputmode' => 'numeric'])`.
+2. **Parse nilai sebelum disimpan.** PHP membaca `"250.000"` sebagai `250.0`, jadi harga 250 ribu menyusut jadi 250 **tanpa error apa pun**. Di Request Beef ada empat halaman yang menyimpan item — Create, Edit, Review, ApproveFinance — dan keempatnya wajib memakai `parseNumber()`.
+
+Sudah diverifikasi langsung di browser: mengetik `250000` menjadi `250.000` per ketikan, dan menghapus baris tidak menyisakan baris zombie.
+
 ### Bug baris "zombie" di Repeater
 
 `RawJs::make('$money(...)')` **di dalam `Repeater`** memicu bug Livewire Morphdom: baris terhapus di sisi server, tapi elemen HTML-nya tertahan proses teardown AlpineJS sehingga menyisakan baris kosong yang tidak bisa dihilangkan di browser. Di dalam Repeater cukup `->numeric()`. Di form biasa, mask aman dipakai.
