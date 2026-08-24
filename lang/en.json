@@ -467,5 +467,6 @@
     "Harga belum lengkap, belum bisa diteruskan ke Finance": "Prices are incomplete, cannot be forwarded to Finance",
     "Isi dulu harga untuk barang berikut": "Fill in the price for these items first",
     "Harga belum lengkap, PO belum bisa diterbitkan": "Prices are incomplete, the PO cannot be issued",
-    "PO bernilai nol akan menciptakan utang palsu dan mengacaukan perhitungan TOP. Barang yang harganya masih kosong": "A zero-value PO would create a phantom payable and distort the TOP calculation. Items still missing a price"
+    "PO bernilai nol akan menciptakan utang palsu dan mengacaukan perhitungan TOP. Barang yang harganya masih kosong": "A zero-value PO would create a phantom payable and distort the TOP calculation. Items still missing a price",
+    "Price is required and cannot be zero.": "Price is required and cannot be zero."
 }

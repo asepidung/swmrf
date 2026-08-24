@@ -175,6 +175,25 @@ class ProductRequisitionResource extends Resource
 
                                 Forms\Components\TextInput::make('price')
                                     ->hiddenLabel()
+                                    // Harga adalah tanggung jawab PURCHASING, bukan pemohon.
+                                    // Pemohon boleh mengisinya sebagai perkiraan, tapi di
+                                    // halaman review purchasing kolom ini WAJIB terisi dan
+                                    // tidak boleh nol. Dengan begitu finance tidak pernah
+                                    // menerima dokumen berharga kosong.
+                                    ->required(fn ($livewire) => $livewire instanceof \App\Filament\Admin\Resources\ProductRequisitionResource\Pages\ReviewProductRequisition)
+                                    ->rules(function ($livewire) {
+                                        if (! $livewire instanceof \App\Filament\Admin\Resources\ProductRequisitionResource\Pages\ReviewProductRequisition) {
+                                            return [];
+                                        }
+
+                                        return [
+                                            function (string $attribute, $value, \Closure $fail) {
+                                                if (self::parseNumber($value) <= 0) {
+                                                    $fail(__('Price is required and cannot be zero.'));
+                                                }
+                                            },
+                                        ];
+                                    })
                                     ->placeholder(fn() => __('Harga'))
                                     ->prefix('Rp')
                                     ->default(0)
