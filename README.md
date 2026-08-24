@@ -15,7 +15,7 @@ Proyek ini adalah modernisasi sistem lama berbasis PHP prosedural + AdminLTE 3, 
 
 ## Tech Stack
 
-- **Laravel 11** — Eloquent ORM dan Migration
+- **Laravel 12** — Eloquent ORM dan Migration
 - **Filament v3** — panel admin
 - **MySQL** — basis data
 - **Tailwind CSS** + **Vite**
