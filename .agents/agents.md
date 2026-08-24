@@ -124,16 +124,38 @@ Terjadi di halaman View Request Beef dan Request Material: `mutateFormDataBefore
 
 Ada test yang menjaganya (`RequisitionViewFormTest`).
 
+### Harga kosong di Request: purchasing yang mengisi, bukan pemohon
+
+Keputusan Owner, 24 Agustus 2026. Tiga situasi yang dulu dipaksa masuk dua tombol:
+
+| Situasi | Yang terjadi |
+|---|---|
+| Harga kosong, barang benar | **Purchasing mengisi sendiri** — dialah yang tahu harga supplier |
+| Barang atau qty salah | Reject dengan catatan |
+| Memang tidak jadi dibeli | Reject |
+
+Owner memutuskan **tidak** menambah tombol "Kembalikan ke Pemohon"; Reject dianggap cukup.
+
+Tombol Approve dikunci selama masih ada harga 0, **di purchasing maupun di finance**. Finance dikunci sebagai lapis kedua karena data lama atau perubahan langsung lewat database bisa lolos dari lapis pertama, dan PO bernilai nol akan menciptakan utang palsu yang mengacaukan perhitungan TOP.
+
+Pemeriksaan membaca isi **form**, bukan record di database, supaya harga yang baru diketik purchasing langsung terhitung tanpa perlu menyimpan lebih dulu. Pesannya menyebut nama barang yang kosong, bukan sekadar "ada harga yang belum diisi".
+
+### Desimal di papan ketik ponsel
+
+Pemformat dikunci ke satu format (titik ribuan, koma desimal) dan **tidak** ikut setelan perangkat, jadi tampilannya konsisten di mana pun. Justru `<input type="number">` yang perilakunya ikut regional — satu alasan lagi untuk tidak memakainya.
+
+Sisa risikonya cuma satu: papan ketik angka sebagian perangkat mengeluarkan `.` sebagai tombol desimal. Karena itu titik yang diketik pengguna pada field qty diubah menjadi koma lewat `x-on:keydown`, supaya pemformat cukup mengenal satu bentuk desimal.
+
 ### RENCANA BERIKUTNYA: modul Request Beef
 
 Daftar dari Owner, 24 Agustus 2026. Nomor 2 sudah selesai; sisanya menunggu.
 
 | No | Kebutuhan | Ukuran |
 |---|---|---|
-| 1 | Pemisah ribuan otomatis pada input **price** saat mengisi request (ketik `250000` jadi `250.000`) | sedang — terhalang larangan `RawJs` mask di dalam Repeater, perlu cara lain yang tidak memicu bug Morphdom |
+| 1 | ~~Pemisah ribuan otomatis pada input price~~ | **selesai** |
 | 2 | ~~Qty tidak ter-load di halaman View~~ | **selesai** |
 | 3 | Setelah approve purchasing dan approve finance, balik ke Index | perlu repro — kodenya **sudah** memanggil `$this->redirect()`, tapi `$this->save(false)` dipanggil lebih dulu; bila save gagal validasi, redirect tidak pernah jalan dan pengguna tertinggal di halaman **tanpa pesan apa pun** |
-| 4 | Cara menolak saat review purchasing bila ada barang tanpa harga: reject saja, atau purchasing boleh mengisi harganya? | **keputusan Owner**, belum diputuskan |
+| 4 | ~~Cara menolak bila ada barang tanpa harga~~ | **selesai** — purchasing mengisi sendiri, Approve dikunci di dua tahap |
 | 5 | Input pembayaran saat approve finance: tunai/transfer, pilih akun bank, kode pembayaran, tanggal bayar. Bila nilainya 0 semua, dilewati dan langsung jadi utang dengan TOP mulai berjalan | **besar**, satu sesi sendiri |
 | 6 | Ganti notifikasi layar dengan **push notification PWA** sungguhan. Notifikasi sukses/gagal bawaan Filament tetap dipertahankan, begitu pula peringatan statis di Dashboard. Berlaku lintas modul, dikerjakan bertahap | **besar**, lintas modul |
 

@@ -619,5 +619,9 @@
     "YES": "YA",
     "Show In Stock": "Tampilkan Yang Ada Stok",
     "Supplied Goods": "Barang yang Dipasok",
-    "Tukar Faktur": "Tukar Faktur"
+    "Tukar Faktur": "Tukar Faktur",
+    "Harga belum lengkap, belum bisa diteruskan ke Finance": "Harga belum lengkap, belum bisa diteruskan ke Finance",
+    "Isi dulu harga untuk barang berikut": "Isi dulu harga untuk barang berikut",
+    "Harga belum lengkap, PO belum bisa diterbitkan": "Harga belum lengkap, PO belum bisa diterbitkan",
+    "PO bernilai nol akan menciptakan utang palsu dan mengacaukan perhitungan TOP. Barang yang harganya masih kosong": "PO bernilai nol akan menciptakan utang palsu dan mengacaukan perhitungan TOP. Barang yang harganya masih kosong"
 }
