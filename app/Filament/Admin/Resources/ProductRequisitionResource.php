@@ -74,6 +74,27 @@ class ProductRequisitionResource extends Resource
                     // perlu di-teardown dan bug "baris zombie" tidak pernah terjadi.
                     // Pola yang sama sudah lama dipakai di modul Sales Order.
                     ->extraAttributes([
+                        // Papan ketik angka sebagian perangkat mengeluarkan '.' sebagai
+                        // tombol desimal, sementara pemformat di bawah hanya menerima ','.
+                        // Tanpa ini, mengetik 300.5 di HP tersebut menjadi 3005.
+                        // Titik yang diketik pengguna diubah menjadi koma di sini, supaya
+                        // pemformat cukup mengenal satu bentuk desimal saja.
+                        'x-on:keydown' => '
+                            (function (e) {
+                                let target = e.target;
+                                if (!target || !target.classList.contains("qty-input")) return;
+                                if (e.key !== "." && e.key !== ",") return;
+
+                                e.preventDefault();
+                                if (target.value.includes(",")) return;
+
+                                let start = target.selectionStart;
+                                let end = target.selectionEnd;
+                                target.value = target.value.slice(0, start) + "," + target.value.slice(end);
+                                target.setSelectionRange(start + 1, start + 1);
+                                target.dispatchEvent(new Event("input", { bubbles: true }));
+                            })(event)
+                        ',
                         'x-on:input' => '
                             (function (e) {
                                 let target = e.target;

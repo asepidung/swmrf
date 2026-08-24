@@ -53,18 +53,54 @@ class ReviewProductRequisition extends EditRecord
         return $data;
     }
 
+    /**
+     * Barang tanpa harga tidak boleh lolos.
+     *
+     * Keputusan Project Owner: purchasing-lah yang mengisi harga, karena
+     * dialah yang tahu harga supplier. Pemohon (gudang/produksi) tidak
+     * dipantulkan bolak-balik hanya karena harga kosong.
+     *
+     * Yang diperiksa adalah isi FORM, bukan record di database, supaya harga
+     * yang baru saja diketik purchasing langsung terhitung tanpa perlu
+     * menyimpan lebih dulu.
+     *
+     * @return array<int, string> nama barang yang harganya masih kosong
+     */
+    protected function itemsMissingPrice(): array
+    {
+        $missing = [];
+
+        foreach ($this->data['items'] ?? [] as $item) {
+            if (empty($item['product_id'])) {
+                continue;
+            }
+
+            if (ProductRequisitionResource::parseNumber($item['price'] ?? 0) > 0) {
+                continue;
+            }
+
+            $product = \App\Models\Product::find($item['product_id']);
+            $missing[] = $product->name ?? ('#' . $item['product_id']);
+        }
+
+        return $missing;
+    }
+
     protected function afterSave(): void
     {
         $this->record->items()->delete();
         foreach ($this->itemsData as $item) {
             if (!empty($item['product_id'])) {
+                $qty = ProductRequisitionResource::parseNumber($item['qty'] ?? 0);
+                $price = ProductRequisitionResource::parseNumber($item['price'] ?? 0);
+
                 $this->record->items()->create([
                     'product_id' => $item['product_id'],
                     // WAJIB di-parse: input menampilkan pemisah ribuan ("250.000"),
                     // yang bila disimpan mentah akan terbaca 250.
-                    'qty' => ProductRequisitionResource::parseNumber($item['qty'] ?? 0),
-                    'price' => ProductRequisitionResource::parseNumber($item['price'] ?? 0),
-                    'subtotal' => ($item['qty'] ?? 0) * ($item['price'] ?? 0),
+                    'qty' => $qty,
+                    'price' => $price,
+                    'subtotal' => $qty * $price,
                     'note' => $item['note'] ?? null,
                 ]);
             }
@@ -88,6 +124,19 @@ class ReviewProductRequisition extends EditRecord
             ->icon('heroicon-s-check-circle')
             ->requiresConfirmation()
             ->action(function () {
+                $missing = $this->itemsMissingPrice();
+
+                if ($missing !== []) {
+                    \Filament\Notifications\Notification::make()
+                        ->title(__('Harga belum lengkap, belum bisa diteruskan ke Finance'))
+                        ->body(__('Isi dulu harga untuk barang berikut') . ': ' . implode(', ', $missing) . '.')
+                        ->danger()
+                        ->persistent()
+                        ->send();
+
+                    return;
+                }
+
                 $this->save(false);
                 
                 $this->record->update([
