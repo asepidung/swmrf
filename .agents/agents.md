@@ -124,6 +124,33 @@ Terjadi di halaman View Request Beef dan Request Material: `mutateFormDataBefore
 
 Ada test yang menjaganya (`RequisitionViewFormTest`).
 
+### Laravel 12, dan kenapa BUKAN Laravel 13 atau Filament 5
+
+Diputuskan 24 Agustus 2026 setelah `composer audit` melaporkan 21 advisory.
+
+**Yang dikerjakan:** naik ke `laravel/framework` ^12.0 plus dompdf 3.1.6, guzzle 7.15.5, commonmark 2.10.0. Hasilnya `composer audit` bersih, nol advisory.
+
+**Kenapa Laravel 11 harus ditinggalkan:** ketiga advisory Laravel menyebut versi terdampak `<12.60.0`, salah satunya eksplisit `>=11.0.0,<12.0.0`. **Tidak ada rilis 11.x yang memperbaikinya** — v11.56.0 pun masih terdampak. Laravel 11 sudah lewat masa dukungan keamanan, jadi kerentanan berikutnya pun tidak akan dapat perbaikan.
+
+**Kenapa belum Laravel 13:** terhalang `laravel/tinker`. Versi stabil terakhirnya (v2.11.1) baru mendukung sampai Laravel 12; yang mendukung 13 masih `2.x-dev` yang di bawah minimum-stability. **Periksa lagi nanti** — begitu tinker rilis stabil untuk 13, jalannya terbuka. Filament v3.3.54 sendiri sudah mendukung `^13.0`.
+
+**Kenapa belum Filament 5 — ini yang paling perlu dipahami sebelum tergoda:**
+
+Filament 5 memang sudah ada (v5.7.6), dan Owner berminat. Tapi dari 3 ke 5 itu **dua versi mayor**, dan permukaannya di proyek ini besar sekali:
+
+| | Jumlah |
+|---|---|
+| Resource | 48 |
+| Halaman kustom | 188 |
+| Total berkas Filament | 275 |
+| Baris kode Filament | **28.310** |
+
+Filament 4 memindahkan hampir seluruh namespace form dan menyatukan API schema, jadi hampir semua baris itu perlu disentuh — lalu diulang untuk versi 5. Test kita 166 tapi cakupannya baru sebagian; sebagian besar kerusakan hanya ketahuan dengan mengklik 48 modul satu per satu.
+
+**Yang menentukan: Filament 5 BUKAN kebutuhan keamanan.** Filament v3.3.54 sudah mendukung Laravel 12 dan 13, jadi kita bisa sepenuhnya bebas advisory tanpa menyentuhnya. Layak dikejar sebagai proyek terjadwal tersendiri, jangan disisipkan di tengah penyisiran modul — kalau dipaksakan, penyisiran berhenti berminggu-minggu dan aplikasi tidak bisa dipakai di tengah jalan.
+
+**Cara memverifikasi upgrade tanpa data:** 27 template di `resources/views/exports/` dirender penuh lewat dompdf dan semuanya menghasilkan `%PDF`; 64 view cetak dan Filament dikompilasi Blade tanpa error; 23 halaman modul diakses lewat browser dan semuanya 200. Pola ini berguna diulang untuk upgrade berikutnya.
+
 ### Notifikasi: Web Push (PWA), bukan toast lintas-pengguna
 
 Keputusan Owner, 24 Agustus 2026, untuk poin 6 pada #77.

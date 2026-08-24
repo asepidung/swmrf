@@ -12,7 +12,7 @@
 
 Sistem ERP untuk **Wijaya Meat**, produsen daging. Merupakan modernisasi sistem lama berbasis PHP prosedural + AdminLTE 3 + jQuery, dikerjakan bertahap dengan **Strangler Pattern**.
 
-- **Stack:** Laravel 11, Filament v3, MySQL.
+- **Stack:** Laravel 12, Filament v3, MySQL.
 - **Siklus bisnis:** Master Data → Procurement → Production (Sapi → Karkas → Boning/Repack/Relabel) → Inventory → Sales → Finance.
 - **Status pajak:** Wijaya Meat berstatus **nonPKP**. Invoice dan penjualan **tidak dikenai PPN**. Pajak hanya relevan pada pembelian material.
 - **Database transisi:** selama migrasi, sistem baru berbagi sumber data dengan sistem lama. **Dilarang mengubah struktur tabel fundamental** yang masih dipakai aktif oleh sistem lama tanpa instruksi eksplisit.
