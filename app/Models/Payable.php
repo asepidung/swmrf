@@ -16,6 +16,56 @@ class Payable extends Model
 
     protected $guarded = ['id'];
 
+    /**
+     * Potongkan uang muka yang sudah dibayar ke utang yang baru terbit.
+     *
+     * DP dibayar saat ORDER, sementara utang lahir saat barang DITERIMA. Tanpa
+     * langkah ini, utang akan tercatat sebesar nilai penuh meski DP sudah
+     * dibayar — kesalahan yang tidak menimbulkan error apa pun dan baru
+     * ketahuan saat supplier menagih.
+     *
+     * Uang muka ditelusuri lewat rantai dokumen: Goods Receipt -> PO -> Request.
+     */
+    protected static function applyAdvancesFrom(?Model $source, self $payable): void
+    {
+        if ($source === null) {
+            return;
+        }
+
+        $outstanding = (float) $payable->amount - (float) $payable->paid_amount;
+
+        if ($outstanding <= 0) {
+            return;
+        }
+
+        foreach (SupplierPayment::unallocatedFor($source) as $advance) {
+            if ($outstanding <= 0) {
+                break;
+            }
+
+            $applied = $advance->allocateTo($payable, $outstanding);
+
+            if ($applied <= 0) {
+                continue;
+            }
+
+            $payable->paid_amount = (float) $payable->paid_amount + $applied;
+            $outstanding -= $applied;
+        }
+    }
+
+    /** Dokumen Request yang menurunkan sebuah Goods Receipt, bila ada. */
+    protected static function requisitionBehind(Model $gr): ?Model
+    {
+        $po = $gr->purchaseMaterial ?? $gr->purchaseProduct ?? null;
+
+        if ($po === null) {
+            return null;
+        }
+
+        return $po->materialRequisition ?? $po->productRequisition ?? null;
+    }
+
     public static function generateForGoodsReceipt(GoodsReceiptMaterial $gr): self
     {
         $gr->loadMissing(['items', 'supplier']);
@@ -35,7 +85,13 @@ class Payable extends Model
         $payable->amount = $amount;
         $payable->balance = $amount - $payable->paid_amount;
         $payable->due_date = $dueDate;
-        
+
+        // Uang muka dipotongkan sebelum status dihitung, supaya dokumen yang
+        // sudah lunas di muka tidak sempat tercatat sebagai 'unpaid'.
+        static::applyAdvancesFrom(static::requisitionBehind($gr), $payable);
+
+        $payable->balance = $payable->amount - $payable->paid_amount;
+
         if ($payable->paid_amount <= 0) {
             $payable->status = 'unpaid';
         } elseif ($payable->paid_amount >= $payable->amount) {
@@ -69,7 +125,13 @@ class Payable extends Model
         $payable->amount = $amount;
         $payable->balance = $amount - $payable->paid_amount;
         $payable->due_date = $dueDate;
-        
+
+        // Uang muka dipotongkan sebelum status dihitung, supaya dokumen yang
+        // sudah lunas di muka tidak sempat tercatat sebagai 'unpaid'.
+        static::applyAdvancesFrom(static::requisitionBehind($gr), $payable);
+
+        $payable->balance = $payable->amount - $payable->paid_amount;
+
         if ($payable->paid_amount <= 0) {
             $payable->status = 'unpaid';
         } elseif ($payable->paid_amount >= $payable->amount) {

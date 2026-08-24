@@ -124,6 +124,27 @@ Terjadi di halaman View Request Beef dan Request Material: `mutateFormDataBefore
 
 Ada test yang menjaganya (`RequisitionViewFormTest`).
 
+### Uang muka ke supplier: dokumen tersendiri, bukan kolom di request
+
+Keputusan Owner, 24 Agustus 2026, untuk poin 5 pada #77.
+
+**Fakta yang menentukan bentuknya:** utang (`Payable`) lahir saat barang **DITERIMA**, sementara DP dibayar saat **ORDER**. Jadi saat DP dicatat, utangnya belum ada.
+
+Kalau DP disimpan sebagai kolom di tabel request, saat barang datang sistem akan membuat utang sebesar **nilai penuh** tanpa ada yang tahu DP sudah dibayar. Kesalahan itu **tidak menimbulkan error apa pun** dan baru ketahuan saat supplier menagih — jenis kesalahan paling mahal karena tampak benar.
+
+**Bentuk yang dipakai:**
+
+- Tabel `supplier_payments` berdiri sendiri, sumbernya polimorfik (`source_type`/`source_id`) supaya kelak bisa dipakai dari PO, Goods Receipt, atau modul hutang tanpa mengubah struktur.
+- Finance mengisinya saat approve — tetap praktis, sesuai maunya Owner.
+- Saat `Payable::generateForGoodsReceipt*()` berjalan, uang muka **ditelusuri lewat rantai dokumen** `Goods Receipt → PO → Request` lalu dipotongkan ke utangnya.
+- Selisih `amount` dan `allocated_amount` adalah uang muka yang masih menggantung.
+
+**Bila nilai pembayaran 0, seluruh bagian itu dilewati** — tidak ada dokumen pembayaran bernilai nol. Dokumen murni jadi utang dan TOP mulai berjalan saat barang diterima.
+
+**Catatan penting soal `payments` yang sudah ada:** tabel itu untuk **terima uang dari customer** (`customer_group_id`, beralokasi ke `invoice_id`), bukan bayar ke supplier. Jangan tertukar. Sebelum ini, sisi pembayaran ke supplier belum ada sama sekali — kolom `paid_amount` di `payables` ada tapi tidak pernah ada yang mengisinya.
+
+Ada test yang menjaga uang muka tidak terpakai dua kali bila utang dihitung ulang, dan tidak terpakai melebihi nilai utangnya.
+
 ### Satu jalur per tahap keputusan — halaman View wajib baca-saja
 
 Penjagaan tidak ada gunanya bila ada jalur pintas yang melewatinya. Ini pernah terjadi dan memakan waktu untuk ketahuan.
@@ -179,7 +200,7 @@ Daftar dari Owner, 24 Agustus 2026. Nomor 2 sudah selesai; sisanya menunggu.
 | 2 | ~~Qty tidak ter-load di halaman View~~ | **selesai** |
 | 3 | Setelah approve purchasing dan approve finance, balik ke Index | perlu repro — kodenya **sudah** memanggil `$this->redirect()`, tapi `$this->save(false)` dipanggil lebih dulu; bila save gagal validasi, redirect tidak pernah jalan dan pengguna tertinggal di halaman **tanpa pesan apa pun** |
 | 4 | ~~Cara menolak bila ada barang tanpa harga~~ | **selesai** — purchasing mengisi sendiri, Approve dikunci di dua tahap |
-| 5 | Input pembayaran saat approve finance: tunai/transfer, pilih akun bank, kode pembayaran, tanggal bayar. Bila nilainya 0 semua, dilewati dan langsung jadi utang dengan TOP mulai berjalan | **besar**, satu sesi sendiri |
+| 5 | ~~Input pembayaran saat approve finance~~ | **selesai** — tersimpan sebagai dokumen `supplier_payments` dan otomatis memotong utang |
 | 6 | Ganti notifikasi layar dengan **push notification PWA** sungguhan. Notifikasi sukses/gagal bawaan Filament tetap dipertahankan, begitu pula peringatan statis di Dashboard. Berlaku lintas modul, dikerjakan bertahap | **besar**, lintas modul |
 
 Owner menyebut masih ada satu hal umum lagi yang belum teringat.

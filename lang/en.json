@@ -468,5 +468,16 @@
     "Isi dulu harga untuk barang berikut": "Fill in the price for these items first",
     "Harga belum lengkap, PO belum bisa diterbitkan": "Prices are incomplete, the PO cannot be issued",
     "PO bernilai nol akan menciptakan utang palsu dan mengacaukan perhitungan TOP. Barang yang harganya masih kosong": "A zero-value PO would create a phantom payable and distort the TOP calculation. Items still missing a price",
-    "Price is required and cannot be zero.": "Price is required and cannot be zero."
+    "Price is required and cannot be zero.": "Price is required and cannot be zero.",
+    "Payment (Optional)": "Payment (Optional)",
+    "Fill this in only if the goods were paid or partially paid up front. Leave the amount at 0 to record it purely as a payable.": "Fill this in only if the goods were paid or partially paid up front. Leave the amount at 0 to record it purely as a payable.",
+    "Payment Amount": "Payment Amount",
+    "Leave at 0 if nothing has been paid yet.": "Leave at 0 if nothing has been paid yet.",
+    "Payment Method": "Payment Method",
+    "Cash": "Cash",
+    "Transfer": "Transfer",
+    "Payment Date": "Payment Date",
+    "Payment Reference": "Payment Reference",
+    "Payment Note": "Payment Note",
+    "Approve & Generate PO": "Approve & Generate PO"
 }
