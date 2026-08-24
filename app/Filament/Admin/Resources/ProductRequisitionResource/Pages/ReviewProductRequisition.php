@@ -144,6 +144,15 @@ class ReviewProductRequisition extends EditRecord
                     'reject_note' => null,
                 ]);
 
+                \App\Support\TaskNotifier::notifyPermissionHolders(
+                    'approve_product_requisitions',
+                    __('Beef Request Awaiting Approval'),
+                    __('Request :number has been priced by purchasing and needs your approval.', ['number' => $this->record->document_number]),
+                    \App\Filament\Admin\Resources\ProductRequisitionResource::getUrl('approve-finance', ['record' => $this->record]),
+                    'beef-request-' . $this->record->id,
+                    auth()->id(),
+                );
+
                 // Notifications rely on PendingTaskWidget now.
                 $this->redirect($this->getResource()::getUrl('index'));
             });

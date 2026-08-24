@@ -228,3 +228,17 @@ Route::middleware(['web', 'auth'])->group(function () {
         return view('print.material-usage', compact('record'));
     })->name('material-usage.print');
 });
+
+/*
+ * Langganan Web Push.
+ *
+ * Berada di luar grup di atas karena hanya butuh pengguna yang sudah login,
+ * bukan konteks panel Filament.
+ */
+Route::middleware('auth')->group(function () {
+    Route::post('/push-subscriptions', [\App\Http\Controllers\PushSubscriptionController::class, 'store'])
+        ->name('push-subscriptions.store');
+
+    Route::delete('/push-subscriptions', [\App\Http\Controllers\PushSubscriptionController::class, 'destroy'])
+        ->name('push-subscriptions.destroy');
+});

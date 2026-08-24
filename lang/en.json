@@ -479,5 +479,16 @@
     "Payment Date": "Payment Date",
     "Payment Reference": "Payment Reference",
     "Payment Note": "Payment Note",
-    "Approve & Generate PO": "Approve & Generate PO"
+    "Approve & Generate PO": "Approve & Generate PO",
+    "Turn on notifications": "Turn on notifications",
+    "Notifications are blocked. Enable them from your browser settings.": "Notifications are blocked. Enable them from your browser settings.",
+    "Device Notifications": "Device Notifications",
+    "Nobody has turned notifications on yet, so no alert is reaching anyone.": "Nobody has turned notifications on yet, so no alert is reaching anyone.",
+    "Most users still miss every alert. Ask them to turn notifications on from the bell icon.": "Most users still miss every alert. Ask them to turn notifications on from the bell icon.",
+    "Active users who will receive task alerts on their device.": "Active users who will receive task alerts on their device.",
+    "You are not subscribed on this device yet.": "You are not subscribed on this device yet.",
+    "New Beef Request": "New Beef Request",
+    "Request :number is waiting for your review.": "Request :number is waiting for your review.",
+    "Beef Request Awaiting Approval": "Beef Request Awaiting Approval",
+    "Request :number has been priced by purchasing and needs your approval.": "Request :number has been priced by purchasing and needs your approval."
 }

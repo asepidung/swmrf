@@ -635,5 +635,16 @@
     "Payment Date": "Tanggal Bayar",
     "Payment Reference": "Kode Pembayaran",
     "Payment Note": "Catatan Pembayaran",
-    "Approve & Generate PO": "Setujui & Terbitkan PO"
+    "Approve & Generate PO": "Setujui & Terbitkan PO",
+    "Turn on notifications": "Nyalakan notifikasi",
+    "Notifications are blocked. Enable them from your browser settings.": "Notifikasi diblokir. Nyalakan lewat pengaturan browser Anda.",
+    "Device Notifications": "Notifikasi Perangkat",
+    "Nobody has turned notifications on yet, so no alert is reaching anyone.": "Belum ada yang menyalakan notifikasi, jadi tidak ada pemberitahuan yang sampai ke siapa pun.",
+    "Most users still miss every alert. Ask them to turn notifications on from the bell icon.": "Sebagian besar pengguna masih melewatkan semua pemberitahuan. Minta mereka menyalakannya lewat ikon lonceng.",
+    "Active users who will receive task alerts on their device.": "Pengguna aktif yang akan menerima pemberitahuan tugas di perangkatnya.",
+    "You are not subscribed on this device yet.": "Perangkat ini belum berlangganan notifikasi.",
+    "New Beef Request": "Request Produk Sapi Baru",
+    "Request :number is waiting for your review.": "Request :number menunggu review Anda.",
+    "Beef Request Awaiting Approval": "Request Produk Sapi Menunggu Persetujuan",
+    "Request :number has been priced by purchasing and needs your approval.": "Request :number sudah diberi harga oleh purchasing dan menunggu persetujuan Anda."
 }

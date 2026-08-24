@@ -43,3 +43,57 @@ self.addEventListener('activate', function(event) {
         })
     );
 });
+
+/*
+ * Web Push.
+ *
+ * Tanpa dua pendengar di bawah, notifikasi tidak akan pernah muncul meski
+ * server sudah mengirimnya dengan benar dan pengguna sudah mengizinkan.
+ */
+
+self.addEventListener('push', function (event) {
+    if (!event.data) {
+        return;
+    }
+
+    var payload;
+    try {
+        payload = event.data.json();
+    } catch (e) {
+        // Bila muatannya bukan JSON, tampilkan apa adanya daripada diam saja.
+        payload = { title: 'WijayaApps', body: event.data.text() };
+    }
+
+    event.waitUntil(
+        self.registration.showNotification(payload.title || 'WijayaApps', {
+            body: payload.body || '',
+            icon: payload.icon || '/img/pwalogo.png',
+            badge: payload.badge || '/img/pwalogo.png',
+            tag: payload.tag || undefined,
+            data: payload.data || {},
+            requireInteraction: false
+        })
+    );
+});
+
+self.addEventListener('notificationclick', function (event) {
+    event.notification.close();
+
+    var target = (event.notification.data && event.notification.data.url) || '/admin';
+
+    // Kalau tab aplikasi sudah terbuka, fokuskan tab itu alih-alih membuka
+    // jendela baru setiap kali notifikasi diklik.
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (windowClients) {
+            for (var i = 0; i < windowClients.length; i++) {
+                var client = windowClients[i];
+                if (client.url.indexOf(target) !== -1 && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            if (clients.openWindow) {
+                return clients.openWindow(target);
+            }
+        })
+    );
+});

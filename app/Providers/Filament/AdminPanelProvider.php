@@ -136,6 +136,11 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 \Filament\View\PanelsRenderHook::BODY_END,
                 fn (): string => \Illuminate\Support\Facades\Blade::render('<livewire:global-task-poller />'),
+            )
+            // Tombol berlangganan notifikasi perangkat, di topbar.
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::USER_MENU_BEFORE,
+                fn (): \Illuminate\Contracts\View\View => view('push.subscribe'),
             );
     }
 }
