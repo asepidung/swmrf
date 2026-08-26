@@ -38,9 +38,10 @@ class TaskAlert extends Notification
         return (new WebPushMessage())
             ->title($this->title)
             ->body($this->body)
-            // Tidak ada `icon`: sistem sudah menampilkan ikon aplikasi di sisi
-            // kiri notifikasi, sehingga mengisinya membuat logo yang sama
-            // tampil dua kali dalam satu notifikasi.
+            // Kiri: sudah otomatis diisi browser dari manifest.
+            // Kanan (besar): kita isi eksplisit, jika tidak Android Chrome akan
+            // membuat ikon huruf (misal 'C' dari coba.wijayameat.co.id).
+            ->icon('/img/pwalogo-192.png')
             ->badge('/img/pwalogo-192.png')
             ->data([
                 'url' => $this->url,

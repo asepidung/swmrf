@@ -201,11 +201,10 @@ Bentuk yang benar: ikon `any` memakai logo apa adanya, ikon `maskable` dibuat **
 
 `apple-touch-icon` ikut diarahkan ke versi berlatar penuh: iOS menaruh **hitam** di belakang bagian transparan, sehingga logo bertepi transparan tampil bersudut hitam di layar utama.
 
-#### Notifikasi: jangan isi `icon`, dan tulis sependek mungkin
+#### Notifikasi: pasang `icon` eksplisit agar tidak diganti huruf oleh browser
 
-Sistem sudah menampilkan ikon aplikasi di sisi kiri notifikasi. Mengisi `icon` menambahkan gambar besar di sisi kanan, sehingga **logo yang sama tampil dua kali** dalam satu notifikasi. Cukup `badge`.
-
-Teks notifikasi ditulis sependek mungkin dan **tanpa nomor dokumen**: di layar HP judul dan isi sama-sama terpotong bila panjang, sementara nomornya toh langsung terlihat begitu notifikasinya dibuka.
+Dulu diputuskan tidak mengisi `icon` karena logo akan tampil ganda (di kiri dan kanan). Namun ternyata jika `icon` kosong, Android Chrome akan otomatis membuat avatar huruf berdasarkan nama domain (misal huruf **C** dari *coba.wijayameat.co.id*). 
+Huruf ini disangka sebagai inisial nama pengirim oleh pengguna, sehingga membingungkan. Keputusannya: **tetap isi `icon` dengan logo aplikasi**, lebih baik tampil ganda daripada memunculkan huruf yang menyesatkan. Teks notifikasi tetap ditulis sependek mungkin.
 
 **Bahasa notifikasi mengikuti locale PENGIRIM, bukan penerima**, karena `__()` dievaluasi saat aksi dijalankan. Penerima berbahasa Indonesia bisa menerima notifikasi berbahasa Inggris bila yang memicunya sedang memakai EN. Belum diputuskan apakah ini perlu diubah.
 
