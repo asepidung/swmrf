@@ -230,6 +230,24 @@ Dikunci `RequisitionNotificationFlowTest`, seluruhnya lewat aksi UI sungguhan.
 
 Yang dijaga bukan sekadar "ada notifikasi terkirim", melainkan **siapa** yang menerima di tiap tahap. Salah sasaran tidak menimbulkan error apa pun: dokumennya tetap tersimpan, dan orang yang seharusnya bertindak cuma tidak pernah tahu ada yang menunggunya. Ada pula test yang memastikan PO tetap terbit meski layanan push mati.
 
+**Request Material memakai alur yang sama persis**, disamakan 26 Agustus 2026 atas permintaan Owner. Statusnya kembar (`Requested`, `Pending Finance`, `Returned to Purchasing`, `PO Created`, `Rejected`), permission-nya sepola (`review_material_requisitions`, `approve_material_requisitions`), jadi tabel di atas berlaku sama dengan mengganti kata Beef menjadi Material. Dikunci `MaterialRequisitionNotificationFlowTest`. Sebelumnya modul itu **tidak punya notifikasi sama sekali**, bahkan toast untuk pelakunya sendiri.
+
+`RequisitionTranslationCoverageTest` kini memindai **kedua** modul. Alurnya kembar sehingga teksnya tumbuh berbarengan, dan lubang bahasa yang sama gampang terulang di sebelahnya.
+
+#### Belum ada buku besar; `bank_transactions` baru dipakai separuh
+
+Ditanyakan Owner 26 Agustus 2026. Kondisi sebenarnya:
+
+- **`payables` ADA** — utang lengkap dengan `amount`, `paid_amount`, `balance`, `due_date`, `status`, dan sumber polimorfik.
+- **Tabel jurnal TIDAK ADA.** Tidak ada chart of accounts, tidak ada journal entry berpasangan.
+- **`bank_transactions` ADA tapi baru dipakai satu sisi**: hanya `ReceivePayment` yang menulisnya (`type => 'in'`). Itulah kenapa terasa tidak ada gunanya.
+
+**Celah yang sudah pasti bug, apa pun keputusan desainnya:** `SupplierPayment` **tidak menulis `bank_transactions` sama sekali**, sehingga uang muka yang dibayar lewat transfer tidak mengurangi saldo bank di mana pun. Sisi piutang sudah benar; sisi supplier belum punya pasangan `type => 'out'`-nya.
+
+**Kenapa DP tidak boleh dicatat sebagai utang:** DP dibayar saat order, barangnya belum diterima. Uang sudah keluar dan supplier justru berutang barang — itu **aset** (Uang Muka Pembelian), bukan kewajiban. Utang usaha baru lahir saat barang diterima. Membuat baris `payables` saat PO terbit akan menggelembungkan neraca di dua sisi sekaligus.
+
+**Arah yang disepakati Owner:** laporan keuangan sesederhana mungkin, uang dan barang punya buku besar dan laporan masing-masing. `bank_transactions` layak dipromosikan menjadi buku kas tunggal, dengan syarat kas tunai juga didaftarkan sebagai baris `bank_accounts` — kolom `bank_account_id` wajib isi, dan sebuah kas memang sebuah akun. **Pengerjaannya ditunda** atas keputusan Owner.
+
 #### Teks notifikasi wajib terdaftar dua bahasa, dan ada test yang menjaganya
 
 Satu alur notifikasi sempat ditambahkan lengkap dengan sepuluh teks ber-`__()` tanpa satu pun didaftarkan di berkas bahasa. Tidak ada error: Laravel menampilkan kuncinya apa adanya, sehingga pengguna yang memilih Indonesia tetap melihat kalimat bahasa Inggris dan tidak ada yang menyadarinya.
@@ -476,7 +494,7 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 202 lolos, 0 gagal** (diverifikasi 26 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Test suite: 207 lolos, 0 gagal** (diverifikasi 26 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Tiga modul Finance sengaja dimatikan

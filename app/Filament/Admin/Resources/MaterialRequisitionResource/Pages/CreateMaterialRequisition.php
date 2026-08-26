@@ -51,6 +51,17 @@ class CreateMaterialRequisition extends CreateRecord
             }
         }
         $this->record->updateTotalAmount();
+
+        \App\Support\TaskNotifier::notifyPermissionHolders(
+            'review_material_requisitions',
+            __('New Material Request'),
+            // Sengaja pendek dan tanpa nomor dokumen: di layar HP judul dan isi
+            // sama-sama terpotong bila panjang.
+            __('Waiting for your review.'),
+            \App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('review', ['record' => $this->record]),
+            'material-request-' . $this->record->id,
+            auth()->id(),
+        );
     }
 
 
