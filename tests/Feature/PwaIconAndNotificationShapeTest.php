@@ -148,11 +148,26 @@ class PwaIconAndNotificationShapeTest extends TestCase
         $this->assertStringContainsString('icon:', $options, 'Service worker membuang ikon yang dikirim server.');
         $this->assertStringContainsString('badge:', $options);
 
+        $taskAlert = file_get_contents(app_path('Notifications/TaskAlert.php'));
+
         $this->assertStringContainsString(
-            "->icon('/img/pwalogo-192.png')",
-            file_get_contents(app_path('Notifications/TaskAlert.php')),
+            '->icon(',
+            $taskAlert,
             'TaskAlert tidak mengirim ikon, sehingga browser memunculkan avatar huruf.',
         );
+
+        // Android memotong ikon besar notifikasi menjadi LINGKARAN. Versi "any"
+        // isinya menyentuh tepi kanvas, jadi sisi kiri-kanannya pasti terpangkas.
+        // Yang boleh dipakai hanya versi beralas yang punya area aman.
+        foreach (['->icon(', '->badge('] as $call) {
+            preg_match('/' . preg_quote($call, '/') . "'([^']+)'/", $taskAlert, $match);
+
+            $this->assertStringContainsString(
+                'maskable',
+                $match[1] ?? '',
+                'Notifikasi memakai ikon yang isinya menyentuh tepi, jadi akan terpotong lingkaran.',
+            );
+        }
     }
 
     /**

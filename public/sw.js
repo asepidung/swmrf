@@ -1,4 +1,4 @@
-const CACHE_NAME = 'swm-erp-cache-v2';
+const CACHE_NAME = 'swm-erp-cache-v3';
 const urlsToCache = [
     '/offline.html',
     '/manifest.json'
@@ -74,8 +74,8 @@ self.addEventListener('push', function (event) {
             // Chrome membuat AVATAR HURUF dari nama domain -- huruf "C" dari
             // coba.wijayameat.co.id -- yang disangka pengguna sebagai inisial
             // nama pengirim. Logo ganda lebih baik daripada huruf menyesatkan.
-            icon: payload.icon || '/img/pwalogo-192.png',
-            badge: payload.badge || '/img/pwalogo-192.png',
+            icon: payload.icon || '/img/pwalogo-maskable-192.png',
+            badge: payload.badge || '/img/pwalogo-maskable-192.png',
             tag: payload.tag || undefined,
             data: payload.data || {},
             requireInteraction: false

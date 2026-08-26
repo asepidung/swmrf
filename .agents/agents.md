@@ -212,6 +212,24 @@ Huruf ini disangka sebagai inisial nama pengirim oleh pengguna, sehingga membing
 
 Sekarang test-nya memeriksa **dua sisi sekaligus**: `TaskAlert` mengirim `icon`, DAN `sw.js` membacanya. Mengirim tanpa membaca sama saja dengan tidak mengirim.
 
+**Ikon notifikasi wajib memakai versi BERALAS.** Android memotong ikon besar notifikasi menjadi **lingkaran**. Versi `any` (`pwalogo-192.png`) isinya membentang penuh sampai tepi kanvas, jadi sisi kiri-kanannya pasti terpangkas. Yang dipakai `pwalogo-maskable-192.png` — versi dengan area aman yang dibuat untuk keperluan ini. Aturan ringkasnya: **di mana pun sebuah ikon bisa dipotong bentuk (lingkaran, squircle, mask peluncur), pakai versi beralas.**
+
+**Ikon di layar utama disimpan Android saat PWA dipasang.** Perubahan `manifest.json` tidak langsung terlihat pada perangkat yang sudah memasang aplikasinya — harus dipasang ulang. Jangan salah menyimpulkan perbaikannya gagal.
+
+#### Alur notifikasi Request Beef, dan siapa penerimanya
+
+Dikunci `RequisitionNotificationFlowTest`, seluruhnya lewat aksi UI sungguhan.
+
+| Tahap | Penerima |
+|---|---|
+| Request dibuat | pemegang `review_product_requisitions` (purchasing) |
+| Ditolak purchasing | **pemohon**, lewat `TaskNotifier::notifyUser()` |
+| Disetujui purchasing | pemegang `approve_product_requisitions` (finance) |
+| Dikembalikan finance | purchasing |
+| Disetujui finance, PO terbit | purchasing |
+
+Yang dijaga bukan sekadar "ada notifikasi terkirim", melainkan **siapa** yang menerima di tiap tahap. Salah sasaran tidak menimbulkan error apa pun: dokumennya tetap tersimpan, dan orang yang seharusnya bertindak cuma tidak pernah tahu ada yang menunggunya. Ada pula test yang memastikan PO tetap terbit meski layanan push mati.
+
 #### Teks notifikasi wajib terdaftar dua bahasa, dan ada test yang menjaganya
 
 Satu alur notifikasi sempat ditambahkan lengkap dengan sepuluh teks ber-`__()` tanpa satu pun didaftarkan di berkas bahasa. Tidak ada error: Laravel menampilkan kuncinya apa adanya, sehingga pengguna yang memilih Indonesia tetap melihat kalimat bahasa Inggris dan tidak ada yang menyadarinya.
@@ -450,7 +468,7 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 190 lolos, 0 gagal** (diverifikasi 26 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Test suite: 196 lolos, 0 gagal** (diverifikasi 26 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Tiga modul Finance sengaja dimatikan
