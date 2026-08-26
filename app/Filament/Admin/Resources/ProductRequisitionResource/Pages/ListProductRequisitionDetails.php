@@ -133,15 +133,21 @@ class ListProductRequisitionDetails extends Page implements HasTable
                                 $writer->openToFile('php://output');
                                 $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Request Date', 'No Request', 'Supplier', 'Item Name', 'Qty', 'Price', 'Status', 'User']));
                                 foreach ($records as $record) {
+                                    // Relasinya bernama productRequisition, bukan requisition.
+                                    // Nama yang salah membuat seluruh export Excel gagal fatal
+                                    // dengan "Attempt to read property on null" - bukan sekadar
+                                    // kolom kosong. Versi PDF sejak awal sudah memakai nama ini.
+                                    $requisition = $record->productRequisition;
+
                                     $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                        $record->requisition->created_at ? $record->requisition->created_at->format('Y-m-d') : '',
-                                        $record->requisition->document_number ?? '',
-                                        $record->requisition->supplier->name ?? '',
-                                        $record->product->name ?? '',
+                                        $requisition?->created_at?->format('Y-m-d') ?? '',
+                                        $requisition?->document_number ?? '',
+                                        $requisition?->supplier?->name ?? '',
+                                        $record->product?->name ?? '',
                                         (string) $record->qty,
                                         (string) $record->price,
-                                        $record->requisition->status ?? '',
-                                        $record->requisition->user->name ?? '',
+                                        $requisition?->status ?? '',
+                                        $requisition?->user?->name ?? '',
                                     ]));
                                 }
                                 $writer->close();
@@ -173,15 +179,21 @@ class ListProductRequisitionDetails extends Page implements HasTable
                                 $writer->openToFile('php://output');
                                 $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Request Date', 'No Request', 'Supplier', 'Item Name', 'Qty', 'Price', 'Status', 'User']));
                                 foreach ($records as $record) {
+                                    // Relasinya bernama productRequisition, bukan requisition.
+                                    // Nama yang salah membuat seluruh export Excel gagal fatal
+                                    // dengan "Attempt to read property on null" - bukan sekadar
+                                    // kolom kosong. Versi PDF sejak awal sudah memakai nama ini.
+                                    $requisition = $record->productRequisition;
+
                                     $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                        $record->requisition->created_at ? $record->requisition->created_at->format('Y-m-d') : '',
-                                        $record->requisition->document_number ?? '',
-                                        $record->requisition->supplier->name ?? '',
-                                        $record->product->name ?? '',
+                                        $requisition?->created_at?->format('Y-m-d') ?? '',
+                                        $requisition?->document_number ?? '',
+                                        $requisition?->supplier?->name ?? '',
+                                        $record->product?->name ?? '',
                                         (string) $record->qty,
                                         (string) $record->price,
-                                        $record->requisition->status ?? '',
-                                        $record->requisition->user->name ?? '',
+                                        $requisition?->status ?? '',
+                                        $requisition?->user?->name ?? '',
                                     ]));
                                 }
                                 $writer->close();

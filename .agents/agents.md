@@ -215,6 +215,20 @@ Ada test yang menjaga dua hal sekaligus: halaman View tidak boleh menulis `Pendi
 
 **Pelajaran umum:** saat memasang validasi, cari dulu **semua** jalur yang bisa mengubah status yang sama. Grep `'status' =>` di seluruh modul, jangan cuma di halaman yang sedang dikerjakan.
 
+### Halaman keputusan wajib menjaga statusnya sendiri, dan penjagaan wajib menutup dokumen kosong
+
+Lanjutan langsung dari keputusan di atas, ditemukan 26 Agustus 2026 saat menyisir Request Beef. Menyembunyikan tombol saja ternyata belum menutup jalurnya.
+
+**Menyembunyikan tombol bukan penjagaan.** Halaman View sudah menyembunyikan tombol Review dan Finance Approval menurut status, tetapi kedua halamannya sendiri tidak memeriksa status sama sekali dan tetap bisa dicapai dengan mengetik URL. Akibatnya dokumen ber-status `PO Created` masih bisa dibuka di halaman finance lalu di-Approve lagi: **PO kedua terbit berikut dokumen uang muka kedua, tanpa error apa pun.** Sekarang setiap halaman keputusan memeriksa statusnya di `mount()` dan memantulkan pengguna ke halaman View. `generatePurchaseOrder()` menolak bila PO-nya sudah ada, sebagai lapis kedua supaya penjagaannya tidak bergantung pada satu halaman. PO yang sudah di-soft-delete sengaja tidak dihitung agar dokumen yang dibatalkan masih bisa diterbitkan ulang.
+
+**Penjagaan yang hanya memeriksa baris berisi akan meloloskan dokumen kosong.** `itemsMissingPrice()` hanya menelusuri baris yang punya `product_id`. Bila seluruh baris dikosongkan, daftar "harga kosong" ikut kosong dan dokumen dianggap lulus — lalu naik ke Finance dengan **0 item dan total 0**, persis PO bernilai nol yang penjagaan harga dibangun untuk mencegahnya. Saat menulis penjagaan berbasis daftar, periksa juga kasus daftarnya kosong; "tidak ada yang salah" dan "tidak ada apa-apa" bukan hal yang sama.
+
+**Baris yang tidak bisa diklik bisa mematikan sebuah alur.** `recordUrl()` mengembalikan `null` untuk status `Rejected`, sementara tombol **Resubmit** hanya ada di halaman View. Jalur "ditolak → perbaiki → ajukan ulang" jadi buntu tanpa ada pesan apa pun. Aturannya sekarang: **pemohon selalu boleh membuka dokumennya sendiri, apa pun statusnya.** Pemegang permission review/approve juga boleh — dokumen yang ditolak adalah arsip keputusan mereka.
+
+**Nama relasi yang salah pada export tidak menghasilkan kolom kosong, melainkan gagal fatal.** Export Excel pada halaman Detail memanggil `$record->requisition`, padahal relasinya bernama `productRequisition`; versi PDF-nya sejak awal benar. Gejalanya `Attempt to read property on null` setiap kali tombolnya ditekan. Karena kedua export dirawat terpisah, perubahan pada salah satunya perlu diperiksa di dua tempat.
+
+**Yang sudah dipastikan TIDAK bermasalah:** redirect kembali ke Index setelah approve purchasing berjalan normal pada jalur wajar — diuji langsung lewat `callAction()`. Bila gejala poin 3 daftar Owner muncul lagi, pemicunya bukan redirect yang hilang melainkan `$this->save(false)` yang gagal validasi lebih dulu.
+
 ### Harga kosong di Request: purchasing yang mengisi, bukan pemohon
 
 Keputusan Owner, 24 Agustus 2026. Tiga situasi yang dulu dipaksa masuk dua tombol:
@@ -391,7 +405,7 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 166 lolos, 0 gagal** (942 assertion, diverifikasi 24 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Test suite: 175 lolos, 0 gagal** (973 assertion, diverifikasi 26 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Tiga modul Finance sengaja dimatikan
