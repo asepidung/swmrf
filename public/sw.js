@@ -67,11 +67,14 @@ self.addEventListener('push', function (event) {
     event.waitUntil(
         self.registration.showNotification(payload.title || 'WijayaApps', {
             body: payload.body || '',
-            // icon SENGAJA tidak diisi.
+            // icon WAJIB diisi.
             //
-            // Sistem sudah menampilkan ikon aplikasi di sisi kiri notifikasi.
-            // Mengisi icon menambahkan gambar besar di sisi kanan, sehingga logo
-            // yang sama tampil DUA KALI dalam satu notifikasi.
+            // Sempat dikosongkan dengan alasan logo tampil ganda (kiri dari
+            // manifest, kanan dari icon). Ternyata bila icon kosong, Android
+            // Chrome membuat AVATAR HURUF dari nama domain -- huruf "C" dari
+            // coba.wijayameat.co.id -- yang disangka pengguna sebagai inisial
+            // nama pengirim. Logo ganda lebih baik daripada huruf menyesatkan.
+            icon: payload.icon || '/img/pwalogo-192.png',
             badge: payload.badge || '/img/pwalogo-192.png',
             tag: payload.tag || undefined,
             data: payload.data || {},

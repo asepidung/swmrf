@@ -497,5 +497,15 @@
     "Request has no items, the PO cannot be issued": "Request has no items, the PO cannot be issued",
     "Add at least one product, or reject the request instead.": "Add at least one product, or reject the request instead.",
     "Add at least one product, or return the request to purchasing instead.": "Add at least one product, or return the request to purchasing instead.",
-    "Waiting for your review.": "Waiting for your review."
+    "Waiting for your review.": "Waiting for your review.",
+    "Beef Request Approved": "Beef Request Approved",
+    "Request :number has been approved by finance and PO is generated.": "Request :number has been approved by finance and PO is generated.",
+    "Beef Request Returned": "Beef Request Returned",
+    "Request :number has been returned by finance.": "Request :number has been returned by finance.",
+    "Beef Request Rejected": "Beef Request Rejected",
+    "Your request :number has been rejected by purchasing.": "Your request :number has been rejected by purchasing.",
+    "PO Generated successfully": "PO Generated successfully",
+    "Returned successfully": "Returned successfully",
+    "Approved successfully": "Approved successfully",
+    "Rejected successfully": "Rejected successfully"
 }

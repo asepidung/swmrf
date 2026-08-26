@@ -653,5 +653,15 @@
     "Request has no items, the PO cannot be issued": "Request tidak berisi barang, PO belum bisa diterbitkan",
     "Add at least one product, or reject the request instead.": "Tambahkan minimal satu barang, atau tolak request-nya.",
     "Add at least one product, or return the request to purchasing instead.": "Tambahkan minimal satu barang, atau kembalikan request-nya ke purchasing.",
-    "Waiting for your review.": "Menunggu review Anda."
+    "Waiting for your review.": "Menunggu review Anda.",
+    "Beef Request Approved": "Request Produk Sapi Disetujui",
+    "Request :number has been approved by finance and PO is generated.": "Request :number disetujui finance, PO sudah terbit.",
+    "Beef Request Returned": "Request Produk Sapi Dikembalikan",
+    "Request :number has been returned by finance.": "Request :number dikembalikan finance.",
+    "Beef Request Rejected": "Request Produk Sapi Ditolak",
+    "Your request :number has been rejected by purchasing.": "Request :number Anda ditolak purchasing.",
+    "PO Generated successfully": "PO berhasil diterbitkan",
+    "Returned successfully": "Berhasil dikembalikan",
+    "Approved successfully": "Berhasil disetujui",
+    "Rejected successfully": "Berhasil ditolak"
 }
