@@ -255,6 +255,14 @@ Kalau DP disimpan sebagai kolom di tabel request, saat barang datang sistem akan
 
 **Bila nilai pembayaran 0, seluruh bagian itu dilewati** — tidak ada dokumen pembayaran bernilai nol. Dokumen murni jadi utang dan TOP mulai berjalan saat barang diterima.
 
+**Uang muka dibatasi nilai tagihannya sendiri.** Kelebihan bayar tidak menimbulkan error apa pun: ia baru terasa jauh kemudian, saat utang dihitung dan `allocated_amount` tidak pernah terpakai habis, lalu menggantung selamanya sebagai uang muka semu. Batasnya dihitung dari isi **form**, bukan record tersimpan, dengan alasan yang sama seperti pemeriksaan harga — finance boleh memperbaiki harga di halaman itu dan batasnya harus ikut angka terbaru. Perhitungan pajaknya mengikuti `updateTotalAmount()` supaya batasnya sama persis dengan nilai yang kelak menjadi utang.
+
+Kolomnya memakai `$money($input, ',', '.', 0)`. **Aman karena berada di form modal, bukan di dalam Repeater** — larangan `$money()` hanya berlaku di dalam Repeater. Formatnya wajib gaya Indonesia; format gaya Inggris (`1,000,000`) justru terbaca `parseNumber()` sebagai 1,0 dan uang mukanya menyusut tanpa error.
+
+#### `save(false)` masih memunculkan toast "Saved"
+
+Tanda tangannya `save(bool $shouldRedirect = true, bool $shouldSendSavedNotification = true)`. Menulis `save(false)` hanya mematikan redirect-nya; toast "Saved" tetap terkirim, sehingga pengguna melihat **dua toast sekaligus** — "Saved" dari penyimpanan dan pesan hasil aksinya sendiri. Yang benar `save(false, false)`. Ada test yang menjaganya.
+
 **Catatan penting soal `payments` yang sudah ada:** tabel itu untuk **terima uang dari customer** (`customer_group_id`, beralokasi ke `invoice_id`), bukan bayar ke supplier. Jangan tertukar. Sebelum ini, sisi pembayaran ke supplier belum ada sama sekali — kolom `paid_amount` di `payables` ada tapi tidak pernah ada yang mengisinya.
 
 Ada test yang menjaga uang muka tidak terpakai dua kali bila utang dihitung ulang, dan tidak terpakai melebihi nilai utangnya.
@@ -468,7 +476,7 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 196 lolos, 0 gagal** (diverifikasi 26 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Test suite: 202 lolos, 0 gagal** (diverifikasi 26 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Tiga modul Finance sengaja dimatikan

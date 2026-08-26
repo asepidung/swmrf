@@ -663,5 +663,7 @@
     "PO Generated successfully": "PO berhasil diterbitkan",
     "Returned successfully": "Berhasil dikembalikan",
     "Approved successfully": "Berhasil disetujui",
-    "Rejected successfully": "Berhasil ditolak"
+    "Rejected successfully": "Berhasil ditolak",
+    "Payment cannot exceed the bill of :total.": "Pembayaran tidak boleh melebihi tagihan :total.",
+    "Bill": "Tagihan"
 }

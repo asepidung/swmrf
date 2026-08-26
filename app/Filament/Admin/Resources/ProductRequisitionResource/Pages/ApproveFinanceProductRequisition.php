@@ -7,6 +7,7 @@ use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
+use Filament\Support\RawJs;
 use App\Models\User;
 
 class ApproveFinanceProductRequisition extends EditRecord
@@ -127,6 +128,34 @@ class ApproveFinanceProductRequisition extends EditRecord
         return true;
     }
 
+    /**
+     * Nilai tagihan menurut isi FORM saat ini, bukan menurut record tersimpan.
+     *
+     * Alasannya sama seperti pemeriksaan harga di atas: finance boleh
+     * memperbaiki harga di halaman ini, dan batas uang muka harus mengikuti
+     * angka yang baru diketik tanpa perlu menyimpan lebih dulu.
+     *
+     * Perhitungan pajaknya mengikuti ProductRequisition::updateTotalAmount()
+     * supaya batasnya sama persis dengan nilai yang kelak menjadi utang.
+     */
+    protected function currentGrandTotal(): float
+    {
+        $subtotal = 0.0;
+
+        foreach ($this->data['items'] ?? [] as $item) {
+            if (empty($item['product_id'])) {
+                continue;
+            }
+
+            $subtotal += ProductRequisitionResource::parseNumber($item['qty'] ?? 0)
+                * ProductRequisitionResource::parseNumber($item['price'] ?? 0);
+        }
+
+        $supplier = \App\Models\Supplier::find($this->data['supplier_id'] ?? $this->record->supplier_id);
+
+        return ($supplier && $supplier->has_tax) ? $subtotal * 1.11 : $subtotal;
+    }
+
     /** Nilai pembayaran dianggap ada bila lebih dari nol setelah di-parse. */
     protected static function hasPaymentAmount($value): bool
     {
@@ -216,8 +245,28 @@ class ApproveFinanceProductRequisition extends EditRecord
                             ->prefix('Rp')
                             ->default(0)
                             ->live(onBlur: true)
+                            // Aman dipakai di sini: larangan $money() hanya berlaku
+                            // DI DALAM Repeater, dan ini form modal biasa.
+                            ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                             ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right'])
-                            ->helperText(__('Leave at 0 if nothing has been paid yet.')),
+                            // Uang muka tidak boleh melebihi tagihannya sendiri.
+                            // Kelebihannya tidak akan pernah terpakai saat utang
+                            // dihitung, jadi ia menggantung selamanya sebagai uang
+                            // muka semu yang mengacaukan pembukuan supplier.
+                            ->rules([
+                                fn (): \Closure => function (string $attribute, $value, \Closure $fail) {
+                                    $amount = ProductRequisitionResource::parseNumber($value);
+                                    $total = $this->currentGrandTotal();
+
+                                    if ($amount > $total) {
+                                        $fail(__('Payment cannot exceed the bill of :total.', [
+                                            'total' => 'Rp ' . number_format($total, 0, ',', '.'),
+                                        ]));
+                                    }
+                                },
+                            ])
+                            ->helperText(fn (): string => __('Leave at 0 if nothing has been paid yet.')
+                                . ' ' . __('Bill') . ': Rp ' . number_format($this->currentGrandTotal(), 0, ',', '.')),
 
                         \Filament\Forms\Components\Radio::make('payment_method')
                             ->label(__('Payment Method'))
@@ -286,7 +335,10 @@ class ApproveFinanceProductRequisition extends EditRecord
                     return;
                 }
 
-                $this->save(false); // Make sure to save any changes made by Finance, if any
+                // Argumen KEDUA mematikan toast "Saved" bawaan Filament.
+                // Tanpa itu pengguna melihat dua toast sekaligus: "Saved" dari
+                // penyimpanan, dan pesan hasil aksinya sendiri.
+                $this->save(false, false);
 
                 \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
                     $this->record->update([
