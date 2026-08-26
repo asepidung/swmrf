@@ -1,4 +1,4 @@
-const CACHE_NAME = 'swm-erp-cache-v1';
+const CACHE_NAME = 'swm-erp-cache-v2';
 const urlsToCache = [
     '/offline.html',
     '/manifest.json'
@@ -67,8 +67,12 @@ self.addEventListener('push', function (event) {
     event.waitUntil(
         self.registration.showNotification(payload.title || 'WijayaApps', {
             body: payload.body || '',
-            icon: payload.icon || '/img/pwalogo.png',
-            badge: payload.badge || '/img/pwalogo.png',
+            // icon SENGAJA tidak diisi.
+            //
+            // Sistem sudah menampilkan ikon aplikasi di sisi kiri notifikasi.
+            // Mengisi icon menambahkan gambar besar di sisi kanan, sehingga logo
+            // yang sama tampil DUA KALI dalam satu notifikasi.
+            badge: payload.badge || '/img/pwalogo-192.png',
             tag: payload.tag || undefined,
             data: payload.data || {},
             requireInteraction: false

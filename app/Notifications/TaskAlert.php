@@ -38,8 +38,10 @@ class TaskAlert extends Notification
         return (new WebPushMessage())
             ->title($this->title)
             ->body($this->body)
-            ->icon('/img/pwalogo.png')
-            ->badge('/img/pwalogo.png')
+            // Tidak ada `icon`: sistem sudah menampilkan ikon aplikasi di sisi
+            // kiri notifikasi, sehingga mengisinya membuat logo yang sama
+            // tampil dua kali dalam satu notifikasi.
+            ->badge('/img/pwalogo-192.png')
             ->data([
                 'url' => $this->url,
                 // `tag` membuat notifikasi sejenis saling menimpa alih-alih

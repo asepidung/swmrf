@@ -644,7 +644,6 @@
     "Active users who will receive task alerts on their device.": "Pengguna aktif yang akan menerima pemberitahuan tugas di perangkatnya.",
     "You are not subscribed on this device yet.": "Perangkat ini belum berlangganan notifikasi.",
     "New Beef Request": "Request Produk Sapi Baru",
-    "Request :number is waiting for your review.": "Request :number menunggu review Anda.",
     "Beef Request Awaiting Approval": "Request Produk Sapi Menunggu Persetujuan",
     "Request :number has been priced by purchasing and needs your approval.": "Request :number sudah diberi harga oleh purchasing dan menunggu persetujuan Anda.",
     "This request is no longer at the purchasing review stage.": "Request ini sudah tidak berada di tahap review purchasing.",
@@ -653,5 +652,6 @@
     "Request has no items, it cannot be sent to Finance": "Request tidak berisi barang, belum bisa diteruskan ke Finance",
     "Request has no items, the PO cannot be issued": "Request tidak berisi barang, PO belum bisa diterbitkan",
     "Add at least one product, or reject the request instead.": "Tambahkan minimal satu barang, atau tolak request-nya.",
-    "Add at least one product, or return the request to purchasing instead.": "Tambahkan minimal satu barang, atau kembalikan request-nya ke purchasing."
+    "Add at least one product, or return the request to purchasing instead.": "Tambahkan minimal satu barang, atau kembalikan request-nya ke purchasing.",
+    "Waiting for your review.": "Menunggu review Anda."
 }
