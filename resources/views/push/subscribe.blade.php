@@ -16,7 +16,7 @@
         >
             <button
                 type="button"
-                x-show="supported && state !== 'granted'"
+                x-show="supported && (state !== 'granted' || failed)"
                 x-on:click="subscribe()"
                 x-bind:disabled="busy"
                 class="fi-icon-btn relative flex items-center justify-center rounded-lg p-2 outline-none transition duration-75 hover:bg-gray-100 focus-visible:bg-gray-100 dark:hover:bg-white/5 dark:focus-visible:bg-white/5"
@@ -40,6 +40,8 @@
                     supported: false,
                     state: 'default',
                     busy: false,
+                    failed: false,
+                    storageKey: 'swm.push.vapid-key',
 
                     init() {
                         this.supported = 'serviceWorker' in navigator
@@ -48,7 +50,99 @@
 
                         if (this.supported) {
                             this.state = Notification.permission;
+                            this.ensureSubscription();
                         }
+                    },
+
+                    // Kunci VAPID yang dipakai saat langganan ini dibuat.
+                    // Dibaca lewat try/catch: localStorage melempar di mode
+                    // penyamaran sebagian browser, dan itu tidak boleh
+                    // menjatuhkan seluruh proses berlangganan.
+                    rememberedKey() {
+                        try {
+                            return window.localStorage.getItem(this.storageKey);
+                        } catch (error) {
+                            return null;
+                        }
+                    },
+
+                    rememberKey() {
+                        try {
+                            window.localStorage.setItem(this.storageKey, vapidPublicKey);
+                        } catch (error) {
+                            // Diabaikan. Konsekuensinya cuma satu kali berlangganan
+                            // ulang yang tidak perlu di kunjungan berikutnya.
+                        }
+                    },
+
+                    /**
+                     * Pulihkan langganan tanpa melibatkan pengguna.
+                     *
+                     * Sebuah langganan terikat pada applicationServerKey yang
+                     * dipakai saat dibuat. Begitu kunci VAPID dirotasi, langganan
+                     * lama ditolak layanan push -- dan pengguna yang sudah pernah
+                     * menekan "Izinkan" TIDAK punya cara memperbaikinya sendiri,
+                     * karena tombol loncengnya sudah menghilang. Satu-satunya
+                     * jalan keluar dulu adalah menghapus data situs.
+                     *
+                     * Karena izinnya sudah ada, membuat ulang di sini tidak
+                     * memunculkan prompt apa pun.
+                     */
+                    async ensureSubscription() {
+                        if (Notification.permission !== 'granted') {
+                            return;
+                        }
+
+                        try {
+                            const registration = await navigator.serviceWorker.ready;
+                            let subscription = await registration.pushManager.getSubscription();
+
+                            if (subscription && this.rememberedKey() !== vapidPublicKey) {
+                                await subscription.unsubscribe();
+                                subscription = null;
+                            }
+
+                            if (! subscription) {
+                                subscription = await registration.pushManager.subscribe({
+                                    userVisibleOnly: true,
+                                    applicationServerKey: this.urlBase64ToUint8Array(vapidPublicKey),
+                                });
+                            }
+
+                            // Dikirim ulang setiap kali, bukan hanya saat baru
+                            // dibuat: barisnya bisa saja hilang di sisi server
+                            // sementara browser masih merasa berlangganan.
+                            // Endpoint penyimpanannya idempoten.
+                            await this.store(subscription);
+                            this.failed = false;
+                        } catch (error) {
+                            console.error('Push subscription repair failed', error);
+                            this.failed = true;
+                        }
+                    },
+
+                    async store(subscription) {
+                        const payload = subscription.toJSON();
+
+                        const response = await fetch(@js(route('push-subscriptions.store')), {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                endpoint: payload.endpoint,
+                                keys: payload.keys,
+                                content_encoding: (PushManager.supportedContentEncodings || ['aesgcm'])[0],
+                            }),
+                        });
+
+                        if (! response.ok) {
+                            throw new Error('Gagal menyimpan langganan');
+                        }
+
+                        this.rememberKey();
                     },
 
                     // applicationServerKey WAJIB Uint8Array, bukan string base64.
@@ -89,27 +183,11 @@
                                 applicationServerKey: this.urlBase64ToUint8Array(vapidPublicKey),
                             });
 
-                            const payload = subscription.toJSON();
-
-                            const response = await fetch(@js(route('push-subscriptions.store')), {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
-                                    'Accept': 'application/json',
-                                },
-                                body: JSON.stringify({
-                                    endpoint: payload.endpoint,
-                                    keys: payload.keys,
-                                    content_encoding: (PushManager.supportedContentEncodings || ['aesgcm'])[0],
-                                }),
-                            });
-
-                            if (! response.ok) {
-                                throw new Error('Gagal menyimpan langganan');
-                            }
+                            await this.store(subscription);
+                            this.failed = false;
                         } catch (error) {
                             console.error('Push subscription failed', error);
+                            this.failed = true;
                         } finally {
                             this.busy = false;
                         }
