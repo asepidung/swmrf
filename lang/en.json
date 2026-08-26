@@ -488,7 +488,6 @@
     "Active users who will receive task alerts on their device.": "Active users who will receive task alerts on their device.",
     "You are not subscribed on this device yet.": "You are not subscribed on this device yet.",
     "New Beef Request": "New Beef Request",
-    "Request :number is waiting for your review.": "Request :number is waiting for your review.",
     "Beef Request Awaiting Approval": "Beef Request Awaiting Approval",
     "Request :number has been priced by purchasing and needs your approval.": "Request :number has been priced by purchasing and needs your approval.",
     "This request is no longer at the purchasing review stage.": "This request is no longer at the purchasing review stage.",
@@ -497,5 +496,6 @@
     "Request has no items, it cannot be sent to Finance": "Request has no items, it cannot be sent to Finance",
     "Request has no items, the PO cannot be issued": "Request has no items, the PO cannot be issued",
     "Add at least one product, or reject the request instead.": "Add at least one product, or reject the request instead.",
-    "Add at least one product, or return the request to purchasing instead.": "Add at least one product, or return the request to purchasing instead."
+    "Add at least one product, or return the request to purchasing instead.": "Add at least one product, or return the request to purchasing instead.",
+    "Waiting for your review.": "Waiting for your review."
 }

@@ -60,7 +60,10 @@ class CreateProductRequisition extends CreateRecord
         \App\Support\TaskNotifier::notifyPermissionHolders(
             'review_product_requisitions',
             __('New Beef Request'),
-            __('Request :number is waiting for your review.', ['number' => $this->record->document_number]),
+            // Sengaja pendek dan tanpa nomor dokumen. Di layar HP judul dan isi
+            // sama-sama terpotong bila panjang, dan nomornya toh langsung
+            // terlihat begitu notifikasinya dibuka.
+            __('Waiting for your review.'),
             \App\Filament\Admin\Resources\ProductRequisitionResource::getUrl('review', ['record' => $this->record]),
             'beef-request-' . $this->record->id,
             auth()->id(),

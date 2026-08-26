@@ -175,6 +175,40 @@ Pengiriman dibungkus try/catch di `TaskNotifier`: **notifikasi tidak boleh mengg
 
 **Kunci VAPID bersifat rahasia** dan hanya ada di `.env` masing-masing lingkungan. `.env.example` sengaja diisi placeholder kosong. Membuatnya: `php artisan webpush:vapid`. Di Windows/Laragon perintah itu gagal dengan "Unable to create the key" bila `OPENSSL_CONF` belum diset ke `openssl.cnf` bawaan PHP.
 
+#### Kunci VAPID rusak: gagal senyap, dan pengguna terkunci tanpa jalan keluar
+
+Ditemukan 26 Agustus 2026 saat Owner menguji notifikasi di HP untuk pertama kalinya. Layak dibaca utuh, karena tiga lapis penyamarannya menumpuk.
+
+**Gejalanya menyesatkan.** Penerima sudah menekan lonceng dan mengizinkan, langganannya tersimpan benar, tetapi tidak ada notifikasi yang muncul. Di layar tidak ada error apa pun — dokumennya tersimpan normal.
+
+**Sebabnya `VAPID_PRIVATE_KEY` di `.env` server rusak**: 81 karakter dan mengandung karakter di luar alfabet base64url, sehingga `Base64Url::decode()` menolaknya dengan `Invalid data provided`. **Kunci VAPID private yang sah panjangnya 43 karakter, public 87.** Angka itu layak dihafal — memeriksanya butuh dua detik dan langsung menjawab.
+
+Kegagalannya senyap karena pengiriman memang dibungkus `try/catch` (dan itu benar — notifikasi tidak boleh menggagalkan aksi bisnis). Satu-satunya jejaknya satu baris di `laravel.log`. **Saat notifikasi tidak sampai, baca log server lebih dulu, jangan menebak dari kode.**
+
+**Jebakan lanjutan yang lebih penting daripada kunci rusaknya:** mengganti kunci VAPID membuat **seluruh langganan lama tidak berlaku**, karena langganan terikat pada `applicationServerKey` yang dipakai saat dibuat. Padahal tombol lonceng menghilang begitu izin diberikan, dan dulu `init()` cuma membaca `Notification.permission` tanpa pernah memeriksa apakah langganannya masih ada dan masih cocok. Pengguna yang sudah pernah mengizinkan jadi **tidak punya cara berlangganan ulang lewat aplikasi sama sekali** — satu-satunya jalan keluar menghapus data situs.
+
+Sekarang tombol loncengnya menyembuhkan diri: saat halaman dibuka dan izin sudah `granted`, langganan yang sebenarnya ada di browser diperiksa, lalu dibuat ulang bila hilang atau terikat kunci yang berbeda. Tanpa prompt, karena izinnya memang sudah ada. Kunci yang dipakai diingat di `localStorage`. Bila pemulihannya gagal, loncengnya muncul kembali supaya pengguna tidak terkunci diam-diam.
+
+**Penghitung langganan di Dashboard tidak menangkap masalah ini** — ia menghitung baris, dan barisnya ada. Angka sehat di Dashboard bukan bukti notifikasi bisa sampai.
+
+#### Ikon PWA: satu file tidak boleh merangkap `any` dan `maskable`
+
+`manifest.json` sempat mendaftarkan satu file yang sama sebagai `"purpose": "any maskable"` untuk ukuran 192 maupun 512, padahal filenya cuma satu berukuran 512x512.
+
+`maskable` menyuruh sistem memotong ikon ke bentuk mask dan hanya menjamin **lingkaran di tengah, sekitar 80% kanvas**. Logo Wijaya Meat membentang penuh dari tepi ke tepi, jadi sisi kiri-kanannya pasti terpotong di layar utama dan splash screen.
+
+Bentuk yang benar: ikon `any` memakai logo apa adanya, ikon `maskable` dibuat **tersendiri** dengan logo diperkecil ke 70% lebar kanvas di atas latar putih penuh. Ukuran yang didaftarkan juga harus benar-benar ukuran filenya. Ada test yang menjaga ketiganya, termasuk memeriksa piksel tepi ikon maskable benar-benar kosong.
+
+`apple-touch-icon` ikut diarahkan ke versi berlatar penuh: iOS menaruh **hitam** di belakang bagian transparan, sehingga logo bertepi transparan tampil bersudut hitam di layar utama.
+
+#### Notifikasi: jangan isi `icon`, dan tulis sependek mungkin
+
+Sistem sudah menampilkan ikon aplikasi di sisi kiri notifikasi. Mengisi `icon` menambahkan gambar besar di sisi kanan, sehingga **logo yang sama tampil dua kali** dalam satu notifikasi. Cukup `badge`.
+
+Teks notifikasi ditulis sependek mungkin dan **tanpa nomor dokumen**: di layar HP judul dan isi sama-sama terpotong bila panjang, sementara nomornya toh langsung terlihat begitu notifikasinya dibuka.
+
+**Bahasa notifikasi mengikuti locale PENGIRIM, bukan penerima**, karena `__()` dievaluasi saat aksi dijalankan. Penerima berbahasa Indonesia bisa menerima notifikasi berbahasa Inggris bila yang memicunya sedang memakai EN. Belum diputuskan apakah ini perlu diubah.
+
 ### Uang muka ke supplier: dokumen tersendiri, bukan kolom di request
 
 Keputusan Owner, 24 Agustus 2026, untuk poin 5 pada #77.
@@ -405,7 +439,7 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 175 lolos, 0 gagal** (973 assertion, diverifikasi 26 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Test suite: 188 lolos, 0 gagal** (diverifikasi 26 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Tiga modul Finance sengaja dimatikan

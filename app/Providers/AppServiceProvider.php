@@ -50,7 +50,7 @@ class AppServiceProvider extends ServiceProvider
             \Filament\View\PanelsRenderHook::HEAD_END,
             fn (): string => '<link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#000080">
-<link rel="apple-touch-icon" href="/img/pwalogo.png">'
+<link rel="apple-touch-icon" href="/img/pwalogo-maskable-192.png">'
         );
 
         \Filament\Support\Facades\FilamentView::registerRenderHook(
