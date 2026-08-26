@@ -156,18 +156,52 @@ class PwaIconAndNotificationShapeTest extends TestCase
             'TaskAlert tidak mengirim ikon, sehingga browser memunculkan avatar huruf.',
         );
 
-        // Android memotong ikon besar notifikasi menjadi LINGKARAN. Versi "any"
-        // isinya menyentuh tepi kanvas, jadi sisi kiri-kanannya pasti terpangkas.
-        // Yang boleh dipakai hanya versi beralas yang punya area aman.
-        foreach (['->icon(', '->badge('] as $call) {
-            preg_match('/' . preg_quote($call, '/') . "'([^']+)'/", $taskAlert, $match);
+        // "icon" (kanan, besar): Android memotong ikon notifikasi menjadi
+        // LINGKARAN. Versi "any" isinya menyentuh tepi kanvas, jadi pasti
+        // terpangkas -- yang boleh dipakai hanya versi beralas.
+        preg_match("/->icon\('([^']+)'\)/", $taskAlert, $iconMatch);
+        $this->assertStringContainsString('maskable', $iconMatch[1] ?? '', 'icon notifikasi bukan versi beralas.');
 
-            $this->assertStringContainsString(
-                'maskable',
-                $match[1] ?? '',
-                'Notifikasi memakai ikon yang isinya menyentuh tepi, jadi akan terpotong lingkaran.',
-            );
+        // "badge" (kiri, kecil): Android HANYA membaca kanal alpha gambar ini
+        // lalu mewarnainya sendiri. Memakai icon berwarna penuh (termasuk
+        // versi maskable yang berlatar putih SOLID) membuat seluruh kanvas
+        // dianggap "isi" dan tampil sebagai blok padat, bukan siluet.
+        preg_match("/->badge\('([^']+)'\)/", $taskAlert, $badgeMatch);
+        $this->assertStringNotContainsString(
+            'maskable',
+            $badgeMatch[1] ?? '',
+            'badge notifikasi memakai aset berlatar solid, akan tampil sebagai blok padat di status bar.',
+        );
+        $this->assertSame('/img/pwalogo-badge-192.png', $badgeMatch[1] ?? null);
+
+        // Aset badge itu sendiri wajib benar-benar transparan sebagian --
+        // kalau tidak, ia akan berperilaku sama seperti bug yang baru ditutup.
+        $badgePath = public_path(ltrim($badgeMatch[1] ?? '', '/'));
+        $this->assertFileExists($badgePath);
+
+        $image = @imagecreatefrompng($badgePath);
+        $this->assertNotFalse($image, 'Aset badge bukan PNG yang valid.');
+
+        $width = imagesx($image);
+        $height = imagesy($image);
+        $transparentPixels = 0;
+
+        for ($x = 0; $x < $width; $x++) {
+            for ($y = 0; $y < $height; $y++) {
+                $alpha = (imagecolorat($image, $x, $y) >> 24) & 0x7F;
+                if ($alpha > 100) {
+                    $transparentPixels++;
+                }
+            }
         }
+
+        imagedestroy($image);
+
+        $this->assertGreaterThan(
+            0,
+            $transparentPixels,
+            'Aset badge tidak punya area transparan sama sekali -- Android akan menampilkannya sebagai blok padat.',
+        );
     }
 
     /**

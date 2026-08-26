@@ -214,7 +214,17 @@ Sekarang test-nya memeriksa **dua sisi sekaligus**: `TaskAlert` mengirim `icon`,
 
 **Ikon notifikasi wajib memakai versi BERALAS.** Android memotong ikon besar notifikasi menjadi **lingkaran**. Versi `any` (`pwalogo-192.png`) isinya membentang penuh sampai tepi kanvas, jadi sisi kiri-kanannya pasti terpangkas. Yang dipakai `pwalogo-maskable-192.png` — versi dengan area aman yang dibuat untuk keperluan ini. Aturan ringkasnya: **di mana pun sebuah ikon bisa dipotong bentuk (lingkaran, squircle, mask peluncur), pakai versi beralas.**
 
-**Ikon di layar utama disimpan Android saat PWA dipasang.** Perubahan `manifest.json` tidak langsung terlihat pada perangkat yang sudah memasang aplikasinya — harus dipasang ulang. Jangan salah menyimpulkan perbaikannya gagal.
+**Ikon di layar utama disimpan Android saat PWA dipasang.** Perubahan `manifest.json` tidak langsung terlihat pada perangkat yang sudah memasang aplikasinya — harus dihapus dari layar utama (atau di-uninstall lewat App Info) lalu dipasang ulang, idealnya sesudah membersihkan data situs di Chrome supaya `manifest.json` yang lama tidak ikut tersimpan di cache HTTP browser. **Diverifikasi 26 Agustus 2026:** md5sum file dan isi `manifest.json` di server sama persis dengan lokal — jadi kalau ikon masih terlihat terpotong padahal filenya sudah benar, itu instalasi lama yang belum di-refresh, bukan kode atau deploy yang salah. Desktop yang baru memasang PWA-nya langsung menampilkan ikon yang benar, mengonfirmasi ini murni soal cache instalasi, bukan berkasnya.
+
+#### Badge notifikasi butuh aset TERSENDIRI, bukan logo berwarna
+
+Ditemukan 26 Agustus 2026, setelah ikon besar (`icon`) dibereskan tapi ikon kecil di status bar (`badge`) masih tampil sebagai blok padat yang terlihat "terpotong".
+
+**Android hanya membaca KANAL ALPHA gambar `badge`, lalu mewarnainya sendiri** (biasanya putih) dan memotongnya ke lingkaran kecil di status bar. `icon` dan `badge` bukan skala berbeda dari gambar yang sama — keduanya perlu **desain berbeda**. Memberinya `pwalogo-maskable-192.png` (logo berwarna penuh, berlatar **putih solid**) membuat seluruh kanvas dianggap "isi" karena alpha-nya seragam, sehingga badge-nya tampil sebagai blok padat tanpa detail, bukan siluet yang bisa dikenali.
+
+**Aset baru `pwalogo-badge-192.png`**: siluet putih di atas latar **transparan**, dibuat dari kanal alpha `pwalogo.png` asli (bukan versi maskable) lalu warnanya dipaksa putih penyeluruh. `icon` tetap memakai `pwalogo-maskable-192.png` (perlu warna dan area aman, karena itu memang ikon besar berwarna). `badge` memakai aset baru ini.
+
+Ada test yang menjaga keduanya sekaligus: `icon` wajib mengandung "maskable", `badge` wajib **TIDAK** mengandung "maskable" dan wajib benar-benar punya piksel transparan (bukan sekadar nama file yang benar — isinya diperiksa piksel per piksel).
 
 #### Alur notifikasi Request Beef, dan siapa penerimanya
 
@@ -246,7 +256,19 @@ Ditanyakan Owner 26 Agustus 2026. Kondisi sebenarnya:
 
 **Kenapa DP tidak boleh dicatat sebagai utang:** DP dibayar saat order, barangnya belum diterima. Uang sudah keluar dan supplier justru berutang barang — itu **aset** (Uang Muka Pembelian), bukan kewajiban. Utang usaha baru lahir saat barang diterima. Membuat baris `payables` saat PO terbit akan menggelembungkan neraca di dua sisi sekaligus.
 
-**Arah yang disepakati Owner:** laporan keuangan sesederhana mungkin, uang dan barang punya buku besar dan laporan masing-masing. `bank_transactions` layak dipromosikan menjadi buku kas tunggal, dengan syarat kas tunai juga didaftarkan sebagai baris `bank_accounts` — kolom `bank_account_id` wajib isi, dan sebuah kas memang sebuah akun. **Pengerjaannya ditunda** atas keputusan Owner.
+**Arah yang disepakati Owner:** laporan keuangan sesederhana mungkin, uang dan barang punya buku besar dan laporan masing-masing. `bank_transactions` dipromosikan menjadi buku kas tunggal — **dikerjakan 26 Agustus 2026**, meski buku besar penuh (chart of accounts, journal entry berpasangan, laporan laba rugi/neraca) tetap ditunda.
+
+#### DP ke supplier sekarang tercatat sebagai pengeluaran
+
+Dikerjakan 26 Agustus 2026, menutup celah di atas. Owner tegas: DP tetap uang yang sungguh-sungguh keluar dan wajib tercatat, terlepas dari kapan utangnya lahir.
+
+**Ditaruh sebagai model event, bukan dipanggil manual di tiap halaman.** `SupplierPayment::booted()` mendengarkan `created` dan langsung menulis `BankTransaction` (`type => 'out'`) plus mengurangi `bank_accounts.balance`. Pilihan ini disengaja — memanggilnya manual di tiap pemanggil gampang lupa disalin ke jalur baru; menaruhnya di model membuatnya berlaku otomatis dari jalur mana pun DP itu lahir, sekarang maupun nanti.
+
+**Metode transfer memakai rekening yang dipilih finance.** Metode tunai memakai **satu akun KAS tunggal**, dibuat lewat `BankAccount::cashAccount()` — `bank_transactions.bank_account_id` tidak boleh NULL, dan sebuah kas tunai memang sebuah akun, sama seperti rekening bank. Helper itu dikunci `->lockForUpdate()` mengikuti pola generator dokumen lain di proyek ini, supaya dua pembayaran tunai bersamaan tidak menciptakan dua baris KAS. Didaftarkan juga di `DatabaseSeeder` supaya barisnya sudah terlihat sejak awal.
+
+**Ditemukan sekaligus dibereskan:** modal pembayaran finance di Request Material belum punya pemisah ribuan maupun batas atas nilai (padahal Request Beef sudah, sejak #99). Disamakan persis — termasuk batas atasnya ikut menghitung pajak pembelian material lewat `Supplier::is_tax_11`, bukan `has_tax` milik Product. **Jangan tertukar nama kolomnya**, keduanya sama-sama menandai "supplier ini kena pajak" tapi di modul yang berbeda.
+
+**Yang masih di luar cakupan ini, sengaja tidak disentuh:** `BankAccountResource` tetap `canAccess() => false` (tiga modul finance dimatikan atas instruksi Owner). Tidak ada satu pun bank_accounts row selain KAS di database mana pun — jadi metode transfer di modal pembayaran akan menemukan dropdown Bank Account kosong sampai Owner memutuskan mengaktifkan Resource itu atau menambah rekening lewat cara lain.
 
 #### Teks notifikasi wajib terdaftar dua bahasa, dan ada test yang menjaganya
 
@@ -443,6 +465,10 @@ Dua hal yang wajib ikut, kalau tidak justru menimbulkan bug baru:
 
 Sudah diverifikasi langsung di browser: mengetik `250000` menjadi `250.000` per ketikan, dan menghapus baris tidak menyisakan baris zombie.
 
+**Request Material sempat tidak memakai pola ini sama sekali** — ditemukan 26 Agustus 2026 saat Owner mengujinya. `qty` dan `price` masih `->numeric()` polos (bahkan `->numeric()` tertulis dua kali berturut-turut, sisa salin-tempel dari Product), tanpa listener apa pun. Disamakan persis dengan Product.
+
+**Jebakan yang nyaris terulang saat membenahinya:** menambahkan mask TANPA membenahi titik simpannya lebih berbahaya daripada tidak menambahkannya sama sekali. Selama field itu `->numeric()`, keempat halaman penyimpan (Create, Edit, Review, ApproveFinance) aman menulis `$item['qty'] ?? 0` mentah — browser tidak akan pernah mengirim string ber-pemisah ribuan. Begitu mask dipasang, browser mulai mengirim `"15.000"`, dan tanpa `parseNumber()` di titik simpannya, nilai itu tersimpan menyusut jadi `15` tanpa error apa pun. **Kedua sisi — mask di form dan `parseNumber()` di titik simpan — wajib berubah bersamaan, tidak boleh salah satu duluan.** Sudah diverifikasi test-nya gagal saat `parseNumber()` dilepas dari salah satu dari keempat halaman itu.
+
 ### Bug baris "zombie" di Repeater
 
 `RawJs::make('$money(...)')` **di dalam `Repeater`** memicu bug Livewire Morphdom: baris terhapus di sisi server, tapi elemen HTML-nya tertahan proses teardown AlpineJS sehingga menyisakan baris kosong yang tidak bisa dihilangkan di browser. Di dalam Repeater cukup `->numeric()`. Di form biasa, mask aman dipakai.
@@ -494,7 +520,7 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 207 lolos, 0 gagal** (diverifikasi 26 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Test suite: 220 lolos, 0 gagal** (1188 assertion, diverifikasi 26 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Tiga modul Finance sengaja dimatikan

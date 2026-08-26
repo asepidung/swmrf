@@ -66,6 +66,70 @@ class MaterialRequisitionResource extends Resource
                     ])->columns(12),
 
                 Forms\Components\Section::make(fn() => __('Item Details'))
+                    // Pemisah ribuan hidup saat mengetik.
+                    //
+                    // Listener sengaja dipasang di Section ini, BUKAN di tiap input
+                    // di dalam baris Repeater. Alpine jadi tidak pernah menempel ke
+                    // elemen baris, sehingga saat sebuah baris dihapus tidak ada yang
+                    // perlu di-teardown dan bug "baris zombie" tidak pernah terjadi.
+                    // Pola yang sama sudah lama dipakai di modul Sales Order dan
+                    // Request Beef.
+                    ->extraAttributes([
+                        // Papan ketik angka sebagian perangkat mengeluarkan '.' sebagai
+                        // tombol desimal, sementara pemformat di bawah hanya menerima ','.
+                        // Tanpa ini, mengetik 300.5 di HP tersebut menjadi 3005.
+                        // Titik yang diketik pengguna diubah menjadi koma di sini, supaya
+                        // pemformat cukup mengenal satu bentuk desimal saja.
+                        'x-on:keydown' => '
+                            (function (e) {
+                                let target = e.target;
+                                if (!target || !target.classList.contains("qty-input")) return;
+                                if (e.key !== "." && e.key !== ",") return;
+
+                                e.preventDefault();
+                                if (target.value.includes(",")) return;
+
+                                let start = target.selectionStart;
+                                let end = target.selectionEnd;
+                                target.value = target.value.slice(0, start) + "," + target.value.slice(end);
+                                target.setSelectionRange(start + 1, start + 1);
+                                target.dispatchEvent(new Event("input", { bubbles: true }));
+                            })(event)
+                        ',
+                        'x-on:input' => '
+                            (function (e) {
+                                let target = e.target;
+                                if (!target) return;
+
+                                let isQty = target.classList.contains("qty-input");
+                                let isPrice = target.classList.contains("price-input");
+                                if (!isQty && !isPrice) return;
+
+                                let raw = target.value;
+                                let cleaned = raw.replace(/[^0-9,]/g, "");
+                                let parts = cleaned.split(",");
+                                let intPart = parts.shift().replace(/^0+(?=\d)/, "");
+                                let decPart = parts.length ? parts.join("").slice(0, 2) : null;
+
+                                let formatted = "";
+                                if (intPart !== "") {
+                                    formatted = new Intl.NumberFormat("de-DE").format(parseInt(intPart, 10));
+                                }
+                                if (decPart !== null) {
+                                    formatted = (formatted === "" ? "0" : formatted) + "," + decPart;
+                                }
+
+                                if (target.value === formatted) return;
+
+                                let selectionStart = target.selectionStart;
+                                let originalLength = target.value.length;
+                                target.value = formatted;
+                                let diff = formatted.length - originalLength;
+                                target.setSelectionRange(selectionStart + diff, selectionStart + diff);
+                                target.dispatchEvent(new Event("input", { bubbles: true }));
+                            })(event)
+                        ',
+                    ])
                     ->schema([
                         // Clean Repeater Header UI
                         Forms\Components\Grid::make(12)
@@ -114,9 +178,10 @@ class MaterialRequisitionResource extends Resource
                                         }
                                         return null;
                                     })
-                                    ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'qty-input text-right', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll(".qty-input")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
-                                    ->numeric()
-                                                                        ->numeric()
+                                    // Masking numerik bawaan Filament SENGAJA dilepas dari field ini.
+                                    // Field itu jadi <input type="number">, yang menolak pemisah
+                                    // ribuan sehingga tampil kosong.
+                                    ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'qty-input text-right', 'inputmode' => 'decimal', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll(".qty-input")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
                                     ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('price')
@@ -124,9 +189,7 @@ class MaterialRequisitionResource extends Resource
                                     ->placeholder(fn() => __('Harga'))
                                     ->prefix('Rp')
                                     ->default(0)
-                                    ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'price-input text-right', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll(".price-input")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
-                                    ->numeric()
-                                                                        ->numeric()
+                                    ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'price-input text-right', 'inputmode' => 'numeric', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll(".price-input")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
                                     ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('item_total')

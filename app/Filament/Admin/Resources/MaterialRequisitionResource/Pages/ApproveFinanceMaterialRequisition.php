@@ -8,6 +8,7 @@ use Filament\Resources\Pages\EditRecord;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use App\Models\User;
+use Filament\Support\RawJs;
 
 class ApproveFinanceMaterialRequisition extends EditRecord
 {
@@ -25,8 +26,8 @@ class ApproveFinanceMaterialRequisition extends EditRecord
         $data['items'] = $this->record->items->mapWithKeys(function ($item) {
             return [(string) \Illuminate\Support\Str::uuid() => [
                 'material_id' => $item->material_id,
-                'qty' => (float) $item->qty,
-                'price' => (float) $item->price,
+                'qty' => number_format((float) $item->qty, 2, ',', '.'),
+                'price' => number_format((float) $item->price, 0, ',', '.'),
                 'item_total' => (float) ($item->qty * $item->price),
                 'note' => $item->note,
             ]];
@@ -69,6 +70,33 @@ class ApproveFinanceMaterialRequisition extends EditRecord
      * request, karena utang baru lahir saat barang diterima. Saat itulah uang
      * muka ini ditelusuri kembali dan dipotongkan ke utangnya.
      */
+    /**
+     * Nilai tagihan menurut isi FORM saat ini, bukan menurut record tersimpan.
+     *
+     * Finance boleh memperbaiki harga di halaman ini, dan batas uang muka
+     * harus mengikuti angka yang baru diketik tanpa perlu menyimpan lebih
+     * dulu. Beda dari Request Beef (nonPKP di sisi penjualan): pembelian
+     * material TETAP relevan dengan pajak, jadi ikut dihitung di sini supaya
+     * batasnya sama persis dengan MaterialRequisition::updateTotalAmount().
+     */
+    protected function currentGrandTotal(): float
+    {
+        $subtotal = 0.0;
+
+        foreach ($this->data['items'] ?? [] as $item) {
+            if (empty($item['material_id'])) {
+                continue;
+            }
+
+            $subtotal += MaterialRequisitionResource::parseNumber($item['qty'] ?? 0)
+                * MaterialRequisitionResource::parseNumber($item['price'] ?? 0);
+        }
+
+        $supplier = \App\Models\Supplier::find($this->data['supplier_id'] ?? $this->record->supplier_id);
+
+        return ($supplier && $supplier->is_tax_11) ? $subtotal * 1.11 : $subtotal;
+    }
+
     protected function recordAdvancePayment(array $data): ?\App\Models\SupplierPayment
     {
         $amount = MaterialRequisitionResource::parseNumber($data['payment_amount'] ?? 0);
@@ -99,11 +127,16 @@ class ApproveFinanceMaterialRequisition extends EditRecord
         $this->record->items()->delete();
         foreach ($this->itemsData as $item) {
             if (!empty($item['material_id'])) {
+                // WAJIB di-parse: input qty dan price kini menampilkan pemisah
+                // ribuan ("250.000"), dan bila disimpan mentah akan terbaca 250.
+                $qty = MaterialRequisitionResource::parseNumber($item['qty'] ?? 0);
+                $price = MaterialRequisitionResource::parseNumber($item['price'] ?? 0);
+
                 $this->record->items()->create([
                     'material_id' => $item['material_id'],
-                    'qty' => $item['qty'] ?? 0,
-                    'price' => $item['price'] ?? 0,
-                    'subtotal' => ($item['qty'] ?? 0) * ($item['price'] ?? 0),
+                    'qty' => $qty,
+                    'price' => $price,
+                    'subtotal' => $qty * $price,
                     'note' => $item['note'] ?? null,
                 ]);
             }
@@ -136,8 +169,28 @@ class ApproveFinanceMaterialRequisition extends EditRecord
                             ->prefix('Rp')
                             ->default(0)
                             ->live(onBlur: true)
+                            // Aman dipakai di sini: larangan $money() hanya berlaku
+                            // DI DALAM Repeater, dan ini form modal biasa.
+                            ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                             ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right'])
-                            ->helperText(__('Leave at 0 if nothing has been paid yet.')),
+                            // Uang muka tidak boleh melebihi tagihannya sendiri.
+                            // Kelebihannya tidak akan pernah terpakai saat utang
+                            // dihitung, jadi ia menggantung selamanya sebagai uang
+                            // muka semu yang mengacaukan pembukuan supplier.
+                            ->rules([
+                                fn (): \Closure => function (string $attribute, $value, \Closure $fail) {
+                                    $amount = MaterialRequisitionResource::parseNumber($value);
+                                    $total = $this->currentGrandTotal();
+
+                                    if ($amount > $total) {
+                                        $fail(__('Payment cannot exceed the bill of :total.', [
+                                            'total' => 'Rp ' . number_format($total, 0, ',', '.'),
+                                        ]));
+                                    }
+                                },
+                            ])
+                            ->helperText(fn (): string => __('Leave at 0 if nothing has been paid yet.')
+                                . ' ' . __('Bill') . ': Rp ' . number_format($this->currentGrandTotal(), 0, ',', '.')),
 
                         \Filament\Forms\Components\Radio::make('payment_method')
                             ->label(__('Payment Method'))

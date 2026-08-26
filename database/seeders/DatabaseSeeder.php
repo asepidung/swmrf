@@ -340,5 +340,10 @@ class DatabaseSeeder extends Seeder
                 ['name' => $gradeName, 'is_active' => true]
             );
         }
+
+        // Akun kas tunai. Dibuat lewat helper idempoten yang sama dipakai
+        // saat pembayaran tunai pertama tercatat, supaya barisnya sudah
+        // terlihat sejak awal tanpa menunggu transaksi pertama.
+        \App\Models\BankAccount::cashAccount();
     }
 }
