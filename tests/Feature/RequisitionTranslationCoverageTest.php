@@ -18,15 +18,25 @@ use Tests\TestCase;
  */
 class RequisitionTranslationCoverageTest extends TestCase
 {
-    /** @return array<int, string> */
+    /**
+     * Kedua modul request sekaligus. Alurnya kembar, jadi teksnya juga tumbuh
+     * berbarengan -- dan lubang yang sama gampang terulang di sebelahnya.
+     *
+     * @return array<int, string>
+     */
     protected function scannedFiles(): array
     {
-        $base = app_path('Filament/Admin/Resources/ProductRequisitionResource');
+        $files = [];
 
-        return array_merge(
-            [app_path('Filament/Admin/Resources/ProductRequisitionResource.php')],
-            glob($base . '/Pages/*.php') ?: [],
-        );
+        foreach (['ProductRequisitionResource', 'MaterialRequisitionResource'] as $resource) {
+            $files[] = app_path('Filament/Admin/Resources/' . $resource . '.php');
+            $files = array_merge(
+                $files,
+                glob(app_path('Filament/Admin/Resources/' . $resource . '/Pages/*.php')) ?: [],
+            );
+        }
+
+        return $files;
     }
 
     /**

@@ -182,7 +182,9 @@ class ApproveFinanceMaterialRequisition extends EditRecord
                     ]),
             ])
             ->action(function (array $data) {
-                $this->save(false); // Make sure to save any changes made by Finance, if any
+                // Argumen KEDUA mematikan toast "Saved" bawaan Filament, supaya
+                // pengguna tidak melihat dua toast sekaligus.
+                $this->save(false, false);
 
                 \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
                     $this->record->update([
@@ -196,8 +198,21 @@ class ApproveFinanceMaterialRequisition extends EditRecord
                     // muka tercatat sekaligus, atau dua-duanya batal.
                     $this->recordAdvancePayment($data);
                 });
-                
-                // Notifications rely on PendingTaskWidget now.
+
+                \App\Support\TaskNotifier::notifyPermissionHolders(
+                    'review_material_requisitions',
+                    __('Material Request Approved'),
+                    __('Approved by finance, the PO has been issued.'),
+                    \App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('view', ['record' => $this->record]),
+                    'material-request-' . $this->record->id,
+                    auth()->id(),
+                );
+
+                \Filament\Notifications\Notification::make()
+                    ->title(__('PO Generated successfully'))
+                    ->success()
+                    ->send();
+
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }
@@ -220,7 +235,22 @@ class ApproveFinanceMaterialRequisition extends EditRecord
                     'reject_note' => $data['reject_note'],
                 ]);
 
-                // Notifications rely on PendingTaskWidget now.
+                // Kembali ke PURCHASING, bukan ke pemohon: purchasing yang harus
+                // memperbaiki harganya. Tombol ini memang bukan reject.
+                \App\Support\TaskNotifier::notifyPermissionHolders(
+                    'review_material_requisitions',
+                    __('Material Request Returned'),
+                    __('Returned by finance, please review it again.'),
+                    \App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('review', ['record' => $this->record]),
+                    'material-request-' . $this->record->id,
+                    auth()->id(),
+                );
+
+                \Filament\Notifications\Notification::make()
+                    ->title(__('Returned successfully'))
+                    ->success()
+                    ->send();
+
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }

@@ -86,14 +86,29 @@ class ReviewMaterialRequisition extends EditRecord
             ->icon('heroicon-s-check-circle')
             ->requiresConfirmation()
             ->action(function () {
-                $this->save(false);
-                
+                // Argumen KEDUA mematikan toast "Saved" bawaan Filament, supaya
+                // pengguna tidak melihat dua toast sekaligus.
+                $this->save(false, false);
+
                 $this->record->update([
                     'status' => 'Pending Finance',
                     'reject_note' => null,
                 ]);
 
-                // Notifications rely on PendingTaskWidget now.
+                \App\Support\TaskNotifier::notifyPermissionHolders(
+                    'approve_material_requisitions',
+                    __('Material Request Awaiting Approval'),
+                    __('Waiting for your approval.'),
+                    \App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('approve-finance', ['record' => $this->record]),
+                    'material-request-' . $this->record->id,
+                    auth()->id(),
+                );
+
+                \Filament\Notifications\Notification::make()
+                    ->title(__('Approved successfully'))
+                    ->success()
+                    ->send();
+
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }
@@ -116,7 +131,23 @@ class ReviewMaterialRequisition extends EditRecord
                     'reject_note' => $data['reject_note'],
                 ]);
 
-                // User can see rejected status in their list.
+                // Dikirim ke PEMOHON, bukan ke peran lain: dialah yang harus
+                // memperbaiki atau mengajukan ulang.
+                if ($this->record->user) {
+                    \App\Support\TaskNotifier::notifyUser(
+                        $this->record->user,
+                        __('Material Request Rejected'),
+                        __('Your request was rejected by purchasing.'),
+                        \App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('view', ['record' => $this->record]),
+                        'material-request-' . $this->record->id,
+                    );
+                }
+
+                \Filament\Notifications\Notification::make()
+                    ->title(__('Rejected successfully'))
+                    ->success()
+                    ->send();
+
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }

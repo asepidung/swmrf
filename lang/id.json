@@ -665,5 +665,14 @@
     "Approved successfully": "Berhasil disetujui",
     "Rejected successfully": "Berhasil ditolak",
     "Payment cannot exceed the bill of :total.": "Pembayaran tidak boleh melebihi tagihan :total.",
-    "Bill": "Tagihan"
+    "Bill": "Tagihan",
+    "New Material Request": "Request Material Baru",
+    "Material Request Awaiting Approval": "Request Material Menunggu Persetujuan",
+    "Material Request Rejected": "Request Material Ditolak",
+    "Material Request Approved": "Request Material Disetujui",
+    "Material Request Returned": "Request Material Dikembalikan",
+    "Waiting for your approval.": "Menunggu persetujuan Anda.",
+    "Your request was rejected by purchasing.": "Request Anda ditolak purchasing.",
+    "Approved by finance, the PO has been issued.": "Disetujui finance, PO sudah terbit.",
+    "Returned by finance, please review it again.": "Dikembalikan finance, mohon direview ulang."
 }

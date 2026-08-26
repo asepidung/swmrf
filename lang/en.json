@@ -509,5 +509,14 @@
     "Approved successfully": "Approved successfully",
     "Rejected successfully": "Rejected successfully",
     "Payment cannot exceed the bill of :total.": "Payment cannot exceed the bill of :total.",
-    "Bill": "Bill"
+    "Bill": "Bill",
+    "New Material Request": "New Material Request",
+    "Material Request Awaiting Approval": "Material Request Awaiting Approval",
+    "Material Request Rejected": "Material Request Rejected",
+    "Material Request Approved": "Material Request Approved",
+    "Material Request Returned": "Material Request Returned",
+    "Waiting for your approval.": "Waiting for your approval.",
+    "Your request was rejected by purchasing.": "Your request was rejected by purchasing.",
+    "Approved by finance, the PO has been issued.": "Approved by finance, the PO has been issued.",
+    "Returned by finance, please review it again.": "Returned by finance, please review it again."
 }
