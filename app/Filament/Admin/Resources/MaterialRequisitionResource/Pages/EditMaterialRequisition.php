@@ -54,11 +54,16 @@ class EditMaterialRequisition extends EditRecord
         $this->record->items()->delete();
         foreach ($this->itemsData as $item) {
             if (!empty($item['material_id'])) {
+                // WAJIB di-parse: input qty dan price kini menampilkan pemisah
+                // ribuan ("250.000"), dan bila disimpan mentah akan terbaca 250.
+                $qty = MaterialRequisitionResource::parseNumber($item['qty'] ?? 0);
+                $price = MaterialRequisitionResource::parseNumber($item['price'] ?? 0);
+
                 $this->record->items()->create([
                     'material_id' => $item['material_id'],
-                    'qty' => $item['qty'] ?? 0,
-                    'price' => $item['price'] ?? 0,
-                    'subtotal' => ($item['qty'] ?? 0) * ($item['price'] ?? 0),
+                    'qty' => $qty,
+                    'price' => $price,
+                    'subtotal' => $qty * $price,
                     'note' => $item['note'] ?? null,
                 ]);
             }

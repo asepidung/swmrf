@@ -38,14 +38,19 @@ class TaskAlert extends Notification
         return (new WebPushMessage())
             ->title($this->title)
             ->body($this->body)
-            // Kiri: sudah otomatis diisi browser dari manifest.
-            // Kanan (besar): kita isi eksplisit, jika tidak Android Chrome akan
-            // membuat ikon huruf (misal 'C' dari coba.wijayameat.co.id).
-            // Versi BERALAS, bukan pwalogo-192.png yang isinya menyentuh tepi.
-            // Android memotong ikon besar notifikasi menjadi lingkaran, jadi
-            // logo yang mepet tepi kiri-kanan pasti terpangkas.
+            // icon: ikon besar berwarna, kanan. WAJIB diisi -- tanpa ini
+            // Android Chrome membuat avatar huruf dari nama domain (misal 'C'
+            // dari coba.wijayameat.co.id), yang disangka inisial pengirim.
+            // Versi BERALAS, bukan pwalogo-192.png yang isinya menyentuh tepi
+            // -- Android memotong ikon besar notifikasi menjadi lingkaran.
             ->icon('/img/pwalogo-maskable-192.png')
-            ->badge('/img/pwalogo-maskable-192.png')
+            // badge: ikon kecil di status bar, kiri. Android HANYA membaca
+            // kanal alpha gambar ini lalu mewarnainya sendiri (putih) --
+            // memberinya logo berwarna penuh membuat seluruh kanvas dianggap
+            // "isi" dan tampil sebagai blok padat, bukan siluet yang bisa
+            // dikenali. Aset ini dibuat khusus: siluet putih di atas latar
+            // transparan, bukan logo warna aslinya.
+            ->badge('/img/pwalogo-badge-192.png')
             ->data([
                 'url' => $this->url,
                 // `tag` membuat notifikasi sejenis saling menimpa alih-alih

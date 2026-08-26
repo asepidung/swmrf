@@ -58,6 +58,46 @@ class SupplierPayment extends Model
                 $payment->created_by = auth()->id();
             }
         });
+
+        // DP adalah uang yang SUNGGUH-SUNGGUH keluar, terlepas dari
+        // pembahasan hutang (yang tetap baru lahir saat barang diterima).
+        // Setiap SupplierPayment WAJIB tercatat sebagai pengeluaran, dari
+        // jalur mana pun ia dibuat — makanya ini model event, bukan kode yang
+        // dipanggil manual di tiap halaman yang gampang lupa memanggilnya.
+        static::created(function (self $payment) {
+            $payment->recordCashOutflow();
+        });
+    }
+
+    /**
+     * Catat DP ini sebagai pengeluaran di buku kas/bank.
+     *
+     * Transfer memakai rekening yang dipilih finance. Tunai memakai akun KAS
+     * tunggal — lihat BankAccount::cashAccount() untuk alasannya.
+     */
+    protected function recordCashOutflow(): void
+    {
+        $bankAccount = $this->method === self::METHOD_TRANSFER
+            ? $this->bankAccount
+            : BankAccount::cashAccount();
+
+        if (! $bankAccount) {
+            // Data lama atau tidak lengkap (transfer tanpa rekening).
+            // Jangan menciptakan baris kas untuk akun yang tidak diketahui.
+            return;
+        }
+
+        BankTransaction::create([
+            'bank_account_id' => $bankAccount->id,
+            'type' => 'out',
+            'amount' => $this->amount,
+            'reference_type' => static::class,
+            'reference_id' => $this->id,
+            'description' => 'Uang muka ke supplier ' . ($this->supplier->name ?? '-') . ' (' . $this->payment_number . ')',
+            'transaction_date' => $this->payment_date,
+        ]);
+
+        $bankAccount->decrement('balance', $this->amount);
     }
 
     public static function generateNumber(): string

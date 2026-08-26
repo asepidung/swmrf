@@ -1,4 +1,4 @@
-const CACHE_NAME = 'swm-erp-cache-v3';
+const CACHE_NAME = 'swm-erp-cache-v4';
 const urlsToCache = [
     '/offline.html',
     '/manifest.json'
@@ -75,7 +75,11 @@ self.addEventListener('push', function (event) {
             // coba.wijayameat.co.id -- yang disangka pengguna sebagai inisial
             // nama pengirim. Logo ganda lebih baik daripada huruf menyesatkan.
             icon: payload.icon || '/img/pwalogo-maskable-192.png',
-            badge: payload.badge || '/img/pwalogo-maskable-192.png',
+            // badge WAJIB aset siluet putih tersendiri, BUKAN logo berwarna.
+            // Android hanya membaca kanal alpha-nya lalu mewarnai sendiri;
+            // logo berwarna penuh tampil sebagai blok padat yang terlihat
+            // "terpotong", bukan siluet yang bisa dikenali.
+            badge: payload.badge || '/img/pwalogo-badge-192.png',
             tag: payload.tag || undefined,
             data: payload.data || {},
             requireInteraction: false
