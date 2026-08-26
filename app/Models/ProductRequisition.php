@@ -87,9 +87,30 @@ class ProductRequisition extends Model
         return $this->hasOne(PurchaseProduct::class);
     }
 
+    /**
+     * Terbitkan PO dari request ini.
+     *
+     * Menolak bila PO-nya sudah pernah terbit. Ini lapis kedua di belakang
+     * penjagaan status pada halaman Finance Approval: tanpa keduanya, membuka
+     * ulang URL finance-approval untuk dokumen ber-status PO Created
+     * menerbitkan PO KEDUA tanpa error apa pun, lengkap dengan dokumen uang
+     * muka kedua. Pemanggil tidak perlu menangkap pengecualian ini - halaman
+     * yang benar tidak akan pernah sampai ke sini.
+     *
+     * PO yang sudah di-soft-delete sengaja tidak dihitung, supaya dokumen yang
+     * dibatalkan masih bisa diterbitkan ulang.
+     *
+     * @throws \RuntimeException bila PO untuk request ini sudah ada
+     */
     public function generatePurchaseOrder()
     {
         $this->loadMissing(['items', 'supplier']);
+
+        if ($this->purchaseProduct()->exists()) {
+            throw new \RuntimeException(
+                'PO untuk ' . $this->document_number . ' sudah pernah diterbitkan.'
+            );
+        }
 
         DB::transaction(function () {
             $currentYear2Digit = date('y');

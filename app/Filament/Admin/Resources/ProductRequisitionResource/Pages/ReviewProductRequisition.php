@@ -21,6 +21,30 @@ class ReviewProductRequisition extends EditRecord
 
     public array $itemsData = [];
 
+    /**
+     * Halaman keputusan hanya boleh dibuka pada tahapnya sendiri.
+     *
+     * Tombol di halaman View memang sudah disembunyikan menurut status, tapi
+     * halamannya sendiri tetap bisa dicapai dengan mengetik URL - dan dulu
+     * tidak ada satu pun pemeriksaan status di sini.
+     */
+    protected const EDITABLE_STATUSES = ['Requested', 'Returned to Purchasing'];
+
+    public function mount(int | string $record): void
+    {
+        parent::mount($record);
+
+        if (! in_array($this->record->status, self::EDITABLE_STATUSES, true)) {
+            Notification::make()
+                ->title(__('This request is no longer at the purchasing review stage.'))
+                ->body(__('Current status') . ': ' . $this->record->status . '.')
+                ->warning()
+                ->send();
+
+            $this->redirect(ProductRequisitionResource::getUrl('view', ['record' => $this->record]));
+        }
+    }
+
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $data['items'] = $this->record->items->mapWithKeys(function ($item) {
@@ -86,6 +110,25 @@ class ReviewProductRequisition extends EditRecord
         return $missing;
     }
 
+    /**
+     * Request tanpa satu pun barang tidak boleh maju.
+     *
+     * Penjagaan harga di bawah hanya memeriksa baris yang PUNYA product_id.
+     * Bila seluruh baris dikosongkan, daftar "harga kosong" ikut kosong dan
+     * dokumen dianggap lulus - lalu naik ke Finance dengan 0 item dan total 0,
+     * persis PO bernilai nol yang penjagaan itu dibangun untuk mencegahnya.
+     */
+    protected function hasNoItems(): bool
+    {
+        foreach ($this->data['items'] ?? [] as $item) {
+            if (! empty($item['product_id'])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     protected function afterSave(): void
     {
         $this->record->items()->delete();
@@ -124,6 +167,17 @@ class ReviewProductRequisition extends EditRecord
             ->icon('heroicon-s-check-circle')
             ->requiresConfirmation()
             ->action(function () {
+                if ($this->hasNoItems()) {
+                    Notification::make()
+                        ->title(__('Request has no items, it cannot be sent to Finance'))
+                        ->body(__('Add at least one product, or reject the request instead.'))
+                        ->danger()
+                        ->persistent()
+                        ->send();
+
+                    return;
+                }
+
                 $missing = $this->itemsMissingPrice();
 
                 if ($missing !== []) {

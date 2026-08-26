@@ -20,6 +20,30 @@ class ApproveFinanceProductRequisition extends EditRecord
 
     public array $itemsData = [];
 
+    /**
+     * Halaman keputusan hanya boleh dibuka pada tahapnya sendiri.
+     *
+     * Tanpa ini, dokumen yang sudah PO Created masih bisa dibuka lewat URL dan
+     * di-Approve lagi - PO kedua terbit berikut dokumen uang muka kedua, tanpa
+     * error apa pun. Lapis keduanya ada di ProductRequisition::generatePurchaseOrder().
+     */
+    protected const APPROVABLE_STATUS = 'Pending Finance';
+
+    public function mount(int | string $record): void
+    {
+        parent::mount($record);
+
+        if ($this->record->status !== self::APPROVABLE_STATUS) {
+            Notification::make()
+                ->title(__('This request is no longer waiting for finance approval.'))
+                ->body(__('Current status') . ': ' . $this->record->status . '.')
+                ->warning()
+                ->send();
+
+            $this->redirect(ProductRequisitionResource::getUrl('view', ['record' => $this->record]));
+        }
+    }
+
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $data['items'] = $this->record->items->mapWithKeys(function ($item) {
@@ -83,6 +107,24 @@ class ApproveFinanceProductRequisition extends EditRecord
         }
 
         return $missing;
+    }
+
+    /**
+     * Request tanpa satu pun barang tidak boleh menerbitkan PO.
+     *
+     * Penjagaan harga di atas hanya memeriksa baris yang PUNYA product_id, jadi
+     * dokumen yang seluruh barisnya kosong lolos begitu saja dan menghasilkan PO
+     * bernilai nol - utang palsu yang mengacaukan perhitungan TOP.
+     */
+    protected function hasNoItems(): bool
+    {
+        foreach ($this->data['items'] ?? [] as $item) {
+            if (! empty($item['product_id'])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /** Nilai pembayaran dianggap ada bila lebih dari nol setelah di-parse. */
@@ -220,6 +262,17 @@ class ApproveFinanceProductRequisition extends EditRecord
                     ]),
             ])
             ->action(function (array $data) {
+                if ($this->hasNoItems()) {
+                    Notification::make()
+                        ->title(__('Request has no items, the PO cannot be issued'))
+                        ->body(__('Add at least one product, or return the request to purchasing instead.'))
+                        ->danger()
+                        ->persistent()
+                        ->send();
+
+                    return;
+                }
+
                 $missing = $this->itemsMissingPrice();
 
                 if ($missing !== []) {

@@ -301,9 +301,20 @@ class ProductRequisitionResource extends Resource
             ->recordAction(null)
             ->recordUrl(function ($record) {
                 $user = auth()->user();
-                $canView = $user->isProgrammer() ||
-                    ($record->status === 'Requested' && $user->hasPermission('review_product_requisitions')) ||
-                    (in_array($record->status, ['Pending Finance', 'Returned to Purchasing', 'PO Created']));
+
+                // Pemohon selalu boleh membuka dokumennya sendiri, apa pun statusnya.
+                // Sebelum ini baris berstatus Rejected tidak bisa diklik sama sekali,
+                // padahal tombol Resubmit HANYA ada di halaman View - jalur
+                // "ditolak -> perbaiki -> ajukan ulang" jadi buntu.
+                //
+                // Pemegang permission review/approve juga boleh membukanya: dokumen
+                // yang sudah ditolak adalah arsip keputusan mereka sendiri.
+                $canView = $user->isProgrammer()
+                    || $record->user_id === $user->id
+                    || $user->hasPermission('review_product_requisitions')
+                    || $user->hasPermission('approve_product_requisitions')
+                    || in_array($record->status, ['Pending Finance', 'Returned to Purchasing', 'PO Created']);
+
                 return $canView ? static::getUrl('view', ['record' => $record]) : null;
             })
             ->columns([
