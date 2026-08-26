@@ -109,11 +109,6 @@ class ReviewMaterialRequisition extends EditRecord
                     auth()->id(),
                 );
 
-                \Filament\Notifications\Notification::make()
-                    ->title(__('Approved successfully'))
-                    ->success()
-                    ->send();
-
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }
@@ -147,11 +142,6 @@ class ReviewMaterialRequisition extends EditRecord
                         'material-request-' . $this->record->id,
                     );
                 }
-
-                \Filament\Notifications\Notification::make()
-                    ->title(__('Rejected successfully'))
-                    ->success()
-                    ->send();
 
                 $this->redirect($this->getResource()::getUrl('index'));
             });

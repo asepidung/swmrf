@@ -210,11 +210,6 @@ class ReviewProductRequisition extends EditRecord
                     auth()->id(),
                 );
 
-                \Filament\Notifications\Notification::make()
-                    ->title(__('Approved successfully'))
-                    ->success()
-                    ->send();
-
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }
@@ -246,11 +241,6 @@ class ReviewProductRequisition extends EditRecord
                         'beef-request-' . $this->record->id,
                     );
                 }
-
-                \Filament\Notifications\Notification::make()
-                    ->title(__('Rejected successfully'))
-                    ->success()
-                    ->send();
 
                 // User can see rejected status in their list.
                 $this->redirect($this->getResource()::getUrl('index'));

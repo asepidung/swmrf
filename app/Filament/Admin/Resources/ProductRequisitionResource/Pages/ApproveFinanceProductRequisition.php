@@ -362,11 +362,6 @@ class ApproveFinanceProductRequisition extends EditRecord
                     auth()->id(),
                 );
 
-                \Filament\Notifications\Notification::make()
-                    ->title(__('PO Generated successfully'))
-                    ->success()
-                    ->send();
-
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }
@@ -397,11 +392,6 @@ class ApproveFinanceProductRequisition extends EditRecord
                     'beef-request-' . $this->record->id,
                     auth()->id(),
                 );
-
-                \Filament\Notifications\Notification::make()
-                    ->title(__('Returned successfully'))
-                    ->success()
-                    ->send();
 
                 $this->redirect($this->getResource()::getUrl('index'));
             });

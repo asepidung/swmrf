@@ -244,6 +244,12 @@ Yang dijaga bukan sekadar "ada notifikasi terkirim", melainkan **siapa** yang me
 
 `RequisitionTranslationCoverageTest` kini memindai **kedua** modul. Alurnya kembar sehingga teksnya tumbuh berbarengan, dan lubang bahasa yang sama gampang terulang di sebelahnya.
 
+**Toast buatan tangan untuk PELAKU aksinya sendiri dihapus, 26 Agustus 2026.** `c766adf` sempat menambah toast eksplisit ("Approved successfully", "PO Generated successfully", "Returned successfully", "Rejected successfully") di keempat halaman keputusan (Review dan Finance, kedua modul). Keputusan Owner: dihapus — push notification sudah cukup memberi tahu **orang lain** yang harus bertindak berikutnya, dan toast buatan tangan ini dianggap berlebihan bagi pelaku aksinya sendiri.
+
+**Toast BAWAAN Filament tetap ada dan sengaja tidak disentuh** — misalnya toast "Created" saat `CreateRecord` menyimpan. Bedanya: toast bawaan itu melekat pada siklus hidup record (create/save) yang memang jadi tanggung jawab Filament, sedangkan yang dihapus adalah `Notification::make()` yang sengaja ditulis manual di dalam `action()` sebuah `Actions\Action`. Toast **penjagaan** (warning/danger — status tidak valid, request kosong, harga belum lengkap) juga sengaja dipertahankan; itu bukan konfirmasi "berhasil", melainkan alasan kenapa aksinya diblokir.
+
+Dikunci `RequisitionActorToastTest`, delapan kombinasi (2 modul × 2 halaman × approve/reject), memanggil aksinya lewat `callAction()` sungguhan lalu memeriksa `session('filament.notifications')` tidak memuat keempat judul itu. Sudah diverifikasi test-nya gagal saat salah satu toast dikembalikan.
+
 #### Belum ada buku besar; `bank_transactions` baru dipakai separuh
 
 Ditanyakan Owner 26 Agustus 2026. Kondisi sebenarnya:
@@ -520,7 +526,7 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 220 lolos, 0 gagal** (1188 assertion, diverifikasi 26 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Test suite: 228 lolos, 0 gagal** (1252 assertion, diverifikasi 26 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Tiga modul Finance sengaja dimatikan
