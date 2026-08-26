@@ -191,7 +191,10 @@ class ReviewProductRequisition extends EditRecord
                     return;
                 }
 
-                $this->save(false);
+                // Argumen KEDUA mematikan toast "Saved" bawaan Filament.
+                // Tanpa itu pengguna melihat dua toast sekaligus: "Saved" dari
+                // penyimpanan, dan pesan hasil aksinya sendiri.
+                $this->save(false, false);
                 
                 $this->record->update([
                     'status' => 'Pending Finance',

@@ -507,5 +507,7 @@
     "PO Generated successfully": "PO Generated successfully",
     "Returned successfully": "Returned successfully",
     "Approved successfully": "Approved successfully",
-    "Rejected successfully": "Rejected successfully"
+    "Rejected successfully": "Rejected successfully",
+    "Payment cannot exceed the bill of :total.": "Payment cannot exceed the bill of :total.",
+    "Bill": "Bill"
 }
