@@ -208,6 +208,18 @@ Huruf ini disangka sebagai inisial nama pengirim oleh pengguna, sehingga membing
 
 **Bahasa notifikasi mengikuti locale PENGIRIM, bukan penerima**, karena `__()` dievaluasi saat aksi dijalankan. Penerima berbahasa Indonesia bisa menerima notifikasi berbahasa Inggris bila yang memicunya sedang memakai EN. Belum diputuskan apakah ini perlu diubah.
 
+**Saat sebuah keputusan dibatalkan, balik juga test-nya.** Keputusan "jangan isi `icon`" sempat dikunci sebuah test yang memastikan `icon:` TIDAK ada di `sw.js`. Setelah keputusannya dibatalkan, test itu tetap hijau — dan yang dijaganya justru kebalikan dari aturan yang berlaku. Lebih buruk lagi, `TaskAlert` sudah dikembalikan mengirim `icon` sementara service worker masih membuangnya, jadi perbaikannya tidak berefek apa pun sampai kedua sisi disamakan. **Test yang menjaga keputusan lama tidak akan pernah memberitahu bahwa keputusannya sudah berubah.**
+
+Sekarang test-nya memeriksa **dua sisi sekaligus**: `TaskAlert` mengirim `icon`, DAN `sw.js` membacanya. Mengirim tanpa membaca sama saja dengan tidak mengirim.
+
+#### Teks notifikasi wajib terdaftar dua bahasa, dan ada test yang menjaganya
+
+Satu alur notifikasi sempat ditambahkan lengkap dengan sepuluh teks ber-`__()` tanpa satu pun didaftarkan di berkas bahasa. Tidak ada error: Laravel menampilkan kuncinya apa adanya, sehingga pengguna yang memilih Indonesia tetap melihat kalimat bahasa Inggris dan tidak ada yang menyadarinya.
+
+`RequisitionTranslationCoverageTest` kini memindai argumen `TaskNotifier::notify*` dan judul/isi toast Filament di modul Request Beef, lalu memastikan setiap kuncinya terdaftar di `id.json` **dan** `en.json`.
+
+**Sengaja dibatasi pada teks notifikasi.** Label formulir modul ini sudah lama banyak yang belum terdaftar — sekitar 20 kunci pada berkas ID dan lebih banyak lagi pada EN, termasuk `Header Information`, `Due Date`, `Item Details`, `Price`, `Summary`, dan `Rejection Info`. Membereskannya pekerjaan tersendiri dan belum dikerjakan; jangan menganggapnya sudah beres hanya karena test ini hijau.
+
 ### Uang muka ke supplier: dokumen tersendiri, bukan kolom di request
 
 Keputusan Owner, 24 Agustus 2026, untuk poin 5 pada #77.
@@ -438,7 +450,7 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 188 lolos, 0 gagal** (diverifikasi 26 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Test suite: 190 lolos, 0 gagal** (diverifikasi 26 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Tiga modul Finance sengaja dimatikan

@@ -120,13 +120,22 @@ class PwaIconAndNotificationShapeTest extends TestCase
     }
 
     /**
-     * Sistem sudah menampilkan ikon aplikasi di sisi kiri notifikasi. Mengisi
-     * "icon" menambah gambar besar di sisi kanan, sehingga logo yang sama
-     * muncul dua kali dalam satu notifikasi.
+     * Notifikasi WAJIB membawa ikon eksplisit.
+     *
+     * Sempat diputuskan sebaliknya, dengan alasan logo tampil ganda -- di kiri
+     * dari manifest, di kanan dari "icon". Keputusan itu DIBATALKAN setelah
+     * diuji di perangkat sungguhan: bila "icon" kosong, Android Chrome membuat
+     * avatar huruf dari nama domain (huruf "C" dari coba.wijayameat.co.id),
+     * dan pengguna menyangkanya inisial nama pengirim. Logo ganda lebih baik
+     * daripada huruf yang menyesatkan.
+     *
+     * Dua sisi diperiksa sekaligus: TaskAlert boleh saja mengirim "icon", tapi
+     * tidak ada gunanya bila service worker membuangnya. Itu persis yang
+     * sempat terjadi.
      *
      * @test
      */
-    public function it_shows_only_one_logo_per_notification()
+    public function it_always_sends_an_explicit_notification_icon()
     {
         $worker = file_get_contents(public_path('sw.js'));
 
@@ -136,8 +145,14 @@ class PwaIconAndNotificationShapeTest extends TestCase
             strpos($worker, 'notificationclick') - strpos($worker, 'showNotification'),
         );
 
-        $this->assertStringNotContainsString('icon:', $options);
+        $this->assertStringContainsString('icon:', $options, 'Service worker membuang ikon yang dikirim server.');
         $this->assertStringContainsString('badge:', $options);
+
+        $this->assertStringContainsString(
+            "->icon('/img/pwalogo-192.png')",
+            file_get_contents(app_path('Notifications/TaskAlert.php')),
+            'TaskAlert tidak mengirim ikon, sehingga browser memunculkan avatar huruf.',
+        );
     }
 
     /**
