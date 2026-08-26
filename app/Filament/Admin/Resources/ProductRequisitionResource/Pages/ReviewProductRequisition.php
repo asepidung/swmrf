@@ -207,7 +207,11 @@ class ReviewProductRequisition extends EditRecord
                     auth()->id(),
                 );
 
-                // Notifications rely on PendingTaskWidget now.
+                \Filament\Notifications\Notification::make()
+                    ->title(__('Approved successfully'))
+                    ->success()
+                    ->send();
+
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }
@@ -229,6 +233,21 @@ class ReviewProductRequisition extends EditRecord
                     'status' => 'Rejected',
                     'reject_note' => $data['reject_note'],
                 ]);
+
+                if ($this->record->user) {
+                    \App\Support\TaskNotifier::notifyUser(
+                        $this->record->user,
+                        __('Beef Request Rejected'),
+                        __('Your request :number has been rejected by purchasing.', ['number' => $this->record->document_number]),
+                        \App\Filament\Admin\Resources\ProductRequisitionResource::getUrl('view', ['record' => $this->record]),
+                        'beef-request-' . $this->record->id,
+                    );
+                }
+
+                \Filament\Notifications\Notification::make()
+                    ->title(__('Rejected successfully'))
+                    ->success()
+                    ->send();
 
                 // User can see rejected status in their list.
                 $this->redirect($this->getResource()::getUrl('index'));

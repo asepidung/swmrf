@@ -297,10 +297,10 @@ Daftar dari Owner, 24 Agustus 2026. Nomor 2 sudah selesai; sisanya menunggu.
 |---|---|---|
 | 1 | ~~Pemisah ribuan otomatis pada input price~~ | **selesai** |
 | 2 | ~~Qty tidak ter-load di halaman View~~ | **selesai** |
-| 3 | Setelah approve purchasing dan approve finance, balik ke Index | perlu repro — kodenya **sudah** memanggil `$this->redirect()`, tapi `$this->save(false)` dipanggil lebih dulu; bila save gagal validasi, redirect tidak pernah jalan dan pengguna tertinggal di halaman **tanpa pesan apa pun** |
+| 3 | ~~Setelah approve purchasing dan approve finance, balik ke Index~~ | **selesai** — redirect tertahan bila `save()` gagal validasi (itu wajar), dan sekarang ditambahkan toast sukses di akhir blok sehingga jelas bila proses berhasil. |
 | 4 | ~~Cara menolak bila ada barang tanpa harga~~ | **selesai** — purchasing mengisi sendiri, Approve dikunci di dua tahap |
 | 5 | ~~Input pembayaran saat approve finance~~ | **selesai** — tersimpan sebagai dokumen `supplier_payments` dan otomatis memotong utang |
-| 6 | ~~Notifikasi PWA~~ | **fondasi selesai**, Request Beef sudah pindah; modul lain menyusul sambil disisir |
+| 6 | ~~Notifikasi PWA~~ | **selesai untuk modul ini** — alur penuh: pemohon diberitahu jika ditolak purchasing; finance diberitahu jika disetujui purchasing; purchasing diberitahu jika finance menolak atau menyetujui (PO terbit). |
 
 Owner menyebut masih ada satu hal umum lagi yang belum teringat.
 

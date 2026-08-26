@@ -301,7 +301,20 @@ class ApproveFinanceProductRequisition extends EditRecord
                     $this->recordAdvancePayment($data);
                 });
                 
-                // Notifications rely on PendingTaskWidget now.
+                \App\Support\TaskNotifier::notifyPermissionHolders(
+                    'review_product_requisitions',
+                    __('Beef Request Approved'),
+                    __('Request :number has been approved by finance and PO is generated.', ['number' => $this->record->document_number]),
+                    \App\Filament\Admin\Resources\ProductRequisitionResource::getUrl('view', ['record' => $this->record]),
+                    'beef-request-' . $this->record->id,
+                    auth()->id(),
+                );
+
+                \Filament\Notifications\Notification::make()
+                    ->title(__('PO Generated successfully'))
+                    ->success()
+                    ->send();
+
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }
@@ -324,7 +337,20 @@ class ApproveFinanceProductRequisition extends EditRecord
                     'reject_note' => $data['reject_note'],
                 ]);
 
-                // Notifications rely on PendingTaskWidget now.
+                \App\Support\TaskNotifier::notifyPermissionHolders(
+                    'review_product_requisitions',
+                    __('Beef Request Returned'),
+                    __('Request :number has been returned by finance.', ['number' => $this->record->document_number]),
+                    \App\Filament\Admin\Resources\ProductRequisitionResource::getUrl('review', ['record' => $this->record]),
+                    'beef-request-' . $this->record->id,
+                    auth()->id(),
+                );
+
+                \Filament\Notifications\Notification::make()
+                    ->title(__('Returned successfully'))
+                    ->success()
+                    ->send();
+
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }

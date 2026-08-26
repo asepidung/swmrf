@@ -57,6 +57,33 @@ class TaskNotifier
     }
 
     /**
+     * Kirim notifikasi ke satu pengguna tertentu (misal: pembuat dokumen).
+     */
+    public static function notifyUser(
+        User $user,
+        string $title,
+        string $body,
+        string $url,
+        ?string $tag = null,
+    ): bool {
+        if (! $user->is_active || ! $user->pushSubscriptions()->exists()) {
+            return false;
+        }
+
+        try {
+            $user->notify(new TaskAlert($title, $body, $url, $tag));
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('Gagal mengirim notifikasi tugas ke pengguna', [
+                'user_id' => $user->id,
+                'title' => $title,
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
      * @param  array<int, string>  $permissions
      * @return Collection<int, User>
      */
