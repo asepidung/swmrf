@@ -41,8 +41,11 @@ class TaskAlert extends Notification
             // Kiri: sudah otomatis diisi browser dari manifest.
             // Kanan (besar): kita isi eksplisit, jika tidak Android Chrome akan
             // membuat ikon huruf (misal 'C' dari coba.wijayameat.co.id).
-            ->icon('/img/pwalogo-192.png')
-            ->badge('/img/pwalogo-192.png')
+            // Versi BERALAS, bukan pwalogo-192.png yang isinya menyentuh tepi.
+            // Android memotong ikon besar notifikasi menjadi lingkaran, jadi
+            // logo yang mepet tepi kiri-kanan pasti terpangkas.
+            ->icon('/img/pwalogo-maskable-192.png')
+            ->badge('/img/pwalogo-maskable-192.png')
             ->data([
                 'url' => $this->url,
                 // `tag` membuat notifikasi sejenis saling menimpa alih-alih
