@@ -249,7 +249,7 @@
                 <div class="meta-content">{{ $record->supplier->name ?? 'Unknown Supplier' }}</div>
                 <div class="meta-address">
                     {{ $record->supplier->address ?? 'No Address Provided' }}<br>
-                    <strong>Terms of Payment:</strong> {{ $record->supplier->top_days ?? '0' }} Days
+                    <strong>Terms of Payment:</strong> {{ $record->supplier->top_days ?? '0' }} Days (after goods received)
                 </div>
             </div>
             <div class="meta-box">
