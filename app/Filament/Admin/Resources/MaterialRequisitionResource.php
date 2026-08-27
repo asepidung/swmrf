@@ -293,9 +293,15 @@ class MaterialRequisitionResource extends Resource
             ->recordAction(null)
             ->recordUrl(function ($record) {
                 $user = auth()->user();
-                $canView = $user->isProgrammer() ||
-                    ($record->status === 'Requested' && $user->hasPermission('review_material_requisitions')) ||
-                    (in_array($record->status, ['Pending Finance', 'Returned to Purchasing', 'PO Created']));
+
+                // Pemohon selalu boleh membuka dokumennya sendiri, apa pun statusnya.
+                // Sebelum ini baris berstatus Rejected tidak bisa diklik sama sekali oleh pemohon.
+                $canView = $user->isProgrammer()
+                    || $record->user_id === $user->id
+                    || $user->hasPermission('review_material_requisitions')
+                    || $user->hasPermission('approve_material_requisitions')
+                    || in_array($record->status, ['Pending Finance', 'Returned to Purchasing', 'PO Created']);
+
                 return $canView ? static::getUrl('view', ['record' => $record]) : null;
             })
             ->columns([
