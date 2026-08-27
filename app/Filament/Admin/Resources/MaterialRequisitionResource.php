@@ -169,6 +169,13 @@ class MaterialRequisitionResource extends Resource
 
                                 Forms\Components\TextInput::make('qty')
                                     ->required()
+                                    ->rules([
+                                        function (string $attribute, $value, \Closure $fail) {
+                                            if (self::parseNumber($value) <= 0) {
+                                                $fail(__('Qty is required and cannot be zero.'));
+                                            }
+                                        },
+                                    ])
                                     ->hiddenLabel()
                                     ->placeholder(fn() => __('Qty'))
                                     ->default(0)
