@@ -36,19 +36,36 @@ class ViewPayable extends ViewRecord
                         ->options(\App\Models\BankAccount::where('is_active', true)->where('initial', '!=', 'KAS')->pluck('bank_name', 'id'))
                         ->required(fn (\Filament\Forms\Get $get) => $get('method') === \App\Models\SupplierPayment::METHOD_TRANSFER)
                         ->visible(fn (\Filament\Forms\Get $get) => $get('method') === \App\Models\SupplierPayment::METHOD_TRANSFER),
-                    \Filament\Forms\Components\TextInput::make('amount')
+                    \Filament\Forms\Components\Placeholder::make('sisa_tagihan')
+                        ->label('Sisa Tagihan (Hutang)')
+                        ->content(fn () => 'Rp ' . number_format($this->record->balance, 0, ',', '.')),
+                    \Filament\Forms\Components\TextInput::make('amount_input')
                         ->label('Nominal Pembayaran (Rp)')
-                        ->numeric()
                         ->required()
-                        ->minValue(1)
-                        ->maxValue(fn () => $this->record->balance),
+                        ->extraInputAttributes([
+                            'x-on:input' => '
+                                let val = $el.value.replace(/[^0-9]/g, "");
+                                $el.value = new Intl.NumberFormat("id-ID").format(val);
+                            '
+                        ])
+                        ->rules([
+                            fn (): \Closure => function (string $attribute, $value, \Closure $fail) {
+                                $val = (float) str_replace('.', '', $value);
+                                if ($val <= 0) {
+                                    $fail('Nominal harus lebih dari 0.');
+                                }
+                                if ($val > $this->record->balance) {
+                                    $fail('Nominal Pembayaran tidak boleh melebihi Sisa Tagihan (Rp ' . number_format($this->record->balance, 0, ',', '.') . ').');
+                                }
+                            },
+                        ]),
                     \Filament\Forms\Components\TextInput::make('reference_number')
                         ->label('No. Referensi / Bukti Transfer'),
                     \Filament\Forms\Components\Textarea::make('note')
                         ->label('Catatan'),
                 ])
                 ->action(function (array $data) {
-                    $amount = (float) $data['amount'];
+                    $amount = (float) str_replace('.', '', $data['amount_input']);
                     
                     // Buat SupplierPayment (mencatat uang keluar ke kas/bank)
                     $payment = \App\Models\SupplierPayment::create([

@@ -35,18 +35,37 @@ class ViewPurchaseMaterial extends ViewRecord
                         ->options(\App\Models\BankAccount::where('is_active', true)->where('initial', '!=', 'KAS')->pluck('bank_name', 'id'))
                         ->required(fn (\Filament\Forms\Get $get) => $get('method') === \App\Models\SupplierPayment::METHOD_TRANSFER)
                         ->visible(fn (\Filament\Forms\Get $get) => $get('method') === \App\Models\SupplierPayment::METHOD_TRANSFER),
-                    \Filament\Forms\Components\TextInput::make('amount')
+                    \Filament\Forms\Components\Placeholder::make('total_tagihan')
+                        ->label('Total Tagihan (PO)')
+                        ->content(fn () => 'Rp ' . number_format($this->record->total_amount, 0, ',', '.')),
+                    \Filament\Forms\Components\TextInput::make('amount_input')
                         ->label('Nominal DP (Rp)')
-                        ->numeric()
                         ->required()
-                        ->minValue(1)
-                        ->maxValue(fn () => $this->record->total_amount),
+                        ->extraInputAttributes([
+                            'x-on:input' => '
+                                let val = $el.value.replace(/[^0-9]/g, "");
+                                $el.value = new Intl.NumberFormat("id-ID").format(val);
+                            '
+                        ])
+                        ->rules([
+                            fn (): \Closure => function (string $attribute, $value, \Closure $fail) {
+                                $val = (float) str_replace('.', '', $value);
+                                if ($val <= 0) {
+                                    $fail('Nominal harus lebih dari 0.');
+                                }
+                                if ($val > $this->record->total_amount) {
+                                    $fail('Nominal DP tidak boleh melebihi Total Tagihan (Rp ' . number_format($this->record->total_amount, 0, ',', '.') . ').');
+                                }
+                            },
+                        ]),
                     \Filament\Forms\Components\TextInput::make('reference_number')
                         ->label('No. Referensi / Bukti Transfer'),
                     \Filament\Forms\Components\Textarea::make('note')
                         ->label('Catatan'),
                 ])
                 ->action(function (array $data) {
+                    $amount = (float) str_replace('.', '', $data['amount_input']);
+                    
                     \App\Models\SupplierPayment::create([
                         'supplier_id' => $this->record->supplier_id,
                         'source_type' => get_class($this->record),
@@ -54,7 +73,7 @@ class ViewPurchaseMaterial extends ViewRecord
                         'payment_date' => $data['payment_date'],
                         'method' => $data['method'],
                         'bank_account_id' => $data['method'] === \App\Models\SupplierPayment::METHOD_TRANSFER ? $data['bank_account_id'] : null,
-                        'amount' => $data['amount'],
+                        'amount' => $amount,
                         'reference_number' => $data['reference_number'],
                         'note' => $data['note'],
                         'allocated_amount' => 0,
