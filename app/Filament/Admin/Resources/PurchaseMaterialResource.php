@@ -34,12 +34,17 @@ class PurchaseMaterialResource extends Resource
                         Forms\Components\TextInput::make('po_number')
                             ->label('PO Number')
                             ->disabled()
-                            ->columnSpan(['default' => 12, 'md' => 6]),
+                            ->columnSpan(['default' => 12, 'md' => 4]),
 
                         Forms\Components\DatePicker::make('po_date')
                             ->label('PO Date')
                             ->disabled()
-                            ->columnSpan(['default' => 12, 'md' => 6]),
+                            ->columnSpan(['default' => 12, 'md' => 4]),
+
+                        Forms\Components\TextInput::make('materialRequisition.document_number')
+                            ->label('Request Number')
+                            ->disabled()
+                            ->columnSpan(['default' => 12, 'md' => 4]),
 
                         Forms\Components\Select::make('supplier_id')
                             ->label('Supplier')
@@ -162,6 +167,10 @@ class PurchaseMaterialResource extends Resource
                     ->label('PO Number')
                     ->searchable()
                     ->weight('bold'),
+
+                Tables\Columns\TextColumn::make('materialRequisition.document_number')
+                    ->label('Request No.')
+                    ->searchable(),
 
                 Tables\Columns\TextColumn::make('po_date')
                     ->label('PO Date')
