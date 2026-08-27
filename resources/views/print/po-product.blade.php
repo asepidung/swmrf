@@ -304,27 +304,27 @@
                     $remaining = $record->total_amount - $dpAmount;
                     @endphp
                     <tr>
-                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px;">Subtotal:</td>
-                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; font-size: 14px;">Rp {{ number_format($subtotal, 0, ',', '.') }}</td>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; white-space: nowrap;">Subtotal:</td>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; font-size: 14px; white-space: nowrap;">Rp {{ number_format($subtotal, 0, ',', '.') }}</td>
                     </tr>
                     @if($taxAmount > 0)
                     <tr>
-                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px;">Tax 11%:</td>
-                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; font-size: 14px;">Rp {{ number_format($taxAmount, 0, ',', '.') }}</td>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; white-space: nowrap;">Tax 11%:</td>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; font-size: 14px; white-space: nowrap;">Rp {{ number_format($taxAmount, 0, ',', '.') }}</td>
                     </tr>
                     @endif
                     <tr>
-                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px;">Grand Total:</td>
-                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; font-size: 14px;">Rp {{ number_format($record->total_amount, 0, ',', '.') }}</td>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; white-space: nowrap;">Grand Total:</td>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; font-size: 14px; white-space: nowrap;">Rp {{ number_format($record->total_amount, 0, ',', '.') }}</td>
                     </tr>
                     @if($dpAmount > 0)
                     <tr>
-                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; color: green;">Down Payment (DP):</td>
-                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; font-size: 14px; color: green;">- Rp {{ number_format($dpAmount, 0, ',', '.') }}</td>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; color: green; white-space: nowrap;">DP:</td>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; font-size: 14px; color: green; white-space: nowrap;">- Rp {{ number_format($dpAmount, 0, ',', '.') }}</td>
                     </tr>
                     <tr>
-                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; color: #d32f2f;">Remaining Balance:</td>
-                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; font-size: 14px; color: #d32f2f;">Rp {{ number_format($remaining, 0, ',', '.') }}</td>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; color: #d32f2f; white-space: nowrap;">Remaining:</td>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; font-size: 14px; color: #d32f2f; white-space: nowrap;">Rp {{ number_format($remaining, 0, ',', '.') }}</td>
                     </tr>
                     @endif
                 </table>
