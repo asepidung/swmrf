@@ -686,5 +686,7 @@
     "Amount": "Nominal",
     "Delete PO": "Hapus PO",
     "Payment Number": "No. Pembayaran",
-    "Allocated Amount": "Terpotong (Dipakai)"
+    "Allocated Amount": "Terpotong (Dipakai)",
+    "ACCOUNTING": "Akuntansi",
+    "FINANCE & ACCOUNTING": "Keuangan & Akuntansi"
 }

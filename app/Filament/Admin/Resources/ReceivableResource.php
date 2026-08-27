@@ -22,15 +22,11 @@ class ReceivableResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
 
-    public static function canAccess(): bool
-    {
-        // Fitur piutang disembunyikan atas instruksi owner
-        return false;
-    }
+
 
     public static function getNavigationGroup(): ?string
     {
-        return __('FINANCE');
+        return __('ACCOUNTING');
     }
 
     public static function getNavigationLabel(): string
