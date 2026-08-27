@@ -14,33 +14,33 @@ class ViewPayable extends ViewRecord
     {
         return [
             Actions\Action::make('pay')
-                ->label('Catat Pembayaran')
+                ->label(__('Record Payment'))
                 ->icon('heroicon-o-banknotes')
                 ->color('success')
                 ->visible(fn () => $this->record->balance > 0)
                 ->form([
                     \Filament\Forms\Components\DatePicker::make('payment_date')
-                        ->label('Tanggal Pembayaran')
+                        ->label(__('Payment Date'))
                         ->default(now())
                         ->required(),
                     \Filament\Forms\Components\Select::make('method')
-                        ->label('Metode')
+                        ->label(__('Method'))
                         ->options([
-                            \App\Models\SupplierPayment::METHOD_CASH => 'Tunai (Kas Kecil)',
-                            \App\Models\SupplierPayment::METHOD_TRANSFER => 'Transfer Bank',
+                            \App\Models\SupplierPayment::METHOD_CASH => __('Cash'),
+                            \App\Models\SupplierPayment::METHOD_TRANSFER => __('Bank Transfer'),
                         ])
                         ->required()
                         ->live(),
                     \Filament\Forms\Components\Select::make('bank_account_id')
-                        ->label('Rekening Bank')
+                        ->label(__('Bank Account'))
                         ->options(\App\Models\BankAccount::where('is_active', true)->where('initial', '!=', 'KAS')->pluck('bank_name', 'id'))
                         ->required(fn (\Filament\Forms\Get $get) => $get('method') === \App\Models\SupplierPayment::METHOD_TRANSFER)
                         ->visible(fn (\Filament\Forms\Get $get) => $get('method') === \App\Models\SupplierPayment::METHOD_TRANSFER),
                     \Filament\Forms\Components\Placeholder::make('sisa_tagihan')
-                        ->label('Sisa Tagihan (Hutang)')
+                        ->label(__('Outstanding Balance'))
                         ->content(fn () => 'Rp ' . number_format($this->record->balance, 0, ',', '.')),
                     \Filament\Forms\Components\TextInput::make('amount_input')
-                        ->label('Nominal Pembayaran (Rp)')
+                        ->label(__('Amount (Rp)'))
                         ->required()
                         ->extraInputAttributes([
                             'x-on:input' => '
@@ -52,17 +52,17 @@ class ViewPayable extends ViewRecord
                             fn (): \Closure => function (string $attribute, $value, \Closure $fail) {
                                 $val = (float) str_replace('.', '', $value);
                                 if ($val <= 0) {
-                                    $fail('Nominal harus lebih dari 0.');
+                                    $fail(__('Amount must be greater than 0.'));
                                 }
                                 if ($val > $this->record->balance) {
-                                    $fail('Nominal Pembayaran tidak boleh melebihi Sisa Tagihan (Rp ' . number_format($this->record->balance, 0, ',', '.') . ').');
+                                    $fail(__('Payment cannot exceed the bill of Rp :total.', ['total' => number_format($this->record->balance, 0, ',', '.')]));
                                 }
                             },
                         ]),
                     \Filament\Forms\Components\TextInput::make('reference_number')
-                        ->label('No. Referensi / Bukti Transfer'),
+                        ->label(__('Reference Number')),
                     \Filament\Forms\Components\Textarea::make('note')
-                        ->label('Catatan'),
+                        ->label(__('Note')),
                 ])
                 ->action(function (array $data) {
                     $amount = (float) str_replace('.', '', $data['amount_input']);
@@ -93,7 +93,7 @@ class ViewPayable extends ViewRecord
                     $this->record->save();
 
                     \Filament\Notifications\Notification::make()
-                        ->title('Pembayaran Hutang Berhasil Dicatat')
+                        ->title(__('Payment Recorded Successfully'))
                         ->success()
                         ->send();
                         

@@ -10,12 +10,17 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Models\SupplierPayment;
+use Illuminate\Database\Eloquent\Model;
 
 class SupplierPaymentsRelationManager extends RelationManager
 {
     protected static string $relationship = 'supplierPayments';
 
-    protected static ?string $title = 'Riwayat Pembayaran Uang Muka (DP)';
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('Payment History');
+    }
+
     protected static ?string $modelLabel = 'Pembayaran';
 
     public function form(Form $form): Form
@@ -33,17 +38,35 @@ class SupplierPaymentsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('payment_number')
             ->columns([
-                Tables\Columns\TextColumn::make('payment_number')->label('No. Pembayaran'),
-                Tables\Columns\TextColumn::make('payment_date')->label('Tanggal')->date('d M Y'),
-                Tables\Columns\TextColumn::make('method')->label('Metode')->formatStateUsing(fn ($state) => match($state) {
-                    'cash' => 'Tunai',
-                    'transfer' => 'Transfer',
-                    default => $state,
-                }),
-                Tables\Columns\TextColumn::make('bankAccount.bank_name')->label('Rekening')->default('Kas Tunai'),
-                Tables\Columns\TextColumn::make('amount')->label('Nominal')->money('IDR', locale: 'id'),
-                Tables\Columns\TextColumn::make('allocated_amount')->label('Terpotong (Dipakai)')->money('IDR', locale: 'id'),
-                Tables\Columns\TextColumn::make('note')->label('Catatan'),
+                Tables\Columns\TextColumn::make('payment_number')
+                    ->label(__('Payment Number')),
+                Tables\Columns\TextColumn::make('payment_date')
+                    ->label(__('Date'))
+                    ->date('d M Y'),
+                Tables\Columns\TextColumn::make('method')
+                    ->label(__('Method'))
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'cash' => 'success',
+                        'transfer' => 'info',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn ($state) => match($state) {
+                        'cash' => __('Cash'),
+                        'transfer' => __('Transfer'),
+                        default => $state,
+                    }),
+                Tables\Columns\TextColumn::make('bankAccount.bank_name')
+                    ->label(__('Bank Account'))
+                    ->default(__('Cash')),
+                Tables\Columns\TextColumn::make('amount')
+                    ->label(__('Amount'))
+                    ->money('IDR', locale: 'id'),
+                Tables\Columns\TextColumn::make('allocated_amount')
+                    ->label(__('Allocated Amount'))
+                    ->money('IDR', locale: 'id'),
+                Tables\Columns\TextColumn::make('note')
+                    ->label(__('Note')),
             ])
             ->filters([
                 //
