@@ -220,7 +220,7 @@ class PurchaseProductResource extends Resource
     public static function getRelations(): array
     {
         return [
-            RelationManagers\SupplierPaymentsRelationManager::class,
+            PurchaseProductResource\RelationManagers\SupplierPaymentsRelationManager::class,
         ];
     }
 
