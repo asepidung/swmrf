@@ -1,1 +1,0 @@
-<?php $path = 'lang/id.json'; $json = json_decode(file_get_contents($path), true); $new = ['Payment Number' => 'No. Pembayaran', 'Transfer' => 'Transfer', 'Allocated Amount' => 'Terpotong (Dipakai)', 'Cash' => 'Tunai']; foreach($new as $k => $v) { $json[$k] = $v; } file_put_contents($path, json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)); echo 'done';
