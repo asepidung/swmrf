@@ -323,7 +323,7 @@
             <div class="sig-box">
                 <p>Purchasing,</p>
                 <div class="sig-space"></div>
-                <div class="sig-name">PURCHASING</div>
+                <div class="sig-name">{{ $record->productRequisition->reviewer->name ?? 'PURCHASING' }}</div>
                 <div class="sig-role">Purchasing Dept.</div>
             </div>
             <div class="sig-box">

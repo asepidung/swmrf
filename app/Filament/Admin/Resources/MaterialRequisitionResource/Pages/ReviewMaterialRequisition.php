@@ -98,6 +98,7 @@ class ReviewMaterialRequisition extends EditRecord
                 $this->record->update([
                     'status' => 'Pending Finance',
                     'reject_note' => null,
+                    'reviewed_by' => auth()->id(),
                 ]);
 
                 \App\Support\TaskNotifier::notifyPermissionHolders(

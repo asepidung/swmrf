@@ -24,6 +24,7 @@ class MaterialRequisition extends Model
         'tax_amount',
         'total_amount',
         'status',
+        'reviewed_by',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -80,6 +81,11 @@ class MaterialRequisition extends Model
     public function supplier()
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function reviewer()
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 
     public function purchaseMaterial()
