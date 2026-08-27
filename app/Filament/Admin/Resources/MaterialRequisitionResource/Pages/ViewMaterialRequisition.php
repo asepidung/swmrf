@@ -70,6 +70,15 @@ class ViewMaterialRequisition extends ViewRecord
                         'status' => 'Requested',
                         'reject_note' => null,
                     ]);
+
+                    \App\Support\TaskNotifier::notifyPermissionHolders(
+                        'review_material_requisitions',
+                        __('Material Request Resubmitted'),
+                        __('A rejected request has been resubmitted.'),
+                        \App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('view', ['record' => $this->record]),
+                        'material-request-' . $this->record->id,
+                        auth()->id(),
+                    );
                 }),
 
             // Diarahkan ke halaman Finance Approval, BUKAN modal, dengan alasan yang
@@ -90,7 +99,15 @@ class ViewMaterialRequisition extends ViewRecord
                 ->tooltip(fn() => __('Edit'))
                 ->icon('heroicon-o-pencil')
                 ->hiddenLabel()
-                ->visible(fn() => in_array($this->record->status, ['Requested', 'Returned to Purchasing'])),
+                ->visible(function () {
+                    if (in_array($this->record->status, ['Requested', 'Returned to Purchasing'])) {
+                        return true;
+                    }
+                    if ($this->record->status === 'Rejected' && $this->record->user_id === auth()->id()) {
+                        return true;
+                    }
+                    return false;
+                }),
 
             Actions\DeleteAction::make()
                 ->tooltip(fn() => __('Delete'))

@@ -210,6 +210,16 @@ class ReviewProductRequisition extends EditRecord
                     auth()->id(),
                 );
 
+                if ($this->record->user) {
+                    \App\Support\TaskNotifier::notifyUser(
+                        $this->record->user,
+                        __('Beef Request Approved'),
+                        __('Your request :number was approved by purchasing and sent to finance.', ['number' => $this->record->document_number]),
+                        \App\Filament\Admin\Resources\ProductRequisitionResource::getUrl('view', ['record' => $this->record]),
+                        'beef-request-' . $this->record->id,
+                    );
+                }
+
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }

@@ -109,6 +109,16 @@ class ReviewMaterialRequisition extends EditRecord
                     auth()->id(),
                 );
 
+                if ($this->record->user) {
+                    \App\Support\TaskNotifier::notifyUser(
+                        $this->record->user,
+                        __('Material Request Approved'),
+                        __('Your request was approved by purchasing and sent to finance.'),
+                        \App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('view', ['record' => $this->record]),
+                        'material-request-' . $this->record->id,
+                    );
+                }
+
                 $this->redirect($this->getResource()::getUrl('index'));
             });
     }

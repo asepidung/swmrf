@@ -70,6 +70,15 @@ class ViewProductRequisition extends ViewRecord
                         'status' => 'Requested',
                         'reject_note' => null,
                     ]);
+
+                    \App\Support\TaskNotifier::notifyPermissionHolders(
+                        'review_product_requisitions',
+                        __('Beef Request Resubmitted'),
+                        __('Request :number has been resubmitted.', ['number' => $this->record->document_number]),
+                        \App\Filament\Admin\Resources\ProductRequisitionResource::getUrl('view', ['record' => $this->record]),
+                        'beef-request-' . $this->record->id,
+                        auth()->id(),
+                    );
                 }),
 
             // Diarahkan ke halaman Finance Approval, BUKAN modal, dengan alasan yang
@@ -90,7 +99,15 @@ class ViewProductRequisition extends ViewRecord
                 ->tooltip(fn() => __('Edit'))
                 ->icon('heroicon-o-pencil')
                 ->hiddenLabel()
-                ->visible(fn() => in_array($this->record->status, ['Requested', 'Returned to Purchasing'])),
+                ->visible(function () {
+                    if (in_array($this->record->status, ['Requested', 'Returned to Purchasing'])) {
+                        return true;
+                    }
+                    if ($this->record->status === 'Rejected' && $this->record->user_id === auth()->id()) {
+                        return true;
+                    }
+                    return false;
+                }),
 
             Actions\DeleteAction::make()
                 ->tooltip(fn() => __('Delete'))
