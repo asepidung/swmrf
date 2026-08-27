@@ -46,6 +46,11 @@ class PurchaseProductResource extends Resource
                             ->disabled()
                             ->columnSpan(['default' => 12, 'md' => 4]),
 
+                        Forms\Components\TextInput::make('productRequisition.user.name')
+                            ->label('Requester')
+                            ->disabled()
+                            ->columnSpan(['default' => 12, 'md' => 4]),
+
                         Forms\Components\Select::make('supplier_id')
                             ->label('Supplier')
                             ->relationship('supplier', 'name')
@@ -152,6 +157,10 @@ class PurchaseProductResource extends Resource
 
                 Tables\Columns\TextColumn::make('productRequisition.document_number')
                     ->label('Request No.')
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('productRequisition.user.name')
+                    ->label('Requester')
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('po_date')

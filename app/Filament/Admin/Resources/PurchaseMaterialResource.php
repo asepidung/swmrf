@@ -46,6 +46,11 @@ class PurchaseMaterialResource extends Resource
                             ->disabled()
                             ->columnSpan(['default' => 12, 'md' => 4]),
 
+                        Forms\Components\TextInput::make('materialRequisition.user.name')
+                            ->label('Requester')
+                            ->disabled()
+                            ->columnSpan(['default' => 12, 'md' => 4]),
+
                         Forms\Components\Select::make('supplier_id')
                             ->label('Supplier')
                             ->relationship('supplier', 'name')
@@ -170,6 +175,10 @@ class PurchaseMaterialResource extends Resource
 
                 Tables\Columns\TextColumn::make('materialRequisition.document_number')
                     ->label('Request No.')
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('materialRequisition.user.name')
+                    ->label('Requester')
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('po_date')
