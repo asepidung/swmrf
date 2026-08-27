@@ -300,6 +300,8 @@
                     @php
                     $taxAmount = $record->productRequisition->tax_amount ?? 0;
                     $subtotal = $record->total_amount - $taxAmount;
+                    $dpAmount = $record->supplierPayments()->sum('amount') ?? 0;
+                    $remaining = $record->total_amount - $dpAmount;
                     @endphp
                     <tr>
                         <td style="border: none; text-align: right; font-weight: bold; padding: 4px;">Subtotal:</td>
@@ -315,6 +317,16 @@
                         <td style="border: none; text-align: right; font-weight: bold; padding: 4px;">Grand Total:</td>
                         <td style="border: none; text-align: right; font-weight: bold; padding: 4px; font-size: 14px;">Rp {{ number_format($record->total_amount, 0, ',', '.') }}</td>
                     </tr>
+                    @if($dpAmount > 0)
+                    <tr>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; color: green;">Down Payment (DP):</td>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; font-size: 14px; color: green;">- Rp {{ number_format($dpAmount, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; color: #d32f2f;">Remaining Balance:</td>
+                        <td style="border: none; text-align: right; font-weight: bold; padding: 4px; font-size: 14px; color: #d32f2f;">Rp {{ number_format($remaining, 0, ',', '.') }}</td>
+                    </tr>
+                    @endif
                 </table>
             </div>
         </div>
