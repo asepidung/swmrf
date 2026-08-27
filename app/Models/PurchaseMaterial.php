@@ -47,4 +47,9 @@ class PurchaseMaterial extends Model
     {
         return $this->hasMany(GoodsReceiptMaterial::class);
     }
+
+    public function supplierPayments()
+    {
+        return $this->morphMany(SupplierPayment::class, 'source');
+    }
 }

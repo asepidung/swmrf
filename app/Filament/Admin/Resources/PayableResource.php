@@ -18,11 +18,7 @@ class PayableResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
 
-    public static function canAccess(): bool
-    {
-        // Fitur utang disembunyikan atas instruksi owner
-        return false;
-    }
+
 
     public static function getNavigationGroup(): ?string
     {

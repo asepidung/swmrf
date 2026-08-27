@@ -55,4 +55,9 @@ class PurchaseProduct extends Model
     {
         return $this->hasMany(GoodsReceiptProduct::class);
     }
+
+    public function supplierPayments()
+    {
+        return $this->morphMany(SupplierPayment::class, 'source');
+    }
 }
