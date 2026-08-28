@@ -78,16 +78,6 @@ class InputGoodsReceiptProduct extends Page implements HasForms
                 ->color('gray')
                 ->url(fn () => GoodsReceiptProductResource::getUrl('index')),
 
-            Actions\Action::make('lock')
-                ->tooltip(__('Lock'))
-                ->icon('heroicon-o-lock-closed')
-                ->color('success')
-                ->hiddenLabel()
-                ->requiresConfirmation()
-                ->modalHeading(__('Lock Goods Receipt'))
-                ->modalDescription(__('Apakah Anda yakin ingin mengunci GR ini? Data tidak akan bisa diubah setelah dikunci (GR Selesai).'))
-                ->hidden(fn () => $this->record->is_locked || ! $this->record->items()->exists())
-                ->action(fn () => $this->lockGr()),
 
             Actions\Action::make('print')
                 ->tooltip(__('Print'))

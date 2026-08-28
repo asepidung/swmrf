@@ -18,7 +18,7 @@ class ListGoodsReceiptMaterials extends ListRecords
                 ->color('info')
                 ->url(static::$resource::getUrl('detail-list')),
             Actions\Action::make('draft_po')
-                ->label(__('Draft PO'))
+                ->label(__('Draft'))
                 ->icon('heroicon-o-document-text')
                 ->color('primary')
                 ->url(fn () => GoodsReceiptMaterialResource::getUrl('drafts')),

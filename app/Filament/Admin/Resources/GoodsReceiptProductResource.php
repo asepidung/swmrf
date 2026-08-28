@@ -173,6 +173,27 @@ class GoodsReceiptProductResource extends Resource
                     }),
             ])
             ->actions([
+                Tables\Actions\Action::make('lock')
+                    ->tooltip(__('Lock'))
+                    ->icon('heroicon-o-lock-closed')
+                    ->color('success')
+                    ->hiddenLabel()
+                    ->requiresConfirmation()
+                    ->modalHeading(__('Lock Goods Receipt'))
+                    ->modalDescription(__('Apakah Anda yakin ingin mengunci GR ini? Data tidak akan bisa diubah setelah dikunci (GR Selesai).'))
+                    ->hidden(fn (GoodsReceiptProduct $record) => $record->is_locked || ! $record->items()->exists())
+                    ->action(function (GoodsReceiptProduct $record) {
+                        \Illuminate\Support\Facades\DB::beginTransaction();
+                        try {
+                            $record->update(['is_locked' => true]);
+                            \App\Models\Payable::generateForGoodsReceiptProduct($record);
+                            \Illuminate\Support\Facades\DB::commit();
+                            \Filament\Notifications\Notification::make()->title(__('Goods Receipt berhasil dikunci (gr selesai)!'))->success()->send();
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\DB::rollBack();
+                            \Filament\Notifications\Notification::make()->title('Error: ' . $e->getMessage())->danger()->send();
+                        }
+                    }),
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\Action::make('scan')
                         ->label(__('Scan'))

@@ -270,7 +270,7 @@
                 @endphp
                 <tr>
                     <td class="center">{{ $index + 1 }}</td>
-                    <td style="font-weight: bold; font-size: 11px;">{{ $item->material->name ?? '-' }}</td>
+                    <td style="font-weight: bold; font-size: 11px; white-space: nowrap;">{{ $item->material->name ?? '-' }}</td>
                     <td class="center">{{ number_format($poQty, 2, ',', '.') }}</td>
                     <td class="center">{{ number_format($item->qty_received, 2, ',', '.') }}</td>
                     <td class="num">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
