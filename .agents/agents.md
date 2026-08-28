@@ -466,6 +466,7 @@ Disepakati dan dikerjakan beberapa perbaikan terkait PO dan Uang Muka:
 - **Tujuan Tombol Back (Scan & Labeling):** Tombol *Back* di halaman *Scan* dan *Labeling* GR diubah arahnya ke halaman **Daftar Index GR**, BUKAN kembali ke halaman Input (agar tidak membingungkan/terjebak *loop*).
 - **Bug Sidebar yang Persisten (Global Minimize):** Halaman *Scan* (GR, Stock Take, Tally) sebelumnya menggunakan baris Javascript `window.Alpine.store('sidebar').close()` untuk meminimize sidebar secara paksa. Hal ini menyebabkan Filament **menyimpan preferensi ini ke *localStorage***, sehingga sidebar akan terus mengecil di semua halaman aplikasi. **Solusi:** JS tersebut dihapus total. Sebagai gantinya, sidebar disembunyikan HANYA secara visual menggunakan CSS `display: none !important;` di masing-masing halaman *Scan*, sehingga preferensi global pengguna tidak terganggu.
 - **Fitur Buka Kunci GR:** Ikon gembok di index GR dibuat dinamis. *Unlock* GR diperbolehkan HANYA JIKA hutang (*Payable*) yang terbentuk belum pernah dicicil/dibayar. Jika di-*unlock*, draft hutang tersebut akan otomatis dihapus. Jika sudah ada pembayaran, sistem akan melempar *Exception* penolakan.
+- **Sistem Kunci GR Material:** Kolom `is_locked` ditambahkan ke `goods_receipt_materials`. *Payable* kini HANYA di-*generate* saat GR dikunci, bukan lagi saat disimpan (*Create*/*Edit*). Tombol *Delete* juga disembunyikan apabila GR Material sudah memiliki item data atau sudah dikunci, sama seperti logika di GR Product.
 
 ---
 
