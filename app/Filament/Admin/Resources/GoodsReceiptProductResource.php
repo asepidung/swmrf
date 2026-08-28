@@ -174,21 +174,41 @@ class GoodsReceiptProductResource extends Resource
             ])
             ->actions([
                 Tables\Actions\Action::make('lock')
-                    ->tooltip(__('Lock'))
-                    ->icon('heroicon-o-lock-closed')
-                    ->color('success')
+                    ->tooltip(fn (GoodsReceiptProduct $record) => $record->is_locked ? __('Buka Kunci') : __('Kunci'))
+                    ->icon(fn (GoodsReceiptProduct $record) => $record->is_locked ? 'heroicon-o-lock-closed' : 'heroicon-o-lock-open')
+                    ->color(fn (GoodsReceiptProduct $record) => $record->is_locked ? 'danger' : 'success')
                     ->hiddenLabel()
                     ->requiresConfirmation()
-                    ->modalHeading(__('Lock Goods Receipt'))
-                    ->modalDescription(__('Apakah Anda yakin ingin mengunci GR ini? Data tidak akan bisa diubah setelah dikunci (GR Selesai).'))
-                    ->hidden(fn (GoodsReceiptProduct $record) => $record->is_locked || ! $record->items()->exists())
+                    ->modalHeading(fn (GoodsReceiptProduct $record) => $record->is_locked ? __('Buka Kunci Goods Receipt') : __('Kunci Goods Receipt'))
+                    ->modalDescription(fn (GoodsReceiptProduct $record) => $record->is_locked 
+                        ? __('Apakah Anda yakin ingin membuka kunci GR ini? Perhatian: Data hutang (Payable) terkait akan dihapus (jika belum ada pembayaran).') 
+                        : __('Apakah Anda yakin ingin mengunci GR ini? Data tidak akan bisa diubah setelah dikunci (GR Selesai).'))
+                    ->hidden(fn (GoodsReceiptProduct $record) => ! $record->items()->exists())
                     ->action(function (GoodsReceiptProduct $record) {
                         \Illuminate\Support\Facades\DB::beginTransaction();
                         try {
-                            $record->update(['is_locked' => true]);
-                            \App\Models\Payable::generateForGoodsReceiptProduct($record);
+                            if ($record->is_locked) {
+                                // Unlock logic
+                                $payable = \App\Models\Payable::where('payableable_type', get_class($record))
+                                    ->where('payableable_id', $record->id)
+                                    ->first();
+                                    
+                                if ($payable && $payable->payments()->exists() && $payable->payments()->sum('amount') > 0) {
+                                    throw new \Exception('Tidak bisa membuka kunci karena sudah ada pembayaran (Payment) yang terhubung.');
+                                }
+                                
+                                $record->update(['is_locked' => false]);
+                                if ($payable) $payable->delete();
+                                
+                                \Filament\Notifications\Notification::make()->title(__('Goods Receipt berhasil dibuka kuncinya!'))->success()->send();
+                            } else {
+                                // Lock logic
+                                $record->update(['is_locked' => true]);
+                                \App\Models\Payable::generateForGoodsReceiptProduct($record);
+                                \Filament\Notifications\Notification::make()->title(__('Goods Receipt berhasil dikunci (gr selesai)!'))->success()->send();
+                            }
+                            
                             \Illuminate\Support\Facades\DB::commit();
-                            \Filament\Notifications\Notification::make()->title(__('Goods Receipt berhasil dikunci (gr selesai)!'))->success()->send();
                         } catch (\Exception $e) {
                             \Illuminate\Support\Facades\DB::rollBack();
                             \Filament\Notifications\Notification::make()->title('Error: ' . $e->getMessage())->danger()->send();
