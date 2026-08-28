@@ -460,6 +460,12 @@ Disepakati dan dikerjakan beberapa perbaikan terkait PO dan Uang Muka:
 - **Pemisah Ribuan pada Form Pembayaran:** Semua input nominal pembayaran (baik DP di PO maupun pelunasan di *PayableResource*) menggunakan pemisah ribuan gaya Indonesia (`number_format` & Alpine `x-mask`). Nilai akhirnya dikonversi menggunakan logika `str_replace` / `parseNumber()` sebelum divalidasi dan disimpan untuk mencegah nilai terpotong.
 - **Bilingual & Lokalisasi (UI Finance):** Semua string statis (awalnya di-*hardcode* bahasa Indonesia) di tombol, tabel Relation Manager, dan form pembayaran sudah dikembalikan ke praktik standar yaitu dibungkus dengan `__()` memakai *key* bahasa Inggris (contoh: `__('Pay Down Payment')`), lalu terjemahannya didaftarkan di `lang/id.json`. Praktik *hardcoding* langsung dengan bahasa Indonesia di kode PHP **tidak disarankan** karena melanggar uji *NavigationTerminologyTest* dan menyulitkan lokalisasi di masa depan.
 
+### Perbaikan Alur Goods Receipt & UI Sidebar (Agustus 2026)
+
+- **Modal Pilihan Tindakan Lanjutan di GR:** Sebelumnya, menyimpan header *Goods Receipt Product* hanya menahan *user* di halaman "parkir" (Input). Sekarang, ketika tombol *Save* diklik dan berhasil, sistem akan memunculkan sebuah **Modal Pilihan** yang memberi 3 jalur: Mulai *Scan* Barcode, Mulai *Labeling* Manual, atau Nanti Saja (Kembali ke Daftar).
+- **Tujuan Tombol Back (Scan & Labeling):** Tombol *Back* di halaman *Scan* dan *Labeling* GR diubah arahnya ke halaman **Daftar Index GR**, BUKAN kembali ke halaman Input (agar tidak membingungkan/terjebak *loop*).
+- **Bug Sidebar yang Persisten (Global Minimize):** Halaman *Scan* (GR, Stock Take, Tally) sebelumnya menggunakan baris Javascript `window.Alpine.store('sidebar').close()` untuk meminimize sidebar secara paksa. Hal ini menyebabkan Filament **menyimpan preferensi ini ke *localStorage***, sehingga sidebar akan terus mengecil di semua halaman aplikasi. **Solusi:** JS tersebut dihapus total. Sebagai gantinya, sidebar disembunyikan HANYA secara visual menggunakan CSS `display: none !important;` di masing-masing halaman *Scan*, sehingga preferensi global pengguna tidak terganggu.
+
 ---
 
 ## 3. Jebakan yang sudah pernah menggigit
