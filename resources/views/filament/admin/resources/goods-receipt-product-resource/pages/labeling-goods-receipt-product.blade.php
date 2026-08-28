@@ -78,7 +78,7 @@
 
     <div class="mb-6 flex items-center justify-between rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
         <x-filament::button
-            href="{{ \App\Filament\Admin\Resources\GoodsReceiptProductResource::getUrl('input', ['record' => $record->id]) }}"
+            href="{{ \App\Filament\Admin\Resources\GoodsReceiptProductResource::getUrl('index') }}"
             tag="a"
             color="gray"
             icon="heroicon-m-arrow-left">
