@@ -452,6 +452,14 @@ Sebelumnya seeder memakai password sungguhan yang juga tertulis di `project.md`.
 
 Sempat masuk `.gitignore`. Itu keliru: pipeline deploy menjalankan `composer install`, yang tanpa lock file berperilaku seperti `composer update` dan me-resolve versi paket dari nol setiap deploy. Terbukti lokal dan server sempat punya versi dependensi berbeda tanpa ada yang menyadarinya.
 
+### Perubahan Modul PO & Pembayaran (Agustus 2026)
+
+Disepakati dan dikerjakan beberapa perbaikan terkait PO dan Uang Muka:
+- **Tombol Hapus PO:** Sengaja ditambahkan di halaman *View Purchase Product* (berlaku juga untuk Material). **Aturan bisnis:** PO hanya boleh dihapus JIKA barang belum pernah diterima sama sekali (`goodsReceipts()->count() === 0`). Bila sudah ada barang masuk, PO terkunci demi integritas data. Jika PO dihapus, status Request terkaitnya akan dikembalikan ke `Pending Finance`.
+- **Cetak PO & Tampilan DP:** Cetakan PO (`resources/views/print/po-*.blade.php`) dimodifikasi menggunakan CSS `white-space: nowrap` agar tata letaknya tidak berantakan/terpotong saat menampilkan teks DP. Juga ditambahkan baris **Ringkasan DP dan Sisa Tagihan** agar supplier tahu persis sisa pembayaran. Nama penandatangan (Reviewer) juga sudah dinamis.
+- **Pemisah Ribuan pada Form Pembayaran:** Semua input nominal pembayaran (baik DP di PO maupun pelunasan di *PayableResource*) menggunakan pemisah ribuan gaya Indonesia (`number_format` & Alpine `x-mask`). Nilai akhirnya dikonversi menggunakan logika `str_replace` / `parseNumber()` sebelum divalidasi dan disimpan untuk mencegah nilai terpotong.
+- **Bilingual & Lokalisasi (UI Finance):** Semua string statis (awalnya di-*hardcode* bahasa Indonesia) di tombol, tabel Relation Manager, dan form pembayaran sudah dikembalikan ke praktik standar yaitu dibungkus dengan `__()` memakai *key* bahasa Inggris (contoh: `__('Pay Down Payment')`), lalu terjemahannya didaftarkan di `lang/id.json`. Praktik *hardcoding* langsung dengan bahasa Indonesia di kode PHP **tidak disarankan** karena melanggar uji *NavigationTerminologyTest* dan menyulitkan lokalisasi di masa depan.
+
 ---
 
 ## 3. Jebakan yang sudah pernah menggigit
