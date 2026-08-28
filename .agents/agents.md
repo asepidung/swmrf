@@ -529,11 +529,13 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 - **Test suite: 228 lolos, 0 gagal** (1252 assertion, diverifikasi 26 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
-### Tiga modul Finance sengaja dimatikan
+### Modul Keuangan (ACCOUNTING) diparkir sementara
 
-`BankAccountResource`, `PayableResource`, dan `ReceivableResource` sama-sama punya `canAccess()` yang mengembalikan `false`, dengan komentar "disembunyikan atas instruksi owner". **Ketiganya sudah dibangun lengkap** — Receivable bahkan punya halaman Receive Payment — dan tinggal dinyalakan bila Owner membutuhkannya.
+Disepakati pada 28 Agustus 2026. Prioritas utama saat ini adalah mematangkan **alur operasional fisik barang** (mulai dari Request, PO, Goods Receipt, Stok, hingga Delivery).
 
-Jangan memperlakukan ini sebagai bug atau modul yang belum jadi. Kalau perlu diaktifkan, cukup ubah `canAccess()`, tapi **tanyakan dulu kepada Owner**.
+- Masalah pencatatan keuangan yang kompleks (buku besar, jurnal berpasangan lengkap) ditunda pengerjaannya.
+- **Resource yang sempat dimatikan kini SUDAH DIAKTIFKAN kembali:** `BankAccountResource`, `PayableResource`, dan `ReceivableResource` sudah dimunculkan (`canAccess` false dihapus) dan disatukan di dalam grup navigasi `ACCOUNTING` beserta `FinancialLossResource`.
+- Meskipun menu-menu tersebut sudah bisa diakses, pengerjaan lebih jauh untuk melengkapi alur mutasi dan penjurnalan diparkir sementara. Biarkan modul ini bertindak sebagai penerima data pasif dari alur operasional (misalnya hutang yang lahir otomatis dari penerimaan barang, atau catatan DP yang tercatat lewat halaman PO).
 
 ### Financial Loss baru menampung satu jenis kerugian
 
