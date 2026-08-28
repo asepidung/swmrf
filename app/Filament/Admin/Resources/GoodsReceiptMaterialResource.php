@@ -330,8 +330,6 @@ class GoodsReceiptMaterialResource extends Resource
                             \Filament\Notifications\Notification::make()->title('Error: ' . $e->getMessage())->danger()->send();
                         }
                     }),
-                Tables\Actions\EditAction::make()
-                    ->hidden(fn (GoodsReceiptMaterial $record) => $record->is_locked),
                 Tables\Actions\DeleteAction::make()
                     ->hidden(fn (GoodsReceiptMaterial $record) => $record->is_locked || $record->items()->exists()),
             ])
