@@ -54,4 +54,29 @@
             </div>
         @endif
     </div>
+
+    <!-- Modal Pilihan Tindakan Lanjutan -->
+    <x-filament::modal id="next-step-modal" width="md">
+        <x-slot name="heading">
+            {{ __('Berhasil Disimpan') }}
+        </x-slot>
+        
+        <x-slot name="description">
+            {{ __('Goods Receipt header berhasil disimpan! Bagaimana Anda ingin melanjutkan penerimaan barang?') }}
+        </x-slot>
+
+        <div class="flex flex-col gap-3 mt-4">
+            <x-filament::button tag="a" href="{{ \App\Filament\Admin\Resources\GoodsReceiptProductResource::getUrl('scan', ['record' => $record->id]) }}" icon="heroicon-m-qr-code" size="lg">
+                {{ __('Mulai Scan (Barcode)') }}
+            </x-filament::button>
+            
+            <x-filament::button tag="a" href="{{ \App\Filament\Admin\Resources\GoodsReceiptProductResource::getUrl('labeling', ['record' => $record->id]) }}" color="gray" icon="heroicon-m-tag" size="lg">
+                {{ __('Mulai Labeling (Manual)') }}
+            </x-filament::button>
+            
+            <x-filament::button tag="a" href="{{ \App\Filament\Admin\Resources\GoodsReceiptProductResource::getUrl('index') }}" color="gray" variant="outlined" size="lg">
+                {{ __('Nanti Saja (Kembali ke Daftar)') }}
+            </x-filament::button>
+        </div>
+    </x-filament::modal>
 </x-filament-panels::page>

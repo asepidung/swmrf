@@ -137,8 +137,9 @@ class InputGoodsReceiptProduct extends Page implements HasForms
 
             DB::commit();
 
-            Notification::make()->title('Goods Receipt header berhasil disimpan!')->success()->send();
+            Notification::make()->title(__('Goods Receipt header berhasil disimpan!'))->success()->send();
             $this->record->refresh();
+            $this->dispatch('open-modal', id: 'next-step-modal');
         } catch (\Exception $e) {
             DB::rollBack();
             Notification::make()->title('Error: ' . $e->getMessage())->danger()->send();
