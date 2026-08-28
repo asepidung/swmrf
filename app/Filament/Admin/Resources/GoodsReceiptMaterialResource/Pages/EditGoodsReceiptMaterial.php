@@ -26,6 +26,7 @@ class EditGoodsReceiptMaterial extends EditRecord
                 ->url(fn ($record): string => route('goods-receipt-material.print', $record))
                 ->openUrlInNewTab(),
             Actions\DeleteAction::make()
+                ->hidden(fn ($record) => $record->items()->exists())
                 ->before(function (Actions\DeleteAction $action) {
                     $payable = $this->getRecord()->payable;
                     if ($payable && in_array($payable->status, ['partial', 'paid'])) {
@@ -95,7 +96,6 @@ class EditGoodsReceiptMaterial extends EditRecord
             }
         }
 
-        // Generate or update Payable
-        \App\Models\Payable::generateForGoodsReceipt($record);
+        // Payable will be generated/updated when the GR is locked
     }
 }

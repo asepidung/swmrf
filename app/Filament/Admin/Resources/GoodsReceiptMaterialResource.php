@@ -256,7 +256,7 @@ class GoodsReceiptMaterialResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->recordUrl(
-                fn (GoodsReceiptMaterial $record): string => $record->trashed() 
+                fn (GoodsReceiptMaterial $record): string => $record->trashed() || $record->is_locked
                     ? Pages\ViewGoodsReceiptMaterial::getUrl(['record' => $record]) 
                     : Pages\EditGoodsReceiptMaterial::getUrl([$record->id]),
             )
@@ -289,7 +289,51 @@ class GoodsReceiptMaterialResource extends Resource
                     }),
             ])
             ->actions([
-                //
+                Tables\Actions\Action::make('lock')
+                    ->tooltip(fn (GoodsReceiptMaterial $record) => $record->is_locked ? __('Buka Kunci') : __('Kunci'))
+                    ->icon(fn (GoodsReceiptMaterial $record) => $record->is_locked ? 'heroicon-o-lock-closed' : 'heroicon-o-lock-open')
+                    ->color(fn (GoodsReceiptMaterial $record) => $record->is_locked ? 'danger' : 'success')
+                    ->hiddenLabel()
+                    ->requiresConfirmation()
+                    ->modalHeading(fn (GoodsReceiptMaterial $record) => $record->is_locked ? __('Buka Kunci Goods Receipt') : __('Kunci Goods Receipt'))
+                    ->modalDescription(fn (GoodsReceiptMaterial $record) => $record->is_locked 
+                        ? __('Apakah Anda yakin ingin membuka kunci GR ini? Perhatian: Data hutang (Payable) terkait akan dihapus (jika belum ada pembayaran).') 
+                        : __('Apakah Anda yakin ingin mengunci GR ini? Data tidak akan bisa diubah setelah dikunci (GR Selesai).'))
+                    ->hidden(fn (GoodsReceiptMaterial $record) => ! $record->items()->exists())
+                    ->action(function (GoodsReceiptMaterial $record) {
+                        \Illuminate\Support\Facades\DB::beginTransaction();
+                        try {
+                            if ($record->is_locked) {
+                                // Unlock logic
+                                $payable = \App\Models\Payable::where('payableable_type', get_class($record))
+                                    ->where('payableable_id', $record->id)
+                                    ->first();
+                                    
+                                if ($payable && $payable->payments()->exists() && $payable->payments()->sum('amount') > 0) {
+                                    throw new \Exception('Tidak bisa membuka kunci karena sudah ada pembayaran (Payment) yang terhubung.');
+                                }
+                                
+                                $record->update(['is_locked' => false]);
+                                if ($payable) $payable->delete();
+                                
+                                \Filament\Notifications\Notification::make()->title(__('Goods Receipt berhasil dibuka kuncinya!'))->success()->send();
+                            } else {
+                                // Lock logic
+                                $record->update(['is_locked' => true]);
+                                \App\Models\Payable::generateForGoodsReceipt($record);
+                                \Filament\Notifications\Notification::make()->title(__('Goods Receipt berhasil dikunci (gr selesai)!'))->success()->send();
+                            }
+                            
+                            \Illuminate\Support\Facades\DB::commit();
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\DB::rollBack();
+                            \Filament\Notifications\Notification::make()->title('Error: ' . $e->getMessage())->danger()->send();
+                        }
+                    }),
+                Tables\Actions\EditAction::make()
+                    ->hidden(fn (GoodsReceiptMaterial $record) => $record->is_locked),
+                Tables\Actions\DeleteAction::make()
+                    ->hidden(fn (GoodsReceiptMaterial $record) => $record->is_locked || $record->items()->exists()),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

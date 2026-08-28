@@ -244,8 +244,7 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
                 }
             }
 
-            // Generate Payable
-            \App\Models\Payable::generateForGoodsReceipt($gr);
+            // Payable will be generated when the GR is locked
 
             // Update PO Status
             $this->purchaseMaterial->update(['status' => $poStatus]);
