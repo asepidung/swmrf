@@ -104,23 +104,5 @@
         });
         });
         
-        (function() {
-            const collapseSidebar = () => {
-                if (window.Alpine && window.Alpine.store('sidebar')) {
-                    window.Alpine.store('sidebar').close();
-                }
-            };
-
-            const interval = setInterval(() => {
-                if (window.Alpine && window.Alpine.store('sidebar')) {
-                    collapseSidebar();
-                    clearInterval(interval);
-                }
-            }, 50);
-            setTimeout(() => clearInterval(interval), 3000);
-
-            document.addEventListener('livewire:navigated', collapseSidebar);
-            document.addEventListener('livewire:init', collapseSidebar);
-        })();
     </script>
 </x-filament-panels::page>
