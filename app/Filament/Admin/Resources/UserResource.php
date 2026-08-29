@@ -69,50 +69,88 @@ class UserResource extends Resource
 
                 Forms\Components\Section::make(__('Permissions (Hak Akses)'))
                     ->description(__('Define custom permissions for this employee.'))
-                    ->schema(function () {
-                        $schema = [];
-                        $modules = \App\Models\Permission::all()->groupBy('module_name')->sortKeys();
+                    ->schema([
+                        // Dikelompokkan ke TAB mengikuti grup sidebar.
+                        //
+                        // Sebelumnya 46 seksi modul ditumpuk vertikal dalam satu
+                        // halaman, dan admin harus menggulir melewati semuanya.
+                        // Itu bukan sekadar tidak nyaman: memilih satu per satu
+                        // dari 46 seksi melelahkan, sehingga lebih gampang
+                        // mencentang semua -- dan begitulah akun uji berakhir
+                        // dengan 181 permission. Form yang menyulitkan pemberian
+                        // hak secara selektif melahirkan hak yang serampangan.
+                        //
+                        // Urutan tabnya sama persis dengan sidebar, supaya admin
+                        // bisa membayangkan menu yang nanti dilihat pengguna.
+                        Forms\Components\Tabs::make('permission_groups')
+                            ->columnSpanFull()
+                            ->tabs(function () {
+                                $tabs = [];
 
-                        foreach ($modules as $moduleName => $permissions) {
-                            $schema[] = Forms\Components\Section::make(__($moduleName))
-                                ->collapsed()
-                                ->schema([
-                                    Forms\Components\CheckboxList::make('permissions_' . $moduleName)
-                                        ->hiddenLabel()
-                                        ->options($permissions->mapWithKeys(function ($p) {
-                                            $desc = $p->description;
-                                            $label = __($desc);
-                                            $prefixes = ['View deleted', 'View', 'Create', 'Edit', 'Delete', 'Review', 'Approve', 'Print', 'Lock/Unlock', 'Lock', 'Reset password'];
-                                            foreach ($prefixes as $prefix) {
-                                                if (str_starts_with($desc, $prefix)) {
-                                                    $label = __($prefix);
-                                                    break;
-                                                }
-                                            }
-                                            if (str_starts_with($desc, 'Perform invoice exchange')) {
-                                                $label = __('Tukar Faktur');
-                                            }
-                                            return [$p->id => $label];
-                                        })->toArray())
-                                        ->bulkToggleable()
-                                        ->columns(4)
-                                        ->dehydrated(false)
-                                        ->afterStateHydrated(function (Forms\Components\CheckboxList $component, ?User $record) use ($moduleName) {
-                                            if ($record) {
-                                                $hasPermissions = $record->permissions()
-                                                    ->where('module_name', $moduleName)
-                                                    ->pluck('permissions.id')
-                                                    ->toArray();
-                                                $component->state($hasPermissions);
-                                            }
-                                        }),
-                                ])
-                                ->compact()
-                                ->collapsible();
-                        }
-                        return $schema;
-                    }),
+                                foreach (\App\Models\Permission::groupedByModuleGroup() as $group => $modules) {
+                                    $sections = [];
+
+                                    foreach ($modules as $moduleName => $permissions) {
+                                        $sections[] = Forms\Components\Section::make(__($moduleName))
+                                            ->collapsed()
+                                            ->compact()
+                                            ->collapsible()
+                                            ->schema([
+                                                static::permissionCheckboxList($moduleName, $permissions),
+                                            ]);
+                                    }
+
+                                    $tabs[] = Forms\Components\Tabs\Tab::make(__($group))
+                                        ->badge(count($modules))
+                                        ->schema($sections);
+                                }
+
+                                return $tabs;
+                            }),
+                    ]),
             ]);
+    }
+
+    /**
+     * Daftar centang hak akses untuk satu modul.
+     *
+     * Label sengaja dipendekkan menjadi kata kerjanya saja (View, Create,
+     * Edit, ...) karena nama modulnya sudah menjadi judul seksi -- menulis
+     * "View sales orders" di dalam seksi "Sales Orders" hanya mengulang.
+     */
+    protected static function permissionCheckboxList(string $moduleName, $permissions): Forms\Components\CheckboxList
+    {
+        return Forms\Components\CheckboxList::make('permissions_' . $moduleName)
+            ->hiddenLabel()
+            ->options($permissions->mapWithKeys(function ($p) {
+                $desc = $p->description;
+                $label = __($desc);
+                $prefixes = ['View deleted', 'View', 'Create', 'Edit', 'Delete', 'Review', 'Approve', 'Print', 'Lock/Unlock', 'Lock', 'Reset password'];
+                foreach ($prefixes as $prefix) {
+                    if (str_starts_with($desc, $prefix)) {
+                        $label = __($prefix);
+                        break;
+                    }
+                }
+                if (str_starts_with($desc, 'Perform invoice exchange')) {
+                    $label = __('Tukar Faktur');
+                }
+
+                return [$p->id => $label];
+            })->toArray())
+            ->bulkToggleable()
+            ->columns(4)
+            ->dehydrated(false)
+            ->afterStateHydrated(function (Forms\Components\CheckboxList $component, ?User $record) use ($moduleName) {
+                if ($record) {
+                    $component->state(
+                        $record->permissions()
+                            ->where('module_name', $moduleName)
+                            ->pluck('permissions.id')
+                            ->toArray()
+                    );
+                }
+            });
     }
 
     public static function table(Table $table): Table
