@@ -99,7 +99,7 @@ class BeefStockAgingResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('age')
-                    ->label(__('Umur (Hari)'))
+                    ->label(__('Age (Days)'))
                     ->getStateUsing(fn (BeefStock $record) => $record->pack_date ? abs((int) now()->diffInDays($record->pack_date)) : '')
                     ->alignCenter()
                     ->badge()

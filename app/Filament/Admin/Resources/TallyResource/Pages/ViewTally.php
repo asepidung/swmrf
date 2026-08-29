@@ -56,8 +56,8 @@ class ViewTally extends ViewRecord
                 ->modalDescription(__('Apakah Anda yakin ingin menyetujui Tally ini? Setelah disetujui, data tidak dapat diubah lagi.'))
                 ->form([
                     Forms\Components\TextInput::make('seal_number')
-                        ->label(__('Nomor Segel (Jika Ada)'))
-                        ->placeholder(__('Nomor Segel')),
+                        ->label(__('Seal Number (If Any)'))
+                        ->placeholder(__('Seal Number')),
                 ])
                 ->action(function (array $data) {
                     DB::transaction(function () use ($data) {

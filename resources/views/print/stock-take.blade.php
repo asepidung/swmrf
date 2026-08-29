@@ -243,7 +243,7 @@
                 <h4>{{ __('Document Status') }}</h4>
                 <div class="meta-content">{{ $record->status }}</div>
                 <div class="meta-address">
-                    <strong>{{ __('Total Fisik (Karton/Pcs)') }}:</strong> {{ $record->items->whereIn('status', ['MATCHED', 'UNEXPECTED'])->count() }} {{ __('Items') }}<br>
+                    <strong>{{ __('Physical Total (Carton/Pcs)') }}:</strong> {{ $record->items->whereIn('status', ['MATCHED', 'UNEXPECTED'])->count() }} {{ __('Items') }}<br>
                     <strong>Total Fisik (Weight):</strong> {{ number_format($record->items->whereIn('status', ['MATCHED', 'UNEXPECTED'])->sum('weight'), 2, ',', '.') }} Kg
                 </div>
             </div>
@@ -254,7 +254,7 @@
                     <span style="color: #f0ad4e;">Found: {{ $record->items->where('status', 'UNEXPECTED')->count() }}</span>
                 </div>
                 <div class="meta-address">
-                    <strong style="color: #d9534f;">{{ __('Missing (Tidak Ditemukan)') }}:</strong> {{ $record->items->where('status', 'MISSING')->count() }} {{ __('Items') }}
+                    <strong style="color: #d9534f;">{{ __('Missing (Not Found)') }}:</strong> {{ $record->items->where('status', 'MISSING')->count() }} {{ __('Items') }}
                 </div>
             </div>
         </div>
@@ -291,8 +291,8 @@
                     <th width="12%">{{ __('Matched') }}</th>
                     <th width="11%">{{ __('Found (+)') }}</th>
                     <th width="11%">{{ __('Missing (-)') }}</th>
-                    <th width="12%">{{ __('Total Fisik') }}</th>
-                    <th width="12%">{{ __('Selisih') }}</th>
+                    <th width="12%">{{ __('Physical Total') }}</th>
+                    <th width="12%">{{ __('Variance') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -358,7 +358,7 @@
             <div class="note-section">
                 <strong>{{ __('General Notes') }}:</strong>
                 <div class="note-box">
-                    {{ $record->summary_note ?? __('Tidak ada catatan tambahan.') }}
+                    {{ $record->summary_note ?? __('No additional notes.') }}
                 </div>
             </div>
         </div>

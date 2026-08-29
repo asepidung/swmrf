@@ -99,8 +99,8 @@ class ScanTally extends Page implements HasForms, HasTable
                 ->modalDescription(__('Apakah Anda yakin ingin menyetujui Tally ini? Setelah disetujui, data tidak dapat diubah lagi.'))
                 ->form([
                     Forms\Components\TextInput::make('seal_number')
-                        ->label(__('Nomor Segel (Jika Ada)'))
-                        ->placeholder(__('Nomor Segel')),
+                        ->label(__('Seal Number (If Any)'))
+                        ->placeholder(__('Seal Number')),
                 ])
                 ->action(function (array $data) {
                     DB::transaction(function () use ($data) {
@@ -370,7 +370,7 @@ class ScanTally extends Page implements HasForms, HasTable
         $exists = $this->record->items()->where('barcode', $barcode)->exists();
         if ($exists) {
             Notification::make()
-                ->title(__('Gagal Scan'))
+                ->title(__('Scan Failed'))
                 ->body(__('Barang Sudah Terscan di Tally Ini (Duplikat)'))
                 ->warning()
                 ->send();
@@ -385,13 +385,13 @@ class ScanTally extends Page implements HasForms, HasTable
                 // 2. Ambil data dari stock (beef_stocks) dengan lockForUpdate
                 $stock = BeefStock::where('barcode', $barcode)->lockForUpdate()->first();
                 if (!$stock) {
-                    throw new \Exception(__('BARANG TIDAK TERDAFTAR di Stock'));
+                    throw new \Exception(__('ITEM NOT REGISTERED in Stock'));
                 }
 
                 // 3. Pastikan product_id ada di sales_order_items
                 $soItemExists = $this->record->salesOrder->items()->where('product_id', $stock->product_id)->exists();
                 if (!$soItemExists) {
-                    throw new \Exception(__('Barang Tidak ada di PO'));
+                    throw new \Exception(__('Item Not in PO'));
                 }
                 // Buat TallyItem
                 TallyItem::create([
@@ -429,7 +429,7 @@ class ScanTally extends Page implements HasForms, HasTable
             });
 
             Notification::make()
-                ->title(__('Berhasil Scan'))
+                ->title(__('Scan Successful'))
                 ->success()
                 ->send();
 

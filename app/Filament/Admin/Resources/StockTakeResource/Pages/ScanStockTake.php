@@ -203,7 +203,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
     public function manualInputAction(): \Filament\Actions\Action
     {
         return \Filament\Actions\Action::make('manualInput')
-            ->label(__('Input Manual Temuan'))
+            ->label(__('Manual Input of Findings'))
             ->color('warning')
             ->icon('heroicon-o-pencil-square')
             ->fillForm(function (array $arguments): array {
@@ -227,8 +227,8 @@ class ScanStockTake extends Page implements HasForms, HasTable
                             ->required()
                             ->columnSpanFull(),
                         Forms\Components\TextInput::make('barcode')
-                            ->label(__('Barcode (Opsional)'))
-                            ->helperText(__('Jika kosong, sistem akan generate otomatis.'))
+                            ->label(__('Barcode (Optional)'))
+                            ->helperText(__('Leave blank to generate automatically.'))
                             ->columnSpanFull(),
                         Forms\Components\Select::make('product_id')
                             ->label(__('Produk'))

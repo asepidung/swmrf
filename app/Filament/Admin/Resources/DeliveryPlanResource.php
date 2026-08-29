@@ -55,11 +55,11 @@ class DeliveryPlanResource extends Resource
                             ->maxLength(255)
                             ->autofocus(), // Ergonomic UI: autofocus on first editable field
                         Forms\Components\TextInput::make('armada')
-                            ->label(__('Armada'))
+                            ->label(__('Fleet'))
                             ->required()
                             ->maxLength(255),
                         Forms\Components\TimePicker::make('load_time')
-                            ->label(__('Jam Loading'))
+                            ->label(__('Loading Time'))
                             ->seconds(false)
                             ->required(),
                     ])->columns(3),
@@ -131,11 +131,11 @@ class DeliveryPlanResource extends Resource
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('armada')
-                    ->label(__('Armada'))
+                    ->label(__('Fleet'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('load_time')
-                    ->label(__('Jam Loading'))
+                    ->label(__('Loading Time'))
                     ->time('H:i')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('notes')

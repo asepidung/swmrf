@@ -238,7 +238,7 @@
                     <th width="30%">{{ __('Item Name') }}</th>
                     <th width="15%">{{ __('System Qty') }}</th>
                     <th width="15%">{{ __('Physical Qty') }}</th>
-                    <th width="20%">{{ __('Selisih') }}</th>
+                    <th width="20%">{{ __('Variance') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -285,7 +285,7 @@
             <div class="note-section">
                 <strong>{{ __('Notes') }}:</strong>
                 <div class="note-box">
-                    {{ $record->note ?? __('Tidak ada catatan tambahan.') }}
+                    {{ $record->note ?? __('No additional notes.') }}
                 </div>
             </div>
         </div>

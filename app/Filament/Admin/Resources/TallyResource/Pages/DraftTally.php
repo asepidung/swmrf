@@ -60,7 +60,7 @@ class DraftTally extends Page implements HasTable
             ])
             ->actions([
                 Tables\Actions\Action::make('process')
-                    ->label(__('Buat Tally'))
+                    ->label(__('Create Tally'))
                     ->icon('heroicon-m-arrow-right-circle')
                     ->color('primary')
                     ->form([

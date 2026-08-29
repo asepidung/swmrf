@@ -165,8 +165,8 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
         $existsInGr = $this->record->items()->where('barcode', $barcode)->exists();
         if ($existsInGr) {
             Notification::make()
-                ->title(__('Gagal Scan'))
-                ->body(__('Barang Sudah Terinput'))
+                ->title(__('Scan Failed'))
+                ->body(__('Item Already Recorded'))
                 ->warning()
                 ->send();
             $this->barcode = '';
@@ -179,7 +179,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
         $tallyItem = \App\Models\TallyItem::where('barcode', $barcode)->first();
         if (!$tallyItem) {
             Notification::make()
-                ->title(__('Gagal Scan'))
+                ->title(__('Scan Failed'))
                 ->body(__('Barang tidak ditemukan di history Tally (Bukan barang produksi internal)'))
                 ->danger()
                 ->send();
@@ -201,8 +201,8 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
         $poItem = $this->record->purchaseProduct->items()->where('product_id', $product->id)->first();
         if (!$poItem) {
             Notification::make()
-                ->title(__('Gagal Scan'))
-                ->body(__('Barang Tidak ada di PO'))
+                ->title(__('Scan Failed'))
+                ->body(__('Item Not in PO'))
                 ->danger()
                 ->send();
             $this->barcode = '';
@@ -214,7 +214,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
         $grade = \App\Models\Grade::find($gradeId);
         if (!$grade) {
             Notification::make()
-                ->title(__('Gagal Scan'))
+                ->title(__('Scan Failed'))
                 ->body(__('Grade tidak valid dari Tally'))
                 ->danger()
                 ->send();
@@ -228,7 +228,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
             DB::transaction(function () use ($barcode, $product, $gradeId, $weightVal, $pcsVal, $phVal, $originCode, $poItem, $defaultPackDate, $expDate) {
                 // TOCTOU Fix: pengecekan duplikat wajib di dalam transaksi dan terkunci.
                 if ($this->record->items()->where('barcode', $barcode)->lockForUpdate()->exists()) {
-                    throw new \Exception(__('Barang Sudah Terinput'));
+                    throw new \Exception(__('Item Already Recorded'));
                 }
 
                 if (BeefStock::where('barcode', $barcode)->lockForUpdate()->exists()) {
@@ -283,7 +283,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
             });
 
             Notification::make()
-                ->title(__('Berhasil Scan'))
+                ->title(__('Scan Successful'))
                 ->success()
                 ->send();
 
