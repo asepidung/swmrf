@@ -10,11 +10,54 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Support\RawJs;
 
 class PriceListResource extends Resource
 {
     protected static ?string $model = CustomerGroup::class;
+
+    /**
+     * Hak akses WAJIB diperiksa di sini, tidak bisa mengandalkan Policy.
+     *
+     * Resource ini memakai model CustomerGroup, yang juga dipakai
+     * ReceivableResource. Laravel menemukan Policy lewat nama MODEL, jadi
+     * keduanya jatuh ke CustomerGroupPolicy -- PriceListPolicy tidak pernah
+     * dipanggil sama sekali. Akibatnya siapa pun yang punya
+     * view_customer_groups ikut melihat menu Price List, meski tidak diberi
+     * hak Price List sedikit pun.
+     *
+     * Selama modelnya masih dipakai bersama, penjagaannya harus di Resource.
+     */
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->hasPermission('view_price_lists') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->hasPermission('create_price_lists') ?? false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return auth()->user()?->hasPermission('edit_price_lists') ?? false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return auth()->user()?->hasPermission('delete_price_lists') ?? false;
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return static::canViewAny();
+    }
 
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
     protected static ?string $navigationLabel = 'Price List';
