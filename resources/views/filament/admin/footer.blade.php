@@ -8,8 +8,18 @@
         <span class="text-gray-300 dark:text-gray-700 hidden sm:inline">|</span>
         <span title="Asep Idung" class="cursor-help hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Copyright &copy; {{ date('Y') }}</span>
         <span class="text-gray-300 dark:text-gray-700 hidden sm:inline">|</span>
-        <a href="https://trakteer.id/saepullrock" target="_blank" rel="noopener noreferrer" class="hover:text-primary-500 dark:hover:text-primary-400 transition-colors inline-flex items-center gap-1 font-medium">
-            ☕ Support me on Trakteer
-        </a>
+        {{-- rel="noopener" wajib menyertai target="_blank": tanpa itu halaman
+             tujuan bisa menjangkau window aplikasi lewat window.opener. --}}
+        <span class="inline-flex items-center gap-1.5">
+            {{ __('Made by') }}
+            <a
+                href="https://www.saepullrock.tech"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="font-bold tracking-[0.2em] text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 hover:underline underline-offset-4 transition-colors"
+            >
+                IDNX
+            </a>
+        </span>
     </div>
 </footer>
