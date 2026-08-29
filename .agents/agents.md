@@ -532,6 +532,22 @@ Disepakati dan dikerjakan beberapa perbaikan terkait PO dan Uang Muka:
 
 ---
 
+### Policy ditemukan lewat nama MODEL, bukan nama Resource
+
+Ditemukan 28 Agustus 2026 saat Owner melaporkan menu Sales dan Accounting terlihat terbuka untuk semua.
+
+**Sebagian besar laporannya ternyata bukan bug.** Diverifikasi dengan me-render navigasi sungguhan: pengguna tanpa permission melihat menu **kosong**, dan `ruby` (12 permission) hanya melihat grup Permintaan. Yang membuatnya tampak terbuka adalah akun uji `rafi` dan `coba` yang memang punya **181 permission** — praktis seluruhnya.
+
+**Tapi ada dua yang benar-benar bocor.** `PriceListResource` dan `ReceivableResource` sama-sama memakai `$model = CustomerGroup::class`. Laravel menemukan Policy lewat **nama model**, jadi keduanya jatuh ke `CustomerGroupPolicy` — `PriceListPolicy` dan `ReceivablePolicy` **tidak pernah dipanggil sama sekali** dan selama ini kode mati. Akibatnya siapa pun yang punya `view_customer_groups` ikut melihat menu Price List dan seluruh data piutang.
+
+Terbukti pada `ahkmad`, yang diberi hak Master Data tapi ikut melihat kedua menu itu tanpa punya `view_price_lists` maupun `view_receivables`.
+
+**Aturannya sekarang:** sebuah Resource yang **menumpang model milik modul lain** wajib mendeklarasikan `canViewAny()` dan `shouldRegisterNavigation()` sendiri. Selama nama Resource sejalan dengan modelnya (`MaterialResource` → `Material` → `MaterialPolicy`), Policy otomatis memang tepat sasaran dan tidak perlu ditimpa.
+
+Ada tujuh Resource yang namanya tidak cocok dengan modelnya, dan kini **ketujuhnya** punya gerbang sendiri. `ResourceAccessGateTest` menjaga polanya, bukan cuma dua yang kemarin bocor — Resource baru yang menumpang model milik modul lain akan langsung gagal.
+
+**Pelajarannya:** membuat Policy tidak ada gunanya bila Laravel tidak pernah menemukannya. Saat sebuah Resource memakai model milik modul lain, `canViewAny()` di Resource adalah satu-satunya penjagaan yang benar-benar berlaku.
+
 ## 3. Jebakan yang sudah pernah menggigit
 
 ### Pemisah ribuan di dalam Repeater: BISA, asal listenernya di luar baris
@@ -604,7 +620,7 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 234 lolos, 0 gagal** (1281 assertion, diverifikasi 28 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Test suite: 239 lolos, 0 gagal** (1292 assertion, diverifikasi 28 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Modul Keuangan (ACCOUNTING) diparkir sementara

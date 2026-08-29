@@ -18,6 +18,44 @@ class ReceivableResource extends Resource
 {
     protected static ?string $model = \App\Models\CustomerGroup::class;
 
+    /**
+     * Hak akses WAJIB diperiksa di sini, tidak bisa mengandalkan Policy.
+     *
+     * Resource ini memakai model CustomerGroup, yang juga dipakai
+     * PriceListResource. Laravel menemukan Policy lewat nama MODEL, jadi
+     * keduanya jatuh ke CustomerGroupPolicy -- ReceivablePolicy tidak pernah
+     * dipanggil sama sekali. Akibatnya siapa pun yang punya
+     * view_customer_groups ikut melihat menu Receivables beserta seluruh data
+     * piutang, meski tidak diberi hak Receivables sedikit pun.
+     *
+     * Selama modelnya masih dipakai bersama, penjagaannya harus di Resource.
+     */
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->hasPermission('view_receivables') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function canView(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return static::canViewAny();
+    }
+
+    /** Piutang hanya dibaca dan dibayar; tidak ada pembuatan atau penghapusan. */
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return false;
+    }
+
     protected static ?string $slug = 'receivables';
 
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
