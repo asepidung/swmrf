@@ -53,11 +53,11 @@ class DeliveryPlanDetailList extends Page implements HasTable
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('deliveryPlan.armada')
-                    ->label(__('Armada'))
+                    ->label(__('Fleet'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('deliveryPlan.load_time')
-                    ->label(__('Jam Loading'))
+                    ->label(__('Loading Time'))
                     ->time('H:i')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('delivery_note')

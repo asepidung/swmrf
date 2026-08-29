@@ -435,6 +435,27 @@ Aturan di `project.md` menyebut "field pertama", dan inilah alasannya: bukan soa
 
 ### Bilingual dijaga otomatis, bukan diaudit manual
 
+**Sejak 28 Agustus 2026 dijaga menyeluruh, bukan lagi per modul.** `BilingualParityTest` memastikan `id.json` dan `en.json` memuat kunci yang **sama persis** — dua arah. Sebelumnya ada 162 kunci yang hanya hidup di `id.json`; sekarang nol, dan keduanya berisi 689 kunci.
+
+Gejalanya dulu tidak pernah terlihat sebagai error: Laravel menampilkan **kuncinya sendiri** saat terjemahan tidak ditemukan, jadi teksnya tetap muncul — hanya dalam bahasa yang salah, dan tidak ada yang menyadarinya.
+
+#### Kunci WAJIB ditulis dalam Bahasa Inggris
+
+Ini yang paling sering keliru dipahami. Mendaftarkan kunci berbahasa Indonesia ke `en.json` **tidak memperbaiki apa pun** — pengguna yang memilih bahasa Inggris tetap melihat teks Indonesia, karena nilainya sama dengan kuncinya. Yang benar: **ganti kuncinya di KODE** menjadi Bahasa Inggris, lalu daftarkan terjemahan Indonesianya di `id.json`.
+
+Dua puluh empat kunci sudah dipindahkan begitu (40 penggantian di 15 berkas), misalnya `Gagal Scan` → `Scan Failed`, `Selisih` → `Variance`, `Armada` → `Fleet`. Tampilan bahasa Indonesia **tidak berubah sama sekali** — nilai `id.json`-nya dipertahankan persis seperti teks yang selama ini dilihat operator.
+
+Ditemukan sekalian: `Nomor Segel` ternyata **duplikat** — `Seal Number` sudah ada dengan terjemahan yang tepat, hanya saja kodenya memakai kunci Indonesia. Enam entri lain sudah mati (sisa `GlobalTaskPoller` yang dikosongkan, konfirmasi Stock Opname yang berganti awalan, dan teks polos di blade cetak yang memang tidak lewat `__()`).
+
+#### Utang yang tersisa: 43 kunci, dijaga ratchet
+
+Masih ada **43 kunci berbahasa Indonesia** yang sudah terdaftar di kedua berkas, tersebar sampai ke modul yang belum disisir (Repack, Sales Return, Cattle Weighing, Boning). Membereskannya pekerjaan tersendiri dan **belum dikerjakan**.
+
+Daftarnya dicatat di `tests/Fixtures/indonesian-translation-keys.json` sebagai register utang yang terlihat, dan `no_new_indonesian_translation_keys_are_introduced` menjaganya sebagai **ratchet**: kunci Indonesia BARU langsung gagal, sementara yang lama dibiarkan sampai gilirannya. Saat ada yang dibereskan, test itu justru gagal juga bila barisnya lupa dihapus dari baseline — supaya utang yang sudah lunas tidak bisa diam-diam kembali.
+
+**Blade cetak sengaja tidak disentuh.** Teks di `resources/views/print/` dan `exports/` sebagian besar hardcode dan tidak lewat `__()` sama sekali. Membuatnya bilingual adalah pekerjaan tersendiri yang belum diputuskan perlu atau tidak — dokumen cetak untuk supplier/customer lokal mungkin memang tidak perlu.
+
+
 `NavigationTerminologyTest` memindai seluruh `__()` pada modul Produk Sapi, Grade, dan Warehouse, lalu memastikan setiap kuncinya terdaftar di `lang/id.json` **dan** `lang/en.json`.
 
 Kunci bahasa Inggris sengaja didaftarkan meski nilainya sama dengan kuncinya sendiri. Gunanya bukan menerjemahkan, melainkan supaya penyeragaman istilah Inggris nanti cukup mengubah berkas bahasa tanpa menyentuh kode.
@@ -583,7 +604,7 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 231 lolos, 0 gagal** (1266 assertion, diverifikasi 28 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Test suite: 234 lolos, 0 gagal** (1281 assertion, diverifikasi 28 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Modul Keuangan (ACCOUNTING) diparkir sementara

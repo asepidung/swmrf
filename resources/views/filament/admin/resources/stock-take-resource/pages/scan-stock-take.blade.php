@@ -18,7 +18,7 @@
                             id="barcode_input"
                             type="text" 
                             wire:model="barcode"
-                            placeholder="{{ $record->status === 'COMPLETED' ? __('Stock Opname Selesai') : __('Scan Barcode Here') }}" 
+                            placeholder="{{ $record->status === 'COMPLETED' ? __('Stock Opname Completed') : __('Scan Barcode Here') }}" 
                             class="w-full rounded-lg shadow-sm text-center text-xl font-bold py-3 
                                 {{ $record->status === 'COMPLETED' ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-500' : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white' }}"
                             autofocus

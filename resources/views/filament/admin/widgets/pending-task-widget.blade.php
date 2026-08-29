@@ -140,7 +140,7 @@
                 <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
             </span>
             <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count Sales Order yang belum dibuatkan Tally.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingTallyCount().'</strong>']) !!}
+                {!! __(':count Sales Orders still have no Tally.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingTallyCount().'</strong>']) !!}
             </p>
         </a>
         @endif
@@ -151,7 +151,7 @@
                 <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
             </span>
             <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count rencana pengiriman besok yang belum ditentukan driver/armadanya.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingDeliveryPlanCount().'</strong>']) !!}
+                {!! __(':count delivery plans for tomorrow have no driver or fleet assigned.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingDeliveryPlanCount().'</strong>']) !!}
             </p>
         </a>
         @endif

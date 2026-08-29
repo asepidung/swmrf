@@ -222,8 +222,8 @@ class StockTakeResource extends Resource
                         });
                         
                         \Filament\Notifications\Notification::make()
-                            ->title(__('Stock Opname Selesai'))
-                            ->body(__('Rekonsiliasi stok berhasil dilakukan.'))
+                            ->title(__('Stock Opname Completed'))
+                            ->body(__('Stock reconciliation completed successfully.'))
                             ->success()
                             ->send();
                     }),

@@ -222,7 +222,7 @@ class InvoiceResource extends Resource
                             }),
                     ]),
 
-                Forms\Components\Section::make(__('Biaya Lain-lain (Ongkir, dll)'))
+                Forms\Components\Section::make(__('Other Charges (Shipping, etc.)'))
                     ->schema([
                         Forms\Components\Repeater::make('additionalCharges')
                             ->relationship('additionalCharges')
