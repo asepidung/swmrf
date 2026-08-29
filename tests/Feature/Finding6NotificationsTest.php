@@ -183,106 +183,50 @@ class Finding6NotificationsTest extends TestCase
         $this->assertEquals(1, $widget->getPendingDeliveryReceiptCount());
     }
 
-    /** @test */
-    public function it_triggers_toast_notifications_via_poller_for_new_records()
+    /**
+     * GlobalTaskPoller sengaja DIBISUKAN, bukan sekadar tidak dipakai.
+     *
+     * Seluruh toast lintas-pengguna dihapus atas keputusan Project Owner
+     * (27 Agustus 2026) karena tugas itu sudah sepenuhnya diambil alih Web
+     * Push PWA. Membiarkan keduanya hidup membuat pemberitahuan yang sama
+     * muncul dua kali lewat jalur berbeda.
+     *
+     * Test lama di sini menyetel properti checkpoint (`lastPurchaseMaterialCheckAt`
+     * dan kawan-kawan) yang kini sudah tidak ada, sehingga melempar
+     * PublicPropertyNotFoundException. Diganti dengan penjagaan atas
+     * keputusannya: poller boleh tetap ada, tapi tidak boleh lagi
+     * memancarkan notifikasi apa pun.
+     *
+     * @test
+     */
+    public function the_poller_no_longer_broadcasts_cross_user_toasts()
     {
         $this->actingAs($this->programmer);
 
-        // Pre-create initial records
-        PurchaseMaterial::create([
-            'po_number' => 'PO-MAT-INIT',
-            'material_requisition_id' => $this->mr->id,
-            'supplier_id' => $this->supplier->id,
-            'approved_by' => $this->programmer->id,
-            'po_date' => now()->toDateString(),
-            'status' => 'pending',
-        ]);
-        PurchaseProduct::create([
-            'po_number' => 'PO-PRD-INIT',
-            'product_requisition_id' => $this->pr->id,
-            'supplier_id' => $this->supplier->id,
-            'approved_by' => $this->programmer->id,
-            'po_date' => now()->toDateString(),
-            'status' => 'pending',
-        ]);
+        Livewire::test(GlobalTaskPoller::class)
+            ->call('checkTasks')
+            ->assertOk();
 
-        $segment = CustomerSegment::create(['name' => 'RETAIL', 'is_active' => true]);
-        $customer = Customer::create([
-            'name' => 'TEST CUSTOMER',
-            'customer_segment_id' => $segment->id,
-            'address' => 'Test Address',
-            'pic' => 'PIC',
-            'phone' => '123',
-            'top' => 10,
-        ]);
-        $so1 = SalesOrder::create([
-            'customer_id' => $customer->id,
-            'delivery_date' => now()->toDateString(),
-            'status' => 'processing',
-            'created_by' => $this->programmer->id,
-        ]);
-        Tally::create([
-            'sales_order_id' => $so1->id,
-            'tally_number' => 'TS#260000',
-            'status' => 'locked',
-        ]);
+        $this->assertSame(
+            [],
+            session('filament.notifications') ?? [],
+            'GlobalTaskPoller masih memancarkan toast, padahal tugasnya sudah diambil alih Web Push.',
+        );
 
-        // Start poller instance. mount() menandai waktu awal pengecekan;
-        // mundurkan penandanya supaya data yang dibuat setelah ini terhitung
-        // baru (perbandingan created_at/updated_at hanya berpresisi detik).
-        $poller = Livewire::test(GlobalTaskPoller::class);
-        $checkpoint = now()->subMinute()->toDateTimeString();
-        $poller->set('lastPurchaseMaterialCheckAt', $checkpoint);
-        $poller->set('lastPurchaseProductCheckAt', $checkpoint);
-        $poller->set('lastTallyCheckAt', $checkpoint);
+        // Properti checkpoint lama tidak boleh hidup lagi -- keberadaannya
+        // menandakan logika polling diam-diam dihidupkan kembali.
+        $reflection = new \ReflectionClass(GlobalTaskPoller::class);
+        $publicProperties = array_map(
+            fn (\ReflectionProperty $property) => $property->getName(),
+            $reflection->getProperties(\ReflectionProperty::IS_PUBLIC),
+        );
 
-        // Insert new records to trigger poller
-        PurchaseMaterial::create([
-            'po_number' => 'PO-MAT-NEW',
-            'material_requisition_id' => $this->mr->id,
-            'supplier_id' => $this->supplier->id,
-            'approved_by' => $this->programmer->id,
-            'po_date' => now()->toDateString(),
-            'status' => 'pending',
-        ]);
-        PurchaseProduct::create([
-            'po_number' => 'PO-PRD-NEW',
-            'product_requisition_id' => $this->pr->id,
-            'supplier_id' => $this->supplier->id,
-            'approved_by' => $this->programmer->id,
-            'po_date' => now()->toDateString(),
-            'status' => 'pending',
-        ]);
-        
-        $so2 = SalesOrder::create([
-            'customer_id' => $customer->id,
-            'delivery_date' => now()->toDateString(),
-            'status' => 'processing',
-            'created_by' => $this->programmer->id,
-        ]);
-        Tally::create([
-            'sales_order_id' => $so2->id,
-            'tally_number' => 'TS#260001',
-            'status' => 'locked',
-        ]);
-
-        // Run checking
-        $poller->call('checkTasks');
-
-        // Ketiga aliran notifikasi harus terpicu. Session dibaca langsung, bukan
-        // lewat assertNotified(), karena helper itu memakai session()->pull()
-        // yang menguras notifikasi sehingga hanya panggilan pertama yang
-        // melihat isinya.
-        $titles = collect(session('filament.notifications', []))->pluck('title')->all();
-
-        $this->assertContains(__('Ada PO Material baru yang siap diterima/dibuatkan GRM.'), $titles);
-        $this->assertContains(__('Ada PO Beef baru yang siap diterima/dibuatkan GRB.'), $titles);
-        $this->assertContains(__('Ada Tally baru yang selesai dikunci (Locked) dan siap dibuatkan DO.'), $titles);
-
-        // Penanda waktu wajib ikut maju, supaya data yang sama tidak
-        // dinotifikasi berulang pada polling berikutnya.
-        $this->assertGreaterThan($checkpoint, $poller->get('lastPurchaseMaterialCheckAt'));
-        $this->assertGreaterThan($checkpoint, $poller->get('lastPurchaseProductCheckAt'));
-        $this->assertGreaterThan($checkpoint, $poller->get('lastTallyCheckAt'));
+        foreach ($publicProperties as $name) {
+            $this->assertStringNotContainsString(
+                'CheckAt',
+                $name,
+                "Properti polling '{$name}' hidup lagi di GlobalTaskPoller.",
+            );
+        }
     }
 }

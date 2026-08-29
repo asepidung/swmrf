@@ -2,11 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Filament\Admin\Resources\MaterialRequisitionResource\Pages\ApproveFinanceMaterialRequisition;
+use App\Filament\Admin\Resources\PurchaseMaterialResource\Pages\ViewPurchaseMaterial;
 use App\Models\Material;
 use App\Models\MaterialCategory;
 use App\Models\MaterialRequisition;
 use App\Models\MaterialUnit;
+use App\Models\PurchaseMaterial;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
 use App\Models\User;
@@ -15,10 +16,11 @@ use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
- * Sama seperti Request Beef (#99), modal pembayaran Material tadinya tidak
- * punya pemisah ribuan maupun batas atas nilai. Uang muka bisa diisi
- * melebihi tagihan tanpa error apa pun -- kelebihannya baru terasa jauh
- * kemudian, saat utang dihitung dan tidak pernah terpakai habis.
+ * Batas uang muka DP pada PO Material, kembar dengan PO Beef.
+ *
+ * CATATAN LOKASI: form uang muka DIPINDAHKAN dari halaman Finance Approval ke
+ * halaman View PO (27-28 Agustus 2026). DP dibayar saat order, dan PO adalah
+ * dokumen order itu sendiri. Test ini ikut pindah menargetkan lokasi barunya.
  */
 class MaterialRequisitionAdvancePaymentCapTest extends TestCase
 {
@@ -59,14 +61,14 @@ class MaterialRequisitionAdvancePaymentCapTest extends TestCase
         ]);
     }
 
-    /** Tagihannya 100 x 15.000 = 1.500.000, tanpa pajak (supplier default tidak kena is_tax_11). */
-    protected function makeRequisition(): MaterialRequisition
+    /** Tagihannya 100 x 15.000 = 1.500.000, supplier default tidak kena is_tax_11. */
+    protected function makePurchaseOrder(): PurchaseMaterial
     {
         $requisition = MaterialRequisition::create([
             'user_id' => $this->user->id,
             'supplier_id' => $this->supplier->id,
             'due_date' => now()->toDateString(),
-            'status' => 'Pending Finance',
+            'status' => 'PO Created',
         ]);
 
         $requisition->items()->create([
@@ -77,35 +79,59 @@ class MaterialRequisitionAdvancePaymentCapTest extends TestCase
         ]);
 
         $requisition->updateTotalAmount();
+        $requisition->generatePurchaseOrder();
 
-        return $requisition;
+        return PurchaseMaterial::where('material_requisition_id', $requisition->id)->firstOrFail();
     }
 
     /** @test */
     public function it_rejects_an_advance_payment_larger_than_the_bill()
     {
-        $requisition = $this->makeRequisition();
+        $po = $this->makePurchaseOrder();
 
         Livewire::actingAs($this->user)
-            ->test(ApproveFinanceMaterialRequisition::class, ['record' => $requisition->id])
-            ->callAction('approve', ['payment_amount' => '2.000.000'])
-            ->assertHasActionErrors(['payment_amount']);
+            ->test(ViewPurchaseMaterial::class, ['record' => $po->id])
+            ->callAction('pay_down_payment', [
+                'payment_date' => now()->toDateString(),
+                'method' => SupplierPayment::METHOD_CASH,
+                'amount_input' => '2.000.000',
+            ])
+            ->assertHasActionErrors(['amount_input']);
 
-        $this->assertSame('Pending Finance', $requisition->fresh()->status);
+        $this->assertSame(0, SupplierPayment::count());
+    }
+
+    /** @test */
+    public function it_rejects_an_advance_payment_of_zero()
+    {
+        $po = $this->makePurchaseOrder();
+
+        Livewire::actingAs($this->user)
+            ->test(ViewPurchaseMaterial::class, ['record' => $po->id])
+            ->callAction('pay_down_payment', [
+                'payment_date' => now()->toDateString(),
+                'method' => SupplierPayment::METHOD_CASH,
+                'amount_input' => '0',
+            ])
+            ->assertHasActionErrors(['amount_input']);
+
         $this->assertSame(0, SupplierPayment::count());
     }
 
     /** @test */
     public function it_accepts_an_advance_payment_equal_to_the_bill()
     {
-        $requisition = $this->makeRequisition();
+        $po = $this->makePurchaseOrder();
 
         Livewire::actingAs($this->user)
-            ->test(ApproveFinanceMaterialRequisition::class, ['record' => $requisition->id])
-            ->callAction('approve', ['payment_amount' => '1.500.000', 'payment_method' => 'cash'])
+            ->test(ViewPurchaseMaterial::class, ['record' => $po->id])
+            ->callAction('pay_down_payment', [
+                'payment_date' => now()->toDateString(),
+                'method' => SupplierPayment::METHOD_CASH,
+                'amount_input' => '1.500.000',
+            ])
             ->assertHasNoActionErrors();
 
-        $this->assertSame('PO Created', $requisition->fresh()->status);
         $this->assertEquals(1500000, SupplierPayment::sum('amount'));
     }
 
@@ -113,13 +139,10 @@ class MaterialRequisitionAdvancePaymentCapTest extends TestCase
     public function it_masks_the_payment_field_with_thousand_separators()
     {
         $source = file_get_contents(app_path(
-            'Filament/Admin/Resources/MaterialRequisitionResource/Pages/ApproveFinanceMaterialRequisition.php',
+            'Filament/Admin/Resources/PurchaseMaterialResource/Pages/ViewPurchaseMaterial.php',
         ));
 
-        $this->assertStringContainsString('->mask(RawJs::make(', $source);
-        $this->assertStringContainsString(
-            "\$money(\$input, ',', '.', 0)",
-            stripslashes($source),
-        );
+        $this->assertStringContainsString('amount_input', $source);
+        $this->assertStringContainsString('Intl.NumberFormat("id-ID")', $source);
     }
 }

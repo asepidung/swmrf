@@ -167,7 +167,10 @@ class MaterialRequisitionNotificationFlowTest extends TestCase
         $this->assertSame('Pending Finance', $requisition->fresh()->status);
         $this->assertAlerted($this->finance, __('Material Request Awaiting Approval'));
 
-        Notification::assertNotSentTo($this->pemohon, TaskAlert::class);
+        // Pemohon IKUT diberi tahu bahwa request-nya maju, keputusan Project
+        // Owner 27 Agustus 2026. Sebelumnya ia tidak dilibatkan di tahap ini
+        // dan tidak pernah tahu nasib pengajuannya sampai PO terbit.
+        $this->assertAlerted($this->pemohon, __('Material Request Approved'));
     }
 
     /** @test */

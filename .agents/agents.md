@@ -244,6 +244,26 @@ Yang dijaga bukan sekadar "ada notifikasi terkirim", melainkan **siapa** yang me
 
 `RequisitionTranslationCoverageTest` kini memindai **kedua** modul. Alurnya kembar sehingga teksnya tumbuh berbarengan, dan lubang bahasa yang sama gampang terulang di sebelahnya.
 
+**Dan lubang itu memang terulang, 28 Agustus 2026.** Alur notifikasi diperluas (pemohon ikut diberi tahu saat purchasing approve, plus notifikasi resubmit) dengan **enam kunci baru yang tidak didaftarkan**, ditambah grup navigasi `ACCOUNTING`. Test-nya menangkapnya — itu memang gunanya.
+
+**Temuan lanjutan yang lebih luas:** `lang/id.json` punya **173 kunci yang tidak ada di `lang/en.json`**, sementara sebaliknya nol. Dampak nyatanya kecil karena Laravel menampilkan kuncinya sendiri (yang kebetulan sudah bahasa Inggris), tetapi itu melanggar konvensi yang sengaja dipilih proyek ini: kunci Inggris tetap didaftarkan meski nilainya sama, supaya penyeragaman istilah nanti cukup mengubah berkas bahasa tanpa menyentuh kode. **Menyisir 173 kunci itu pekerjaan tersendiri dan BELUM dikerjakan.**
+
+Yang sudah ditutup baru yang ada di cakupan kerja sekarang: sebelas kunci pada halaman **View PO Product, View PO Material, dan View Payable**. Ketiganya kini dijaga `it_registers_every_payment_page_string_in_both_languages`, yang memeriksa **seluruh** `__()` di halaman itu — bukan cuma teks notifikasi seperti pemindai modul Request. Bisa seketat itu karena ketiga halaman itu masih baru dan bersih.
+
+#### Notifikasi kini juga mengabari PEMOHON saat request-nya maju
+
+Keputusan Project Owner 27 Agustus 2026 (`515c2a8`). Sebelumnya pemohon hanya dikabari saat ditolak; kalau disetujui ia tidak mendengar apa-apa sampai PO terbit, jadi tidak tahu pengajuannya sudah bergerak.
+
+Sekarang purchasing approve mengirim **dua** notifikasi: ke finance (giliran bertindak) dan ke pemohon (kabar bahwa request-nya maju). Berlaku di kedua modul, dan ditambah notifikasi saat request yang ditolak diajukan ulang.
+
+Test lama justru menegaskan pemohon TIDAK diberi tahu di tahap itu, sehingga gagal begitu keputusannya berubah — persis fungsinya. Sudah diperbarui.
+
+#### `GlobalTaskPoller` sekarang bisu total
+
+`a4dfd22` mengosongkannya: seluruh toast lintas-pengguna dihapus karena tugas itu sudah sepenuhnya diambil alih Web Push PWA. Membiarkan keduanya hidup membuat pemberitahuan yang sama muncul dua kali lewat jalur berbeda.
+
+Komponennya sengaja **dipertahankan** (masih ada `wire:poll`), hanya isinya dikosongkan. Dua test lama yang menyetel properti checkpoint (`lastSalesOrderCheckAt` dan kawan-kawan) diganti menjadi penjagaan atas keputusannya: poller boleh ada, tapi tidak boleh memancarkan notifikasi apa pun, dan properti `*CheckAt` tidak boleh hidup lagi.
+
 **Toast buatan tangan untuk PELAKU aksinya sendiri dihapus, 26 Agustus 2026.** `c766adf` sempat menambah toast eksplisit ("Approved successfully", "PO Generated successfully", "Returned successfully", "Rejected successfully") di keempat halaman keputusan (Review dan Finance, kedua modul). Keputusan Owner: dihapus — push notification sudah cukup memberi tahu **orang lain** yang harus bertindak berikutnya, dan toast buatan tangan ini dianggap berlebihan bagi pelaku aksinya sendiri.
 
 **Toast BAWAAN Filament tetap ada dan sengaja tidak disentuh** — misalnya toast "Created" saat `CreateRecord` menyimpan. Bedanya: toast bawaan itu melekat pada siklus hidup record (create/save) yang memang jadi tanggung jawab Filament, sedangkan yang dihapus adalah `Notification::make()` yang sengaja ditulis manual di dalam `action()` sebuah `Actions\Action`. Toast **penjagaan** (warning/danger — status tidak valid, request kosong, harga belum lengkap) juga sengaja dipertahankan; itu bukan konfirmasi "berhasil", melainkan alasan kenapa aksinya diblokir.
@@ -454,6 +474,27 @@ Sempat masuk `.gitignore`. Itu keliru: pipeline deploy menjalankan `composer ins
 
 ### Perubahan Modul PO & Pembayaran (Agustus 2026)
 
+#### Uang muka pindah ke halaman PO, dan apa yang ikut terbawa
+
+Dicatat 28 Agustus 2026 saat menyelaraskan test dengan perubahan ini.
+
+**Lokasi barunya:** aksi `pay_down_payment` di **View PO Product / View PO Material**, bukan lagi form di dalam modal Approve & Generate PO pada halaman Finance Approval. Ini lurus dengan akuntansi: DP dibayar saat order, dan PO adalah dokumen order itu sendiri. `PayableResource` juga menerima pembayaran dengan bentuk aksi yang sama untuk pelunasan hutang.
+
+**Yang selamat tanpa disentuh sama sekali: pencatatan DP ke buku kas.** `recordCashOutflow()` dipasang sebagai **model event** pada `SupplierPayment::created`, bukan dipanggil manual di halaman pembuatnya. Ketika form DP dipindah ke tiga halaman yang sama sekali berbeda, pencatatan kas ikut otomatis tanpa satu baris pun ditambahkan. **Ini alasan konkret kenapa aturan lintas-dokumen sebaiknya hidup di model, bukan di halaman** — halaman berpindah, model tidak.
+
+**Bedanya dengan versi lama yang perlu diketahui:**
+
+| | Versi lama (Finance Approval) | Versi sekarang (View PO) |
+|---|---|---|
+| Nama field | `payment_amount` | `amount_input` |
+| Pemformat | `RawJs::make('$money(...)')` | listener Alpine `Intl.NumberFormat("id-ID")` |
+| Parser | `parseNumber()` | `(float) str_replace('.', '', $value)` |
+| Batas atas | tagihan dari isi FORM | `$this->record->total_amount` milik PO |
+| Batas bawah | tidak ada | wajib `> 0` |
+
+Parser barunya lebih sederhana dan aman untuk nilai rupiah bulat, tetapi **tidak menangani desimal koma** seperti `parseNumber()`. Selama kolom itu hanya menerima digit (listener-nya membuang non-digit), keduanya setara. Kalau kelak kolom itu perlu menerima desimal, pindahkan ke `parseNumber()` — jangan tambal `str_replace` lagi.
+
+
 Disepakati dan dikerjakan beberapa perbaikan terkait PO dan Uang Muka:
 - **Tombol Hapus PO:** Sengaja ditambahkan di halaman *View Purchase Product* (berlaku juga untuk Material). **Aturan bisnis:** PO hanya boleh dihapus JIKA barang belum pernah diterima sama sekali (`goodsReceipts()->count() === 0`). Bila sudah ada barang masuk, PO terkunci demi integritas data. Jika PO dihapus, status Request terkaitnya akan dikembalikan ke `Pending Finance`.
 - **Cetak PO & Tampilan DP:** Cetakan PO (`resources/views/print/po-*.blade.php`) dimodifikasi menggunakan CSS `white-space: nowrap` agar tata letaknya tidak berantakan/terpotong saat menampilkan teks DP. Juga ditambahkan baris **Ringkasan DP dan Sisa Tagihan** agar supplier tahu persis sisa pembayaran. Nama penandatangan (Reviewer) juga sudah dinamis.
@@ -542,7 +583,7 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 228 lolos, 0 gagal** (1252 assertion, diverifikasi 26 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Test suite: 231 lolos, 0 gagal** (1266 assertion, diverifikasi 28 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Modul Keuangan (ACCOUNTING) diparkir sementara
