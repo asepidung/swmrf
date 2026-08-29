@@ -532,6 +532,20 @@ Disepakati dan dikerjakan beberapa perbaikan terkait PO dan Uang Muka:
 
 ---
 
+### Form hak akses User dikelompokkan ke tab mengikuti sidebar
+
+Keputusan Project Owner, 28 Agustus 2026.
+
+Sebelumnya form Create/Edit User menumpuk **46 seksi modul** secara vertikal. Masalahnya bukan sekadar tidak nyaman: memilih satu per satu dari 46 seksi itu melelahkan, sehingga lebih gampang mencentang semuanya — dan begitulah akun uji `rafi` dan `coba` berakhir dengan **181 permission**. **Form yang menyulitkan pemberian hak secara selektif akan melahirkan pemberian hak yang serampangan.** Merapikan formnya sekaligus memperbaiki disiplin hak akses.
+
+Sekarang 46 modul dikelompokkan ke **12 tab yang urutannya sama persis dengan grup sidebar**. Kesamaan urutan itu disengaja: admin yang memberi hak sedang membayangkan menu apa yang nanti dilihat pengguna, jadi susunan yang sama membuat hasilnya bisa ditebak tanpa mencoba dulu.
+
+Petanya ada di `Permission::moduleGroups()` — ditaruh di model, bukan di form, karena itu pengetahuan domain tentang permission dan bukan urusan tata letak.
+
+**Modul yang belum dipetakan sengaja TIDAK dibuang.** Ia tetap tampil di tab cadangan `LAINNYA`. Kalau dibuang, haknya tidak bisa diberikan sama sekali dan tidak ada yang menyadarinya — persis jenis kegagalan senyap yang paling mahal. Ada test yang memastikan seluruh modul yang di-seed sudah terpeta, jadi modul baru yang lupa didaftarkan langsung gagal, bukan diam-diam terdampar di tab cadangan.
+
+**Yang wajib diperiksa saat mengubah form ini:** penyimpanan hak akses membaca kunci `permissions_*` dari `$this->form->getRawState()`. `Tabs` dan `Section` adalah komponen **tata letak** — keduanya tidak menyarangkan state, jadi kuncinya tetap datar di tingkat atas. Ada test yang menyimpan hak dari **dua tab berbeda** sekaligus untuk membuktikannya, karena kalau salah, gejalanya menyesatkan: form tampak berhasil disimpan tapi centangnya hilang.
+
 ### Policy ditemukan lewat nama MODEL, bukan nama Resource
 
 Ditemukan 28 Agustus 2026 saat Owner melaporkan menu Sales dan Accounting terlihat terbuka untuk semua.
@@ -620,7 +634,7 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 239 lolos, 0 gagal** (1292 assertion, diverifikasi 28 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Test suite: 246 lolos, 0 gagal** (1305 assertion, diverifikasi 28 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Modul Keuangan (ACCOUNTING) diparkir sementara
