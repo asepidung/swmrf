@@ -2,12 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Filament\Admin\Resources\ProductRequisitionResource\Pages\ApproveFinanceProductRequisition;
+use App\Filament\Admin\Resources\PurchaseProductResource\Pages\ViewPurchaseProduct;
 use App\Models\BankAccount;
 use App\Models\BankTransaction;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductRequisition;
+use App\Models\PurchaseProduct;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
 use App\Models\User;
@@ -140,11 +141,16 @@ class SupplierPaymentLedgerTest extends TestCase
     }
 
     /**
-     * Rantai penuh: dari modal Approve & Generate PO sampai ke buku kas.
+     * Rantai penuh: dari tombol Pay Down Payment di halaman PO sampai buku kas.
+     *
+     * Jalur DP-nya pindah (Finance Approval -> View PO, 27-28 Agustus 2026),
+     * dan pencatatan kasnya ikut tanpa disentuh sama sekali. Itu memang
+     * gunanya recordCashOutflow() dipasang sebagai model event di
+     * SupplierPayment, bukan dipanggil manual di halaman yang membuatnya.
      *
      * @test
      */
-    public function approving_with_a_down_payment_writes_the_ledger_end_to_end()
+    public function paying_a_down_payment_on_the_po_writes_the_ledger_end_to_end()
     {
         $category = ProductCategory::create(['name' => 'PRIMARY CUTS', 'prefix' => 1]);
 
@@ -160,7 +166,7 @@ class SupplierPaymentLedgerTest extends TestCase
             'user_id' => $this->user->id,
             'supplier_id' => $this->supplier->id,
             'due_date' => now()->toDateString(),
-            'status' => 'Pending Finance',
+            'status' => 'PO Created',
         ]);
 
         $requisition->items()->create([
@@ -170,21 +176,29 @@ class SupplierPaymentLedgerTest extends TestCase
             'subtotal' => 75000000,
         ]);
         $requisition->updateTotalAmount();
+        $requisition->generatePurchaseOrder();
+
+        $po = PurchaseProduct::where('product_requisition_id', $requisition->id)->firstOrFail();
 
         Livewire::actingAs($this->user)
-            ->test(ApproveFinanceProductRequisition::class, ['record' => $requisition->id])
-            ->callAction('approve', ['payment_amount' => '10.000.000', 'payment_method' => 'cash'])
+            ->test(ViewPurchaseProduct::class, ['record' => $po->id])
+            ->callAction('pay_down_payment', [
+                'payment_date' => now()->toDateString(),
+                'method' => SupplierPayment::METHOD_CASH,
+                'amount_input' => '10.000.000',
+            ])
             ->assertHasNoActionErrors();
 
-        $payment = SupplierPayment::where('source_type', ProductRequisition::class)
-            ->where('source_id', $requisition->id)
+        $payment = SupplierPayment::where('source_type', PurchaseProduct::class)
+            ->where('source_id', $po->id)
             ->first();
 
-        $this->assertNotNull($payment);
+        $this->assertNotNull($payment, 'DP tidak tersimpan dari halaman PO.');
         $this->assertEquals(10000000, $payment->amount);
 
         $transaction = BankTransaction::where('reference_id', $payment->id)->first();
-        $this->assertNotNull($transaction, 'DP dari modal Approve & Generate PO tidak sampai ke buku kas.');
+        $this->assertNotNull($transaction, 'DP dari halaman PO tidak sampai ke buku kas.');
+        $this->assertSame('out', $transaction->type);
         $this->assertEquals(10000000, $transaction->amount);
     }
 }

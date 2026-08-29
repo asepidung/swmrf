@@ -83,6 +83,61 @@ class RequisitionTranslationCoverageTest extends TestCase
         );
     }
 
+    /**
+     * Halaman DP/pembayaran: SELURUH __() diperiksa, bukan cuma notifikasi.
+     *
+     * Berbeda dari modul Request yang label formulirnya memang sudah lama
+     * banyak yang belum terdaftar, ketiga halaman ini baru dan masih bersih,
+     * jadi bisa dijaga penuh sejak awal. Ditemukan 28 Agustus 2026: sebelas
+     * kuncinya terdaftar di id.json tetapi TIDAK di en.json.
+     *
+     * @return array<int, string>
+     */
+    protected function paymentPageFiles(): array
+    {
+        return [
+            app_path('Filament/Admin/Resources/PurchaseProductResource/Pages/ViewPurchaseProduct.php'),
+            app_path('Filament/Admin/Resources/PurchaseMaterialResource/Pages/ViewPurchaseMaterial.php'),
+            app_path('Filament/Admin/Resources/PayableResource/Pages/ViewPayable.php'),
+        ];
+    }
+
+    /** @test */
+    public function it_registers_every_payment_page_string_in_both_languages()
+    {
+        $missing = [];
+
+        $strings = [
+            'id' => json_decode(file_get_contents(lang_path('id.json')), true),
+            'en' => json_decode(file_get_contents(lang_path('en.json')), true),
+        ];
+
+        foreach ($this->paymentPageFiles() as $file) {
+            if (! file_exists($file)) {
+                continue;
+            }
+
+            preg_match_all("/__\(\s*'((?:[^'\\\\]|\\\\.)*)'/", file_get_contents($file), $matches);
+
+            foreach (array_unique($matches[1]) as $key) {
+                $key = stripslashes($key);
+
+                foreach ($strings as $locale => $registered) {
+                    if (! array_key_exists($key, $registered)) {
+                        $missing[] = $locale . '.json: ' . $key;
+                    }
+                }
+            }
+        }
+
+        $this->assertSame(
+            [],
+            array_values(array_unique($missing)),
+            "Teks berikut dipakai di halaman pembayaran tapi belum terdaftar:\n"
+            . implode("\n", array_unique($missing)),
+        );
+    }
+
     /** @test */
     public function it_registers_every_requisition_string_in_both_languages()
     {

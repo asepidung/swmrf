@@ -476,25 +476,22 @@ class TallyTest extends TestCase
         $this->assertEquals(1, $widget->getPendingTallyCount());
     }
 
-    /** @test */
-    public function it_alerts_user_about_new_sales_orders_via_poller()
+    /**
+     * Pemberitahuan "ada Sales Order baru" tidak lagi lewat toast poller.
+     *
+     * Seluruh toast lintas-pengguna di GlobalTaskPoller dihapus atas
+     * keputusan Project Owner (27 Agustus 2026); tugas itu diambil alih Web
+     * Push PWA. Test lama di sini menyetel `lastSalesOrderCheckAt` yang kini
+     * sudah tidak ada, sehingga melempar PublicPropertyNotFoundException.
+     *
+     * Yang tersisa untuk dijaga: membuat Sales Order baru TIDAK boleh lagi
+     * memunculkan toast ke layar orang lain.
+     *
+     * @test
+     */
+    public function a_new_sales_order_no_longer_raises_a_poller_toast()
     {
         $this->actingAs($this->user);
-
-        SalesOrder::create([
-            'customer_id' => $this->customer->id,
-            'delivery_date' => now()->addDays(2)->format('Y-m-d'),
-            'created_by' => $this->user->id,
-            'status' => 'waiting',
-        ]);
-
-        $poller = Livewire::test(\App\Livewire\GlobalTaskPoller::class);
-
-        // mount() menandai waktu awal pengecekan. Mundurkan penanda itu supaya
-        // Sales Order yang dibuat setelah ini terhitung sebagai data baru
-        // (perbandingan created_at hanya berpresisi detik).
-        $checkpoint = now()->subMinute()->toDateTimeString();
-        $poller->set('lastSalesOrderCheckAt', $checkpoint);
 
         SalesOrder::create([
             'customer_id' => $this->customer->id,
@@ -503,13 +500,15 @@ class TallyTest extends TestCase
             'status' => 'waiting',
         ]);
 
-        $poller->call('checkTasks');
+        Livewire::test(\App\Livewire\GlobalTaskPoller::class)
+            ->call('checkTasks')
+            ->assertOk();
 
-        $poller->assertNotified(__('Ada Sales Order baru yang siap dibuatkan Tally'));
-
-        // Penanda waktu wajib ikut maju, supaya Sales Order yang sama tidak
-        // dinotifikasi berulang pada polling berikutnya.
-        $this->assertGreaterThan($checkpoint, $poller->get('lastSalesOrderCheckAt'));
+        $this->assertSame(
+            [],
+            session('filament.notifications') ?? [],
+            'Poller masih memancarkan toast Sales Order, padahal sudah diambil alih Web Push.',
+        );
     }
 
     /** @test */
