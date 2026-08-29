@@ -264,12 +264,11 @@ class DatabaseSeeder extends Seeder
             ['name' => 'edit_material_stock_takes', 'module_name' => 'Material Stock Takes', 'description' => 'Edit material stock takes'],
             ['name' => 'delete_material_stock_takes', 'module_name' => 'Material Stock Takes', 'description' => 'Delete material stock takes'],
             
-            // Stock Takes (Beef) Module
-            ['name' => 'view_stock_takes', 'module_name' => 'Stock Takes', 'description' => 'View stock takes'],
-            ['name' => 'create_stock_takes', 'module_name' => 'Stock Takes', 'description' => 'Create stock takes'],
-            ['name' => 'edit_stock_takes', 'module_name' => 'Stock Takes', 'description' => 'Edit stock takes'],
-            ['name' => 'delete_stock_takes', 'module_name' => 'Stock Takes', 'description' => 'Delete stock takes'],
-            
+            // Permission Stock Takes (Beef) SENGAJA tidak diulang di sini --
+            // seluruhnya sudah didaftarkan di blok "Stock Takes Module" di
+            // atas, berikut view_deleted_stock_takes yang di blok ini malah
+            // terlewat.
+
             // Sales Returns Module
             ['name' => 'view_sales_returns', 'module_name' => 'Sales Returns', 'description' => 'View sales returns'],
             ['name' => 'create_sales_returns', 'module_name' => 'Sales Returns', 'description' => 'Create sales returns'],
@@ -279,8 +278,13 @@ class DatabaseSeeder extends Seeder
             // Beef Stock Aging Module
             ['name' => 'view_beef_stock_aging', 'module_name' => 'Beef Stock Aging', 'description' => 'View beef stock aging'],
             
-            // System/Activity Logs
-            ['name' => 'view_activity_logs', 'module_name' => 'System', 'description' => 'View activity logs'],
+            // view_activity_logs SENGAJA tidak didaftarkan lagi di sini.
+            //
+            // Ia sudah ada di atas dengan module_name 'Activity Logs'. Karena
+            // permissions.name unique dan seeder ini memakai updateOrCreate,
+            // entri kedua DIAM-DIAM MENIMPA yang pertama -- akibatnya modul
+            // 'Activity Logs' tidak pernah benar-benar ada, dan 'System' cuma
+            // berisi permission duplikat itu.
 
             // Grade Module
             ['name' => 'view_grades', 'module_name' => 'Grades', 'description' => 'View grades'],

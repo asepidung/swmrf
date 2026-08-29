@@ -216,6 +216,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Tautan "Buy me a coffee" milik pembuat paket.
+    |--------------------------------------------------------------------------
+    | Dimatikan atas permintaan Project Owner. Ini aplikasi internal Wijaya
+    | Meat, dan tombol donasi ke pihak ketiga di dalamnya membingungkan
+    | pengguna -- mereka mengira itu bagian dari aplikasi.
+    |
+    | Dibaca IndexController lewat config('log-viewer.show_support_link').
+    |
+    */
+
+    'show_support_link' => false,
+
+    /*
+    |--------------------------------------------------------------------------
     |  Shorter stack trace filters.
     |--------------------------------------------------------------------------
     | Lines containing any of these strings will be excluded from the full log.

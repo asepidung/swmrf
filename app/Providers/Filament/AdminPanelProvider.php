@@ -36,7 +36,16 @@ class AdminPanelProvider extends PanelProvider
                     ->icon('heroicon-o-user'),
             ])
             ->navigationItems([
+                // Namanya sengaja menyebut ERROR, bukan "Log Viewer".
+                //
+                // "Log Viewer" tidak memberi tahu gunanya apa, sehingga alat ini
+                // nyaris tidak pernah dibuka. Padahal ia satu-satunya tempat
+                // kegagalan yang SENGAJA ditelan try/catch bisa terlihat --
+                // misalnya push notification, yang dibungkus supaya tidak
+                // menggagalkan penyimpanan dokumen dan karenanya tidak pernah
+                // muncul di layar.
                 \Filament\Navigation\NavigationItem::make('Log Viewer')
+                    ->label(fn (): string => __('System Error Log'))
                     ->url(fn (): string => route('log-viewer.index'))
                     ->icon('heroicon-o-document-text')
                     ->group(fn() => __('SYSTEM'))

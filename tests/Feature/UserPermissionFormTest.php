@@ -268,4 +268,142 @@ class UserPermissionFormTest extends TestCase
             'Pembungkusan tab diterapkan terlalu luas, bukan hanya pada tab form.',
         );
     }
+
+    /**
+     * Tidak boleh ada permission yang di-seed lebih dari sekali.
+     *
+     * `permissions.name` unique dan seeder memakai updateOrCreate, sehingga
+     * entri kedua DIAM-DIAM MENIMPA yang pertama tanpa error apa pun. Itu
+     * yang terjadi pada `view_activity_logs`: didaftarkan dua kali dengan
+     * module_name berbeda ('Activity Logs' dan 'System'), dan yang belakangan
+     * menang -- membuat modul 'Activity Logs' tidak pernah benar-benar ada.
+     *
+     * Gejalanya cuma satu modul yang hilang diam-diam dari form hak akses.
+     *
+     * @test
+     */
+    public function no_permission_is_seeded_more_than_once()
+    {
+        $seeder = file_get_contents(base_path('database/seeders/DatabaseSeeder.php'));
+
+        preg_match_all("/'name'\s*=>\s*'([a-z_]+)'\s*,\s*'module_name'/", $seeder, $matches);
+
+        $counts = array_count_values($matches[1]);
+        $duplicates = [];
+
+        foreach ($counts as $name => $count) {
+            if ($count > 1) {
+                $duplicates[] = $name . ' (' . $count . 'x)';
+            }
+        }
+
+        sort($duplicates);
+
+        $this->assertSame(
+            [],
+            $duplicates,
+            "Permission berikut didaftarkan lebih dari sekali di DatabaseSeeder. "
+            . "Yang belakangan akan menimpa yang awal tanpa error:\n" . implode("\n", $duplicates),
+        );
+    }
+
+    /**
+     * Menu log wajib menyebut gunanya, bukan sekadar "Log Viewer".
+     *
+     * Nama lamanya tidak memberi tahu apa-apa, sehingga alat ini nyaris tidak
+     * pernah dibuka -- padahal ia satu-satunya tempat kegagalan yang sengaja
+     * ditelan try/catch bisa terlihat.
+     *
+     * @test
+     */
+    public function the_log_menu_says_what_it_is_for()
+    {
+        $source = file_get_contents(app_path('Providers/Filament/AdminPanelProvider.php'));
+
+        $this->assertStringContainsString("__('System Error Log')", $source);
+
+        foreach (['id', 'en'] as $locale) {
+            $strings = json_decode(file_get_contents(lang_path($locale . '.json')), true);
+            $this->assertArrayHasKey('System Error Log', $strings, "Belum terdaftar di {$locale}.json.");
+        }
+    }
+
+    /**
+     * Tautan donasi pihak ketiga di dalam Log Viewer dimatikan.
+     *
+     * Paket opcodesio/log-viewer menampilkan tombol "Buy me a coffee" milik
+     * pembuatnya. Di aplikasi internal Wijaya Meat itu membingungkan --
+     * pengguna mengira tombol itu bagian dari aplikasi.
+     *
+     * Dibaca paket lewat config('log-viewer.show_support_link'), jadi cukup
+     * satu opsi config. Ada test-nya karena `php artisan config:publish`
+     * atau pembaruan paket bisa menimpanya kembali ke bawaan (true) tanpa
+     * ada yang menyadarinya.
+     *
+     * @test
+     */
+    public function the_log_viewer_hides_the_third_party_donation_link()
+    {
+        $this->assertFalse(
+            config('log-viewer.show_support_link'),
+            'Tombol "Buy me a coffee" milik pembuat paket muncul lagi di Log Viewer.',
+        );
+    }
+
+    /**
+     * Tautan ke repositori pembuat paket disembunyikan dari Log Viewer.
+     *
+     * Berbeda dari tombol "Buy me a coffee" yang punya flag config, ikon
+     * GitHub HARDCODE di komponen Vue yang sudah terkompilasi ke app.js.
+     * Satu-satunya cara tanpa menyunting berkas vendor/ (yang hilang setiap
+     * composer install) adalah menimpa view-nya dan menyembunyikannya lewat
+     * CSS.
+     *
+     * Test ini menjaga dua hal: view timpaannya masih ada -- kalau terhapus,
+     * Laravel diam-diam kembali memakai view bawaan paket dan ikonnya muncul
+     * lagi -- dan aturan CSS-nya masih di dalamnya.
+     *
+     * @test
+     */
+    public function the_log_viewer_hides_the_package_repository_link()
+    {
+        $override = resource_path('views/vendor/log-viewer/index.blade.php');
+
+        $this->assertFileExists(
+            $override,
+            'View timpaan Log Viewer hilang -- Laravel akan kembali memakai view bawaan paket.',
+        );
+
+        $this->assertSame(
+            $override,
+            view()->getFinder()->find('log-viewer::index'),
+            'Laravel tidak memakai view timpaan, melainkan bawaan paket.',
+        );
+
+        $this->assertStringContainsString(
+            'github.com/opcodesio',
+            file_get_contents($override),
+            'Aturan CSS penyembunyi tautan repositori hilang dari view timpaan.',
+        );
+    }
+
+    /**
+     * Halamannya harus benar-benar ter-render dengan view timpaan itu.
+     *
+     * View timpaan lama ternyata salinan versi paket yang LEBIH TUA -- ia
+     * memuat aset dengan path hardcode, bukan logika $assetsPublished yang
+     * dipakai paket sekarang. Menyalin ulang dari paket menyelaraskannya,
+     * tapi itu mengubah cara aset dimuat, jadi harus dibuktikan tidak rusak.
+     *
+     * @test
+     */
+    public function the_log_viewer_page_still_renders()
+    {
+        $this->seed(\Database\Seeders\DatabaseSeeder::class);
+
+        $this->actingAs($this->programmer)
+            ->get(route('log-viewer.index'))
+            ->assertOk()
+            ->assertSee('log-viewer', false);
+    }
 }
