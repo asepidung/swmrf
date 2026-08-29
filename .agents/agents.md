@@ -544,6 +544,10 @@ Petanya ada di `Permission::moduleGroups()` — ditaruh di model, bukan di form,
 
 **Modul yang belum dipetakan sengaja TIDAK dibuang.** Ia tetap tampil di tab cadangan `LAINNYA`. Kalau dibuang, haknya tidak bisa diberikan sama sekali dan tidak ada yang menyadarinya — persis jenis kegagalan senyap yang paling mahal. Ada test yang memastikan seluruh modul yang di-seed sudah terpeta, jadi modul baru yang lupa didaftarkan langsung gagal, bukan diam-diam terdampar di tab cadangan.
 
+**Tab bawaan Filament tidak terbaca di HP.** `nav.fi-tabs` memakai satu baris ber-`overflow-x-auto`. Dengan 12 tab, di layar HP hanya 2-3 yang terlihat — dan **tab yang sedang aktif bisa berada di luar layar**, sehingga pengguna tidak tahu sedang membuka bagian yang mana. Ditambahkan CSS di `AdminPanelProvider` agar strip tab **membungkus ke beberapa baris** di bawah 1024px. Sengaja dibatasi pada `.fi-fo-tabs` (tab di dalam form), bukan seluruh tab aplikasi, supaya halaman lain yang belum diperiksa tidak ikut berubah.
+
+Gejalanya **tidak terlihat sama sekali di desktop**, jadi gampang hilang tanpa ada yang menyadarinya — karena itu ada test yang menjaganya.
+
 **Yang wajib diperiksa saat mengubah form ini:** penyimpanan hak akses membaca kunci `permissions_*` dari `$this->form->getRawState()`. `Tabs` dan `Section` adalah komponen **tata letak** — keduanya tidak menyarangkan state, jadi kuncinya tetap datar di tingkat atas. Ada test yang menyimpan hak dari **dua tab berbeda** sekaligus untuk membuktikannya, karena kalau salah, gejalanya menyesatkan: form tampak berhasil disimpan tapi centangnya hilang.
 
 ### Policy ditemukan lewat nama MODEL, bukan nama Resource
@@ -634,7 +638,7 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 246 lolos, 0 gagal** (1305 assertion, diverifikasi 28 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Test suite: 247 lolos, 0 gagal** (1308 assertion, diverifikasi 28 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Modul Keuangan (ACCOUNTING) diparkir sementara
