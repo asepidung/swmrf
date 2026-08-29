@@ -105,6 +105,27 @@ class AdminPanelProvider extends PanelProvider
                     .fi-sidebar-item-button { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; min-height: 2rem !important; gap: 0.4rem !important; }
                     .fi-sidebar-item-label { font-size: 0.875rem !important; }
                     .fi-sidebar-item-icon { width: 1rem !important; height: 1rem !important; }
+
+                    /*
+                     * Tab di dalam FORM harus terbaca di layar sempit.
+                     *
+                     * Bawaan Filament: satu baris dengan overflow-x-auto. Dengan
+                     * 12 tab hak akses, di HP hanya 2-3 yang terlihat -- dan tab
+                     * yang sedang AKTIF bisa berada di luar layar, sehingga
+                     * pengguna tidak tahu sedang membuka bagian yang mana.
+                     *
+                     * Dibungkus ke beberapa baris supaya semuanya tampak
+                     * sekaligus. Sengaja dibatasi pada .fi-fo-tabs (tab form),
+                     * bukan seluruh tab aplikasi, supaya halaman lain yang belum
+                     * diperiksa tidak ikut berubah tata letaknya.
+                     */
+                    @media (max-width: 1023px) {
+                        .fi-fo-tabs .fi-tabs {
+                            flex-wrap: wrap !important;
+                            overflow-x: visible !important;
+                            row-gap: 0.375rem !important;
+                        }
+                    }
                 </style>' . '
                 <script>
                     document.addEventListener("alpine:initialized", () => {

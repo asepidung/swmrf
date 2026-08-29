@@ -236,4 +236,36 @@ class UserPermissionFormTest extends TestCase
             'Hak akses tidak tersimpan dari form bertab.',
         );
     }
+
+    /**
+     * Tab form wajib membungkus di layar sempit, bukan menggulir ke samping.
+     *
+     * Bawaan Filament menaruh seluruh tab dalam satu baris ber-overflow-x-auto.
+     * Dengan 12 tab hak akses, di HP hanya 2-3 yang terlihat -- dan tab yang
+     * sedang AKTIF bisa berada di luar layar, sehingga pengguna tidak tahu
+     * sedang membuka bagian yang mana. Gejalanya tidak terlihat sama sekali
+     * di desktop, jadi gampang hilang tanpa ada yang menyadarinya.
+     *
+     * @test
+     */
+    public function form_tabs_wrap_instead_of_scrolling_on_small_screens()
+    {
+        $source = file_get_contents(app_path('Providers/Filament/AdminPanelProvider.php'));
+
+        $this->assertStringContainsString(
+            '.fi-fo-tabs .fi-tabs',
+            $source,
+            'CSS pembungkus tab form hilang -- di HP tab akan menggulir ke samping lagi.',
+        );
+
+        $this->assertStringContainsString('flex-wrap: wrap', $source);
+
+        // Dibatasi pada tab FORM saja. Melebarkannya ke seluruh .fi-tabs akan
+        // mengubah tata letak halaman lain yang belum diperiksa.
+        $this->assertStringNotContainsString(
+            '.fi-tabs { flex-wrap',
+            $source,
+            'Pembungkusan tab diterapkan terlalu luas, bukan hanya pada tab form.',
+        );
+    }
 }
