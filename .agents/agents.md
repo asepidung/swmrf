@@ -532,6 +532,34 @@ Disepakati dan dikerjakan beberapa perbaikan terkait PO dan Uang Muka:
 
 ---
 
+### Log Viewer DIPERTAHANKAN — ia satu-satunya jendela ke error yang ditelan
+
+Owner sempat menganggapnya tidak berguna dan ingin dihapus (28 Agustus 2026). Diperiksa dulu di server, dan datanya justru sebaliknya.
+
+`laravel.log` berisi **11 ERROR**, dan sebagian besar merekam bug yang Owner sendiri perbaiki sehari sebelumnya: `An attempt was made to evaluate a closure for [Filament\Forms\Component...]` (yang menghasilkan `6bc755b`) dan `Unable to find component: [...RelationManager...]` (yang menghasilkan `db233a9`). Alatnya bekerja; yang tidak terjadi adalah ada yang membukanya.
+
+**Alasan yang lebih menentukan: aplikasi ini SENGAJA menelan sebagian error.** `TaskNotifier` dibungkus `try/catch` supaya kegagalan notifikasi tidak pernah menggagalkan penyimpanan dokumen — itu keputusan yang benar dan tetap dipertahankan. Konsekuensinya kegagalan push **tidak muncul di layar sama sekali**. Saat notifikasi tidak sampai ke ruby, satu-satunya bukti adalah satu baris `production.WARNING` di log itu. Menghapus log viewer membuat seluruh kelas kegagalan tersebut permanen tak terlihat, dan memaksa SSH tiap kali — mustahil dari HP.
+
+**Keluhan Owner yang sebenarnya bukan "tidak berguna" melainkan "tidak tahu gunanya apa".** Nama menunya, "Log Viewer", memang tidak memberi tahu apa-apa. Diganti menjadi `System Error Log` / **Log Error Sistem**.
+
+**Tautan pihak ketiga di dalamnya dimatikan** atas permintaan Owner — di aplikasi internal, tombol donasi ke pembuat paket membingungkan karena disangka bagian dari aplikasi:
+
+- Tombol **"Buy me a coffee"** punya flag resmi: `config('log-viewer.show_support_link') => false`. Selesai dengan satu opsi.
+- **Ikon GitHub** tidak punya opsi apa pun — hardcode di komponen Vue yang sudah terkompilasi ke `app.js`. Disembunyikan lewat CSS di view timpaan `resources/views/vendor/log-viewer/index.blade.php`, memakai selektor **atribut href** (bukan kelas) supaya tetap bekerja meski paketnya mengubah nama kelas.
+
+**Perhatian saat menaikkan versi paket:** view timpaan itu salinan penuh, jadi perubahan view dari paket tidak ikut. Bandingkan dengan berkas aslinya setelah upgrade. Ada test yang menjaga view timpaannya masih dipakai — kalau terhapus, Laravel diam-diam kembali ke view bawaan dan ikonnya muncul lagi tanpa ada yang menyadarinya.
+
+**Ditemukan saat mengerjakannya:** view timpaan yang sudah ada ternyata salinan versi paket yang **lebih tua** — ia memuat aset dengan path hardcode (`asset('vendor/log-viewer/app.css')`), bukan logika `$assetsPublished` + `mix()` yang dipakai paket sekarang. Disalin ulang dari paket terpasang supaya selaras. Asetnya sudah ter-publish di `public/vendor/log-viewer/` lengkap dengan `mix-manifest.json` di lokal maupun server, jadi jalur `mix()` bekerja. Ada test yang benar-benar me-render halamannya, bukan sekadar memeriksa isi berkas.
+
+
+#### Permission ganda di seeder menimpa diam-diam
+
+Ditemukan sambil memeriksa Log Viewer. `permissions.name` unique dan seeder memakai `updateOrCreate`, sehingga **entri kedua menimpa yang pertama tanpa error apa pun**.
+
+`view_activity_logs` didaftarkan dua kali dengan `module_name` berbeda — `Activity Logs` dan `System` — dan yang belakangan menang. Akibatnya modul `Activity Logs` tidak pernah benar-benar ada, dan `System` hanya berisi permission duplikat itu. Empat permission `*_stock_takes` juga terdaftar dua kali, meski nilainya identik sehingga tidak berakibat apa-apa.
+
+`no_permission_is_seeded_more_than_once` kini menjaganya. Gejalanya cuma satu modul hilang diam-diam dari form hak akses — jenis kesalahan yang tidak akan pernah ketahuan tanpa ada yang memeriksanya.
+
 ### Form hak akses User dikelompokkan ke tab mengikuti sidebar
 
 Keputusan Project Owner, 28 Agustus 2026.
@@ -638,7 +666,7 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 247 lolos, 0 gagal** (1308 assertion, diverifikasi 28 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Test suite: 252 lolos, 0 gagal** (1318 assertion, diverifikasi 28 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Modul Keuangan (ACCOUNTING) diparkir sementara
