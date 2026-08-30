@@ -46,10 +46,25 @@
                 </form>
 
                 <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
-                    <button wire:click.prevent="mountAction('manualInput')" type="button" class="w-full flex items-center justify-center gap-2 bg-warning-500 hover:bg-warning-400 text-white font-bold py-2 px-4 rounded-lg shadow-sm transition-all active:scale-95 group">
-                        <x-heroicon-o-pencil-square class="w-5 h-5 transition-transform" />
-                        {{ __('Label Rusak') }}
-                    </button>
+                    {{--
+                        Dulu tombol ini memakai kelas warna Tailwind langsung.
+                        Kelas itu tidak menghasilkan CSS apa pun di proyek ini --
+                        tidak ada tema Filament kustom yang dikompilasi -- jadi
+                        tombolnya tampil polos tanpa warna sama sekali, dan
+                        tidak ada yang menyadarinya karena tombolnya tetap bisa
+                        diklik. Komponen Filament memakai CSS bawaannya, jadi
+                        warnanya pasti muncul dan ikut tema terang/gelap.
+                    --}}
+                    <x-filament::button
+                        wire:click.prevent="mountAction('manualInput')"
+                        type="button"
+                        color="warning"
+                        size="lg"
+                        icon="heroicon-o-pencil-square"
+                        class="w-full justify-center"
+                    >
+                        {{ __('Damaged Label') }}
+                    </x-filament::button>
                 </div>
                 </div>
             </div>

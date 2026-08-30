@@ -147,7 +147,7 @@ class FoundItemScanner extends Page implements HasForms, HasTable
     public function manualInputAction(): Action
     {
         return Action::make('manualInput')
-            ->label(__('Label Rusak'))
+            ->label(__('Damaged Label'))
             ->color('warning')
             ->icon('heroicon-o-pencil-square')
             ->fillForm(function (array $arguments): array {
