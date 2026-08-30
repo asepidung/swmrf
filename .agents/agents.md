@@ -588,6 +588,31 @@ Ditemukan sambil memeriksa Log Viewer. `permissions.name` unique dan seeder mema
 
 `no_permission_is_seeded_more_than_once` kini menjaganya. Gejalanya cuma satu modul hilang diam-diam dari form hak akses — jenis kesalahan yang tidak akan pernah ketahuan tanpa ada yang memeriksanya.
 
+### Melihat dokumen ≠ menggerakkan uang
+
+Ditanyakan Project Owner 30 Agustus 2026: modul Accounting hanya punya `view` dan `view_deleted`, padahal seharusnya ada hak khusus untuk membayar atau mencicil. Diperiksa, dan kekhawatirannya benar — bahkan lebih luas.
+
+**Keempat aksi yang memindahkan uang tidak satu pun memeriksa hak akses:**
+
+| Halaman | Aksi | Penjagaan lama |
+|---|---|---|
+| `ViewPayable` | bayar/cicil utang supplier | hanya `balance > 0` |
+| `ViewPurchaseProduct` | DP di PO Beef | tidak ada |
+| `ViewPurchaseMaterial` | DP di PO Material | tidak ada |
+| `ReceivePayment` | terima pembayaran piutang | tidak ada |
+
+Artinya siapa pun yang diberi hak **melihat** sebuah PO atau utang otomatis bisa **mengeluarkan uang perusahaan**.
+
+**Yang paling menyesatkan:** `ViewPurchaseProduct` memang punya satu `hasPermission`, tetapi itu untuk tombol **Print** — bukan untuk pembayarannya. Sekilas halamannya tampak sudah dijaga. Saat memeriksa penjagaan, jangan berhenti pada "ada `hasPermission`" — periksa ia menjaga aksi yang mana.
+
+Empat permission baru: `pay_payables`, `pay_purchase_products`, `pay_purchase_materials`, `receive_receivables`.
+
+**`ReceivePayment` dijaga di tingkat HALAMAN**, bukan cuma tombolnya — rutenya bisa dicapai dengan mengetik URL. Pelajaran yang sama dengan halaman keputusan Request.
+
+**Penjagaan polanya yang terpenting:** `MoneyActionPermissionTest` memindai **seluruh** halaman Filament, dan halaman mana pun yang membuat `SupplierPayment` atau `Payment` wajib menyebut sebuah permission di berkas yang sama. Menjaga empat halaman yang sudah diketahui saja tidak cukup — yang berikutnya akan lolos dengan cara yang persis sama.
+
+Ditemukan sekalian: tombolnya memakai kunci berbahasa Indonesia (`Terima Pembayaran`) yang lolos dari daftar kata pada ratchet bahasa — bukti bahwa heuristik kata memang tidak menangkap semuanya. Sudah dipindahkan ke kunci Inggris.
+
 ### Nama grup navigasi hidup di TIGA tempat — dijaga test, bukan diingat
 
 Ditemukan 30 Agustus 2026 saat Owner melaporkan tab ACCOUNTING tidak muncul di form hak akses, lalu bertanya: *"ini bikin pusing, kalau menu berubah lagi yang lain harus diubah lagi — best practice-nya gimana?"*
@@ -714,7 +739,7 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 262 lolos, 0 gagal** (1343 assertion, diverifikasi 30 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Test suite: 266 lolos, 0 gagal** (1351 assertion, diverifikasi 30 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Modul Keuangan (ACCOUNTING) diparkir sementara

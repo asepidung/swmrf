@@ -142,10 +142,12 @@ class DatabaseSeeder extends Seeder
             // PO Material Module
             ['name' => 'view_purchase_materials', 'module_name' => 'PO Material', 'description' => 'View PO materials'],
             ['name' => 'print_purchase_materials', 'module_name' => 'PO Material', 'description' => 'Print PO materials'],
+            ['name' => 'pay_purchase_materials', 'module_name' => 'PO Material', 'description' => 'Pay down payment on PO materials'],
 
             // PO Product (Beef) Module
             ['name' => 'view_purchase_products', 'module_name' => 'PO Beef', 'description' => 'View PO beef'],
             ['name' => 'print_purchase_products', 'module_name' => 'PO Beef', 'description' => 'Print PO beef'],
+            ['name' => 'pay_purchase_products', 'module_name' => 'PO Beef', 'description' => 'Pay down payment on PO beef'],
 
             // GR Material Module
             ['name' => 'view_gr_materials', 'module_name' => 'GR Material', 'description' => 'View GR materials'],
@@ -164,6 +166,9 @@ class DatabaseSeeder extends Seeder
             // Payables Module
             ['name' => 'view_payables', 'module_name' => 'Payables', 'description' => 'View payables'],
             ['name' => 'view_deleted_payables', 'module_name' => 'Payables', 'description' => 'View deleted payables'],
+            // Melihat tagihan dan MEMBAYAR tagihan adalah dua tingkat
+            // wewenang yang berbeda. Sebelumnya tidak dibedakan sama sekali.
+            ['name' => 'pay_payables', 'module_name' => 'Payables', 'description' => 'Pay payables'],
 
             // Material Stock Module
             ['name' => 'view_material_stocks', 'module_name' => 'Material Stocks', 'description' => 'View material stocks'],
@@ -244,6 +249,7 @@ class DatabaseSeeder extends Seeder
             // Receivables Module
             ['name' => 'view_receivables', 'module_name' => 'Receivables', 'description' => 'View receivables'],
             ['name' => 'view_deleted_receivables', 'module_name' => 'Receivables', 'description' => 'View deleted receivables'],
+            ['name' => 'receive_receivables', 'module_name' => 'Receivables', 'description' => 'Receive payment for receivables'],
 
             // Mutations Module
             ['name' => 'view_mutations', 'module_name' => 'Mutations', 'description' => 'View mutations'],

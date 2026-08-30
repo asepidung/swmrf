@@ -17,7 +17,11 @@ class ViewPayable extends ViewRecord
                 ->label(__('Record Payment'))
                 ->icon('heroicon-o-banknotes')
                 ->color('success')
-                ->visible(fn () => $this->record->balance > 0)
+                // Melihat tagihan dan MEMBAYAR tagihan adalah dua tingkat
+                // wewenang yang berbeda. Sebelumnya siapa pun yang bisa
+                // melihat utang otomatis bisa mengeluarkan uang perusahaan.
+                ->visible(fn () => $this->record->balance > 0
+                    && (auth()->user()?->hasPermission('pay_payables') ?? false))
                 ->form([
                     \Filament\Forms\Components\DatePicker::make('payment_date')
                         ->label(__('Payment Date'))

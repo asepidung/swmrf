@@ -28,8 +28,22 @@ class ReceivePayment extends Page
 
     public ?array $data = [];
 
+    /**
+     * Halaman ini MENERIMA UANG, jadi dijaga di tingkat halaman.
+     *
+     * Menyembunyikan tombolnya saja tidak cukup: rutenya bisa dicapai dengan
+     * mengetik URL langsung. Sebelumnya siapa pun yang bisa melihat piutang
+     * otomatis bisa mencatat penerimaan pembayaran.
+     */
+    public static function canAccess(array $parameters = []): bool
+    {
+        return auth()->user()?->hasPermission('receive_receivables') ?? false;
+    }
+
     public function mount(int|string $record): void
     {
+        abort_unless(static::canAccess(), 403);
+
         $this->record = CustomerGroup::findOrFail($record);
 
         // Pre-fill allocations with 0 for all outstanding invoices
@@ -135,7 +149,7 @@ class ReceivePayment extends Page
 
     public function getTitle(): string
     {
-        return __('Terima Pembayaran: ') . $this->record->name;
+        return __('Receive Payment: ') . $this->record->name;
     }
 
     public function save(): void
