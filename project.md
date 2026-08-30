@@ -39,7 +39,7 @@ Sistem ERP untuk **Wijaya Meat**, produsen daging. Merupakan modernisasi sistem 
 
 - Kerjakan di branch `feature/issue-[nomor]`. **Dilarang commit langsung ke `main`.**
 - Setiap rencana yang disetujui wajib punya GitHub Issue. Setiap branch yang selesai diajukan sebagai Pull Request.
-- **Deploy dilakukan MANUAL lewat SSH.** Deploy otomatis (GitHub Actions maupun bawaan Hostinger) sudah dimatikan karena koneksi SSH dari GitHub ke Hostinger berulang kali gagal. Setelah merge ke `main`, jalankan sendiri di server: `git pull`, `composer install`, **`php artisan migrate --force`**, lalu `optimize:clear` dan cache warming. **Merge saja tidak membuat perubahan sampai ke server.**
+- **Deploy: kode sampai sendiri, migrasi dan cache TIDAK.** Auto-deploy GitHub Actions sudah dimatikan, tetapi auto-deploy bawaan Hostinger ternyata masih aktif -- ia meng-clone ulang repo tiap kali `main` berubah (diverifikasi 30 Agustus 2026). Yang TIDAK dikerjakannya: `migrate` dan pembersihan cache. Karena itu setelah merge, masuk lewat SSH (`-tt`, wajib) lalu jalankan **`php artisan migrate --force`**, `optimize:clear`, dan cache warming. **Jangan `git pull` manual** -- ia bisa menabrak clone ulang yang sedang berjalan dan gagal dengan `fatal: not a git repository`. Perintah git di sisi server wajib memakai `git --no-pager`, kalau tidak sesinya menggantung menunggu pager.
 - Kode PHP mengikuti PSR-12.
 
 ### Setelah selesai
@@ -53,6 +53,7 @@ Sistem ERP untuk **Wijaya Meat**, produsen daging. Merupakan modernisasi sistem 
 
 - **Dilarang menjalankan `php artisan migrate:fresh`** pada database mana pun. Selalu migrasi inkremental (`php artisan migrate`). Menyiapkan ulang data dummy itu merepotkan.
 - **Dilarang menjalankan `php artisan test`** sebelum memverifikasi `phpunit.xml` memakai SQLite `:memory:` atau database testing terpisah. `RefreshDatabase` tidak boleh menyentuh MySQL utama.
+- **Dilarang memakai `--filter` untuk menjalankan satu test.** Pakai **path berkasnya**: `php artisan test tests/Feature/NamaTest.php`. `--filter` tetap memuat seluruh berkas test lalu membuang yang tidak cocok -- selisihnya menit lawan detik. Suite penuh hanya dijalankan bila memang dibutuhkan, dan dijalankan di latar belakang supaya tidak menahan Project Owner menunggu.
 - **Dilarang menulis password sungguhan** di seeder, dokumentasi, atau file mana pun. **Repositori ini publik.** Password bawaan akun superuser wajib tetap `1234` agar `CheckPasswordChange` memaksa penggantian pada login pertama.
 - **Dilarang menyisipkan JavaScript global hook** (seperti `Livewire.hook`) untuk mem-*bypass* error bawaan framework seperti 419. Biarkan framework menampilkannya secara natural agar akar masalahnya terlihat.
 - **Dilarang memakai Filament Shield** atau `shield:generate`. Sistem hak akses dibangun custom.
