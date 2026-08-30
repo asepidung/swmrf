@@ -164,6 +164,14 @@ class AdminPanelProvider extends PanelProvider
                 </script>',
             )
 
+            // Kelas warna yang dipakai blade aplikasi ini tapi tidak ada di CSS
+            // Filament. Dimuat di HEAD_END supaya berada SESUDAH stylesheet
+            // Filament. Penjelasan lengkapnya ada di dalam view-nya.
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::HEAD_END,
+                fn (): \Illuminate\Contracts\View\View => view('filament.admin.missing-color-utilities'),
+            )
+
             ->renderHook(
                 \Filament\View\PanelsRenderHook::FOOTER,
                 fn (): \Illuminate\Contracts\View\View => view('filament.admin.footer'),
