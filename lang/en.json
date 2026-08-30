@@ -417,7 +417,6 @@
     "Histori Temuan": "Finding History",
     "Konfirmasi Temuan": "Confirm Finding",
     "Label baru (prefix 0) dibuat: ": "New label (prefix 0) created: ",
-    "Label Rusak": "Damaged Label",
     "Lanjutkan Stock In": "Continue Stock In",
     "Lokasi Gudang Temuan": "Found Location",
     "Produk": "Product",
@@ -701,5 +700,6 @@
     "Account": "Account",
     "Type": "Type",
     "Export Data": "Export Data",
-    "Receivable payment from :group (:number)": "Receivable payment from :group (:number)"
+    "Receivable payment from :group (:number)": "Receivable payment from :group (:number)",
+    "Damaged Label": "Damaged Label"
 }

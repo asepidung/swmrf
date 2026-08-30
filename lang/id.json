@@ -514,7 +514,6 @@
     "Histori Temuan": "Histori Temuan",
     "Konfirmasi Temuan": "Konfirmasi Temuan",
     "Label baru (prefix 0) dibuat: ": "Label baru (prefix 0) dibuat: ",
-    "Label Rusak": "Label Rusak",
     "Lanjutkan Stock In": "Lanjutkan Stock In",
     "Lokasi Gudang Temuan": "Lokasi Gudang Temuan",
     "Riwayat barang yang tidak terdaftar dan ditemukan saat scan atau stock opname.": "Riwayat barang yang tidak terdaftar dan ditemukan saat scan atau stock opname.",
@@ -701,5 +700,6 @@
     "Account": "Rekening",
     "Type": "Tipe",
     "Export Data": "Ekspor Data",
-    "Receivable payment from :group (:number)": "Penerimaan piutang dari :group (:number)"
+    "Receivable payment from :group (:number)": "Penerimaan piutang dari :group (:number)",
+    "Damaged Label": "Label Rusak"
 }
