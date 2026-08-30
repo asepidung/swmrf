@@ -729,9 +729,35 @@ Jangan mencampur `localhost` dengan `127.0.0.1` dalam satu sesi. Samakan dengan 
 Owner memberi akses SSH penuh ke server uji coba (bukan produksi):
 
 ```
-ssh -p 65002 u525862761@153.92.9.218
+ssh -tt -p 65002 u525862761@153.92.9.218
 cd /home/u525862761/domains/coba.wijayameat.co.id/public_html
 ```
+
+#### WAJIB pakai `-tt`. Tanpa itu SSH tampak "rusak" padahal tidak.
+
+Ditemukan 30 Agustus 2026, setelah sempat salah didiagnosa dan membuat Owner menjalankan deploy manual berkali-kali.
+
+Server **menolak eksekusi perintah tanpa PTY**. Gejalanya sangat menyesatkan karena semua lapisan awal berhasil:
+
+| Lapisan | Hasil |
+|---|---|
+| TCP + handshake SSH | sehat |
+| Autentikasi publickey | sehat — `Authenticated using publickey` |
+| Kanal sesi terbuka | sehat |
+| `ssh -N` (tanpa shell) | bertahan penuh, transport normal |
+| Begitu perintah dieksekusi | **`Connection reset by peer` seketika** |
+
+Karena `Connection reset by peer` muncul berulang di banyak percobaan beruntun, gejalanya **mirip sekali dengan IP yang kena rate-limit** — dan sempat disimpulkan begitu. Itu keliru. Perbaikannya cuma satu flag: `-tt` (memaksa alokasi PTY).
+
+**Cara mendiagnosa ulang bila terulang**, berurutan dari yang paling murah:
+
+1. `ssh -v ...` — kalau muncul `Authenticated using publickey`, autentikasi bukan masalahnya.
+2. `timeout 20 ssh -N ...` — kalau bertahan sampai timeout (exit 124), transport sehat dan masalahnya ada di eksekusi shell.
+3. `ssh -tt ... 'echo ok'` — kalau ini berhasil, penyebabnya memang PTY.
+
+**Pelajarannya:** jangan menyimpulkan "diblokir" dari gejala berulang. Turunkan satu per satu lapisannya; di sini transport, autentikasi, dan kanal sesi semuanya sehat, dan yang rusak cuma satu lapis paling atas.
+
+**Catatan praktis dengan `-tt`:** keluaran membawa kode warna ANSI dan akhiran baris CRLF. Untuk keluaran yang perlu dibaca mesin, tambahkan `TERM=dumb` di sisi remote dan saring dengan `sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g'`.
 
 Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destruktif yang tidak bisa dibalik, meski itu data dummy — menyiapkan ulang data uji itu merepotkan.
 
@@ -814,3 +840,58 @@ Langkah untuk tiap modul:
 5. Laporkan temuan ke Owner, lalu Owner memverifikasi perilakunya di browser.
 
 Alasan pembagian ini: bug Tukar Faktur membuktikan membaca kode saja tidak cukup, sementara Owner memang perlu membuka aplikasinya sendiri untuk menyegarkan ingatan terhadap alur bisnis. Keduanya saling menutupi titik buta.
+
+---
+
+## 6. Serah Terima — posisi per 30 Agustus 2026
+
+Ditulis di akhir sesi panjang, supaya sesi berikutnya tidak perlu menggali ulang.
+
+### Modul yang SUDAH disisir
+
+**Master Data, Request Beef, Request Material, PO Beef, PO Material, GR Beef, GR Material**, plus jahitannya ke **Payable**. Selebihnya belum tersentuh.
+
+### Yang paling penting dipahami dari sesi ini
+
+Empat bug terpisah pekan ini punya **satu pola yang sama**: penjagaan yang diasumsikan ada padahal tidak pernah dipasang, dan kegagalannya **senyap** — tidak ada error, tidak ada gejala di layar.
+
+| Bug | Kenapa tidak ketahuan |
+|---|---|
+| DP tidak terpotong dari utang | Rantai putus saat form pindah ke halaman PO; test lama memakai `source_type` yang sudah tidak dipakai |
+| DP hilang saat GR dibuka kuncinya | `allocateTo()` tidak punya pasangan pelepas |
+| Price List & Receivables bocor | Dua Resource berbagi model, Policy salah sasaran |
+| Empat aksi uang tanpa hak akses | `ViewPurchaseProduct` punya `hasPermission` — tapi untuk tombol Print |
+
+**Kesimpulan yang dipakai ke depan:** jangan mengandalkan pemeriksaan menyeluruh di akhir. Pemeriksaan akhir hanya menemukan yang terpikir untuk dicari. Setiap menemukan pola yang bisa menyimpang diam-diam, **pasang penjaganya saat itu juga**.
+
+### Penjaga pola yang sudah terpasang
+
+Semuanya memindai seluruh aplikasi, bukan cuma berkas yang kebetulan disentuh:
+
+| Test | Menjaga |
+|---|---|
+| `NavigationGroupConsistencyTest` | tiga daftar grup navigasi tetap sepakat |
+| `MoneyActionPermissionTest` | halaman mana pun yang membuat pembayaran wajib memeriksa hak akses |
+| `ResourceAccessGateTest` | Resource yang menumpang model modul lain wajib punya `canViewAny()` |
+| `BilingualParityTest` | `id.json` dan `en.json` memuat kunci yang sama persis |
+| `UserPermissionFormTest` | tiap permission hanya di-seed sekali; tiap modul terpeta ke tab |
+| `RequisitionTranslationCoverageTest` | teks notifikasi terdaftar dua bahasa |
+
+### Utang yang DIKETAHUI dan sengaja ditunda
+
+1. **43 kunci berbahasa Indonesia** masih dipakai sebagai kunci terjemahan, tersebar sampai Repack, Sales Return, Cattle Weighing, Boning. Daftarnya di `tests/Fixtures/indonesian-translation-keys.json`, dijaga ratchet supaya tidak bertambah. **Tidak darurat** — server berjalan di `APP_LOCALE=id`, jadi pengguna sehari-hari melihat teks yang benar.
+2. **Label formulir modul Request** banyak yang belum terdaftar bilingual. Pemindainya sengaja dibatasi pada teks notifikasi.
+3. **Blade cetak** (`resources/views/print/`, `exports/`) hampir seluruhnya hardcode, tidak lewat `__()`. Belum diputuskan perlu bilingual atau tidak.
+4. **Urutan Tab di banyak form** belum wajar — lihat bagian utang teknis di atas.
+5. **Alokasi uang muka per pembayaran** tidak dicatat per pasangan. Total selalu tepat; hanya laporan alokasi per pembayaran yang belum mungkin. Kalau kelak dibutuhkan, jawabannya tabel alokasi tersendiri.
+
+### Yang belum sempat diperiksa di jahitan Payable
+
+Alur pelunasan di `ViewPayable` sudah dibaca dan terlihat wajar (memperbarui `paid_amount`, `balance`, `status`, dan pembayarannya otomatis masuk buku kas lewat model event `SupplierPayment::created`) — **tetapi belum ditutup test**. Itu titik lanjut yang paling dekat.
+
+### Cara kerja yang disepakati Owner
+
+- Perbaiki langsung bila penyebabnya **sudah pasti dari membaca kode**; hemat token, jangan buat probe sekali pakai.
+- Tetap **buktikan dengan menjalankan** bila dugaannya menyangkut perilaku runtime yang bisa meleset — dua bug pekan ini hanya ketahuan karena dijalankan, dan salah satunya (`UNIQUE constraint` saat GR dikunci ulang) tidak terlihat sama sekali dari membaca kode. Bedanya: tulis pembuktiannya langsung sebagai test permanen, bukan probe yang dibuang.
+- Deploy dikerjakan sendiri lewat SSH (`-tt`, lihat bagian akses server), lalu laporkan hasilnya.
+
