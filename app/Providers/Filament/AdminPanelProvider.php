@@ -10,7 +10,6 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -86,10 +85,11 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 \App\Filament\Admin\Pages\Dashboard::class,
             ])
+            // Dashboard minimalis: widget bawaan Filament (AccountWidget,
+            // FilamentInfoWidget) sengaja TIDAK didaftarkan. Isinya cuma
+            // sapaan dan tombol Sign out yang sudah ada di user menu topbar.
+            // Dijaga WidgetRegistrationTest.
             ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\\Filament\\Admin\\Widgets')
-            ->widgets([
-                Widgets\AccountWidget::class,
-            ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
