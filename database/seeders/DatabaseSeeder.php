@@ -129,6 +129,9 @@ class DatabaseSeeder extends Seeder
             ['name' => 'delete_cattle_weighings', 'module_name' => 'Cattle Weighing', 'description' => 'Delete cattle weighings'],
             ['name' => 'view_deleted_cattle_weighings', 'module_name' => 'Cattle Weighing', 'description' => 'View deleted cattle weighings'],
 
+            // Cash Book Module -- read-only, jadi cuma view.
+            ['name' => 'view_cash_book', 'module_name' => 'Cash Book', 'description' => 'View cash book'],
+
             // Financial Loss Module
             ['name' => 'view_financial_losses', 'module_name' => 'Financial Loss', 'description' => 'View financial losses'],
 
