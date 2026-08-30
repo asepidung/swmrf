@@ -54,16 +54,42 @@ class Payable extends Model
         }
     }
 
-    /** Dokumen Request yang menurunkan sebuah Goods Receipt, bila ada. */
-    protected static function requisitionBehind(Model $gr): ?Model
+    /**
+     * Seluruh dokumen di belakang sebuah Goods Receipt yang mungkin memegang
+     * uang muka: PO-nya, lalu Request yang menurunkan PO itu.
+     *
+     * Dulu hanya Request yang ditelusuri, karena DP memang dicatat saat
+     * approve finance. Setelah DP dipindahkan ke halaman PO, uang mukanya
+     * tersimpan dengan source_type = PurchaseProduct dan TIDAK PERNAH KETEMU
+     * -- utang lahir sebesar nilai penuh seolah belum ada yang dibayar, tanpa
+     * error apa pun, dan baru ketahuan saat supplier menagih.
+     *
+     * Keduanya ditelusuri supaya DP lama yang menempel di Request tetap
+     * terpotong, sekaligus DP baru yang menempel di PO. Kalau kelak DP bisa
+     * dibayar dari dokumen lain lagi, tambahkan di sini -- jangan menambah
+     * pemanggilan applyAdvancesFrom() terpisah, supaya tidak ada yang lupa.
+     *
+     * @return array<int, Model>
+     */
+    protected static function advanceSourcesBehind(Model $gr): array
     {
         $po = $gr->purchaseMaterial ?? $gr->purchaseProduct ?? null;
 
         if ($po === null) {
-            return null;
+            return [];
         }
 
-        return $po->materialRequisition ?? $po->productRequisition ?? null;
+        $requisition = $po->materialRequisition ?? $po->productRequisition ?? null;
+
+        return array_values(array_filter([$po, $requisition]));
+    }
+
+    /** Potongkan uang muka dari seluruh dokumen di belakang Goods Receipt. */
+    protected static function applyAdvancesBehind(Model $gr, self $payable): void
+    {
+        foreach (static::advanceSourcesBehind($gr) as $source) {
+            static::applyAdvancesFrom($source, $payable);
+        }
     }
 
     public static function generateForGoodsReceipt(GoodsReceiptMaterial $gr): self
@@ -88,7 +114,7 @@ class Payable extends Model
 
         // Uang muka dipotongkan sebelum status dihitung, supaya dokumen yang
         // sudah lunas di muka tidak sempat tercatat sebagai 'unpaid'.
-        static::applyAdvancesFrom(static::requisitionBehind($gr), $payable);
+        static::applyAdvancesBehind($gr, $payable);
 
         $payable->balance = $payable->amount - $payable->paid_amount;
 
@@ -128,7 +154,7 @@ class Payable extends Model
 
         // Uang muka dipotongkan sebelum status dihitung, supaya dokumen yang
         // sudah lunas di muka tidak sempat tercatat sebagai 'unpaid'.
-        static::applyAdvancesFrom(static::requisitionBehind($gr), $payable);
+        static::applyAdvancesBehind($gr, $payable);
 
         $payable->balance = $payable->amount - $payable->paid_amount;
 
