@@ -111,12 +111,32 @@ class SupplierAdvancePaymentTest extends TestCase
         return $gr->fresh('items');
     }
 
+    /**
+     * DP yang menempel di REQUEST -- lokasi lama, saat DP masih dicatat pada
+     * approve finance. Dipertahankan supaya data lama tetap terpotong.
+     */
     protected function recordAdvance(ProductRequisition $requisition, float $amount): SupplierPayment
     {
         return SupplierPayment::create([
             'supplier_id' => $this->supplier->id,
             'source_type' => ProductRequisition::class,
             'source_id' => $requisition->id,
+            'payment_date' => now()->toDateString(),
+            'method' => SupplierPayment::METHOD_TRANSFER,
+            'amount' => $amount,
+        ]);
+    }
+
+    /**
+     * DP yang menempel di PO -- lokasi SEKARANG, sejak form uang muka
+     * dipindahkan dari Finance Approval ke halaman View PO.
+     */
+    protected function recordAdvanceOnPo(PurchaseProduct $po, float $amount): SupplierPayment
+    {
+        return SupplierPayment::create([
+            'supplier_id' => $this->supplier->id,
+            'source_type' => PurchaseProduct::class,
+            'source_id' => $po->id,
             'payment_date' => now()->toDateString(),
             'method' => SupplierPayment::METHOD_TRANSFER,
             'amount' => $amount,
@@ -223,5 +243,77 @@ class SupplierAdvancePaymentTest extends TestCase
         $this->assertEquals(2_000_000, $payable->paid_amount);
         $this->assertEquals(0, $payable->balance);
         $this->assertEquals(3_000_000, $advance->fresh()->unallocated_amount, 'Sisa uang muka wajib tetap menggantung.');
+    }
+
+    /**
+     * DP yang dibayar di halaman PO wajib terpotong dari utang.
+     *
+     * Ini yang sempat PUTUS. Uang muka dipindahkan ke halaman PO sehingga
+     * tersimpan dengan source_type = PurchaseProduct, sementara Payable masih
+     * hanya menelusuri Request. Uang mukanya tidak pernah ketemu, dan utang
+     * lahir sebesar nilai penuh seolah belum ada yang dibayar -- tanpa error
+     * apa pun, baru ketahuan saat supplier menagih.
+     *
+     * @test
+     */
+    public function it_deducts_an_advance_paid_on_the_purchase_order()
+    {
+        $gr = $this->buildChain(10_000_000);
+
+        $this->recordAdvanceOnPo($gr->purchaseProduct, 4_000_000);
+
+        $payable = Payable::generateForGoodsReceiptProduct($gr);
+
+        $this->assertEquals(4_000_000, $payable->paid_amount, 'DP di halaman PO tidak terpotong dari utang.');
+        $this->assertEquals(6_000_000, $payable->balance);
+        $this->assertSame('partial', $payable->status);
+    }
+
+    /**
+     * Dua sumber sekaligus: DP lama di Request dan DP baru di PO.
+     *
+     * Keduanya harus terpotong. Kalau hanya salah satu yang terbaca, utangnya
+     * salah tanpa ada yang menyadarinya.
+     *
+     * @test
+     */
+    public function it_deducts_advances_from_both_the_request_and_the_purchase_order()
+    {
+        $gr = $this->buildChain(10_000_000);
+
+        $this->recordAdvance($gr->purchaseProduct->productRequisition, 3_000_000);
+        $this->recordAdvanceOnPo($gr->purchaseProduct, 2_000_000);
+
+        $payable = Payable::generateForGoodsReceiptProduct($gr);
+
+        $this->assertEquals(5_000_000, $payable->paid_amount);
+        $this->assertEquals(5_000_000, $payable->balance);
+        $this->assertSame('partial', $payable->status);
+    }
+
+    /**
+     * Gabungan dua sumber pun tidak boleh melebihi nilai utangnya.
+     *
+     * @test
+     */
+    public function it_never_lets_combined_advances_exceed_the_payable()
+    {
+        $gr = $this->buildChain(5_000_000);
+
+        $this->recordAdvance($gr->purchaseProduct->productRequisition, 4_000_000);
+        $this->recordAdvanceOnPo($gr->purchaseProduct, 4_000_000);
+
+        $payable = Payable::generateForGoodsReceiptProduct($gr);
+
+        $this->assertEquals(5_000_000, $payable->paid_amount, 'Uang muka terpakai melebihi nilai utang.');
+        $this->assertEquals(0, $payable->balance);
+        $this->assertSame('paid', $payable->status);
+
+        // Sisa 3 juta harus tetap menggantung, bukan hangus.
+        $this->assertEquals(
+            3_000_000,
+            SupplierPayment::sum('amount') - SupplierPayment::sum('allocated_amount'),
+            'Sisa uang muka hangus, seharusnya menggantung menunggu utang berikutnya.',
+        );
     }
 }

@@ -497,6 +497,21 @@ Sempat masuk `.gitignore`. Itu keliru: pipeline deploy menjalankan `composer ins
 
 #### Uang muka pindah ke halaman PO, dan apa yang ikut terbawa
 
+**Pemindahan itu MEMUTUS rantai DP ke utang, dan baru ketahuan 30 Agustus 2026.**
+
+`Payable::requisitionBehind()` menelusuri GR → PO → **Request**, lalu mencari uang muka yang menempel pada Request saja. Setelah DP pindah ke halaman PO, uang mukanya tersimpan dengan `source_type = PurchaseProduct` — **tidak pernah ketemu, tidak pernah dipotong**. Utang lahir sebesar nilai penuh seolah belum ada yang dibayar.
+
+Terbukti: DP Rp 4.000.000 di PO, barang diterima Rp 10.000.000 → utang tetap Rp 10.000.000, `paid_amount` nol, status `unpaid`.
+
+Ini persis peringatan yang sudah tertulis di bagian "Uang muka ke supplier" di bawah: *"sistem akan membuat utang sebesar nilai penuh tanpa ada yang tahu DP sudah dibayar… baru ketahuan saat supplier menagih."* Peringatannya benar; yang tidak terduga adalah pemicunya bukan desain awal, melainkan **pemindahan lokasi form** yang tampak tidak berhubungan.
+
+**`SupplierAdvancePaymentTest` tetap hijau sepanjang itu**, karena membuat pembayaran dengan `source_type => ProductRequisition::class` — source yang sudah tidak dipakai kode mana pun. Contoh lain dari "test hijau bukan jaminan fitur jalan": test yang tidak ikut berpindah saat fiturnya berpindah.
+
+**Perbaikannya:** `advanceSourcesBehind()` mengembalikan **seluruh** dokumen di belakang GR (PO dan Request), dan `applyAdvancesBehind()` memotongkan dari semuanya. DP lama yang menempel di Request tetap terpotong, DP baru di PO ikut terpotong, dan gabungan keduanya tidak pernah melebihi nilai utang — sisanya menggantung menunggu utang berikutnya, bukan hangus.
+
+**Kalau kelak DP bisa dibayar dari dokumen lain lagi, tambahkan sumbernya di `advanceSourcesBehind()`** — jangan menambah pemanggilan `applyAdvancesFrom()` terpisah, supaya tidak ada jalur yang lupa disambungkan.
+
+
 Dicatat 28 Agustus 2026 saat menyelaraskan test dengan perubahan ini.
 
 **Lokasi barunya:** aksi `pay_down_payment` di **View PO Product / View PO Material**, bukan lagi form di dalam modal Approve & Generate PO pada halaman Finance Approval. Ini lurus dengan akuntansi: DP dibayar saat order, dan PO adalah dokumen order itu sendiri. `PayableResource` juga menerima pembayaran dengan bentuk aksi yang sama untuk pelunasan hutang.
@@ -666,7 +681,7 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 252 lolos, 0 gagal** (1318 assertion, diverifikasi 28 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Test suite: 255 lolos, 0 gagal** (1328 assertion, diverifikasi 30 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Modul Keuangan (ACCOUNTING) diparkir sementara
