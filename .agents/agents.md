@@ -511,6 +511,19 @@ Ini persis peringatan yang sudah tertulis di bagian "Uang muka ke supplier" di b
 
 **Kalau kelak DP bisa dibayar dari dokumen lain lagi, tambahkan sumbernya di `advanceSourcesBehind()`** — jangan menambah pemanggilan `applyAdvancesFrom()` terpisah, supaya tidak ada jalur yang lupa disambungkan.
 
+#### Membuka kunci GR: uang muka WAJIB dilepas, dan utangnya dipulihkan bukan dibuat ulang
+
+Dua bug pada alur buka-kunci, ditemukan 30 Agustus 2026 saat menyisir sisa jahitan Payable. Keduanya menyentuh uang.
+
+**Uang muka hilang permanen.** `SupplierPayment::allocateTo()` hanya MENAMBAH `allocated_amount`; tidak ada cara melepasnya. Sementara kode unlock menghapus utangnya begitu saja. Akibatnya DP tercatat "sudah terpakai" untuk utang yang sudah tidak ada — dan karena `unallocatedFor()` menyaring `allocated_amount < amount`, DP itu tidak akan pernah muncul lagi. Utang berikutnya lahir sebesar nilai penuh seolah DP-nya tidak pernah dibayar.
+
+Sekarang `Payable::releaseAdvances()` mengembalikannya ke kolam, dan **wajib dipanggil sebelum utangnya dihapus**. Sudah dipasang di kedua Resource GR.
+
+**GR yang sudah dibuka tidak bisa dikunci ulang.** `Payable` memakai soft delete, sehingga `$gr->payable` tidak menemukannya lagi dan `generateForGoodsReceipt*()` membuat baris BARU dengan `document_number` yang sama (nomor GR) — langsung kena unique constraint. Alur buka-kunci jadi jalan buntu. Sekarang utang yang ter-soft-delete **dipulihkan** lewat `withTrashed()`, bukan dibuatkan baris baru.
+
+**Batas yang disengaja pada pelepasan:** bila satu utang menyerap beberapa uang muka sekaligus, pembagian per-dokumen saat dilepas bisa berbeda dari saat dialokasikan. **Total yang kembali ke kolam selalu tepat**, dan hanya itu yang menentukan perhitungan utang berikutnya — jadi tidak ada dampak pada angka utang mana pun. Yang bisa berbeda hanya laporan alokasi per pembayaran. Kalau kelak laporan itu dibutuhkan, barulah perlu tabel alokasi tersendiri (mirip `payment_allocations` di sisi piutang); jangan menambalnya dengan tebakan.
+
+
 
 Dicatat 28 Agustus 2026 saat menyelaraskan test dengan perubahan ini.
 
@@ -681,7 +694,7 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 255 lolos, 0 gagal** (1328 assertion, diverifikasi 30 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Test suite: 258 lolos, 0 gagal** (1338 assertion, diverifikasi 30 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Modul Keuangan (ACCOUNTING) diparkir sementara

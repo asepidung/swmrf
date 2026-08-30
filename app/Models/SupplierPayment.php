@@ -173,6 +173,50 @@ class SupplierPayment extends Model
     }
 
     /**
+     * Lepaskan kembali sebagian alokasi, hingga sebanyak $maximum.
+     *
+     * Dipakai saat sebuah utang dibatalkan (GR dibuka kuncinya). Tanpa ini
+     * uang muka tercatat "sudah terpakai" untuk utang yang sudah tidak ada,
+     * sehingga hilang permanen: utang berikutnya lahir sebesar nilai penuh
+     * seolah DP-nya tidak pernah dibayar.
+     *
+     * @return float nilai yang benar-benar dilepas
+     */
+    public function releaseAmount(float $maximum): float
+    {
+        $released = min((float) $this->allocated_amount, max($maximum, 0));
+
+        if ($released <= 0) {
+            return 0.0;
+        }
+
+        $this->allocated_amount = (float) $this->allocated_amount - $released;
+        $this->save();
+
+        return $released;
+    }
+
+    /**
+     * Uang muka milik satu dokumen asal yang SUDAH terpakai sebagian.
+     *
+     * Diurutkan terbalik dari unallocatedFor(): yang paling belakang
+     * dialokasikan, itu yang paling dulu dilepas.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, self>
+     */
+    public static function allocatedFor(Model $source)
+    {
+        return static::query()
+            ->where('source_type', get_class($source))
+            ->where('source_id', $source->getKey())
+            ->where('allocated_amount', '>', 0)
+            ->orderByDesc('payment_date')
+            ->orderByDesc('id')
+            ->lockForUpdate()
+            ->get();
+    }
+
+    /**
      * Uang muka milik satu dokumen asal yang belum habis dipotongkan.
      *
      * @return \Illuminate\Database\Eloquent\Collection<int, self>

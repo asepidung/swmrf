@@ -316,4 +316,82 @@ class SupplierAdvancePaymentTest extends TestCase
             'Sisa uang muka hangus, seharusnya menggantung menunggu utang berikutnya.',
         );
     }
+
+    /**
+     * Membuka kunci GR harus MENGEMBALIKAN uang mukanya ke kolam.
+     *
+     * Tanpa itu DP tercatat "sudah terpakai" untuk utang yang sudah tidak
+     * ada, lalu hilang permanen -- utang berikutnya lahir sebesar nilai penuh
+     * seolah DP-nya tidak pernah dibayar, tanpa error apa pun.
+     *
+     * @test
+     */
+    public function unlocking_a_goods_receipt_returns_the_advance_to_the_pool()
+    {
+        $gr = $this->buildChain(10_000_000);
+        $advance = $this->recordAdvanceOnPo($gr->purchaseProduct, 4_000_000);
+
+        $payable = Payable::generateForGoodsReceiptProduct($gr);
+        $this->assertEquals(4_000_000, $advance->fresh()->allocated_amount);
+
+        $payable->releaseAdvances();
+        $payable->delete();
+
+        $this->assertEquals(0, $advance->fresh()->allocated_amount, 'Uang muka tidak dikembalikan ke kolam.');
+        $this->assertEquals(4_000_000, $advance->fresh()->unallocated_amount);
+    }
+
+    /**
+     * GR yang sudah dibuka harus bisa dikunci ulang, dan DP-nya terpotong lagi.
+     *
+     * Payable memakai soft delete, sehingga dulu penguncian ulang membuat
+     * baris BARU dengan document_number yang sama dan langsung kena unique
+     * constraint -- alur buka-kunci jadi jalan buntu.
+     *
+     * @test
+     */
+    public function a_goods_receipt_can_be_locked_again_after_being_unlocked()
+    {
+        $gr = $this->buildChain(10_000_000);
+        $advance = $this->recordAdvanceOnPo($gr->purchaseProduct, 4_000_000);
+
+        $first = Payable::generateForGoodsReceiptProduct($gr);
+        $first->releaseAdvances();
+        $first->delete();
+
+        $second = Payable::generateForGoodsReceiptProduct($gr->fresh());
+
+        $this->assertEquals(10_000_000, $second->amount);
+        $this->assertEquals(4_000_000, $second->paid_amount, 'DP tidak terpotong lagi setelah GR dikunci ulang.');
+        $this->assertEquals(6_000_000, $second->balance);
+        $this->assertSame('partial', $second->status);
+
+        // Tidak boleh ada utang kembar untuk satu GR.
+        $this->assertSame(1, Payable::withTrashed()
+            ->where('payableable_type', get_class($gr))
+            ->where('payableable_id', $gr->id)
+            ->count());
+    }
+
+    /**
+     * Melepas lalu memotong ulang tidak boleh menggandakan uang muka.
+     *
+     * @test
+     */
+    public function releasing_and_reapplying_never_multiplies_the_advance()
+    {
+        $gr = $this->buildChain(10_000_000);
+        $advance = $this->recordAdvanceOnPo($gr->purchaseProduct, 4_000_000);
+
+        foreach (range(1, 3) as $ignored) {
+            $payable = Payable::generateForGoodsReceiptProduct($gr->fresh());
+            $payable->releaseAdvances();
+            $payable->delete();
+        }
+
+        $final = Payable::generateForGoodsReceiptProduct($gr->fresh());
+
+        $this->assertEquals(4_000_000, $final->paid_amount);
+        $this->assertEquals(4_000_000, $advance->fresh()->allocated_amount, 'Uang muka terpakai lebih dari nilainya.');
+    }
 }

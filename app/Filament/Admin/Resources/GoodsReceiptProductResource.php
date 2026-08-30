@@ -198,7 +198,14 @@ class GoodsReceiptProductResource extends Resource
                                 }
                                 
                                 $record->update(['is_locked' => false]);
-                                if ($payable) $payable->delete();
+
+                                if ($payable) {
+                                    // Uang muka WAJIB dilepas dulu. Tanpa ini
+                                    // DP tercatat terpakai untuk utang yang
+                                    // sudah tidak ada, lalu hilang permanen.
+                                    $payable->releaseAdvances();
+                                    $payable->delete();
+                                }
                                 
                                 \Filament\Notifications\Notification::make()->title(__('Goods Receipt berhasil dibuka kuncinya!'))->success()->send();
                             } else {

@@ -92,6 +92,53 @@ class Payable extends Model
         }
     }
 
+    /**
+     * Kembalikan uang muka yang sudah dipotongkan ke utang ini.
+     *
+     * WAJIB dipanggil sebelum sebuah utang dibatalkan (GR dibuka kuncinya).
+     * Tanpa ini uang mukanya tercatat "sudah terpakai" untuk utang yang sudah
+     * tidak ada, lalu HILANG PERMANEN -- utang berikutnya lahir sebesar nilai
+     * penuh seolah DP-nya tidak pernah dibayar, tanpa error apa pun.
+     *
+     * Pelepasannya menyusuri dokumen di belakang GR dan mengurangi alokasi
+     * dari yang paling belakang dibayar. Bila satu utang menyerap beberapa
+     * uang muka sekaligus, pembagian per-dokumen bisa berbeda dari saat
+     * dialokasikan -- tetapi TOTAL yang kembali ke kolam selalu tepat, dan
+     * itulah satu-satunya yang menentukan perhitungan utang berikutnya.
+     * Kalau kelak perlu laporan alokasi per pembayaran, barulah dibutuhkan
+     * tabel alokasi tersendiri.
+     */
+    public function releaseAdvances(): void
+    {
+        $outstanding = (float) $this->paid_amount;
+
+        if ($outstanding <= 0) {
+            return;
+        }
+
+        $gr = $this->payableable;
+
+        if ($gr === null) {
+            return;
+        }
+
+        foreach (static::advanceSourcesBehind($gr) as $source) {
+            foreach (SupplierPayment::allocatedFor($source) as $advance) {
+                if ($outstanding <= 0) {
+                    break 2;
+                }
+
+                $outstanding -= $advance->releaseAmount($outstanding);
+            }
+        }
+
+        // Sisa yang tidak berhasil dilepas tetap tercatat sebagai terbayar.
+        $this->paid_amount = max($outstanding, 0);
+        $this->balance = (float) $this->amount - (float) $this->paid_amount;
+        $this->status = $this->paid_amount <= 0 ? 'unpaid' : 'partial';
+        $this->save();
+    }
+
     public static function generateForGoodsReceipt(GoodsReceiptMaterial $gr): self
     {
         $gr->loadMissing(['items', 'supplier']);
@@ -103,7 +150,19 @@ class Payable extends Model
         $topDays = $gr->supplier->top_days ?? 0;
         $dueDate = Carbon::parse($gr->receive_date)->addDays($topDays);
         
-        $payable = $gr->payable ?: new self();
+        // withTrashed(): utang yang pernah dibatalkan hanya di-soft-delete.
+        // Tanpa ini, mengunci ulang GR membuat baris BARU dengan
+        // document_number yang sama dan langsung kena unique constraint --
+        // GR yang sudah dibuka jadi tidak bisa dikunci lagi sama sekali.
+        $payable = static::withTrashed()
+            ->where('payableable_type', get_class($gr))
+            ->where('payableable_id', $gr->id)
+            ->first() ?: new self();
+
+        if ($payable->trashed()) {
+            $payable->restore();
+        }
+
         $payable->payableable_type = get_class($gr);
         $payable->payableable_id = $gr->id;
         $payable->supplier_id = $gr->supplier_id;
@@ -143,7 +202,19 @@ class Payable extends Model
         $topDays = $gr->supplier->top_days ?? 0;
         $dueDate = Carbon::parse($gr->receive_date)->addDays($topDays);
         
-        $payable = $gr->payable ?: new self();
+        // withTrashed(): utang yang pernah dibatalkan hanya di-soft-delete.
+        // Tanpa ini, mengunci ulang GR membuat baris BARU dengan
+        // document_number yang sama dan langsung kena unique constraint --
+        // GR yang sudah dibuka jadi tidak bisa dikunci lagi sama sekali.
+        $payable = static::withTrashed()
+            ->where('payableable_type', get_class($gr))
+            ->where('payableable_id', $gr->id)
+            ->first() ?: new self();
+
+        if ($payable->trashed()) {
+            $payable->restore();
+        }
+
         $payable->payableable_type = get_class($gr);
         $payable->payableable_id = $gr->id;
         $payable->supplier_id = $gr->supplier_id;
