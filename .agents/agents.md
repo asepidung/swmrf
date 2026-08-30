@@ -27,7 +27,7 @@ Sedang dimigrasikan dari sistem PHP prosedural ke Laravel 12 + Filament v3 denga
 | Lingkungan | Keterangan |
 |---|---|
 | Lokal | MySQL `swmv2`, dipakai untuk pengembangan |
-| Uji coba | `coba.wijayameat.co.id` (shared hosting Hostinger), **auto-deploy dari `main`**, isinya **data dummy** |
+| Uji coba | `coba.wijayameat.co.id` (shared hosting Hostinger), **auto-deploy Hostinger dari `main` -- kode saja, tanpa migrate dan tanpa clear cache**, isinya **data dummy** |
 | Produksi | **VPS terpisah**, di luar jangkauan pekerjaan sehari-hari |
 
 **Sejak 24 Agustus 2026, deploy otomatis DIMATIKAN.** Koneksi SSH dari GitHub Actions ke Hostinger berulang kali gagal dengan `dial tcp: i/o timeout` (setidaknya dua kali), sehingga merge ke `main` kadang tidak benar-benar sampai ke server tanpa ada yang menyadarinya. Auto-deploy bawaan Hostinger juga dimatikan Owner.
@@ -760,6 +760,89 @@ Karena `Connection reset by peer` muncul berulang di banyak percobaan beruntun, 
 **Catatan praktis dengan `-tt`:** keluaran membawa kode warna ANSI dan akhiran baris CRLF. Untuk keluaran yang perlu dibaca mesin, tambahkan `TERM=dumb` di sisi remote dan saring dengan `sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g'`.
 
 Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destruktif yang tidak bisa dibalik, meski itu data dummy — menyiapkan ulang data uji itu merepotkan.
+
+#### Perintah git di server WAJIB `--no-pager`
+
+Ditemukan 30 Agustus 2026, dan gejalanya menghabiskan tujuh belas menit Owner
+tanpa satu pun tanda apa yang terjadi.
+
+`git log` di server membuka pager. Dengan `-tt` ada PTY, jadi pager merasa
+punya terminal dan menunggu tombol RETURN yang tidak akan pernah datang.
+Sesinya menggantung selamanya: tidak ada error, tidak ada keluaran, tidak ada
+timeout. Yang terlihat di sisi Owner cuma indikator "running tools" yang terus
+berjalan -- dan karena kebetulan sedang membahas test yang lambat, wajar saja
+ia disangka test yang belum selesai.
+
+Aturannya: **setiap perintah git di sisi remote memakai `git --no-pager`**.
+Berlaku juga untuk perintah lain yang bisa memanggil pager.
+
+**Pelajaran yang lebih umum:** perintah yang menggantung lebih buruk daripada
+perintah yang gagal. Yang gagal memberi tahu; yang menggantung menyamar
+sebagai pekerjaan yang sedang berjalan. Bila sebuah perintah remote tidak
+mengembalikan apa pun dalam waktu yang wajar, curigai pager atau prompt lebih
+dulu, jangan menunggu.
+
+#### Auto-deploy Hostinger ternyata MASIH aktif
+
+Dicatat 30 Agustus 2026, mengoreksi keyakinan yang selama ini dipakai.
+
+Sebelum sempat `git pull`, server sudah berada di commit yang baru saja
+di-push. `git reflog` di server cuma berisi dua baris -- `clone: from
+https://github.com/asepidung/swmrf.git` lalu `checkout` ke commit itu -- dan
+reponya `grafted` (shallow). Jadi Hostinger **meng-clone ulang seluruh repo**
+tiap kali `main` berubah, bukan `git pull`.
+
+Yang dimatikan Owner adalah auto-deploy dari GitHub Actions; yang bawaan
+Hostinger ternyata masih hidup.
+
+**Konsekuensi praktis, dan ini bagian yang penting:** clone ulang itu **tidak
+menjalankan `migrate` dan tidak membersihkan cache**. Jadi kode memang sampai
+sendiri, tetapi migrasi dan cache tetap tanggung jawab implementor. Merge yang
+tidak diikuti langkah itu menghasilkan server yang kodenya baru tetapi
+perilakunya lama -- persis jenis kegagalan senyap yang berulang di proyek ini.
+
+**Jangan `git pull` manual.** Percobaan pertama gagal dengan `fatal: not a git
+repository` karena menabrak clone ulang yang sedang berjalan: `.git` sedang
+diganti saat itu juga. Urutan yang benar: push ke `main`, beri jeda, lalu masuk
+untuk `migrate --force` dan cache warming saja.
+
+### Test lambat itu I/O, bukan test-nya
+
+Diukur 30 Agustus 2026 setelah Owner menegur bahwa menghapus satu widget pun
+memakan waktu terlalu lama. Teguran itu tepat, dan angkanya membenarkannya.
+
+| Perintah | Waktu |
+|---|---|
+| Suite penuh -- dilaporkan PHPUnit | 43 detik |
+| Suite penuh -- wall clock sebenarnya | **7 menit 26 detik** |
+| `--filter` satu test, run dingin | 2 menit 37 detik |
+| `--filter` satu test, run kedua | 1,4 detik |
+| `php artisan test tests/Feature/NamaTest.php` | 1,7 detik |
+| Suite penuh setelah Defender dikecualikan | **1 menit 41 detik** |
+
+Dua hal yang terbaca dari tabel itu:
+
+**Angka PHPUnit menyembunyikan hampir seluruh waktu tunggu.** Ia melaporkan 43
+detik untuk sesuatu yang sebenarnya memakan 7 menit 26 detik. Karena itu
+laporan durasi PHPUnit **tidak boleh dipakai** untuk menilai apakah test terasa
+lambat -- pakai wall clock.
+
+**Baris ketiga dan keempat adalah buktinya:** perintah yang sama persis, 2m37s
+saat dingin dan 1,4 detik saat diulang. Kodenya identik; yang berubah cuma
+cache filesystem. Itu tanda pemindaian antivirus atas `vendor/`, bukan test
+yang berat.
+
+Perbaikannya di luar repo: `Add-MpPreference -ExclusionPath` untuk folder
+proyek dan folder PHP, plus `-ExclusionProcess` untuk `php.exe`. Dijalankan
+Owner sendiri karena butuh hak admin. Hasilnya 7m26s menjadi 1m41s, 270 test
+tetap lolos. **Kalau kelak test terasa lambat lagi di mesin lain, periksa ini
+lebih dulu sebelum menyalahkan test-nya.**
+
+`--parallel` (paratest) sengaja **tidak** diambil: sisa 100 detik itu murni
+eksekusi test, dan sehari-hari kita menjalankan satu berkas yang cuma 1,7
+detik. Menambah dependensi dan risiko test rewel saat paralel tidak sepadan
+untuk sekarang.
+
 
 ---
 
