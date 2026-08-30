@@ -63,6 +63,11 @@ class AdminPanelProvider extends PanelProvider
                 \Filament\Navigation\NavigationGroup::make('DISTRIBUTION')->label(fn() => __('DISTRIBUTION')),
                 \Filament\Navigation\NavigationGroup::make('SALES')->label(fn() => __('SALES')),
                 \Filament\Navigation\NavigationGroup::make('FINANCE')->label(fn() => __('FINANCE')),
+                // ACCOUNTING sempat TIDAK terdaftar di sini, padahal empat
+                // Resource memakainya. Grup tak terdaftar tetap tampil, tapi
+                // tanpa posisi urutan -- dan tidak ada yang menyadarinya
+                // karena Filament tidak mengeluh. Ada test yang menjaganya.
+                \Filament\Navigation\NavigationGroup::make('ACCOUNTING')->label(fn() => __('ACCOUNTING')),
                 \Filament\Navigation\NavigationGroup::make('MASTER DATA')->label(fn() => __('MASTER DATA')),
                 \Filament\Navigation\NavigationGroup::make('SYSTEM')->label(fn() => __('SYSTEM')),
             ])
