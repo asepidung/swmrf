@@ -91,6 +91,11 @@ class Permission extends Model
             ],
             'FINANCE' => [
                 'Invoices',
+            ],
+            // Empat modul di bawah memakai grup ACCOUNTING di Resource-nya,
+            // bukan FINANCE. Peta ini HARUS mengikuti grup yang benar-benar
+            // dipakai Resource, bukan tebakan -- ada test yang menjaganya.
+            'ACCOUNTING' => [
                 'Payables',
                 'Receivables',
                 'Bank Accounts',

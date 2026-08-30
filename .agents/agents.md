@@ -588,6 +588,26 @@ Ditemukan sambil memeriksa Log Viewer. `permissions.name` unique dan seeder mema
 
 `no_permission_is_seeded_more_than_once` kini menjaganya. Gejalanya cuma satu modul hilang diam-diam dari form hak akses — jenis kesalahan yang tidak akan pernah ketahuan tanpa ada yang memeriksanya.
 
+### Nama grup navigasi hidup di TIGA tempat — dijaga test, bukan diingat
+
+Ditemukan 30 Agustus 2026 saat Owner melaporkan tab ACCOUNTING tidak muncul di form hak akses, lalu bertanya: *"ini bikin pusing, kalau menu berubah lagi yang lain harus diubah lagi — best practice-nya gimana?"*
+
+Pertanyaan yang tepat, karena nama grup memang hidup di tiga tempat yang saling bebas:
+
+1. `navigationGroups()` di `AdminPanelProvider` — urutan resmi di sidebar
+2. `getNavigationGroup()` tiap Resource — penempatan sebenarnya
+3. `Permission::moduleGroups()` — tab di form hak akses
+
+**Tidak ada apa pun di framework yang memaksa ketiganya cocok.** Filament menerima begitu saja Resource yang menunjuk grup tak terdaftar: menunya tetap tampil, hanya kehilangan posisi urutannya. Tidak ada error, tidak ada peringatan.
+
+Itulah yang terjadi: empat Resource (`BankAccount`, `Payable`, `Receivable`, `FinancialLoss`) memakai `ACCOUNTING` sementara panel hanya mendeklarasikan `FINANCE`, dan peta permission menaruh keempatnya di `FINANCE`. Sidebar menampilkan "Akuntansi", form hak akses menampilkan "Keuangan".
+
+**Jawaban atas pertanyaannya: jangan mengandalkan pemeriksaan ulang di akhir — buat penyimpangannya GAGAL SEKETIKA.** `NavigationGroupConsistencyTest` memastikan setiap grup yang dipakai Resource terdaftar di panel, setiap grup di peta permission benar-benar ada, dan modul keuangan berada di grup yang sama dengan Resource-nya. Mengganti nama grup kini langsung menggagalkan test dengan pesan yang menyebut apa yang harus ikut diubah.
+
+Pemeriksaan menyeluruh di akhir hanya menemukan yang terpikir untuk dicari; penjaga otomatis menemukannya pada commit yang merusaknya. Dua bug DP pekan ini — rantai putus saat form pindah, dan uang muka hilang saat GR dibuka — dua-duanya lolos berhari-hari justru karena mengandalkan pemeriksaan manual.
+
+**Sisi Inggris label grup juga dibereskan:** `PRODUCTION`, `FINANCE`, `ACCOUNTING` di `en.json` nilainya masih kunci mentah (huruf besar semua) sehingga berteriak di antara tetangganya yang Title Case.
+
 ### Form hak akses User dikelompokkan ke tab mengikuti sidebar
 
 Keputusan Project Owner, 28 Agustus 2026.
@@ -694,7 +714,7 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 258 lolos, 0 gagal** (1338 assertion, diverifikasi 30 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Test suite: 262 lolos, 0 gagal** (1343 assertion, diverifikasi 30 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Modul Keuangan (ACCOUNTING) diparkir sementara
