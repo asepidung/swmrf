@@ -266,7 +266,7 @@
             <thead>
                 <tr>
                     <th width="5%">No</th>
-                    <th width="30%">Beef Name</th>
+                    <th width="30%">Product Name</th>
                     <th width="10%">Qty</th>
                     <th width="15%">Unit Price</th>
                     <th width="20%">Total</th>
@@ -277,7 +277,7 @@
                 @foreach($record->items as $index => $item)
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
-                    <td>{{ $item->Beef->name ?? '-' }}</td>
+                    <td>{{ $item->product->name ?? '-' }}</td>
                     <td class="text-center">{{ number_format($item->qty, 0, ',', '.') }}</td>
                     <td class="text-right">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
                     <td class="text-right">Rp {{ number_format($item->subtotal ?? ($item->qty * $item->price), 0, ',', '.') }}</td>
@@ -335,13 +335,13 @@
             <div class="sig-box">
                 <p>Purchasing,</p>
                 <div class="sig-space"></div>
-                <div class="sig-name">{{ $record->productRequisition->reviewer->name ?? 'PURCHASING' }}</div>
+                <div class="sig-name">{{ $record->productRequisition->reviewer->name ?? '-' }}</div>
                 <div class="sig-role">Purchasing Dept.</div>
             </div>
             <div class="sig-box">
                 <p>Approved By,</p>
                 <div class="sig-space"></div>
-                <div class="sig-name">{{ $record->approvedBy->name ?? 'FINANCE' }}</div>
+                <div class="sig-name">{{ $record->approver->name ?? '-' }}</div>
                 <div class="sig-role">Finance / Direktur</div>
             </div>
         </div>

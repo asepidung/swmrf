@@ -115,7 +115,7 @@ class ProductResource extends Resource
                             ),
 
                         Forms\Components\TextInput::make('name')
-                            ->label(fn() => __('Beef Name'))
+                            ->label(fn() => __('Product Name'))
                             ->autofocus()
                             ->required()
                             ->unique(ignorable: fn ($record) => $record)
@@ -150,7 +150,7 @@ class ProductResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('name')
-                    ->label(fn() => __('Beef Name'))
+                    ->label(fn() => __('Product Name'))
                     ->searchable()
                     ->sortable()
                     ->description(function (Product $record) {
@@ -186,7 +186,7 @@ class ProductResource extends Resource
                         return response()->streamDownload(function () use ($records) {
                             $writer = new \OpenSpout\Writer\XLSX\Writer();
                             $writer->openToFile('php://output');
-                            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Beef Code', 'Beef Name', 'Structure', 'Category', 'Active']));
+                            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Beef Code', 'Product Name', 'Structure', 'Category', 'Active']));
                             foreach ($records as $record) {
                                 $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
                                     $record->code ?? '',

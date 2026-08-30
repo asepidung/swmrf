@@ -41,27 +41,31 @@ class PurchaseMaterialResource extends Resource
                             ->disabled()
                             ->columnSpan(['default' => 12, 'md' => 4]),
 
-                        Forms\Components\TextInput::make('materialRequisition.document_number')
+                        Forms\Components\TextInput::make('request_number')
                             ->label('Request Number')
                             ->disabled()
+                            ->dehydrated(false)
+                            ->formatStateUsing(fn ($record) => data_get($record, 'materialRequisition.document_number'))
                             ->columnSpan(['default' => 12, 'md' => 4]),
 
-                        Forms\Components\TextInput::make('materialRequisition.user.name')
+                        Forms\Components\TextInput::make('requester_name')
                             ->label('Requester')
                             ->disabled()
+                            ->dehydrated(false)
+                            ->formatStateUsing(fn ($record) => data_get($record, 'materialRequisition.user.name'))
                             ->columnSpan(['default' => 12, 'md' => 4]),
 
                         Forms\Components\Select::make('supplier_id')
                             ->label('Supplier')
                             ->relationship('supplier', 'name')
                             ->disabled()
-                            ->columnSpan(['default' => 12, 'md' => 6]),
+                            ->columnSpan(['default' => 12, 'md' => 4]),
 
                         Forms\Components\Select::make('approved_by')
                             ->label('Approved By')
                             ->relationship('approvedBy', 'name')
                             ->disabled()
-                            ->columnSpan(['default' => 12, 'md' => 6]),
+                            ->columnSpan(['default' => 12, 'md' => 4]),
 
                         Forms\Components\Textarea::make('note')
                             ->label('Note')

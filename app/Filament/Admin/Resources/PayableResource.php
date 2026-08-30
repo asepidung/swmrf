@@ -56,9 +56,11 @@ class PayableResource extends Resource
                                 'App\Models\GoodsReceiptMaterial' => __('Material Receipt'),
                                 default => $state,
                             }),
-                        Forms\Components\TextInput::make('supplier.name')
+                        Forms\Components\TextInput::make('supplier_name')
                             ->label(__('Supplier'))
-                            ->disabled(),
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->formatStateUsing(fn ($record) => data_get($record, 'supplier.name')),
                         Forms\Components\DatePicker::make('due_date')
                             ->label(__('Due Date'))
                             ->disabled(),
