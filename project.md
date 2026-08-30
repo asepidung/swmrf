@@ -110,7 +110,7 @@ Setiap Resource atau Cluster baru wajib:
 - **Halaman Detail (Flat List):** modul Induk-Anak wajib punya Custom Page `detail-list` berisi rekap seluruh item anak dalam tabel datar, lengkap dengan silent date filter dan Export.
 - **Halaman bertipe paksaan** yang menahan pengguna sampai suatu tindakan selesai wajib memakai layout `simple` agar sidebar tidak tampil, dengan topbar tetap ada supaya pengguna masih bisa Sign out.
 - **Sub-menu cluster wajib di ATAS, bukan di samping.** Setel `protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;` pada **setiap Resource di dalam cluster** — Filament membaca setelan ini dari Resource, bukan dari kelas Cluster. Menyetelnya di kelas Cluster saja tidak mengubah tampilan sama sekali.
-- **Dashboard minimalis.** Dilarang menampilkan widget bawaan framework seperti `FilamentInfoWidget`.
+- **Dashboard minimalis.** Dilarang mendaftarkan widget bawaan framework -- **seluruh namespace `Filament\Widgets\`**, bukan cuma `FilamentInfoWidget`. `AccountWidget` sempat lolos berbulan-bulan karena aturan ini hanya menyebut satu contoh; isinya cuma sapaan dan tombol Sign out yang sudah ada di user menu topbar. Dijaga `WidgetRegistrationTest`.
 
 ### Lain-lain
 
