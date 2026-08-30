@@ -71,12 +71,16 @@ class MaterialStockResource extends Resource
                         Forms\Components\TextInput::make('name')
                             ->label(__('Item Name'))
                             ->disabled(),
-                        Forms\Components\TextInput::make('category.name')
+                        Forms\Components\TextInput::make('category_name')
                             ->label(__('Category'))
-                            ->disabled(),
-                        Forms\Components\TextInput::make('unit.name')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->formatStateUsing(fn ($record) => data_get($record, 'category.name')),
+                        Forms\Components\TextInput::make('unit_name')
                             ->label(__('Unit'))
-                            ->disabled(),
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->formatStateUsing(fn ($record) => data_get($record, 'unit.name')),
                         Forms\Components\TextInput::make('qty')
                             ->label(__('Stok Aktual'))
                             ->disabled()

@@ -61,9 +61,11 @@ class MaterialStockMovementResource extends Resource
                         Forms\Components\TextInput::make('reference_document')
                             ->label(__('Reference Document'))
                             ->disabled(),
-                        Forms\Components\TextInput::make('material.name')
+                        Forms\Components\TextInput::make('material_name')
                             ->label(__('Material'))
-                            ->disabled(),
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->formatStateUsing(fn ($record) => data_get($record, 'material.name')),
                         Forms\Components\TextInput::make('transaction_type')
                             ->label(__('Transaction Type'))
                             ->disabled()
@@ -80,9 +82,11 @@ class MaterialStockMovementResource extends Resource
                             ->label(__('Balance'))
                             ->disabled()
                             ->formatStateUsing(fn ($state) => number_format((float) $state, 2, ',', '.')),
-                        Forms\Components\TextInput::make('creator.name')
+                        Forms\Components\TextInput::make('creator_name')
                             ->label(__('Operator'))
-                            ->disabled(),
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->formatStateUsing(fn ($record) => data_get($record, 'creator.name')),
                         Forms\Components\Textarea::make('note')
                             ->label(__('Note'))
                             ->disabled()

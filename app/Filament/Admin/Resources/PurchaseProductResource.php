@@ -41,27 +41,31 @@ class PurchaseProductResource extends Resource
                             ->disabled()
                             ->columnSpan(['default' => 12, 'md' => 4]),
 
-                        Forms\Components\TextInput::make('productRequisition.document_number')
+                        Forms\Components\TextInput::make('request_number')
                             ->label('Request Number')
                             ->disabled()
+                            ->dehydrated(false)
+                            ->formatStateUsing(fn ($record) => data_get($record, 'productRequisition.document_number'))
                             ->columnSpan(['default' => 12, 'md' => 4]),
 
-                        Forms\Components\TextInput::make('productRequisition.user.name')
+                        Forms\Components\TextInput::make('requester_name')
                             ->label('Requester')
                             ->disabled()
+                            ->dehydrated(false)
+                            ->formatStateUsing(fn ($record) => data_get($record, 'productRequisition.user.name'))
                             ->columnSpan(['default' => 12, 'md' => 4]),
 
                         Forms\Components\Select::make('supplier_id')
                             ->label('Supplier')
                             ->relationship('supplier', 'name')
                             ->disabled()
-                            ->columnSpan(['default' => 12, 'md' => 6]),
+                            ->columnSpan(['default' => 12, 'md' => 4]),
 
                         Forms\Components\Select::make('approved_by')
                             ->label('Approved By')
                             ->relationship('approver', 'name')
                             ->disabled()
-                            ->columnSpan(['default' => 12, 'md' => 6]),
+                            ->columnSpan(['default' => 12, 'md' => 4]),
 
                         Forms\Components\Textarea::make('note')
                             ->label('Note')

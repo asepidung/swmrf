@@ -335,13 +335,13 @@
             <div class="sig-box">
                 <p>Purchasing,</p>
                 <div class="sig-space"></div>
-                <div class="sig-name">{{ $record->materialRequisition->reviewer->name ?? 'PURCHASING' }}</div>
+                <div class="sig-name">{{ $record->materialRequisition->reviewer->name ?? '-' }}</div>
                 <div class="sig-role">Purchasing Dept.</div>
             </div>
             <div class="sig-box">
                 <p>Approved By,</p>
                 <div class="sig-space"></div>
-                <div class="sig-name">{{ $record->approvedBy->name ?? 'FINANCE' }}</div>
+                <div class="sig-name">{{ $record->approvedBy->name ?? '-' }}</div>
                 <div class="sig-role">Finance / Direktur</div>
             </div>
         </div>
