@@ -81,7 +81,7 @@ class ReceivePayment extends Page
                     ->schema([
                         Select::make('bank_account_id')
                             ->label(__('Masuk ke Rekening'))
-                            ->options(BankAccount::where('is_active', true)->pluck('bank_name', 'id'))
+                            ->options(BankAccount::where('is_active', true)->pluck('initial', 'id'))
                             ->required()
                             ->searchable()
                             ->autofocus(),

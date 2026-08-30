@@ -35,7 +35,7 @@ class ViewPurchaseMaterial extends ViewRecord
                         ->live(),
                     \Filament\Forms\Components\Select::make('bank_account_id')
                         ->label(__('Bank Account'))
-                        ->options(\App\Models\BankAccount::where('is_active', true)->where('initial', '!=', 'KAS')->pluck('bank_name', 'id'))
+                        ->options(\App\Models\BankAccount::where('is_active', true)->where('initial', '!=', 'KAS')->pluck('initial', 'id'))
                         ->required(fn (\Filament\Forms\Get $get) => $get('method') === \App\Models\SupplierPayment::METHOD_TRANSFER)
                         ->visible(fn (\Filament\Forms\Get $get) => $get('method') === \App\Models\SupplierPayment::METHOD_TRANSFER),
                     \Filament\Forms\Components\Placeholder::make('total_tagihan')
