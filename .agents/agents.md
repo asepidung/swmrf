@@ -739,7 +739,7 @@ Boleh dipakai untuk diagnosa dan perbaikan. Tetap konfirmasi sebelum aksi destru
 
 ## 5. Status Saat Ini
 
-- **Test suite: 266 lolos, 0 gagal** (1351 assertion, diverifikasi 30 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
+- **Test suite: 268 lolos, 0 gagal** (1361 assertion, diverifikasi 30 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
 - **Modul yang benar-benar belum ada:** QC/QA Monitoring Produksi; Killing Lost dan Lost Cost; serta laporan Fast Moving Products, Sales Report, dan Stock Gudang. (UI Warehouse dan Grade **sudah ada** sejak 24 Agustus 2026 — lihat bagian di bawah.) Status lengkap ada di `checklist_modul.md` (file lokal, tidak masuk repo).
 
 ### Modul Keuangan (ACCOUNTING) diparkir sementara
