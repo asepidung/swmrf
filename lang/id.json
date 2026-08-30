@@ -689,5 +689,11 @@
     "Age (Days)": "Umur (Hari)",
     "Other Charges (Shipping, etc.)": "Biaya Lain-lain (Ongkir, dll)",
     "Made by": "Dibuat oleh",
-    "System Error Log": "Log Error Sistem"
+    "System Error Log": "Log Error Sistem",
+    "Receive Payment": "Terima Pembayaran",
+    "Receive Payment: ": "Terima Pembayaran: ",
+    "Pay payables": "Bayar Utang",
+    "Receive payment for receivables": "Terima Pembayaran Piutang",
+    "Pay down payment on PO beef": "Bayar Uang Muka PO Sapi",
+    "Pay down payment on PO materials": "Bayar Uang Muka PO Material"
 }

@@ -17,6 +17,9 @@ class ViewPurchaseMaterial extends ViewRecord
                 ->label(__('Pay Down Payment'))
                 ->icon('heroicon-o-banknotes')
                 ->color('warning')
+                // Melihat PO dan MEMBAYAR DP adalah dua tingkat wewenang
+                // yang berbeda. Sebelumnya tidak dibedakan sama sekali.
+                ->visible(fn () => auth()->user()?->hasPermission('pay_purchase_materials') ?? false)
                 ->form([
                     \Filament\Forms\Components\DatePicker::make('payment_date')
                         ->label(__('Payment Date'))

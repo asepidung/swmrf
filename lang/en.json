@@ -689,5 +689,11 @@
     "Age (Days)": "Age (Days)",
     "Other Charges (Shipping, etc.)": "Other Charges (Shipping, etc.)",
     "Made by": "Made by",
-    "System Error Log": "System Error Log"
+    "System Error Log": "System Error Log",
+    "Receive Payment": "Receive Payment",
+    "Receive Payment: ": "Receive Payment: ",
+    "Pay payables": "Pay payables",
+    "Receive payment for receivables": "Receive payment for receivables",
+    "Pay down payment on PO beef": "Pay down payment on PO beef",
+    "Pay down payment on PO materials": "Pay down payment on PO materials"
 }
