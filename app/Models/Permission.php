@@ -99,6 +99,7 @@ class Permission extends Model
                 'Payables',
                 'Receivables',
                 'Bank Accounts',
+                'Cash Book',
                 'Financial Loss',
             ],
             'MASTER DATA' => [

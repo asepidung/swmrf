@@ -694,5 +694,12 @@
     "Pay payables": "Pay payables",
     "Receive payment for receivables": "Receive payment for receivables",
     "Pay down payment on PO beef": "Pay down payment on PO beef",
-    "Pay down payment on PO materials": "Pay down payment on PO materials"
+    "Pay down payment on PO materials": "Pay down payment on PO materials",
+    "Cash Book": "Cash Book",
+    "Cash In": "Cash In",
+    "Cash Out": "Cash Out",
+    "Account": "Account",
+    "Type": "Type",
+    "Export Data": "Export Data",
+    "Receivable payment from :group (:number)": "Receivable payment from :group (:number)"
 }

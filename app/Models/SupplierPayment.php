@@ -82,8 +82,16 @@ class SupplierPayment extends Model
             : BankAccount::cashAccount();
 
         if (! $bankAccount) {
-            // Data lama atau tidak lengkap (transfer tanpa rekening).
-            // Jangan menciptakan baris kas untuk akun yang tidak diketahui.
+            // Data lama atau tidak lengkap (transfer tanpa rekening). Jangan
+            // menciptakan baris kas untuk akun yang tidak diketahui -- tapi
+            // jangan pula diam. Uang sudah keluar; kalau baris kasnya hilang
+            // tanpa jejak, selisihnya baru ketahuan saat rekonsiliasi bank dan
+            // tidak ada yang bisa menunjuk asalnya.
+            \Illuminate\Support\Facades\Log::warning(
+                'Pembayaran supplier tanpa rekening: uang keluar tidak tercatat di buku kas.',
+                ['supplier_payment_id' => $this->id, 'payment_number' => $this->payment_number, 'amount' => $this->amount],
+            );
+
             return;
         }
 

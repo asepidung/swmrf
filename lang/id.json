@@ -694,5 +694,12 @@
     "Pay payables": "Bayar Utang",
     "Receive payment for receivables": "Terima Pembayaran Piutang",
     "Pay down payment on PO beef": "Bayar Uang Muka PO Sapi",
-    "Pay down payment on PO materials": "Bayar Uang Muka PO Material"
+    "Pay down payment on PO materials": "Bayar Uang Muka PO Material",
+    "Cash Book": "Buku Kas",
+    "Cash In": "Uang Masuk",
+    "Cash Out": "Uang Keluar",
+    "Account": "Rekening",
+    "Type": "Tipe",
+    "Export Data": "Ekspor Data",
+    "Receivable payment from :group (:number)": "Penerimaan piutang dari :group (:number)"
 }
