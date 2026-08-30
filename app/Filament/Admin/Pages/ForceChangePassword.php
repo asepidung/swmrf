@@ -68,9 +68,16 @@ class ForceChangePassword extends Page
     {
         return $form
             ->schema([
+                // revealable(): tombol mata untuk melihat password yang diketik.
+                //
+                // Halaman ini memaksa pengguna mengganti password bawaan pada
+                // login pertama, sering kali dari HP. Mengetik password baru
+                // dua kali secara buta di papan ketik ponsel gampang meleset,
+                // dan kegagalannya baru terlihat setelah tombol ditekan.
                 TextInput::make('new_password')
                     ->label(__('New Password'))
                     ->password()
+                    ->revealable()
                     ->required()
                     ->minLength(8)
                     ->same('new_password_confirmation')
@@ -78,6 +85,7 @@ class ForceChangePassword extends Page
                 TextInput::make('new_password_confirmation')
                     ->label(__('Confirm New Password'))
                     ->password()
+                    ->revealable()
                     ->required(),
             ])
             ->statePath('data');
