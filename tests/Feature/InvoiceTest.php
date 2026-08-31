@@ -61,12 +61,17 @@ class InvoiceTest extends TestCase
         ]);
 
         $this->customerExchange = Customer::create([
-            'name' => 'EXCHANGE CUSTOMER DCA', // triggers DCA 2% default discount
+            // Namanya sengaja TIDAK memuat "DCA" lagi. Dulu diskon 2%
+            // ditentukan dengan mencocokkan potongan nama pelanggan, jadi
+            // test ini ikut membuktikan bahwa nama sudah tidak menentukan
+            // apa pun -- yang menentukan adalah default_discount di bawah.
+            'name' => 'EXCHANGE CUSTOMER',
             'customer_segment_id' => $segment->id,
             'address' => 'Bogor',
             'pic' => 'John Exchange',
             'phone' => '0898765432',
             'top' => 14,
+            'default_discount' => 2,
             'invoice_exchange' => true,
             'is_taxable' => true,
         ]);
@@ -124,7 +129,7 @@ class InvoiceTest extends TestCase
             'box' => 1,
         ]);
 
-        // Setup Sales Order exchange (DCA)
+        // Setup Sales Order untuk pelanggan berdiskon tetap.
         $soExchange = SalesOrder::create([
             'customer_id' => $this->customerExchange->id,
             'delivery_date' => now()->toDateString(),
@@ -136,7 +141,11 @@ class InvoiceTest extends TestCase
             'product_id' => $this->product->id,
             'weight' => 20.0,
             'price' => 100000,
-            'discount' => 0,
+            // Diskonnya tercatat DI SINI, sama seperti yang diisikan otomatis
+            // dari pelanggan saat SO dibuat. Dulu kolom ini 0 dan invoice
+            // menempelkan 2% belakangan, sehingga SO dan tagihan berbeda
+            // angka di atas kertas.
+            'discount' => 2,
         ]);
         $tallyExch = Tally::create(['sales_order_id' => $soExchange->id, 'status' => 'locked']);
         $doExch = DeliveryOrder::create([
@@ -239,7 +248,7 @@ class InvoiceTest extends TestCase
     }
 
     /** @test */
-    public function it_applies_dca_discount_and_sets_due_date_to_null_for_exchange_customer()
+    public function it_applies_the_customer_discount_and_sets_due_date_to_null_for_exchange_customer()
     {
         $this->actingAs($this->user);
 
@@ -252,7 +261,11 @@ class InvoiceTest extends TestCase
                 // Sama seperti test di atas: term_of_payment dan status bukan
                 // field form, jadi diperiksa pada record hasil simpan.
                 'total_weight' => 20.0,
-                // DCA customer gets 2% discount: gross 20 * 100000 = 2000000, disc 40000, subtotal = 1960000
+                // Diskon 2% milik pelanggan ini: kotor 20 * 100000 = 2000000,
+                // potongan 40000, sehingga subtotal 1960000. Angkanya sengaja
+                // dibiarkan sama persis seperti sebelum diskonnya dipindahkan
+                // dari pencocokan nama ke data -- yang berubah asal-usulnya,
+                // bukan hasilnya.
                 'subtotal' => 1960000.0,
                 'total_discount' => 40000.0,
                 // Tidak ada baris 'tax' di sini karena memang tidak boleh ada:

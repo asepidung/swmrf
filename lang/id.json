@@ -776,5 +776,8 @@
     "Discount must be a number.": "Diskon harus berupa angka.",
     "Discount cannot be negative.": "Diskon tidak boleh kurang dari nol.",
     "Discount cannot be more than 100%.": "Diskon tidak boleh lebih dari 100%.",
-    "Leave empty to create a group named after this customer. A group is required because price lists belong to groups, not to individual customers.": "Kosongkan untuk membuat grup bernama sama dengan pelanggan ini. Grup wajib ada karena price list melekat pada grup, bukan pada pelanggan satu per satu."
+    "Leave empty to create a group named after this customer. A group is required because price lists belong to groups, not to individual customers.": "Kosongkan untuk membuat grup bernama sama dengan pelanggan ini. Grup wajib ada karena price list melekat pada grup, bukan pada pelanggan satu per satu.",
+    "Default Discount": "Diskon Bawaan",
+    "Discount": "Diskon",
+    "Filled in automatically on every Sales Order for this customer, and still editable there. Leave at 0 if there is no standing discount.": "Terisi otomatis di setiap Sales Order untuk pelanggan ini, dan tetap bisa diubah di sana. Biarkan 0 bila tidak ada diskon tetap."
 }

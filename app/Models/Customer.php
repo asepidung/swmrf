@@ -15,6 +15,7 @@ class Customer extends Model
         'customer_segment_id',
         'address',
         'top',
+        'default_discount',
         'pic',
         'phone',
         'required_documents',
@@ -24,6 +25,7 @@ class Customer extends Model
     ];
 
     protected $casts = [
+        'default_discount' => 'float',
         'required_documents' => 'array',
         'invoice_exchange' => 'boolean',
         'is_taxable' => 'boolean',

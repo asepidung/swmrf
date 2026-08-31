@@ -186,7 +186,6 @@ class InvoiceResource extends Resource
                                 $receipt = \App\Models\DeliveryOrderReceipt::with('items', 'customer')->find($receiptId);
                                 if (!$receipt) return [];
                                 
-                                $customer = $receipt->customer;
                                 $items = [];
                                 foreach ($receipt->items as $item) {
                                     $soItem = \App\Models\SalesOrderItem::where('sales_order_id', $receipt->sales_order_id)
@@ -194,16 +193,34 @@ class InvoiceResource extends Resource
                                         ->first();
                                     
                                     $price = $soItem ? (float)$soItem->price : 0.0;
+
+                                    // Diskonnya diambil apa adanya dari Sales
+                                    // Order dan TIDAK ditimpa di sini.
+                                    //
+                                    // Dulu berkas ini memberi 2% kepada
+                                    // pelanggan yang NAMANYA mengandung DCA,
+                                    // DCB, atau DCC, di empat tempat terpisah.
+                                    // Aturannya benar secara bisnis -- tiga
+                                    // Distribution Center Lion Superindo memang
+                                    // disepakati mendapat diskon itu -- tetapi
+                                    // tempatnya keliru, dengan dua akibat:
+                                    //
+                                    //  - SO tertulis 0% sementara invoice
+                                    //    menagih 2%, sehingga dokumen yang
+                                    //    dipegang pelanggan tidak cocok dengan
+                                    //    tagihan yang dikirim;
+                                    //  - mengganti nama pelanggan diam-diam
+                                    //    mengubah harganya, dan pelanggan baru
+                                    //    yang namanya kebetulan memuat huruf
+                                    //    itu ikut mendapat diskon.
+                                    //
+                                    // Sekarang diskonnya berasal dari kolom
+                                    // customers.default_discount, terisi
+                                    // sendiri saat SO dibuat, dan terlihat di
+                                    // sana. Jangan mengembalikan penggantian
+                                    // di tempat ini.
                                     $discountPercent = $soItem ? (float)$soItem->discount : 0.0;
-                                    
-                                    if ($customer && (
-                                        strpos(strtoupper($customer->name), 'DCA') !== false ||
-                                        strpos(strtoupper($customer->name), 'DCB') !== false ||
-                                        strpos(strtoupper($customer->name), 'DCC') !== false
-                                    )) {
-                                        $discountPercent = 2.0;
-                                    }
-                                    
+
                                     $gross = $item->weight * $price;
                                     $discountRp = round($gross * ($discountPercent / 100), 0);
                                     $amount = round($gross - $discountRp, 0);
@@ -316,7 +333,6 @@ class InvoiceResource extends Resource
                                         if (!$receiptId) return 0.0;
                                         $receipt = \App\Models\DeliveryOrderReceipt::find($receiptId);
                                         if (!$receipt) return 0.0;
-                                        $customer = $receipt->customer;
                                         $totalDiscount = 0.0;
                                         foreach ($receipt->items as $item) {
                                             $soItem = \App\Models\SalesOrderItem::where('sales_order_id', $receipt->sales_order_id)
@@ -324,13 +340,6 @@ class InvoiceResource extends Resource
                                                 ->first();
                                             $price = $soItem ? (float)$soItem->price : 0.0;
                                             $discountPercent = $soItem ? (float)$soItem->discount : 0.0;
-                                            if ($customer && (
-                                                strpos(strtoupper($customer->name), 'DCA') !== false ||
-                                                strpos(strtoupper($customer->name), 'DCB') !== false ||
-                                                strpos(strtoupper($customer->name), 'DCC') !== false
-                                            )) {
-                                                $discountPercent = 2.0;
-                                            }
                                             $gross = $item->weight * $price;
                                             $totalDiscount += round($gross * ($discountPercent / 100), 0);
                                         }
@@ -349,7 +358,6 @@ class InvoiceResource extends Resource
                                         if (!$receiptId) return 0.0;
                                         $receipt = \App\Models\DeliveryOrderReceipt::find($receiptId);
                                         if (!$receipt) return 0.0;
-                                        $customer = $receipt->customer;
                                         $subtotal = 0.0;
                                         foreach ($receipt->items as $item) {
                                             $soItem = \App\Models\SalesOrderItem::where('sales_order_id', $receipt->sales_order_id)
@@ -357,13 +365,6 @@ class InvoiceResource extends Resource
                                                 ->first();
                                             $price = $soItem ? (float)$soItem->price : 0.0;
                                             $discountPercent = $soItem ? (float)$soItem->discount : 0.0;
-                                            if ($customer && (
-                                                strpos(strtoupper($customer->name), 'DCA') !== false ||
-                                                strpos(strtoupper($customer->name), 'DCB') !== false ||
-                                                strpos(strtoupper($customer->name), 'DCC') !== false
-                                            )) {
-                                                $discountPercent = 2.0;
-                                            }
                                             $gross = $item->weight * $price;
                                             $discountRp = round($gross * ($discountPercent / 100), 0);
                                             $subtotal += ($gross - $discountRp);
@@ -406,7 +407,6 @@ class InvoiceResource extends Resource
                                         if (!$receiptId) return 0.0;
                                         $receipt = \App\Models\DeliveryOrderReceipt::find($receiptId);
                                         if (!$receipt) return 0.0;
-                                        $customer = $receipt->customer;
                                         $subtotal = 0.0;
                                         foreach ($receipt->items as $item) {
                                             $soItem = \App\Models\SalesOrderItem::where('sales_order_id', $receipt->sales_order_id)
@@ -414,13 +414,6 @@ class InvoiceResource extends Resource
                                                 ->first();
                                             $price = $soItem ? (float)$soItem->price : 0.0;
                                             $discountPercent = $soItem ? (float)$soItem->discount : 0.0;
-                                            if ($customer && (
-                                                strpos(strtoupper($customer->name), 'DCA') !== false ||
-                                                strpos(strtoupper($customer->name), 'DCB') !== false ||
-                                                strpos(strtoupper($customer->name), 'DCC') !== false
-                                            )) {
-                                                $discountPercent = 2.0;
-                                            }
                                             $gross = $item->weight * $price;
                                             $discountRp = round($gross * ($discountPercent / 100), 0);
                                             $subtotal += ($gross - $discountRp);
