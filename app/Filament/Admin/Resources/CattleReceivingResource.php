@@ -167,8 +167,31 @@ class CattleReceivingResource extends Resource
                                     ->required()
                                     ->numeric()
                                     ->integer()
-                                    ->minValue(0)
-                                    ->maxValue(800)
+                                    /*
+                                     * Batas 800 kg dijaga sebagai ATURAN, bukan
+                                     * lewat `maxValue()`.
+                                     *
+                                     * `maxValue()` ikut memasang atribut HTML
+                                     * `max` pada <input type="number">, dan
+                                     * atribut itu membuka jalan bagi nilai
+                                     * terjepit diam-diam ke 800 -- misalnya
+                                     * lewat tombol panah. Operator tidak akan
+                                     * pernah tahu ia salah ketik, dan yang
+                                     * tersimpan adalah berat yang tidak pernah
+                                     * ada sapinya.
+                                     *
+                                     * Sejak hutang dihitung dari berat ini,
+                                     * kesalahan itu langsung menjadi tagihan
+                                     * yang salah ke supplier, tanpa satu pun
+                                     * gejala di layar. Jadi nilai di luar batas
+                                     * DITOLAK dan dikembalikan ke operator
+                                     * untuk diperbaiki sendiri.
+                                     */
+                                    ->rules(['integer', 'min:1', 'max:800'])
+                                    ->validationMessages([
+                                        'max' => __('Weight is above the :max kg limit. Please check the number again.', ['max' => 800]),
+                                        'min' => __('Weight must be greater than zero.'),
+                                    ])
                                     ->live(debounce: 500)
                                     ->suffix('Kg')
                                     ->extraInputAttributes([
