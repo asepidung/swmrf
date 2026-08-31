@@ -725,5 +725,7 @@
     "Eartag is already registered": "Eartag sudah terdaftar",
     "Payable not issued yet": "Hutang belum diterbitkan",
     "This receiving has no cattle recorded, so no payable was created.": "Penerimaan ini belum berisi sapi, jadi hutangnya tidak dibuat.",
-    "These cattle classes have no price on the PO, so the payable was not created: :classes. Add the price on the PO, then save this document again.": "Kelas sapi berikut belum punya harga di PO, jadi hutangnya tidak dibuat: :classes. Lengkapi harganya di PO, lalu simpan ulang dokumen ini."
+    "These cattle classes have no price on the PO, so the payable was not created: :classes. Add the price on the PO, then save this document again.": "Kelas sapi berikut belum punya harga di PO, jadi hutangnya tidak dibuat: :classes. Lengkapi harganya di PO, lalu simpan ulang dokumen ini.",
+    "Weight is above the :max kg limit. Please check the number again.": "Berat melebihi batas :max kg. Mohon periksa kembali angkanya.",
+    "Weight must be greater than zero.": "Berat harus lebih dari nol."
 }

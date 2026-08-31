@@ -725,5 +725,7 @@
     "Eartag is already registered": "Eartag is already registered",
     "Payable not issued yet": "Payable not issued yet",
     "This receiving has no cattle recorded, so no payable was created.": "This receiving has no cattle recorded, so no payable was created.",
-    "These cattle classes have no price on the PO, so the payable was not created: :classes. Add the price on the PO, then save this document again.": "These cattle classes have no price on the PO, so the payable was not created: :classes. Add the price on the PO, then save this document again."
+    "These cattle classes have no price on the PO, so the payable was not created: :classes. Add the price on the PO, then save this document again.": "These cattle classes have no price on the PO, so the payable was not created: :classes. Add the price on the PO, then save this document again.",
+    "Weight is above the :max kg limit. Please check the number again.": "Weight is above the :max kg limit. Please check the number again.",
+    "Weight must be greater than zero.": "Weight must be greater than zero."
 }
