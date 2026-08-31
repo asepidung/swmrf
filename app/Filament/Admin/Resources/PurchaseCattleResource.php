@@ -189,15 +189,73 @@ class PurchaseCattleResource extends Resource
                             );
                     }),
             ])
-                        ->headerActions([])
+            // Ekspor Excel dan PDF wajib untuk modul transaksional
+            // (project.md). Halaman ini sebelumnya punya headerActions kosong,
+            // jadi satu-satunya ekspor ada di halaman Detail List.
+            //
+            // Excel sengaja TIDAK memakai Filament Exporter -- ia memicu queue
+            // yang lambat, dan di lingkungan ini tidak ada worker sama sekali.
+            ->headerActions([
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('excel')
+                        ->label(__('Excel'))
+                        ->icon('heroicon-o-document-text')
+                        ->color('success')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->with(['supplier', 'items'])->get();
+
+                            return response()->streamDownload(function () use ($records) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    'PO Number', 'PO Date', 'Shipping Date', 'Supplier', 'Total Head', 'Note',
+                                ]));
+
+                                foreach ($records as $record) {
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $record->document_number ?? '',
+                                        optional($record->created_at)->format('Y-m-d') ?? '',
+                                        optional($record->shipping_date)->format('Y-m-d') ?? '',
+                                        $record->supplier?->name ?? '',
+                                        (int) $record->items->sum('qty'),
+                                        $record->summary_note ?? '',
+                                    ]));
+                                }
+
+                                $writer->close();
+                            }, 'purchase-cattles.xlsx');
+                        }),
+
+                    Tables\Actions\Action::make('pdf')
+                        ->label('PDF')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('danger')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->with(['supplier', 'items'])->get();
+
+                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.purchase-cattles-pdf', [
+                                'records' => $records,
+                                'title' => __('PO Cattles'),
+                            ]);
+
+                            return response()->streamDownload(fn () => print($pdf->output()), 'purchase-cattles.pdf');
+                        }),
+                ])
+                    ->label(__('Export Data'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->button()
+                    ->color('success'),
+            ])
             ->actions([
                 // No action buttons on index page
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ])
+            // Tanpa bulk delete, sama seperti PO Beef dan PO Material.
+            //
+            // Penjagaan hapus hidup di `PurchaseCattle::deleting()` sebagai
+            // Exception. Lewat tombol per-baris ia tertahan lebih dulu oleh
+            // `->disabled()`, tapi penghapusan massal menembusnya dan
+            // Exception-nya sampai ke pengguna sebagai halaman error mentah.
+            ->bulkActions([])
             ->defaultSort('created_at', 'desc');
     }
 
