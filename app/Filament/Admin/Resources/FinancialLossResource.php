@@ -61,6 +61,19 @@ class FinancialLossResource extends Resource
                         Forms\Components\TextInput::make('amount')
                             ->label(__('Total Financial Loss'))
                             ->prefix('Rp')
+                            /*
+                             * Nilai dari kolom decimal(15,2) berbentuk
+                             * "1200000.00". Mask uang membuang karakter
+                             * non-digit, jadi dua nol di belakang titik ikut
+                             * terbaca sebagai digit dan angkanya tampil
+                             * SERATUS KALI LIPAT -- Rp 1,2 juta menjadi 120
+                             * juta, tanpa error apa pun.
+                             *
+                             * Desimalnya dibuang di sini, sebelum mask bekerja.
+                             */
+                            ->formatStateUsing(fn ($state): ?string => $state === null
+                                ? null
+                                : number_format((float) $state, 0, ',', '.'))
                             ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                             ->disabled(),
 

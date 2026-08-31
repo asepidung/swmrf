@@ -146,6 +146,14 @@ class BankAccountResource extends Resource
                             ->prefix('Rp')
                             ->required()
                             ->extraInputAttributes(['inputmode' => 'numeric'])
+                            // Nilai decimal(15,2) berbentuk "5000000.00", dan
+                            // mask uang membuang karakter non-digit -- nol di
+                            // belakang titik ikut terhitung sehingga angkanya
+                            // tampil seratus kali lipat. Desimalnya dibuang di
+                            // sini, sebelum mask bekerja.
+                            ->formatStateUsing(fn ($state): ?string => $state === null || $state === ''
+                                ? null
+                                : number_format((float) $state, 0, ',', '.'))
                             ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                             ->helperText(__('Recorded as an entry in the Cash Book, not as a number on this account.')),
                     ])
@@ -154,7 +162,9 @@ class BankAccountResource extends Resource
                         $entry = $record->openingBalanceEntry();
 
                         return [
-                            'amount_input' => $entry ? number_format((float) $entry->amount, 0, ',', '.') : null,
+                            // Nilai MENTAH; formatStateUsing pada field itu yang
+                            // memformatnya sebelum sampai ke mask.
+                            'amount_input' => $entry?->amount,
                             'transaction_date' => $entry?->transaction_date ?? now(),
                         ];
                     })
@@ -225,6 +235,9 @@ class BankAccountResource extends Resource
                             ->prefix('Rp')
                             ->required()
                             ->extraInputAttributes(['inputmode' => 'numeric'])
+                            ->formatStateUsing(fn ($state): ?string => $state === null || $state === ''
+                                ? null
+                                : number_format((float) $state, 0, ',', '.'))
                             ->mask(RawJs::make('$money($input, \',\', \'.\', 0)')),
                         Forms\Components\Textarea::make('description')
                             ->label(__('Reason'))

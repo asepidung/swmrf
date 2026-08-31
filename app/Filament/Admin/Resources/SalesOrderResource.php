@@ -92,6 +92,24 @@ class SalesOrderResource extends Resource
                             ->default(0)
                             ->disabled(fn (?SalesOrder $record) => in_array($record?->status, ['processing', 'cancelled', 'canceled', 'ready']))
                             ->dehydrated()
+                            /*
+                             * WAJIB, dan ini bukan soal tampilan saja.
+                             *
+                             * Nilai dari kolom decimal(15,2) berbentuk
+                             * "500000.00". Mask uang membuang karakter
+                             * non-digit, jadi nol di belakang titik ikut
+                             * terhitung dan field menampilkan 50.000.000.
+                             * Lalu `stripCharacters('.')` membuang titiknya
+                             * saat disimpan -- dan yang TERSIMPAN benar-benar
+                             * 50 juta.
+                             *
+                             * Artinya uang muka pelanggan membengkak seratus
+                             * kali lipat setiap kali form dibuka lalu disimpan
+                             * ulang, tanpa satu pun error.
+                             */
+                            ->formatStateUsing(fn ($state): ?string => $state === null
+                                ? null
+                                : number_format((float) $state, 0, ',', '.'))
                             ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                             ->stripCharacters('.')
                             ->extraInputAttributes(['onfocus' => 'this.select()', 'class' => 'text-right'])
