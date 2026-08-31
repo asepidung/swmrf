@@ -1156,6 +1156,15 @@ Invoice yang sudah terbit tidak disentuh; ia menyimpan angkanya sendiri di
 `CustomerDefaultDiscountTest` memindai seluruh `app/` untuk keputusan yang
 diambil dari nama pelanggan, jadi bentuk ini tidak bisa lahir lagi.
 
+**Verifikasinya harus di produksi, bukan di server uji coba.** Saat migrasi ini
+dijalankan di `coba.wijayameat.co.id` (31 Agustus 2026) hasilnya nol baris --
+server itu hanya berisi satu pelanggan dummy. Data yang sesungguhnya, 302
+pelanggan dengan 29 di antaranya grup LION, ada di produksi. Di sanalah
+pencocokan `%DCA%` perlu diperiksa hasilnya, karena ia juga akan mengenai
+pelanggan lain yang namanya kebetulan memuat huruf itu. Kolom **Diskon** pada
+daftar Customer sengaja ditampilkan untuk keperluan itu: yang tidak seharusnya
+berdiskon tinggal dinolkan lewat form.
+
 ### Batas angka di Filament tidak membatasi apa pun tanpa aturan numerik
 
 `->minValue(0)->maxValue(100)` **hanya** menghasilkan aturan `min:0` dan
