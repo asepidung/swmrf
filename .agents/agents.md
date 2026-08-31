@@ -216,6 +216,37 @@ Sekarang test-nya memeriksa **dua sisi sekaligus**: `TaskAlert` mengirim `icon`,
 
 **Ikon di layar utama disimpan Android saat PWA dipasang.** Perubahan `manifest.json` tidak langsung terlihat pada perangkat yang sudah memasang aplikasinya — harus dihapus dari layar utama (atau di-uninstall lewat App Info) lalu dipasang ulang, idealnya sesudah membersihkan data situs di Chrome supaya `manifest.json` yang lama tidak ikut tersimpan di cache HTTP browser. **Diverifikasi 26 Agustus 2026:** md5sum file dan isi `manifest.json` di server sama persis dengan lokal — jadi kalau ikon masih terlihat terpotong padahal filenya sudah benar, itu instalasi lama yang belum di-refresh, bukan kode atau deploy yang salah. Desktop yang baru memasang PWA-nya langsung menampilkan ikon yang benar, mengonfirmasi ini murni soal cache instalasi, bukan berkasnya.
 
+#### Ikon notifikasi ganda: sudah dicoba dilepas DUA KALI, dua kali gagal
+
+Owner menanyakannya lagi 31 Agustus 2026: kenapa notifikasi menampilkan logo
+dua kali, di kiri dan di kanan. Pertanyaan yang sama yang melahirkan
+keputusan pertama.
+
+**Percobaan kedua dilakukan dengan dasar yang masuk akal:** aplikasinya kini
+sudah TERPASANG sebagai PWA, sehingga diduga Android akan memakai ikon
+aplikasinya sendiri dan huruf tidak akan muncul. Diuji langsung di perangkat
+Owner setelah deploy.
+
+**Hasilnya: huruf "C" tetap muncul.** Status terpasang tidak mengubah apa
+pun. Dugaan itu salah, dan `icon` dikembalikan pada hari yang sama.
+
+**Kesimpulan yang berlaku dan jangan diulang:** logo tampil dua kali adalah
+perilaku bawaan Android untuk notifikasi web. Itu lebih baik daripada avatar
+huruf yang disangka inisial nama pengirim. Jangan mencoba melepasnya untuk
+ketiga kalinya tanpa alasan baru yang benar-benar kuat -- dan kalau dicoba,
+uji di perangkat sungguhan sebelum menganggapnya berhasil.
+
+**Yang justru berhasil dari sesi itu:** ikon status bar. Owner menanyakan
+kenapa ia cuma bentuk putih tanpa logo -- itu memang tidak bisa diperbaiki
+dengan memasang logo, karena Android HANYA membaca kanal alpha lalu
+mewarnainya sendiri. Yang bisa diperbaiki cuma bentuk siluetnya: dari
+perisai luar logo (yang pada ~24px kehilangan seluruh detail dan tampil
+sebagai bidang penuh) menjadi **siluet kepala sapi** -- tanduk melengkung,
+telinga mendatar, moncong membulat -- yang masih terbaca pada ukuran itu.
+
+Asetnya dibangkitkan dari kode (Pillow), jadi proporsinya bisa disetel ulang
+tanpa berkas desain terpisah.
+
 #### Badge notifikasi butuh aset TERSENDIRI, bukan logo berwarna
 
 Ditemukan 26 Agustus 2026, setelah ikon besar (`icon`) dibereskan tapi ikon kecil di status bar (`badge`) masih tampil sebagai blok padat yang terlihat "terpotong".

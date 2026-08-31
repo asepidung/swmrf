@@ -38,14 +38,14 @@ class TaskAlert extends Notification
         return (new WebPushMessage())
             ->title($this->title)
             ->body($this->body)
-            // icon (ikon besar di kanan) SENGAJA TIDAK dikirim: ia membuat
-            // logo tampil dua kali, sekali sebagai ikon aplikasi dan sekali
-            // lagi di kanan. Keputusan Owner, 31 Agustus 2026.
+            // icon: ikon besar berwarna, kanan. WAJIB diisi -- tanpa ini
+            // Android Chrome membuat avatar huruf dari nama domain ('C' dari
+            // coba.wijayameat.co.id) yang disangka inisial pengirim. Sudah
+            // dicoba dilepas DUA KALI dengan hasil sama; lihat sw.js.
             //
-            // Penjelasan lengkap dan cara mengembalikannya ada di sw.js --
-            // KEDUA sisi harus berubah bersamaan, karena service worker punya
-            // nilai cadangan sendiri dan akan tetap memasang ikon meski
-            // server tidak mengirimnya.
+            // Versi BERALAS, bukan pwalogo-192.png yang isinya menyentuh tepi
+            // -- Android memotong ikon besar notifikasi menjadi lingkaran.
+            ->icon('/img/pwalogo-maskable-192.png')
             // badge: ikon kecil di status bar, kiri. Android HANYA membaca
             // kanal alpha gambar ini lalu mewarnainya sendiri (putih) --
             // memberinya logo berwarna penuh membuat seluruh kanvas dianggap
