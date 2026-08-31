@@ -722,5 +722,8 @@
     "Eartag already recorded": "Eartag sudah tercatat",
     "One of these eartags is already recorded in another receiving document. Please check the tags again.": "Salah satu eartag ini sudah tercatat di dokumen penerimaan lain. Mohon periksa kembali nomor telinganya.",
     "Duplicate eartag in this form": "Eartag duplikat di form ini",
-    "Eartag is already registered": "Eartag sudah terdaftar"
+    "Eartag is already registered": "Eartag sudah terdaftar",
+    "Payable not issued yet": "Hutang belum diterbitkan",
+    "This receiving has no cattle recorded, so no payable was created.": "Penerimaan ini belum berisi sapi, jadi hutangnya tidak dibuat.",
+    "These cattle classes have no price on the PO, so the payable was not created: :classes. Add the price on the PO, then save this document again.": "Kelas sapi berikut belum punya harga di PO, jadi hutangnya tidak dibuat: :classes. Lengkapi harganya di PO, lalu simpan ulang dokumen ini."
 }

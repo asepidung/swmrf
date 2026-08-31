@@ -49,6 +49,13 @@ class CattleReceiving extends Model
     {
         parent::boot();
 
+        // Utang ikut dilepas bila dokumen penerimaannya dibatalkan. Tanpa ini,
+        // utang tetap berdiri untuk barang yang catatannya sudah tidak ada,
+        // dan tidak ada apa pun di layar yang menunjukkan asalnya.
+        static::deleting(function ($model) {
+            $model->payable?->delete();
+        });
+
         static::creating(function ($model) {
             if (empty($model->created_by) && Auth::check()) {
                 $model->created_by = Auth::id();
@@ -64,6 +71,28 @@ class CattleReceiving extends Model
                 );
             }
         });
+    }
+
+    /**
+     * Terbitkan atau perbarui utang dari penerimaan ini.
+     *
+     * Dipanggil dari halaman Create dan Edit, BUKAN dari model event.
+     * Alasannya teknis: baris item disimpan oleh Repeater SESUDAH induknya,
+     * jadi pada `saved()` daftar sapinya masih kosong dan utangnya akan
+     * terhitung nol.
+     *
+     * Mengembalikan null bila ada kelas sapi yang belum berharga di PO --
+     * pemanggilnya yang memberi tahu operator. Lihat
+     * Payable::generateForCattleReceiving().
+     */
+    public function syncPayable(): ?Payable
+    {
+        return Payable::generateForCattleReceiving($this);
+    }
+
+    public function payable()
+    {
+        return $this->morphOne(Payable::class, 'payableable');
     }
 
     public function purchaseCattle(): BelongsTo

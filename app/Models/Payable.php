@@ -243,6 +243,102 @@ class Payable extends Model
         return $payable;
     }
 
+    /**
+     * Utang dari penerimaan sapi hidup.
+     *
+     * Keputusan Project Owner: utang terbit begitu sapi diterima, dan
+     * acuannya berat yang diisi operator saat penerimaan -- bukan berat hasil
+     * penimbangan ulang. Selisih di penimbangan sudah punya tempatnya sendiri
+     * sebagai Financial Loss; ia tidak mengurangi apa yang harus dibayar ke
+     * supplier.
+     *
+     * Harga per kg diambil dari PO Cattle sesuai kelas sapinya, karena PO
+     * adalah kontraknya. Harga tidak boleh dibaca dari tempat lain, apalagi
+     * diketik ulang saat penerimaan.
+     *
+     * MENGEMBALIKAN NULL bila ada kelas sapi yang tidak punya harga di PO.
+     * Form penerimaan tidak membatasi pilihan kelas ke isi PO, jadi kasus itu
+     * nyata bisa terjadi. Menghitungnya sebagai nol akan menerbitkan utang
+     * yang lebih kecil dari seharusnya -- tanpa error apa pun, dan baru
+     * ketahuan saat supplier menagih. Lebih baik utangnya belum terbit dan
+     * terlihat, daripada terbit dengan angka yang salah dan terlihat wajar.
+     */
+    public static function generateForCattleReceiving(CattleReceiving $receiving): ?self
+    {
+        $receiving->loadMissing(['items', 'supplier', 'purchaseCattle.items']);
+
+        $pricePerClass = $receiving->purchaseCattle
+            ? $receiving->purchaseCattle->items->pluck('price', 'cattle_class_id')
+            : collect();
+
+        $unpriced = $receiving->items
+            ->reject(fn ($item): bool => $pricePerClass->has($item->cattle_class_id));
+
+        if ($receiving->items->isEmpty() || $unpriced->isNotEmpty()) {
+            return null;
+        }
+
+        $subtotal = $receiving->items->sum(
+            fn ($item): float => (float) $item->initial_weight * (float) $pricePerClass[$item->cattle_class_id]
+        );
+
+        // Pajak mengikuti flag supplier, sama seperti GR Beef dan GR Material.
+        $tax = $receiving->supplier && $receiving->supplier->is_tax_11 ? $subtotal * 0.11 : 0;
+        $amount = $subtotal + $tax;
+
+        $topDays = $receiving->supplier->top_days ?? 0;
+
+        // withTrashed(): utang yang pernah dibatalkan hanya di-soft-delete.
+        // Tanpa ini, menyimpan ulang dokumen membuat baris BARU dengan
+        // document_number yang sama dan langsung kena unique constraint.
+        $payable = static::withTrashed()
+            ->where('payableable_type', get_class($receiving))
+            ->where('payableable_id', $receiving->id)
+            ->first() ?: new self();
+
+        if ($payable->trashed()) {
+            $payable->restore();
+        }
+
+        $payable->payableable_type = get_class($receiving);
+        $payable->payableable_id = $receiving->id;
+        $payable->supplier_id = $receiving->supplier_id;
+        $payable->document_number = $receiving->receiving_number;
+        $payable->amount = $amount;
+        $payable->due_date = Carbon::parse($receiving->receive_date)->addDays($topDays);
+        $payable->balance = $amount - $payable->paid_amount;
+
+        if ($payable->paid_amount <= 0) {
+            $payable->status = 'unpaid';
+        } elseif ($payable->paid_amount >= $payable->amount) {
+            $payable->status = 'paid';
+        } else {
+            $payable->status = 'partial';
+        }
+
+        $payable->created_by = auth()->id() ?? $receiving->created_by;
+        $payable->save();
+
+        return $payable;
+    }
+
+    /** Kelas sapi pada penerimaan ini yang belum punya harga di PO-nya. */
+    public static function unpricedCattleClasses(CattleReceiving $receiving): array
+    {
+        $receiving->loadMissing(['items.cattleClass', 'purchaseCattle.items']);
+
+        $priced = $receiving->purchaseCattle
+            ? $receiving->purchaseCattle->items->pluck('cattle_class_id')
+            : collect();
+
+        return $receiving->items
+            ->reject(fn ($item): bool => $priced->contains($item->cattle_class_id))
+            ->map(fn ($item): string => $item->cattleClass?->name ?? '-')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

@@ -722,5 +722,8 @@
     "Eartag already recorded": "Eartag already recorded",
     "One of these eartags is already recorded in another receiving document. Please check the tags again.": "One of these eartags is already recorded in another receiving document. Please check the tags again.",
     "Duplicate eartag in this form": "Duplicate eartag in this form",
-    "Eartag is already registered": "Eartag is already registered"
+    "Eartag is already registered": "Eartag is already registered",
+    "Payable not issued yet": "Payable not issued yet",
+    "This receiving has no cattle recorded, so no payable was created.": "This receiving has no cattle recorded, so no payable was created.",
+    "These cattle classes have no price on the PO, so the payable was not created: :classes. Add the price on the PO, then save this document again.": "These cattle classes have no price on the PO, so the payable was not created: :classes. Add the price on the PO, then save this document again."
 }
