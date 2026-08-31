@@ -11,18 +11,25 @@
     "12,22 / 1". Keduanya memang selalu dibaca berbarengan, dan menyatukannya
     membebaskan satu kolom penuh tanpa menghilangkan satu angka pun.
 
-    DUA KOLOM SELALU, tanpa breakpoint. Yang dipegang operator adalah alat
-    pemindai, bukan tetikus: begitu ringkasan PO turun ke bawah daftar, ia
-    harus menggulir bolak-balik hanya untuk melihat sisa kebutuhan barang.
-    Pernah dicoba menyejajarkannya hanya mulai breakpoint terbesar, dan
-    hasilnya justru menumpuk di layar Owner.
+    DUA KOLOM SELALU. Yang dipegang operator adalah alat pemindai, bukan
+    tetikus: begitu ringkasan PO turun ke bawah daftar, ia harus menggulir
+    bolak-balik hanya untuk melihat sisa kebutuhan barang.
+
+    Kolomnya ditulis sebagai STYLE LANGSUNG, bukan kelas Tailwind, dan itu
+    disengaja. Panel admin ini TIDAK memuat hasil build CSS aplikasi --
+    FilamentAsset::register sengaja dinonaktifkan -- sehingga yang berlaku
+    hanya CSS bawaan Filament. Di sana `grid-cols-2` polos TIDAK ADA; yang
+    ada hanya varian ber-breakpoint. Menulisnya sebagai kelas menghasilkan
+    grid tanpa definisi kolom, dan isinya menumpuk ke bawah tanpa satu pun
+    error. Sudah terjadi dua kali di halaman ini.
 
     Ringkasannya juga DILEKATKAN (sticky). Satu tally bisa berisi ratusan
     baris, jadi sekadar bersebelahan belum cukup -- tanpa dilekatkan,
-    ringkasannya ikut tergulir hilang begitu daftarnya memanjang.
+    ringkasannya ikut tergulir hilang begitu daftarnya memanjang. Kelas
+    `sticky` dan `top-6` sudah diperiksa ada di CSS Filament.
 --}}
 <x-filament-panels::page>
-    <div class="grid grid-cols-2 gap-6 items-start w-full">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; width: 100%;">
 
         {{-- Kiri: pemindai dan daftar hasil pindai --}}
         <div class="space-y-6">
@@ -78,17 +85,17 @@
 
         {{-- Kanan: ringkasan PO, melekat supaya tetap terlihat saat menggulir --}}
         <div class="sticky top-6 rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
-            <h3 class="text-base font-bold mb-3 text-gray-950 dark:text-white">{{ __('PO Summary') }}</h3>
+            <h3 class="text-base font-bold mb-4 dark:text-white">{{ __('PO Summary') }}</h3>
 
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse text-sm">
                     <thead>
-                        <tr class="border-b border-gray-200 dark:border-gray-800 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                            <th class="py-2 pr-2 font-semibold">{{ __('Product') }}</th>
+                        <tr class="border-b border-gray-200 dark:border-gray-800 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                            <th class="py-2 px-2 font-semibold">{{ __('Product') }}</th>
                             <th class="py-2 px-2 text-right font-semibold whitespace-nowrap">{{ __('PO') }}</th>
                             <th class="py-2 px-2 text-right font-semibold whitespace-nowrap">{{ __('Scan / Box') }}</th>
                             <th class="py-2 px-2 text-right font-semibold whitespace-nowrap">{{ __('Balance') }}</th>
-                            <th class="py-2 pl-2 font-semibold">{{ __('Notes') }}</th>
+                            <th class="py-2 px-2 font-semibold">{{ __('Notes') }}</th>
                         </tr>
                     </thead>
 
@@ -106,9 +113,9 @@
                                 $totalBox += $row['scanned_box'];
                             @endphp
                             <tr>
-                                <td class="py-2 pr-2 font-medium text-gray-900 dark:text-white">{{ $row['product_name'] }}</td>
-                                <td class="py-2 px-2 text-right tabular-nums whitespace-nowrap">{{ number_format($row['po_weight'], 2) }}</td>
-                                <td class="py-2 px-2 text-right tabular-nums whitespace-nowrap font-semibold text-primary-600 dark:text-primary-400">
+                                <td class="py-2 px-2 font-medium dark:text-white">{{ $row['product_name'] }}</td>
+                                <td class="py-2 px-2 text-right whitespace-nowrap">{{ number_format($row['po_weight'], 2) }}</td>
+                                <td class="py-2 px-2 text-right whitespace-nowrap font-semibold text-primary-600 dark:text-primary-400">
                                     {{ number_format($row['scanned_weight'], 2) }}
                                     <span class="font-normal text-gray-400 dark:text-gray-500">/ {{ $row['scanned_box'] }}</span>
                                 </td>
@@ -118,10 +125,10 @@
                                     selesai, lebih itu barang yang tidak
                                     dipesan.
                                 --}}
-                                <td class="py-2 px-2 text-right tabular-nums whitespace-nowrap font-medium {{ $row['balance'] > 0 ? 'text-danger-600 dark:text-danger-400' : 'text-gray-950 dark:text-white' }}">
+                                <td class="py-2 px-2 text-right whitespace-nowrap font-medium {{ $row['balance'] > 0 ? 'text-danger-600 dark:text-danger-400' : 'text-gray-950 dark:text-white' }}">
                                     {{ number_format($row['balance'], 2) }}
                                 </td>
-                                <td class="py-2 pl-2 text-gray-500 dark:text-gray-400 text-xs">{{ $row['notes'] }}</td>
+                                <td class="py-2 px-2 text-gray-500 dark:text-gray-400 text-xs">{{ $row['notes'] }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -131,13 +138,13 @@
                             $totalBalance = $totalScan - $totalPo;
                         @endphp
                         <tr class="border-t-2 border-gray-200 dark:border-gray-800 font-bold text-gray-900 dark:text-white">
-                            <td class="py-2 pr-2">{{ __('Total') }}</td>
-                            <td class="py-2 px-2 text-right tabular-nums whitespace-nowrap">{{ number_format($totalPo, 2) }}</td>
-                            <td class="py-2 px-2 text-right tabular-nums whitespace-nowrap">
+                            <td class="py-2 px-2">{{ __('Total') }}</td>
+                            <td class="py-2 px-2 text-right whitespace-nowrap">{{ number_format($totalPo, 2) }}</td>
+                            <td class="py-2 px-2 text-right whitespace-nowrap">
                                 {{ number_format($totalScan, 2) }}
                                 <span class="font-normal text-gray-400 dark:text-gray-500">/ {{ $totalBox }}</span>
                             </td>
-                            <td class="py-2 px-2 text-right tabular-nums whitespace-nowrap {{ $totalBalance > 0 ? 'text-danger-600 dark:text-danger-400' : '' }}">
+                            <td class="py-2 px-2 text-right whitespace-nowrap {{ $totalBalance > 0 ? 'text-danger-600 dark:text-danger-400' : '' }}">
                                 {{ number_format($totalBalance, 2) }}
                             </td>
                             <td></td>
