@@ -125,13 +125,36 @@ class CattleWeighingResource extends Resource
                                     ->dehydrated(false),
                                 Forms\Components\TextInput::make('actual_weight')
                                     ->label(__('Actual Weight'))
-                                    ->numeric()
+                                    /*
+                                     * Batasnya sengaja berupa ATURAN, bukan
+                                     * komponen angka bawaan Filament -- yang
+                                     * terakhir menghasilkan input bertipe
+                                     * number beserta tombol panahnya, gampang
+                                     * tertekan tanpa sengaja -- berat sapi
+                                     * berubah satu kilo tanpa ada yang
+                                     * menyadarinya. `inputmode` tetap
+                                     * memunculkan papan ketik angka di ponsel.
+                                     *
+                                     * Batas bawah 1, BUKAN 0. Baris ini terisi
+                                     * otomatis dengan 0 saat draft dibuka, dan
+                                     * perhitungan susut menghitung selisih tiap
+                                     * kali berat aktual lebih kecil dari berat
+                                     * terima. Satu ekor yang terlewat -- masih
+                                     * bernilai 0 -- tercatat sebagai kerugian
+                                     * sebesar SELURUH bobot sapi itu dikali
+                                     * harga, tanpa error dan tanpa gejala.
+                                     */
+                                    ->rules(['numeric', 'min:1', 'max:800'])
+                                    ->validationMessages([
+                                        'min' => __('Actual weight must be filled in; a cattle left at zero is recorded as a total loss.'),
+                                        'max' => __('Weight is above the :max kg limit. Please check the number again.', ['max' => 800]),
+                                    ])
                                     ->suffix('Kg')
                                     ->required()
                                     ->default(0)
-                                    ->minValue(0)
                                     ->live(onBlur: true)
                                     ->extraInputAttributes([
+                                        'inputmode' => 'decimal',
                                         'x-on:focus' => '$el.select()',
                                         'x-on:click' => '$el.select()',
                                         'class' => 'text-center enter-to-next-actual-weight',
@@ -256,6 +279,70 @@ class CattleWeighingResource extends Resource
                     : Pages\EditCattleWeighing::getUrl(['record' => $record])
             )
             ->recordClasses(fn (CattleWeighing $record) => $record->trashed() ? 'border-s-2 border-danger-600 dark:border-danger-400 bg-danger-50 dark:bg-danger-900/50' : null)
+            // Ekspor Excel dan PDF wajib untuk modul transaksional
+            // (project.md). Halaman ini sebelumnya tidak punya sama sekali.
+            //
+            // Excel sengaja TIDAK memakai Filament Exporter -- ia memicu queue
+            // yang lambat, dan di lingkungan ini tidak ada worker sama sekali.
+            ->headerActions([
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('excel')
+                        ->label(__('Excel'))
+                        ->icon('heroicon-o-document-text')
+                        ->color('success')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()
+                                ->with(['items', 'receiving.supplier'])->get();
+
+                            return response()->streamDownload(function () use ($records) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    'Weighing No', 'Date', 'Receiving No', 'Supplier', 'Heads',
+                                    'Initial Weight (Kg)', 'Actual Weight (Kg)', 'Shrinkage (Kg)',
+                                ]));
+
+                                foreach ($records as $record) {
+                                    $initial = (float) $record->items->sum('initial_weight');
+                                    $actual = (float) $record->items->sum('actual_weight');
+
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $record->weighing_number ?? '',
+                                        optional($record->weighing_date)->format('Y-m-d') ?? '',
+                                        $record->receiving?->receiving_number ?? '',
+                                        $record->receiving?->supplier?->name ?? '',
+                                        $record->items->count(),
+                                        $initial,
+                                        $actual,
+                                        $initial - $actual,
+                                    ]));
+                                }
+
+                                $writer->close();
+                            }, 'cattle-weighings.xlsx');
+                        }),
+
+                    Tables\Actions\Action::make('pdf')
+                        ->label('PDF')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('danger')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()
+                                ->with(['items', 'receiving.supplier'])->get();
+
+                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.cattle-weighings-pdf', [
+                                'records' => $records,
+                                'title' => __('Cattle Weighings'),
+                            ]);
+
+                            return response()->streamDownload(fn () => print($pdf->output()), 'cattle-weighings.pdf');
+                        }),
+                ])
+                    ->label(__('Export Data'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->button()
+                    ->color('success'),
+            ])
             ->filters([
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_cattle_weighings')),
