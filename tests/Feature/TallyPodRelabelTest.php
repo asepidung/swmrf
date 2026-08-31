@@ -167,7 +167,15 @@ class TallyPodRelabelTest extends TestCase
         // ada, hanya varian ber-breakpoint. Menulisnya sebagai kelas
         // menghasilkan grid tanpa definisi kolom: isinya menumpuk ke bawah
         // tanpa satu pun error.
-        $this->assertStringContainsString('grid-template-columns: 1fr 1fr', $view);
+        // minmax(0, 1fr), BUKAN 1fr saja. `1fr` berarti `minmax(auto, 1fr)`,
+        // dan batas minimum `auto` itu selebar isi terlebar yang tidak bisa
+        // dipatahkan -- barcode 26 karakter di tabel kiri memenuhi syarat itu,
+        // sehingga kolom kiri melar melewati separuh dan menggencet ringkasan
+        // PO sampai terpotong meski gridnya sendiri sudah benar dua kolom.
+        $this->assertStringContainsString(
+            'grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)',
+            $view,
+        );
         $this->assertStringContainsString('sticky top-6', $view);
 
         // Kelas dua-kolom Tailwind tidak boleh dipakai di halaman ini, dengan
