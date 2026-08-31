@@ -129,7 +129,7 @@ class CattleReceivingResource extends Resource
                                                 ->toArray();
 
                                             if (collect($allEartags)->countBy()[$eartag] > 1) {
-                                                $fail(__('Eartag duplikat di form ini!'));
+                                                $fail(__('Duplicate eartag in this form'));
                                                 return;
                                             }
 
@@ -141,7 +141,7 @@ class CattleReceivingResource extends Resource
                                             }
 
                                             if ($query->exists()) {
-                                                $fail(__('Eartag sudah terdaftar di database!'));
+                                                $fail(__('Eartag is already registered'));
                                             }
                                         },
                                     ])
