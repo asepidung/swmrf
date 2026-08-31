@@ -173,7 +173,7 @@ class TallyPodRelabelTest extends TestCase
         // sehingga kolom kiri melar melewati separuh dan menggencet ringkasan
         // PO sampai terpotong meski gridnya sendiri sudah benar dua kolom.
         $this->assertStringContainsString(
-            'grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)',
+            'grid-template-columns: minmax(0, 8fr) minmax(0, 4fr)',
             $view,
         );
         $this->assertStringContainsString('sticky top-6', $view);
