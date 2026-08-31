@@ -72,7 +72,6 @@
     "Basic Information": "Basic Information",
     "Customer profile and relations data.": "Customer profile and relations data.",
     "Customer Name": "Customer Name",
-    "Leave empty if Customer does not have a Group.": "Leave empty if Customer does not have a Group.",
     "Segment": "Segment",
     "TOP (Term of Payment) / Days": "TOP (Term of Payment) / Days",
     "Full Address": "Full Address",
@@ -770,5 +769,12 @@
     "Material Usage - Repack": "Material Usage - Repack",
     "Weight (Kg)": "Weight (Kg)",
     "Result is heavier than the source": "Result is heavier than the source",
-    "Source :source kg, result :result kg. Please check whether something was recorded twice or a weight was mistyped. This does not block saving.": "Source :source kg, result :result kg. Please check whether something was recorded twice or a weight was mistyped. This does not block saving."
+    "Source :source kg, result :result kg. Please check whether something was recorded twice or a weight was mistyped. This does not block saving.": "Source :source kg, result :result kg. Please check whether something was recorded twice or a weight was mistyped. This does not block saving.",
+    "The group :group has no price list yet": "The group :group has no price list yet",
+    "Without one, every Sales Order line for this group starts at Rp 0 and has to be typed by hand.": "Without one, every Sales Order line for this group starts at Rp 0 and has to be typed by hand.",
+    "Create Price List Now": "Create Price List Now",
+    "Discount must be a number.": "Discount must be a number.",
+    "Discount cannot be negative.": "Discount cannot be negative.",
+    "Discount cannot be more than 100%.": "Discount cannot be more than 100%.",
+    "Leave empty to create a group named after this customer. A group is required because price lists belong to groups, not to individual customers.": "Leave empty to create a group named after this customer. A group is required because price lists belong to groups, not to individual customers."
 }

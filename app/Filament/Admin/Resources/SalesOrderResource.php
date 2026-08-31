@@ -45,7 +45,6 @@ class SalesOrderResource extends Resource
                             ->disabled(fn (?SalesOrder $record) => $record?->status === 'processing')
                             ->dehydrated()
                             ->afterStateUpdated(function (Get $get, Set $set, $state) {
-                                \Illuminate\Support\Facades\Log::info("customer_id afterStateUpdated: state=" . var_export($state, true));
                                 if ($state) {
                                     $customer = Customer::find($state);
                                     if ($customer) {
@@ -303,12 +302,31 @@ class SalesOrderResource extends Resource
                                     ])
                                     ->columnSpan(2),
 
+                                // Diskon ini PERSEN, dan angkanya dipakai langsung
+                                // oleh Invoice sebagai gross * (discount / 100).
+                                //
+                                // Sebelumnya dijaga dengan ->minValue(0)->maxValue(100),
+                                // yang ternyata TIDAK menjaga apa pun. Keduanya hanya
+                                // menghasilkan aturan "min:0" dan "max:100" tanpa aturan
+                                // numerik, sehingga Laravel memeriksa PANJANG KARAKTER,
+                                // bukan nilainya -- "500" lolos karena cuma tiga huruf.
+                                // Diskon 500% membuat baris tagihan menjadi minus tanpa
+                                // satu pun error di sepanjang jalannya.
+                                //
+                                // Aturannya ditulis manual, BUKAN dengan ->numeric().
+                                // Pemanggilan itu membuat input menjadi type=number
+                                // lengkap dengan tombol panah, yang sudah dilarang untuk
+                                // kolom uang dan berat karena gampang tergeser.
                                 Forms\Components\TextInput::make('discount')
                                     ->hiddenLabel()
                                     ->placeholder(__('Discount'))
                                     ->suffix('%')
-                                    ->minValue(0)
-                                    ->maxValue(100)
+                                    ->rules(['numeric', 'min:0', 'max:100'])
+                                    ->validationMessages([
+                                        'numeric' => __('Discount must be a number.'),
+                                        'min' => __('Discount cannot be negative.'),
+                                        'max' => __('Discount cannot be more than 100%.'),
+                                    ])
                                     ->extraInputAttributes([
                                         'class' => 'text-right so-discount-input-column',
                                         'onclick' => 'this.select()',
@@ -330,39 +348,41 @@ class SalesOrderResource extends Resource
             ]);
     }
 
+    /**
+     * Harga awal sebuah baris SO, diambil dari price list grup pelanggan.
+     *
+     * Mengembalikan 0 bila harganya tidak ditemukan, dan itu DISENGAJA --
+     * keputusan Project Owner, 31 Agustus 2026. Saat membuat SO user memang
+     * bebas mengubah harga, jadi nol hanyalah titik awal, bukan kegagalan.
+     * Jangan diubah menjadi penolakan.
+     *
+     * Yang justru diperbaiki adalah momennya: grup yang belum punya price
+     * list ditawari membuatnya lebih awal, saat pelanggan atau grupnya baru
+     * disimpan, supaya harganya sudah siap sebelum SO pertama dibuat.
+     */
     protected static function calculateProductPrice($customerId, $productId): int
     {
-        \Illuminate\Support\Facades\Log::info("calculateProductPrice enter: customerId=" . var_export($customerId, true) . " productId=" . var_export($productId, true));
-        if (!$customerId || !$productId) {
+        if (! $customerId || ! $productId) {
             return 0;
         }
 
         $customer = Customer::find($customerId);
-        if (!$customer) {
-            \Illuminate\Support\Facades\Log::info("calculateProductPrice: customer not found");
-            return 0;
-        }
-        if (!$customer->customer_group_id) {
-            \Illuminate\Support\Facades\Log::info("calculateProductPrice: customer has no group");
+
+        if (! $customer?->customer_group_id) {
             return 0;
         }
 
         $priceList = PriceList::where('customer_group_id', $customer->customer_group_id)->first();
-        if (!$priceList) {
-            \Illuminate\Support\Facades\Log::info("calculateProductPrice: pricelist not found for group " . $customer->customer_group_id);
+
+        if (! $priceList) {
             return 0;
         }
 
         $priceItem = PriceListItem::where('price_list_id', $priceList->id)
             ->where('product_id', $productId)
             ->first();
-        if ($priceItem) {
-            \Illuminate\Support\Facades\Log::info("calculateProductPrice: found price=" . $priceItem->price);
-            return $priceItem->price;
-        }
 
-        \Illuminate\Support\Facades\Log::info("calculateProductPrice: price item not found for product " . $productId);
-        return 0;
+        return (int) ($priceItem->price ?? 0);
     }
 
     public static function table(Table $table): Table

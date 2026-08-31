@@ -72,7 +72,6 @@
     "Basic Information": "Informasi Dasar",
     "Customer profile and relations data.": "Data profil dan relasi customer.",
     "Customer Name": "Nama Customer",
-    "Leave empty if Customer does not have a Group.": "Kosongkan jika Customer tidak memiliki Grup.",
     "Segment": "Segmen",
     "TOP (Term of Payment) / Days": "TOP (Hari)",
     "Full Address": "Alamat Lengkap",
@@ -770,5 +769,12 @@
     "Material Usage - Repack": "Pemakaian Material - Repack",
     "Weight (Kg)": "Berat (Kg)",
     "Result is heavier than the source": "Hasil lebih berat daripada bahannya",
-    "Source :source kg, result :result kg. Please check whether something was recorded twice or a weight was mistyped. This does not block saving.": "Bahan :source kg, hasil :result kg. Mohon periksa apakah ada yang tercatat dua kali atau berat yang salah ketik. Ini tidak menghalangi penyimpanan."
+    "Source :source kg, result :result kg. Please check whether something was recorded twice or a weight was mistyped. This does not block saving.": "Bahan :source kg, hasil :result kg. Mohon periksa apakah ada yang tercatat dua kali atau berat yang salah ketik. Ini tidak menghalangi penyimpanan.",
+    "The group :group has no price list yet": "Grup :group belum punya price list",
+    "Without one, every Sales Order line for this group starts at Rp 0 and has to be typed by hand.": "Tanpa price list, setiap baris Sales Order untuk grup ini dimulai dari Rp 0 dan harus diketik satu per satu.",
+    "Create Price List Now": "Buat Price List Sekarang",
+    "Discount must be a number.": "Diskon harus berupa angka.",
+    "Discount cannot be negative.": "Diskon tidak boleh kurang dari nol.",
+    "Discount cannot be more than 100%.": "Diskon tidak boleh lebih dari 100%.",
+    "Leave empty to create a group named after this customer. A group is required because price lists belong to groups, not to individual customers.": "Kosongkan untuk membuat grup bernama sama dengan pelanggan ini. Grup wajib ada karena price list melekat pada grup, bukan pada pelanggan satu per satu."
 }
