@@ -339,6 +339,51 @@ class Payable extends Model
             ->all();
     }
 
+    /**
+     * Jenis pembelian di balik sebuah hutang.
+     *
+     * Petanya ditaruh DI SINI, bukan di masing-masing tampilan. Sebelumnya
+     * `payableable_type` cuma dipetakan di form halaman detail, dan hanya
+     * untuk GR Material -- GR Beef dan penerimaan sapi tampil sebagai nama
+     * kelas mentah, `App\Models\GoodsReceiptProduct`, di layar pengguna.
+     *
+     * Dengan satu peta, kolom tabel, filter, dan halaman detail tidak bisa
+     * lagi saling berbeda, dan sumber hutang baru cukup didaftarkan sekali.
+     *
+     * @return array<class-string, string>
+     */
+    public static function sourceLabels(): array
+    {
+        return [
+            CattleReceiving::class => __('Cattle Purchase'),
+            GoodsReceiptProduct::class => __('Meat Purchase'),
+            GoodsReceiptMaterial::class => __('Goods Purchase'),
+        ];
+    }
+
+    /** Warna kategori, supaya daftar hutang bisa dipindai sekilas. */
+    public static function sourceColors(): array
+    {
+        return [
+            CattleReceiving::class => 'warning',
+            GoodsReceiptProduct::class => 'danger',
+            GoodsReceiptMaterial::class => 'info',
+        ];
+    }
+
+    /**
+     * Label sebuah jenis dokumen.
+     *
+     * Jenis yang belum terdaftar dikembalikan APA ADANYA, bukan disamarkan
+     * menjadi tanda hubung: kalau suatu saat ada sumber hutang baru yang lupa
+     * didaftarkan, nama kelasnya di layar adalah petunjuk yang menunjukkan
+     * persis apa yang harus ditambahkan.
+     */
+    public static function sourceLabel(?string $type): string
+    {
+        return static::sourceLabels()[$type] ?? (string) $type;
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

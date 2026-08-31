@@ -52,10 +52,7 @@ class PayableResource extends Resource
                         Forms\Components\TextInput::make('payableable_type')
                             ->label(__('Source Document Type'))
                             ->disabled()
-                            ->formatStateUsing(fn ($state) => match($state) {
-                                'App\Models\GoodsReceiptMaterial' => __('Material Receipt'),
-                                default => $state,
-                            }),
+                            ->formatStateUsing(fn ($state) => Payable::sourceLabel($state)),
                         Forms\Components\TextInput::make('supplier_name')
                             ->label(__('Supplier'))
                             ->disabled()
@@ -97,18 +94,23 @@ class PayableResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
+                // Kategori pembelian: tanpa ini, hutang sapi tidak bisa
+                // dipisahkan dari hutang daging atau barang sama sekali.
+                Tables\Columns\TextColumn::make('payableable_type')
+                    ->label(__('Category'))
+                    ->badge()
+                    ->sortable()
+                    ->formatStateUsing(fn (?string $state): string => Payable::sourceLabel($state))
+                    ->color(fn (?string $state): string => Payable::sourceColors()[$state] ?? 'gray'),
                 Tables\Columns\TextColumn::make('supplier.name')
                     ->label(__('Supplier'))
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('amount')
-                    ->label(__('Total Amount'))
-                    ->money('IDR', locale: 'id')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('paid_amount')
-                    ->label(__('Paid Amount'))
-                    ->money('IDR', locale: 'id')
-                    ->sortable(),
+                // Total Amount dan Paid Amount sengaja TIDAK di sini.
+                //
+                // Keduanya bisa dihitung ulang dari sisa dan sudah tampil di
+                // halaman detail. Yang dicari orang di daftar hutang adalah
+                // siapa, berapa sisanya, dan kapan jatuh temponya.
                 Tables\Columns\TextColumn::make('balance')
                     ->label(__('Outstanding Balance'))
                     ->money('IDR', locale: 'id')
@@ -161,12 +163,13 @@ class PayableResource extends Resource
                                 $writer = new \OpenSpout\Writer\XLSX\Writer();
                                 $writer->openToFile('php://output');
                                 $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                    'Date', 'Document No.', 'Supplier', 'Total Amount (Rp)', 'Paid Amount (Rp)', 'Outstanding Balance (Rp)', 'Due Date', 'Status', 'Notes'
+                                    'Date', 'Document No.', 'Category', 'Supplier', 'Total Amount (Rp)', 'Paid Amount (Rp)', 'Outstanding Balance (Rp)', 'Due Date', 'Status', 'Notes'
                                 ]));
                                 foreach ($records as $record) {
                                     $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
                                         $record->created_at ?? '',
                                         $record->document_number ?? '',
+                                        Payable::sourceLabel($record->payableable_type),
                                         $record->supplier?->name ?? '',
                                         $record->amount ?? '',
                                         $record->paid_amount ?? '',
@@ -200,6 +203,9 @@ class PayableResource extends Resource
             ->filters([
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_payables')),
+                Tables\Filters\SelectFilter::make('payableable_type')
+                    ->label(__('Category'))
+                    ->options(fn (): array => Payable::sourceLabels()),
                 Tables\Filters\SelectFilter::make('supplier_id')
                     ->relationship('supplier', 'name')
                     ->label(__('Supplier')),
