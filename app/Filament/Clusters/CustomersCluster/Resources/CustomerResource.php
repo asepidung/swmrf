@@ -52,11 +52,19 @@ class CustomerResource extends Resource
                 // tepinya sendiri.
                 //
                 // Sekarang satu kartu dengan kisi 12 kolom: lebar ditentukan
-                // per isian, dan seluruhnya selesai dalam tiga baris.
+                // per isian, dan tiap baris genap dua belas.
                 //
-                //   nama 4 | grup 3 | segmen 3 | aktif 2
+                //   nama 4 | grup 4   | segmen 4
                 //   TOP 2  | diskon 2 | I-Ex 2 | PIC 3 | telepon 3
                 //   alamat 12
+                //
+                // Toggle Aktif sengaja ditaruh PALING BAWAH, bukan disisipkan
+                // di baris pertama. Ia hanya muncul di halaman Edit, dan isian
+                // yang menghilang di halaman Create akan menyedot isian
+                // berikutnya naik mengisi slotnya -- itulah yang dulu membuat
+                // TOP terlempar ke baris identitas, terpisah dari Diskon dan
+                // Invoice Exchange yang sejenis dengannya. Di bawah sendiri,
+                // hilangnya tidak menggeser apa pun.
                 Forms\Components\Section::make(__('Basic Information'))
                     ->description(__('The group decides which price list applies. Leave it empty to create a group named after this customer.'))
                     ->compact()
@@ -90,7 +98,7 @@ class CustomerResource extends Resource
                                     ->label(fn() => __('Head Office Address'))
                                     ->columnSpanFull(),
                             ])
-                            ->columnSpan(3),
+                            ->columnSpan(4),
 
                         Forms\Components\Select::make('customer_segment_id')
                             ->relationship('segment', 'name')
@@ -104,13 +112,7 @@ class CustomerResource extends Resource
                                     ->required()
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                             ])
-                            ->columnSpan(3),
-
-                        Forms\Components\Toggle::make('is_active')
-                            ->label(fn() => __('Active'))
-                            ->default(true)
-                            ->visibleOn('edit')
-                            ->columnSpan(2),
+                            ->columnSpan(4),
 
                         // Tanpa ->numeric(), yang akan membuat input menjadi
                         // type=number lengkap dengan tombol panah. TOP
@@ -174,6 +176,12 @@ class CustomerResource extends Resource
                             ->required()
                             ->rows(2)
                             ->columnSpanFull(),
+
+                        Forms\Components\Toggle::make('is_active')
+                            ->label(fn() => __('Active'))
+                            ->default(true)
+                            ->visibleOn('edit')
+                            ->columnSpan(2),
                     ]),
 
                 Forms\Components\Section::make(__('Required Documents'))
