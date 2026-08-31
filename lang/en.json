@@ -730,5 +730,15 @@
     "Weight must be greater than zero.": "Weight must be greater than zero.",
     "Cattle Purchase": "Cattle Purchase",
     "Meat Purchase": "Meat Purchase",
-    "Goods Purchase": "Goods Purchase"
+    "Goods Purchase": "Goods Purchase",
+    "Payables due": "Payables due",
+    ":count overdue": ":count overdue",
+    ":count due today": ":count due today",
+    ":count due within :days days": ":count due within :days days",
+    "Due Date Reminder": "Due Date Reminder",
+    "Never": "Never",
+    "The due date check has never run. Payable reminders are not being sent at all.": "The due date check has never run. Payable reminders are not being sent at all.",
+    "The due date check has not run recently. Reminders may have stopped without any error.": "The due date check has not run recently. Reminders may have stopped without any error.",
+    "Last time the system checked which payables are due.": "Last time the system checked which payables are due.",
+    "Needing attention": "Needing attention"
 }

@@ -730,5 +730,15 @@
     "Weight must be greater than zero.": "Berat harus lebih dari nol.",
     "Cattle Purchase": "Pembelian Sapi",
     "Meat Purchase": "Pembelian Daging",
-    "Goods Purchase": "Pembelian Barang"
+    "Goods Purchase": "Pembelian Barang",
+    "Payables due": "Hutang jatuh tempo",
+    ":count overdue": ":count lewat jatuh tempo",
+    ":count due today": ":count jatuh tempo hari ini",
+    ":count due within :days days": ":count jatuh tempo dalam :days hari",
+    "Due Date Reminder": "Pengingat Jatuh Tempo",
+    "Never": "Belum pernah",
+    "The due date check has never run. Payable reminders are not being sent at all.": "Pemeriksaan jatuh tempo belum pernah berjalan. Pengingat hutang sama sekali tidak terkirim.",
+    "The due date check has not run recently. Reminders may have stopped without any error.": "Pemeriksaan jatuh tempo tidak berjalan belakangan ini. Pengingat mungkin sudah berhenti tanpa error apa pun.",
+    "Last time the system checked which payables are due.": "Terakhir kali sistem memeriksa hutang yang jatuh tempo.",
+    "Needing attention": "Perlu perhatian"
 }
