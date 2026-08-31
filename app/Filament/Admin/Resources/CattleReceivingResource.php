@@ -165,8 +165,14 @@ class CattleReceivingResource extends Resource
                                 Forms\Components\TextInput::make('initial_weight')
                                     ->placeholder(__('Weight (Max 800)'))
                                     ->required()
-                                    ->numeric()
-                                    ->integer()
+                                    /*
+                                     * BUKAN `->numeric()`: itu menghasilkan
+                                     * <input type="number"> beserta tombol
+                                     * panahnya, yang gampang tertekan tanpa
+                                     * sengaja sehingga berat berubah tanpa ada
+                                     * yang menyadarinya. `inputmode` tetap
+                                     * memunculkan papan ketik angka di ponsel.
+                                     */
                                     /*
                                      * Batas 800 kg dijaga sebagai ATURAN, bukan
                                      * lewat `maxValue()`.
@@ -195,6 +201,7 @@ class CattleReceivingResource extends Resource
                                     ->live(debounce: 500)
                                     ->suffix('Kg')
                                     ->extraInputAttributes([
+                                        'inputmode' => 'numeric',
                                         'class' => 'text-center enter-to-next-weight',
                                         'onkeydown' => "
                                             if (event.key === 'Enter') {

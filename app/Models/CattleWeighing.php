@@ -157,7 +157,7 @@ class CattleWeighing extends Model
         if ($totalLoss > 0) {
             $this->financialLoss()->updateOrCreate(
                 ['transaction_type' => 'Cattle Weighing', 'reference_number' => $this->weighing_number],
-                ['date' => $this->weighing_date, 'amount' => $totalLoss, 'note' => 'Susut Timbang Ulang Sapi']
+                ['date' => $this->weighing_date, 'amount' => $totalLoss, 'note' => __('Cattle re-weighing shrinkage')]
             );
         } else {
             $this->financialLoss()->delete();

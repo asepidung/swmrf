@@ -740,5 +740,16 @@
     "The due date check has never run. Payable reminders are not being sent at all.": "The due date check has never run. Payable reminders are not being sent at all.",
     "The due date check has not run recently. Reminders may have stopped without any error.": "The due date check has not run recently. Reminders may have stopped without any error.",
     "Last time the system checked which payables are due.": "Last time the system checked which payables are due.",
-    "Needing attention": "Needing attention"
+    "Needing attention": "Needing attention",
+    "Cattle re-weighing shrinkage": "Cattle re-weighing shrinkage",
+    "Cannot delete Cattle Weighing because it has already been processed into Carcass.": "Cannot delete Cattle Weighing because it has already been processed into Carcass.",
+    "Draft Cattle Weighing": "Draft Cattle Weighing",
+    "Draft Weighing": "Draft Weighing",
+    "Initial Weight": "Initial Weight",
+    "PO No": "PO No",
+    "Receive No": "Receive No",
+    "This Cattle Weighing has been processed into Carcass and is now read-only.": "This Cattle Weighing has been processed into Carcass and is now read-only.",
+    "Total Shrinkage": "Total Shrinkage",
+    "Weigher": "Weigher",
+    "Actual weight must be filled in; a cattle left at zero is recorded as a total loss.": "Actual weight must be filled in; a cattle left at zero is recorded as a total loss."
 }

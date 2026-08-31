@@ -740,5 +740,16 @@
     "The due date check has never run. Payable reminders are not being sent at all.": "Pemeriksaan jatuh tempo belum pernah berjalan. Pengingat hutang sama sekali tidak terkirim.",
     "The due date check has not run recently. Reminders may have stopped without any error.": "Pemeriksaan jatuh tempo tidak berjalan belakangan ini. Pengingat mungkin sudah berhenti tanpa error apa pun.",
     "Last time the system checked which payables are due.": "Terakhir kali sistem memeriksa hutang yang jatuh tempo.",
-    "Needing attention": "Perlu perhatian"
+    "Needing attention": "Perlu perhatian",
+    "Cattle re-weighing shrinkage": "Susut Timbang Ulang Sapi",
+    "Cannot delete Cattle Weighing because it has already been processed into Carcass.": "Penimbangan tidak bisa dihapus karena sapinya sudah diproses menjadi karkas.",
+    "Draft Cattle Weighing": "Draft Penimbangan Sapi",
+    "Draft Weighing": "Draft Timbang",
+    "Initial Weight": "Berat Terima",
+    "PO No": "No. PO",
+    "Receive No": "No. Terima",
+    "This Cattle Weighing has been processed into Carcass and is now read-only.": "Penimbangan ini sudah diproses menjadi karkas, jadi tidak bisa diubah lagi.",
+    "Total Shrinkage": "Total Susut",
+    "Weigher": "Petugas Timbang",
+    "Actual weight must be filled in; a cattle left at zero is recorded as a total loss.": "Berat aktual wajib diisi; sapi yang dibiarkan nol tercatat sebagai kerugian penuh."
 }
