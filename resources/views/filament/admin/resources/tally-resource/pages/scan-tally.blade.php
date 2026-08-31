@@ -15,6 +15,14 @@
     tetikus: begitu ringkasan PO turun ke bawah daftar, ia harus menggulir
     bolak-balik hanya untuk melihat sisa kebutuhan barang.
 
+    Perhatikan minmax(0, 1fr), BUKAN 1fr saja. `1fr` sebenarnya berarti
+    `minmax(auto, 1fr)`, dan batas minimum `auto` itu selebar ISI TERLEBAR yang
+    tidak bisa dipatahkan. Barcode 26 karakter di tabel kiri memenuhi syarat
+    itu, sehingga kolom kiri melar melewati separuh dan menggencet ringkasan PO
+    sampai terpotong -- meski gridnya sendiri sudah benar dua kolom. Dengan
+    minimum nol, kolomnya patuh pada pembagian dan tabel kiri menggulir sendiri
+    di dalam wadahnya.
+
     Kolomnya ditulis sebagai STYLE LANGSUNG, bukan kelas Tailwind, dan itu
     disengaja. Panel admin ini TIDAK memuat hasil build CSS aplikasi --
     FilamentAsset::register sengaja dinonaktifkan -- sehingga yang berlaku
@@ -29,10 +37,10 @@
     `sticky` dan `top-6` sudah diperiksa ada di CSS Filament.
 --}}
 <x-filament-panels::page>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; width: 100%;">
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; width: 100%;">
 
         {{-- Kiri: pemindai dan daftar hasil pindai --}}
-        <div class="space-y-6">
+        <div class="space-y-6" style="min-width: 0;">
             <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
                 <form wire:submit.prevent="scan">
                     <div class="flex gap-3 items-end">
