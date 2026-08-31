@@ -117,6 +117,10 @@ Setiap Resource atau Cluster baru wajib:
 
 - **Bilingual:** seluruh teks UI wajib lewat `__()` dan terdaftar di `lang/id.json` serta `lang/en.json`.
 - **Activity Log:** model transaksional dan master data sensitif wajib memakai `spatie/laravel-activitylog`.
+- **Saldo dan stok DILARANG disimpan di master data.** Keduanya diturunkan dari tabel mutasinya: stok dari `beef_stocks`/`beef_stock_movements`, saldo uang dari `bank_transactions` lewat `BankAccount::currentBalance()`. Kolom saldo yang di-increment berdampingan dengan tabel mutasi menciptakan dua angka yang sama-sama mengaku benar, dan tidak ada cara menentukan mana yang salah saat keduanya berbeda.
+- **Permission baru dikirim lewat MIGRASI**, bukan `db:seed` di server. Seeder menyetel ulang password superuser menjadi `1234` tanpa syarat. Tetap daftarkan juga di `DatabaseSeeder` untuk lingkungan baru.
+- **Kelas warna Tailwind tidak otomatis ada CSS-nya.** Filament hanya menyertakan kelas yang dipakainya sendiri, dan proyek ini tanpa tema kustom. Kelas warna baru wajib didaftarkan di `resources/views/filament/admin/missing-color-utilities.blade.php`, atau pakai komponen Filament. Dijaga `MissingColorUtilitiesTest`.
+- **Test hak akses wajib memakai user berperan `employee`.** `hasPermission()` selalu mengembalikan `true` untuk `programmer`, jadi test yang memakainya selalu lulus tanpa menguji apa pun.
 - **Notifikasi:** memakai Livewire Global Poller (`GlobalTaskPoller`) berbasis perbandingan timestamp, tanpa tabel notifikasi khusus. Untuk setiap modul transaksional baru, **tanyakan dulu kepada Project Owner** apakah modul itu butuh notifikasi.
 
 ---
