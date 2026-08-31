@@ -780,5 +780,11 @@
     "TOP": "TOP",
     "Discount must be a whole percent.": "Diskon harus berupa persen bulat.",
     "New Sales Order": "Sales Order Baru",
-    "Ready to be tallied.": "Siap untuk ditally."
+    "Ready to be tallied.": "Siap untuk ditally.",
+    "Max POD": "Maks POD",
+    "Maximum pack age in days. Older items turn red and can be relabeled.": "Umur maksimal barang dalam hari. Yang lebih tua berwarna merah dan bisa dilabeli ulang.",
+    "Older than the limit. Click to relabel.": "Sudah melewati batas umur. Klik untuk melabeli ulang.",
+    "Change the POD date and reprint the label.": "Ubah tanggal POD dan cetak ulang label.",
+    "Scan / Box": "Scan / Box",
+    "PO": "PO"
 }

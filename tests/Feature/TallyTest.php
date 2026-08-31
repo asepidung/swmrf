@@ -860,9 +860,34 @@ class TallyTest extends TestCase
         ]);
 
         $newPackDate = '2026-06-15'; // one day later
-        
+
+        // Batas umur POD wajib diisi lebih dulu. Relabel hanya terbuka untuk
+        // barang yang umurnya sudah MELEWATI batas itu -- keputusan Project
+        // Owner, 1 September 2026. Tanpa batas, tidak ada yang dianggap lewat
+        // dan tombolnya memang tidak muncul.
+        // Barang yang baru dikemas hari ini, sebagai pembanding: ia masih
+        // dalam batas, jadi tidak boleh bisa dilabeli ulang.
+        $fresh = TallyItem::create([
+            'tally_id' => $tally->id,
+            'barcode' => '1140626MT00100122500800002',
+            'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id,
+            'weight' => 10.00,
+            'qty_pcs' => 4,
+            'ph_level' => null,
+            'pack_date' => now()->toDateString(),
+            'origin' => 'BONING',
+        ]);
+
         Livewire::actingAs($this->user)
             ->test(ScanTally::class, ['record' => $tally])
+            // Tanpa batas umur, tidak ada yang dianggap lewat.
+            ->assertTableActionHidden('relabel', $item)
+            ->set('podLimit', 5)
+            // Dengan batas terisi, hanya yang sudah lewat yang terbuka.
+            ->assertTableActionVisible('relabel', $item)
+            ->assertTableActionHidden('relabel', $fresh)
             ->callTableAction('relabel', $item, [
                 'pack_date' => $newPackDate,
                 'show_exp' => true,
