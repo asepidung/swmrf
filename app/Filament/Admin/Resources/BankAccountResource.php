@@ -149,6 +149,7 @@ class BankAccountResource extends Resource
                             ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                             ->helperText(__('Recorded as an entry in the Cash Book, not as a number on this account.')),
                     ])
+                    ->modalDescription(__('An account has only one starting point. Once other entries exist, corrections go through Cash Adjustment instead.'))
                     ->fillForm(function (BankAccount $record): array {
                         $entry = $record->openingBalanceEntry();
 
@@ -188,6 +189,76 @@ class BankAccountResource extends Resource
                         Notification::make()
                             ->success()
                             ->title(__('Opening balance saved'))
+                            ->send();
+                    }),
+
+                /*
+                 * Penyesuaian Kas: padanan Stock Opname untuk uang.
+                 *
+                 * Saldo awal sifatnya sekali. Kalau saldo aplikasi berbeda
+                 * dari rekening koran, jawabannya BUKAN menulis ulang titik
+                 * awalnya -- itu menggeser seluruh riwayat di atasnya tanpa
+                 * ada yang menyadarinya. Yang benar: catat selisihnya sebagai
+                 * barisnya sendiri, lengkap dengan alasannya, supaya riwayat
+                 * tetap utuh dan koreksinya bisa diperiksa siapa pun nanti.
+                 */
+                Tables\Actions\Action::make('adjustBalance')
+                    ->label(__('Cash Adjustment'))
+                    ->icon('heroicon-o-scale')
+                    ->color('gray')
+                    ->visible(fn (): bool => auth()->user()->hasPermission('adjust_cash_balance'))
+                    ->form([
+                        Forms\Components\DatePicker::make('transaction_date')
+                            ->label(__('Date'))
+                            ->default(now())
+                            ->required(),
+                        Forms\Components\Select::make('direction')
+                            ->label(__('Direction'))
+                            ->options([
+                                'in' => __('Add to balance'),
+                                'out' => __('Deduct from balance'),
+                            ])
+                            ->default('in')
+                            ->required(),
+                        Forms\Components\TextInput::make('amount_input')
+                            ->label(__('Amount'))
+                            ->prefix('Rp')
+                            ->required()
+                            ->extraInputAttributes(['inputmode' => 'numeric'])
+                            ->mask(RawJs::make('$money($input, \',\', \'.\', 0)')),
+                        Forms\Components\Textarea::make('description')
+                            ->label(__('Reason'))
+                            ->required()
+                            ->rows(2)
+                            // Wajib: koreksi tanpa alasan tidak bisa diperiksa
+                            // siapa pun nanti, dan justru itulah yang paling
+                            // sering perlu ditelusuri ulang.
+                            ->helperText(__('Explain why the balance differs, for example a bank statement mismatch.')),
+                    ])
+                    ->action(function (BankAccount $record, array $data): void {
+                        $amount = (float) str_replace('.', '', $data['amount_input']);
+
+                        if ($amount <= 0) {
+                            Notification::make()
+                                ->danger()
+                                ->title(__('Adjustment must be greater than zero'))
+                                ->send();
+
+                            return;
+                        }
+
+                        BankTransaction::create([
+                            'bank_account_id' => $record->id,
+                            'type' => $data['direction'],
+                            'amount' => $amount,
+                            'reference_type' => BankAccount::ADJUSTMENT_REFERENCE,
+                            'description' => __('Adjustment').': '.$data['description'],
+                            'transaction_date' => $data['transaction_date'],
+                        ]);
+
+                        Notification::make()
+                            ->success()
+                            ->title(__('Adjustment recorded'))
                             ->send();
                     }),
             ])

@@ -161,16 +161,51 @@ class BankAccountBalanceTest extends TestCase
     }
 
     /**
-     * Setelah rekening dipakai, titik awalnya terkunci.
+     * Rekening yang SUDAH dipakai tetap boleh diberi saldo awal.
      *
-     * Mengubahnya akan menggeser seluruh riwayat yang sudah terjadi di
-     * atasnya, dan tidak ada yang akan menyadarinya -- angkanya cuma bergeser.
+     * Ini kondisi normal proyek ini, bukan kasus pinggiran: sistem ini
+     * refactor dari aplikasi lama, hutang dan piutang sudah berjalan, jadi
+     * pembukuan dimulai dari tengah dan titik awalnya baru dipasang
+     * belakangan dengan tanggal mundur.
+     *
+     * Versi pertama aturan ini salah -- ia mengunci PEMBUATAN, bukan hanya
+     * pengubahan, sehingga dua rekening di server tidak bisa diberi saldo
+     * awal sama sekali.
      */
-    public function test_the_opening_balance_locks_once_the_account_has_been_used(): void
+    public function test_an_account_that_has_been_used_can_still_receive_its_first_opening_balance(): void
     {
         $account = BankAccount::cashAccount();
 
-        $this->assertTrue($account->canSetOpeningBalance());
+        BankTransaction::create([
+            'bank_account_id' => $account->id, 'type' => 'out', 'amount' => 100_000,
+            'reference_type' => SupplierPayment::class, 'reference_id' => 1,
+            'description' => 'DP', 'transaction_date' => now()->toDateString(),
+        ]);
+
+        $this->assertTrue(
+            $account->fresh()->canSetOpeningBalance(),
+            'Rekening yang sudah dipakai justru yang paling butuh saldo awal.',
+        );
+    }
+
+    /**
+     * Tapi begitu saldo awalnya ADA dan sudah ditumpuki mutasi, ia terkunci.
+     *
+     * Menggesernya akan memindahkan seluruh riwayat di atasnya, dan tidak ada
+     * yang akan menyadarinya -- angkanya cuma bergeser.
+     */
+    public function test_the_opening_balance_locks_once_it_has_entries_on_top_of_it(): void
+    {
+        $account = BankAccount::cashAccount();
+
+        BankTransaction::create([
+            'bank_account_id' => $account->id, 'type' => 'in', 'amount' => 5_000_000,
+            'reference_type' => BankAccount::OPENING_BALANCE_REFERENCE,
+            'description' => 'Saldo awal', 'transaction_date' => now()->toDateString(),
+        ]);
+
+        // Masih boleh diperbaiki: belum ada apa pun di atasnya.
+        $this->assertTrue($account->fresh()->canSetOpeningBalance());
 
         BankTransaction::create([
             'bank_account_id' => $account->id, 'type' => 'out', 'amount' => 100_000,
@@ -179,6 +214,83 @@ class BankAccountBalanceTest extends TestCase
         ]);
 
         $this->assertFalse($account->fresh()->canSetOpeningBalance());
+    }
+
+    /**
+     * Koreksi setelah itu lewat Penyesuaian, dan boleh berkali-kali.
+     *
+     * Padanannya di barang adalah Stock Opname: kalau stok fisik berbeda dari
+     * catatan, jawabannya mencatat selisihnya -- bukan mengubah penerimaan
+     * barang yang pertama.
+     */
+    public function test_a_cash_adjustment_can_be_recorded_repeatedly_and_moves_the_balance(): void
+    {
+        $account = BankAccount::cashAccount();
+        $this->givePermission('adjust_cash_balance');
+
+        Livewire::test(ListBankAccounts::class)
+            ->callTableAction('adjustBalance', $account, [
+                'transaction_date' => now()->toDateString(),
+                'direction' => 'in',
+                'amount_input' => '1.000.000',
+                'description' => 'Selisih rekening koran Agustus',
+            ])
+            ->callTableAction('adjustBalance', $account, [
+                'transaction_date' => now()->toDateString(),
+                'direction' => 'out',
+                'amount_input' => '250.000',
+                'description' => 'Biaya admin bank',
+            ]);
+
+        $this->assertSame(750_000.0, $account->fresh()->currentBalance());
+        $this->assertSame(2, BankTransaction::where('reference_type', BankAccount::ADJUSTMENT_REFERENCE)->count());
+
+        // Alasannya ikut tersimpan -- itu yang membedakannya dari menulis
+        // ulang angka diam-diam.
+        $this->assertStringContainsString(
+            'Selisih rekening koran Agustus',
+            BankTransaction::where('reference_type', BankAccount::ADJUSTMENT_REFERENCE)->first()->description,
+        );
+    }
+
+    /** Menggeser saldo butuh haknya sendiri, terpisah dari saldo awal. */
+    public function test_a_cash_adjustment_requires_its_own_permission(): void
+    {
+        $account = BankAccount::cashAccount();
+
+        // Bukan programmer: peran itu melewati seluruh pemeriksaan hak akses,
+        // jadi memakainya di sini akan membuat test lulus tanpa menguji apa pun.
+        $staff = User::create([
+            'name' => 'Staff Finance', 'username' => 'staff_adjust', 'password' => 'secret-password',
+            'gender' => 'L', 'role' => 'employee', 'is_active' => true,
+        ]);
+
+        foreach (['view_bank_accounts', 'set_opening_balance'] as $name) {
+            $staff->permissions()->attach(
+                Permission::firstOrCreate(
+                    ['name' => $name],
+                    ['module_name' => 'Bank Accounts', 'description' => $name],
+                )->id
+            );
+        }
+
+        $this->actingAs($staff);
+
+        // Punya hak saldo awal saja tidak cukup untuk menyesuaikan saldo.
+        Livewire::test(ListBankAccounts::class)
+            ->assertTableActionHidden('adjustBalance', $account)
+            ->assertTableActionVisible('setOpeningBalance', $account);
+    }
+
+    private function givePermission(string $name): void
+    {
+        $permission = Permission::firstOrCreate(
+            ['name' => $name],
+            ['module_name' => 'Bank Accounts', 'description' => $name],
+        );
+
+        $this->user->permissions()->attach($permission->id);
+        $this->actingAs($this->user->fresh());
     }
 
     /** Menciptakan uang butuh hak akses tersendiri. */

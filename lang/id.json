@@ -708,5 +708,15 @@
     "Opening balance must be greater than zero": "Saldo awal harus lebih dari nol",
     "Recorded as an entry in the Cash Book, not as a number on this account.": "Dicatat sebagai transaksi di Buku Kas, bukan sebagai angka di rekening ini.",
     "Opening balance for :account": "Saldo awal :account",
-    "Total Balance": "Total Saldo"
+    "Total Balance": "Total Saldo",
+    "Cash Adjustment": "Penyesuaian Kas",
+    "Adjustment": "Penyesuaian",
+    "Adjustment recorded": "Penyesuaian tercatat",
+    "Adjustment must be greater than zero": "Penyesuaian harus lebih dari nol",
+    "Direction": "Arah",
+    "Add to balance": "Menambah saldo",
+    "Deduct from balance": "Mengurangi saldo",
+    "Reason": "Alasan",
+    "Explain why the balance differs, for example a bank statement mismatch.": "Jelaskan kenapa saldonya berbeda, misalnya selisih dengan rekening koran.",
+    "An account has only one starting point. Once other entries exist, corrections go through Cash Adjustment instead.": "Sebuah rekening hanya punya satu titik awal. Begitu ada transaksi lain, koreksi dilakukan lewat Penyesuaian Kas."
 }
