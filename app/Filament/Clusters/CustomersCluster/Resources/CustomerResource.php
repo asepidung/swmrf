@@ -80,6 +80,32 @@ class CustomerResource extends Resource
                             ->label(fn() => __('TOP (Term of Payment) / Days'))
                             ->required()
                             ->numeric(),
+
+                        // Diskon ini mengisi NILAI AWAL kolom diskon di Sales
+                        // Order, sejajar dengan cara price list mengisi harga.
+                        // Yang tersimpan di SO tetap yang menentukan, jadi
+                        // mengubah angka di sini tidak menyentuh SO yang sudah
+                        // ada -- termasuk yang belum ditagih.
+                        //
+                        // Letaknya di pelanggan, bukan di grup: grup LION
+                        // berisi 29 pelanggan dan hanya tiga Distribution
+                        // Center-nya yang berhak atas diskon ini.
+                        //
+                        // Aturannya ditulis manual, bukan dengan ->numeric(),
+                        // yang akan membuat input menjadi type=number lengkap
+                        // dengan tombol panah.
+                        Forms\Components\TextInput::make('default_discount')
+                            ->label(fn() => __('Default Discount'))
+                            ->suffix('%')
+                            ->default(0)
+                            ->extraInputAttributes(['inputmode' => 'decimal'])
+                            ->rules(['numeric', 'min:0', 'max:100'])
+                            ->validationMessages([
+                                'numeric' => __('Discount must be a number.'),
+                                'min' => __('Discount cannot be negative.'),
+                                'max' => __('Discount cannot be more than 100%.'),
+                            ])
+                            ->helperText(__('Filled in automatically on every Sales Order for this customer, and still editable there. Leave at 0 if there is no standing discount.')),
                         Forms\Components\Textarea::make('address')
                             ->label(fn() => __('Full Address'))
                             ->required()
@@ -143,6 +169,16 @@ class CustomerResource extends Resource
                 Tables\Columns\TextColumn::make('top')
                     ->label(fn() => __('TOP (Days)'))
                     ->numeric()
+                    ->sortable(),
+                // Ditampilkan supaya siapa saja yang berdiskon bisa dilihat
+                // dari daftar, tanpa harus membuka satu per satu. Dulu hal
+                // ini sama sekali tidak terlihat: aturannya tersembunyi di
+                // dalam kode dan hanya muncul saat invoice dibuat.
+                Tables\Columns\TextColumn::make('default_discount')
+                    ->label(fn() => __('Discount'))
+                    ->formatStateUsing(fn ($state) => ((float) $state) > 0
+                        ? rtrim(rtrim(number_format((float) $state, 2, ',', '.'), '0'), ',').'%'
+                        : '-')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('invoice_exchange')
                     ->label(fn() => __('I-Ex'))

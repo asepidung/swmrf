@@ -52,12 +52,20 @@ class SalesOrderResource extends Resource
                                     }
                                 }
 
-                                // Update prices in existing items
+                                // Harga DAN diskon sama-sama disegarkan.
+                                // Keduanya milik pelanggan: harga dari price
+                                // list grupnya, diskon dari pelanggannya
+                                // sendiri. Mengganti pelanggan tanpa ikut
+                                // mengganti diskon akan meninggalkan angka
+                                // milik pelanggan sebelumnya.
+                                $discount = static::customerDefaultDiscount($state);
+
                                 $items = $get('items') ?? [];
                                 foreach ($items as $key => $item) {
                                     if (!empty($item['product_id'])) {
                                         $newPrice = static::calculateProductPrice($state, $item['product_id']);
                                         $set("items.{$key}.price", number_format($newPrice, 0, '', '.'));
+                                        $set("items.{$key}.discount", $discount);
                                     }
                                 }
                             }),
@@ -233,7 +241,7 @@ class SalesOrderResource extends Resource
                                             'product_id' => $productId,
                                             'weight' => 0,
                                             'price' => number_format($price, 0, '', '.'),
-                                            'discount' => 0,
+                                            'discount' => static::customerDefaultDiscount($customerId),
                                             'note' => '',
                                         ];
                                     }
@@ -346,6 +354,34 @@ class SalesOrderResource extends Resource
                     ])
                     ->disabled(fn (?SalesOrder $record) => in_array($record?->status, ['cancelled', 'canceled', 'ready']))
             ]);
+    }
+
+    /**
+     * Diskon awal sebuah baris SO, diambil dari pelanggannya.
+     *
+     * Sejajar dengan harga: harga datang dari price list grup, diskon datang
+     * dari pelanggan itu sendiri. Diskon TIDAK diambil dari grup karena grup
+     * LION berisi 29 pelanggan dan hanya tiga Distribution Center-nya yang
+     * berhak atas diskon 2%.
+     *
+     * Yang dikembalikan di sini hanya NILAI AWAL. Begitu tersimpan, angka di
+     * SO itulah yang berlaku sampai kapan pun -- Invoice memakainya apa
+     * adanya, tanpa menimpa. Karena itu mengubah diskon di master pelanggan
+     * tidak menyentuh SO yang sudah dibuat, termasuk yang belum ditagih.
+     *
+     * Sebelumnya diskon 2% ditentukan dengan mencocokkan POTONGAN NAMA
+     * pelanggan di dalam InvoiceResource, dan penggantiannya baru terjadi
+     * saat invoice dibuat. Akibatnya SO tertulis 0% sementara invoice menagih
+     * 2%: angkanya benar, tapi dokumen yang dipegang pelanggan dan tagihan
+     * yang dikirim tidak cocok. Sekarang diskonnya terlihat sejak di SO.
+     */
+    protected static function customerDefaultDiscount($customerId): float
+    {
+        if (! $customerId) {
+            return 0.0;
+        }
+
+        return (float) (Customer::find($customerId)?->default_discount ?? 0);
     }
 
     /**

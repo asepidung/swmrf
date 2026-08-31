@@ -1096,6 +1096,7 @@ membuang waktu Project Owner.
 | Repack | 31 Agu 2026 | neraca bahan vs hasil, warna terbalik |
 | Price List + Customer | 31 Agu 2026 | tawaran price list untuk grup baru |
 | Sales Order (harga & diskon) | 31 Agu 2026 | diskon persen tanpa penjaga, log debug |
+| Diskon pelanggan | 31 Agu 2026 | 2% Lion DC pindah dari cocok-nama ke data |
 
 **Belum tersentuh:** Tally, Delivery Plan, Delivery Order, Sales Return,
 Invoice, Stock Take, Mutation. Sales Order baru disisir pada bagian harga
@@ -1107,20 +1108,53 @@ beberapa minggu, dan penataan ulang tampilan halaman Input Bahan/Hasil
 belum dikerjakan. Metode input Material Usage juga masih terbuka; lihat
 bagian tersendiri di atas.
 
-Dua temuan dari penyisiran Price List sengaja TIDAK dikerjakan karena
-modulnya belum gilirannya, dan keduanya menunggu Owner:
+Satu temuan dari penyisiran Price List sengaja TIDAK dikerjakan karena
+modulnya belum gilirannya:
 
-- **Diskon 2% keras berdasarkan potongan nama pelanggan.** `InvoiceResource`
-  memberi diskon 2% kepada pelanggan yang namanya mengandung `DCA`, `DCB`,
-  atau `DCC`, di empat tempat terpisah, menimpa diskon yang tertulis di
-  Sales Order. Konsekuensinya: mengganti nama pelanggan diam-diam mengubah
-  harganya, dan pelanggan baru yang namanya kebetulan memuat huruf itu ikut
-  kena. Aturan bisnisnya perlu dikonfirmasi sebelum dipindahkan ke tempat
-  yang semestinya.
 - **pH masih memakai `->numeric()`** di GR Product labeling, Sales Return,
   Stock Take, dan Found Item Scanner. Owner sudah memutuskan pH tidak boleh
   bertombol panah saat modul Boning disisir; keputusan yang sama belum
   diterapkan di keempat tempat itu, dan pH ikut masuk ke barcode 26 karakter.
+
+### Diskon pelanggan: di pelanggan, bukan di grup dan bukan di segment
+
+Tiga Distribution Center Lion Superindo (DCA, DCB, DCC) disepakati mendapat
+diskon 2%. Dulu aturan itu ada **di dalam kode**: `InvoiceResource` mencocokkan
+POTONGAN NAMA pelanggan, di empat tempat terpisah. Sejak 31 Agustus 2026
+diskonnya ada di kolom `customers.default_discount`.
+
+**Kenapa di pelanggan.** Grup LION berisi **29 pelanggan** -- tiga DC, sisanya
+toko dan kantor. Diskon di tingkat grup akan mengenai 26 toko yang tidak
+berhak. Segment juga tidak bisa: ia berlaku lintas perusahaan, sehingga DC
+milik pelanggan lain ikut kena tanpa pernah disepakati. Harga tetap di grup
+lewat price list, karena harga memang disepakati dengan perusahaannya.
+
+**Aturan umum yang dipakai Owner untuk memilih lapisnya:** yang biasanya SAMA
+untuk seluruh grup ditaruh di grup; yang berbeda antar titik kirim ditaruh di
+pelanggan. TOP saat ini masih di pelanggan meski sebenarnya seragam per grup;
+memindahkannya menyentuh jatuh tempo piutang, jadi ditunda sampai giliran
+modul itu -- ia tidak sedang rusak, hanya diisi berulang.
+
+**Yang penting dipahami tentang bekas masalahnya:** penggantian 2% itu terjadi
+saat INVOICE dibuat, bukan saat SO dibuat. Jadi maksud "supaya pembuat SO
+tidak lupa" tidak pernah tercapai -- SO tetap tertulis 0% sementara invoice
+menagih 2%. Dokumen yang dipegang pelanggan tidak cocok dengan tagihannya.
+Sekarang Sales Order mengisi diskonnya sendiri dari pelanggan dan
+menampilkannya, lalu Invoice memakainya apa adanya.
+
+**Nilai di SO yang menentukan, selamanya.** Kolom di master pelanggan hanya
+mengisi nilai awal. Kalau diskon DC suatu saat berubah, SO lama tetap memakai
+angka yang berlaku saat itu.
+
+Migrasi `2026_08_31_180100` memindahkan keadaan yang sedang berlaku ke dalam
+data supaya tagihannya tidak berubah pada saat pergantian: kolom pelanggan
+diisi, dan diskon pada SO yang **belum diinvoice** ikut diisi -- rombongan
+itulah yang akan tertagih kurang bila aturan lamanya dicabut begitu saja.
+Invoice yang sudah terbit tidak disentuh; ia menyimpan angkanya sendiri di
+`invoice_items`.
+
+`CustomerDefaultDiscountTest` memindai seluruh `app/` untuk keputusan yang
+diambil dari nama pelanggan, jadi bentuk ini tidak bisa lahir lagi.
 
 ### Batas angka di Filament tidak membatasi apa pun tanpa aturan numerik
 
