@@ -751,5 +751,16 @@
     "This Cattle Weighing has been processed into Carcass and is now read-only.": "This Cattle Weighing has been processed into Carcass and is now read-only.",
     "Total Shrinkage": "Total Shrinkage",
     "Weigher": "Weigher",
-    "Actual weight must be filled in; a cattle left at zero is recorded as a total loss.": "Actual weight must be filled in; a cattle left at zero is recorded as a total loss."
+    "Actual weight must be filled in; a cattle left at zero is recorded as a total loss.": "Actual weight must be filled in; a cattle left at zero is recorded as a total loss.",
+    "Carcass 1, Carcass 2, and Hides must all be filled in.": "Carcass 1, Carcass 2, and Hides must all be filled in.",
+    "The two carcass halves differ by more than :max kg; one of them is likely mistyped.": "The two carcass halves differ by more than :max kg; one of them is likely mistyped.",
+    "Total :total kg is heavier than the cattle itself (:reference kg).": "Total :total kg is heavier than the cattle itself (:reference kg).",
+    "Cannot delete Carcass because it has already been processed into Boning.": "Cannot delete Carcass because it has already been processed into Boning.",
+    "Draft Carcass": "Draft Carcass",
+    "This Carcass has been processed into Boning and is now read-only.": "This Carcass has been processed into Boning and is now read-only.",
+    "Total Carcass 1": "Total Carcass 1",
+    "Total Carcass 2": "Total Carcass 2",
+    "Total Hides": "Total Hides",
+    "Total Offal": "Total Offal",
+    "Total Tail": "Total Tail"
 }

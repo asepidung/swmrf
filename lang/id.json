@@ -751,5 +751,16 @@
     "This Cattle Weighing has been processed into Carcass and is now read-only.": "Penimbangan ini sudah diproses menjadi karkas, jadi tidak bisa diubah lagi.",
     "Total Shrinkage": "Total Susut",
     "Weigher": "Petugas Timbang",
-    "Actual weight must be filled in; a cattle left at zero is recorded as a total loss.": "Berat aktual wajib diisi; sapi yang dibiarkan nol tercatat sebagai kerugian penuh."
+    "Actual weight must be filled in; a cattle left at zero is recorded as a total loss.": "Berat aktual wajib diisi; sapi yang dibiarkan nol tercatat sebagai kerugian penuh.",
+    "Carcass 1, Carcass 2, and Hides must all be filled in.": "Karkas 1, Karkas 2, dan Hides wajib diisi.",
+    "The two carcass halves differ by more than :max kg; one of them is likely mistyped.": "Selisih kedua belahan karkas lebih dari :max kg; kemungkinan salah satu salah ketik.",
+    "Total :total kg is heavier than the cattle itself (:reference kg).": "Total :total kg lebih berat daripada sapinya sendiri (:reference kg).",
+    "Cannot delete Carcass because it has already been processed into Boning.": "Karkas tidak bisa dihapus karena sudah diproses ke Boning.",
+    "Draft Carcass": "Draft Karkas",
+    "This Carcass has been processed into Boning and is now read-only.": "Karkas ini sudah diproses ke Boning, jadi tidak bisa diubah lagi.",
+    "Total Carcass 1": "Total Karkas 1",
+    "Total Carcass 2": "Total Karkas 2",
+    "Total Hides": "Total Hides",
+    "Total Offal": "Total Offal",
+    "Total Tail": "Total Tail"
 }
