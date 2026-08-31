@@ -65,7 +65,7 @@ class CustomerResource extends Resource
                                     ->label(fn() => __('Head Office Address'))
                                     ->columnSpanFull(),
                             ])
-                            ->helperText(__('Leave empty if Customer does not have a Group.')),
+                            ->helperText(__('Leave empty to create a group named after this customer. A group is required because price lists belong to groups, not to individual customers.')),
                         Forms\Components\Select::make('customer_segment_id')
                             ->relationship('segment', 'name')
                             ->label(fn() => __('Segment'))

@@ -3,29 +3,33 @@
 namespace App\Filament\Clusters\CustomersCluster\Resources\CustomerResource\Pages;
 
 use App\Filament\Clusters\CustomersCluster\Resources\CustomerResource;
-use Filament\Actions;
+use App\Filament\Clusters\CustomersCluster\Resources\CustomerResource\Pages\Concerns\KeepsCustomerInAGroup;
+use App\Support\PriceListInvitation;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateCustomer extends CreateRecord
 {
+    use KeepsCustomerInAGroup;
+
     protected static string $resource = CustomerResource::class;
 
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        if (empty($data['customer_group_id'])) {
-            $group = \App\Models\CustomerGroup::firstOrCreate(
-                ['name' => strtoupper($data['name'])],
-                [
-                    'head_office_pic' => $data['pic'] ?? null,
-                    'head_office_address' => $data['address'] ?? null,
-                ]
-            );
-            $data['customer_group_id'] = $group->id;
-        }
-        
-        $data['name'] = strtoupper($data['name']);
-        
-        return $data;
+        return $this->ensureCustomerGroup($data);
+    }
+
+    /**
+     * Pelanggan baru hampir selalu berarti grup baru, dan grup baru berarti
+     * belum ada satu harga pun. Ditawarkan sekarang supaya price list-nya
+     * sudah siap sebelum Sales Order pertama dibuat, bukan sesudahnya.
+     */
+    protected function afterCreate(): void
+    {
+        PriceListInvitation::offerFor($this->getRecord()->group);
     }
 
     protected function getRedirectUrl(): string
