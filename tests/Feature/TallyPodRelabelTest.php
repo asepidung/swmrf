@@ -161,10 +161,18 @@ class TallyPodRelabelTest extends TestCase
             'views/filament/admin/resources/tally-resource/pages/scan-tally.blade.php'
         ));
 
-        $this->assertStringContainsString('grid grid-cols-2', $view);
-        $this->assertStringNotContainsString('xl:grid-cols-2', $view);
-        $this->assertStringNotContainsString('grid-cols-1 ', $view);
+        // Ditulis sebagai style langsung, bukan kelas Tailwind. Panel admin
+        // tidak memuat hasil build CSS aplikasi, sehingga yang berlaku hanya
+        // CSS bawaan Filament -- dan di sana kelas dua-kolom yang polos tidak
+        // ada, hanya varian ber-breakpoint. Menulisnya sebagai kelas
+        // menghasilkan grid tanpa definisi kolom: isinya menumpuk ke bawah
+        // tanpa satu pun error.
+        $this->assertStringContainsString('grid-template-columns: 1fr 1fr', $view);
         $this->assertStringContainsString('sticky top-6', $view);
+
+        // Kelas dua-kolom Tailwind tidak boleh dipakai di halaman ini, dengan
+        // atau tanpa breakpoint.
+        $this->assertDoesNotMatchRegularExpression('/class="[^"]*grid-cols-/', $view);
     }
 
     /**

@@ -1116,6 +1116,45 @@ modulnya belum gilirannya:
   bertombol panah saat modul Boning disisir; keputusan yang sama belum
   diterapkan di keempat tempat itu, dan pH ikut masuk ke barcode 26 karakter.
 
+### Panel admin TIDAK memuat CSS hasil build aplikasi
+
+`FilamentAsset::register` di `AppServiceProvider` sengaja dinonaktifkan, jadi
+yang berlaku di panel hanya CSS bawaan Filament -- dan Filament hanya
+menyertakan kelas yang **ia sendiri** pakai. Kelas Tailwind yang ditulis di
+blade aplikasi **belum tentu ada wujudnya**, dan kegagalannya sepenuhnya
+senyap: tidak ada error, elemennya sekadar tampil tanpa gaya.
+
+**Contoh yang sudah menggigit dua kali di halaman Scan Tally:** `grid-cols-2`
+yang polos TIDAK ADA di CSS Filament; yang ada hanya varian ber-breakpoint
+seperti `md:grid-cols-2`. Menulis `<div class="grid grid-cols-2">`
+menghasilkan grid tanpa definisi kolom, sehingga isinya menumpuk ke bawah.
+Karena itu tata letak dua kolom di halaman itu ditulis sebagai **style
+langsung**, bukan kelas -- dan penulis aslinya rupanya sudah menabrak hal yang
+sama, karena kode lamanya juga memakai style langsung.
+
+**Sebelum memakai kelas Tailwind di blade panel, pastikan ia benar-benar ada:**
+
+```
+grep -c "\.nama-kelas[^a-zA-Z0-9_-]" public/css/filament/filament/app.css
+```
+
+Perhatikan bahwa sebagian kelas memakai selektor gabungan (`space-y-6` menjadi
+`.space-y-6>:not([hidden])~:not([hidden])`), jadi pencocokan yang terlalu ketat
+bisa memberi hasil negatif palsu.
+
+**Utang yang sudah diketahui, belum dikerjakan.** Pemindaian halaman Scan Tally
+menemukan **22 dari 68 kelas** tidak menghasilkan CSS apa pun. Tujuh di
+antaranya diperbaiki saat itu; enam belas sisanya sudah ada sejak sebelumnya --
+antara lain `dark:bg-gray-900`, `dark:text-white`, `focus:ring-primary-500`,
+`ring-gray-950/5`, bahkan `mb-1`. Halamannya tetap terlihat wajar karena
+Filament sudah punya warna bawaan yang masuk akal untuk mode gelap, sehingga
+tidak ada yang menyadarinya.
+
+Memperbaikinya menyeluruh berarti menyentuh cara aset dimuat untuk **seluruh**
+panel -- entah dengan mendaftarkan build Vite aplikasi, atau dengan memperluas
+`missing-color-utilities.blade.php` menjadi berkas utilitas umum. Sudah
+disepakati Owner sebagai pekerjaan tersendiri, bukan disisipkan sambil lalu.
+
 ### Urutan kerja yang diminta Owner, 1 September 2026
 
 Tally, lalu **Delivery Order**, lalu **plandev**. Owner meminta secara khusus
