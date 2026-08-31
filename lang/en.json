@@ -780,5 +780,11 @@
     "TOP": "TOP",
     "Discount must be a whole percent.": "Discount must be a whole percent.",
     "New Sales Order": "New Sales Order",
-    "Ready to be tallied.": "Ready to be tallied."
+    "Ready to be tallied.": "Ready to be tallied.",
+    "Max POD": "Max POD",
+    "Maximum pack age in days. Older items turn red and can be relabeled.": "Maximum pack age in days. Older items turn red and can be relabeled.",
+    "Older than the limit. Click to relabel.": "Older than the limit. Click to relabel.",
+    "Change the POD date and reprint the label.": "Change the POD date and reprint the label.",
+    "Scan / Box": "Scan / Box",
+    "PO": "PO"
 }

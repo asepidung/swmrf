@@ -1116,6 +1116,33 @@ modulnya belum gilirannya:
   bertombol panah saat modul Boning disisir; keputusan yang sama belum
   diterapkan di keempat tempat itu, dan pH ikut masuk ke barcode 26 karakter.
 
+### Urutan kerja yang diminta Owner, 1 September 2026
+
+Tally, lalu **Delivery Order**, lalu **plandev**. Owner meminta secara khusus
+supaya diingatkan mengerjakan plandev setelah Delivery Order selesai --
+jangan sampai terlewat.
+
+### Notifikasi web push memang menampilkan dua ikon di Android
+
+Bukan bug, dan **jangan dicoba diperbaiki lagi**. Android Chrome selalu
+menggambar dua: `badge` (siluet kecil, status bar dan kepala notifikasi) dan
+`icon` (gambar besar berwarna di kanan). Keduanya wajib.
+
+Melepas `icon` supaya tersisa satu **sudah dicoba dua kali** dan dua-duanya
+gagal dengan cara yang sama: Android membuat avatar huruf dari nama domain,
+sehingga muncul huruf "C" dari `coba.wijayameat.co.id`. Owner melaporkannya
+langsung. Percobaan ketiga akan berakhir sama.
+
+Asetnya sendiri sudah benar: `pwalogo-badge-192.png` adalah siluet kepala
+sapi berlatar transparan (Android hanya membaca kanal alpha lalu mewarnainya
+sendiri), dan `pwalogo-maskable-192.png` yang beralas dipakai sebagai ikon
+besar karena Android memotongnya menjadi lingkaran.
+
+Satu-satunya perbaikan yang mungkin adalah membuat ikon besarnya **berbeda**
+dari logo -- misalnya gambar yang menjelaskan jenis pekerjaannya -- supaya
+tidak terbaca sebagai logo yang sama dua kali. Menghilangkan salah satunya
+tidak mungkin.
+
 ### Diskon itu persen BULAT di seluruh sistem
 
 `sales_order_items.discount` bertipe bilangan bulat, dan sejak 31 Agustus 2026

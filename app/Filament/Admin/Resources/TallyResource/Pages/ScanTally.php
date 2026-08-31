@@ -189,27 +189,40 @@ class ScanTally extends Page implements HasForms, HasTable
                     ->label(__('pH'))
                     ->alignCenter(),
 
+                // Merah DAN bisa diklik hanya untuk barang yang umurnya sudah
+                // MELEWATI batas. Yang masih dalam batas tampil biasa tanpa
+                // tautan.
+                //
+                // Sebelumnya warnanya sudah benar tetapi aksinya dipasang
+                // tanpa syarat, sehingga setiap tanggal POD terlihat dan
+                // terasa bisa diklik -- termasuk barang yang tidak perlu
+                // dilabeli ulang sama sekali.
+                //
+                // Yang mematikannya harus ->disableClick(), bukan ->hidden()
+                // pada aksinya. Filament merender selnya sebagai tombol
+                // begitu sebuah aksi terpasang, tanpa memeriksa apakah aksi
+                // itu sedang tampil; menyembunyikan aksinya hanya membuat
+                // kliknya tidak melakukan apa-apa, sementara selnya tetap
+                // terlihat bisa diklik. Dengan disableClick, Filament
+                // merendernya sebagai sel biasa.
                 Tables\Columns\TextColumn::make('pack_date')
                     ->label(__('POD'))
                     ->date('d-m-y')
                     ->alignCenter()
-                    ->color(function (?TallyItem $record, $livewire) {
-                        if (!$record) {
-                            return null;
-                        }
-                        $podLimit = $livewire->podLimit;
-                        if ($podLimit !== null && $podLimit !== '' && $record->pack_date) {
-                            $ageInDays = (int) abs(now()->startOfDay()->diffInDays($record->pack_date->startOfDay()));
-                            if ($ageInDays > (int) $podLimit) {
-                                return 'danger';
-                            }
-                        }
-                        return null;
-                    })
+                    ->color(fn (?TallyItem $record, $livewire) => $livewire->isPastPodLimit($record) ? 'danger' : null)
+                    ->weight(fn (?TallyItem $record, $livewire) => $livewire->isPastPodLimit($record) ? 'bold' : null)
+                    ->tooltip(fn (?TallyItem $record, $livewire) => $livewire->isPastPodLimit($record)
+                        ? __('Older than the limit. Click to relabel.')
+                        : null)
+                    ->disableClick(fn (?TallyItem $record, $livewire) => ! $livewire->isPastPodLimit($record))
                     ->action(
                         Tables\Actions\Action::make('relabel')
+                            // Penjagaan kedua. disableClick menghentikan
+                            // kliknya di layar; ini menghentikan pemanggilan
+                            // yang tidak lewat layar.
+                            ->visible(fn (?TallyItem $record, $livewire) => $livewire->isPastPodLimit($record))
                             ->modalHeading(__('Relabel Tally Item'))
-                            ->modalDescription(__('Ubah tanggal POD dan cetak ulang label.'))
+                            ->modalDescription(__('Change the POD date and reprint the label.'))
                             ->form(fn (TallyItem $record) => [
                                 Forms\Components\TextInput::make('product_name')
                                     ->label(__('Product'))
@@ -445,24 +458,61 @@ class ScanTally extends Page implements HasForms, HasTable
         $this->dispatch('focus-barcode');
     }
 
+    /**
+     * Barang ini sudah melewati batas umur POD.
+     *
+     * Satu-satunya tempat aturannya ditulis. Warna, tebal huruf, keterangan
+     * bantuan, bisa-tidaknya diklik, dan penjagaan aksinya semua bertanya ke
+     * sini -- kalau aturannya disalin, kelimanya bisa berbeda pendapat dan
+     * sebuah baris bisa tampil merah tetapi menolak diklik.
+     *
+     * Batas yang belum diisi berarti TIDAK ADA yang lewat batas. Tanpa angka
+     * pembanding kita memang tidak tahu apa-apa, dan menganggap semuanya
+     * kedaluwarsa akan menyalakan seluruh kolom menjadi merah.
+     */
+    public function isPastPodLimit(?TallyItem $record): bool
+    {
+        if (! $record || ! $record->pack_date) {
+            return false;
+        }
+
+        if ($this->podLimit === null || $this->podLimit === '') {
+            return false;
+        }
+
+        $ageInDays = (int) abs(now()->startOfDay()->diffInDays($record->pack_date->startOfDay()));
+
+        return $ageInDays > (int) $this->podLimit;
+    }
+
     public function getSummaryData(): array
     {
-        $soItems = $this->record->salesOrder->items()->with('product')->get();
-        $summary = [];
-        foreach ($soItems as $item) {
-            $scannedWeight = (float) $this->record->items()->where('product_id', $item->product_id)->sum('weight');
-            $scannedBox = $this->record->items()->where('product_id', $item->product_id)->count();
-            $balance = $scannedWeight - (float) $item->weight;
-            $summary[] = [
-                'product_name' => $item->product?->name ?? 'Unknown',
-                'po_weight' => (float) $item->weight,
-                'scanned_weight' => $scannedWeight,
-                'scanned_box' => $scannedBox,
-                'balance' => $balance,
-                'notes' => $item->note,
-            ];
-        }
-        return $summary;
+        // Dihitung sekali dalam dua kueri, bukan dua kueri per produk.
+        // Halaman ini digambar ulang setiap kali satu barcode dipindai, jadi
+        // kueri per baris ikut terkena berkali-kali sepanjang penerimaan.
+        $scanned = $this->record->items()
+            ->selectRaw('product_id, SUM(weight) as total_weight, COUNT(*) as total_box')
+            ->groupBy('product_id')
+            ->get()
+            ->keyBy('product_id');
+
+        return $this->record->salesOrder->items()->with('product')->get()
+            ->map(function ($item) use ($scanned) {
+                $row = $scanned->get($item->product_id);
+
+                $scannedWeight = (float) ($row->total_weight ?? 0);
+                $scannedBox = (int) ($row->total_box ?? 0);
+
+                return [
+                    'product_name' => $item->product?->name ?? 'Unknown',
+                    'po_weight' => (float) $item->weight,
+                    'scanned_weight' => $scannedWeight,
+                    'scanned_box' => $scannedBox,
+                    'balance' => $scannedWeight - (float) $item->weight,
+                    'notes' => $item->note,
+                ];
+            })
+            ->all();
     }
 
     public function getViewData(): array

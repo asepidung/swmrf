@@ -1,38 +1,63 @@
+{{--
+    Halaman pemindaian tally.
+
+    Dua hal yang dulu membuatnya sesak. Pertama, kolom Max POD Age memakai
+    sepertiga lebar padahal isinya paling banyak dua angka, sehingga kotak
+    pindai -- satu-satunya isian yang benar-benar dipakai sepanjang hari --
+    justru menjadi sempit. Kedua, ringkasan PO punya enam kolom di separuh
+    layar, sehingga kolom paling kanan terpotong.
+
+    Berat dan jumlah box kini digabung menjadi satu kolom berbentuk
+    "12,22 / 1". Keduanya memang selalu dibaca berbarengan, dan menyatukannya
+    membebaskan satu kolom penuh tanpa menghilangkan satu angka pun.
+--}}
 <x-filament-panels::page>
-    <!-- Original split scan layout -->
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; width: 100%;">
-        <!-- Left Side: Barcode Scanner & Scanned Items List -->
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-2 items-start w-full">
+
+        {{-- Kiri: pemindai dan daftar hasil pindai --}}
         <div class="space-y-6">
-            <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
+            <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
                 <form wire:submit.prevent="scan">
-                    <div class="flex gap-4 items-end">
-                        <div class="flex-1">
-                            <label for="barcode_input" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">{{ __('Scan Barcode Here') }}</label>
-                            <input 
+                    <div class="flex gap-3 items-end">
+                        <div class="flex-1 min-w-0">
+                            <label for="barcode_input" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                                {{ __('Scan Barcode Here') }}
+                            </label>
+                            <input
                                 id="barcode_input"
-                                type="text" 
+                                type="text"
                                 wire:model="barcode"
-                                placeholder="{{ __('Scan Barcode Here') }}" 
+                                placeholder="{{ __('Scan Barcode Here') }}"
                                 class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white text-center text-xl font-bold py-3"
                                 autofocus
                                 autocomplete="off"
                                 required
                             >
                         </div>
-                        <div class="w-1/3">
-                            <label for="pod_limit_input" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Max POD Age (Days)</label>
-                            <input 
+
+                        {{--
+                            Lebarnya dipatok, bukan sepersekian layar: isinya
+                            paling banyak dua angka, dan sisa ruangnya lebih
+                            berguna untuk kotak pindai di sebelahnya.
+                        --}}
+                        <div class="w-20 shrink-0">
+                            <label for="pod_limit_input" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                                {{ __('Max POD') }}
+                            </label>
+                            <input
                                 id="pod_limit_input"
-                                type="number" 
+                                type="number"
                                 required
                                 min="0"
+                                max="99"
                                 wire:model.live="podLimit"
-                                placeholder="Limit" 
+                                placeholder="0"
+                                title="{{ __('Maximum pack age in days. Older items turn red and can be relabeled.') }}"
                                 class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white text-center text-xl font-bold py-3"
                             >
                         </div>
                     </div>
-                    <button type="submit" class="hidden">Scan</button>
+                    <button type="submit" class="hidden">{{ __('Scan') }}</button>
                 </form>
             </div>
 
@@ -41,55 +66,68 @@
             </div>
         </div>
 
-        <!-- Right Side: PO Summary Table -->
-        <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
-            <h3 class="text-lg font-bold mb-4">{{ __('PO Summary') }}</h3>
+        {{-- Kanan: ringkasan PO --}}
+        <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
+            <h3 class="text-base font-bold mb-3 text-gray-950 dark:text-white">{{ __('PO Summary') }}</h3>
+
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse text-sm">
                     <thead>
-                        <tr class="border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400">
-                            <th class="py-2">{{ __('Product') }}</th>
-                            <th class="py-2 px-4 text-right">{{ __('PO Weight') }}</th>
-                            <th class="py-2 px-4 text-right">{{ __('Qty Scan') }}</th>
-                            <th class="py-2 px-4 text-center">{{ __('Box') }}</th>
-                            <th class="py-2 px-4 text-right">{{ __('Balance') }}</th>
-                            <th class="py-2 pl-6">{{ __('Notes') }}</th>
+                        <tr class="border-b border-gray-200 dark:border-gray-800 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                            <th class="py-2 pr-2 font-semibold">{{ __('Product') }}</th>
+                            <th class="py-2 px-2 text-right font-semibold whitespace-nowrap">{{ __('PO') }}</th>
+                            <th class="py-2 px-2 text-right font-semibold whitespace-nowrap">{{ __('Scan / Box') }}</th>
+                            <th class="py-2 px-2 text-right font-semibold whitespace-nowrap">{{ __('Balance') }}</th>
+                            <th class="py-2 pl-2 font-semibold">{{ __('Notes') }}</th>
                         </tr>
                     </thead>
+
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                         @php
                             $totalPo = 0;
                             $totalScan = 0;
                             $totalBox = 0;
                         @endphp
+
                         @foreach($this->getSummaryData() as $row)
                             @php
                                 $totalPo += $row['po_weight'];
                                 $totalScan += $row['scanned_weight'];
                                 $totalBox += $row['scanned_box'];
                             @endphp
-                            <tr class="border-b border-gray-100 dark:border-gray-800/50">
-                                <td class="py-3 font-medium text-gray-900 dark:text-white">{{ $row['product_name'] }}</td>
-                                <td class="py-3 px-4 text-right">{{ number_format($row['po_weight'], 2) }}</td>
-                                <td class="py-3 px-4 text-right font-semibold text-primary-600 dark:text-primary-400">{{ number_format($row['scanned_weight'], 2) }}</td>
-                                <td class="py-3 px-4 text-center">{{ $row['scanned_box'] }}</td>
-                                <td class="py-3 px-4 text-right font-medium {{ $row['balance'] > 0 ? 'text-danger-600 dark:text-danger-400' : 'text-gray-950 dark:text-white' }}">
+                            <tr>
+                                <td class="py-2 pr-2 font-medium text-gray-900 dark:text-white">{{ $row['product_name'] }}</td>
+                                <td class="py-2 px-2 text-right tabular-nums whitespace-nowrap">{{ number_format($row['po_weight'], 2) }}</td>
+                                <td class="py-2 px-2 text-right tabular-nums whitespace-nowrap font-semibold text-primary-600 dark:text-primary-400">
+                                    {{ number_format($row['scanned_weight'], 2) }}
+                                    <span class="font-normal text-gray-400 dark:text-gray-500">/ {{ $row['scanned_box'] }}</span>
+                                </td>
+                                {{--
+                                    Kelebihan pindai berwarna merah; kekurangan
+                                    tidak. Kurang itu pekerjaan yang belum
+                                    selesai, lebih itu barang yang tidak
+                                    dipesan.
+                                --}}
+                                <td class="py-2 px-2 text-right tabular-nums whitespace-nowrap font-medium {{ $row['balance'] > 0 ? 'text-danger-600 dark:text-danger-400' : 'text-gray-950 dark:text-white' }}">
                                     {{ number_format($row['balance'], 2) }}
                                 </td>
-                                <td class="py-3 pl-6 text-gray-500 dark:text-gray-400 text-xs">{{ $row['notes'] }}</td>
+                                <td class="py-2 pl-2 text-gray-500 dark:text-gray-400 text-xs">{{ $row['notes'] }}</td>
                             </tr>
                         @endforeach
                     </tbody>
+
                     <tfoot>
                         @php
                             $totalBalance = $totalScan - $totalPo;
                         @endphp
                         <tr class="border-t-2 border-gray-200 dark:border-gray-800 font-bold text-gray-900 dark:text-white">
-                            <td class="py-3">{{ __('Total') }}</td>
-                            <td class="py-3 px-4 text-right">{{ number_format($totalPo, 2) }}</td>
-                            <td class="py-3 px-4 text-right">{{ number_format($totalScan, 2) }}</td>
-                            <td class="py-3 px-4 text-center">{{ $totalBox }}</td>
-                            <td class="py-3 px-4 text-right {{ $totalBalance > 0 ? 'text-danger-600 dark:text-danger-400' : '' }}">
+                            <td class="py-2 pr-2">{{ __('Total') }}</td>
+                            <td class="py-2 px-2 text-right tabular-nums whitespace-nowrap">{{ number_format($totalPo, 2) }}</td>
+                            <td class="py-2 px-2 text-right tabular-nums whitespace-nowrap">
+                                {{ number_format($totalScan, 2) }}
+                                <span class="font-normal text-gray-400 dark:text-gray-500">/ {{ $totalBox }}</span>
+                            </td>
+                            <td class="py-2 px-2 text-right tabular-nums whitespace-nowrap {{ $totalBalance > 0 ? 'text-danger-600 dark:text-danger-400' : '' }}">
                                 {{ number_format($totalBalance, 2) }}
                             </td>
                             <td></td>
@@ -117,7 +155,7 @@
             const input = document.getElementById('barcode_input');
             if (input) input.focus();
         });
-        
+
         // Livewire page update hook
         document.addEventListener('livewire:init', () => {
             Livewire.on('focus-barcode', () => {
@@ -127,6 +165,5 @@
                 }, 50);
             });
         });
-
     </script>
 </x-filament-panels::page>
