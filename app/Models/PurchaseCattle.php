@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -87,20 +88,12 @@ class PurchaseCattle extends Model
      */
     public static function generateDocumentNumber(): string
     {
-        $prefix = 'SWM-CPO#'.date('y');
-
-        $lastRecord = static::withTrashed()
-            ->where('document_number', 'like', "{$prefix}%")
-            ->lockForUpdate()
-            ->orderByRaw('LENGTH(document_number) DESC')
-            ->orderBy('document_number', 'desc')
-            ->first();
-
-        $sequence = $lastRecord
-            ? ((int) substr($lastRecord->document_number, strlen($prefix))) + 1
-            : 1;
-
-        return $prefix.str_pad((string) $sequence, 3, '0', STR_PAD_LEFT);
+        return DocumentNumber::next(
+            query: static::withTrashed(),
+            column: 'document_number',
+            prefix: 'SWM-CPO#'.date('y'),
+            padding: 3,
+        );
     }
 
     public function supplier(): BelongsTo

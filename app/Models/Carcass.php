@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -48,24 +49,12 @@ class Carcass extends Model
             }
 
             if (empty($model->carcass_number)) {
-                DB::transaction(function () use ($model) {
-                    $year = date('y');
-                    $prefix = "CC#{$year}";
-                    
-                    $lastRecord = static::withTrashed()
-                        ->where('carcass_number', 'like', "{$prefix}%")
-                        ->lockForUpdate()
-                        ->orderBy('carcass_number', 'desc')
-                        ->first();
-
-                    $sequence = 1;
-                    if ($lastRecord) {
-                        $lastSequence = (int) substr($lastRecord->carcass_number, -3);
-                        $sequence = $lastSequence + 1;
-                    }
-
-                    $model->carcass_number = $prefix . str_pad($sequence, 3, '0', STR_PAD_LEFT);
-                });
+                $model->carcass_number = DocumentNumber::next(
+                    query: static::withTrashed(),
+                    column: 'carcass_number',
+                    prefix: 'CC#'.date('y'),
+                    padding: 3,
+                );
             }
         });
 

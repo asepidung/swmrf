@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -53,24 +54,12 @@ class CattleWeighing extends Model
             }
 
             if (empty($model->weighing_number)) {
-                DB::transaction(function () use ($model) {
-                    $year = date('y');
-                    $prefix = "CW#{$year}";
-                    
-                    $lastRecord = static::withTrashed()
-                        ->where('weighing_number', 'like', "{$prefix}%")
-                        ->lockForUpdate()
-                        ->orderBy('weighing_number', 'desc')
-                        ->first();
-
-                    $sequence = 1;
-                    if ($lastRecord) {
-                        $lastSequence = (int) substr($lastRecord->weighing_number, -3);
-                        $sequence = $lastSequence + 1;
-                    }
-
-                    $model->weighing_number = $prefix . str_pad($sequence, 3, '0', STR_PAD_LEFT);
-                });
+                $model->weighing_number = DocumentNumber::next(
+                    query: static::withTrashed(),
+                    column: 'weighing_number',
+                    prefix: 'CW#'.date('y'),
+                    padding: 3,
+                );
             }
         });
 

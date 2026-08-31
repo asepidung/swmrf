@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -55,24 +56,12 @@ class CattleReceiving extends Model
 
             // Generate GRC/CR number if not provided
             if (empty($model->receiving_number)) {
-                DB::transaction(function () use ($model) {
-                    $year = date('y');
-                    $prefix = "CR#{$year}";
-                    
-                    $lastRecord = static::withTrashed()
-                        ->where('receiving_number', 'like', "{$prefix}%")
-                        ->lockForUpdate()
-                        ->orderBy('receiving_number', 'desc')
-                        ->first();
-
-                    $sequence = 1;
-                    if ($lastRecord) {
-                        $lastSequence = (int) substr($lastRecord->receiving_number, -3);
-                        $sequence = $lastSequence + 1;
-                    }
-
-                    $model->receiving_number = $prefix . str_pad($sequence, 3, '0', STR_PAD_LEFT);
-                });
+                $model->receiving_number = DocumentNumber::next(
+                    query: static::withTrashed(),
+                    column: 'receiving_number',
+                    prefix: 'CR#'.date('y'),
+                    padding: 3,
+                );
             }
         });
     }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -46,17 +47,12 @@ class Mutation extends Model
             }
 
             if (empty($model->mutation_number)) {
-                $year = date('y');
-                $prefix = 'MT#' . $year;
-                $latest = self::where('mutation_number', 'like', $prefix . '%')
-                    ->orderBy('id', 'desc')
-                    ->first();
-                $counter = 1;
-                if ($latest) {
-                    $latestCounter = (int) substr($latest->mutation_number, -3);
-                    $counter = $latestCounter + 1;
-                }
-                $model->mutation_number = $prefix . str_pad($counter, 3, '0', STR_PAD_LEFT);
+                $model->mutation_number = DocumentNumber::next(
+                    query: static::query(),
+                    column: 'mutation_number',
+                    prefix: 'MT#'.date('y'),
+                    padding: 3,
+                );
             }
         });
     }
