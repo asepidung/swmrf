@@ -4,12 +4,21 @@ namespace App\Filament\Admin\Resources\CattleReceivingResource\Pages;
 
 use App\Filament\Admin\Resources\CattleReceivingResource;
 use App\Models\PurchaseCattle;
+use App\Filament\Admin\Resources\CattleReceivingResource\Concerns\SavesUniqueEartags;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class CreateCattleReceiving extends CreateRecord
 {
+    use SavesUniqueEartags;
+
     protected static string $resource = CattleReceivingResource::class;
+
+    protected function handleRecordCreation(array $data): Model
+    {
+        return $this->saveGuardingEartags(fn (): Model => parent::handleRecordCreation($data));
+    }
 
     public function mount(): void
     {

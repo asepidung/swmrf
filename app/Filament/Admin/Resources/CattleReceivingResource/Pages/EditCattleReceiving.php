@@ -4,11 +4,20 @@ namespace App\Filament\Admin\Resources\CattleReceivingResource\Pages;
 
 use App\Filament\Admin\Resources\CattleReceivingResource;
 use Filament\Actions;
+use App\Filament\Admin\Resources\CattleReceivingResource\Concerns\SavesUniqueEartags;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class EditCattleReceiving extends EditRecord
 {
+    use SavesUniqueEartags;
+
     protected static string $resource = CattleReceivingResource::class;
+
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        return $this->saveGuardingEartags(fn (): Model => parent::handleRecordUpdate($record, $data));
+    }
 
 
 
