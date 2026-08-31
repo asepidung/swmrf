@@ -47,34 +47,60 @@ class PurchaseCattle extends Model
                 $model->created_by = Auth::id();
             }
 
-            // Generate document number if not provided
             if (empty($model->document_number)) {
-                DB::transaction(function () use ($model) {
-                    $year = date('y');
-                    $prefix = "SWM-CPO#{$year}";
-                    
-                    $lastRecord = static::withTrashed()
-                        ->where('document_number', 'like', "{$prefix}%")
-                        ->lockForUpdate()
-                        ->orderBy('document_number', 'desc')
-                        ->first();
-
-                    $sequence = 1;
-                    if ($lastRecord) {
-                        $lastSequence = (int) substr($lastRecord->document_number, -3);
-                        $sequence = $lastSequence + 1;
-                    }
-
-                    $model->document_number = $prefix . str_pad($sequence, 3, '0', STR_PAD_LEFT);
-                });
+                $model->document_number = static::generateDocumentNumber();
             }
         });
 
         static::deleting(function ($model) {
             if ($model->receivings()->exists()) {
-                throw new \Exception("Cannot delete PO Cattle because it has already been received.");
+                throw new \Exception(__('Cannot delete PO Cattle because it has already been received.'));
             }
         });
+    }
+
+    /**
+     * Nomor dokumen berikutnya: SWM-CPO#26001.
+     *
+     * TIDAK memakai `substr(-3)` untuk membaca urutan terakhir. Cara itu
+     * membuat modul berhenti bekerja di PO ke-1000: nomornya menjadi
+     * `...1000`, tiga digit terakhirnya terbaca `000`, urutan berikutnya
+     * dihitung 1, dan nomor yang sudah ada dicoba lagi -- menabrak unique
+     * index dengan error yang tidak menjelaskan apa-apa. 999 PO setahun
+     * kira-kira 2,7 per hari; di RPH itu sangat mungkin tercapai.
+     *
+     * Sekarang urutannya dibaca dari SELURUH bagian setelah prefix, jadi
+     * format lama yang tiga digit tetap terbaca dan nomornya tumbuh sendiri
+     * menjadi empat digit saat melewati 999.
+     *
+     * Urutannya juga tidak boleh diambil dengan `orderBy` string biasa:
+     * `...26999` dianggap lebih besar daripada `...261000` karena '9' > '1'.
+     * Diurutkan berdasarkan PANJANG lebih dulu -- didukung MySQL maupun
+     * SQLite, dan testing berjalan di SQLite.
+     *
+     * `lockForUpdate()` sengaja TIDAK dibungkus transaksinya sendiri di
+     * sini. Transaksi yang bersarang di dalam `creating()` akan commit
+     * sebelum Eloquent menjalankan INSERT, sehingga kuncinya lepas justru
+     * pada celah yang seharusnya dijaga. Pemanggilnya yang membuka
+     * transaksi, sehingga kunci bertahan sampai barisnya benar-benar
+     * tersimpan -- lihat CreatePurchaseCattle::handleRecordCreation().
+     */
+    public static function generateDocumentNumber(): string
+    {
+        $prefix = 'SWM-CPO#'.date('y');
+
+        $lastRecord = static::withTrashed()
+            ->where('document_number', 'like', "{$prefix}%")
+            ->lockForUpdate()
+            ->orderByRaw('LENGTH(document_number) DESC')
+            ->orderBy('document_number', 'desc')
+            ->first();
+
+        $sequence = $lastRecord
+            ? ((int) substr($lastRecord->document_number, strlen($prefix))) + 1
+            : 1;
+
+        return $prefix.str_pad((string) $sequence, 3, '0', STR_PAD_LEFT);
     }
 
     public function supplier(): BelongsTo

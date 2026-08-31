@@ -21,7 +21,6 @@
                 <th>Cattle Class</th>
                 <th>Qty</th>
                 <th>Price</th>
-                <th>Subtotal</th>
                 <th>Note</th>
             </tr>
         </thead>
@@ -34,7 +33,6 @@
                 <td>{{ $record->cattleClass->name ?? '-' }}</td>
                 <td style="text-align: right">{{ number_format($record->qty, 0, ',', '.') }}</td>
                 <td style="text-align: right">Rp {{ number_format($record->price, 0, ',', '.') }}</td>
-                <td style="text-align: right">Rp {{ number_format($record->subtotal, 0, ',', '.') }}</td>
                 <td>{{ $record->item_notes ?? '-' }}</td>
             </tr>
             @endforeach

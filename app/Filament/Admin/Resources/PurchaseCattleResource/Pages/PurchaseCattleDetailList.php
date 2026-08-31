@@ -55,11 +55,14 @@ class PurchaseCattleDetailList extends Page implements HasTable
                     ->money('IDR', locale: 'id')
                     ->alignRight()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('subtotal')
-                    ->label(__('Subtotal'))
-                    ->money('IDR', locale: 'id')
-                    ->alignRight()
-                    ->sortable(),
+                // Kolom Subtotal DIHAPUS, bukan diperbaiki.
+                //
+                // `PurchaseCattleItem` tidak punya kolom maupun accessor
+                // `subtotal`, jadi kolom ini selalu kosong sejak awal.
+                // Menambalnya dengan `qty * price` justru lebih berbahaya:
+                // harga di PO ini per KG sementara qty adalah jumlah EKOR,
+                // sehingga hasilnya angka yang salah tapi terlihat masuk akal.
+                // Nilai sebenarnya baru diketahui setelah penimbangan.
                 Tables\Columns\TextColumn::make('item_notes')
                     ->label(__('Note'))
                     ->limit(30),
@@ -114,7 +117,7 @@ class PurchaseCattleDetailList extends Page implements HasTable
                                 $writer = new \OpenSpout\Writer\XLSX\Writer();
                                 $writer->openToFile('php://output');
                                 $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                    'PO Number', 'PO Date', 'Supplier', 'Cattle Class', 'Qty (Head)', 'Price', 'Subtotal', 'Item Note'
+                                    'PO Number', 'PO Date', 'Supplier', 'Cattle Class', 'Qty (Head)', 'Price', 'Item Note'
                                 ]));
                                 foreach ($records as $record) {
                                     $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
@@ -124,7 +127,6 @@ class PurchaseCattleDetailList extends Page implements HasTable
                                         $record->cattleClass?->name ?? '',
                                         $record->qty ?? '',
                                         $record->price ?? '',
-                                        $record->subtotal ?? '',
                                         $record->item_notes ?? ''
                                     ]));
                                 }

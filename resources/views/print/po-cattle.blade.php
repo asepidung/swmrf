@@ -293,7 +293,7 @@
             <div class="sig-box">
                 <p>Purchasing,</p>
                 <div class="sig-space"></div>
-                <div class="sig-name">{{ $record->creator->name ?? 'AYU' }}</div>
+                <div class="sig-name">{{ $record->creator->name ?? '-' }}</div>
                 <div class="sig-role">Purchasing Dept.</div>
             </div>
         </div>
