@@ -39,6 +39,7 @@ Sistem ERP untuk **Wijaya Meat**, produsen daging. Merupakan modernisasi sistem 
 
 - Kerjakan di branch `feature/issue-[nomor]`. **Dilarang commit langsung ke `main`.**
 - Setiap rencana yang disetujui wajib punya GitHub Issue. Setiap branch yang selesai diajukan sebagai Pull Request.
+- **Setelah test hijau, langsung commit, merge, dan deploy tanpa menunggu persetujuan tambahan.** Persetujuan diberikan sekali di tahap Implementation Plan; menanyakannya lagi di akhir hanya menahan pekerjaan. Yang tetap wajib dilaporkan: hasil test, apa yang berubah, dan keputusan yang diambil sendiri di tengah jalan.
 - **Deploy: kode sampai sendiri, migrasi dan cache TIDAK.** Auto-deploy GitHub Actions sudah dimatikan, tetapi auto-deploy bawaan Hostinger ternyata masih aktif -- ia meng-clone ulang repo tiap kali `main` berubah (diverifikasi 30 Agustus 2026). Yang TIDAK dikerjakannya: `migrate` dan pembersihan cache. Karena itu setelah merge, masuk lewat SSH (`-tt`, wajib) lalu jalankan **`php artisan migrate --force`**, `optimize:clear`, dan cache warming. **Jangan `git pull` manual** -- ia bisa menabrak clone ulang yang sedang berjalan dan gagal dengan `fatal: not a git repository`. Perintah git di sisi server wajib memakai `git --no-pager`, kalau tidak sesinya menggantung menunggu pager.
 - Kode PHP mengikuti PSR-12.
 
