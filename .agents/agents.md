@@ -1073,7 +1073,28 @@ Ditulis di akhir sesi panjang, supaya sesi berikutnya tidak perlu menggali ulang
 
 ### Modul yang SUDAH disisir
 
-**Master Data, Request Beef, Request Material, PO Beef, PO Material, GR Beef, GR Material**, plus jahitannya ke **Payable**. Selebihnya belum tersentuh.
+Daftar ini WAJIB diperbarui tiap kali sebuah modul selesai disisir. Tanpa
+itu, sesi berikutnya akan memeriksa ulang modul yang sudah bersih dan
+membuang waktu Project Owner.
+
+| Modul | Kapan | Catatan |
+|---|---|---|
+| Master Data | 24 Agu 2026 | unique index identitas |
+| Request Beef | 26 Agu 2026 | harga, notifikasi, uang muka |
+| Request Material | 26 Agu 2026 | disamakan dengan Request Beef |
+| PO Beef | 30 Agu 2026 | jahitan ke Payable |
+| PO Material | 30 Agu 2026 | jahitan ke Payable |
+| GR Beef | 30 Agu 2026 | buka-kunci, pelepasan uang muka |
+| GR Material | 30 Agu 2026 | sistem kunci |
+| Payable | 31 Agu 2026 | kategori pembelian, pengingat jatuh tempo |
+| Bank Account / Buku Kas | 31 Agu 2026 | saldo turunan, saldo awal, penyesuaian |
+| PO Cattle | 31 Agu 2026 | penomoran, subtotal semu, ekspor |
+| Cattle Receiving | 31 Agu 2026 | eartag unik, hutang otomatis, batas berat |
+| Cattle Weighing | 31 Agu 2026 | berat 0 = kerugian penuh, ekspor |
+| Carcass | 31 Agu 2026 | total vs bobot sapi, selisih belahan |
+
+**Belum tersentuh:** Boning, Repack, Tally, Delivery Plan, Delivery Order,
+Sales Order, Sales Return, Invoice, Stock Take, Mutation.
 
 ### Yang paling penting dipahami dari sesi ini
 
