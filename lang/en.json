@@ -776,13 +776,7 @@
     "Discount cannot be more than 100%.": "Discount cannot be more than 100%.",
     "Default Discount": "Default Discount",
     "Discount": "Discount",
-    "Customer Identity": "Customer Identity",
-    "The group decides which price list applies, so every customer belongs to one.": "The group decides which price list applies, so every customer belongs to one.",
-    "Leave empty to create a group named after this customer.": "Leave empty to create a group named after this customer.",
-    "Trading Terms": "Trading Terms",
-    "Agreed with this customer, and carried into every Sales Order and invoice.": "Agreed with this customer, and carried into every Sales Order and invoice.",
-    "TOP (Term of Payment)": "TOP (Term of Payment)",
     "days": "days",
-    "Filled in automatically on every Sales Order, and still editable there.": "Filled in automatically on every Sales Order, and still editable there.",
-    "Contact and Delivery Address": "Contact and Delivery Address"
+    "The group decides which price list applies. Leave it empty to create a group named after this customer.": "The group decides which price list applies. Leave it empty to create a group named after this customer.",
+    "TOP": "TOP"
 }

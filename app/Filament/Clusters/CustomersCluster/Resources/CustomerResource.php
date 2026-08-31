@@ -41,23 +41,38 @@ class CustomerResource extends Resource
     {
         return $form
             ->schema([
-                // Formnya dipecah menurut ARTI, bukan sekadar diurutkan.
-                // Sebelumnya seluruh isian ditumpuk dalam satu bagian dua
-                // kolom, sehingga keterangan panjang di satu sisi membuat
-                // sisi lainnya menganga dan barisnya tidak lagi sejajar.
+                // Satu pelanggan harus muat dalam satu layar, bukan satu
+                // halaman penuh.
                 //
-                // Tiga kelompoknya: siapa pelanggan ini, apa syarat dagangnya,
-                // dan ke mana barangnya dikirim.
-                Forms\Components\Section::make(__('Customer Identity'))
-                    ->description(__('The group decides which price list applies, so every customer belongs to one.'))
+                // Dua hal yang dulu membuatnya boros. Pertama, formnya memakai
+                // dua kolom sama besar, sehingga TOP yang paling banyak tiga
+                // angka dan Invoice Exchange yang cuma Ya/Tidak sama lebarnya
+                // dengan alamat lengkap. Kedua, isiannya dipecah ke beberapa
+                // kartu, dan tiap kartu menambah baris judul serta jarak
+                // tepinya sendiri.
+                //
+                // Sekarang satu kartu dengan kisi 12 kolom: lebar ditentukan
+                // per isian, dan seluruhnya selesai dalam tiga baris.
+                //
+                //   nama 4 | grup 3 | segmen 3 | aktif 2
+                //   TOP 2  | diskon 2 | I-Ex 2 | PIC 3 | telepon 3
+                //   alamat 12
+                Forms\Components\Section::make(__('Basic Information'))
+                    ->description(__('The group decides which price list applies. Leave it empty to create a group named after this customer.'))
+                    ->compact()
+                    ->columns(12)
                     ->schema([
                         Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
                             ->label(fn() => __('Customer Name'))
                             ->required()
                             ->maxLength(255)
                             ->autofocus()
-                            ->extraInputAttributes(['style' => 'text-transform:uppercase']),
+                            ->extraInputAttributes(['style' => 'text-transform:uppercase'])
+                            ->columnSpan(4),
 
+                        // Tanpa helperText: keterangannya sudah ada di
+                        // deskripsi kartu, satu baris untuk seluruh form,
+                        // sehingga tidak menambah tinggi barisnya sendiri.
                         Forms\Components\Select::make('customer_group_id')
                             ->relationship('group', 'name')
                             ->label(fn() => __('Customer Group'))
@@ -75,10 +90,7 @@ class CustomerResource extends Resource
                                     ->label(fn() => __('Head Office Address'))
                                     ->columnSpanFull(),
                             ])
-                            // Keterangannya sengaja satu baris. Alasan
-                            // lengkapnya sudah ada di deskripsi bagian ini,
-                            // supaya tidak mendorong kolom di sebelahnya.
-                            ->helperText(__('Leave empty to create a group named after this customer.')),
+                            ->columnSpan(3),
 
                         Forms\Components\Select::make('customer_segment_id')
                             ->relationship('segment', 'name')
@@ -91,53 +103,50 @@ class CustomerResource extends Resource
                                     ->label(fn() => __('Name'))
                                     ->required()
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
-                            ]),
+                            ])
+                            ->columnSpan(3),
 
                         Forms\Components\Toggle::make('is_active')
                             ->label(fn() => __('Active'))
                             ->default(true)
-                            ->visibleOn('edit'),
-                    ])->columns(2),
+                            ->visibleOn('edit')
+                            ->columnSpan(2),
 
-                // TOP dan diskon sengaja bersebelahan: keduanya syarat dagang
-                // yang disepakati dengan pelanggan ini, dan keduanya mengisi
-                // dokumen di hilir -- TOP menentukan jatuh tempo invoice,
-                // diskon mengisi nilai awal di Sales Order.
-                Forms\Components\Section::make(__('Trading Terms'))
-                    ->description(__('Agreed with this customer, and carried into every Sales Order and invoice.'))
-                    ->schema([
                         // Tanpa ->numeric(), yang akan membuat input menjadi
                         // type=number lengkap dengan tombol panah. TOP
                         // menentukan tanggal jatuh tempo piutang, jadi
                         // tergeser satu tanpa disadari bukan hal sepele.
                         Forms\Components\TextInput::make('top')
-                            ->label(fn() => __('TOP (Term of Payment)'))
+                            ->label(fn() => __('TOP'))
                             ->suffix(__('days'))
                             ->required()
-                            ->extraInputAttributes(['inputmode' => 'numeric'])
-                            ->rules(['integer', 'min:0']),
+                            ->maxLength(3)
+                            ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right'])
+                            ->rules(['integer', 'min:0'])
+                            ->columnSpan(2),
 
-                        // Diskon ini mengisi NILAI AWAL kolom diskon di Sales
-                        // Order, sejajar dengan cara price list mengisi harga.
-                        // Yang tersimpan di SO tetap yang menentukan, jadi
-                        // mengubah angka di sini tidak menyentuh SO yang sudah
-                        // ada -- termasuk yang belum ditagih.
+                        // Mengisi NILAI AWAL kolom diskon di Sales Order,
+                        // sejajar dengan cara price list mengisi harga. Yang
+                        // tersimpan di SO tetap yang menentukan, jadi mengubah
+                        // angka di sini tidak menyentuh SO yang sudah ada --
+                        // termasuk yang belum ditagih.
                         //
                         // Letaknya di pelanggan, bukan di grup: grup LION
                         // berisi 29 pelanggan dan hanya tiga Distribution
                         // Center-nya yang berhak atas diskon ini.
                         Forms\Components\TextInput::make('default_discount')
-                            ->label(fn() => __('Default Discount'))
+                            ->label(fn() => __('Discount'))
                             ->suffix('%')
                             ->default(0)
-                            ->extraInputAttributes(['inputmode' => 'decimal'])
+                            ->maxLength(6)
+                            ->extraInputAttributes(['inputmode' => 'decimal', 'class' => 'text-right'])
                             ->rules(['numeric', 'min:0', 'max:100'])
                             ->validationMessages([
                                 'numeric' => __('Discount must be a number.'),
                                 'min' => __('Discount cannot be negative.'),
                                 'max' => __('Discount cannot be more than 100%.'),
                             ])
-                            ->helperText(__('Filled in automatically on every Sales Order, and still editable there.')),
+                            ->columnSpan(2),
 
                         Forms\Components\Select::make('invoice_exchange')
                             ->label(fn() => __('Invoice Exchange'))
@@ -146,26 +155,26 @@ class CustomerResource extends Resource
                                 '0' => __('No'),
                             ])
                             ->required()
-                            ->native(false),
-                    ])->columns(3),
-
-                Forms\Components\Section::make(__('Contact and Delivery Address'))
-                    ->schema([
-                        Forms\Components\Textarea::make('address')
-                            ->label(fn() => __('Full Address'))
-                            ->required()
-                            ->rows(3)
-                            ->columnSpanFull(),
+                            ->native(false)
+                            ->columnSpan(2),
 
                         Forms\Components\TextInput::make('pic')
                             ->label(fn() => __('PIC / Person In Charge'))
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->columnSpan(3),
 
                         Forms\Components\TextInput::make('phone')
                             ->label(fn() => __('Phone Number'))
                             ->tel()
-                            ->maxLength(255),
-                    ])->columns(2),
+                            ->maxLength(255)
+                            ->columnSpan(3),
+
+                        Forms\Components\Textarea::make('address')
+                            ->label(fn() => __('Full Address'))
+                            ->required()
+                            ->rows(2)
+                            ->columnSpanFull(),
+                    ]),
 
                 Forms\Components\Section::make(__('Required Documents'))
                     ->description(__('Check the documents that must be included during delivery.'))

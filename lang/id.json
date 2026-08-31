@@ -776,13 +776,7 @@
     "Discount cannot be more than 100%.": "Diskon tidak boleh lebih dari 100%.",
     "Default Discount": "Diskon Bawaan",
     "Discount": "Diskon",
-    "Customer Identity": "Identitas Pelanggan",
-    "The group decides which price list applies, so every customer belongs to one.": "Grup menentukan price list mana yang berlaku, jadi setiap pelanggan selalu ada di dalam satu grup.",
-    "Leave empty to create a group named after this customer.": "Kosongkan untuk membuat grup bernama sama dengan pelanggan ini.",
-    "Trading Terms": "Syarat Dagang",
-    "Agreed with this customer, and carried into every Sales Order and invoice.": "Disepakati dengan pelanggan ini, dan terbawa ke setiap Sales Order dan invoice.",
-    "TOP (Term of Payment)": "TOP (Tempo Pembayaran)",
     "days": "hari",
-    "Filled in automatically on every Sales Order, and still editable there.": "Terisi otomatis di setiap Sales Order, dan tetap bisa diubah di sana.",
-    "Contact and Delivery Address": "Kontak dan Alamat Pengiriman"
+    "The group decides which price list applies. Leave it empty to create a group named after this customer.": "Grup menentukan price list mana yang berlaku. Kosongkan untuk membuat grup bernama sama dengan pelanggan ini.",
+    "TOP": "TOP"
 }

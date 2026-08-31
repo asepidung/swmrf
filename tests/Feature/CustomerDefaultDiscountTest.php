@@ -157,6 +157,26 @@ class CustomerDefaultDiscountTest extends TestCase
     }
 
     /**
+     * TOP tidak boleh bertombol panah, sama seperti diskon.
+     *
+     * Ia menentukan tanggal jatuh tempo piutang, jadi tergeser satu hari
+     * tanpa disadari bukan hal sepele. Keputusan yang sama sudah diambil
+     * untuk berat karkas dan pH.
+     */
+    public function test_the_payment_term_has_no_spinner_arrows(): void
+    {
+        $source = file_get_contents(app_path(
+            'Filament/Clusters/CustomersCluster/Resources/CustomerResource.php'
+        ));
+
+        $field = substr($source, strpos($source, "TextInput::make('top')"), 600);
+
+        $this->assertStringNotContainsString('->numeric()', $field);
+        $this->assertStringContainsString("'integer'", $field);
+        $this->assertStringContainsString("'inputmode' => 'numeric'", $field);
+    }
+
+    /**
      * Migrasi cutover memindahkan keadaan yang berlaku, bukan mengubahnya.
      *
      * Mencabut aturan lama begitu saja akan membuat SO yang belum diinvoice
