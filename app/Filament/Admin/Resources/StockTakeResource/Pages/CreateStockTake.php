@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\StockTakeResource\Pages;
 use App\Filament\Admin\Resources\StockTakeResource;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
+use App\Support\DocumentNumber;
 use App\Models\StockTake;
 use App\Models\BeefStock;
 use App\Models\StockTakeItem;
@@ -29,19 +30,14 @@ class CreateStockTake extends CreateRecord
         $date = \Carbon\Carbon::parse($data['date']);
         $yymm = $date->format('ym');
         
-        $latest = StockTake::withTrashed()
-            ->whereYear('date', $date->year)
-            ->whereMonth('date', $date->month)
-            ->orderBy('id', 'desc')
-            ->first();
-            
-        if ($latest) {
-            $counter = (int) substr($latest->document_number, -3) + 1;
-        } else {
-            $counter = 1;
-        }
-        
-        $data['document_number'] = 'ST#' . $yymm . str_pad($counter, 3, '0', STR_PAD_LEFT);
+        // Bulannya sudah terkandung di prefix (ST#yymm), jadi penyaring
+        // whereYear/whereMonth tidak lagi diperlukan.
+        $data['document_number'] = DocumentNumber::next(
+            query: StockTake::withTrashed(),
+            column: 'document_number',
+            prefix: 'ST#'.$yymm,
+            padding: 3,
+        );
         $data['created_by'] = auth()->id();
         $data['status'] = 'IN_PROGRESS';
         

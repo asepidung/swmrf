@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -105,27 +106,22 @@ class Invoice extends Model
 
         static::creating(function ($model) {
             if (empty($model->invoice_number)) {
-                $currentYearFull = date('Y');
                 $year2Digit = date('y');
                 $currentMonth = date('n');
 
                 $romans = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
                 $romanMonth = $romans[$currentMonth - 1] ?? 'I';
 
-                $lastInvoice = self::withTrashed()
-                    ->whereYear('created_at', $currentYearFull)
-                    ->orderBy('id', 'desc')
-                    ->first();
-
-                $nextSequence = 1;
-                if ($lastInvoice && !empty($lastInvoice->invoice_number)) {
-                    $lastPart = substr($lastInvoice->invoice_number, -4);
-                    if (is_numeric($lastPart)) {
-                        $nextSequence = ((int) $lastPart) + 1;
-                    }
-                }
-
-                $model->invoice_number = 'SWM-INV#' . $year2Digit . str_pad($nextSequence, 4, '0', STR_PAD_LEFT);
+                // Tahunnya sudah terkandung di prefix, jadi penyaring
+                // `whereYear('created_at')` tidak lagi diperlukan -- dan
+                // memang bukan penyaring yang tepat: dokumen bertanggal
+                // mundur akan salah kelompok.
+                $model->invoice_number = DocumentNumber::next(
+                    query: static::withTrashed(),
+                    column: 'invoice_number',
+                    prefix: 'SWM-INV#'.$year2Digit,
+                    padding: 4,
+                );
             }
             if (empty($model->created_by)) {
                 $model->created_by = auth()->id() ?? 1;

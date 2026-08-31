@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -42,14 +43,12 @@ class SalesReturn extends Model
 
         static::creating(function ($model) {
             if (empty($model->return_number)) {
-                $datePrefix = date('y');
-                $latest = self::withTrashed()
-                    ->where('return_number', 'LIKE', "SR#{$datePrefix}%")
-                    ->orderBy('id', 'desc')
-                    ->first();
-
-                $nextId = $latest ? (int) substr($latest->return_number, -3) + 1 : 1;
-                $model->return_number = "SR#{$datePrefix}" . str_pad($nextId, 3, '0', STR_PAD_LEFT);
+                $model->return_number = DocumentNumber::next(
+                    query: static::withTrashed(),
+                    column: 'return_number',
+                    prefix: 'SR#'.date('y'),
+                    padding: 3,
+                );
             }
             if (empty($model->created_by)) {
                 $model->created_by = Auth::id();

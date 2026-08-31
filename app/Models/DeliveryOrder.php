@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -117,23 +118,12 @@ class DeliveryOrder extends Model
             }
 
             if (empty($do->delivery_order_number)) {
-                $year2Digit = date('y');
-                $currentYearFull = date('Y');
-
-                $lastDo = self::withTrashed()
-                    ->whereYear('created_at', $currentYearFull)
-                    ->orderBy('id', 'desc')
-                    ->first();
-
-                $nextSequence = 1;
-
-                if ($lastDo && !empty($lastDo->delivery_order_number)) {
-                    // delivery_order_number format: SWM-DO#YYxxxx (e.g. SWM-DO#260001)
-                    $lastSequence = (int) substr($lastDo->delivery_order_number, -4);
-                    $nextSequence = $lastSequence + 1;
-                }
-
-                $do->delivery_order_number = 'SWM-DO#' . $year2Digit . str_pad($nextSequence, 4, '0', STR_PAD_LEFT);
+                $do->delivery_order_number = DocumentNumber::next(
+                    query: static::withTrashed(),
+                    column: 'delivery_order_number',
+                    prefix: 'SWM-DO#'.date('y'),
+                    padding: 4,
+                );
             }
         });
 

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -54,23 +55,13 @@ class SalesOrder extends Model
         static::creating(function ($model) {
             if (empty($model->so_number)) {
                 $year2Digit = date('y');
-                $currentYearFull = date('Y');
 
-                $lastOrder = self::withTrashed()
-                    ->whereYear('created_at', $currentYearFull)
-                    ->orderBy('id', 'desc')
-                    ->first();
-
-                $nextSequence = 1;
-
-                if ($lastOrder && !empty($lastOrder->so_number)) {
-                    // so_number format: SO#YYxxxx (e.g. SO#260001)
-                    // The sequence is the last 4 characters
-                    $lastSequence = (int) substr($lastOrder->so_number, -4);
-                    $nextSequence = $lastSequence + 1;
-                }
-
-                $model->so_number = 'SO#' . $year2Digit . str_pad($nextSequence, 4, '0', STR_PAD_LEFT);
+                $model->so_number = DocumentNumber::next(
+                    query: static::withTrashed(),
+                    column: 'so_number',
+                    prefix: 'SO#'.$year2Digit,
+                    padding: 4,
+                );
             }
         });
 
