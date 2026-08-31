@@ -18,8 +18,10 @@ use Tests\TestCase;
  * yang sudah dipakai sepuluh bulan sebelumnya dicoba lagi. Unique index
  * menolaknya dengan error yang tidak menjelaskan apa-apa.
  *
- * Untuk Carcass batas itu bukan teori: satu karkas per sapi yang dipotong,
- * jadi memotong tiga ekor sehari sudah melewati 1.000 dalam setahun.
+ * Seberapa cepat batas itu tercapai berbeda per modul dan jangan ditebak dari
+ * nama dokumennya -- satu nomor Carcass menampung banyak sapi sekaligus,
+ * bukan satu nomor per ekor. Yang menentukan bukan lajunya, melainkan bahwa
+ * kegagalannya datang mendadak tanpa gejala apa pun sebelumnya.
  *
  * Yang dijaga di sini POLANYA, bukan sepuluh berkas yang kebetulan sudah
  * ketahuan -- generator berikutnya akan ditulis dengan menyalin tetangganya.
