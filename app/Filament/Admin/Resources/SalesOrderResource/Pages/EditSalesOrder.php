@@ -77,9 +77,19 @@ class EditSalesOrder extends EditRecord
         foreach ($this->itemsData as $item) {
             $record->items()->create([
                 'product_id' => $item['product_id'],
+                // Berat dan harga memang berpemisah ribuan -- titiknya
+                // dibuang di sini karena JavaScript di form yang memasangnya.
+                //
+                // Diskon TIDAK. Form sengaja tidak memformat kolom itu, jadi
+                // titik di sana hanya mungkin berarti koma desimal, dan
+                // membuangnya bukan membulatkan melainkan mengubah artinya:
+                // 2,5% menjadi 25%, 12,75% menjadi 1275%. Validasi tidak
+                // menangkapnya karena perusakannya terjadi SESUDAH validasi.
+                //
+                // Diskon kini persen bulat, jadi dibaca apa adanya.
                 'weight' => (int) str_replace('.', '', $item['weight'] ?? 0),
                 'price' => (int) str_replace('.', '', $item['price'] ?? 0),
-                'discount' => (int) str_replace('.', '', $item['discount'] ?? 0),
+                'discount' => (int) ($item['discount'] ?? 0),
                 'note' => $item['note'] ?? '',
             ]);
         }

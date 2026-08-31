@@ -136,15 +136,22 @@ class CustomerResource extends Resource
                         // Letaknya di pelanggan, bukan di grup: grup LION
                         // berisi 29 pelanggan dan hanya tiga Distribution
                         // Center-nya yang berhak atas diskon ini.
+                        // Persen BULAT, disamakan dengan kolom diskon di
+                        // Sales Order yang menerimanya. Dulu kolom ini desimal
+                        // sementara yang di SO bilangan bulat, dan penyimpanan
+                        // SO membuang titik desimalnya alih-alih membulatkan:
+                        // 2,5% berubah menjadi 25%. Kalau suatu saat diskon
+                        // berkoma dibutuhkan, KEDUA kolom harus dilebarkan
+                        // bersamaan.
                         Forms\Components\TextInput::make('default_discount')
                             ->label(fn() => __('Discount'))
                             ->suffix('%')
                             ->default(0)
-                            ->maxLength(6)
-                            ->extraInputAttributes(['inputmode' => 'decimal', 'class' => 'text-right'])
-                            ->rules(['numeric', 'min:0', 'max:100'])
+                            ->maxLength(3)
+                            ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right'])
+                            ->rules(['integer', 'min:0', 'max:100'])
                             ->validationMessages([
-                                'numeric' => __('Discount must be a number.'),
+                                'integer' => __('Discount must be a whole percent.'),
                                 'min' => __('Discount cannot be negative.'),
                                 'max' => __('Discount cannot be more than 100%.'),
                             ])
@@ -230,9 +237,7 @@ class CustomerResource extends Resource
                 // dalam kode dan hanya muncul saat invoice dibuat.
                 Tables\Columns\TextColumn::make('default_discount')
                     ->label(fn() => __('Discount'))
-                    ->formatStateUsing(fn ($state) => ((float) $state) > 0
-                        ? rtrim(rtrim(number_format((float) $state, 2, ',', '.'), '0'), ',').'%'
-                        : '-')
+                    ->formatStateUsing(fn ($state) => ((int) $state) > 0 ? ((int) $state).'%' : '-')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('invoice_exchange')
                     ->label(fn() => __('I-Ex'))

@@ -329,9 +329,9 @@ class SalesOrderResource extends Resource
                                     ->hiddenLabel()
                                     ->placeholder(__('Discount'))
                                     ->suffix('%')
-                                    ->rules(['numeric', 'min:0', 'max:100'])
+                                    ->rules(['integer', 'min:0', 'max:100'])
                                     ->validationMessages([
-                                        'numeric' => __('Discount must be a number.'),
+                                        'integer' => __('Discount must be a whole percent.'),
                                         'min' => __('Discount cannot be negative.'),
                                         'max' => __('Discount cannot be more than 100%.'),
                                     ])
@@ -375,13 +375,13 @@ class SalesOrderResource extends Resource
      * 2%: angkanya benar, tapi dokumen yang dipegang pelanggan dan tagihan
      * yang dikirim tidak cocok. Sekarang diskonnya terlihat sejak di SO.
      */
-    protected static function customerDefaultDiscount($customerId): float
+    protected static function customerDefaultDiscount($customerId): int
     {
         if (! $customerId) {
-            return 0.0;
+            return 0;
         }
 
-        return (float) (Customer::find($customerId)?->default_discount ?? 0);
+        return (int) (Customer::find($customerId)?->default_discount ?? 0);
     }
 
     /**

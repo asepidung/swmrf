@@ -1116,6 +1116,56 @@ modulnya belum gilirannya:
   bertombol panah saat modul Boning disisir; keputusan yang sama belum
   diterapkan di keempat tempat itu, dan pH ikut masuk ke barcode 26 karakter.
 
+### Diskon itu persen BULAT di seluruh sistem
+
+`sales_order_items.discount` bertipe bilangan bulat, dan sejak 31 Agustus 2026
+`customers.default_discount` disamakan dengannya. Keputusan Owner: persen
+bulat saja, karena satu-satunya diskon yang berlaku adalah 2%.
+
+**Kalau suatu saat diskon berkoma dibutuhkan, KEDUA kolom harus dilebarkan
+bersamaan.** Melebarkan yang satu saja mengembalikan persoalan yang baru
+diberesi.
+
+**Bekas masalahnya, supaya tidak dipasang lagi.** Penyimpanan Sales Order
+membuang titik dari nilai diskon, sama seperti yang dilakukannya pada berat
+dan harga. Untuk berat dan harga itu BENAR -- JavaScript di form memang
+memasang titik sebagai pemisah ribuan. Untuk diskon itu KELIRU, karena form
+sengaja tidak memformat kolom itu, sehingga titik di sana hanya mungkin
+berarti koma desimal:
+
+```
+diketik 2,5%    tersimpan 25%
+diketik 12,75%  tersimpan 1275%
+```
+
+Validasi tidak menangkapnya: perusakannya terjadi SESUDAH validasi berjalan,
+di `afterCreate` dan `afterSave`. Ini pola yang sama dengan temuan-temuan lain
+pekan ini -- penjagaan yang ada di tempat yang salah.
+
+**Yang sudah diperiksa dan ternyata aman:** `EditSalesOrder` menghapus lalu
+membuat ulang seluruh barisnya setiap kali menyimpan, sehingga ID barisnya
+selalu berganti. Tidak ada tabel mana pun yang menyimpan
+`sales_order_item_id`; Invoice mencocokkan lewat `sales_order_id` +
+`product_id`. Jadi tidak ada yang putus, dan ini bukan bug.
+
+**Masih terbuka, menunggu giliran modul Invoice:** di `InvoiceResource`,
+diskon per baris membuang titik sebagai pemisah ribuan sementara diskon pada
+baris biaya tambahan memperlakukan titik sebagai desimal. Dua field sejenis,
+dua perlakuan berbeda. Dengan persen bulat dampaknya hilang, inkonsistensinya
+belum.
+
+### Notifikasi tally saat Sales Order dibuat
+
+SO baru lahir berstatus `waiting`, dan itu persis keadaan yang ditunggu
+halaman Draft Tally -- jadi begitu SO tersimpan, pekerjaannya memang sudah
+menganggur di meja orang lain. Pemegang `create_tallies` diberi tahu di
+`CreateSalesOrder::afterCreate()`.
+
+**Hanya saat dibuat, tidak saat disunting.** Menyunting SO yang sama beberapa
+kali tidak melahirkan pekerjaan baru, dan notifikasi berulang hanya membuat
+orang berhenti membacanya. Pembuatnya sendiri dikecualikan lewat
+`auth()->id()`.
+
 ### Diskon pelanggan: di pelanggan, bukan di grup dan bukan di segment
 
 Tiga Distribution Center Lion Superindo (DCA, DCB, DCC) disepakati mendapat
