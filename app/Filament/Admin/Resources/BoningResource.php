@@ -212,8 +212,14 @@ class BoningResource extends Resource
             ->actions([
                 /* 1. Tombol Lock */
                 Tables\Actions\Action::make('lock')
-                    ->icon('heroicon-o-lock-closed')
-                    ->color('danger')
+                    // Ikon dan warna menggambarkan KEADAAN, bukan aksinya:
+                    // hijau-terbuka berarti dokumen ini masih bisa diubah,
+                    // merah-tertutup berarti sudah terkunci. Sama seperti
+                    // GR Beef dan GR Material. Menggambarkan aksi justru
+                    // menyesatkan -- gembok tertutup merah pada dokumen yang
+                    // BELUM terkunci terbaca seolah dokumennya sudah dikunci.
+                    ->icon('heroicon-o-lock-open')
+                    ->color('success')
                     ->iconButton()
                     ->tooltip(__('Lock Data'))
                     ->requiresConfirmation()
@@ -231,8 +237,8 @@ class BoningResource extends Resource
 
                 /* 2. Tombol Unlock */
                 Tables\Actions\Action::make('unlock')
-                    ->icon('heroicon-o-lock-open')
-                    ->color('success')
+                    ->icon('heroicon-o-lock-closed')
+                    ->color('danger')
                     ->iconButton()
                     ->tooltip(__('Unlock Data'))
                     ->requiresConfirmation()

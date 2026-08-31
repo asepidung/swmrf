@@ -160,8 +160,10 @@ class RepackResource extends Resource
                     /* Tombol Lock */
                     Tables\Actions\Action::make('lock')
                         ->label(__('Lock'))
-                        ->icon('heroicon-o-lock-closed')
-                        ->color('danger')
+                        // Ikon dan warna menggambarkan KEADAAN, bukan aksinya --
+                        // lihat catatan yang sama di BoningResource.
+                        ->icon('heroicon-o-lock-open')
+                        ->color('success')
                         ->tooltip(__('Kunci Repack (Final)'))
                         ->requiresConfirmation()
                         ->modalHeading(__('Lock Repack Data'))
@@ -176,8 +178,8 @@ class RepackResource extends Resource
                     /* Tombol Unlock */
                     Tables\Actions\Action::make('unlock')
                         ->label(__('Unlock'))
-                        ->icon('heroicon-o-lock-open')
-                        ->color('success')
+                        ->icon('heroicon-o-lock-closed')
+                        ->color('danger')
                         ->tooltip(__('Buka Kunci'))
                         ->requiresConfirmation()
                         ->modalHeading(__('Unlock Repack Data'))

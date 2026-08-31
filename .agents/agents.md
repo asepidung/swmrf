@@ -1122,6 +1122,21 @@ Semuanya memindai seluruh aplikasi, bukan cuma berkas yang kebetulan disentuh:
 | `UserPermissionFormTest` | tiap permission hanya di-seed sekali; tiap modul terpeta ke tab |
 | `RequisitionTranslationCoverageTest` | teks notifikasi terdaftar dua bahasa |
 
+### TERBUKA: metode input Material Usage perlu dirombak
+
+Project Owner, 31 Agustus 2026, setelah mencoba modul Boning: *"masalah
+input material usage ... ini gak bisa dikerjain sekarang harus sesi
+tersendiri mungkin akan dihilangkan atau diubah metodenya ... gw butuh
+diskusi panjang soal ini"*.
+
+**Belum ada keputusan apa pun.** Jangan menyentuh alur input Material Usage
+-- termasuk merapikannya -- sampai pembahasan itu terjadi. Kemungkinan yang
+disebut Owner: dihilangkan sama sekali, atau diganti metodenya.
+
+Yang sudah disentuh dan aman: qty pemakaian material kini wajib lebih dari
+nol dan tidak lagi memakai input bertombol panah. Itu penjagaan isian, bukan
+perubahan alur.
+
 ### Utang yang DIKETAHUI dan sengaja ditunda
 
 1. **43 kunci berbahasa Indonesia** masih dipakai sebagai kunci terjemahan, tersebar sampai Repack, Sales Return, Cattle Weighing, Boning. Daftarnya di `tests/Fixtures/indonesian-translation-keys.json`, dijaga ratchet supaya tidak bertambah. **Tidak darurat** — server berjalan di `APP_LOCALE=id`, jadi pengguna sehari-hari melihat teks yang benar.
