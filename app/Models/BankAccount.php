@@ -34,6 +34,15 @@ class BankAccount extends Model
      */
     public const OPENING_BALANCE_REFERENCE = 'opening_balance';
 
+    /**
+     * Penanda baris penyesuaian kas.
+     *
+     * Saldo awal sifatnya SEKALI. Koreksi yang berulang bukan saldo awal --
+     * itu penyesuaian, dan sengaja dibedakan supaya keduanya tidak tertukar
+     * saat riwayat dibaca kembali berbulan-bulan kemudian.
+     */
+    public const ADJUSTMENT_REFERENCE = 'adjustment';
+
     public function payments()
     {
         return $this->hasMany(Payment::class);
@@ -77,15 +86,38 @@ class BankAccount extends Model
     }
 
     /**
-     * Saldo awal masih boleh diubah selama rekening ini belum dipakai.
+     * Boleh menyetel saldo awal rekening ini?
      *
-     * Begitu ada mutasi lain, mengubahnya akan menggeser seluruh riwayat yang
-     * sudah terjadi di atasnya. Koreksi setelah itu harus lewat penyesuaian
-     * tersendiri, bukan dengan menulis ulang titik awalnya.
+     * MEMBUAT saldo awal aman kapan pun, termasuk pada rekening yang sudah
+     * punya mutasi -- dan itu justru kondisi normal di sini. Sistem ini
+     * refactor dari aplikasi lama: hutang dan piutang sudah berjalan, jadi
+     * pembukuan memang dimulai dari tengah dan titik awalnya baru dipasang
+     * belakangan, dengan tanggal mundur ke cut-off.
+     *
+     * Yang berbahaya adalah MENGGESER titik awal yang sudah menjadi dasar
+     * perhitungan. Karena itu batasnya bukan "rekening sudah dipakai",
+     * melainkan "saldo awalnya sudah ada DAN sudah dipakai": selama belum
+     * pernah diset ia selalu boleh dibuat, dan sesudahnya masih boleh
+     * diperbaiki sampai ada mutasi lain menumpuk di atasnya.
+     *
+     * Koreksi setelah itu punya jalurnya sendiri -- Penyesuaian Kas -- yang
+     * mencatat selisihnya beserta alasannya, bukan menulis ulang masa lalu.
+     * Sama seperti stok fisik yang berbeda dari catatan: jawabannya Stock
+     * Opname, bukan mengubah penerimaan barang yang pertama.
      */
     public function canSetOpeningBalance(): bool
     {
-        return ! $this->transactions()
+        if (! $this->openingBalanceEntry()) {
+            return true;
+        }
+
+        return ! $this->hasEntriesBesidesOpeningBalance();
+    }
+
+    /** Rekening ini sudah punya mutasi selain saldo awalnya sendiri? */
+    public function hasEntriesBesidesOpeningBalance(): bool
+    {
+        return $this->transactions()
             ->where(function ($query) {
                 // Dikelompokkan: tanpa pembungkus ini, `orWhereNull` akan
                 // lolos dari penyaring rekening dan memeriksa seluruh tabel.

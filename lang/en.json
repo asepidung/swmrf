@@ -708,5 +708,15 @@
     "Opening balance must be greater than zero": "Opening balance must be greater than zero",
     "Recorded as an entry in the Cash Book, not as a number on this account.": "Recorded as an entry in the Cash Book, not as a number on this account.",
     "Opening balance for :account": "Opening balance for :account",
-    "Total Balance": "Total Balance"
+    "Total Balance": "Total Balance",
+    "Cash Adjustment": "Cash Adjustment",
+    "Adjustment": "Adjustment",
+    "Adjustment recorded": "Adjustment recorded",
+    "Adjustment must be greater than zero": "Adjustment must be greater than zero",
+    "Direction": "Direction",
+    "Add to balance": "Add to balance",
+    "Deduct from balance": "Deduct from balance",
+    "Reason": "Reason",
+    "Explain why the balance differs, for example a bank statement mismatch.": "Explain why the balance differs, for example a bank statement mismatch.",
+    "An account has only one starting point. Once other entries exist, corrections go through Cash Adjustment instead.": "An account has only one starting point. Once other entries exist, corrections go through Cash Adjustment instead."
 }
