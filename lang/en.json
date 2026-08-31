@@ -701,5 +701,12 @@
     "Type": "Type",
     "Export Data": "Export Data",
     "Receivable payment from :group (:number)": "Receivable payment from :group (:number)",
-    "Damaged Label": "Damaged Label"
+    "Damaged Label": "Damaged Label",
+    "Opening Balance": "Opening Balance",
+    "Opening balance not set": "Opening balance not set",
+    "Opening balance saved": "Opening balance saved",
+    "Opening balance must be greater than zero": "Opening balance must be greater than zero",
+    "Recorded as an entry in the Cash Book, not as a number on this account.": "Recorded as an entry in the Cash Book, not as a number on this account.",
+    "Opening balance for :account": "Opening balance for :account",
+    "Total Balance": "Total Balance"
 }

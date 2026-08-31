@@ -82,7 +82,8 @@ class SupplierPaymentLedgerTest extends TestCase
         $this->assertSame('out', $transaction->type);
         $this->assertEquals(1000000, $transaction->amount);
         $this->assertSame($kas->id, $transaction->bank_account_id);
-        $this->assertEquals(-1000000, $kas->fresh()->balance, 'Saldo KAS tidak berkurang.');
+        // Saldo tidak lagi disimpan di master data; ia dihitung dari buku kas.
+        $this->assertSame(-1000000.0, $kas->fresh()->currentBalance(), 'Saldo KAS tidak berkurang.');
     }
 
     /** @test */
@@ -94,7 +95,7 @@ class SupplierPaymentLedgerTest extends TestCase
         $this->assertSame(1, BankAccount::where('initial', BankAccount::CASH_INITIAL)->count());
 
         $kas = BankAccount::where('initial', BankAccount::CASH_INITIAL)->first();
-        $this->assertEquals(-800000, $kas->balance);
+        $this->assertSame(-800000.0, $kas->currentBalance());
     }
 
     /** @test */
@@ -119,7 +120,7 @@ class SupplierPaymentLedgerTest extends TestCase
         $this->assertNotNull($transaction);
         $this->assertSame('out', $transaction->type);
         $this->assertSame($bca->id, $transaction->bank_account_id);
-        $this->assertEquals(-2000000, $bca->fresh()->balance);
+        $this->assertSame(-2000000.0, $bca->fresh()->currentBalance());
 
         // Transfer tidak boleh ikut membuat/menyentuh akun KAS.
         $this->assertNull(BankAccount::where('initial', BankAccount::CASH_INITIAL)->first());

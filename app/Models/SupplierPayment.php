@@ -105,7 +105,6 @@ class SupplierPayment extends Model
             'transaction_date' => $this->payment_date,
         ]);
 
-        $bankAccount->decrement('balance', $this->amount);
     }
 
     public static function generateNumber(): string
