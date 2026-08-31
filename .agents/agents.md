@@ -1092,9 +1092,17 @@ membuang waktu Project Owner.
 | Cattle Receiving | 31 Agu 2026 | eartag unik, hutang otomatis, batas berat |
 | Cattle Weighing | 31 Agu 2026 | berat 0 = kerugian penuh, ekspor |
 | Carcass | 31 Agu 2026 | total vs bobot sapi, selisih belahan |
+| Boning | 31 Agu 2026 | penomoran dari count, pH, ikon gembok |
+| Repack | 31 Agu 2026 | neraca bahan vs hasil, warna terbalik |
 
-**Belum tersentuh:** Boning, Repack, Tally, Delivery Plan, Delivery Order,
-Sales Order, Sales Return, Invoice, Stock Take, Mutation.
+**Belum tersentuh:** Tally, Delivery Plan, Delivery Order, Sales Order,
+Sales Return, Invoice, Stock Take, Mutation.
+
+**Catatan untuk sesi berikutnya:** dua hal di Repack sengaja ditinggalkan
+dan sudah disepakati Owner -- ambang persen susut menunggu data pemakaian
+beberapa minggu, dan penataan ulang tampilan halaman Input Bahan/Hasil
+belum dikerjakan. Metode input Material Usage juga masih terbuka; lihat
+bagian tersendiri di atas.
 
 ### Yang paling penting dipahami dari sesi ini
 
