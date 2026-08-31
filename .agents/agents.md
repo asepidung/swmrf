@@ -1097,10 +1097,17 @@ membuang waktu Project Owner.
 | Price List + Customer | 31 Agu 2026 | tawaran price list untuk grup baru |
 | Sales Order (harga & diskon) | 31 Agu 2026 | diskon persen tanpa penjaga, log debug |
 | Diskon pelanggan | 31 Agu 2026 | 2% Lion DC pindah dari cocok-nama ke data |
+| Tally (halaman pindai) | 1 Sep 2026 | relabel POD, tata letak pemindai |
 
-**Belum tersentuh:** Tally, Delivery Plan, Delivery Order, Sales Return,
-Invoice, Stock Take, Mutation. Sales Order baru disisir pada bagian harga
-dan diskonnya saja, mengikuti alur price list -- sisanya belum.
+**Belum tersentuh:** Delivery Plan, Delivery Order, Sales Return, Invoice,
+Stock Take, Mutation. Sales Order baru disisir pada bagian harga dan
+diskonnya saja, mengikuti alur price list -- sisanya belum. Tally baru
+disisir pada halaman pindainya; halaman Draft, View, dan cetaknya belum.
+
+**Sesi 1 September 2026 berhenti di sini.** Berikutnya **Delivery Order**,
+lalu ingatkan Owner mengerjakan **plandev**. Tata letak halaman Scan Tally
+ditutup dengan pembagian kolom 7:5; 8:4 sudah dicoba lebih dulu dan Owner
+memilih 7:5.
 
 **Catatan untuk sesi berikutnya:** dua hal di Repack sengaja ditinggalkan
 dan sudah disepakati Owner -- ambang persen susut menunggu data pemakaian
