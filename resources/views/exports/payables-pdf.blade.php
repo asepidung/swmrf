@@ -43,6 +43,7 @@
                 <th style="width: 5%">No</th>
                 <th>Tanggal Timbul</th>
                 <th>No. Dokumen</th>
+                <th>Kategori</th>
                 <th>Supplier</th>
                 <th class="text-right">Total Hutang</th>
                 <th class="text-right">Telah Dibayar</th>
@@ -57,6 +58,7 @@
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td>{{ $record->created_at ? $record->created_at->format('d/m/Y') : '-' }}</td>
                     <td>{{ $record->document_number ?? '-' }}</td>
+                    <td>{{ \App\Models\Payable::sourceLabel($record->payableable_type) }}</td>
                     <td>{{ $record->supplier->name ?? '-' }}</td>
                     <td class="text-right">Rp {{ number_format($record->amount, 0, ',', '.') }}</td>
                     <td class="text-right">Rp {{ number_format($record->paid_amount, 0, ',', '.') }}</td>
