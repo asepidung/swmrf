@@ -160,10 +160,20 @@ class LabelingBoning extends Page implements HasForms, HasTable
 
                             Forms\Components\TextInput::make('ph_level')
                                 ->hiddenLabel()
-                                ->numeric()
-                                ->step(0.1)
-                                ->minValue(5.4)
-                                ->maxValue(5.7)
+                                /*
+                                 * Tanpa komponen angka bawaan. Rentang pH di
+                                 * sini cuma 5,4-5,7 dengan langkah 0,1, jadi
+                                 * SATU sentuhan panah menggeser nilainya tanpa
+                                 * terasa -- dan pH ikut masuk ke barcode 26
+                                 * karakter, sehingga digit yang salah berarti
+                                 * barcode yang salah arti.
+                                 */
+                                ->extraInputAttributes(['inputmode' => 'decimal'])
+                                ->rules(['numeric', 'min:5.4', 'max:5.7'])
+                                ->validationMessages([
+                                    'min' => __('pH must be between :min and :max.', ['min' => '5.4', 'max' => '5.7']),
+                                    'max' => __('pH must be between :min and :max.', ['min' => '5.4', 'max' => '5.7']),
+                                ])
                                 ->placeholder(__('PH (5.4 - 5.7)'))
                                 ->required()
                                 ->extraInputAttributes([
@@ -272,7 +282,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
             ])
             ->actions([
                 Tables\Actions\Action::make('repack_status')
-                    ->label(__('R'))
+                    ->label('R')
                     ->color('warning')
                     ->tooltip(__('Barang sudah masuk bahan repack'))
                     ->visible(fn (BoningItem $record) => DB::table('repack_materials')->where('barcode', $record->barcode)->exists())
@@ -281,7 +291,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
                         'style' => 'cursor: not-allowed;',
                     ]),
                 Tables\Actions\Action::make('tally_status')
-                    ->label(__('D'))
+                    ->label('D')
                     ->color('info')
                     ->tooltip(__('Barang sudah masuk tally'))
                     ->visible(fn (BoningItem $record) => DB::table('tally_items')->where('barcode', $record->barcode)->exists())

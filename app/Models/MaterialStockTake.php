@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -48,10 +49,12 @@ class MaterialStockTake extends Model
 
             if (empty($model->document_number)) {
                 $currentYear = date('Y');
-                $prefix = 'MST#' . date('y');
-                $count = static::withTrashed()->whereYear('date', $currentYear)->count();
-                $sequence = $count + 1;
-                $model->document_number = $prefix . str_pad($sequence, 3, '0', STR_PAD_LEFT);
+                $model->document_number = DocumentNumber::next(
+                    query: static::withTrashed(),
+                    column: 'document_number',
+                    prefix: 'MST#'.date('y'),
+                    padding: 3,
+                );
             }
         });
     }

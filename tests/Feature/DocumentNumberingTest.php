@@ -147,6 +147,14 @@ class DocumentNumberingTest extends TestCase
      * Penjagaan pola: tidak ada generator yang membaca urutannya dengan
      * memotong karakter terakhir.
      *
+     * Dua pola yang ditolak:
+     *
+     *  - urutan dibaca dengan memotong karakter terakhir (`substr(-N)`), yang
+     *    kehilangan angka teratas begitu digitnya bertambah;
+     *  - urutan dihitung dari JUMLAH BARIS, yang ditemukan di Boning. Satu
+     *    dokumen yang dihapus permanen membuat hitungan turun, dan nomor yang
+     *    sudah dipakai dicoba lagi -- menabrak unique index.
+     *
      * Counter BARCODE sengaja dikecualikan. Barcode di sini 26 karakter
      * berformat tetap -- counternya memang TIDAK boleh tumbuh, karena
      * panjangnya bagian dari format itu sendiri. Persoalan berbeda.
@@ -185,6 +193,18 @@ class DocumentNumberingTest extends TestCase
             if (preg_match('/substr\([^,)]+,\s*-\d+\s*\)/', $source, $match)) {
                 $offenders[] = str_replace(app_path().DIRECTORY_SEPARATOR, '', $file->getPathname())
                     .'  ('.$match[0].')';
+
+                continue;
+            }
+
+            // Pola kedua, ditemukan di Boning: urutan dihitung dari JUMLAH
+            // BARIS, bukan dari nomor terakhir. Satu dokumen yang dihapus
+            // permanen membuat hitungan turun, dan nomor yang sudah dipakai
+            // dicoba lagi.
+            if (preg_match('/->count\(\)\s*;?\s*
+\s*\$\w*[Ss]equence\s*=\s*\$\w+\s*\+\s*1/', $source, $match)) {
+                $offenders[] = str_replace(app_path().DIRECTORY_SEPARATOR, '', $file->getPathname())
+                    .'  (urutan dihitung dari count())';
             }
         }
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -43,11 +44,24 @@ class Boning extends Model
             }
 
             if (empty($model->doc_no)) {
-                $currentYear = date('Y');
-                $prefix = 'BN' . date('y');
-                $count = static::withTrashed()->whereYear('created_at', $currentYear)->count();
-                $sequence = $count + 1;
-                $model->doc_no = $prefix . str_pad($sequence, 3, '0', STR_PAD_LEFT);
+                /*
+                 * Dulu nomornya dihitung dari COUNT baris, bukan dari nomor
+                 * terakhir -- satu-satunya generator di aplikasi ini yang
+                 * begitu.
+                 *
+                 * Akibatnya nomor bisa TERULANG: satu dokumen yang dihapus
+                 * permanen membuat hitungan turun, dan dokumen berikutnya
+                 * memakai nomor yang sudah dipakai, langsung menabrak unique
+                 * index dengan error yang tidak menjelaskan apa-apa. Tidak ada
+                 * pula penguncian, sehingga dua penyimpanan bersamaan
+                 * mendapat hitungan yang sama.
+                 */
+                $model->doc_no = DocumentNumber::next(
+                    query: static::withTrashed(),
+                    column: 'doc_no',
+                    prefix: 'BN'.date('y'),
+                    padding: 3,
+                );
             }
 
             if (empty($model->status)) {

@@ -66,7 +66,15 @@ class MaterialUsageBoning extends EditRecord
                                 
                                 Forms\Components\TextInput::make('qty')
                                     ->label(__('Quantity'))
-                                    ->numeric()
+                                    // Tanpa komponen angka bawaan (tombol
+                                    // panahnya gampang tertekan), dan dengan
+                                    // batas bawah -- sebelumnya qty nol atau
+                                    // negatif lolos begitu saja.
+                                    ->extraInputAttributes(['inputmode' => 'decimal'])
+                                    ->rules(['numeric', 'gt:0'])
+                                    ->validationMessages([
+                                        'gt' => __('Quantity must be greater than zero.'),
+                                    ])
                                     ->required(),
 
                                 Forms\Components\TextInput::make('unit')

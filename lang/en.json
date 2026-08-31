@@ -762,5 +762,9 @@
     "Total Carcass 2": "Total Carcass 2",
     "Total Hides": "Total Hides",
     "Total Offal": "Total Offal",
-    "Total Tail": "Total Tail"
+    "Total Tail": "Total Tail",
+    "pH must be between :min and :max.": "pH must be between :min and :max.",
+    "Quantity must be greater than zero.": "Quantity must be greater than zero.",
+    "Carcasses Processed": "Carcasses Processed",
+    "Material Usage - Boning": "Material Usage - Boning"
 }
