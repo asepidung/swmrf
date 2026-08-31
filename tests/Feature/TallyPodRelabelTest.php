@@ -144,6 +144,46 @@ class TallyPodRelabelTest extends TestCase
         $this->assertStringContainsString('max="99"', $view);
     }
 
+    /**
+     * Ringkasan PO selalu bersebelahan dengan daftar pindai, dan melekat.
+     *
+     * Yang dipegang operator adalah alat pemindai, bukan tetikus. Begitu
+     * ringkasannya turun ke bawah daftar, ia harus menggulir bolak-balik
+     * hanya untuk melihat sisa kebutuhan barang -- dan satu tally bisa
+     * berisi ratusan baris, jadi sekadar bersebelahan pun belum cukup:
+     * tanpa dilekatkan, ringkasannya ikut tergulir hilang.
+     *
+     * `xl:grid-cols-2` sudah dicoba dan justru menumpuk di layar Owner.
+     */
+    public function test_the_summary_stays_beside_the_scan_list(): void
+    {
+        $view = file_get_contents(resource_path(
+            'views/filament/admin/resources/tally-resource/pages/scan-tally.blade.php'
+        ));
+
+        $this->assertStringContainsString('grid grid-cols-2', $view);
+        $this->assertStringNotContainsString('xl:grid-cols-2', $view);
+        $this->assertStringNotContainsString('grid-cols-1 ', $view);
+        $this->assertStringContainsString('sticky top-6', $view);
+    }
+
+    /**
+     * Hasil pindai terbaru muncul paling atas.
+     *
+     * Kalau urutannya terlama dulu, pindaian yang barusan dilakukan akan
+     * mendarat di halaman terakhir dan operator tidak bisa memastikan
+     * pindaiannya masuk tanpa berpindah halaman.
+     */
+    public function test_the_newest_scan_is_listed_first(): void
+    {
+        $this->assertStringContainsString(
+            "->defaultSort('id', 'desc')",
+            file_get_contents(app_path(
+                'Filament/Admin/Resources/TallyResource/Pages/ScanTally.php'
+            )),
+        );
+    }
+
     /** Halamannya benar-benar bisa dirender. */
     public function test_the_summary_renders(): void
     {

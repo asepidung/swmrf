@@ -10,9 +10,19 @@
     Berat dan jumlah box kini digabung menjadi satu kolom berbentuk
     "12,22 / 1". Keduanya memang selalu dibaca berbarengan, dan menyatukannya
     membebaskan satu kolom penuh tanpa menghilangkan satu angka pun.
+
+    DUA KOLOM SELALU, tanpa breakpoint. Yang dipegang operator adalah alat
+    pemindai, bukan tetikus: begitu ringkasan PO turun ke bawah daftar, ia
+    harus menggulir bolak-balik hanya untuk melihat sisa kebutuhan barang.
+    Pernah dicoba menyejajarkannya hanya mulai breakpoint terbesar, dan
+    hasilnya justru menumpuk di layar Owner.
+
+    Ringkasannya juga DILEKATKAN (sticky). Satu tally bisa berisi ratusan
+    baris, jadi sekadar bersebelahan belum cukup -- tanpa dilekatkan,
+    ringkasannya ikut tergulir hilang begitu daftarnya memanjang.
 --}}
 <x-filament-panels::page>
-    <div class="grid grid-cols-1 gap-6 xl:grid-cols-2 items-start w-full">
+    <div class="grid grid-cols-2 gap-6 items-start w-full">
 
         {{-- Kiri: pemindai dan daftar hasil pindai --}}
         <div class="space-y-6">
@@ -66,8 +76,8 @@
             </div>
         </div>
 
-        {{-- Kanan: ringkasan PO --}}
-        <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
+        {{-- Kanan: ringkasan PO, melekat supaya tetap terlihat saat menggulir --}}
+        <div class="sticky top-6 rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
             <h3 class="text-base font-bold mb-3 text-gray-950 dark:text-white">{{ __('PO Summary') }}</h3>
 
             <div class="overflow-x-auto">
