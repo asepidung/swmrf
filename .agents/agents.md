@@ -846,6 +846,116 @@ untuk sekarang.
 
 ---
 
+### Uang: saldo diturunkan dari mutasi, TIDAK disimpan di master data
+
+Keputusan Project Owner, 31 Agustus 2026, dengan analogi yang menentukan bentuknya: *"kalo product atau beef kita punya stock, harusnya uang pun ada bisa ditelusuri ada dimana"*, dan *"jangan menyimpan saldo atau stock di master data"*.
+
+Sejajarannya begini:
+
+| | Posisi sekarang | Kartu mutasi | Koreksi |
+|---|---|---|---|
+| Barang | `beef_stocks` | `beef_stock_movements` | Stock Opname |
+| Uang | dihitung dari mutasi | `bank_transactions` (Buku Kas) | Penyesuaian Kas |
+
+**Kolom `bank_accounts.balance` DIHAPUS**, bukan sekadar tidak dipakai lagi. Selama ia ada, seseorang akan menulisinya lagi. Dulu kolom itu di-increment dan di-decrement tiap ada pembayaran, sehingga ada **dua angka yang sama-sama mengaku benar**: kolomnya, dan jumlah baris buku kas. Selama keduanya cocok tidak ada yang terasa; begitu berbeda, tidak ada cara menentukan mana yang salah tanpa memeriksa satu per satu.
+
+Aman dilakukan: `bank_accounts` tabel sistem baru, tidak dipakai sistem lama, dan nilainya memang sudah persis sama dengan jumlah mutasinya (diverifikasi di server sebelum dihapus: selisih nol di ketiga rekening).
+
+**Konsekuensi yang paling berharga:** pembayaran kini menggeser saldo semata-mata karena menambah baris di buku kas. Tidak ada lagi kode terpisah yang mengurangi sebuah kolom, jadi **jalur pembayaran baru mana pun otomatis benar dan tidak bisa lupa**. Saldo dibaca lewat `BankAccount::currentBalance()`; untuk tabel pakai `withSum` supaya tidak satu query per baris.
+
+#### Saldo awal SEKALI; koreksi berikutnya adalah Penyesuaian
+
+Sebelum ini tidak ada cara memasukkan uang ke sistem sama sekali -- uang hanya bisa keluar, sehingga saldo di server minus di dua rekening. Ibarat kartu stok rapi yang tidak pernah punya penerimaan barang pertama.
+
+| | Saldo Awal | Penyesuaian Kas |
+|---|---|---|
+| Berapa kali | sekali per rekening | berkali-kali |
+| Maksudnya | titik mulai pembukuan | koreksi selisih dengan rekening koran |
+| Alasan | opsional | **wajib** |
+| Arah | masuk | masuk atau keluar |
+| Padanan di barang | penerimaan pertama | Stock Opname |
+| Permission | `set_opening_balance` | `adjust_cash_balance` |
+
+Keduanya tersimpan sebagai baris `bank_transactions` dengan `reference_type` `opening_balance` / `adjustment`.
+
+**Aturan penguncian, dan kesalahan yang sempat dibuat.** Percobaan pertama mengunci saldo awal begitu rekening punya mutasi. Itu salah: yang berbahaya bukan MEMBUAT saldo awal belakangan, melainkan MENGGESER titik awal yang sudah jadi dasar perhitungan. Padahal membuatnya belakangan justru kondisi normal proyek ini -- sistem ini refactor dari aplikasi lama, hutang dan piutang sudah berjalan, jadi pembukuan memang dimulai dari tengah dengan tanggal mundur ke cut-off. Akibatnya dua rekening di server tidak bisa diberi saldo awal sama sekali.
+
+Aturan yang berlaku: boleh diset kapan pun selama **belum pernah diset**; sesudahnya masih boleh diperbaiki sampai ada mutasi lain menumpuk di atasnya; setelah itu terkunci permanen dan koreksi lewat Penyesuaian.
+
+**Alasan penyesuaian wajib diisi** dan ikut tersimpan di keterangan barisnya. Itu yang membedakan koreksi dari menulis ulang angka diam-diam: selisih tanpa alasan tidak bisa diperiksa siapa pun nanti, dan justru itulah yang paling sering perlu ditelusuri ulang.
+
+#### Buku Kas read-only, dan kenapa tanpa saldo berjalan
+
+`CashBookResource` sengaja read-only: tiap barisnya adalah JEJAK dari dokumen lain. Membolehkan orang mengetik baris kas langsung akan memutus hubungan itu dan membuat buku kas berbeda dari dokumen yang melahirkannya, tanpa ada yang bisa menunjukkan mana yang benar.
+
+Namanya "Buku Kas", bukan "Bank Transactions", karena tabelnya juga menampung akun KAS tunai.
+
+**Tidak ada kolom saldo berjalan.** Tabel ini tidak menyimpan saldo per baris, jadi saldo berjalan harus diakumulasi dari awal -- dan begitu difilter tanggal (yang wajib untuk modul transaksional), angkanya salah karena baris sebelum rentang tidak ikut terhitung. Saldo yang salah lebih berbahaya daripada tidak ada saldo. Kalau kelak dibutuhkan, jawabannya menyimpan saldo per baris saat transaksinya dibuat, bukan menambal kolom.
+
+#### Penjaga aksi uang kini mencakup BankTransaction
+
+Karena saldo diturunkan dari buku kas, siapa pun yang bisa menulis baris di sana bisa **menciptakan uang**, bukan sekadar mencatat perpindahannya. `MoneyActionPermissionTest` menolak halaman mana pun yang membuat `BankTransaction` tanpa memeriksa hak akses.
+
+#### Peta "uang ada di mana"
+
+Ditanyakan Owner. Kondisinya per 31 Agustus 2026:
+
+| Uangnya di mana | Tabel | Status |
+|---|---|---|
+| Kas dan rekening bank | `bank_transactions` | ada, ada layarnya |
+| Di tangan customer (piutang) | `receivables` / invoice | ada, ada layarnya |
+| Di tangan supplier (DP belum terpakai) | `supplier_payments` (`amount` - `allocated_amount`) | datanya ada, **belum ada layarnya** |
+| Kewajiban ke supplier | `payables` | ada, ada layarnya |
+| Berbentuk barang | `beef_stocks`, `material_stocks` | qty ada; nilai rupiahnya belum diperiksa |
+
+DP menggantung sengaja **belum** dibuatkan layar (keputusan Owner, tidak mendesak). Kalau kelak dibuat: DP yang menggantung tidak pernah menimbulkan error -- PO batal atau barang datang kurang membuat sisanya tercatat selamanya tanpa ada yang menagih.
+
+### Permission BARU dikirim lewat MIGRASI, bukan `db:seed`
+
+Ditemukan 30 Agustus 2026 saat hendak mengirim `view_cash_book` ke server.
+
+`DatabaseSeeder` menyetel ulang password akun `saepullrock` menjadi `1234` **tanpa syarat** setiap kali dijalankan. Menjalankannya di server hidup akan melempar pemiliknya ke alur penggantian password.
+
+Karena deploy sudah menjalankan `migrate --force`, permission baru dikirim lewat migrasi kecil ber-`updateOrInsert` (aman diulang, didukung MySQL maupun SQLite). Tetap didaftarkan juga di `DatabaseSeeder` untuk lingkungan yang dibangun dari nol.
+
+### Kelas warna Tailwind tidak menghasilkan CSS
+
+Ditemukan 30 Agustus 2026 dari gejala sepele: tombol "Damaged Label" tampil polos tanpa warna.
+
+Filament hanya menyertakan kelas utilitas yang dipakai kode Filament **sendiri**, dan proyek ini tidak mengompilasi tema Filament kustom. Jadi `bg-warning-500`, `text-success-700`, `divide-y`, dan `bg-gradient-to-r` tidak menghasilkan CSS apa pun.
+
+Kegagalannya tidak pernah terasa sebagai kegagalan: elemennya tetap ada, tetap bisa diklik, hanya tidak berwarna -- dan garis pemisah tabel hilang tanpa ada yang menyadarinya. Setelah dipindai betul-betul: **75 kelas di 14 berkas**.
+
+**Kenapa bukan tema Filament kustom**, meski itu jawaban yang lebih rapi: ia butuh `npm run build`, sementara server **tidak punya node** dan `public/build` tidak masuk repo. Artinya setiap perubahan tampilan jadi bergantung pada langkah build yang bisa terlupakan, dan lupa build berarti perubahan tidak sampai TANPA GEJALA APA PUN.
+
+Yang dipakai: Filament sudah menyuntikkan variabel warnanya (`--warning-500` dan seterusnya) ke setiap halaman panel, jadi kelas yang kurang cukup didefinisikan sekali di `resources/views/filament/admin/missing-color-utilities.blade.php` memakai variabel itu -- ikut palet dan tema gelap, tanpa kompilasi. `MissingColorUtilitiesTest` memindai ulang seluruh blade, jadi kelas baru yang tidak tercakup langsung gagal.
+
+**Kalau kelak ingin memakai kelas warna baru:** tambahkan di berkas itu, atau pakai komponen Filament (`<x-filament::button color="warning">`) yang sudah punya CSS-nya sendiri.
+
+### Jebakan: test hak akses dengan user `programmer` tidak menguji apa pun
+
+`User::hasPermission()` mengembalikan `true` untuk peran `programmer` tanpa memeriksa apa pun. Sebuah test yang memakai user seperti itu untuk memastikan sebuah aksi terjaga akan **selalu lulus** -- yang diujinya cuma "superuser bisa melakukan segalanya".
+
+Terjadi 31 Agustus 2026 saat menulis test permission Penyesuaian Kas. Test hak akses wajib memakai user berperan `employee`.
+
+### Nama relasi salah menyamar jadi teks yang wajar
+
+Tiga bug 30 Agustus 2026 dengan bentuk yang sama, semuanya dilaporkan Owner dari layar aplikasi -- tidak satu pun menimbulkan error:
+
+| Tempat | Salahnya | Tampilnya |
+|---|---|---|
+| Cetak PO Product | `$item->Beef->name`, relasinya `product()` | kolom nama produk selalu `-` |
+| Cetak PO Product | `$record->approvedBy->name`, di model ini namanya `approver()` | penandatangan selalu "FINANCE" |
+| View PO Product/Material | `TextInput::make('relasi.kolom')` | field selalu kosong |
+
+Dua yang pertama disamarkan operator `??`, yang mengubah null menjadi tampilan masuk akal. **Fallback berupa kata yang terbaca sebagai data menyembunyikan kerusakan** -- 'FINANCE' terbaca seperti format yang disengaja. Fallback sekarang `-`.
+
+Yang ketiga bentuknya berbeda dan layak diingat sendiri: **halaman View mengisi form dari `attributesToArray()`, yang hanya memuat kolom tabel tanpa relasi**, jadi field bernama jalur relasi TIDAK PERNAH terisi. Ada di sembilan tempat pada lima Resource. Pakai nama datar plus `->formatStateUsing(fn ($record) => data_get($record, 'relasi.kolom'))`. Dijaga `no_form_field_is_named_after_a_relation_path`.
+
+### navigationSort kembar = urutan yang tidak dipilih siapa pun
+
+Beef Stock terdampar di posisi ketiga cluster bukan karena ada yang memilihnya, melainkan karena ia dan BeefStockAging sama-sama bernilai 3 sehingga urutannya diputuskan tie-break. Test-nya menolak nilai kembar, bukan sekadar memeriksa posisi -- kalau cuma posisi yang dijaga, penyebabnya bisa kembali lewat halaman baru yang menyalin nilai tetangganya.
+
 ## 5. Status Saat Ini
 
 - **Test suite: 268 lolos, 0 gagal** (1361 assertion, diverifikasi 30 Agustus 2026). Sebelumnya praktis mati total. Jaga tetap hijau.
