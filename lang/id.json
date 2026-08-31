@@ -701,5 +701,12 @@
     "Type": "Tipe",
     "Export Data": "Ekspor Data",
     "Receivable payment from :group (:number)": "Penerimaan piutang dari :group (:number)",
-    "Damaged Label": "Label Rusak"
+    "Damaged Label": "Label Rusak",
+    "Opening Balance": "Saldo Awal",
+    "Opening balance not set": "Saldo awal belum disetel",
+    "Opening balance saved": "Saldo awal tersimpan",
+    "Opening balance must be greater than zero": "Saldo awal harus lebih dari nol",
+    "Recorded as an entry in the Cash Book, not as a number on this account.": "Dicatat sebagai transaksi di Buku Kas, bukan sebagai angka di rekening ini.",
+    "Opening balance for :account": "Saldo awal :account",
+    "Total Balance": "Total Saldo"
 }

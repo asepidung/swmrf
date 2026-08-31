@@ -242,10 +242,9 @@ class ReceivePayment extends Page
 
             // 4. Update Bank Account Balance & Record Transaction
             $bankAccount = BankAccount::find($data['bank_account_id']);
+            // Saldo TIDAK ditulis ke master data. Ia dihitung dari baris
+            // buku kas di bawah ini -- lihat BankAccount::currentBalance().
             if ($bankAccount && $amountTransfer > 0) {
-                $bankAccount->balance += $amountTransfer;
-                $bankAccount->save();
-
                 BankTransaction::create([
                     'bank_account_id' => $bankAccount->id,
                     'type' => 'in', // Uang masuk

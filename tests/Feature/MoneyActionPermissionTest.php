@@ -123,6 +123,12 @@ class MoneyActionPermissionTest extends TestCase
      * SELURUH halaman Filament: yang membuat SupplierPayment atau Payment
      * wajib menyebut sebuah permission di berkas yang sama.
      *
+     * Sejak 31 Agustus 2026 pemindaiannya juga mencakup BankTransaction.
+     * Saldo tidak lagi disimpan di master data -- ia dihitung dari baris
+     * buku kas -- sehingga siapa pun yang bisa menulis baris di sana bisa
+     * MENCIPTAKAN uang, bukan sekadar mencatat perpindahannya. Saldo awal
+     * adalah aksi seperti itu, dan yang berikutnya akan sama.
+     *
      * @test
      */
     public function no_page_creates_a_payment_without_checking_a_permission()
@@ -133,7 +139,9 @@ class MoneyActionPermissionTest extends TestCase
             $source = file_get_contents($file);
 
             $createsPayment = str_contains($source, 'SupplierPayment::create')
-                || str_contains($source, 'Payment::create(');
+                || str_contains($source, 'Payment::create(')
+                || str_contains($source, 'BankTransaction::create')
+                || str_contains($source, 'new BankTransaction');
 
             if (! $createsPayment) {
                 continue;
