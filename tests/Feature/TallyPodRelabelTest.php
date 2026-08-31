@@ -184,6 +184,40 @@ class TallyPodRelabelTest extends TestCase
     }
 
     /**
+     * Sidebar dilepas dan tabelnya dipadatkan di halaman pemindaian.
+     *
+     * Halaman ini dipakai dengan satu alat pemindai di tangan, bukan tetikus.
+     * Setiap gulir mendatar berarti operator harus meletakkan pemindainya
+     * dulu, jadi yang perlu dilihat wajib muat tanpa digeser.
+     *
+     * Membagi dua kolom saja tidak cukup: barcode 26 karakter membuat tabel
+     * kiri menuntut lebar besar, sehingga tanpa tambahan ruang halamannya
+     * hanya berpindah dari "ringkasan terpotong" menjadi "daftar harus
+     * digeser".
+     */
+    public function test_the_scanning_page_gives_itself_room(): void
+    {
+        $view = file_get_contents(resource_path(
+            'views/filament/admin/resources/tally-resource/pages/scan-tally.blade.php'
+        ));
+
+        $this->assertStringContainsString('filament.partials.scanner-page-style', $view);
+
+        $style = file_get_contents(resource_path(
+            'views/filament/partials/scanner-page-style.blade.php'
+        ));
+
+        $this->assertStringContainsString('aside.fi-sidebar', $style);
+        $this->assertStringContainsString('display: none !important', $style);
+
+        // Lewat CSS berlingkup halaman, BUKAN dengan mengubah keadaan sidebar
+        // milik Filament -- keadaan itu diingat antar halaman, jadi menutupnya
+        // dari sini akan ikut menutupnya di seluruh aplikasi.
+        $this->assertStringNotContainsString('$store.sidebar', $style);
+        $this->assertStringNotContainsString('sidebar.close', $style);
+    }
+
+    /**
      * Hasil pindai terbaru muncul paling atas.
      *
      * Kalau urutannya terlama dulu, pindaian yang barusan dilakukan akan

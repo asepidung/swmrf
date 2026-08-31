@@ -37,6 +37,18 @@
     `sticky` dan `top-6` sudah diperiksa ada di CSS Filament.
 --}}
 <x-filament-panels::page>
+    {{--
+        Sidebar dilepas dan tabelnya dipadatkan. Halaman ini dipakai dengan
+        satu alat pemindai di tangan: setiap gulir mendatar berarti operator
+        harus meletakkan pemindainya dulu.
+
+        Sekadar membagi dua kolom tidak cukup. Barcode 26 karakter membuat
+        tabel kiri menuntut lebar besar, sehingga tanpa tambahan ruang ia
+        hanya berpindah dari "ringkasan terpotong" menjadi "daftar harus
+        digeser" -- sama merepotkannya.
+    --}}
+    @include('filament.partials.scanner-page-style')
+
     <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; width: 100%;">
 
         {{-- Kiri: pemindai dan daftar hasil pindai --}}
