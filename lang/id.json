@@ -762,5 +762,9 @@
     "Total Carcass 2": "Total Karkas 2",
     "Total Hides": "Total Hides",
     "Total Offal": "Total Offal",
-    "Total Tail": "Total Tail"
+    "Total Tail": "Total Tail",
+    "pH must be between :min and :max.": "pH harus antara :min dan :max.",
+    "Quantity must be greater than zero.": "Jumlah harus lebih dari nol.",
+    "Carcasses Processed": "Karkas Diproses",
+    "Material Usage - Boning": "Pemakaian Material - Boning"
 }

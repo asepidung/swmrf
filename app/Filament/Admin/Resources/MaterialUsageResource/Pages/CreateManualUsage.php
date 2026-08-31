@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Resources\MaterialUsageResource\Pages;
 
+use App\Support\DocumentNumber;
+
 use App\Filament\Admin\Resources\MaterialUsageResource;
 use App\Models\MaterialAdjustment;
 use App\Models\Material;
@@ -30,10 +32,15 @@ class CreateManualUsage extends CreateRecord
                         Forms\Components\Hidden::make('doc_no')
                             ->default(function () {
                                 $currentYear = date('Y');
-                                $prefix = 'MA#' . date('y');
-                                $count = MaterialAdjustment::withTrashed()->whereYear('adjustment_date', $currentYear)->count();
-                                $sequence = $count + 1;
-                                return $prefix . str_pad($sequence, 3, '0', STR_PAD_LEFT);
+                                // Pratinjau nomor berikutnya. Memakai jalur yang SAMA dengan
+                                // penyimpanannya, supaya yang ditampilkan tidak pernah
+                                // berbeda dari yang akhirnya tersimpan.
+                                return DocumentNumber::next(
+                                    query: MaterialAdjustment::withTrashed(),
+                                    column: 'doc_no',
+                                    prefix: 'MA#'.date('y'),
+                                    padding: 3,
+                                );
                             }),
 
                         Forms\Components\DatePicker::make('adjustment_date')

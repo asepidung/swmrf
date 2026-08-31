@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Support\DocumentNumber;
+
 use App\Filament\Admin\Resources\BoningResource\Pages;
 use App\Models\Boning;
 use App\Models\Carcass;
@@ -53,10 +55,15 @@ class BoningResource extends Resource
                             ->unique(ignoreRecord: true)
                             ->default(function () {
                                 $currentYear = date('Y');
-                                $prefix = 'BN' . date('y');
-                                $count = Boning::withTrashed()->whereYear('created_at', $currentYear)->count();
-                                $sequence = $count + 1;
-                                return $prefix . str_pad($sequence, 3, '0', STR_PAD_LEFT);
+                                // Pratinjau nomor berikutnya. Memakai jalur yang SAMA dengan
+                                // penyimpanannya, supaya yang ditampilkan tidak pernah
+                                // berbeda dari yang akhirnya tersimpan.
+                                return DocumentNumber::next(
+                                    query: Boning::withTrashed(),
+                                    column: 'doc_no',
+                                    prefix: 'BN'.date('y'),
+                                    padding: 3,
+                                );
                             })
                             ->readOnly(),
 
@@ -143,7 +150,7 @@ class BoningResource extends Resource
                     ->label(__('Supplier'))
                     ->getStateUsing(function (Boning $record) {
                         $carcassIds = $record->carcasses->pluck('carcass_id')->toArray();
-                        if (empty($carcassIds)) return __('-');
+                        if (empty($carcassIds)) return '-';
                         $suppliers = DB::table('carcasses')
                             ->whereIn('carcasses.id', $carcassIds)
                             ->join('cattle_weighings', 'carcasses.cattle_weighing_id', '=', 'cattle_weighings.id')

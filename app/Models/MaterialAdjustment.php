@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -33,10 +34,12 @@ class MaterialAdjustment extends Model
 
             if (empty($model->doc_no)) {
                 $currentYear = date('Y');
-                $prefix = 'MA#' . date('y');
-                $count = static::withTrashed()->whereYear('adjustment_date', $currentYear)->count();
-                $sequence = $count + 1;
-                $model->doc_no = $prefix . str_pad($sequence, 3, '0', STR_PAD_LEFT);
+                $model->doc_no = DocumentNumber::next(
+                    query: static::withTrashed(),
+                    column: 'doc_no',
+                    prefix: 'MA#'.date('y'),
+                    padding: 3,
+                );
             }
         });
     }

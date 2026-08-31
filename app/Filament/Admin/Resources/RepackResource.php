@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Support\DocumentNumber;
+
 use App\Filament\Admin\Resources\RepackResource\Pages;
 use App\Models\Repack;
 use Filament\Forms;
@@ -52,10 +54,15 @@ class RepackResource extends Resource
                             ->unique(ignoreRecord: true)
                             ->default(function () {
                                 $currentYear = date('Y');
-                                $prefix = 'RP#' . date('y');
-                                $count = Repack::withTrashed()->whereYear('repack_date', $currentYear)->count();
-                                $sequence = $count + 1;
-                                return $prefix . str_pad($sequence, 3, '0', STR_PAD_LEFT);
+                                // Pratinjau nomor berikutnya. Memakai jalur yang SAMA dengan
+                                // penyimpanannya, supaya yang ditampilkan tidak pernah
+                                // berbeda dari yang akhirnya tersimpan.
+                                return DocumentNumber::next(
+                                    query: Repack::withTrashed(),
+                                    column: 'doc_no',
+                                    prefix: 'RP#'.date('y'),
+                                    padding: 3,
+                                );
                             })
                             ->readOnly()
                             ->columnSpan(1),
