@@ -67,22 +67,23 @@ self.addEventListener('push', function (event) {
     event.waitUntil(
         self.registration.showNotification(payload.title || 'WijayaApps', {
             body: payload.body || '',
-            // icon SENGAJA TIDAK DIPASANG.
+            // icon WAJIB diisi. SUDAH DICOBA DUA KALI melepasnya, dan dua
+            // kali menghasilkan kegagalan yang sama -- jangan dicoba ketiga.
             //
-            // Ikon besar di kanan membuat logo tampil dua kali: sekali sebagai
-            // ikon aplikasi di kiri, sekali lagi di kanan. Keputusan Project
-            // Owner, 31 Agustus 2026: cukup satu.
+            // Tanpa icon, Android Chrome membuat AVATAR HURUF dari nama
+            // domain: huruf "C" dari coba.wijayameat.co.id, yang disangka
+            // pengguna sebagai inisial nama pengirim.
             //
-            // Ini pernah dicoba lalu dibatalkan, dan alasannya perlu diingat:
-            // dulu tanpa icon, Android Chrome membuat AVATAR HURUF dari nama
-            // domain -- huruf "C" dari coba.wijayameat.co.id -- yang disangka
-            // inisial nama pengirim. Yang berubah sejak itu, aplikasinya kini
-            // terpasang sebagai PWA, sehingga yang tampil di kiri adalah ikon
-            // aplikasinya sendiri.
+            // Percobaan kedua (31 Agustus 2026) berangkat dari dugaan bahwa
+            // aplikasi yang sudah TERPASANG sebagai PWA akan memakai ikon
+            // aplikasinya sendiri. Diuji langsung di perangkat Project Owner:
+            // huruf "C" tetap muncul. Dugaan itu salah, dan status terpasang
+            // tidak mengubah apa pun.
             //
-            // KALAU AVATAR HURUF MUNCUL LAGI, pasang kembali opsi ikon besar
-            // di sini dengan nilai '/img/pwalogo-maskable-192.png', dan
-            // kembalikan juga pengirimannya di TaskAlert.
+            // Kesimpulan yang berlaku: logo tampil dua kali adalah perilaku
+            // bawaan Android untuk notifikasi web, dan itu lebih baik
+            // daripada huruf yang menyesatkan.
+            icon: payload.icon || '/img/pwalogo-maskable-192.png',
             // badge WAJIB aset siluet putih tersendiri, BUKAN logo berwarna.
             // Android hanya membaca kanal alpha-nya lalu mewarnai sendiri;
             // logo berwarna penuh tampil sebagai blok padat yang terlihat

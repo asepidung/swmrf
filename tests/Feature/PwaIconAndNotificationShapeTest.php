@@ -122,25 +122,30 @@ class PwaIconAndNotificationShapeTest extends TestCase
     /**
      * Notifikasi WAJIB membawa ikon eksplisit.
      *
-     * KEPUTUSANNYA DIBALIK LAGI, 31 Agustus 2026, atas permintaan Owner:
-     * ikon besar membuat logo tampil dua kali, dan cukup satu.
+     * SUDAH DICOBA DILEPAS DUA KALI, dua kali gagal dengan cara yang sama.
+     * Jangan dicoba ketiga kalinya tanpa alasan baru yang benar-benar kuat.
      *
-     * Riwayatnya sengaja disimpan utuh supaya tidak berputar untuk ketiga
-     * kalinya. Semula "icon" tidak diisi (alasan: logo ganda), lalu WAJIB
-     * diisi setelah terbukti di perangkat bahwa tanpa itu Android Chrome
-     * membuat avatar huruf dari nama domain -- "C" dari coba.wijayameat.co.id
-     * -- yang disangka inisial nama pengirim. Yang berubah sejak itu:
-     * aplikasinya kini terpasang sebagai PWA, sehingga yang tampil di kiri
-     * adalah ikon aplikasinya sendiri, bukan huruf.
+     * Percobaan pertama: "icon" tidak diisi, alasannya logo tampil dua kali.
+     * Dibatalkan setelah terbukti di perangkat -- Android Chrome membuat
+     * avatar huruf dari nama domain, "C" dari coba.wijayameat.co.id, yang
+     * disangka pengguna sebagai inisial nama pengirim.
      *
-     * Yang dijaga sekarang: KEDUA SISI sepakat tidak memasang ikon besar.
-     * TaskAlert boleh berhenti mengirimnya, tapi tidak ada gunanya bila
-     * service worker punya nilai cadangan sendiri dan tetap memasangnya --
-     * itu persis yang sempat terjadi ke arah sebaliknya.
+     * Percobaan kedua, 31 Agustus 2026: dugaannya aplikasi yang sudah
+     * TERPASANG sebagai PWA akan memakai ikon aplikasinya sendiri sehingga
+     * huruf tidak muncul. Diuji langsung di perangkat Project Owner: huruf
+     * "C" tetap muncul. Status terpasang tidak mengubah apa pun.
+     *
+     * Kesimpulan yang berlaku: logo tampil dua kali adalah perilaku bawaan
+     * Android untuk notifikasi web, dan itu lebih baik daripada huruf yang
+     * menyesatkan.
+     *
+     * Dua sisi diperiksa sekaligus: TaskAlert boleh saja mengirim "icon",
+     * tapi tidak ada gunanya bila service worker membuangnya -- itu persis
+     * yang pernah terjadi.
      *
      * @test
      */
-    public function it_does_not_attach_a_large_notification_icon()
+    public function it_always_sends_an_explicit_notification_icon()
     {
         $worker = file_get_contents(public_path('sw.js'));
 
@@ -150,20 +155,22 @@ class PwaIconAndNotificationShapeTest extends TestCase
             strpos($worker, 'notificationclick') - strpos($worker, 'showNotification'),
         );
 
-        $this->assertStringNotContainsString(
-            'icon:',
-            $options,
-            'Service worker masih memasang ikon besar, jadi logo tetap tampil dua kali meski server berhenti mengirimnya.',
-        );
+        $this->assertStringContainsString('icon:', $options, 'Service worker membuang ikon yang dikirim server.');
         $this->assertStringContainsString('badge:', $options);
 
         $taskAlert = file_get_contents(app_path('Notifications/TaskAlert.php'));
 
-        $this->assertStringNotContainsString(
+        $this->assertStringContainsString(
             '->icon(',
             $taskAlert,
-            'TaskAlert masih mengirim ikon besar; logo akan tampil dua kali.',
+            'TaskAlert tidak mengirim ikon, sehingga browser memunculkan avatar huruf.',
         );
+
+        // "icon" (kanan, besar): Android memotong ikon notifikasi menjadi
+        // LINGKARAN. Versi "any" isinya menyentuh tepi kanvas, jadi pasti
+        // terpangkas -- yang boleh dipakai hanya versi beralas.
+        preg_match("/->icon\('([^']+)'\)/", $taskAlert, $iconMatch);
+        $this->assertStringContainsString('maskable', $iconMatch[1] ?? '', 'icon notifikasi bukan versi beralas.');
 
         // "badge" (kiri, kecil): Android HANYA membaca kanal alpha gambar ini
         // lalu mewarnainya sendiri. Memakai icon berwarna penuh (termasuk
