@@ -1094,15 +1094,70 @@ membuang waktu Project Owner.
 | Carcass | 31 Agu 2026 | total vs bobot sapi, selisih belahan |
 | Boning | 31 Agu 2026 | penomoran dari count, pH, ikon gembok |
 | Repack | 31 Agu 2026 | neraca bahan vs hasil, warna terbalik |
+| Price List + Customer | 31 Agu 2026 | tawaran price list untuk grup baru |
+| Sales Order (harga & diskon) | 31 Agu 2026 | diskon persen tanpa penjaga, log debug |
 
-**Belum tersentuh:** Tally, Delivery Plan, Delivery Order, Sales Order,
-Sales Return, Invoice, Stock Take, Mutation.
+**Belum tersentuh:** Tally, Delivery Plan, Delivery Order, Sales Return,
+Invoice, Stock Take, Mutation. Sales Order baru disisir pada bagian harga
+dan diskonnya saja, mengikuti alur price list -- sisanya belum.
 
 **Catatan untuk sesi berikutnya:** dua hal di Repack sengaja ditinggalkan
 dan sudah disepakati Owner -- ambang persen susut menunggu data pemakaian
 beberapa minggu, dan penataan ulang tampilan halaman Input Bahan/Hasil
 belum dikerjakan. Metode input Material Usage juga masih terbuka; lihat
 bagian tersendiri di atas.
+
+Dua temuan dari penyisiran Price List sengaja TIDAK dikerjakan karena
+modulnya belum gilirannya, dan keduanya menunggu Owner:
+
+- **Diskon 2% keras berdasarkan potongan nama pelanggan.** `InvoiceResource`
+  memberi diskon 2% kepada pelanggan yang namanya mengandung `DCA`, `DCB`,
+  atau `DCC`, di empat tempat terpisah, menimpa diskon yang tertulis di
+  Sales Order. Konsekuensinya: mengganti nama pelanggan diam-diam mengubah
+  harganya, dan pelanggan baru yang namanya kebetulan memuat huruf itu ikut
+  kena. Aturan bisnisnya perlu dikonfirmasi sebelum dipindahkan ke tempat
+  yang semestinya.
+- **pH masih memakai `->numeric()`** di GR Product labeling, Sales Return,
+  Stock Take, dan Found Item Scanner. Owner sudah memutuskan pH tidak boleh
+  bertombol panah saat modul Boning disisir; keputusan yang sama belum
+  diterapkan di keempat tempat itu, dan pH ikut masuk ke barcode 26 karakter.
+
+### Batas angka di Filament tidak membatasi apa pun tanpa aturan numerik
+
+`->minValue(0)->maxValue(100)` **hanya** menghasilkan aturan `min:0` dan
+`max:100`. Tanpa aturan numerik yang menyertainya, Laravel memeriksa
+**panjang karakter**, bukan nilainya -- `"500"` lolos karena cuma tiga
+huruf. Ini ditemukan pada diskon Sales Order, yang dipakai Invoice sebagai
+`gross * (discount / 100)`, sehingga diskon 500% menghasilkan baris tagihan
+**minus** tanpa satu pun error.
+
+Perbaikannya **tidak boleh** memakai `->numeric()`: pemanggilan itu membuat
+`getType()` mengembalikan `number`, lengkap dengan tombol panah yang sudah
+dilarang untuk kolom uang dan berat. Tulis aturannya manual:
+
+```php
+->rules(['numeric', 'min:0', 'max:100'])
+```
+
+`NumericRangeValidationTest` memindai seluruh `app/Filament` untuk bentuk
+ini, jadi yang baru tidak bisa lahir diam-diam.
+
+### Pelanggan tanpa grup selalu dibuatkan grup sendiri
+
+Grup adalah satu-satunya jalan menuju harga -- price list dikunci ke
+`customer_groups`. Karena itu pelanggan yang grupnya dikosongkan di form
+otomatis dibuatkan grup bernama sama dengan dirinya (`ensureCustomerGroup`
+pada trait `KeepsCustomerInAGroup`, dipakai bersama oleh halaman Create dan
+Edit supaya keduanya tidak bisa berbeda diam-diam).
+
+Konsekuensinya, **setiap pelanggan baru hampir selalu melahirkan grup baru
+tanpa harga**, dan setiap Sales Order untuknya terisi Rp 0. Nol itu sendiri
+**disengaja** -- keputusan Owner, 31 Agustus 2026: user bebas mengubah harga
+saat membuat SO, jadi nol hanyalah titik awal, bukan kegagalan. **Jangan
+mengubahnya menjadi penolakan.** Yang diperbaiki adalah momennya:
+`PriceListInvitation::offerFor()` menawarkan pembuatan price list tepat
+setelah pelanggan atau grupnya disimpan, dan sifatnya hanya menawarkan --
+yang membuat pelanggan belum tentu berhak menetapkan harga.
 
 ### Yang paling penting dipahami dari sesi ini
 

@@ -146,6 +146,33 @@ class PriceListInvitationTest extends TestCase
         $this->assertTrue(true);
     }
 
+    /**
+     * Kolom harga di Price List tidak boleh bertombol panah.
+     *
+     * Satu angka di sini menentukan harga SATU GRUP PELANGGAN sekaligus,
+     * jadi tergeser sedikit saja dampaknya jauh lebih luas daripada salah
+     * ketik di satu dokumen. Sebelumnya kolom ini memakai ->numeric(), yang
+     * membuat input menjadi type=number lengkap dengan tombol panahnya.
+     */
+    public function test_the_price_field_has_no_spinner_arrows(): void
+    {
+        $source = file_get_contents(app_path('Filament/Admin/Resources/PriceListResource.php'));
+        $start = strpos($source, "TextInput::make('price')");
+
+        $this->assertNotFalse($start, 'Kolom harga tidak ditemukan.');
+
+        $field = substr($source, $start, strpos($source, "TextInput::make('note')") - $start);
+
+        $this->assertStringNotContainsString('->numeric()', $field);
+        $this->assertStringNotContainsString('->minValue(', $field);
+        $this->assertStringContainsString("'inputmode' => 'numeric'", $field);
+
+        // Disamakan dengan kolom uang lain: 95000 terbaca 95.000, dan
+        // titiknya dibuang lagi sebelum tersimpan.
+        $this->assertStringContainsString('$money($input', $field);
+        $this->assertStringContainsString('dehydrateStateUsing', $field);
+    }
+
     /** Keterangan grup di form tidak lagi menyesatkan. */
     public function test_the_group_helper_text_matches_what_actually_happens(): void
     {

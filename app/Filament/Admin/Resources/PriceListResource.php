@@ -114,16 +114,32 @@ class PriceListResource extends Resource
                                     ])
                                     ->columnSpan(4),
 
+                                // Harga di sini menentukan harga SATU GRUP
+                                // PELANGGAN sekaligus, jadi tergeser sedikit
+                                // saja dampaknya jauh lebih luas daripada
+                                // salah ketik di satu dokumen.
+                                //
+                                // Karena itu ->numeric() dilepas: pemanggilan
+                                // itu membuat input menjadi type=number lengkap
+                                // dengan tombol panah yang gampang tersentuh
+                                // tanpa disadari. Aturan angkanya ditulis
+                                // manual supaya tetap terjaga, dan topengnya
+                                // disamakan dengan kolom uang lain di aplikasi
+                                // supaya 95000 terbaca sebagai 95.000.
                                 Forms\Components\TextInput::make('price')
                                     ->label('')
                                     ->hiddenLabel()
                                     ->required()
                                     ->prefix('Rp')
                                     ->placeholder(__('Price'))
-                                    ->numeric()
                                     ->default(0)
-                                    ->minValue(0)
+                                    ->formatStateUsing(fn ($state): ?string => $state === null || $state === ''
+                                        ? null
+                                        : number_format((float) $state, 0, ',', '.'))
+                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
+                                    ->dehydrateStateUsing(fn ($state): int => (int) str_replace('.', '', (string) $state))
                                     ->extraInputAttributes([
+                                        'inputmode' => 'numeric',
                                         'class' => 'text-right price-input-column enter-to-next-price',
                                         'onclick' => 'this.select()',
                                         'onkeydown' => "
