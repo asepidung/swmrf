@@ -67,14 +67,22 @@ self.addEventListener('push', function (event) {
     event.waitUntil(
         self.registration.showNotification(payload.title || 'WijayaApps', {
             body: payload.body || '',
-            // icon WAJIB diisi.
+            // icon SENGAJA TIDAK DIPASANG.
             //
-            // Sempat dikosongkan dengan alasan logo tampil ganda (kiri dari
-            // manifest, kanan dari icon). Ternyata bila icon kosong, Android
-            // Chrome membuat AVATAR HURUF dari nama domain -- huruf "C" dari
-            // coba.wijayameat.co.id -- yang disangka pengguna sebagai inisial
-            // nama pengirim. Logo ganda lebih baik daripada huruf menyesatkan.
-            icon: payload.icon || '/img/pwalogo-maskable-192.png',
+            // Ikon besar di kanan membuat logo tampil dua kali: sekali sebagai
+            // ikon aplikasi di kiri, sekali lagi di kanan. Keputusan Project
+            // Owner, 31 Agustus 2026: cukup satu.
+            //
+            // Ini pernah dicoba lalu dibatalkan, dan alasannya perlu diingat:
+            // dulu tanpa icon, Android Chrome membuat AVATAR HURUF dari nama
+            // domain -- huruf "C" dari coba.wijayameat.co.id -- yang disangka
+            // inisial nama pengirim. Yang berubah sejak itu, aplikasinya kini
+            // terpasang sebagai PWA, sehingga yang tampil di kiri adalah ikon
+            // aplikasinya sendiri.
+            //
+            // KALAU AVATAR HURUF MUNCUL LAGI, pasang kembali opsi ikon besar
+            // di sini dengan nilai '/img/pwalogo-maskable-192.png', dan
+            // kembalikan juga pengirimannya di TaskAlert.
             // badge WAJIB aset siluet putih tersendiri, BUKAN logo berwarna.
             // Android hanya membaca kanal alpha-nya lalu mewarnai sendiri;
             // logo berwarna penuh tampil sebagai blok padat yang terlihat
