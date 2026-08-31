@@ -21,6 +21,7 @@ class CattleWeighingItem extends Model
         'eartag',
         'initial_weight',
         'cattle_class_id',
+        'reference_weight',
     ];
 
     
@@ -37,6 +38,26 @@ class CattleWeighingItem extends Model
     public function getEartagAttribute()
     {
         return optional($this->receivingItem)->eartag;
+    }
+
+    /**
+     * Bobot sapi ini sebagai acuan pemeriksaan di modul sesudahnya.
+     *
+     * Berat hasil penimbangan bila memang ditimbang; berat saat PENERIMAAN
+     * bila tidak. Catatan Project Owner: kadang ada proses yang tidak melewati
+     * penimbangan, dan dalam kasus itu satu-satunya bobot yang pernah tercatat
+     * adalah yang diisi saat sapi datang.
+     *
+     * Dipakai Carcass untuk memastikan total potongan tidak melebihi bobot
+     * sapinya sendiri.
+     */
+    public function getReferenceWeightAttribute(): float
+    {
+        $actual = (float) ($this->actual_weight ?? 0);
+
+        return $actual > 0
+            ? $actual
+            : (float) (optional($this->receivingItem)->initial_weight ?? 0);
     }
 
     public function getInitialWeightAttribute()
