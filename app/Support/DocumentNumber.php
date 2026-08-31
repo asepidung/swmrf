@@ -21,8 +21,11 @@ use Illuminate\Database\Eloquent\Builder;
  * tidak menjelaskan apa-apa, di tengah hari kerja, tanpa peringatan apa pun
  * sebelumnya.
  *
- * Untuk Carcass batas itu bukan teori: satu karkas per sapi yang dipotong,
- * jadi memotong tiga ekor sehari sudah melewati 1.000 dalam setahun.
+ * Seberapa cepat batas itu tercapai berbeda-beda per modul, dan JANGAN
+ * ditebak dari nama dokumennya: satu nomor Carcass, misalnya, menampung
+ * banyak sapi sekaligus -- bukan satu nomor per ekor. Yang menentukan bukan
+ * lajunya, melainkan bahwa kegagalannya datang mendadak dan tanpa gejala
+ * apa pun sebelumnya.
  *
  * Ada jebakan kedua yang hanya muncul pada generator yang mengurutkan
  * berdasarkan NOMOR (bukan id): `orderBy` membandingkan sebagai teks, dan
