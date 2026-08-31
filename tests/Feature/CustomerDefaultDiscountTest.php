@@ -34,7 +34,7 @@ class CustomerDefaultDiscountTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function makeCustomer(string $name, float $discount = 0): Customer
+    private function makeCustomer(string $name, int $discount = 0): Customer
     {
         return Customer::create([
             'name' => $name,
@@ -54,8 +54,10 @@ class CustomerDefaultDiscountTest extends TestCase
         $store = $this->makeCustomer('LION TOKO BSA');
         $distributionCentre = $this->makeCustomer('LION DCA SUPERINDO', 2);
 
-        $this->assertSame(0.0, $store->fresh()->default_discount);
-        $this->assertSame(2.0, $distributionCentre->fresh()->default_discount);
+        // Persen BULAT: kolomnya disamakan dengan sales_order_items.discount
+        // yang menerimanya, supaya nilainya tidak berubah arti saat disimpan.
+        $this->assertSame(0, $store->fresh()->default_discount);
+        $this->assertSame(2, $distributionCentre->fresh()->default_discount);
     }
 
     /**
@@ -68,12 +70,12 @@ class CustomerDefaultDiscountTest extends TestCase
     {
         $lookalike = $this->makeCustomer('PT DCAHAYA MANDIRI');
 
-        $this->assertSame(0.0, $lookalike->fresh()->default_discount);
+        $this->assertSame(0, $lookalike->fresh()->default_discount);
 
         $real = $this->makeCustomer('LION DCB SUPERINDO', 2);
         $real->update(['name' => 'LION DISTRIBUTION CENTRE B']);
 
-        $this->assertSame(2.0, $real->fresh()->default_discount);
+        $this->assertSame(2, $real->fresh()->default_discount);
     }
 
     /**
@@ -151,7 +153,7 @@ class CustomerDefaultDiscountTest extends TestCase
 
         // Batasnya nyata, bukan pemeriksaan panjang karakter.
         $field = substr($source, strpos($source, "TextInput::make('default_discount')"), 900);
-        $this->assertStringContainsString("'numeric'", $field);
+        $this->assertStringContainsString("'integer'", $field);
         $this->assertStringContainsString("'max:100'", $field);
         $this->assertStringNotContainsString('->numeric()', $field);
     }

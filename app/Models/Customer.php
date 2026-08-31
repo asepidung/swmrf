@@ -25,7 +25,7 @@ class Customer extends Model
     ];
 
     protected $casts = [
-        'default_discount' => 'float',
+        'default_discount' => 'integer',
         'required_documents' => 'array',
         'invoice_exchange' => 'boolean',
         'is_taxable' => 'boolean',

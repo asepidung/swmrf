@@ -771,12 +771,14 @@
     "The group :group has no price list yet": "The group :group has no price list yet",
     "Without one, every Sales Order line for this group starts at Rp 0 and has to be typed by hand.": "Without one, every Sales Order line for this group starts at Rp 0 and has to be typed by hand.",
     "Create Price List Now": "Create Price List Now",
-    "Discount must be a number.": "Discount must be a number.",
     "Discount cannot be negative.": "Discount cannot be negative.",
     "Discount cannot be more than 100%.": "Discount cannot be more than 100%.",
     "Default Discount": "Default Discount",
     "Discount": "Discount",
     "days": "days",
     "The group decides which price list applies. Leave it empty to create a group named after this customer.": "The group decides which price list applies. Leave it empty to create a group named after this customer.",
-    "TOP": "TOP"
+    "TOP": "TOP",
+    "Discount must be a whole percent.": "Discount must be a whole percent.",
+    "New Sales Order": "New Sales Order",
+    "Ready to be tallied.": "Ready to be tallied."
 }
