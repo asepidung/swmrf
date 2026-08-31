@@ -70,10 +70,8 @@
     "Customer Group": "Customer Group",
     "Customer Groups": "Customer Groups",
     "Basic Information": "Basic Information",
-    "Customer profile and relations data.": "Customer profile and relations data.",
     "Customer Name": "Customer Name",
     "Segment": "Segment",
-    "TOP (Term of Payment) / Days": "TOP (Term of Payment) / Days",
     "Full Address": "Full Address",
     "Required Documents": "Required Documents",
     "Check the documents that must be included during delivery.": "Check the documents that must be included during delivery.",
@@ -776,8 +774,9 @@
     "Discount must be a number.": "Discount must be a number.",
     "Discount cannot be negative.": "Discount cannot be negative.",
     "Discount cannot be more than 100%.": "Discount cannot be more than 100%.",
-    "Leave empty to create a group named after this customer. A group is required because price lists belong to groups, not to individual customers.": "Leave empty to create a group named after this customer. A group is required because price lists belong to groups, not to individual customers.",
     "Default Discount": "Default Discount",
     "Discount": "Discount",
-    "Filled in automatically on every Sales Order for this customer, and still editable there. Leave at 0 if there is no standing discount.": "Filled in automatically on every Sales Order for this customer, and still editable there. Leave at 0 if there is no standing discount."
+    "days": "days",
+    "The group decides which price list applies. Leave it empty to create a group named after this customer.": "The group decides which price list applies. Leave it empty to create a group named after this customer.",
+    "TOP": "TOP"
 }

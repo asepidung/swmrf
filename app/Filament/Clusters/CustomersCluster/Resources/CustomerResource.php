@@ -41,18 +41,43 @@ class CustomerResource extends Resource
     {
         return $form
             ->schema([
+                // Satu pelanggan harus muat dalam satu layar, bukan satu
+                // halaman penuh.
+                //
+                // Dua hal yang dulu membuatnya boros. Pertama, formnya memakai
+                // dua kolom sama besar, sehingga TOP yang paling banyak tiga
+                // angka dan Invoice Exchange yang cuma Ya/Tidak sama lebarnya
+                // dengan alamat lengkap. Kedua, isiannya dipecah ke beberapa
+                // kartu, dan tiap kartu menambah baris judul serta jarak
+                // tepinya sendiri.
+                //
+                // Sekarang satu kartu dengan kisi 12 kolom: lebar ditentukan
+                // per isian, dan seluruhnya selesai dalam tiga baris.
+                //
+                //   nama 4 | grup 3 | segmen 3 | aktif 2
+                //   TOP 2  | diskon 2 | I-Ex 2 | PIC 3 | telepon 3
+                //   alamat 12
                 Forms\Components\Section::make(__('Basic Information'))
-                    ->description(__('Customer profile and relations data.'))
+                    ->description(__('The group decides which price list applies. Leave it empty to create a group named after this customer.'))
+                    ->compact()
+                    ->columns(12)
                     ->schema([
                         Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
                             ->label(fn() => __('Customer Name'))
                             ->required()
                             ->maxLength(255)
                             ->autofocus()
-                            ->extraInputAttributes(['style' => 'text-transform:uppercase']),
+                            ->extraInputAttributes(['style' => 'text-transform:uppercase'])
+                            ->columnSpan(4),
+
+                        // Tanpa helperText: keterangannya sudah ada di
+                        // deskripsi kartu, satu baris untuk seluruh form,
+                        // sehingga tidak menambah tinggi barisnya sendiri.
                         Forms\Components\Select::make('customer_group_id')
                             ->relationship('group', 'name')
                             ->label(fn() => __('Customer Group'))
+                            ->searchable()
+                            ->preload()
                             ->createOptionForm([
                                 Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
                                     ->label(fn() => __('Name'))
@@ -65,70 +90,91 @@ class CustomerResource extends Resource
                                     ->label(fn() => __('Head Office Address'))
                                     ->columnSpanFull(),
                             ])
-                            ->helperText(__('Leave empty to create a group named after this customer. A group is required because price lists belong to groups, not to individual customers.')),
+                            ->columnSpan(3),
+
                         Forms\Components\Select::make('customer_segment_id')
                             ->relationship('segment', 'name')
                             ->label(fn() => __('Segment'))
                             ->required()
+                            ->searchable()
+                            ->preload()
                             ->createOptionForm([
                                 Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
                                     ->label(fn() => __('Name'))
                                     ->required()
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
-                            ]),
-                        Forms\Components\TextInput::make('top')
-                            ->label(fn() => __('TOP (Term of Payment) / Days'))
-                            ->required()
-                            ->numeric(),
+                            ])
+                            ->columnSpan(3),
 
-                        // Diskon ini mengisi NILAI AWAL kolom diskon di Sales
-                        // Order, sejajar dengan cara price list mengisi harga.
-                        // Yang tersimpan di SO tetap yang menentukan, jadi
-                        // mengubah angka di sini tidak menyentuh SO yang sudah
-                        // ada -- termasuk yang belum ditagih.
+                        Forms\Components\Toggle::make('is_active')
+                            ->label(fn() => __('Active'))
+                            ->default(true)
+                            ->visibleOn('edit')
+                            ->columnSpan(2),
+
+                        // Tanpa ->numeric(), yang akan membuat input menjadi
+                        // type=number lengkap dengan tombol panah. TOP
+                        // menentukan tanggal jatuh tempo piutang, jadi
+                        // tergeser satu tanpa disadari bukan hal sepele.
+                        Forms\Components\TextInput::make('top')
+                            ->label(fn() => __('TOP'))
+                            ->suffix(__('days'))
+                            ->required()
+                            ->maxLength(3)
+                            ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right'])
+                            ->rules(['integer', 'min:0'])
+                            ->columnSpan(2),
+
+                        // Mengisi NILAI AWAL kolom diskon di Sales Order,
+                        // sejajar dengan cara price list mengisi harga. Yang
+                        // tersimpan di SO tetap yang menentukan, jadi mengubah
+                        // angka di sini tidak menyentuh SO yang sudah ada --
+                        // termasuk yang belum ditagih.
                         //
                         // Letaknya di pelanggan, bukan di grup: grup LION
                         // berisi 29 pelanggan dan hanya tiga Distribution
                         // Center-nya yang berhak atas diskon ini.
-                        //
-                        // Aturannya ditulis manual, bukan dengan ->numeric(),
-                        // yang akan membuat input menjadi type=number lengkap
-                        // dengan tombol panah.
                         Forms\Components\TextInput::make('default_discount')
-                            ->label(fn() => __('Default Discount'))
+                            ->label(fn() => __('Discount'))
                             ->suffix('%')
                             ->default(0)
-                            ->extraInputAttributes(['inputmode' => 'decimal'])
+                            ->maxLength(6)
+                            ->extraInputAttributes(['inputmode' => 'decimal', 'class' => 'text-right'])
                             ->rules(['numeric', 'min:0', 'max:100'])
                             ->validationMessages([
                                 'numeric' => __('Discount must be a number.'),
                                 'min' => __('Discount cannot be negative.'),
                                 'max' => __('Discount cannot be more than 100%.'),
                             ])
-                            ->helperText(__('Filled in automatically on every Sales Order for this customer, and still editable there. Leave at 0 if there is no standing discount.')),
-                        Forms\Components\Textarea::make('address')
-                            ->label(fn() => __('Full Address'))
-                            ->required()
-                            ->columnSpanFull(),
-                        Forms\Components\TextInput::make('phone')
-                            ->label(fn() => __('Phone Number'))
-                            ->tel()
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('pic')
-                            ->label(fn() => __('PIC / Person In Charge'))
-                            ->maxLength(255),
+                            ->columnSpan(2),
+
                         Forms\Components\Select::make('invoice_exchange')
                             ->label(fn() => __('Invoice Exchange'))
                             ->options([
                                 '1' => __('Yes'),
                                 '0' => __('No'),
                             ])
-                            ->required(),
-                        Forms\Components\Toggle::make('is_active')
-                            ->label(fn() => __('Active'))
-                            ->default(true)
-                            ->visibleOn('edit'),
-                    ])->columns(2),
+                            ->required()
+                            ->native(false)
+                            ->columnSpan(2),
+
+                        Forms\Components\TextInput::make('pic')
+                            ->label(fn() => __('PIC / Person In Charge'))
+                            ->maxLength(255)
+                            ->columnSpan(3),
+
+                        Forms\Components\TextInput::make('phone')
+                            ->label(fn() => __('Phone Number'))
+                            ->tel()
+                            ->maxLength(255)
+                            ->columnSpan(3),
+
+                        Forms\Components\Textarea::make('address')
+                            ->label(fn() => __('Full Address'))
+                            ->required()
+                            ->rows(2)
+                            ->columnSpanFull(),
+                    ]),
 
                 Forms\Components\Section::make(__('Required Documents'))
                     ->description(__('Check the documents that must be included during delivery.'))
