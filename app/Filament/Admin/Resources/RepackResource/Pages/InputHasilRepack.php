@@ -161,10 +161,21 @@ class InputHasilRepack extends Page implements HasForms, HasTable
 
                             Forms\Components\TextInput::make('ph_level')
                                 ->hiddenLabel()
-                                ->numeric()
-                                ->step(0.1)
-                                ->minValue(5.4)
-                                ->maxValue(5.7)
+                                /*
+                                 * Tanpa komponen angka bawaan. Rentang pH cuma
+                                 * 5,4-5,7 dengan langkah 0,1, jadi satu
+                                 * sentuhan panah menggeser nilainya tanpa
+                                 * terasa -- dan pH ikut masuk ke barcode 26
+                                 * karakter, sehingga digit yang salah berarti
+                                 * barcode yang salah arti. Sama seperti di
+                                 * Boning.
+                                 */
+                                ->extraInputAttributes(['inputmode' => 'decimal'])
+                                ->rules(['numeric', 'min:5.4', 'max:5.7'])
+                                ->validationMessages([
+                                    'min' => __('pH must be between :min and :max.', ['min' => '5.4', 'max' => '5.7']),
+                                    'max' => __('pH must be between :min and :max.', ['min' => '5.4', 'max' => '5.7']),
+                                ])
                                 ->placeholder(__('PH (5.4 - 5.7)'))
                                 ->extraInputAttributes([
                                     'tabindex' => '4',

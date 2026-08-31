@@ -766,5 +766,9 @@
     "pH must be between :min and :max.": "pH must be between :min and :max.",
     "Quantity must be greater than zero.": "Quantity must be greater than zero.",
     "Carcasses Processed": "Carcasses Processed",
-    "Material Usage - Boning": "Material Usage - Boning"
+    "Material Usage - Boning": "Material Usage - Boning",
+    "Material Usage - Repack": "Material Usage - Repack",
+    "Weight (Kg)": "Weight (Kg)",
+    "Result is heavier than the source": "Result is heavier than the source",
+    "Source :source kg, result :result kg. Please check whether something was recorded twice or a weight was mistyped. This does not block saving.": "Source :source kg, result :result kg. Please check whether something was recorded twice or a weight was mistyped. This does not block saving."
 }

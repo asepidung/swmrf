@@ -70,9 +70,12 @@ class MaterialUsageRepack extends EditRecord
                                     ->label(__('Quantity'))
                                     ->hiddenLabel()
                                     ->placeholder(__('Quantity'))
-                                    ->numeric()
+                                    // Tanpa komponen angka bawaan; tombol panahnya
+                                    // gampang tertekan tanpa sengaja.
+                                    ->extraInputAttributes(['inputmode' => 'decimal'])
                                     ->required()
-                                    ->minValue(0.01),
+                                    ->rules(['numeric', 'gt:0'])
+                                    ->validationMessages(['gt' => __('Quantity must be greater than zero.')]),
 
                                 Forms\Components\TextInput::make('unit')
                                     ->label(__('Unit'))

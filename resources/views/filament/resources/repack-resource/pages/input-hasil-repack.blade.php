@@ -275,16 +275,8 @@
                     </table>
                 </div>
 
-                <!-- Lost / Balance -->
-                @php $balance = $totalHasilQty - $totalBahanQty; @endphp
-                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800 flex justify-between items-center">
-                    <span class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ __('SELISIH (BALANCE)') }}</span>
-                    <span class="text-sm font-black px-3 py-1 rounded-lg {{ $balance < 0 ? 'bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400' : 'bg-green-50 text-green-600 dark:bg-green-950/30 dark:text-green-400' }}">
-                        {{ number_format($balance, 2) }} Kg
-                    </span>
-                </div>
-            </div>
-        </div>
+                @include('filament.resources.repack-resource.partials.balance')
+</div>
     </div>
 
     <script>

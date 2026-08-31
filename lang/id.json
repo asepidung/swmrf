@@ -766,5 +766,9 @@
     "pH must be between :min and :max.": "pH harus antara :min dan :max.",
     "Quantity must be greater than zero.": "Jumlah harus lebih dari nol.",
     "Carcasses Processed": "Karkas Diproses",
-    "Material Usage - Boning": "Pemakaian Material - Boning"
+    "Material Usage - Boning": "Pemakaian Material - Boning",
+    "Material Usage - Repack": "Pemakaian Material - Repack",
+    "Weight (Kg)": "Berat (Kg)",
+    "Result is heavier than the source": "Hasil lebih berat daripada bahannya",
+    "Source :source kg, result :result kg. Please check whether something was recorded twice or a weight was mistyped. This does not block saving.": "Bahan :source kg, hasil :result kg. Mohon periksa apakah ada yang tercatat dua kali atau berat yang salah ketik. Ini tidak menghalangi penyimpanan."
 }

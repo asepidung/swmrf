@@ -162,10 +162,31 @@
 </div>
 
 <!-- Lost / Balance -->
-@php $balance = $totalHasilQty - $totalBahanQty; @endphp
+@php
+    $balance = $totalHasilQty - $totalBahanQty;
+    $isImpossible = $balance > 0.001;
+    $shrinkPercent = $totalBahanQty > 0 ? abs($balance) / $totalBahanQty * 100 : 0;
+@endphp
 <div class="repack-balance-card">
     <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #6b7280;">{{ __('SELISIH (BALANCE)') }}</span>
-    <span style="font-size: 14px; font-weight: 900; padding: 4px 12px; border-radius: 8px; font-family: monospace; {{ $balance < 0 ? 'background-color: rgba(239, 68, 68, 0.15); color: #ef4444;' : 'background-color: rgba(16, 185, 129, 0.15); color: #10b981;' }}">
+    {{--
+        Warna sebelumnya terbalik maknanya: hasil yang lebih berat daripada
+        bahan diwarnai hijau, sementara susut biasa diwarnai merah. Susut kecil
+        itu wajar; hasil yang melebihi bahan justru mustahil secara fisik.
+    --}}
+    <span style="font-size: 14px; font-weight: 900; padding: 4px 12px; border-radius: 8px; font-family: monospace; {{ $isImpossible ? 'background-color: rgba(239, 68, 68, 0.15); color: #ef4444;' : 'background-color: rgba(107, 114, 128, 0.15); color: #6b7280;' }}">
         {{ number_format($balance, 2) }} Kg
+        @if ($totalBahanQty > 0)
+            <span style="font-weight: 400;">({{ number_format($shrinkPercent, 1) }}%)</span>
+        @endif
     </span>
 </div>
+@if ($isImpossible)
+    <div style="margin-top: 8px; padding: 10px; border-radius: 8px; background-color: rgba(239, 68, 68, 0.1); color: #b91c1c; font-size: 12px;">
+        <strong>{{ __('Result is heavier than the source') }}</strong><br>
+        {{ __('Source :source kg, result :result kg. Please check whether something was recorded twice or a weight was mistyped. This does not block saving.', [
+            'source' => number_format($totalBahanQty, 2),
+            'result' => number_format($totalHasilQty, 2),
+        ]) }}
+    </div>
+@endif
