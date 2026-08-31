@@ -11,7 +11,10 @@
     "12,22 / 1". Keduanya memang selalu dibaca berbarengan, dan menyatukannya
     membebaskan satu kolom penuh tanpa menghilangkan satu angka pun.
 
-    DUA KOLOM SELALU. Yang dipegang operator adalah alat pemindai, bukan
+    DUA KOLOM SELALU, dengan pembagian 8:4 dari dua belas -- bukan sama rata.
+    Daftar pindai memuat barcode 26 karakter yang tidak bisa dipatahkan,
+    sementara ringkasan PO hanya berisi angka pendek, jadi membagi rata justru
+    memaksa yang kiri digeser mendatar. Yang dipegang operator adalah alat pemindai, bukan
     tetikus: begitu ringkasan PO turun ke bawah daftar, ia harus menggulir
     bolak-balik hanya untuk melihat sisa kebutuhan barang.
 
@@ -49,7 +52,7 @@
     --}}
     @include('filament.partials.scanner-page-style')
 
-    <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; width: 100%;">
+    <div style="display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: 1.5rem; align-items: start; width: 100%;">
 
         {{-- Kiri: pemindai dan daftar hasil pindai --}}
         <div class="space-y-6" style="min-width: 0;">
