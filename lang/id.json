@@ -840,8 +840,6 @@
     ":count cattle purchases have not been received yet.": "Ada :count pembelian sapi yang belum diterima.",
     ":count cattle receivings have not been weighed yet.": "Ada :count penerimaan sapi yang belum ditimbang.",
     ":count weighings have not been broken down into carcasses yet.": "Ada :count timbangan yang belum dipotong menjadi karkas.",
-    ":count beef receipts have not been locked, so no payable exists for them yet.": "Ada :count penerimaan daging yang belum dikunci, jadi hutangnya belum terbentuk.",
-    ":count material receipts have not been locked, so no payable exists for them yet.": "Ada :count penerimaan material yang belum dikunci, jadi hutangnya belum terbentuk.",
     ":count material requests are waiting for review.": "Ada :count permintaan material yang menunggu review.",
     ":count material requests are waiting for approval.": "Ada :count permintaan material yang menunggu persetujuan.",
     ":count beef requests are waiting for review.": "Ada :count permintaan daging yang menunggu review.",
@@ -867,9 +865,6 @@
     ":count material receipts": ":count penerimaan material",
     ":items are still unlocked, so no payable exists for them yet.": ":items masih belum dikunci, jadi hutangnya belum terbentuk.",
     "Scheduled Reminders": "Pengingat Terjadwal",
-    "The scheduled checks have never run. No reminder is being sent at all.": "Pemeriksaan terjadwal belum pernah berjalan. Tidak ada satu pun pengingat yang terkirim.",
-    "A scheduled check has not run recently. Reminders may have stopped without any error.": "Ada pemeriksaan terjadwal yang lama tidak berjalan. Pengingatnya mungkin sudah berhenti tanpa error apa pun.",
-    "Last time the system ran its scheduled reminder checks.": "Terakhir kali sistem menjalankan pemeriksaan pengingat terjadwalnya.",
     "Received quantity is less than ordered": "Barang yang datang kurang dari yang dipesan",
     "Is the rest still coming in a later delivery? Closing the purchase order means the remaining quantity will never be received.": "Apakah sisanya masih akan datang di pengiriman berikutnya? Menutup Purchase Order berarti sisa pesanannya tidak akan pernah diterima.",
     "pH must be a number.": "pH harus berupa angka.",
@@ -893,5 +888,11 @@
     "Unknown compensation reason.": "Alasan kompensasi tidak dikenal.",
     "Compensation cannot be more than the outstanding amount.": "Kompensasi tidak boleh melebihi sisa tagihan.",
     "Recovered": "Dipulihkan",
-    "Net Loss": "Kerugian Bersih"
+    "Net Loss": "Kerugian Bersih",
+    ":count beef receipts have not been locked yet.": "Ada :count penerimaan daging yang belum dikunci.",
+    ":count material receipts have not been locked yet.": "Ada :count penerimaan material yang belum dikunci.",
+    "No reminder has been sent yet.": "Belum ada pengingat yang terkirim.",
+    "A check has not run recently.": "Ada pemeriksaan yang lama tidak berjalan.",
+    "Last scheduled check.": "Pemeriksaan terjadwal terakhir.",
+    "More": "Lainnya"
 }

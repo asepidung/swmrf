@@ -840,8 +840,6 @@
     ":count cattle purchases have not been received yet.": ":count cattle purchases have not been received yet.",
     ":count cattle receivings have not been weighed yet.": ":count cattle receivings have not been weighed yet.",
     ":count weighings have not been broken down into carcasses yet.": ":count weighings have not been broken down into carcasses yet.",
-    ":count beef receipts have not been locked, so no payable exists for them yet.": ":count beef receipts have not been locked, so no payable exists for them yet.",
-    ":count material receipts have not been locked, so no payable exists for them yet.": ":count material receipts have not been locked, so no payable exists for them yet.",
     ":count material requests are waiting for review.": ":count material requests are waiting for review.",
     ":count material requests are waiting for approval.": ":count material requests are waiting for approval.",
     ":count beef requests are waiting for review.": ":count beef requests are waiting for review.",
@@ -867,9 +865,6 @@
     ":count material receipts": ":count material receipts",
     ":items are still unlocked, so no payable exists for them yet.": ":items are still unlocked, so no payable exists for them yet.",
     "Scheduled Reminders": "Scheduled Reminders",
-    "The scheduled checks have never run. No reminder is being sent at all.": "The scheduled checks have never run. No reminder is being sent at all.",
-    "A scheduled check has not run recently. Reminders may have stopped without any error.": "A scheduled check has not run recently. Reminders may have stopped without any error.",
-    "Last time the system ran its scheduled reminder checks.": "Last time the system ran its scheduled reminder checks.",
     "Received quantity is less than ordered": "Received quantity is less than ordered",
     "Is the rest still coming in a later delivery? Closing the purchase order means the remaining quantity will never be received.": "Is the rest still coming in a later delivery? Closing the purchase order means the remaining quantity will never be received.",
     "pH must be a number.": "pH must be a number.",
@@ -893,5 +888,11 @@
     "Unknown compensation reason.": "Unknown compensation reason.",
     "Compensation cannot be more than the outstanding amount.": "Compensation cannot be more than the outstanding amount.",
     "Recovered": "Recovered",
-    "Net Loss": "Net Loss"
+    "Net Loss": "Net Loss",
+    ":count beef receipts have not been locked yet.": ":count beef receipts have not been locked yet.",
+    ":count material receipts have not been locked yet.": ":count material receipts have not been locked yet.",
+    "No reminder has been sent yet.": "No reminder has been sent yet.",
+    "A check has not run recently.": "A check has not run recently.",
+    "Last scheduled check.": "Last scheduled check.",
+    "More": "More"
 }

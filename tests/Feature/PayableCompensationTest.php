@@ -196,6 +196,31 @@ class PayableCompensationTest extends TestCase
     }
 
     /**
+     * Layar HP hanya menampilkan satu tombol utama.
+     *
+     * Tiga tombol sejajar terlipat menjadi dua baris yang tidak rata di layar
+     * sempit, dan yang paling mencolok justru bukan aksi yang paling sering
+     * dipakai. Mencatat pembayaran adalah pekerjaan sehari-hari; mencatat
+     * kompensasi jarang, dan Kembali selalu ada di mana-mana.
+     */
+    public function test_the_secondary_actions_are_grouped(): void
+    {
+        $page = file_get_contents(app_path(
+            'Filament/Admin/Resources/PayableResource/Pages/ViewPayable.php'
+        ));
+
+        $this->assertStringContainsString('Actions\ActionGroup::make([', $page);
+
+        // Pembayaran tetap berdiri sendiri dan berada di DEPAN kelompok:
+        // ia pekerjaan sehari-hari, jadi ia yang pertama tersentuh.
+        $posisiBayar = strpos($page, "Action::make('pay')");
+        $posisiKelompok = strpos($page, 'ActionGroup::make([');
+
+        $this->assertNotFalse($posisiBayar, 'Aksi pembayaran tidak ditemukan.');
+        $this->assertLessThan($posisiKelompok, $posisiBayar, 'Pembayaran harus mendahului kelompoknya.');
+    }
+
+    /**
      * Alasannya wajib dipilih dan tidak punya nilai bawaan.
      *
      * Ia menentukan perlakuannya, bukan sekadar menjadi keterangan: yang

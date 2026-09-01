@@ -13,7 +13,7 @@
     >
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
-                <p class="text-2xl font-bold text-gray-950 dark:text-white">
+                <p class="text-lg font-bold dark:text-white">
                     @if ($lastRun)
                         {{ $lastRun->diffForHumans() }}
                     @else
@@ -25,11 +25,11 @@
                     @if (! $lastRun)
                         {{-- Belum pernah berjalan sama sekali: cron-nya kemungkinan
                              besar memang belum dipasang di hPanel. --}}
-                        {{ __('The scheduled checks have never run. No reminder is being sent at all.') }}
+                        {{ __('No reminder has been sent yet.') }}
                     @elseif (! $healthy)
-                        {{ __('A scheduled check has not run recently. Reminders may have stopped without any error.') }}
+                        {{ __('A check has not run recently.') }}
                     @else
-                        {{ __('Last time the system ran its scheduled reminder checks.') }}
+                        {{ __('Last scheduled check.') }}
                     @endif
                 </p>
             </div>
