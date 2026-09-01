@@ -23,3 +23,19 @@ Schedule::command('payables:notify-due')
     ->dailyAt('08:00')
     ->withoutOverlapping()
     ->onOneServer();
+
+/*
+ * Peringatan Goods Receipt yang sudah menginap tetapi belum dikunci.
+ *
+ * Selama belum dikunci, hutang kepada pemasok TIDAK TERBENTUK -- barangnya
+ * sudah diterima dan pemasoknya menunggu, sementara sistem tidak mencatat apa
+ * pun yang harus dibayar.
+ *
+ * Jamnya sama dengan peringatan hutang jatuh tempo, jadi keduanya sampai
+ * dalam satu waktu baca dan bukan menjadi dua gangguan terpisah sepanjang
+ * pagi.
+ */
+Schedule::command('goods-receipts:notify-unlocked')
+    ->dailyAt('08:00')
+    ->withoutOverlapping()
+    ->onOneServer();

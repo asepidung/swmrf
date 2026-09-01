@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Console\Commands\NotifyDuePayables;
+use App\Console\Commands\NotifyUnlockedGoodsReceipts;
 use App\Filament\Admin\Widgets\ScheduledReminderHealthWidget;
 use App\Models\CattleReceiving;
 use App\Models\Payable;
@@ -193,18 +194,85 @@ class DuePayableReminderTest extends TestCase
     {
         $widget = new ScheduledReminderHealthWidget();
 
+        $segar = now()->subHours(2)->toIso8601String();
+
         Cache::forever(NotifyDuePayables::LAST_RUN_CACHE_KEY, now()->subDays(5)->toIso8601String());
+        Cache::forever(NotifyUnlockedGoodsReceipts::LAST_RUN_CACHE_KEY, $segar);
         $this->assertFalse($widget->isHealthy());
 
-        Cache::forever(NotifyDuePayables::LAST_RUN_CACHE_KEY, now()->subHours(2)->toIso8601String());
+        Cache::forever(NotifyDuePayables::LAST_RUN_CACHE_KEY, $segar);
         $this->assertTrue($widget->isHealthy());
     }
 
-    /** Jadwalnya benar-benar terdaftar, bukan cuma command-nya ada. */
-    public function test_the_reminder_is_actually_scheduled(): void
+    /**
+     * Peringatan terjadwal yang KEDUA ikut diawasi.
+     *
+     * Keduanya menumpang satu baris cron yang sama, tetapi masing-masing
+     * menandai waktu jalannya sendiri. Kalau salah satunya melempar error
+     * tiap hari sementara yang lain baik-baik saja, penanda "cron hidup" saja
+     * tidak akan memperlihatkannya -- karena itu yang ditampilkan adalah yang
+     * PALING TERTINGGAL.
+     */
+    public function test_one_stale_command_is_enough_to_flag_the_dashboard(): void
+    {
+        $widget = new ScheduledReminderHealthWidget();
+
+        Cache::forever(NotifyDuePayables::LAST_RUN_CACHE_KEY, now()->subHours(2)->toIso8601String());
+        Cache::forever(NotifyUnlockedGoodsReceipts::LAST_RUN_CACHE_KEY, now()->subDays(5)->toIso8601String());
+
+        $this->assertFalse($widget->isHealthy());
+    }
+
+    /**
+     * Satu saja yang belum pernah berjalan sudah cukup.
+     *
+     * Perintah yang tidak pernah jalan sama sekali adalah kasus terburuk:
+     * peringatannya tidak pernah terkirim, dan tidak ada yang menyadarinya.
+     */
+    public function test_a_command_that_never_ran_is_treated_as_unknown(): void
+    {
+        $widget = new ScheduledReminderHealthWidget();
+
+        Cache::forever(NotifyDuePayables::LAST_RUN_CACHE_KEY, now()->subHours(2)->toIso8601String());
+        Cache::forget(NotifyUnlockedGoodsReceipts::LAST_RUN_CACHE_KEY);
+
+        $this->assertNull($widget->getLastRun());
+        $this->assertFalse($widget->isHealthy());
+    }
+
+    /** Kedua jadwalnya benar-benar terdaftar, bukan cuma command-nya ada. */
+    public function test_both_reminders_are_actually_scheduled(): void
     {
         $this->artisan('schedule:list')
             ->expectsOutputToContain('payables:notify-due')
+            ->expectsOutputToContain('goods-receipts:notify-unlocked')
             ->assertSuccessful();
+    }
+
+    /**
+     * Goods Receipt yang baru dibuat belum ditanyakan.
+     *
+     * Yang dibuat pagi ini memang wajar belum dikunci -- barangnya masih
+     * dihitung, labelnya masih dicetak. Yang perlu ditanyakan adalah yang
+     * menginap.
+     */
+    public function test_a_fresh_goods_receipt_is_not_nagged_about(): void
+    {
+        $this->assertSame(24, NotifyUnlockedGoodsReceipts::GRACE_HOURS);
+
+        $source = file_get_contents(app_path('Console/Commands/NotifyUnlockedGoodsReceipts.php'));
+
+        $this->assertStringContainsString('subHours(static::GRACE_HOURS)', $source);
+        $this->assertStringContainsString("where('is_locked', false)", $source);
+    }
+
+    /** Hari tanpa GR menggantung tidak mengirim apa-apa. */
+    public function test_a_quiet_day_sends_no_goods_receipt_reminder(): void
+    {
+        Notification::fake();
+
+        $this->artisan('goods-receipts:notify-unlocked')->assertSuccessful();
+
+        Notification::assertNothingSent();
     }
 }
