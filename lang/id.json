@@ -828,5 +828,6 @@
     ":count box selected": ":count karton terpilih",
     "Barcode ticked": "Barcode tercentang",
     "Barcode already ticked": "Barcode sudah tercentang",
-    "Barcode not found in this Tally": "Barcode tidak ditemukan di Tally ini"
+    "Barcode not found in this Tally": "Barcode tidak ditemukan di Tally ini",
+    "Add the typed barcode to the list. A scanner does this by itself.": "Tambahkan barcode yang diketik ke daftar. Alat pemindai melakukannya sendiri."
 }
