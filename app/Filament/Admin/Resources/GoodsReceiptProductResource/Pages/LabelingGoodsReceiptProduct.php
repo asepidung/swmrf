@@ -137,22 +137,37 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                             ->extraAttributes(['tabindex' => '3'])
                             ->extraInputAttributes(['tabindex' => '3']),
 
-                        Forms\Components\DatePicker::make('pack_date')
-                            ->hiddenLabel()
-                            ->placeholder(__('Pack Date'))
-                            ->required()
-                            ->live()
-                            ->afterStateUpdated(fn($state, callable $set, callable $get) => self::calculateExpiry($state, $get('grade_id'), $set))
-                            ->extraAttributes(['tabindex' => '-1'])
-                            ->extraInputAttributes(['tabindex' => '-1']),
-
                         Forms\Components\Hidden::make('exp_date'),
 
-                        Forms\Components\Checkbox::make('show_exp')
-                            ->label(__('Show Expiry Date on Label'))
-                            ->default(false)
-                            ->dehydrated(false)
-                            ->extraAttributes(['tabindex' => '-1']),
+                        // Tanggal kemas dan centang exp dijadikan satu baris:
+                        // keduanya pendek, dan sebelumnya masing-masing
+                        // memakan barisnya sendiri.
+                        //
+                        // Kolomnya RESPONSIF -- satu kolom di layar kecil, dua
+                        // kolom mulai layar sedang. Memakai Grid milik Filament,
+                        // bukan kelas Tailwind yang ditulis sendiri: panel ini
+                        // tidak memuat hasil build CSS aplikasi, sehingga kelas
+                        // sembarang bisa tidak menghasilkan apa pun. Grid
+                        // Filament membawa CSS-nya sendiri.
+                        Forms\Components\Grid::make(['default' => 1, 'sm' => 2])
+                            ->schema([
+                                Forms\Components\DatePicker::make('pack_date')
+                                    ->hiddenLabel()
+                                    ->placeholder(__('Pack Date'))
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(fn($state, callable $set, callable $get) => self::calculateExpiry($state, $get('grade_id'), $set))
+                                    ->extraAttributes(['tabindex' => '-1'])
+                                    ->extraInputAttributes(['tabindex' => '-1']),
+
+                                // Labelnya dipendekkan supaya muat di samping
+                                // tanggal tanpa mendorong barisnya melipat.
+                                Forms\Components\Checkbox::make('show_exp')
+                                    ->label(__('Show expiry'))
+                                    ->default(false)
+                                    ->dehydrated(false)
+                                    ->extraAttributes(['tabindex' => '-1']),
+                            ]),
 
                         Forms\Components\Grid::make(2)->schema([
                             Forms\Components\TextInput::make('qty_pcs_combined')

@@ -17,8 +17,17 @@
 
         Warnanya dulu menyesatkan: tombol "tutup PO" berwarna HIJAU, sehingga
         terbaca sebagai pilihan yang aman dan dianjurkan. Padahal justru itu
-        yang menutup pintu -- sisa pesanan tidak akan diterima lagi. Yang hijau
-        seharusnya yang bisa dibatalkan, bukan yang mengakhiri.
+        yang menutup pintu -- sisa pesanan tidak akan diterima lagi.
+
+        Menggantinya menjadi `warning` ternyata belum cukup: di palet aplikasi
+        ini `primary` JUGA amber, sehingga kedua tombol jadi sama persis dan
+        tidak ada yang bisa dibedakan. Sekarang yang menutup PO memakai garis
+        tepi merah -- bentuknya berbeda, bukan cuma warnanya.
+
+        Labelnya juga dipendekkan. Kalimat panjang berawalan Ya/Tidak pada
+        kedua tombol memaksa tombol Batal turun ke baris kedua, dan itulah yang
+        membuatnya terlihat berantakan. Pertanyaannya sudah ada di deskripsi,
+        jadi tombolnya cukup menyebut tindakannya.
 
         Dan akibatnya kalimatnya kurang: pertanyaannya tidak menyebutkan
         konsekuensi menutup PO sama sekali.
@@ -35,13 +44,14 @@
         <x-slot name="footerActions">
             {{-- Pilihan yang bisa dibatalkan: PO tetap terbuka. --}}
             <x-filament::button wire:click="confirmPartial" color="primary">
-                {{ __('Yes, wait for the rest') }}
+                {{ __('Wait for the rest') }}
             </x-filament::button>
 
-            {{-- Menutup PO. Diberi warna peringatan, bukan hijau, karena
-                 sesudah ini sisa pesanan tidak bisa diterima lagi. --}}
-            <x-filament::button wire:click="forceCompleted" color="warning">
-                {{ __('No, close this purchase order') }}
+            {{-- Menutup PO: bergaris tepi merah, bukan terisi penuh.
+                 Bentuknya sengaja berbeda, bukan cuma warnanya -- di palet
+                 aplikasi ini primary dan warning sama-sama amber. --}}
+            <x-filament::button wire:click="forceCompleted" color="danger" outlined>
+                {{ __('Close the PO') }}
             </x-filament::button>
 
             <x-filament::button

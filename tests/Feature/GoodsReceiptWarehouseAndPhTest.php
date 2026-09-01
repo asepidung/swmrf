@@ -92,6 +92,35 @@ class GoodsReceiptWarehouseAndPhTest extends TestCase
     }
 
     /**
+     * Tanggal kemas dan centang exp berbagi satu baris, tetapi melipat
+     * sendiri di layar kecil.
+     *
+     * Keduanya isian pendek yang sebelumnya masing-masing memakan barisnya
+     * sendiri. Kolomnya memakai Grid milik Filament, bukan kelas Tailwind
+     * yang ditulis sendiri: panel ini tidak memuat hasil build CSS aplikasi,
+     * sehingga kelas sembarang bisa tidak menghasilkan apa pun -- dan yang
+     * gagal justru akan terlihat sebagai tata letak yang berantakan di layar
+     * kecil, persis yang mau dihindari.
+     */
+    public function test_the_pack_date_row_folds_on_small_screens(): void
+    {
+        $source = $this->labelingPage();
+
+        $this->assertStringContainsString(
+            "Grid::make(['default' => 1, 'sm' => 2])",
+            $source,
+            'Barisnya harus melipat sendiri di layar kecil.',
+        );
+
+        // Keduanya benar-benar berada di dalam grid yang sama.
+        $awal = strpos($source, "Grid::make(['default' => 1, 'sm' => 2])");
+        $blok = substr($source, $awal, 1600);
+
+        $this->assertStringContainsString("DatePicker::make('pack_date')", $blok);
+        $this->assertStringContainsString("Checkbox::make('show_exp')", $blok);
+    }
+
+    /**
      * Modal "barang kurang dari pesanan" tidak lagi mengundang penutupan.
      *
      * Tombol yang MENUTUP PO dulu berwarna hijau, sehingga terbaca sebagai
@@ -104,8 +133,17 @@ class GoodsReceiptWarehouseAndPhTest extends TestCase
             'views/filament/admin/resources/goods-receipt-material-resource/pages/create-goods-receipt-material.blade.php'
         ));
 
-        $this->assertStringContainsString('wire:click="forceCompleted" color="warning"', $view);
+        // Bentuknya yang membedakan, bukan cuma warnanya: di palet aplikasi
+        // ini primary dan warning sama-sama amber, sehingga dua tombol terisi
+        // penuh terlihat identik dan tidak ada yang bisa dipilih dengan yakin.
+        $this->assertStringContainsString('wire:click="forceCompleted" color="danger" outlined', $view);
         $this->assertStringNotContainsString('wire:click="forceCompleted" color="success"', $view);
+        $this->assertStringNotContainsString('wire:click="forceCompleted" color="warning"', $view);
+
+        // Label pendek supaya ketiga tombol muat satu baris; label panjang
+        // berawalan Ya/Tidak itulah yang mendorong Batal turun ke baris kedua.
+        $this->assertStringContainsString("__('Wait for the rest')", $view);
+        $this->assertStringContainsString("__('Close the PO')", $view);
 
         // Teksnya dulu ditulis langsung tanpa __(), jadi tetap berbahasa
         // Inggris apa pun bahasa yang dipilih.
