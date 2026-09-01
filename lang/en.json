@@ -352,7 +352,6 @@
     "Kunci Repack (Final)": "Lock Repack (Final)",
     "Lock Repack Data": "Lock Repack Data",
     "Repack Locked": "Repack Locked",
-    "Buka Kunci": "Unlock",
     "Unlock Repack Data": "Unlock Repack Data",
     "Repack Unlocked": "Repack Unlocked",
     "Input Bahan (Scan)": "Input Material (Scan)",
@@ -857,5 +856,11 @@
     ":count delivery orders are waiting for their receiving check.": ":count delivery orders are waiting for their receiving check.",
     ":count invoices have not been exchanged yet.": ":count invoices have not been exchanged yet.",
     ":count mutations have not been received yet.": ":count mutations have not been received yet.",
-    ":count items have been in stock for more than 60 days.": ":count items have been in stock for more than 60 days."
+    ":count items have been in stock for more than 60 days.": ":count items have been in stock for more than 60 days.",
+    "This purchase order cannot be deleted because a supplier payment is already recorded against it.": "This purchase order cannot be deleted because a supplier payment is already recorded against it.",
+    "This Goods Receipt cannot be unlocked because a payment is already recorded against its payable.": "This Goods Receipt cannot be unlocked because a payment is already recorded against its payable.",
+    "Unlock Goods Receipt": "Unlock Goods Receipt",
+    "Lock Goods Receipt": "Lock Goods Receipt",
+    "Goods Receipt unlocked": "Goods Receipt unlocked",
+    "Goods Receipt locked": "Goods Receipt locked"
 }

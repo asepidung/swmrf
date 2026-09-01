@@ -182,12 +182,12 @@ class GoodsReceiptProductResource extends Resource
             ])
             ->actions([
                 Tables\Actions\Action::make('lock')
-                    ->tooltip(fn (GoodsReceiptProduct $record) => $record->is_locked ? __('Buka Kunci') : __('Kunci'))
+                    ->tooltip(fn (GoodsReceiptProduct $record) => $record->is_locked ? __('Unlock') : __('Lock'))
                     ->icon(fn (GoodsReceiptProduct $record) => $record->is_locked ? 'heroicon-o-lock-closed' : 'heroicon-o-lock-open')
                     ->color(fn (GoodsReceiptProduct $record) => $record->is_locked ? 'danger' : 'success')
                     ->hiddenLabel()
                     ->requiresConfirmation()
-                    ->modalHeading(fn (GoodsReceiptProduct $record) => $record->is_locked ? __('Buka Kunci Goods Receipt') : __('Kunci Goods Receipt'))
+                    ->modalHeading(fn (GoodsReceiptProduct $record) => $record->is_locked ? __('Unlock Goods Receipt') : __('Lock Goods Receipt'))
                     ->modalDescription(fn (GoodsReceiptProduct $record) => $record->is_locked 
                         ? __('Apakah Anda yakin ingin membuka kunci GR ini? Perhatian: Data hutang (Payable) terkait akan dihapus (jika belum ada pembayaran).') 
                         : __('Apakah Anda yakin ingin mengunci GR ini? Data tidak akan bisa diubah setelah dikunci (GR Selesai).'))
@@ -201,8 +201,23 @@ class GoodsReceiptProductResource extends Resource
                                     ->where('payableable_id', $record->id)
                                     ->first();
                                     
-                                if ($payable && $payable->payments()->exists() && $payable->payments()->sum('amount') > 0) {
-                                    throw new \Exception('Tidak bisa membuka kunci karena sudah ada pembayaran (Payment) yang terhubung.');
+                                // Membuka kunci akan MENGHAPUS hutangnya.
+                                // Kalau sudah ada uang yang dibayarkan atas
+                                // hutang itu, pembayarannya jadi menunjuk ke
+                                // sesuatu yang tidak ada lagi.
+                                //
+                                // Status payable ikut diperiksa, bukan hanya
+                                // jumlah pembayarannya: baris pembayaran
+                                // bernilai nol lolos dari penjumlahan
+                                // sementara statusnya sudah terlanjur
+                                // berubah.
+                                $sudahDibayar = $payable && (
+                                    in_array($payable->status, ['partial', 'paid'], true)
+                                    || $payable->payments()->sum('amount') > 0
+                                );
+
+                                if ($sudahDibayar) {
+                                    throw new \Exception(__('This Goods Receipt cannot be unlocked because a payment is already recorded against its payable.'));
                                 }
                                 
                                 $record->update(['is_locked' => false]);
@@ -215,12 +230,12 @@ class GoodsReceiptProductResource extends Resource
                                     $payable->delete();
                                 }
                                 
-                                \Filament\Notifications\Notification::make()->title(__('Goods Receipt berhasil dibuka kuncinya!'))->success()->send();
+                                \Filament\Notifications\Notification::make()->title(__('Goods Receipt unlocked'))->success()->send();
                             } else {
                                 // Lock logic
                                 $record->update(['is_locked' => true]);
                                 \App\Models\Payable::generateForGoodsReceiptProduct($record);
-                                \Filament\Notifications\Notification::make()->title(__('Goods Receipt berhasil dikunci (gr selesai)!'))->success()->send();
+                                \Filament\Notifications\Notification::make()->title(__('Goods Receipt locked'))->success()->send();
                             }
                             
                             \Illuminate\Support\Facades\DB::commit();
