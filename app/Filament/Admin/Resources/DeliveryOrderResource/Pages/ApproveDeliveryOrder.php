@@ -132,6 +132,45 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
             ->statePath('data');
     }
 
+    /**
+     * Pilihan karton untuk daftar tolakan.
+     *
+     * Label dan keterangannya dibangun dari SATU kueri yang sama. Kalau
+     * masing-masing mengambil sendiri, daftar ratusan karton itu dibaca dua
+     * kali setiap kali modalnya digambar ulang -- dan CheckboxList
+     * menggambar ulang setiap kali satu kotak dicentang.
+     *
+     * Relasi produknya ikut dimuat. Tanpa itu, satu kueri tambahan menembak
+     * untuk SETIAP karton.
+     *
+     * @return array{labels: array<string, string>, barcodes: array<string, string>}
+     */
+    protected static function rejectionOptions(DeliveryOrder $record): array
+    {
+        static $cache = [];
+
+        if (isset($cache[$record->id])) {
+            return $cache[$record->id];
+        }
+
+        $labels = [];
+        $barcodes = [];
+
+        $items = $record->tally?->items()->with('product')->get() ?? collect();
+
+        foreach ($items as $item) {
+            $labels[$item->barcode] = ($item->product?->name ?? '-')
+                .' — '.number_format($item->weight, 2).' kg';
+
+            // Barcode menjadi keterangan, bukan bagian label: Filament
+            // merendernya dengan huruf lebih kecil dan redup, sehingga
+            // barisnya rata dan yang terbaca lebih dulu adalah produknya.
+            $barcodes[$item->barcode] = $item->barcode;
+        }
+
+        return $cache[$record->id] = ['labels' => $labels, 'barcodes' => $barcodes];
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -155,8 +194,14 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                             'onkeydown' => 'if (event.key === "Enter") { event.preventDefault(); document.getElementById("add-barcode-btn")?.click(); }'
                         ])
                         ->suffixAction(
+                            // Alat pemindai menekan Enter sendiri, dan Enter
+                            // sudah memicu tombol ini. Jadi tombolnya hanya
+                            // untuk yang mengetik barcode manual lalu
+                            // mengklik -- diberi tooltip supaya gunanya tidak
+                            // perlu ditebak.
                             Forms\Components\Actions\Action::make('add_barcode')
                                 ->icon('heroicon-m-plus')
+                                ->tooltip(__('Add the typed barcode to the list. A scanner does this by itself.'))
                                 ->extraAttributes(['id' => 'add-barcode-btn'])
                                 ->action(function (Forms\Set $set, Forms\Get $get) {
                                     $barcode = trim($get('barcode_scan'));
@@ -202,19 +247,33 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                             .'</div>'
                         )),
 
+                    // Satu tally bisa berisi RATUSAN karton, jadi daftar
+                    // centang polos tidak terpakai: barcode 26 karakter
+                    // membuat barisnya melipat, dan tidak ada cara mencari.
+                    //
+                    // Tiga hal membuatnya kembali bisa dibaca:
+                    //
+                    //  - barcode turun menjadi keterangan di bawah label,
+                    //    dirender Filament dengan huruf lebih kecil dan
+                    //    redup, sehingga kolomnya rata dan yang menonjol
+                    //    adalah nama produk dan beratnya;
+                    //  - kotak pencarian, satu-satunya cara masuk akal
+                    //    menemukan satu karton di antara ratusan;
+                    //  - centang massal, untuk menolak seluruh kiriman
+                    //    tanpa menekan ratusan kotak.
+                    //
+                    // Tingginya dibatasi lewat style langsung, bukan kelas
+                    // Tailwind: panel ini tidak memuat hasil build CSS
+                    // aplikasi, sehingga kelas sembarang bisa tidak
+                    // menghasilkan apa pun tanpa satu pun error.
                     Forms\Components\CheckboxList::make('rejected_barcodes')
                         ->label(__('Select Rejected Barcode'))
-                        ->options(fn (): array => $this->record->tally
-                            ?->items()
-                            ->with('product')
-                            ->get()
-                            ->mapWithKeys(fn ($item): array => [
-                                $item->barcode => ($item->product?->name ?? '-')
-                                    .'  '.number_format($item->weight, 2).' kg'
-                                    .'  '.$item->barcode,
-                            ])
-                            ->all() ?? [])
+                        ->options(fn (): array => static::rejectionOptions($this->record)['labels'])
+                        ->descriptions(fn (): array => static::rejectionOptions($this->record)['barcodes'])
+                        ->searchable()
+                        ->bulkToggleable()
                         ->columns(2)
+                        ->extraAttributes(['style' => 'max-height: 22rem; overflow-y: auto;'])
                         ->live(),
                 ])
                 ->action(function (array $data) {

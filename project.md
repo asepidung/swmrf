@@ -134,6 +134,14 @@ Setiap Resource atau Cluster baru wajib:
 
 `origin(1) + tanggal ddmmyy(6) + kode produk(6) + grade(1) + berat(4) + pcs(2) + pH(2) + counter(4)`
 
+> **Panjang 26 hanya berlaku untuk barcode yang DIBUAT sistem ini.**
+> Tidak semua barcode yang beredar berbentuk demikian — ditegaskan Project
+> Owner, 1 September 2026. Karena itu **jangan pernah memakai panjangnya
+> sebagai penanda sah, lengkap, atau selesai diketik.** Pernah nyaris
+> dipasang di halaman Approve Delivery Order, untuk memproses hasil pindai
+> begitu isian mencapai 26 karakter; barcode yang lebih pendek tidak akan
+> pernah terproses dan tidak ada error yang memberitahu.
+
 Digit pertama menandakan asal barang:
 
 | Digit | Asal |

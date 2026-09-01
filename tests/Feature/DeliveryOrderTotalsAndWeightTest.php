@@ -142,45 +142,69 @@ class DeliveryOrderTotalsAndWeightTest extends TestCase
     }
 
     /**
-     * Daftar tolakan dibaca sebagai Produk - Berat - Barcode.
+     * Daftar tolakan bisa dipakai walau isinya ratusan karton.
      *
-     * Urutan lamanya barcode dulu, sehingga mata harus melewati 26 angka
-     * sebelum sampai ke nama produknya. Barcode tetap ditampilkan, di
-     * belakang: dua karton produk yang sama dengan berat yang sama tidak bisa
-     * dibedakan tanpa itu, dan yang dipindai memang barcode-nya.
+     * Satu tally bisa berisi ratusan karton, dan daftar centang polos tidak
+     * terpakai untuk jumlah segitu: barcode 26 karakter membuat barisnya
+     * melipat, dan tidak ada cara mencari.
      */
-    public function test_the_rejection_list_reads_product_first(): void
+    public function test_the_rejection_list_survives_hundreds_of_boxes(): void
     {
         $source = $this->approvePage();
         $start = strpos($source, "CheckboxList::make('rejected_barcodes')");
 
         $this->assertNotFalse($start, 'Daftar tolakan tidak ditemukan.');
 
-        $field = substr($source, $start, 900);
+        $field = substr($source, $start, 700);
 
-        $this->assertStringContainsString("\$item->product?->name ?? '-'", $field);
+        // Satu-satunya cara masuk akal menemukan satu karton di antara ratusan.
+        $this->assertStringContainsString('->searchable()', $field);
 
-        // Nama produk mendahului berat, berat mendahului barcode.
-        $posisiProduk = strpos($field, 'product?->name');
-        $posisiBerat = strpos($field, 'number_format($item->weight');
-        $posisiBarcode = strpos($field, '$item->barcode,');
+        // Menolak seluruh kiriman tanpa menekan ratusan kotak.
+        $this->assertStringContainsString('->bulkToggleable()', $field);
 
-        $this->assertLessThan($posisiBerat, $posisiProduk, 'Produk harus lebih dulu daripada berat.');
-        $this->assertLessThan($posisiBarcode, $posisiBerat, 'Berat harus lebih dulu daripada barcode.');
+        // Tingginya dibatasi lewat style langsung, bukan kelas Tailwind:
+        // panel ini tidak memuat hasil build CSS aplikasi.
+        $this->assertStringContainsString('overflow-y: auto', $field);
     }
 
     /**
-     * Relasi produknya dimuat sekaligus.
+     * Produk dan berat menjadi label, barcode menjadi keterangan.
      *
-     * Tanpa itu, membuka modal tolakan menembak satu kueri untuk SETIAP
-     * karton -- dan satu tally bisa berisi ratusan.
+     * Urutan lamanya barcode dulu, sehingga mata harus melewati 26 angka
+     * sebelum sampai ke nama produknya. Sebagai keterangan, Filament
+     * merender barcode dengan huruf lebih kecil dan redup, sehingga
+     * barisnya rata dan yang terbaca lebih dulu adalah produknya.
      */
-    public function test_the_rejection_list_loads_products_in_one_query(): void
+    public function test_the_product_is_the_label_and_the_barcode_is_the_description(): void
     {
         $source = $this->approvePage();
-        $field = substr($source, strpos($source, "CheckboxList::make('rejected_barcodes')"), 900);
 
-        $this->assertStringContainsString("->with('product')", $field);
+        $this->assertStringContainsString('protected static function rejectionOptions(', $source);
+        $this->assertStringContainsString("'labels' => \$labels", $source);
+        $this->assertStringContainsString("'barcodes' => \$barcodes", $source);
+
+        $field = substr($source, strpos($source, "CheckboxList::make('rejected_barcodes')"), 700);
+
+        $this->assertStringContainsString('->descriptions(', $field);
+    }
+
+    /**
+     * Label dan keterangannya berasal dari satu kueri yang sama.
+     *
+     * Kalau masing-masing mengambil sendiri, daftar ratusan karton itu
+     * dibaca dua kali setiap kali modalnya digambar ulang -- dan
+     * CheckboxList menggambar ulang setiap kali satu kotak dicentang.
+     */
+    public function test_the_rejection_list_reads_the_boxes_once(): void
+    {
+        $source = $this->approvePage();
+        $awal = strpos($source, 'protected static function rejectionOptions(');
+        $badan = substr($source, $awal, 1400);
+
+        $this->assertStringContainsString("->with('product')", $badan);
+        $this->assertSame(1, substr_count($badan, '->get()'));
+        $this->assertStringContainsString('static $cache', $badan);
     }
 
     /**
