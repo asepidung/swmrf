@@ -141,6 +141,76 @@ class DeliveryOrderTotalsAndWeightTest extends TestCase
         $this->assertStringContainsString('->disabled()', $field);
     }
 
+    /**
+     * Daftar tolakan dibaca sebagai Produk - Berat - Barcode.
+     *
+     * Urutan lamanya barcode dulu, sehingga mata harus melewati 26 angka
+     * sebelum sampai ke nama produknya. Barcode tetap ditampilkan, di
+     * belakang: dua karton produk yang sama dengan berat yang sama tidak bisa
+     * dibedakan tanpa itu, dan yang dipindai memang barcode-nya.
+     */
+    public function test_the_rejection_list_reads_product_first(): void
+    {
+        $source = $this->approvePage();
+        $start = strpos($source, "CheckboxList::make('rejected_barcodes')");
+
+        $this->assertNotFalse($start, 'Daftar tolakan tidak ditemukan.');
+
+        $field = substr($source, $start, 900);
+
+        $this->assertStringContainsString("\$item->product?->name ?? '-'", $field);
+
+        // Nama produk mendahului berat, berat mendahului barcode.
+        $posisiProduk = strpos($field, 'product?->name');
+        $posisiBerat = strpos($field, 'number_format($item->weight');
+        $posisiBarcode = strpos($field, '$item->barcode,');
+
+        $this->assertLessThan($posisiBerat, $posisiProduk, 'Produk harus lebih dulu daripada berat.');
+        $this->assertLessThan($posisiBarcode, $posisiBerat, 'Berat harus lebih dulu daripada barcode.');
+    }
+
+    /**
+     * Relasi produknya dimuat sekaligus.
+     *
+     * Tanpa itu, membuka modal tolakan menembak satu kueri untuk SETIAP
+     * karton -- dan satu tally bisa berisi ratusan.
+     */
+    public function test_the_rejection_list_loads_products_in_one_query(): void
+    {
+        $source = $this->approvePage();
+        $field = substr($source, strpos($source, "CheckboxList::make('rejected_barcodes')"), 900);
+
+        $this->assertStringContainsString("->with('product')", $field);
+    }
+
+    /**
+     * Hitungan hasil pindai ditulis di satu tempat.
+     *
+     * Dulu kalimatnya ada di tiga tempat: isi Placeholder, dan dua
+     * pemanggilan $set yang sebenarnya tidak berguna -- isi Placeholder
+     * memang dihitung ulang sendiri setiap render. Yang ditinggalkan hanya
+     * salinan kalimat yang bisa berbeda dengan aslinya.
+     */
+    public function test_the_scanned_count_is_written_once(): void
+    {
+        $source = $this->approvePage();
+
+        $this->assertStringNotContainsString('Total Ter-scan', $source);
+        $this->assertSame(1, substr_count($source, ':count box selected'));
+        $this->assertStringNotContainsString("\$set('scanned_count_placeholder'", $source);
+    }
+
+    /** Satu produk muat dalam satu baris di Receiving Check. */
+    public function test_one_product_fits_on_one_row(): void
+    {
+        $source = $this->approvePage();
+        $awal = strpos($source, "Section::make(__('Receiving Check')");
+        $bagian = substr($source, $awal, 2600);
+
+        // 4 + 2 + 2 + 4 = 12
+        $this->assertStringNotContainsString('->columnSpan(12),', $bagian);
+    }
+
     /** Pesan di halaman ini memakai kunci Inggris, bukan kalimat Indonesia. */
     public function test_the_messages_use_english_keys(): void
     {

@@ -824,5 +824,9 @@
     "Material Stock": "Material Stock",
     "Receivables": "Receivables",
     "Stock Movements": "Stock Movements",
-    "Materials": "Materials"
+    "Materials": "Materials",
+    ":count box selected": ":count box selected",
+    "Barcode ticked": "Barcode ticked",
+    "Barcode already ticked": "Barcode already ticked",
+    "Barcode not found in this Tally": "Barcode not found in this Tally"
 }

@@ -83,7 +83,8 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                                     ->label(__('Shipped Weight'))
                                     ->disabled()
                                     ->numeric()
-                                    ->columnSpan(4),
+                                    ->extraInputAttributes(['class' => 'text-right'])
+                                    ->columnSpan(2),
 
                                 // Satu-satunya isian yang benar-benar diketik
                                 // di halaman ini, dan angkanya menentukan
@@ -106,11 +107,15 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                                         'numeric' => __('Received weight must be a number.'),
                                         'min' => __('Received weight cannot be negative.'),
                                     ])
-                                    ->columnSpan(4),
+                                    ->columnSpan(2),
 
+                                // Satu produk = satu baris. Sebelumnya Notes
+                                // memakai dua belas kolom sehingga selalu
+                                // turun sendiri, dan satu baris produk
+                                // memakan dua baris layar.
                                 Forms\Components\TextInput::make('notes')
                                     ->label(__('Notes'))
-                                    ->columnSpan(12),
+                                    ->columnSpan(4),
                             ])
                             ->columns(12)
                             ->disableItemCreation()
@@ -165,22 +170,19 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                                             $rejected[] = $barcode;
                                             $set('rejected_barcodes', $rejected);
 
-                                            $count = count($rejected);
-                                            $set('scanned_count_placeholder', "Total Ter-scan: {$count} karton");
-
                                             Notification::make()
-                                                ->title(__('Barcode tercentang'))
+                                                ->title(__('Barcode ticked'))
                                                 ->success()
                                                 ->send();
                                         } else {
                                             Notification::make()
-                                                ->title(__('Barcode sudah tercentang'))
+                                                ->title(__('Barcode already ticked'))
                                                 ->warning()
                                                 ->send();
                                         }
                                     } else {
                                         Notification::make()
-                                            ->title(__('Barcode tidak ditemukan di Tally ini'))
+                                            ->title(__('Barcode not found in this Tally'))
                                             ->danger()
                                             ->send();
                                     }
@@ -188,25 +190,32 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                                 })
                         ),
 
+                    // Dihitung di satu tempat saja. Dulu kalimatnya juga
+                    // ditulis ulang di dua pemanggilan $set yang sebenarnya
+                    // tidak berguna -- isi Placeholder memang dihitung ulang
+                    // sendiri setiap render.
                     Forms\Components\Placeholder::make('scanned_count_placeholder')
                         ->label('')
-                        ->content(function (Forms\Get $get) {
-                            $rejected = $get('rejected_barcodes') ?? [];
-                            $count = count($rejected);
-                            return new \Illuminate\Support\HtmlString("<div class='text-lg font-bold text-warning-600 dark:text-warning-400'>Total Ter-scan: {$count} karton</div>");
-                        }),
+                        ->content(fn (Forms\Get $get) => new \Illuminate\Support\HtmlString(
+                            "<div class='text-lg font-bold text-warning-600 dark:text-warning-400'>"
+                            .e(__(':count box selected', ['count' => count($get('rejected_barcodes') ?? [])]))
+                            .'</div>'
+                        )),
 
                     Forms\Components\CheckboxList::make('rejected_barcodes')
                         ->label(__('Select Rejected Barcode'))
-                        ->options(fn () => $this->record->tally?->items->mapWithKeys(fn ($item) => [
-                            $item->barcode => $item->barcode . ' (' . $item->product->name . ' - ' . number_format($item->weight, 2) . ' kg)'
-                        ])->toArray() ?? [])
+                        ->options(fn (): array => $this->record->tally
+                            ?->items()
+                            ->with('product')
+                            ->get()
+                            ->mapWithKeys(fn ($item): array => [
+                                $item->barcode => ($item->product?->name ?? '-')
+                                    .'  '.number_format($item->weight, 2).' kg'
+                                    .'  '.$item->barcode,
+                            ])
+                            ->all() ?? [])
                         ->columns(2)
-                        ->live()
-                        ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, $state) {
-                            $count = count($state ?? []);
-                            $set('scanned_count_placeholder', "Total Ter-scan: {$count} karton");
-                        }),
+                        ->live(),
                 ])
                 ->action(function (array $data) {
                     $barcodes = $data['rejected_barcodes'] ?? [];

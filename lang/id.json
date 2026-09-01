@@ -824,5 +824,9 @@
     "Material Stock": "Stok Material",
     "Receivables": "Piutang",
     "Stock Movements": "Mutasi Stok",
-    "Materials": "Material"
+    "Materials": "Material",
+    ":count box selected": ":count karton terpilih",
+    "Barcode ticked": "Barcode tercentang",
+    "Barcode already ticked": "Barcode sudah tercentang",
+    "Barcode not found in this Tally": "Barcode tidak ditemukan di Tally ini"
 }
