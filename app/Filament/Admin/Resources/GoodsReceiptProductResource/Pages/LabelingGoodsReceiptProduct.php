@@ -163,7 +163,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                                 // Labelnya dipendekkan supaya muat di samping
                                 // tanggal tanpa mendorong barisnya melipat.
                                 Forms\Components\Checkbox::make('show_exp')
-                                    ->label(__('Show expiry'))
+                                    ->label(__('Show Expiry'))
                                     ->default(false)
                                     ->dehydrated(false)
                                     ->extraAttributes(['tabindex' => '-1']),

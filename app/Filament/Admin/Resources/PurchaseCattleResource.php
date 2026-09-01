@@ -6,6 +6,7 @@ use App\Filament\Admin\Resources\PurchaseCattleResource\Pages;
 use App\Filament\Admin\Resources\PurchaseCattleResource\RelationManagers;
 use App\Models\PurchaseCattle;
 use Filament\Forms;
+use Filament\Support\RawJs;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -85,22 +86,41 @@ class PurchaseCattleResource extends Resource
                                 ->placeholder(__('Category'))
                                 ->label('')
                                 ->hiddenLabel(),
+                            // Tanpa ->numeric(). Pemanggilan itu membuat input
+                            // menjadi type=number lengkap dengan tombol panah,
+                            // dan jumlah ekor yang tergeser tanpa disadari
+                            // mengubah nilai seluruh pembelian.
                             Forms\Components\TextInput::make('qty')
                                 ->required()
                                 ->stripCharacters('.')
-                                ->numeric()
+                                ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right'])
                                 ->rules(['integer', 'min:1'])
                                 ->placeholder(__('Qty / Head'))
                                 ->label('')
                                 ->hiddenLabel(),
+
+                            // Harga per kilo: bertombol panah DAN tanpa
+                            // pemisah ribuan, sehingga 1500000 terbaca sebagai
+                            // deretan angka yang harus dihitung dengan mata.
+                            //
+                            // Topengnya disamakan dengan kolom uang lain di
+                            // aplikasi, dan stripCharacters('.') yang sudah ada
+                            // yang membuang titiknya lagi sebelum tersimpan.
                             Forms\Components\TextInput::make('price')
                                 ->required()
                                 ->default(0)
                                 ->prefix('Rp')
                                 ->stripCharacters('.')
-                                ->numeric()
+                                ->formatStateUsing(fn ($state): ?string => $state === null || $state === ''
+                                    ? null
+                                    : number_format((float) $state, 0, ',', '.'))
+                                ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                 ->rules(['integer', 'min:0'])
-                                ->extraInputAttributes(['x-on:focus' => '$el.select()'])
+                                ->extraInputAttributes([
+                                    'x-on:focus' => '$el.select()',
+                                    'inputmode' => 'numeric',
+                                    'class' => 'text-right',
+                                ])
                                 ->placeholder(__('Price / Kg'))
                                 ->label('')
                                 ->hiddenLabel(),
