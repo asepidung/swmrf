@@ -829,5 +829,12 @@
     "Barcode ticked": "Barcode ticked",
     "Barcode already ticked": "Barcode already ticked",
     "Barcode not found in this Tally": "Barcode not found in this Tally",
-    "Add the typed barcode to the list. A scanner does this by itself.": "Add the typed barcode to the list. A scanner does this by itself."
+    "Add the typed barcode to the list. A scanner does this by itself.": "Add the typed barcode to the list. A scanner does this by itself.",
+    "Active schedules only": "Active schedules only",
+    "Progress": "Progress",
+    "No sales order yet": "No sales order yet",
+    "Delivered": "Delivered",
+    "Delivery note issued": "Delivery note issued",
+    "Being prepared": "Being prepared",
+    "Not started": "Not started"
 }

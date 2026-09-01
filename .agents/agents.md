@@ -1205,6 +1205,40 @@ apa pun dan **nomor resi menjadi sama persis dengan nomor DO** -- tanpa error,
 dan tanpa apa pun yang menahannya, karena index unique pada `receipt_number`
 sudah dilepas pada migrasi 1 Juli 2026.
 
+### Jadwal kirim hilang di AKHIR HARI KIRIM, bukan pada peristiwa dokumen
+
+Delivery Plan adalah alat kerja petugas distribusi: jadwal muncul begitu
+Sales Order dibuat, dan dibagikan H-1 sekitar pukul sepuluh malam.
+
+Sebelum 1 September 2026 jadwalnya **tidak pernah hilang** -- daftarnya
+memuat seluruh jadwal yang pernah dibuat sejak sistem berdiri.
+
+Ketiga peristiwa dokumen ditolak Owner, masing-masing dengan alasannya:
+
+| Penanda | Kenapa keliru |
+|---|---|
+| Surat jalan dibuat | Kadang dibuat sehari sebelum berangkat, jadi jadwalnya hilang padahal barangnya belum ke mana-mana |
+| Resi penerimaan dibuat | Berarti sopir sudah pulang, jauh sesudah jadwalnya tidak relevan |
+| Lewat dari hari kirim | Pengiriman sore hilang sejak pagi |
+
+**Perhatikan:** status `on_delivery` pada Sales Order dipasang saat surat
+jalan DIBUAT (`DeliveryOrder::created`), bukan saat truk berangkat. Jadi
+status itu pun bukan penanda yang dicari, dan sistem ini memang tidak punya
+penanda "truk berangkat".
+
+**Aturan yang dipakai:** hari kirim itu sendiri. Sebuah jadwal berhenti
+menjadi jadwal ketika harinya habis, sehingga pengiriman sore tetap terlihat
+sepanjang hari itu.
+
+**Ditambah satu klausa yang menutup lubangnya:** jadwal yang harinya sudah
+lewat tetapi Sales Order-nya belum selesai TETAP ditampilkan, ditandai merah.
+Tanpa itu, pengiriman yang tertunda lenyap diam-diam pada tengah malam justru
+ketika ia paling perlu dilihat.
+
+Ada di `DeliveryPlan::scopeStillRelevant()`, dipasang sebagai **saringan
+bawaan** dan bukan batasan tetap pada `getEloquentQuery()` -- mematikan
+saringannya mengembalikan riwayat lengkapnya.
+
 ### Urutan kerja yang diminta Owner, 1 September 2026
 
 Tally, lalu **Delivery Order**, lalu **plandev**. Owner meminta secara khusus
@@ -1330,6 +1364,17 @@ pencocokan `%DCA%` perlu diperiksa hasilnya, karena ia juga akan mengenai
 pelanggan lain yang namanya kebetulan memuat huruf itu. Kolom **Diskon** pada
 daftar Customer sengaja ditampilkan untuk keperluan itu: yang tidak seharusnya
 berdiskon tinggal dinolkan lewat form.
+
+### Jangan mengutip pola terlarang di dalam komentar kodenya sendiri
+
+Test penjaga di proyek ini banyak yang memindai berkas sumber untuk memastikan
+sebuah bentuk TIDAK ada lagi. Menuliskan bentuk itu di dalam komentar --
+sekadar untuk menjelaskan apa yang dulu salah -- membuat penjaganya menemukan
+komentar itu sendiri dan gagal.
+
+Sudah terjadi **empat kali**: pada kelas warna, pada kelas dua-kolom, pada
+nama kelas CSS yang tidak berwujud, dan pada pemanggilan penjumlahan relasi.
+Jelaskan bentuk lamanya dengan kata-kata, jangan disalin apa adanya.
 
 ### Batas angka di Filament tidak membatasi apa pun tanpa aturan numerik
 
