@@ -108,11 +108,6 @@ class Payable extends Model
      * Kalau kelak perlu laporan alokasi per pembayaran, barulah dibutuhkan
      * tabel alokasi tersendiri.
      */
-    /** Alasan kompensasi yang dikenal, dan keduanya berbeda perlakuan. */
-    public const COMPENSATION_FOR_QUALITY = 'quality';
-
-    public const COMPENSATION_FOR_WEIGHT = 'weight';
-
     /**
      * Satu-satunya tempat saldo dan status hutang dihitung.
      *
@@ -151,28 +146,38 @@ class Payable extends Model
      *
      * Bentuknya potongan TOTAL, bukan potongan per kilo. Keputusan Project
      * Owner: yang sebenarnya dinegosiasikan memang angka bulat, dan
-     * menurunkannya menjadi harga per kilo adalah ketelitian yang dikarang --
-     * lagi pula itu memaksa menghitung ulang setiap baris hutang dan kerugian
-     * penimbangan, merambat ke dokumen yang mungkin sudah disetujui.
+     * menurunkannya menjadi harga per kilo adalah ketelitian yang dikarang.
      *
-     * ALASANNYA menentukan perlakuannya, bukan sekadar menjadi keterangan.
-     * Lihat recoverWeightLoss().
+     * KOMPENSASI TIDAK PERNAH MENYENTUH KERUGIAN. Rancangan sebelumnya
+     * membedakan kompensasi karena berat dan karena kualitas, dan yang karena
+     * berat ikut mengurangi kerugian susut. Penjelasan Owner membatalkan
+     * dasarnya: komplainnya selalu soal mutu -- lemaknya terlalu banyak,
+     * hasil dagingnya sedikit. Pemasok tidak pernah mengganti karena beratnya
+     * kurang.
+     *
+     * Pembedaan itu karena itu membedakan sesuatu yang tidak dibedakan di
+     * lapangan, dan justru pembedaan itulah bagian yang berbahaya: salah
+     * memilih alasan menghapus kerugian susut yang nyata, tanpa satu pun
+     * gejala. Jangan dipasang lagi.
+     *
+     * Susut timbang tetap utuh karena beratnya memang tidak pernah sampai.
+     * Gambaran utuhnya terbaca dari kedua angka yang berdiri sendiri.
      *
      * @throws \InvalidArgumentException
      */
-    public function applyCompensation(float $amount, string $reason, ?string $note = null): void
+    public function applyCompensation(float $amount, ?string $note = null): void
     {
         if ($amount <= 0) {
             throw new \InvalidArgumentException(__('Compensation must be more than zero.'));
         }
 
-        if (! in_array($reason, [self::COMPENSATION_FOR_QUALITY, self::COMPENSATION_FOR_WEIGHT], true)) {
-            throw new \InvalidArgumentException(__('Unknown compensation reason.'));
-        }
-
         // Tidak boleh melebihi yang belum dibayar. Kompensasi yang lebih besar
         // daripada sisa hutang berarti pemasok berhutang kepada kita, dan itu
         // hal lain yang butuh dokumennya sendiri.
+        //
+        // Perhatikan bahwa ini SATU-SATUNYA batas. Kompensasi yang lebih besar
+        // daripada kerugian susut tidak perlu dibatasi sama sekali, karena ia
+        // memang tidak pernah menyentuhnya.
         $sisa = (float) $this->amount - (float) $this->compensation - (float) $this->paid_amount;
 
         if ($amount > $sisa) {
@@ -182,56 +187,10 @@ class Payable extends Model
         }
 
         $this->compensation = (float) $this->compensation + $amount;
-        $this->compensation_reason = $reason;
         $this->compensation_note = $note;
 
         $this->recalculate();
         $this->save();
-
-        if ($reason === self::COMPENSATION_FOR_WEIGHT) {
-            $this->recoverWeightLoss($amount);
-        }
-    }
-
-    /**
-     * Kompensasi karena BERAT mengurangi kerugian susut yang sudah tercatat.
-     *
-     * Kerugian susut penimbangan dan kompensasi karena berat mengukur hal yang
-     * SAMA: berat yang dibayar tetapi tidak diterima. Mencatat keduanya penuh
-     * membuat kerugian perusahaan tampak lebih besar daripada kenyataannya.
-     *
-     * Kompensasi karena KUALITAS sengaja tidak masuk ke sini. Susutnya tetap
-     * terjadi; uang itu didapat untuk hal lain. Menguranginya berarti memakai
-     * satu pemulihan untuk menutup dua kerugian yang berbeda.
-     *
-     * Nilai kerugiannya sendiri tidak diubah -- yang bertambah kolom
-     * `recovered_amount`, supaya angka aslinya tetap terbaca dan bisa
-     * dibandingkan dengan yang berhasil ditarik kembali.
-     */
-    protected function recoverWeightLoss(float $amount): void
-    {
-        $receiving = $this->payableable;
-
-        if (! $receiving instanceof CattleReceiving) {
-            return;
-        }
-
-        $loss = optional($receiving->weighing)->financialLoss;
-
-        if ($loss === null) {
-            return;
-        }
-
-        // Pemulihan yang lebih besar daripada kerugiannya akan berubah menjadi
-        // keuntungan semu.
-        $bisaDipulihkan = (float) $loss->amount - (float) $loss->recovered_amount;
-
-        if ($bisaDipulihkan <= 0) {
-            return;
-        }
-
-        $loss->recovered_amount = (float) $loss->recovered_amount + min($amount, $bisaDipulihkan);
-        $loss->save();
     }
 
     public function releaseAdvances(): void

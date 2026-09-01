@@ -61,7 +61,7 @@ class PayableCompensationTest extends TestCase
     {
         $payable = $this->payable(100_000_000);
 
-        $payable->applyCompensation(5_000_000, Payable::COMPENSATION_FOR_QUALITY, 'Sapi kurus');
+        $payable->applyCompensation(5_000_000, 'Lemaknya terlalu banyak');
 
         $payable->refresh();
 
@@ -76,8 +76,8 @@ class PayableCompensationTest extends TestCase
     {
         $payable = $this->payable(10_000_000);
 
-        $payable->applyCompensation(1_000_000, Payable::COMPENSATION_FOR_QUALITY);
-        $payable->applyCompensation(500_000, Payable::COMPENSATION_FOR_QUALITY);
+        $payable->applyCompensation(1_000_000);
+        $payable->applyCompensation(500_000);
 
         $this->assertEquals(1_500_000, (float) $payable->fresh()->compensation);
         $this->assertEquals(8_500_000, (float) $payable->fresh()->balance);
@@ -92,7 +92,7 @@ class PayableCompensationTest extends TestCase
     {
         $payable = $this->payable(2_000_000);
 
-        $payable->applyCompensation(2_000_000, Payable::COMPENSATION_FOR_QUALITY);
+        $payable->applyCompensation(2_000_000);
 
         $this->assertSame('paid', $payable->fresh()->status);
         $this->assertEquals(0, (float) $payable->fresh()->balance);
@@ -110,7 +110,7 @@ class PayableCompensationTest extends TestCase
 
         $this->expectException(\InvalidArgumentException::class);
 
-        $payable->applyCompensation(4_000_000, Payable::COMPENSATION_FOR_QUALITY);
+        $payable->applyCompensation(4_000_000);
     }
 
     /** Nol dan angka minus ditolak. */
@@ -118,15 +118,7 @@ class PayableCompensationTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
 
-        $this->payable()->applyCompensation(0, Payable::COMPENSATION_FOR_QUALITY);
-    }
-
-    /** Alasan yang tidak dikenal ditolak, bukan disimpan apa adanya. */
-    public function test_an_unknown_reason_is_refused(): void
-    {
-        $this->expectException(\InvalidArgumentException::class);
-
-        $this->payable()->applyCompensation(1_000, 'entah');
+        $this->payable()->applyCompensation(0);
     }
 
     /**
@@ -141,7 +133,7 @@ class PayableCompensationTest extends TestCase
     {
         $payable = $this->payable(10_000_000);
 
-        $payable->applyCompensation(2_000_000, Payable::COMPENSATION_FOR_QUALITY);
+        $payable->applyCompensation(2_000_000);
 
         $payable->paid_amount = 8_000_000;
         $payable->recalculate();
@@ -196,50 +188,76 @@ class PayableCompensationTest extends TestCase
     }
 
     /**
-     * Layar HP hanya menampilkan satu tombol utama.
+     * Ketiga tombol berdampingan, dengan label sependek mungkin.
      *
-     * Tiga tombol sejajar terlipat menjadi dua baris yang tidak rata di layar
-     * sempit, dan yang paling mencolok justru bukan aksi yang paling sering
-     * dipakai. Mencatat pembayaran adalah pekerjaan sehari-hari; mencatat
-     * kompensasi jarang, dan Kembali selalu ada di mana-mana.
+     * Menyembunyikan sebagiannya ke dalam tombol titik tiga memang merapikan
+     * barisnya, tetapi menukar kerapian dengan satu ketukan tambahan -- dan
+     * yang ikut tersembunyi justru Kembali, yang paling sering dicari.
      */
-    public function test_the_secondary_actions_are_grouped(): void
+    public function test_the_actions_stand_side_by_side_with_short_labels(): void
     {
         $page = file_get_contents(app_path(
             'Filament/Admin/Resources/PayableResource/Pages/ViewPayable.php'
         ));
 
-        $this->assertStringContainsString('Actions\ActionGroup::make([', $page);
+        $this->assertStringNotContainsString('ActionGroup::make([', $page);
 
-        // Pembayaran tetap berdiri sendiri dan berada di DEPAN kelompok:
-        // ia pekerjaan sehari-hari, jadi ia yang pertama tersentuh.
-        $posisiBayar = strpos($page, "Action::make('pay')");
-        $posisiKelompok = strpos($page, 'ActionGroup::make([');
-
-        $this->assertNotFalse($posisiBayar, 'Aksi pembayaran tidak ditemukan.');
-        $this->assertLessThan($posisiKelompok, $posisiBayar, 'Pembayaran harus mendahului kelompoknya.');
+        foreach (["__('Pay')", "__('Compensate')", "__('Back')"] as $label) {
+            $this->assertStringContainsString($label, $page);
+        }
     }
 
     /**
-     * Alasannya wajib dipilih dan tidak punya nilai bawaan.
+     * Kompensasi TIDAK PERNAH menyentuh kerugian.
      *
-     * Ia menentukan perlakuannya, bukan sekadar menjadi keterangan: yang
-     * karena BERAT ikut mengurangi kerugian susut, yang karena KUALITAS
-     * tidak.
+     * Rancangan sebelumnya membedakan kompensasi karena berat dan karena
+     * kualitas, dan yang karena berat ikut mengurangi kerugian susut.
+     * Penjelasan Owner membatalkan dasarnya: komplainnya selalu soal mutu --
+     * lemaknya terlalu banyak, hasil dagingnya sedikit. Pemasok tidak pernah
+     * mengganti karena beratnya kurang.
+     *
+     * Pembedaan itu membedakan sesuatu yang tidak dibedakan di lapangan, dan
+     * justru pembedaan itulah bagian yang berbahaya: salah memilih alasan
+     * menghapus kerugian susut yang nyata, tanpa satu pun gejala.
      */
-    public function test_the_reason_must_be_chosen_deliberately(): void
+    public function test_compensation_never_touches_a_recorded_loss(): void
     {
+        $model = file_get_contents(app_path('Models/Payable.php'));
+
+        $this->assertStringNotContainsString('recoverWeightLoss', $model);
+        $this->assertStringNotContainsString('COMPENSATION_FOR_WEIGHT', $model);
+        $this->assertStringNotContainsString('recovered_amount', $model);
+
         $page = file_get_contents(app_path(
             'Filament/Admin/Resources/PayableResource/Pages/ViewPayable.php'
         ));
 
-        $awal = strpos($page, "Radio::make('reason')");
+        $this->assertStringNotContainsString("Radio::make('reason')", $page);
+    }
 
-        $this->assertNotFalse($awal, 'Pilihan alasan tidak ditemukan.');
+    /**
+     * Kompensasi yang lebih besar daripada kerugian tidak perlu dibatasi.
+     *
+     * Pertanyaan Owner: bagaimana kalau kompensasinya 1 juta sementara
+     * kerugian susutnya hanya 500 ribu? Dengan aturan yang disederhanakan,
+     * pertanyaan itu hilang sendiri -- kompensasi memang tidak pernah
+     * menyentuh kerugian, jadi tidak ada yang perlu dibatasi.
+     *
+     * Satu-satunya batas yang tersisa adalah sisa tagihan.
+     */
+    public function test_a_compensation_larger_than_any_loss_is_fine(): void
+    {
+        $payable = $this->payable(5_000_000);
 
-        $blok = substr($page, $awal, 900);
+        $payable->applyCompensation(1_000_000, 'Hasil dagingnya sedikit');
 
-        $this->assertStringContainsString('->required()', $blok);
-        $this->assertStringNotContainsString('->default(', $blok);
+        $this->assertEquals(4_000_000, (float) $payable->fresh()->balance);
+
+        // Tidak ada lagi pembatas yang membandingkan kompensasi dengan
+        // kerugian; satu-satunya batas adalah sisa tagihan.
+        $model = file_get_contents(app_path('Models/Payable.php'));
+
+        $this->assertStringNotContainsString('bisaDipulihkan', $model);
+        $this->assertStringContainsString('Compensation cannot be more than the outstanding amount.', $model);
     }
 }

@@ -1244,57 +1244,60 @@ Ada di `DeliveryPlan::scopeStillRelevant()`, dipasang sebagai **saringan
 bawaan** dan bukan batasan tetap pada `getEloquentQuery()` -- mematikan
 saringannya mengembalikan riwayat lengkapnya.
 
-### Kompensasi pemasok: potongan TOTAL, dan alasannya menentukan perlakuan
+### Kompensasi pemasok: potongan TOTAL, dan TIDAK menyentuh kerugian
 
-Kejadian di lapangan: pesanan datang lengkap -- sepuluh steer dipesan,
-sepuluh steer datang -- tetapi kualitasnya buruk, sehingga purchasing menawar
-kompensasi ke pemasok.
+Kejadian di lapangan: sapi datang dengan surat jalan 100 kg, harga 50.000, jadi
+tagihan 5 juta. Ditimbang ulang hanya 90 kg -- susut 10 kg, tercatat rugi 500
+ribu. Lalu purchasing komplen karena mutunya jelek: lemaknya terlalu banyak,
+hasil dagingnya sedikit. Pemasok memberi kompensasi, dan hutangnya berkurang.
 
-**Bentuknya potongan TOTAL, bukan potongan per kilo.** Keputusan Owner,
-1 September 2026. Yang sebenarnya dinegosiasikan memang angka bulat ("potong
-5 juta"); menurunkannya menjadi harga per kilo adalah ketelitian yang
-dikarang, dan itu memaksa menghitung ulang setiap baris hutang **dan**
-kerugian penimbangan, merambat ke dokumen yang mungkin sudah disetujui.
+**Bentuknya potongan TOTAL, bukan potongan per kilo.** Keputusan Owner. Yang
+sebenarnya dinegosiasikan memang angka bulat, dan menurunkannya menjadi harga
+per kilo adalah ketelitian yang dikarang -- lagi pula itu memaksa menghitung
+ulang setiap baris hutang, merambat ke dokumen yang mungkin sudah disetujui.
 
 **Harga di Purchase Order TIDAK diubah.** PO adalah catatan kesepakatan.
 Menurunkan harganya di belakang menghapus selisih antara yang disepakati dan
-yang akhirnya dibayar, sehingga pertanyaan "tahun ini kita dapat kompensasi
-berapa dari pemasok" tidak bisa dijawab sama sekali.
-
-`payables.amount` tetap utuh sebagai nilai asli, dan kompensasinya berdiri
-sebagai kolom sendiri:
+yang akhirnya dibayar. `payables.amount` tetap utuh:
 
 ```
 balance = amount - compensation - paid_amount
 ```
 
-**ALASANNYA MENENTUKAN PERLAKUAN, bukan sekadar keterangan:**
+**KOMPENSASI TIDAK PERNAH MENYENTUH KERUGIAN.** Ini keputusan yang paling
+penting di sini, dan ia menggantikan rancangan sebelumnya.
 
-| Alasan | Hutang | Kerugian susut penimbangan |
-|---|---|---|
-| `quality` | berkurang | **tidak disentuh** |
-| `weight` | berkurang | ikut berkurang |
+Rancangan pertama membedakan kompensasi karena BERAT dan karena KUALITAS, dan
+yang karena berat ikut mengurangi kerugian susut. Penjelasan Owner membatalkan
+dasarnya: **komplainnya selalu soal mutu.** Pemasok tidak pernah mengganti
+karena beratnya kurang; susut timbang adalah urusan lain yang sudah tercatat
+sendiri, dan berat yang dicatat diterima tetap mengikuti surat jalan pemasok --
+itu keputusan bisnis tersendiri.
 
-Owner sempat mengira kerugian penimbangan harus selalu ikut berubah bila
-harga berubah -- dan itu memang benar untuk kompensasi karena BERAT, karena
-keduanya mengukur hal yang sama: berat yang dibayar tetapi tidak diterima.
+Artinya pembedaan itu **membedakan sesuatu yang tidak dibedakan di lapangan**,
+dan justru pembedaan itulah bagian yang berbahaya: salah memilih alasan
+menghapus kerugian susut yang nyata, tanpa satu pun gejala. **Jangan dipasang
+lagi.**
 
-Untuk kompensasi karena KUALITAS tidak. Susutnya tetap terjadi, dan uang itu
-didapat untuk hal lain; menguranginya berarti memakai satu pemulihan untuk
-menutup dua kerugian yang berbeda.
+Susut 10 kg tetap tercatat 500 ribu karena beratnya memang tidak pernah sampai.
+Kompensasi didapat karena hal lain. Gambaran utuhnya terbaca dari kedua angka
+yang berdiri sendiri, dan menetralkannya lebih dulu justru menyembunyikan
+dua-duanya.
 
-Nilai kerugiannya sendiri tidak pernah diubah -- yang bertambah kolom
-`financial_losses.recovered_amount`, supaya angka asli dan yang berhasil
-ditarik kembali dua-duanya terbaca. Idiom yang sama dengan hutang.
+Pertanyaan Owner "bagaimana kalau kompensasinya lebih besar daripada
+kerugiannya" ikut hilang dengan sendirinya: tidak ada yang perlu dibatasi.
+**Satu-satunya batas yang tersisa adalah sisa tagihan** -- kompensasi yang
+melebihi itu berarti pemasok berhutang kepada kita, dan itu dokumen lain.
 
-**Penjagaannya:** kompensasi tidak boleh melebihi sisa tagihan (kalau lebih,
-pemasok yang berhutang -- itu dokumen lain), tidak boleh nol, alasannya wajib
-dipilih tanpa nilai bawaan, dan pemulihan tidak boleh melebihi kerugian yang
-tercatat supaya tidak berubah menjadi untung semu.
+Alasannya tetap dicatat sebagai **keterangan bebas**, berguna untuk ditelusuri
+tetapi tidak mengubah angka apa pun.
 
-Haknya terpisah: `record_payable_compensations`. Mencatat kompensasi
-mengurangi yang dibayar perusahaan -- itu keputusan uang, beda dari melihat
-daftar hutang dan beda dari membayar.
+Haknya terpisah: `record_payable_compensations`. Mencatat kompensasi mengurangi
+yang dibayar perusahaan -- itu keputusan uang, beda dari melihat daftar hutang
+dan beda dari membayar.
+
+**Belum ada cara membatalkan kompensasi.** Owner sudah diberi tahu; menunggu
+pembahasan tersendiri.
 
 ### Rumus saldo hutang hanya ada di SATU tempat
 
