@@ -201,57 +201,85 @@ class DeliveryOrderResource extends Resource
                             ->hiddenLabel()
                             ->live(true),
 
-                        Forms\Components\Placeholder::make('totals')
-                            ->label('')
-                            ->content(function ($record, callable $get) {
-                                $items = $get('items');
-                                $totalBox = 0;
-                                $totalWeight = 0;
+                        // Tiga angka ringkasan, dirender oleh Filament sendiri.
+                        //
+                        // Sebelumnya blok ini adalah HTML rakitan tangan dengan
+                        // huruf extrabold, label kapital renggang berukuran 10
+                        // piksel, garis pemisah, bayangan, dan warna amber serta
+                        // emerald -- ramai untuk tiga angka yang cuma perlu
+                        // dibaca sekilas.
+                        //
+                        // Yang lebih runyam: sebagian gayanya tidak pernah
+                        // muncul. Panel ini tidak memuat hasil build CSS
+                        // aplikasi, dan lima dari kelas yang dipakainya --
+                        // dua warna, dua penata huruf, dan satu ukuran
+                        // sembarang -- tidak ada di CSS bawaan Filament. Jadi
+                        // yang tampil selama ini bukan yang dirancang, dan
+                        // tidak ada error yang memberitahu.
+                        //
+                        // Memakai Placeholder biasa menghapus dua persoalan itu
+                        // sekaligus: tampilannya seragam dengan isian lain di
+                        // form yang sama, dan tidak ada satu pun kelas yang bisa
+                        // diam-diam kehilangan wujudnya.
+                        Forms\Components\Grid::make()
+                            ->columns(3)
+                            ->schema([
+                                Forms\Components\Placeholder::make('total_box')
+                                    ->label(__('Total Box'))
+                                    ->content(fn (callable $get): string => number_format(
+                                        static::sumItems($get('items'), 'box'),
+                                        0,
+                                        ',',
+                                        '.',
+                                    )),
 
-                                if (is_array($items)) {
-                                    foreach ($items as $item) {
-                                        $totalBox += (int) ($item['box'] ?? 0);
-                                        $totalWeight += (float) ($item['weight'] ?? 0);
-                                    }
-                                }
+                                Forms\Components\Placeholder::make('total_weight')
+                                    ->label(__('Total Weight'))
+                                    ->content(fn (callable $get): string => number_format(
+                                        static::sumItems($get('items'), 'weight'),
+                                        2,
+                                        ',',
+                                        '.',
+                                    ).' Kg'),
 
-                                $totalBoxFormatted = number_format($totalBox, 0, ',', '.');
-                                $totalWeightFormatted = number_format($totalWeight, 2, ',', '.');
-
-                                $receivedWeightHtml = "";
-                                if ($record && $record->status === 'Approved') {
-                                    $receipt = \App\Models\DeliveryOrderReceipt::where('delivery_order_id', $record->id)->first();
-                                    if ($receipt) {
-                                        $receivedWeightFormatted = number_format($receipt->total_weight, 2, ',', '.');
-                                        $receivedWeightHtml = "
-                                            <div class='h-8 w-px bg-gray-200 dark:bg-gray-700'></div>
-                                            <div class='flex flex-col items-end'>
-                                                <span class='text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider'>" . __('Total Received Weight') . "</span>
-                                                <span class='text-base font-extrabold text-emerald-600 dark:text-emerald-400'>{$receivedWeightFormatted} <span class='text-xs font-normal text-gray-400'>Kg</span></span>
-                                            </div>
-                                        ";
-                                    }
-                                }
-
-                                return new \Illuminate\Support\HtmlString("
-                                    <div class='flex justify-end mt-4'>
-                                        <div class='flex flex-wrap items-center gap-6 border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50/50 dark:bg-gray-800/40 shadow-sm'>
-                                            <div class='flex flex-col items-end'>
-                                                <span class='text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider'>" . __('Total Box') . "</span>
-                                                <span class='text-base font-extrabold text-amber-600 dark:text-amber-400'>{$totalBoxFormatted}</span>
-                                            </div>
-                                            <div class='h-8 w-px bg-gray-200 dark:bg-gray-700'></div>
-                                            <div class='flex flex-col items-end'>
-                                                <span class='text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider'>" . __('Total Weight') . "</span>
-                                                <span class='text-base font-extrabold text-gray-800 dark:text-gray-200'>{$totalWeightFormatted} <span class='text-xs font-normal text-gray-400'>Kg</span></span>
-                                            </div>
-                                            {$receivedWeightHtml}
-                                        </div>
-                                    </div>
-                                ");
-                            }),
+                                // Hanya ada setelah barangnya benar-benar
+                                // diterima, jadi tidak ditampilkan sebagai nol
+                                // pada dokumen yang belum sampai tujuan --
+                                // nol yang tidak berarti apa-apa lebih
+                                // menyesatkan daripada tidak ada.
+                                Forms\Components\Placeholder::make('total_received_weight')
+                                    ->label(__('Total Received Weight'))
+                                    ->visible(fn ($record): bool => $record?->status === 'Approved'
+                                        && $record->receipt()->exists())
+                                    ->content(fn ($record): string => number_format(
+                                        (float) $record->receipt()->value('total_weight'),
+                                        2,
+                                        ',',
+                                        '.',
+                                    ).' Kg'),
+                            ]),
                     ]),
             ]);
+    }
+
+    /**
+     * Menjumlahkan satu kolom dari baris-baris yang sedang ada di form.
+     *
+     * Dibaca dari state form, bukan dari basis data, supaya angkanya ikut
+     * berubah saat baris disunting dan belum disimpan.
+     *
+     * @param  mixed  $items
+     */
+    protected static function sumItems($items, string $column): float
+    {
+        if (! is_array($items)) {
+            return 0.0;
+        }
+
+        return array_sum(array_map(
+            fn ($item): float => (float) ($item[$column] ?? 0),
+            $items,
+        ));
     }
 
     public static function table(Table $table): Table

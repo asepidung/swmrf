@@ -786,5 +786,9 @@
     "Older than the limit. Click to relabel.": "Older than the limit. Click to relabel.",
     "Change the POD date and reprint the label.": "Change the POD date and reprint the label.",
     "Scan / Box": "Scan / Box",
-    "PO": "PO"
+    "PO": "PO",
+    "Received weight must be a number.": "Received weight must be a number.",
+    "Received weight cannot be negative.": "Received weight cannot be negative.",
+    "Select Rejected Barcode": "Select Rejected Barcode",
+    "No item selected": "No item selected"
 }
