@@ -1162,6 +1162,51 @@ panel -- entah dengan mendaftarkan build Vite aplikasi, atau dengan memperluas
 `missing-color-utilities.blade.php` menjadi berkas utilitas umum. Sudah
 disepakati Owner sebagai pekerjaan tersendiri, bukan disisipkan sambil lalu.
 
+### Aturan penagihan berat: yang ditagih adalah yang LEBIH KECIL
+
+Aturan pelanggan, disampaikan Owner 1 September 2026:
+
+| Berat diterima | Yang ditagih |
+|---|---|
+| kurang dari PO | berat diterima |
+| lebih dari PO | berat PO |
+
+Jadi `min(berat_diterima, berat_po)`, ada di `InvoiceResource::billableWeight()`
+dan dipakai keempat tempat perhitungan.
+
+Sebelumnya invoice selalu memakai berat diterima apa adanya. Sisi kurangnya
+sudah benar dengan sendirinya, tetapi sisi lebihnya berarti **pelanggan
+ditagih untuk daging yang tidak ia pesan** -- tanpa satu pun error, karena
+angkanya memang berat yang betul-betul terkirim.
+
+Batas atasnya utuh karena satu Sales Order hanya melahirkan satu Delivery
+Order (SO punya satu Tally, Tally punya satu DO). Kalau suatu saat satu SO
+boleh dikirim beberapa kali, rumus ini **wajib ditinjau ulang** -- berat PO
+per produk tidak lagi menjadi batas untuk satu pengiriman.
+
+### HPP belum ada, karena itu susut kirim tercatat Rp 0
+
+`FinancialLoss` untuk susut kirim sengaja dicatat dengan `amount => 0.00`;
+jumlah kilonya hanya ditulis di catatan.
+
+Alasannya, disampaikan Owner: harga di Sales Order adalah **harga jual**,
+bukan HPP, sehingga memakainya untuk menilai kerugian akan melebih-lebihkan
+angkanya. Sistem ini belum punya cara menghitung HPP sama sekali; tempatnya
+semestinya di modul Boning. **Sudah disepakati sebagai sesi tersendiri**,
+jangan dikerjakan sambil lalu.
+
+### Awalan nomor DO dan nomor resi punya satu rumah
+
+Nomor resi diturunkan dari nomor DO dengan mengganti awalannya, supaya
+keduanya mudah dipasangkan saat dilihat manusia. Kedua awalan ada di
+`DeliveryOrder::NUMBER_PREFIX` dan `DeliveryOrder::RECEIPT_NUMBER_PREFIX`.
+
+Dulu awalannya diketik ulang sebagai teks di halaman Approve. Kalau awalan di
+model diubah dan salinan itu tertinggal, penggantian teksnya tidak menemukan
+apa pun dan **nomor resi menjadi sama persis dengan nomor DO** -- tanpa error,
+dan tanpa apa pun yang menahannya, karena index unique pada `receipt_number`
+sudah dilepas pada migrasi 1 Juli 2026.
+
 ### Urutan kerja yang diminta Owner, 1 September 2026
 
 Tally, lalu **Delivery Order**, lalu **plandev**. Owner meminta secara khusus

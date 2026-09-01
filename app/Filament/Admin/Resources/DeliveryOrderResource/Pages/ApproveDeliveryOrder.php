@@ -31,7 +31,7 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
 
         if ($this->record->status !== 'Ready') {
             Notification::make()
-                ->title(__('Hanya Delivery Order status Ready yang bisa di-approve'))
+                ->title(__('Only a Delivery Order with status Ready can be approved'))
                 ->danger()
                 ->send();
 
@@ -68,7 +68,7 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
     {
         return $form
             ->schema([
-                Forms\Components\Section::make(__('Pemeriksaan Penerimaan (Checking)'))
+                Forms\Components\Section::make(__('Receiving Check'))
                     ->schema([
                         Forms\Components\Repeater::make('receipt_items')
                             ->schema([
@@ -120,7 +120,7 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
 
                         Forms\Components\Textarea::make('receipt_note')
                             ->label(__('Receipt Note'))
-                            ->placeholder(__('Catatan Penerimaan'))
+                            ->placeholder(__('Receiving Note'))
                             ->columnSpanFull(),
                     ])
             ])
@@ -136,15 +136,15 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                 ->action(fn () => $this->submit()),
 
             Actions\Action::make('rejections')
-                ->label(__('Tolakan'))
+                ->label(__('Rejections'))
                 ->color('warning')
                 ->icon('heroicon-o-arrow-path')
                 ->modalWidth('4xl')
-                ->modalHeading(__('Pengembalian Barang ke Stock (Rejections)'))
+                ->modalHeading(__('Return Rejected Goods to Stock'))
                 ->form([
                     Forms\Components\TextInput::make('barcode_scan')
                         ->label(__('Scan Barcode'))
-                        ->placeholder(__('Scan barcode tolakan di sini...'))
+                        ->placeholder(__('Scan the rejected barcode here...'))
                         ->autofocus()
                         ->extraAttributes([
                             'onkeydown' => 'if (event.key === "Enter") { event.preventDefault(); document.getElementById("add-barcode-btn")?.click(); }'
@@ -228,8 +228,8 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                     });
 
                     Notification::make()
-                        ->title(__('Tolakan berhasil diproses'))
-                        ->body(__('Barang yang ditolak telah dikembalikan ke stok.'))
+                        ->title(__('Rejection processed'))
+                        ->body(__('The rejected goods have been returned to stock.'))
                         ->success()
                         ->send();
 
@@ -253,7 +253,15 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
         $data = $this->form->getState();
 
         DB::transaction(function () use ($data) {
-            $receiptNumber = str_replace('SWM-DO#', 'SWM-REC#', $this->record->delivery_order_number);
+            // Kedua awalan diambil dari model, bukan diketik ulang di sini.
+            // Kalau awalannya berubah dan salinan di sini tertinggal,
+            // penggantiannya tidak menemukan apa pun dan nomor resi menjadi
+            // sama persis dengan nomor DO -- tanpa error.
+            $receiptNumber = str_replace(
+                DeliveryOrder::NUMBER_PREFIX,
+                DeliveryOrder::RECEIPT_NUMBER_PREFIX,
+                $this->record->delivery_order_number,
+            );
 
             $doItemsList = $this->record->items->values();
 
