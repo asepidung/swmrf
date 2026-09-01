@@ -879,5 +879,19 @@
     "The scanned goods need to be recorded somewhere.": "Barang yang dipindai harus tercatat di suatu gudang.",
     "Wait for the rest": "Tunggu sisanya",
     "Close the PO": "Tutup PO",
-    "Show Expiry": "Tampilkan Exp"
+    "Show Expiry": "Tampilkan Exp",
+    "Record Compensation": "Catat Kompensasi",
+    "The purchase order keeps its agreed price. Only the payable goes down.": "Harga di Purchase Order tetap seperti yang disepakati. Yang berkurang hanya hutangnya.",
+    "Outstanding": "Sisa Tagihan",
+    "Poor quality": "Kualitas buruk",
+    "Weight shortfall": "Berat kurang",
+    "Reduces the payable only. The recorded shrinkage loss stays as it is.": "Hanya mengurangi hutang. Kerugian susut yang tercatat tidak berubah.",
+    "Also reduces the recorded shrinkage loss, because it recovers the same thing.": "Ikut mengurangi kerugian susut yang tercatat, karena memulihkan hal yang sama.",
+    "Compensation": "Kompensasi",
+    "Compensation recorded": "Kompensasi tercatat",
+    "Compensation must be more than zero.": "Kompensasi harus lebih dari nol.",
+    "Unknown compensation reason.": "Alasan kompensasi tidak dikenal.",
+    "Compensation cannot be more than the outstanding amount.": "Kompensasi tidak boleh melebihi sisa tagihan.",
+    "Recovered": "Dipulihkan",
+    "Net Loss": "Kerugian Bersih"
 }

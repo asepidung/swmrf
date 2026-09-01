@@ -13,6 +13,86 @@ class ViewPayable extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            // Mencatat kompensasi MENGURANGI yang harus dibayar perusahaan,
+            // jadi ia keputusan uang -- haknya terpisah dari melihat daftar
+            // hutang, dan terpisah pula dari membayar.
+            Actions\Action::make('compensation')
+                ->label(__('Record Compensation'))
+                ->icon('heroicon-o-receipt-percent')
+                ->color('warning')
+                ->visible(fn () => $this->record->balance > 0
+                    && (auth()->user()?->hasPermission('record_payable_compensations') ?? false))
+                ->modalDescription(__('The purchase order keeps its agreed price. Only the payable goes down.'))
+                ->form([
+                    \Filament\Forms\Components\Placeholder::make('sisa')
+                        ->label(__('Outstanding'))
+                        ->content(fn () => 'Rp '.number_format(
+                            (float) $this->record->amount
+                            - (float) $this->record->compensation
+                            - (float) $this->record->paid_amount,
+                            0,
+                            ',',
+                            '.',
+                        )),
+
+                    // Alasannya menentukan perlakuannya, bukan sekadar
+                    // keterangan -- karena itu wajib dipilih dan tidak
+                    // punya nilai bawaan.
+                    \Filament\Forms\Components\Radio::make('reason')
+                        ->label(__('Reason'))
+                        ->options([
+                            \App\Models\Payable::COMPENSATION_FOR_QUALITY => __('Poor quality'),
+                            \App\Models\Payable::COMPENSATION_FOR_WEIGHT => __('Weight shortfall'),
+                        ])
+                        ->descriptions([
+                            \App\Models\Payable::COMPENSATION_FOR_QUALITY => __('Reduces the payable only. The recorded shrinkage loss stays as it is.'),
+                            \App\Models\Payable::COMPENSATION_FOR_WEIGHT => __('Also reduces the recorded shrinkage loss, because it recovers the same thing.'),
+                        ])
+                        ->required(),
+
+                    \Filament\Forms\Components\TextInput::make('amount')
+                        ->label(__('Compensation'))
+                        ->prefix('Rp')
+                        ->required()
+                        ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right'])
+                        // Isian ini selalu kosong saat dibuka, jadi bahaya
+                        // "seratus kali lipat" tidak berlaku di sini. Tetap
+                        // dipasang karena aturannya memang menyeluruh:
+                        // pengecualian yang beralasan "yang ini aman" persis
+                        // cara bug itu kembali.
+                        ->formatStateUsing(fn ($state): ?string => $state === null || $state === ''
+                            ? null
+                            : number_format((float) $state, 0, ',', '.'))
+                        ->mask(\Filament\Support\RawJs::make('$money($input, \',\', \'.\', 0)'))
+                        ->stripCharacters('.')
+                        ->rules(['numeric', 'gt:0']),
+
+                    \Filament\Forms\Components\Textarea::make('note')
+                        ->label(__('Note'))
+                        ->rows(2),
+                ])
+                ->action(function (array $data): void {
+                    try {
+                        $this->record->applyCompensation(
+                            (float) $data['amount'],
+                            $data['reason'],
+                            $data['note'] ?? null,
+                        );
+                    } catch (\InvalidArgumentException $e) {
+                        \Filament\Notifications\Notification::make()
+                            ->title($e->getMessage())
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
+
+                    \Filament\Notifications\Notification::make()
+                        ->title(__('Compensation recorded'))
+                        ->success()
+                        ->send();
+                }),
+
             Actions\Action::make('pay')
                 ->label(__('Record Payment'))
                 ->icon('heroicon-o-banknotes')
@@ -85,15 +165,13 @@ class ViewPayable extends ViewRecord
                         'allocated_amount' => $amount, // Langsung dialokasikan semua karena ini bayar hutang langsung
                     ]);
 
-                    // Update hutangnya
+                    // Update hutangnya lewat satu-satunya tempat rumus saldo
+                    // dan status ditulis. Salinan rumus di sini dulu tidak
+                    // mengenal kompensasi, sehingga hutang yang sama bisa
+                    // menunjukkan angka berbeda tergantung apakah ia terakhir
+                    // disentuh lewat halaman ini atau lewat modelnya.
                     $this->record->paid_amount += $amount;
-                    $this->record->balance = $this->record->amount - $this->record->paid_amount;
-                    
-                    if ($this->record->paid_amount >= $this->record->amount) {
-                        $this->record->status = 'paid';
-                    } else {
-                        $this->record->status = 'partial';
-                    }
+                    $this->record->recalculate();
                     $this->record->save();
 
                     \Filament\Notifications\Notification::make()
