@@ -57,7 +57,11 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
         $productId = in_array($sessionProductId, $poProductIds) ? $sessionProductId : null;
 
         $this->form->fill([
-            'warehouse_id' => session('gr_warehouse_id', 1),
+            // TANPA cadangan. Cadangan 1 membuat Jonggol terpilih sendiri
+            // sebelum pengguna memilih apa pun, dan label pertama hari itu
+            // bisa tercetak untuk gudang yang salah tanpa ada yang menyadari.
+            // Sesudah dipilih sekali, sesi yang mengingatnya.
+            'warehouse_id' => session('gr_warehouse_id'),
             'origin' => session('gr_origin'),
             'product_id' => $productId,
             'grade_id' => session('gr_grade_id', $defaultGrade),
@@ -163,12 +167,27 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                                     'onkeydown' => "if(event.key === 'Enter') { event.preventDefault(); document.getElementById('submit_btn_label').click(); }"
                                 ]),
 
+                            // pH ikut masuk ke barcode, jadi digit yang salah
+                            // berarti barcode yang salah arti -- dan barcode
+                            // itu terbawa ke seluruh modul sesudahnya.
+                            //
+                            // Rentangnya cuma 5,4 sampai 5,7 dengan langkah
+                            // 0,1, sehingga satu sentuhan tombol panah
+                            // menggeser nilainya tanpa terasa. ->numeric()
+                            // dilepas karena itulah yang memunculkan
+                            // panahnya; aturannya ditulis manual supaya
+                            // batasnya tetap terjaga.
+                            //
+                            // Keputusan yang sama sudah diambil untuk pH di
+                            // modul Boning.
                             Forms\Components\TextInput::make('ph_level')
                                 ->hiddenLabel()
-                                ->numeric()
-                                ->step(0.1)
-                                ->minValue(5.4)
-                                ->maxValue(5.7)
+                                ->rules(['numeric', 'min:5.4', 'max:5.7'])
+                                ->validationMessages([
+                                    'numeric' => __('pH must be a number.'),
+                                    'min' => __('pH cannot be lower than 5.4.'),
+                                    'max' => __('pH cannot be higher than 5.7.'),
+                                ])
                                 ->placeholder(__('PH (5.4 - 5.7)'))
                                 ->required()
                                 ->extraInputAttributes([

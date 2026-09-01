@@ -870,5 +870,14 @@
     "Scheduled Reminders": "Pengingat Terjadwal",
     "The scheduled checks have never run. No reminder is being sent at all.": "Pemeriksaan terjadwal belum pernah berjalan. Tidak ada satu pun pengingat yang terkirim.",
     "A scheduled check has not run recently. Reminders may have stopped without any error.": "Ada pemeriksaan terjadwal yang lama tidak berjalan. Pengingatnya mungkin sudah berhenti tanpa error apa pun.",
-    "Last time the system ran its scheduled reminder checks.": "Terakhir kali sistem menjalankan pemeriksaan pengingat terjadwalnya."
+    "Last time the system ran its scheduled reminder checks.": "Terakhir kali sistem menjalankan pemeriksaan pengingat terjadwalnya.",
+    "Received quantity is less than ordered": "Barang yang datang kurang dari yang dipesan",
+    "Is the rest still coming in a later delivery? Closing the purchase order means the remaining quantity will never be received.": "Apakah sisanya masih akan datang di pengiriman berikutnya? Menutup Purchase Order berarti sisa pesanannya tidak akan pernah diterima.",
+    "Yes, wait for the rest": "Ya, tunggu sisanya",
+    "No, close this purchase order": "Tidak, tutup Purchase Order ini",
+    "pH must be a number.": "pH harus berupa angka.",
+    "pH cannot be lower than 5.4.": "pH tidak boleh kurang dari 5,4.",
+    "pH cannot be higher than 5.7.": "pH tidak boleh lebih dari 5,7.",
+    "Choose a warehouse first": "Pilih gudang lebih dulu",
+    "The scanned goods need to be recorded somewhere.": "Barang yang dipindai harus tercatat di suatu gudang."
 }
