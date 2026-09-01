@@ -211,9 +211,16 @@ class GoodsReceiptProductResource extends Resource
                                 // bernilai nol lolos dari penjumlahan
                                 // sementara statusnya sudah terlanjur
                                 // berubah.
+                                // paid_amount, BUKAN relasi payments().
+                                // Payable tidak punya relasi itu sama sekali;
+                                // memanggilnya melempar "Call to undefined
+                                // method". Penjagaan ini karena itu tidak
+                                // pernah benar-benar bekerja -- ia meledak
+                                // alih-alih menolak, dan pesan errornya tidak
+                                // menjelaskan apa pun kepada pengguna.
                                 $sudahDibayar = $payable && (
                                     in_array($payable->status, ['partial', 'paid'], true)
-                                    || $payable->payments()->sum('amount') > 0
+                                    || (float) $payable->paid_amount > 0
                                 );
 
                                 if ($sudahDibayar) {

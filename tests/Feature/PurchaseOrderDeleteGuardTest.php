@@ -87,6 +87,35 @@ class PurchaseOrderDeleteGuardTest extends TestCase
     }
 
     /**
+     * Penjagaannya membaca kolom, bukan relasi yang tidak ada.
+     *
+     * `Payable` TIDAK punya relasi `payments()`. Memanggilnya melempar
+     * "Call to undefined method", sehingga penjagaan buka-kunci selama ini
+     * MELEDAK alih-alih menolak -- dan pesan errornya tidak menjelaskan apa
+     * pun kepada pengguna.
+     *
+     * Ini jenis kegagalan yang paling menipu di proyek ini: penjagaannya
+     * terbaca benar, tertulis rapi, dan tidak pernah bekerja.
+     */
+    public function test_the_unlock_guard_reads_a_column_that_actually_exists(): void
+    {
+        $this->assertFalse(
+            method_exists(\App\Models\Payable::class, 'payments'),
+            'Kalau relasi payments() memang ditambahkan, penjagaannya boleh memakainya lagi.',
+        );
+
+        foreach ([
+            'Filament/Admin/Resources/GoodsReceiptProductResource.php',
+            'Filament/Admin/Resources/GoodsReceiptMaterialResource.php',
+        ] as $file) {
+            $source = file_get_contents(app_path($file));
+
+            $this->assertStringNotContainsString('$payable->payments()', $source, basename($file));
+            $this->assertStringContainsString('(float) $payable->paid_amount > 0', $source, basename($file));
+        }
+    }
+
+    /**
      * Buku kas menampilkan catatan terbaru paling atas.
      *
      * Tanggal saja tidak cukup: beberapa catatan pada HARI YANG SAMA tidak
