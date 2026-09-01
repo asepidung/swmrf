@@ -151,7 +151,7 @@ class InputGoodsReceiptProduct extends Page implements HasForms
 
             DB::commit();
 
-            Notification::make()->title(__('Goods Receipt berhasil dikunci (gr selesai)!'))->success()->send();
+            Notification::make()->title(__('Goods Receipt locked'))->success()->send();
             $this->redirect(GoodsReceiptProductResource::getUrl('index'));
         } catch (\Exception $e) {
             DB::rollBack();

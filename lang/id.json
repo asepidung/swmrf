@@ -415,7 +415,6 @@
     "Kunci Repack (Final)": "Kunci Repack (Final)",
     "Lock Repack Data": "Kunci Data Repack",
     "Repack Locked": "Repack Terkunci",
-    "Buka Kunci": "Buka Kunci",
     "Unlock Repack Data": "Buka Kunci Data Repack",
     "Repack Unlocked": "Kunci Repack Dibuka",
     "Input Bahan (Scan)": "Input Bahan (Scan)",
@@ -857,5 +856,11 @@
     ":count delivery orders are waiting for their receiving check.": "Ada :count surat jalan yang menunggu pemeriksaan penerimaan.",
     ":count invoices have not been exchanged yet.": "Ada :count invoice yang belum ditukar faktur.",
     ":count mutations have not been received yet.": "Ada :count mutasi yang belum diterima.",
-    ":count items have been in stock for more than 60 days.": "Ada :count barang yang sudah lebih dari 60 hari di gudang."
+    ":count items have been in stock for more than 60 days.": "Ada :count barang yang sudah lebih dari 60 hari di gudang.",
+    "This purchase order cannot be deleted because a supplier payment is already recorded against it.": "Purchase Order ini tidak bisa dihapus karena sudah ada pembayaran ke pemasok yang tercatat atasnya.",
+    "This Goods Receipt cannot be unlocked because a payment is already recorded against its payable.": "Goods Receipt ini tidak bisa dibuka kuncinya karena hutangnya sudah pernah dibayar.",
+    "Unlock Goods Receipt": "Buka Kunci Goods Receipt",
+    "Lock Goods Receipt": "Kunci Goods Receipt",
+    "Goods Receipt unlocked": "Kunci Goods Receipt berhasil dibuka",
+    "Goods Receipt locked": "Goods Receipt berhasil dikunci"
 }

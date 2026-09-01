@@ -180,7 +180,7 @@ class RepackResource extends Resource
                         ->label(__('Unlock'))
                         ->icon('heroicon-o-lock-closed')
                         ->color('danger')
-                        ->tooltip(__('Buka Kunci'))
+                        ->tooltip(__('Unlock'))
                         ->requiresConfirmation()
                         ->modalHeading(__('Unlock Repack Data'))
                         ->modalDescription(__('Are you sure you want to unlock this data? It will become editable again.'))

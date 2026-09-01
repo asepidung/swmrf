@@ -9,6 +9,25 @@ use Spatie\Activitylog\LogOptions;
 
 class PurchaseProduct extends Model
 {
+
+    /**
+     * Penjagaan penghapusan.
+     *
+     * Ditulis di model, bukan di tombolnya, supaya berlaku untuk semua jalur
+     * penghapusan -- tombol di layar, aksi massal, maupun tinker. Idiomnya
+     * mengikuti penjagaan yang sudah ada di Goods Receipt.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function ($po) {
+            // Uang muka sudah terlanjur keluar ke pemasok. Menghapus PO-nya
+            // membuat pembayaran itu menunjuk ke dokumen yang tidak ada lagi,
+            // dan uangnya hilang dari jejak tanpa satu pun error.
+            if ($po->supplierPayments()->exists()) {
+                throw new \Exception(__('This purchase order cannot be deleted because a supplier payment is already recorded against it.'));
+            }
+        });
+    }
     use SoftDeletes, LogsActivity;
 
     protected $fillable = [

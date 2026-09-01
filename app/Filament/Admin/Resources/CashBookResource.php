@@ -206,7 +206,13 @@ class CashBookResource extends Resource
             ])
             ->actions([])
             ->bulkActions([])
-            ->defaultSort('transaction_date', 'desc');
+            // Tanggal saja tidak cukup: beberapa catatan pada HARI YANG
+            // SAMA tidak punya urutan yang pasti, sehingga yang barusan
+            // dibuat bisa muncul di bawah yang lebih dulu. Id dipakai sebagai
+            // pemecah seri karena ia selalu menaik.
+            ->defaultSort(fn ($query) => $query
+                ->orderBy('transaction_date', 'desc')
+                ->orderBy('id', 'desc'));
     }
 
     public static function getPages(): array

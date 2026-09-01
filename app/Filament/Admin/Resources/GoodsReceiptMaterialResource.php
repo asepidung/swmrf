@@ -298,12 +298,12 @@ class GoodsReceiptMaterialResource extends Resource
             ])
             ->actions([
                 Tables\Actions\Action::make('lock')
-                    ->tooltip(fn (GoodsReceiptMaterial $record) => $record->is_locked ? __('Buka Kunci') : __('Kunci'))
+                    ->tooltip(fn (GoodsReceiptMaterial $record) => $record->is_locked ? __('Unlock') : __('Lock'))
                     ->icon(fn (GoodsReceiptMaterial $record) => $record->is_locked ? 'heroicon-o-lock-closed' : 'heroicon-o-lock-open')
                     ->color(fn (GoodsReceiptMaterial $record) => $record->is_locked ? 'danger' : 'success')
                     ->hiddenLabel()
                     ->requiresConfirmation()
-                    ->modalHeading(fn (GoodsReceiptMaterial $record) => $record->is_locked ? __('Buka Kunci Goods Receipt') : __('Kunci Goods Receipt'))
+                    ->modalHeading(fn (GoodsReceiptMaterial $record) => $record->is_locked ? __('Unlock Goods Receipt') : __('Lock Goods Receipt'))
                     ->modalDescription(fn (GoodsReceiptMaterial $record) => $record->is_locked 
                         ? __('Apakah Anda yakin ingin membuka kunci GR ini? Perhatian: Data hutang (Payable) terkait akan dihapus (jika belum ada pembayaran).') 
                         : __('Apakah Anda yakin ingin mengunci GR ini? Data tidak akan bisa diubah setelah dikunci (GR Selesai).'))
@@ -331,12 +331,12 @@ class GoodsReceiptMaterialResource extends Resource
                                     $payable->delete();
                                 }
                                 
-                                \Filament\Notifications\Notification::make()->title(__('Goods Receipt berhasil dibuka kuncinya!'))->success()->send();
+                                \Filament\Notifications\Notification::make()->title(__('Goods Receipt unlocked'))->success()->send();
                             } else {
                                 // Lock logic
                                 $record->update(['is_locked' => true]);
                                 \App\Models\Payable::generateForGoodsReceipt($record);
-                                \Filament\Notifications\Notification::make()->title(__('Goods Receipt berhasil dikunci (gr selesai)!'))->success()->send();
+                                \Filament\Notifications\Notification::make()->title(__('Goods Receipt locked'))->success()->send();
                             }
                             
                             \Illuminate\Support\Facades\DB::commit();
