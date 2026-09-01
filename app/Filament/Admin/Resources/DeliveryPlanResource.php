@@ -141,6 +141,22 @@ class DeliveryPlanResource extends Resource
                     ->label(__('Loading Time'))
                     ->time('H:i')
                     ->sortable(),
+                // Kemajuan tiap jadwal, dihitung dari relasi yang sudah
+                // dimuat. Inilah yang membuat daftarnya berguna sebagai alat
+                // mengatur: tanpa ini, petugas harus membuka satu per satu
+                // untuk tahu mana yang sudah disiapkan.
+                Tables\Columns\TextColumn::make('progress')
+                    ->label(__('Progress'))
+                    ->state(fn (DeliveryPlan $record): string => $record->progressLabel())
+                    ->badge()
+                    ->color(fn (DeliveryPlan $record): string => match (true) {
+                        $record->isOverdue() => 'danger',
+                        $record->progressLabel() === __('Delivered') => 'success',
+                        $record->progressLabel() === __('Delivery note issued') => 'info',
+                        $record->progressLabel() === __('Being prepared') => 'warning',
+                        default => 'gray',
+                    }),
+
                 Tables\Columns\TextColumn::make('notes')
                     ->label(__('Notes'))
                     ->limit(40),
@@ -153,6 +169,22 @@ class DeliveryPlanResource extends Resource
                 default => null,
             })
             ->filters([
+                // Menyala secara bawaan. Daftar ini adalah alat kerja
+                // petugas distribusi, jadi yang pertama terlihat harus
+                // jadwal yang masih perlu diurus -- bukan seluruh jadwal
+                // yang pernah dibuat sejak sistem berdiri.
+                //
+                // Dibuat sebagai SARINGAN, bukan sebagai batasan tetap pada
+                // kueri, supaya riwayatnya tetap bisa dibuka: mematikan
+                // saringannya mengembalikan seluruh daftar.
+                //
+                // Batasnya akhir hari kirim, bukan peristiwa dokumen; lihat
+                // DeliveryPlan::scopeStillRelevant() untuk alasannya.
+                Tables\Filters\Filter::make('still_relevant')
+                    ->label(__('Active schedules only'))
+                    ->default()
+                    ->query(fn (Builder $query): Builder => $query->stillRelevant()),
+
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_delivery_plans')),
                 Tables\Filters\SelectFilter::make('customer_id')
@@ -226,6 +258,10 @@ class DeliveryPlanResource extends Resource
     {
         return parent::getEloquentQuery()
             ->withCount('salesOrders')
+            // Dimuat sekaligus. Kolom Qty dan Notes membaca Sales Order
+            // beserta barisnya untuk setiap jadwal; tanpa ini, satu kueri
+            // menembak untuk setiap Sales Order pada setiap baris tabel.
+            ->with(['salesOrders:id,delivery_plan_id,status,delivery_note', 'salesOrders.items:id,sales_order_id,weight'])
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);

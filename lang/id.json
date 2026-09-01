@@ -829,5 +829,12 @@
     "Barcode ticked": "Barcode tercentang",
     "Barcode already ticked": "Barcode sudah tercentang",
     "Barcode not found in this Tally": "Barcode tidak ditemukan di Tally ini",
-    "Add the typed barcode to the list. A scanner does this by itself.": "Tambahkan barcode yang diketik ke daftar. Alat pemindai melakukannya sendiri."
+    "Add the typed barcode to the list. A scanner does this by itself.": "Tambahkan barcode yang diketik ke daftar. Alat pemindai melakukannya sendiri.",
+    "Active schedules only": "Hanya jadwal aktif",
+    "Progress": "Kemajuan",
+    "No sales order yet": "Belum ada sales order",
+    "Delivered": "Terkirim",
+    "Delivery note issued": "Surat jalan dibuat",
+    "Being prepared": "Sedang disiapkan",
+    "Not started": "Belum disiapkan"
 }
