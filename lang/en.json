@@ -862,5 +862,13 @@
     "Unlock Goods Receipt": "Unlock Goods Receipt",
     "Lock Goods Receipt": "Lock Goods Receipt",
     "Goods Receipt unlocked": "Goods Receipt unlocked",
-    "Goods Receipt locked": "Goods Receipt locked"
+    "Goods Receipt locked": "Goods Receipt locked",
+    "Goods receipts not locked": "Goods receipts not locked",
+    ":count beef receipts": ":count beef receipts",
+    ":count material receipts": ":count material receipts",
+    ":items are still unlocked, so no payable exists for them yet.": ":items are still unlocked, so no payable exists for them yet.",
+    "Scheduled Reminders": "Scheduled Reminders",
+    "The scheduled checks have never run. No reminder is being sent at all.": "The scheduled checks have never run. No reminder is being sent at all.",
+    "A scheduled check has not run recently. Reminders may have stopped without any error.": "A scheduled check has not run recently. Reminders may have stopped without any error.",
+    "Last time the system ran its scheduled reminder checks.": "Last time the system ran its scheduled reminder checks."
 }

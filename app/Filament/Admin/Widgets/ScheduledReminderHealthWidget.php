@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Widgets;
 
 use App\Console\Commands\NotifyDuePayables;
+use App\Console\Commands\NotifyUnlockedGoodsReceipts;
 use Carbon\Carbon;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Facades\Cache;
@@ -39,11 +40,47 @@ class ScheduledReminderHealthWidget extends Widget
         return $user && ($user->isProgrammer() || $user->hasPermission('view_users'));
     }
 
+    /**
+     * Semua peringatan terjadwal yang kesehatannya diawasi di sini.
+     *
+     * Keduanya menumpang satu baris cron yang sama, tetapi masing-masing
+     * menandai waktu jalannya sendiri. Kalau salah satunya melempar error
+     * tiap hari sementara yang lain baik-baik saja, penanda "cron hidup"
+     * tidak akan memperlihatkannya.
+     *
+     * @return array<int, string>
+     */
+    protected function watchedCommands(): array
+    {
+        return [
+            NotifyDuePayables::LAST_RUN_CACHE_KEY,
+            NotifyUnlockedGoodsReceipts::LAST_RUN_CACHE_KEY,
+        ];
+    }
+
+    /**
+     * Waktu pemeriksaan terakhir, diambil yang PALING TERTINGGAL.
+     *
+     * Kalau satu perintah berjalan hari ini dan satunya sudah seminggu
+     * berhenti, yang perlu terlihat adalah yang seminggu itu. Satu saja yang
+     * belum pernah berjalan sudah cukup untuk menyatakan pemeriksaannya
+     * tidak utuh.
+     */
     public function getLastRun(): ?Carbon
     {
-        $stamp = Cache::get(NotifyDuePayables::LAST_RUN_CACHE_KEY);
+        $waktu = [];
 
-        return $stamp ? Carbon::parse($stamp) : null;
+        foreach ($this->watchedCommands() as $key) {
+            $stamp = Cache::get($key);
+
+            if (! $stamp) {
+                return null;
+            }
+
+            $waktu[] = Carbon::parse($stamp);
+        }
+
+        return $waktu === [] ? null : min($waktu);
     }
 
     /**
@@ -64,5 +101,11 @@ class ScheduledReminderHealthWidget extends Widget
     public function getSummary(): array
     {
         return NotifyDuePayables::summary();
+    }
+
+    /** @return array{beef:int, material:int, total:int} */
+    public function getUnlockedSummary(): array
+    {
+        return NotifyUnlockedGoodsReceipts::summary();
     }
 }

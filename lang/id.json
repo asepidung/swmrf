@@ -862,5 +862,13 @@
     "Unlock Goods Receipt": "Buka Kunci Goods Receipt",
     "Lock Goods Receipt": "Kunci Goods Receipt",
     "Goods Receipt unlocked": "Kunci Goods Receipt berhasil dibuka",
-    "Goods Receipt locked": "Goods Receipt berhasil dikunci"
+    "Goods Receipt locked": "Goods Receipt berhasil dikunci",
+    "Goods receipts not locked": "Goods Receipt belum dikunci",
+    ":count beef receipts": ":count penerimaan daging",
+    ":count material receipts": ":count penerimaan material",
+    ":items are still unlocked, so no payable exists for them yet.": ":items masih belum dikunci, jadi hutangnya belum terbentuk.",
+    "Scheduled Reminders": "Pengingat Terjadwal",
+    "The scheduled checks have never run. No reminder is being sent at all.": "Pemeriksaan terjadwal belum pernah berjalan. Tidak ada satu pun pengingat yang terkirim.",
+    "A scheduled check has not run recently. Reminders may have stopped without any error.": "Ada pemeriksaan terjadwal yang lama tidak berjalan. Pengingatnya mungkin sudah berhenti tanpa error apa pun.",
+    "Last time the system ran its scheduled reminder checks.": "Terakhir kali sistem menjalankan pemeriksaan pengingat terjadwalnya."
 }
