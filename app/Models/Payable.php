@@ -108,6 +108,132 @@ class Payable extends Model
      * Kalau kelak perlu laporan alokasi per pembayaran, barulah dibutuhkan
      * tabel alokasi tersendiri.
      */
+    /** Alasan kompensasi yang dikenal, dan keduanya berbeda perlakuan. */
+    public const COMPENSATION_FOR_QUALITY = 'quality';
+
+    public const COMPENSATION_FOR_WEIGHT = 'weight';
+
+    /**
+     * Satu-satunya tempat saldo dan status hutang dihitung.
+     *
+     * Sebelumnya rumus ini disalin di ENAM tempat -- lima di berkas ini dan
+     * satu di halaman pembayaran. Selama semuanya menghitung hal yang sama,
+     * salinan itu tidak terasa; begitu ada faktor baru seperti kompensasi, ia
+     * hanya berlaku di sebagian tempat, dan hutang yang sama menunjukkan angka
+     * berbeda tergantung jalur mana yang menyentuhnya terakhir.
+     *
+     * `amount` tidak pernah diubah. Ia nilai asli yang disepakati, dan
+     * kompensasi berdiri di sampingnya supaya keduanya tetap terbaca.
+     */
+    public function recalculate(): void
+    {
+        $amount = (float) $this->amount;
+        $compensation = (float) $this->compensation;
+        $paid = (float) $this->paid_amount;
+
+        $harusDibayar = max($amount - $compensation, 0);
+
+        $this->balance = $harusDibayar - $paid;
+
+        if ($paid <= 0) {
+            // Kompensasi yang menutup seluruh tagihan membuat hutangnya lunas
+            // tanpa satu rupiah pun berpindah -- dan itu memang benar.
+            $this->status = $harusDibayar <= 0 ? 'paid' : 'unpaid';
+
+            return;
+        }
+
+        $this->status = $paid >= $harusDibayar ? 'paid' : 'partial';
+    }
+
+    /**
+     * Catat kompensasi dari pemasok atas hutang ini.
+     *
+     * Bentuknya potongan TOTAL, bukan potongan per kilo. Keputusan Project
+     * Owner: yang sebenarnya dinegosiasikan memang angka bulat, dan
+     * menurunkannya menjadi harga per kilo adalah ketelitian yang dikarang --
+     * lagi pula itu memaksa menghitung ulang setiap baris hutang dan kerugian
+     * penimbangan, merambat ke dokumen yang mungkin sudah disetujui.
+     *
+     * ALASANNYA menentukan perlakuannya, bukan sekadar menjadi keterangan.
+     * Lihat recoverWeightLoss().
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function applyCompensation(float $amount, string $reason, ?string $note = null): void
+    {
+        if ($amount <= 0) {
+            throw new \InvalidArgumentException(__('Compensation must be more than zero.'));
+        }
+
+        if (! in_array($reason, [self::COMPENSATION_FOR_QUALITY, self::COMPENSATION_FOR_WEIGHT], true)) {
+            throw new \InvalidArgumentException(__('Unknown compensation reason.'));
+        }
+
+        // Tidak boleh melebihi yang belum dibayar. Kompensasi yang lebih besar
+        // daripada sisa hutang berarti pemasok berhutang kepada kita, dan itu
+        // hal lain yang butuh dokumennya sendiri.
+        $sisa = (float) $this->amount - (float) $this->compensation - (float) $this->paid_amount;
+
+        if ($amount > $sisa) {
+            throw new \InvalidArgumentException(
+                __('Compensation cannot be more than the outstanding amount.')
+            );
+        }
+
+        $this->compensation = (float) $this->compensation + $amount;
+        $this->compensation_reason = $reason;
+        $this->compensation_note = $note;
+
+        $this->recalculate();
+        $this->save();
+
+        if ($reason === self::COMPENSATION_FOR_WEIGHT) {
+            $this->recoverWeightLoss($amount);
+        }
+    }
+
+    /**
+     * Kompensasi karena BERAT mengurangi kerugian susut yang sudah tercatat.
+     *
+     * Kerugian susut penimbangan dan kompensasi karena berat mengukur hal yang
+     * SAMA: berat yang dibayar tetapi tidak diterima. Mencatat keduanya penuh
+     * membuat kerugian perusahaan tampak lebih besar daripada kenyataannya.
+     *
+     * Kompensasi karena KUALITAS sengaja tidak masuk ke sini. Susutnya tetap
+     * terjadi; uang itu didapat untuk hal lain. Menguranginya berarti memakai
+     * satu pemulihan untuk menutup dua kerugian yang berbeda.
+     *
+     * Nilai kerugiannya sendiri tidak diubah -- yang bertambah kolom
+     * `recovered_amount`, supaya angka aslinya tetap terbaca dan bisa
+     * dibandingkan dengan yang berhasil ditarik kembali.
+     */
+    protected function recoverWeightLoss(float $amount): void
+    {
+        $receiving = $this->payableable;
+
+        if (! $receiving instanceof CattleReceiving) {
+            return;
+        }
+
+        $loss = optional($receiving->weighing)->financialLoss;
+
+        if ($loss === null) {
+            return;
+        }
+
+        // Pemulihan yang lebih besar daripada kerugiannya akan berubah menjadi
+        // keuntungan semu.
+        $bisaDipulihkan = (float) $loss->amount - (float) $loss->recovered_amount;
+
+        if ($bisaDipulihkan <= 0) {
+            return;
+        }
+
+        $loss->recovered_amount = (float) $loss->recovered_amount + min($amount, $bisaDipulihkan);
+        $loss->save();
+    }
+
     public function releaseAdvances(): void
     {
         $outstanding = (float) $this->paid_amount;
@@ -134,8 +260,7 @@ class Payable extends Model
 
         // Sisa yang tidak berhasil dilepas tetap tercatat sebagai terbayar.
         $this->paid_amount = max($outstanding, 0);
-        $this->balance = (float) $this->amount - (float) $this->paid_amount;
-        $this->status = $this->paid_amount <= 0 ? 'unpaid' : 'partial';
+        $this->recalculate();
         $this->save();
     }
 
@@ -168,22 +293,13 @@ class Payable extends Model
         $payable->supplier_id = $gr->supplier_id;
         $payable->document_number = $gr->gr_number;
         $payable->amount = $amount;
-        $payable->balance = $amount - $payable->paid_amount;
         $payable->due_date = $dueDate;
 
         // Uang muka dipotongkan sebelum status dihitung, supaya dokumen yang
         // sudah lunas di muka tidak sempat tercatat sebagai 'unpaid'.
         static::applyAdvancesBehind($gr, $payable);
 
-        $payable->balance = $payable->amount - $payable->paid_amount;
-
-        if ($payable->paid_amount <= 0) {
-            $payable->status = 'unpaid';
-        } elseif ($payable->paid_amount >= $payable->amount) {
-            $payable->status = 'paid';
-        } else {
-            $payable->status = 'partial';
-        }
+        $payable->recalculate();
         
         $payable->created_by = auth()->id() ?? $gr->created_by;
         $payable->save();
@@ -220,22 +336,13 @@ class Payable extends Model
         $payable->supplier_id = $gr->supplier_id;
         $payable->document_number = $gr->gr_number;
         $payable->amount = $amount;
-        $payable->balance = $amount - $payable->paid_amount;
         $payable->due_date = $dueDate;
 
         // Uang muka dipotongkan sebelum status dihitung, supaya dokumen yang
         // sudah lunas di muka tidak sempat tercatat sebagai 'unpaid'.
         static::applyAdvancesBehind($gr, $payable);
 
-        $payable->balance = $payable->amount - $payable->paid_amount;
-
-        if ($payable->paid_amount <= 0) {
-            $payable->status = 'unpaid';
-        } elseif ($payable->paid_amount >= $payable->amount) {
-            $payable->status = 'paid';
-        } else {
-            $payable->status = 'partial';
-        }
+        $payable->recalculate();
         
         $payable->created_by = auth()->id() ?? $gr->created_by;
         $payable->save();
@@ -306,16 +413,8 @@ class Payable extends Model
         $payable->document_number = $receiving->receiving_number;
         $payable->amount = $amount;
         $payable->due_date = Carbon::parse($receiving->receive_date)->addDays($topDays);
-        $payable->balance = $amount - $payable->paid_amount;
-
-        if ($payable->paid_amount <= 0) {
-            $payable->status = 'unpaid';
-        } elseif ($payable->paid_amount >= $payable->amount) {
-            $payable->status = 'paid';
-        } else {
-            $payable->status = 'partial';
-        }
-
+        $payable->recalculate();
+        
         $payable->created_by = auth()->id() ?? $receiving->created_by;
         $payable->save();
 

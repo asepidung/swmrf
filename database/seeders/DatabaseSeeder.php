@@ -174,6 +174,7 @@ class DatabaseSeeder extends Seeder
             // Melihat tagihan dan MEMBAYAR tagihan adalah dua tingkat
             // wewenang yang berbeda. Sebelumnya tidak dibedakan sama sekali.
             ['name' => 'pay_payables', 'module_name' => 'Payables', 'description' => 'Pay payables'],
+            ['name' => 'record_payable_compensations', 'module_name' => 'Payables', 'description' => 'Record supplier compensation on a payable'],
 
             // Material Stock Module
             ['name' => 'view_material_stocks', 'module_name' => 'Material Stocks', 'description' => 'View material stocks'],

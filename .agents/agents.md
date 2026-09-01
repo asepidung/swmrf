@@ -1098,11 +1098,16 @@ membuang waktu Project Owner.
 | Sales Order (harga & diskon) | 31 Agu 2026 | diskon persen tanpa penjaga, log debug |
 | Diskon pelanggan | 31 Agu 2026 | 2% Lion DC pindah dari cocok-nama ke data |
 | Tally (halaman pindai) | 1 Sep 2026 | relabel POD, tata letak pemindai |
+| Delivery Order | 1 Sep 2026 | ringkasan total, berat diterima, daftar tolakan |
+| Delivery Plan | 1 Sep 2026 | jadwal hilang di akhir hari kirim |
+| Dashboard (notifikasi) | 1 Sep 2026 | seragam, bilingual, GR belum dikunci |
+| Hutang (kompensasi) | 1 Sep 2026 | potongan total, saldo satu rumus |
 
-**Belum tersentuh:** Delivery Plan, Delivery Order, Sales Return, Invoice,
-Stock Take, Mutation. Sales Order baru disisir pada bagian harga dan
-diskonnya saja, mengikuti alur price list -- sisanya belum. Tally baru
-disisir pada halaman pindainya; halaman Draft, View, dan cetaknya belum.
+**Belum tersentuh:** Sales Return, Invoice, Stock Take, Mutation. Sales Order
+baru disisir pada bagian harga dan diskonnya saja, mengikuti alur price
+list -- sisanya belum. Tally baru disisir pada halaman pindainya; halaman
+Draft, View, dan cetaknya belum. Delivery Order disisir pada ringkasan,
+halaman Approve, dan daftar tolakannya.
 
 **Sesi 1 September 2026 berhenti di sini.** Berikutnya **Delivery Order**,
 lalu ingatkan Owner mengerjakan **plandev**. Tata letak halaman Scan Tally
@@ -1238,6 +1243,79 @@ ketika ia paling perlu dilihat.
 Ada di `DeliveryPlan::scopeStillRelevant()`, dipasang sebagai **saringan
 bawaan** dan bukan batasan tetap pada `getEloquentQuery()` -- mematikan
 saringannya mengembalikan riwayat lengkapnya.
+
+### Kompensasi pemasok: potongan TOTAL, dan alasannya menentukan perlakuan
+
+Kejadian di lapangan: pesanan datang lengkap -- sepuluh steer dipesan,
+sepuluh steer datang -- tetapi kualitasnya buruk, sehingga purchasing menawar
+kompensasi ke pemasok.
+
+**Bentuknya potongan TOTAL, bukan potongan per kilo.** Keputusan Owner,
+1 September 2026. Yang sebenarnya dinegosiasikan memang angka bulat ("potong
+5 juta"); menurunkannya menjadi harga per kilo adalah ketelitian yang
+dikarang, dan itu memaksa menghitung ulang setiap baris hutang **dan**
+kerugian penimbangan, merambat ke dokumen yang mungkin sudah disetujui.
+
+**Harga di Purchase Order TIDAK diubah.** PO adalah catatan kesepakatan.
+Menurunkan harganya di belakang menghapus selisih antara yang disepakati dan
+yang akhirnya dibayar, sehingga pertanyaan "tahun ini kita dapat kompensasi
+berapa dari pemasok" tidak bisa dijawab sama sekali.
+
+`payables.amount` tetap utuh sebagai nilai asli, dan kompensasinya berdiri
+sebagai kolom sendiri:
+
+```
+balance = amount - compensation - paid_amount
+```
+
+**ALASANNYA MENENTUKAN PERLAKUAN, bukan sekadar keterangan:**
+
+| Alasan | Hutang | Kerugian susut penimbangan |
+|---|---|---|
+| `quality` | berkurang | **tidak disentuh** |
+| `weight` | berkurang | ikut berkurang |
+
+Owner sempat mengira kerugian penimbangan harus selalu ikut berubah bila
+harga berubah -- dan itu memang benar untuk kompensasi karena BERAT, karena
+keduanya mengukur hal yang sama: berat yang dibayar tetapi tidak diterima.
+
+Untuk kompensasi karena KUALITAS tidak. Susutnya tetap terjadi, dan uang itu
+didapat untuk hal lain; menguranginya berarti memakai satu pemulihan untuk
+menutup dua kerugian yang berbeda.
+
+Nilai kerugiannya sendiri tidak pernah diubah -- yang bertambah kolom
+`financial_losses.recovered_amount`, supaya angka asli dan yang berhasil
+ditarik kembali dua-duanya terbaca. Idiom yang sama dengan hutang.
+
+**Penjagaannya:** kompensasi tidak boleh melebihi sisa tagihan (kalau lebih,
+pemasok yang berhutang -- itu dokumen lain), tidak boleh nol, alasannya wajib
+dipilih tanpa nilai bawaan, dan pemulihan tidak boleh melebihi kerugian yang
+tercatat supaya tidak berubah menjadi untung semu.
+
+Haknya terpisah: `record_payable_compensations`. Mencatat kompensasi
+mengurangi yang dibayar perusahaan -- itu keputusan uang, beda dari melihat
+daftar hutang dan beda dari membayar.
+
+### Rumus saldo hutang hanya ada di SATU tempat
+
+`Payable::recalculate()`. Sebelumnya rumus saldo dan status disalin di **enam
+tempat** -- lima di model dan satu di halaman pembayaran.
+
+Selama semuanya menghitung hal yang sama, salinan itu tidak terasa. Begitu ada
+faktor baru seperti kompensasi, ia hanya berlaku di sebagian, dan **hutang yang
+sama menunjukkan angka berbeda tergantung jalur mana yang menyentuhnya
+terakhir**. Ada test yang menghitung jumlah salinannya.
+
+### Kerugian penimbangan memakai harga cadangan yang dikarang
+
+Belum diperbaiki, dicatat supaya tidak hilang. `CattleWeighing::calculateAndSaveFinancialLoss()`
+mencari harga per class dengan tiga tingkat: harga di PO ini, lalu harga PO
+lain dari pemasok yang sama, lalu **rata-rata harga semua class di PO ini**.
+
+Dua tingkat terakhir menghasilkan angka yang tidak pernah disepakati untuk
+pembelian itu -- rata-rata antar class sapi yang berbeda khususnya adalah
+angka karangan. Hasilnya tetap tampil sebagai rupiah yang meyakinkan di
+laporan kerugian.
 
 ### Urutan kerja yang diminta Owner, 1 September 2026
 
