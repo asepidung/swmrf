@@ -20,6 +20,86 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // ------------------------------------------------------------------
+        // Semua isian tanggal: pemilih milik Filament, format hari/bulan/tahun
+        // ------------------------------------------------------------------
+        //
+        // Dua hal yang diperbaiki sekaligus, dan keduanya berlaku untuk 124
+        // isian tanggal di seluruh aplikasi.
+        //
+        // PERTAMA, isian tanggal bawaan browser hanya bisa dibuka lewat ikon
+        // kalender di kanan; mengklik teksnya cuma memindahkan kursor antar
+        // bagian tanggal. Pemilih milik Filament terbuka begitu field-nya
+        // disentuh di mana saja.
+        //
+        // KEDUA, dan ini yang lebih penting: isian bawaan menampilkan tanggal
+        // mengikuti bahasa BROWSER, sehingga di mesin berbahasa Inggris ia
+        // tampil `mm/dd/yyyy`. Artinya "03/09" bisa berarti 3 September ATAU
+        // 9 Maret tergantung siapa yang membukanya -- pada tanggal kirim dan
+        // jatuh tempo, itu ambiguitas yang tidak pernah memunculkan error.
+        // Formatnya kini dipatok hari/bulan/tahun, apa pun mesinnya.
+        //
+        // Dipasang di SATU tempat, bukan disalin ke 124 pemanggilan. Isian
+        // tanggal yang dibuat nanti ikut mendapatkannya tanpa perlu diingat,
+        // dan yang benar-benar butuh format lain masih bisa menimpanya sendiri
+        // karena pemanggilan berantai di call site berjalan sesudah ini.
+        //
+        // Yang tersimpan tetap Y-m-d; yang berubah hanya yang dibaca manusia.
+        // DateTimePicker didaftarkan LEBIH DULU, dan itu disengaja.
+        //
+        // Di Filament, DatePicker adalah TURUNAN dari DateTimePicker -- bukan
+        // sebaliknya. Jadi aturan DateTimePicker ikut mengenai setiap
+        // DatePicker, dan yang terdaftar belakangan berjalan belakangan.
+        // Kalau urutannya dibalik, seluruh isian tanggal biasa ikut
+        // menampilkan jam. Sudah terjadi sekali dan langsung ketahuan dari
+        // pemeriksaan, bukan dari layar.
+        \Filament\Forms\Components\DateTimePicker::configureUsing(
+            fn (\Filament\Forms\Components\DateTimePicker $picker) => $picker
+                ->native(false)
+                ->displayFormat('d/m/Y H:i'),
+        );
+
+        \Filament\Forms\Components\DatePicker::configureUsing(
+            fn (\Filament\Forms\Components\DatePicker $picker) => $picker
+                ->native(false)
+                ->displayFormat('d/m/Y')
+                // State-nya dikembalikan menjadi TANGGAL SAJA.
+                //
+                // Filament sengaja menyimpan state pemilih non-native sebagai
+                // datetime penuh (DateTimePicker.php, `(string) $state`),
+                // sementara pemilih bawaan browser menyimpannya sebagai
+                // tanggal saja. Untuk isian FORM perbedaan itu tidak terasa:
+                // dehidrasi mengembalikannya ke Y-m-d sebelum disimpan.
+                //
+                // Untuk SARINGAN TABEL terasa sekali. Saringan membaca state
+                // mentah tanpa melewati dehidrasi, lalu memakainya di
+                // whereDate() -- dan '2026-09-01' >= '2026-09-01 00:00:00'
+                // bernilai SALAH karena dibandingkan sebagai teks. Seluruh
+                // baris hari itu lenyap dari daftar tanpa satu pun error.
+                //
+                // Ada 42 berkas yang membaca state saringan tanggal seperti
+                // itu. Menormalkannya di sini menyelesaikan semuanya sekaligus,
+                // dan yang dibuang cuma bagian jam yang memang tidak pernah
+                // dimiliki DatePicker.
+                ->afterStateHydrated(function (\Filament\Forms\Components\DatePicker $component, $state): void {
+                    if (blank($state)) {
+                        return;
+                    }
+
+                    try {
+                        $component->state(\Carbon\Carbon::parse($state)->toDateString());
+                    } catch (\Throwable) {
+                        // Nilai yang tidak bisa dibaca dibiarkan apa adanya;
+                        // Filament sendiri yang akan menolaknya.
+                    }
+                }),
+            // isImportant: dijalankan SESUDAH setUp() milik Filament.
+            // Tanpa penanda ini, callback di atas terdaftar lebih dulu dan
+            // langsung ditimpa oleh milik Filament sendiri -- perbaikannya
+            // tampak terpasang padahal tidak berpengaruh sama sekali.
+            isImportant: true,
+        );
+
         LanguageSwitch::configureUsing(function (LanguageSwitch $switch) {
             $switch
                 ->locales(['en', 'id'])
