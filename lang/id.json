@@ -786,5 +786,9 @@
     "Older than the limit. Click to relabel.": "Sudah melewati batas umur. Klik untuk melabeli ulang.",
     "Change the POD date and reprint the label.": "Ubah tanggal POD dan cetak ulang label.",
     "Scan / Box": "Scan / Box",
-    "PO": "PO"
+    "PO": "PO",
+    "Received weight must be a number.": "Berat diterima harus berupa angka.",
+    "Received weight cannot be negative.": "Berat diterima tidak boleh kurang dari nol.",
+    "Select Rejected Barcode": "Pilih Barcode Tolakan",
+    "No item selected": "Tidak ada barang yang dipilih"
 }

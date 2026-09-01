@@ -85,10 +85,27 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                                     ->numeric()
                                     ->columnSpan(4),
 
+                                // Satu-satunya isian yang benar-benar diketik
+                                // di halaman ini, dan angkanya menentukan
+                                // kerugian susut kirim: selisihnya terhadap
+                                // berat kirim dicatat sebagai Financial Loss.
+                                //
+                                // Karena itu ->numeric() dilepas. Pemanggilan
+                                // itu membuat input menjadi type=number lengkap
+                                // dengan tombol panah, dan satu sentuhan yang
+                                // tidak disengaja di sini menggeser angka
+                                // kerugian tanpa ada yang menyadarinya.
+                                // Keputusan yang sama sudah diambil untuk berat
+                                // karkas, berat sapi masuk, pH, dan TOP.
                                 Forms\Components\TextInput::make('weight')
                                     ->label(__('Received Weight'))
                                     ->required()
-                                    ->numeric()
+                                    ->extraInputAttributes(['inputmode' => 'decimal', 'class' => 'text-right'])
+                                    ->rules(['numeric', 'min:0'])
+                                    ->validationMessages([
+                                        'numeric' => __('Received weight must be a number.'),
+                                        'min' => __('Received weight cannot be negative.'),
+                                    ])
                                     ->columnSpan(4),
 
                                 Forms\Components\TextInput::make('notes')
@@ -180,7 +197,7 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                         }),
 
                     Forms\Components\CheckboxList::make('rejected_barcodes')
-                        ->label(__('Pilih Barcode Tolakan'))
+                        ->label(__('Select Rejected Barcode'))
                         ->options(fn () => $this->record->tally?->items->mapWithKeys(fn ($item) => [
                             $item->barcode => $item->barcode . ' (' . $item->product->name . ' - ' . number_format($item->weight, 2) . ' kg)'
                         ])->toArray() ?? [])
@@ -195,7 +212,7 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                     $barcodes = $data['rejected_barcodes'] ?? [];
                     if (empty($barcodes)) {
                         Notification::make()
-                            ->title(__('Tidak ada barang yang dipilih'))
+                            ->title(__('No item selected'))
                             ->warning()
                             ->send();
                         return;
