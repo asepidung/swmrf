@@ -14,7 +14,7 @@ class ViewPayable extends ViewRecord
     {
         return [
             Actions\Action::make('pay')
-                ->label(__('Record Payment'))
+                ->label(__('Pay'))
                 ->icon('heroicon-o-banknotes')
                 ->color('success')
                 // Melihat tagihan dan MEMBAYAR tagihan adalah dua tingkat
@@ -102,105 +102,91 @@ class ViewPayable extends ViewRecord
                     $this->redirect($this->getResource()::getUrl('view', ['record' => $this->record]));
                 }),
 
-            // Di layar HP tiga tombol sejajar terlipat menjadi dua baris
-            // yang tidak rata, dan yang paling mencolok justru bukan aksi
-            // yang paling sering dipakai.
+            // Tiga tombol berdampingan, dengan label sependek mungkin.
             //
-            // Mencatat pembayaran adalah pekerjaan sehari-hari, jadi ia
-            // yang tetap berdiri sendiri. Mencatat kompensasi jarang, dan
-            // Kembali selalu ada di mana-mana -- keduanya masuk ke satu
-            // kelompok, sehingga layar sempit cukup menampilkan satu
-            // tombol utama dan satu tombol titik tiga.
-            Actions\ActionGroup::make([
-                // Mencatat kompensasi MENGURANGI yang harus dibayar perusahaan,
-                // jadi ia keputusan uang -- haknya terpisah dari melihat daftar
-                // hutang, dan terpisah pula dari membayar.
-                Actions\Action::make('compensation')
-                    ->label(__('Record Compensation'))
-                    ->icon('heroicon-o-receipt-percent')
-                    ->color('warning')
-                    ->visible(fn () => $this->record->balance > 0
-                        && (auth()->user()?->hasPermission('record_payable_compensations') ?? false))
-                    ->modalDescription(__('The purchase order keeps its agreed price. Only the payable goes down.'))
-                    ->form([
-                        \Filament\Forms\Components\Placeholder::make('sisa')
-                            ->label(__('Outstanding'))
-                            ->content(fn () => 'Rp '.number_format(
-                                (float) $this->record->amount
-                                - (float) $this->record->compensation
-                                - (float) $this->record->paid_amount,
-                                0,
-                                ',',
-                                '.',
-                            )),
+            // Menyembunyikan sebagiannya ke dalam tombol titik tiga memang
+            // merapikan barisnya, tetapi menukar kerapian dengan satu ketukan
+            // tambahan -- dan yang ikut tersembunyi justru Kembali, yang
+            // paling sering dicari. Memendekkan labelnya menyelesaikan hal
+            // yang sama tanpa menyembunyikan apa pun.
 
-                        // Alasannya menentukan perlakuannya, bukan sekadar
-                        // keterangan -- karena itu wajib dipilih dan tidak
-                        // punya nilai bawaan.
-                        \Filament\Forms\Components\Radio::make('reason')
-                            ->label(__('Reason'))
-                            ->options([
-                                \App\Models\Payable::COMPENSATION_FOR_QUALITY => __('Poor quality'),
-                                \App\Models\Payable::COMPENSATION_FOR_WEIGHT => __('Weight shortfall'),
-                            ])
-                            ->descriptions([
-                                \App\Models\Payable::COMPENSATION_FOR_QUALITY => __('Reduces the payable only. The recorded shrinkage loss stays as it is.'),
-                                \App\Models\Payable::COMPENSATION_FOR_WEIGHT => __('Also reduces the recorded shrinkage loss, because it recovers the same thing.'),
-                            ])
-                            ->required(),
+            // Mencatat kompensasi MENGURANGI yang harus dibayar perusahaan,
+            // jadi ia keputusan uang -- haknya terpisah dari melihat daftar
+            // hutang, dan terpisah pula dari membayar.
+            Actions\Action::make('compensation')
+                ->label(__('Compensate'))
+                ->icon('heroicon-o-receipt-percent')
+                ->color('warning')
+                ->visible(fn () => $this->record->balance > 0
+                    && (auth()->user()?->hasPermission('record_payable_compensations') ?? false))
+                ->modalHeading(__('Record Compensation'))
+                ->modalDescription(__('The purchase order keeps its agreed price, and the recorded shrinkage loss stays as it is. Only the payable goes down.'))
+                ->form([
+                    \Filament\Forms\Components\Placeholder::make('sisa')
+                        ->label(__('Outstanding'))
+                        ->content(fn () => 'Rp '.number_format(
+                            (float) $this->record->amount
+                            - (float) $this->record->compensation
+                            - (float) $this->record->paid_amount,
+                            0,
+                            ',',
+                            '.',
+                        )),
 
-                        \Filament\Forms\Components\TextInput::make('amount')
-                            ->label(__('Compensation'))
-                            ->prefix('Rp')
-                            ->required()
-                            ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right'])
-                            // Isian ini selalu kosong saat dibuka, jadi bahaya
-                            // "seratus kali lipat" tidak berlaku di sini. Tetap
-                            // dipasang karena aturannya memang menyeluruh:
-                            // pengecualian yang beralasan "yang ini aman" persis
-                            // cara bug itu kembali.
-                            ->formatStateUsing(fn ($state): ?string => $state === null || $state === ''
-                                ? null
-                                : number_format((float) $state, 0, ',', '.'))
-                            ->mask(\Filament\Support\RawJs::make('$money($input, \',\', \'.\', 0)'))
-                            ->stripCharacters('.')
-                            ->rules(['numeric', 'gt:0']),
+                    \Filament\Forms\Components\TextInput::make('amount')
+                        ->label(__('Compensation'))
+                        ->prefix('Rp')
+                        ->required()
+                        ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right'])
+                        // Isian ini selalu kosong saat dibuka, jadi bahaya
+                        // "seratus kali lipat" tidak berlaku di sini. Tetap
+                        // dipasang karena aturannya memang menyeluruh:
+                        // pengecualian yang beralasan "yang ini aman" persis
+                        // cara bug itu kembali.
+                        ->formatStateUsing(fn ($state): ?string => $state === null || $state === ''
+                            ? null
+                            : number_format((float) $state, 0, ',', '.'))
+                        ->mask(\Filament\Support\RawJs::make('$money($input, \',\', \'.\', 0)'))
+                        ->stripCharacters('.')
+                        ->rules(['numeric', 'gt:0']),
 
-                        \Filament\Forms\Components\Textarea::make('note')
-                            ->label(__('Note'))
-                            ->rows(2),
-                    ])
-                    ->action(function (array $data): void {
-                        try {
-                            $this->record->applyCompensation(
-                                (float) $data['amount'],
-                                $data['reason'],
-                                $data['note'] ?? null,
-                            );
-                        } catch (\InvalidArgumentException $e) {
-                            \Filament\Notifications\Notification::make()
-                                ->title($e->getMessage())
-                                ->danger()
-                                ->send();
-
-                            return;
-                        }
-
+                    // Alasannya dicatat sebagai KETERANGAN saja, dan tidak
+                    // mengubah angka apa pun. Rancangan sebelumnya membuatnya
+                    // menentukan perlakuan -- yang karena berat ikut mengurangi
+                    // kerugian susut -- padahal di lapangan komplainnya selalu
+                    // soal mutu. Pembedaan itu membedakan sesuatu yang tidak
+                    // dibedakan, dan salah memilihnya menghapus kerugian yang
+                    // nyata tanpa satu pun gejala.
+                    \Filament\Forms\Components\Textarea::make('note')
+                        ->label(__('Reason'))
+                        ->placeholder(__('For example: too much fat, low meat yield.'))
+                        ->rows(2),
+                ])
+                ->action(function (array $data): void {
+                    try {
+                        $this->record->applyCompensation(
+                            (float) $data['amount'],
+                            $data['note'] ?? null,
+                        );
+                    } catch (\InvalidArgumentException $e) {
                         \Filament\Notifications\Notification::make()
-                            ->title(__('Compensation recorded'))
-                            ->success()
+                            ->title($e->getMessage())
+                            ->danger()
                             ->send();
-                    }),
 
-                Actions\Action::make('back')
-                    ->label(__('Back'))
-                    ->color('gray')
-                    ->url(fn (): string => $this->getResource()::getUrl('index')),
-            ])
-                ->icon('heroicon-m-ellipsis-vertical')
+                        return;
+                    }
+
+                    \Filament\Notifications\Notification::make()
+                        ->title(__('Compensation recorded'))
+                        ->success()
+                        ->send();
+                }),
+
+            Actions\Action::make('back')
+                ->label(__('Back'))
                 ->color('gray')
-                ->button()
-                ->label(__('More')),
+                ->url(fn (): string => $this->getResource()::getUrl('index')),
         ];
     }
 }
