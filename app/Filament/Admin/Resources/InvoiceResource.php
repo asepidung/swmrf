@@ -221,7 +221,10 @@ class InvoiceResource extends Resource
                                     // di tempat ini.
                                     $discountPercent = $soItem ? (float)$soItem->discount : 0.0;
 
-                                    $gross = $item->weight * $price;
+                                    // Yang ditagih adalah berat diterima ATAU
+                                    // berat PO, mana yang lebih kecil. Lihat
+                                    // billableWeight() untuk alasannya.
+                                    $gross = static::billableWeight($item, $soItem) * $price;
                                     $discountRp = round($gross * ($discountPercent / 100), 0);
                                     $amount = round($gross - $discountRp, 0);
 
@@ -340,7 +343,7 @@ class InvoiceResource extends Resource
                                                 ->first();
                                             $price = $soItem ? (float)$soItem->price : 0.0;
                                             $discountPercent = $soItem ? (float)$soItem->discount : 0.0;
-                                            $gross = $item->weight * $price;
+                                            $gross = static::billableWeight($item, $soItem) * $price;
                                             $totalDiscount += round($gross * ($discountPercent / 100), 0);
                                         }
                                         return round($totalDiscount, 0);
@@ -365,7 +368,7 @@ class InvoiceResource extends Resource
                                                 ->first();
                                             $price = $soItem ? (float)$soItem->price : 0.0;
                                             $discountPercent = $soItem ? (float)$soItem->discount : 0.0;
-                                            $gross = $item->weight * $price;
+                                            $gross = static::billableWeight($item, $soItem) * $price;
                                             $discountRp = round($gross * ($discountPercent / 100), 0);
                                             $subtotal += ($gross - $discountRp);
                                         }
@@ -414,7 +417,7 @@ class InvoiceResource extends Resource
                                                 ->first();
                                             $price = $soItem ? (float)$soItem->price : 0.0;
                                             $discountPercent = $soItem ? (float)$soItem->discount : 0.0;
-                                            $gross = $item->weight * $price;
+                                            $gross = static::billableWeight($item, $soItem) * $price;
                                             $discountRp = round($gross * ($discountPercent / 100), 0);
                                             $subtotal += ($gross - $discountRp);
                                         }
@@ -501,6 +504,45 @@ class InvoiceResource extends Resource
         $rootSet('subtotal', $grandTotal);
         $rootSet('total_discount', $totalDiscount);
         $rootSet('balance', $balance);
+    }
+
+    /**
+     * Berat yang boleh ditagih untuk satu baris invoice.
+     *
+     * Aturan pelanggan, disampaikan Project Owner 1 September 2026:
+     *
+     *   berat diterima KURANG dari PO  -> tagihan mengikuti berat diterima
+     *   berat diterima LEBIH dari PO   -> tagihan mengikuti PO
+     *
+     * Jadi yang ditagih adalah yang LEBIH KECIL di antara keduanya.
+     *
+     * Sebelumnya invoice selalu memakai berat diterima apa adanya. Sisi
+     * kurangnya sudah benar dengan sendirinya, tetapi sisi lebihnya berarti
+     * pelanggan ditagih untuk daging yang tidak ia pesan -- dan tidak ada
+     * error apa pun yang memberitahu, karena angkanya memang berat yang
+     * betul-betul terkirim.
+     *
+     * Satu Sales Order hanya melahirkan satu Delivery Order (SO punya satu
+     * Tally, Tally punya satu DO), jadi berat PO per produk memang batas
+     * atas yang utuh untuk pengiriman ini -- bukan bagian dari beberapa
+     * kali kirim yang harus dijumlahkan dulu.
+     *
+     * Baris tanpa pasangan di Sales Order dibiarkan apa adanya: tidak ada
+     * angka PO untuk dibandingkan, dan menolak menagihnya justru
+     * menghilangkan barang yang benar-benar dikirim.
+     *
+     * @param  \App\Models\DeliveryOrderReceiptItem  $receiptItem
+     * @param  \App\Models\SalesOrderItem|null  $soItem
+     */
+    protected static function billableWeight($receiptItem, $soItem): float
+    {
+        $received = (float) $receiptItem->weight;
+
+        if (! $soItem) {
+            return $received;
+        }
+
+        return min($received, (float) $soItem->weight);
     }
 
     public static function table(Table $table): Table

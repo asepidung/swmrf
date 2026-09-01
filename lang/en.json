@@ -558,7 +558,6 @@
     "To Warehouse": "To Warehouse",
     "Mutation Number": "Mutation Number",
     "Mutation Header": "Mutation Header",
-    "Scan Barcode": "Scan Barcode",
     "Qty": "Qty",
     "pH": "pH",
     "POD": "POD",
@@ -790,5 +789,13 @@
     "Received weight must be a number.": "Received weight must be a number.",
     "Received weight cannot be negative.": "Received weight cannot be negative.",
     "Select Rejected Barcode": "Select Rejected Barcode",
-    "No item selected": "No item selected"
+    "No item selected": "No item selected",
+    "Only a Delivery Order with status Ready can be approved": "Only a Delivery Order with status Ready can be approved",
+    "Receiving Check": "Receiving Check",
+    "Receiving Note": "Receiving Note",
+    "Rejections": "Rejections",
+    "Return Rejected Goods to Stock": "Return Rejected Goods to Stock",
+    "Scan the rejected barcode here...": "Scan the rejected barcode here...",
+    "Rejection processed": "Rejection processed",
+    "The rejected goods have been returned to stock.": "The rejected goods have been returned to stock."
 }

@@ -13,6 +13,23 @@ use Spatie\Activitylog\LogOptions;
 
 class DeliveryOrder extends Model
 {
+
+    /**
+     * Awalan nomor dokumen, dan awalan nomor resi penerimaannya.
+     *
+     * Nomor resi diturunkan dari nomor DO dengan mengganti awalannya, supaya
+     * keduanya mudah dipasangkan saat dilihat manusia. Karena itu kedua
+     * awalan WAJIB berasal dari sini.
+     *
+     * Sebelumnya awalannya ditulis ulang sebagai teks di halaman Approve.
+     * Kalau awalan di model diubah dan yang di sana tertinggal, penggantian
+     * teksnya tidak menemukan apa pun dan nomor resi menjadi SAMA PERSIS
+     * dengan nomor DO -- tanpa error, dan tanpa index unique yang menahannya,
+     * karena unique pada receipt_number sudah dilepas 1 Juli 2026.
+     */
+    public const NUMBER_PREFIX = 'SWM-DO#';
+
+    public const RECEIPT_NUMBER_PREFIX = 'SWM-REC#';
     use SoftDeletes, LogsActivity;
 
     protected $fillable = [
@@ -121,7 +138,7 @@ class DeliveryOrder extends Model
                 $do->delivery_order_number = DocumentNumber::next(
                     query: static::withTrashed(),
                     column: 'delivery_order_number',
-                    prefix: 'SWM-DO#'.date('y'),
+                    prefix: self::NUMBER_PREFIX.date('y'),
                     padding: 4,
                 );
             }

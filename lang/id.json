@@ -308,7 +308,6 @@
     "To Warehouse": "Ke Gudang",
     "Mutation Number": "No. Mutasi",
     "Mutation Header": "Header Mutasi",
-    "Scan Barcode": "Scan Barcode",
     "Barcode": "Barcode",
     "Qty": "Qty",
     "Pcs": "Pcs",
@@ -790,5 +789,13 @@
     "Received weight must be a number.": "Berat diterima harus berupa angka.",
     "Received weight cannot be negative.": "Berat diterima tidak boleh kurang dari nol.",
     "Select Rejected Barcode": "Pilih Barcode Tolakan",
-    "No item selected": "Tidak ada barang yang dipilih"
+    "No item selected": "Tidak ada barang yang dipilih",
+    "Only a Delivery Order with status Ready can be approved": "Hanya Delivery Order berstatus Ready yang bisa disetujui",
+    "Receiving Check": "Pemeriksaan Penerimaan",
+    "Receiving Note": "Catatan Penerimaan",
+    "Rejections": "Tolakan",
+    "Return Rejected Goods to Stock": "Pengembalian Barang Tolakan ke Stok",
+    "Scan the rejected barcode here...": "Scan barcode tolakan di sini...",
+    "Rejection processed": "Tolakan berhasil diproses",
+    "The rejected goods have been returned to stock.": "Barang yang ditolak telah dikembalikan ke stok."
 }
