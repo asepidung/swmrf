@@ -317,8 +317,19 @@ class GoodsReceiptMaterialResource extends Resource
                                     ->where('payableable_id', $record->id)
                                     ->first();
                                     
-                                if ($payable && $payable->payments()->exists() && $payable->payments()->sum('amount') > 0) {
-                                    throw new \Exception('Tidak bisa membuka kunci karena sudah ada pembayaran (Payment) yang terhubung.');
+                                // paid_amount, BUKAN relasi payments().
+                                // Payable tidak punya relasi itu sama sekali;
+                                // memanggilnya melempar "Call to undefined
+                                // method", sehingga penjagaan ini tidak pernah
+                                // benar-benar bekerja -- ia meledak alih-alih
+                                // menolak.
+                                $sudahDibayar = $payable && (
+                                    in_array($payable->status, ['partial', 'paid'], true)
+                                    || (float) $payable->paid_amount > 0
+                                );
+
+                                if ($sudahDibayar) {
+                                    throw new \Exception(__('This Goods Receipt cannot be unlocked because a payment is already recorded against its payable.'));
                                 }
                                 
                                 $record->update(['is_locked' => false]);
