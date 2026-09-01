@@ -1365,6 +1365,26 @@ pelanggan lain yang namanya kebetulan memuat huruf itu. Kolom **Diskon** pada
 daftar Customer sengaja ditampilkan untuk keperluan itu: yang tidak seharusnya
 berdiskon tinggal dinolkan lewat form.
 
+### Perintah artisan di server juga punya pager, bukan cuma git
+
+Sudah tercatat bahwa `git` di sisi server wajib memakai `--no-pager`. Hal yang
+sama berlaku untuk **artisan yang mengeluarkan tabel**: `schedule:list`,
+`route:list`, dan sejenisnya membuka pager yang menunggu tombol ditekan,
+sehingga sesi `ssh -tt` menggantung **selamanya** tanpa gejala apa pun.
+
+Terjadi 1 September 2026 dan menghabiskan 30 menit sebelum Owner
+menyadarinya. Salurkan lewat `grep`, `head`, atau `| cat`:
+
+```
+php artisan schedule:list | grep notify
+```
+
+**Dan jangan mengumumkan deploy selesai hanya karena commit di server sudah
+benar.** Pada kejadian itu clone-nya memang sudah sampai, tetapi tugas latar
+belakangnya masih menggantung di perintah berikutnya -- cache belum
+dihangatkan sama sekali. Periksa tugasnya benar-benar berhenti, bukan hanya
+hasil antaranya.
+
 ### Jangan mengutip pola terlarang di dalam komentar kodenya sendiri
 
 Test penjaga di proyek ini banyak yang memindai berkas sumber untuk memastikan
