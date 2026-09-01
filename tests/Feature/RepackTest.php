@@ -357,7 +357,10 @@ class RepackTest extends TestCase
         // Test with authorized user
         Livewire::actingAs($userWithPerm)
             ->test(\App\Filament\Admin\Widgets\PendingTaskWidget::class)
-            ->assertSee('repack yang belum dikunci');
+            // Kalimatnya kini kunci Inggris dengan terjemahan Indonesia
+            // terdaftar; test berjalan pada locale bawaan, jadi yang tampil
+            // versi Inggrisnya.
+            ->assertSee('repacks have not been locked yet');
 
         // Test widget directly using helper methods
         $widget = new \App\Filament\Admin\Widgets\PendingTaskWidget();
