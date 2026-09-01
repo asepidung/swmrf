@@ -56,7 +56,8 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
             return;
         }
 
-        $this->warehouse_id = session('gr_warehouse_id', 1);
+        // TANPA cadangan; lihat alasannya di scan().
+        $this->warehouse_id = session('gr_warehouse_id');
     }
 
     public function updatedWarehouseId($value): void
@@ -149,6 +150,24 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
     public function scan()
     {
         if ($this->record->is_locked) {
+            return;
+        }
+
+        // Gudang WAJIB dipilih lebih dulu.
+        //
+        // Sebelumnya nilai awalnya jatuh ke gudang nomor 1 -- Jonggol --
+        // sebelum pengguna memilih apa pun, sehingga barang bisa masuk ke
+        // gudang yang salah tanpa satu pun gejala. Sekarang tidak ada
+        // cadangan, dan pemindaian ditahan sampai gudangnya benar-benar
+        // dipilih; tanpa penjagaan ini, stok akan tercatat tanpa gudang sama
+        // sekali.
+        if (! $this->warehouse_id) {
+            \Filament\Notifications\Notification::make()
+                ->title(__('Choose a warehouse first'))
+                ->body(__('The scanned goods need to be recorded somewhere.'))
+                ->warning()
+                ->send();
+
             return;
         }
 

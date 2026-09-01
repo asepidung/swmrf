@@ -870,5 +870,14 @@
     "Scheduled Reminders": "Scheduled Reminders",
     "The scheduled checks have never run. No reminder is being sent at all.": "The scheduled checks have never run. No reminder is being sent at all.",
     "A scheduled check has not run recently. Reminders may have stopped without any error.": "A scheduled check has not run recently. Reminders may have stopped without any error.",
-    "Last time the system ran its scheduled reminder checks.": "Last time the system ran its scheduled reminder checks."
+    "Last time the system ran its scheduled reminder checks.": "Last time the system ran its scheduled reminder checks.",
+    "Received quantity is less than ordered": "Received quantity is less than ordered",
+    "Is the rest still coming in a later delivery? Closing the purchase order means the remaining quantity will never be received.": "Is the rest still coming in a later delivery? Closing the purchase order means the remaining quantity will never be received.",
+    "Yes, wait for the rest": "Yes, wait for the rest",
+    "No, close this purchase order": "No, close this purchase order",
+    "pH must be a number.": "pH must be a number.",
+    "pH cannot be lower than 5.4.": "pH cannot be lower than 5.4.",
+    "pH cannot be higher than 5.7.": "pH cannot be higher than 5.7.",
+    "Choose a warehouse first": "Choose a warehouse first",
+    "The scanned goods need to be recorded somewhere.": "The scanned goods need to be recorded somewhere."
 }
