@@ -2,10 +2,65 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Resources\BeefStockAgingResource;
+use App\Filament\Admin\Resources\BoningResource;
+use App\Filament\Admin\Resources\CarcassResource;
+use App\Filament\Admin\Resources\CattleReceivingResource;
+use App\Filament\Admin\Resources\CattleWeighingResource;
+use App\Filament\Admin\Resources\DeliveryOrderResource;
+use App\Filament\Admin\Resources\DeliveryPlanResource;
+use App\Filament\Admin\Resources\GoodsReceiptMaterialResource;
+use App\Filament\Admin\Resources\GoodsReceiptProductResource;
+use App\Filament\Admin\Resources\InvoiceResource;
+use App\Filament\Admin\Resources\MaterialRequisitionResource;
+use App\Filament\Admin\Resources\MutationResource;
+use App\Filament\Admin\Resources\ProductRequisitionResource;
+use App\Filament\Admin\Resources\RepackResource;
+use App\Filament\Admin\Resources\TallyResource;
+use App\Models\BeefStock;
+use App\Models\Boning;
 use App\Models\CattleReceiving;
+use App\Models\CattleWeighing;
+use App\Models\DeliveryOrder;
+use App\Models\DeliveryPlan;
+use App\Models\GoodsReceiptMaterial;
+use App\Models\GoodsReceiptProduct;
+use App\Models\Invoice;
+use App\Models\MaterialRequisition;
+use App\Models\MaterialStockTake;
+use App\Models\Mutation;
+use App\Models\ProductRequisition;
 use App\Models\PurchaseCattle;
+use App\Models\PurchaseMaterial;
+use App\Models\PurchaseProduct;
+use App\Models\ProductRequisition as BeefRequisition;
+use App\Models\Repack;
+use App\Models\SalesOrder;
+use App\Models\StockTake;
 use Filament\Widgets\Widget;
 
+/**
+ * Daftar pekerjaan tertunda di Dashboard.
+ *
+ * Sebelumnya setiap baris ditulis tangan di dalam blade: dua puluh blok HTML
+ * yang hampir sama, masing-masing dengan kelasnya sendiri, warnanya sendiri,
+ * dan kalimatnya sendiri. Tiga akibatnya:
+ *
+ *  - **Tidak seragam.** Beberapa memakai warna lewat style langsung, yang
+ *    lain lewat kelas; jaraknya, ukuran ikonnya, dan tebal hurufnya
+ *    berbeda-beda.
+ *  - **Tidak bilingual.** Enam belas kalimatnya memakai kunci berbahasa
+ *    Indonesia, sehingga tidak pernah berubah saat bahasanya diganti.
+ *  - **Sebagian warnanya tidak pernah muncul.** Peringatan stock opname --
+ *    notifikasi paling keras di halaman itu, yang memberi tahu bahwa
+ *    transaksi sedang terkunci -- memakai kelas merah bawaan Tailwind yang
+ *    TIDAK ADA di CSS Filament. Yang bekerja hanya kedipannya, tanpa satu
+ *    warna pun. Tidak ada error yang memberitahu.
+ *
+ * Sekarang seluruh daftarnya berasal dari satu larik, dan blade hanya
+ * menggambarnya. Menambah baris baru berarti menambah satu entri, bukan
+ * menyalin dua puluh baris HTML.
+ */
 class PendingTaskWidget extends Widget
 {
     protected static string $view = 'filament.admin.widgets.pending-task-widget';
@@ -13,6 +68,237 @@ class PendingTaskWidget extends Widget
     protected int | string | array $columnSpan = 'full';
 
     protected static ?int $sort = -1;
+
+    /**
+     * Peringatan yang menghentikan pekerjaan, bukan sekadar mengingatkan.
+     *
+     * Selama stock opname berjalan, sebagian transaksi memang terkunci --
+     * jadi ini bukan tugas yang bisa dikerjakan, melainkan keadaan yang harus
+     * diketahui.
+     *
+     * @return array<int, array{title: string, body: string}>
+     */
+    public function alerts(): array
+    {
+        $alerts = [];
+
+        if (StockTake::whereIn('status', ['DRAFT', 'IN_PROGRESS'])->exists()) {
+            $alerts[] = [
+                'title' => __('Beef stock take in progress'),
+                'body' => __('Some transactions are locked until the stock take is finished.'),
+            ];
+        }
+
+        if (MaterialStockTake::whereIn('status', ['DRAFT', 'IN_PROGRESS'])->exists()) {
+            $alerts[] = [
+                'title' => __('Material stock take in progress'),
+                'body' => __('Some transactions are locked until the stock take is finished.'),
+            ];
+        }
+
+        return $alerts;
+    }
+
+    /**
+     * Pekerjaan tertunda yang boleh dilihat pengguna ini.
+     *
+     * Tiap hitungan mengembalikan nol bila penggunanya tidak berhak, jadi
+     * penyaringan haknya sudah terjadi di dalam metode masing-masing.
+     *
+     * @return array<int, array{label: string, url: string, tone: string}>
+     */
+    public function tasks(): array
+    {
+        $tasks = [];
+
+        foreach ($this->definitions() as [$count, $message, $url, $tone]) {
+            if ($count < 1) {
+                continue;
+            }
+
+            $tasks[] = [
+                'label' => __($message, ['count' => $count]),
+                'url' => $url,
+                'tone' => $tone,
+            ];
+        }
+
+        return $tasks;
+    }
+
+    /**
+     * Satu-satunya tempat susunan daftarnya ditulis.
+     *
+     * Urutannya urutan tampil. Nadanya 'danger' hanya untuk yang berakibat
+     * uang tidak tercatat; sisanya 'warning'.
+     *
+     * @return array<int, array{0: int, 1: string, 2: string, 3: string}>
+     */
+    protected function definitions(): array
+    {
+        return [
+            // Dua yang pertama paling menentukan: selama Goods Receipt belum
+            // dikunci, HUTANGNYA TIDAK TERBENTUK. Barangnya sudah diterima,
+            // pemasoknya menunggu, dan sistem tidak mencatat apa pun yang
+            // harus dibayar. Karena itu diletakkan di atas dan berwarna
+            // merah.
+            [
+                $this->getUnlockedGrProductCount(),
+                ':count beef receipts have not been locked, so no payable exists for them yet.',
+                \App\Filament\Admin\Resources\GoodsReceiptProductResource::getUrl('index'),
+                'danger',
+            ],
+            [
+                $this->getUnlockedGrMaterialCount(),
+                ':count material receipts have not been locked, so no payable exists for them yet.',
+                \App\Filament\Admin\Resources\GoodsReceiptMaterialResource::getUrl('index'),
+                'danger',
+            ],
+
+            [
+                $this->getPendingReceivingCount(),
+                ':count cattle purchases have not been received yet.',
+                \App\Filament\Admin\Resources\CattleReceivingResource::getUrl('draft'),
+                'warning',
+            ],
+            [
+                $this->getPendingWeighingCount(),
+                ':count cattle receivings have not been weighed yet.',
+                \App\Filament\Admin\Resources\CattleWeighingResource::getUrl('draft'),
+                'warning',
+            ],
+            [
+                $this->getPendingCarcassCount(),
+                ':count weighings have not been broken down into carcasses yet.',
+                \App\Filament\Admin\Resources\CarcassResource::getUrl('draft'),
+                'warning',
+            ],
+            [
+                $this->getPendingMaterialRequestCount(),
+                ':count material requests are waiting for review.',
+                \App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('index'),
+                'warning',
+            ],
+            [
+                $this->getPendingMaterialFinanceCount(),
+                ':count material requests are waiting for approval.',
+                \App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('index'),
+                'warning',
+            ],
+            [
+                $this->getPendingProductRequestCount(),
+                ':count beef requests are waiting for review.',
+                \App\Filament\Admin\Resources\ProductRequisitionResource::getUrl('index'),
+                'warning',
+            ],
+            [
+                $this->getPendingProductFinanceCount(),
+                ':count beef requests are waiting for approval.',
+                \App\Filament\Admin\Resources\ProductRequisitionResource::getUrl('index'),
+                'warning',
+            ],
+            [
+                $this->getPendingGrMaterialCount(),
+                ':count material purchase orders are ready to be received.',
+                \App\Filament\Admin\Resources\GoodsReceiptMaterialResource::getUrl('drafts'),
+                'warning',
+            ],
+            [
+                $this->getPendingGrProductCount(),
+                ':count beef purchase orders are ready to be received.',
+                \App\Filament\Admin\Resources\GoodsReceiptProductResource::getUrl('drafts'),
+                'warning',
+            ],
+            [
+                $this->getPendingBoningLockCount(),
+                ':count bonings have not been locked yet.',
+                \App\Filament\Admin\Resources\BoningResource::getUrl('index'),
+                'warning',
+            ],
+            [
+                $this->getPendingRepackLockCount(),
+                ':count repacks have not been locked yet.',
+                \App\Filament\Admin\Resources\RepackResource::getUrl('index'),
+                'warning',
+            ],
+            [
+                $this->getPendingTallyCount(),
+                ':count sales orders still have no tally.',
+                \App\Filament\Admin\Resources\TallyResource::getUrl('draft'),
+                'warning',
+            ],
+            [
+                $this->getPendingDeliveryPlanCount(),
+                ':count delivery plans for tomorrow have no driver or fleet assigned.',
+                \App\Filament\Admin\Resources\DeliveryPlanResource::getUrl('index'),
+                'warning',
+            ],
+            [
+                $this->getPendingDeliveryOrderCount(),
+                ':count tallies are ready for a delivery order.',
+                \App\Filament\Admin\Resources\DeliveryOrderResource::getUrl('draft'),
+                'warning',
+            ],
+            [
+                $this->getPendingDeliveryReceiptCount(),
+                ':count delivery orders are waiting for their receiving check.',
+                \App\Filament\Admin\Resources\DeliveryOrderResource::getUrl('index'),
+                'warning',
+            ],
+            [
+                $this->getPendingInvoiceExchangeCount(),
+                ':count invoices have not been exchanged yet.',
+                \App\Filament\Admin\Resources\InvoiceResource::getUrl('index'),
+                'warning',
+            ],
+            [
+                $this->getPendingMutationCount(),
+                ':count mutations have not been received yet.',
+                \App\Filament\Admin\Resources\MutationResource::getUrl('index'),
+                'warning',
+            ],
+            [
+                $this->getAging60DaysCount(),
+                ':count items have been in stock for more than 60 days.',
+                \App\Filament\Admin\Resources\BeefStockAgingResource::getUrl('index'),
+                'warning',
+            ],
+        ];
+    }
+
+    /**
+     * Goods Receipt daging yang belum dikunci.
+     *
+     * Selama belum dikunci, hutang kepada pemasok TIDAK TERBENTUK -- inilah
+     * kenapa lupa mengunci berakibat jauh lebih besar daripada sekadar
+     * dokumen yang menggantung.
+     */
+    public function getUnlockedGrProductCount(): int
+    {
+        if (! $this->may('edit_goods_receipt_products')) {
+            return 0;
+        }
+
+        return \App\Models\GoodsReceiptProduct::where('is_locked', false)->count();
+    }
+
+    /** Goods Receipt material yang belum dikunci; akibatnya sama. */
+    public function getUnlockedGrMaterialCount(): int
+    {
+        if (! $this->may('edit_gr_materials')) {
+            return 0;
+        }
+
+        return \App\Models\GoodsReceiptMaterial::where('is_locked', false)->count();
+    }
+
+    /** Hak akses, dengan programmer selalu lolos -- mengikuti hasPermission(). */
+    protected function may(string $permission): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null && ($user->isProgrammer() || $user->hasPermission($permission));
+    }
 
     public function getPendingReceivingCount(): int
     {

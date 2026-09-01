@@ -1,247 +1,68 @@
+{{--
+    Daftar pekerjaan tertunda di Dashboard.
+
+    Seluruh isinya berasal dari PendingTaskWidget::alerts() dan ::tasks();
+    berkas ini hanya menggambar. Sebelumnya tiap baris ditulis tangan --
+    dua puluh blok HTML yang hampir sama, masing-masing dengan kelasnya
+    sendiri, warnanya sendiri, dan kalimatnya sendiri.
+
+    Warnanya memakai nama SEMANTIK Filament (danger, warning), bukan nama
+    warna bawaan Tailwind. Panel ini tidak memuat hasil build CSS aplikasi,
+    dan kelas seperti `bg-red-50` atau `text-red-600` tidak ada wujudnya di
+    sana. Peringatan stock opname -- notifikasi paling keras di halaman ini --
+    selama ini memakai kelas-kelas itu, sehingga ia berkedip tanpa satu warna
+    pun, tanpa ada error yang memberitahu.
+--}}
 <x-filament-widgets::widget class="fi-wi-pending-task">
-    <style>
-        .fi-wi-pending-task a {
-            transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease !important;
-        }
-        .fi-wi-pending-task a:hover {
-            transform: scale(1.01) !important;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
-            background-color: #f9fafb !important;
-        }
-        .dark .fi-wi-pending-task a:hover {
-            background-color: rgba(255, 255, 255, 0.05) !important;
-        }
-    </style>
-    @if($this->getPendingReceivingCount() > 0 || $this->getPendingWeighingCount() > 0 || $this->getPendingCarcassCount() > 0 || $this->getPendingMaterialRequestCount() > 0 || $this->getPendingMaterialFinanceCount() > 0 || $this->getPendingProductRequestCount() > 0 || $this->getPendingProductFinanceCount() > 0 || $this->getPendingRepackLockCount() > 0 || $this->getPendingTallyCount() > 0 || $this->getPendingDeliveryPlanCount() > 0 || $this->getPendingGrMaterialCount() > 0 || $this->getPendingGrProductCount() > 0 || $this->getPendingBoningLockCount() > 0 || $this->getPendingDeliveryOrderCount() > 0 || $this->getPendingDeliveryReceiptCount() > 0 || $this->getPendingInvoiceExchangeCount() > 0 || $this->getPendingMutationCount() > 0 || $this->getPendingBeefStockTakeCount() > 0 || $this->getPendingMaterialStockTakeCount() > 0 || $this->getAging60DaysCount() > 0)
-    <div class="space-y-2">
-        @if($this->getPendingBeefStockTakeCount() > 0)
-        <div class="p-4 rounded-lg shadow-md border-2 border-red-500 bg-red-50 dark:bg-red-900/30 flex items-center gap-x-4 transition duration-200 block animate-pulse">
-            <span class="text-red-600 dark:text-red-400">
-                <x-filament::icon icon="heroicon-s-exclamation-circle" class="w-8 h-8" />
-            </span>
-            <div>
-                <p class="text-base font-bold text-red-700 dark:text-red-400">
-                    SEDANG DILAKUKAN STOCK OPNAME DAGING!
-                </p>
-                <p class="text-sm font-medium text-red-600 dark:text-red-300">
-                    Beberapa transaksi tidak bisa dilakukan (terkunci) selama proses Stock Opname belum selesai.
-                </p>
-            </div>
+    @php
+        $alerts = $this->alerts();
+        $tasks = $this->tasks();
+    @endphp
+
+    @if (filled($alerts) || filled($tasks))
+        <div class="space-y-2">
+
+            {{-- Keadaan yang menghentikan pekerjaan, bukan tugas yang bisa dikerjakan. --}}
+            @foreach ($alerts as $alert)
+                <div class="flex items-center gap-3 rounded-lg border border-danger-200 bg-danger-50 p-4 shadow-sm dark:bg-danger-900">
+                    <x-filament::icon
+                        icon="heroicon-s-exclamation-circle"
+                        class="h-7 w-7 shrink-0 text-danger-600 dark:text-danger-400"
+                    />
+                    <div>
+                        <p class="text-sm font-bold text-danger-700 dark:text-danger-400">
+                            {{ $alert['title'] }}
+                        </p>
+                        <p class="text-sm text-danger-600 dark:text-danger-400">
+                            {{ $alert['body'] }}
+                        </p>
+                    </div>
+                </div>
+            @endforeach
+
+            {{-- Pekerjaan tertunda. Satu bentuk untuk semuanya. --}}
+            @foreach ($tasks as $task)
+                <a
+                    href="{{ $task['url'] }}"
+                    class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition dark:border-gray-800 dark:bg-gray-900"
+                >
+                    <x-filament::icon
+                        icon="heroicon-o-exclamation-triangle"
+                        @class([
+                            'h-5 w-5 shrink-0',
+                            'text-danger-600 dark:text-danger-400' => $task['tone'] === 'danger',
+                            'text-warning-600 dark:text-warning-400' => $task['tone'] !== 'danger',
+                        ])
+                    />
+                    <p @class([
+                        'text-sm',
+                        'font-semibold text-danger-700 dark:text-danger-400' => $task['tone'] === 'danger',
+                        'font-medium text-gray-700 dark:text-gray-200' => $task['tone'] !== 'danger',
+                    ])>
+                        {{ $task['label'] }}
+                    </p>
+                </a>
+            @endforeach
         </div>
-        @endif
-
-        @if($this->getPendingMaterialStockTakeCount() > 0)
-        <div class="p-4 rounded-lg shadow-md border-2 border-red-500 bg-red-50 dark:bg-red-900/30 flex items-center gap-x-4 transition duration-200 block animate-pulse">
-            <span class="text-red-600 dark:text-red-400">
-                <x-filament::icon icon="heroicon-s-exclamation-circle" class="w-8 h-8" />
-            </span>
-            <div>
-                <p class="text-base font-bold text-red-700 dark:text-red-400">
-                    SEDANG DILAKUKAN STOCK OPNAME MATERIAL!
-                </p>
-                <p class="text-sm font-medium text-red-600 dark:text-red-300">
-                    Beberapa transaksi tidak bisa dilakukan (terkunci) selama proses Stock Opname belum selesai.
-                </p>
-            </div>
-        </div>
-        @endif
-
-        @if($this->getPendingReceivingCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\CattleReceivingResource::getUrl('draft') }}" class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3 hover:bg-gray-55 dark:hover:bg-white/5 transition duration-200 block">
-            <span style="color: #f59e0b !important;">
-                <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
-            </span>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count penerimaan sapi yang belum dikerjakan.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingReceivingCount().'</strong>']) !!}
-            </p>
-        </a>
-        @endif
-
-        @if($this->getPendingWeighingCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\CattleWeighingResource::getUrl('draft') }}" class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3 hover:bg-gray-55 dark:hover:bg-white/5 transition duration-200 block">
-            <span style="color: #f59e0b !important;">
-                <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
-            </span>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count timbangan sapi yang belum dikerjakan.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingWeighingCount().'</strong>']) !!}
-            </p>
-        </a>
-        @endif
-
-        @if($this->getPendingCarcassCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\CarcassResource::getUrl('draft') }}" class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3 hover:bg-gray-55 dark:hover:bg-white/5 transition duration-200 block">
-            <span style="color: #f59e0b !important;">
-                <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
-            </span>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count draft timbangan yang belum dipotong (karkas).', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingCarcassCount().'</strong>']) !!}
-            </p>
-        </a>
-        @endif
-
-        @if($this->getPendingMaterialRequestCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('index') }}" class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3 hover:bg-gray-55 dark:hover:bg-white/5 transition duration-200 block">
-            <span style="color: #f59e0b !important;">
-                <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
-            </span>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count request material yang belum di-review.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingMaterialRequestCount().'</strong>']) !!}
-            </p>
-        </a>
-        @endif
-
-        @if($this->getPendingMaterialFinanceCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('index') }}" class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3 hover:bg-gray-55 dark:hover:bg-white/5 transition duration-200 block">
-            <span style="color: #f59e0b !important;">
-                <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
-            </span>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count request material yang belum di-approve.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingMaterialFinanceCount().'</strong>']) !!}
-            </p>
-        </a>
-        @endif
-
-        @if($this->getPendingProductRequestCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\ProductRequisitionResource::getUrl('index') }}" class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3 hover:bg-gray-55 dark:hover:bg-white/5 transition duration-200 block">
-            <span style="color: #f59e0b !important;">
-                <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
-            </span>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count request beef yang belum di-review.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingProductRequestCount().'</strong>']) !!}
-            </p>
-        </a>
-        @endif
-
-        @if($this->getPendingProductFinanceCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\ProductRequisitionResource::getUrl('index') }}" class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3 hover:bg-gray-55 dark:hover:bg-white/5 transition duration-200 block">
-            <span style="color: #f59e0b !important;">
-                <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
-            </span>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count request beef yang belum di-approve.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingProductFinanceCount().'</strong>']) !!}
-            </p>
-        </a>
-        @endif
-
-        @if($this->getPendingRepackLockCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\RepackResource::getUrl('index') }}" class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3 hover:bg-gray-55 dark:hover:bg-white/5 transition duration-200 block">
-            <span style="color: #f59e0b !important;">
-                <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
-            </span>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count repack yang belum dikunci.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingRepackLockCount().'</strong>']) !!}
-            </p>
-        </a>
-        @endif
-
-        @if($this->getPendingTallyCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\TallyResource::getUrl('draft') }}" class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3 hover:bg-gray-55 dark:hover:bg-white/5 transition duration-200 block">
-            <span style="color: #f59e0b !important;">
-                <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
-            </span>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __(':count Sales Orders still have no Tally.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingTallyCount().'</strong>']) !!}
-            </p>
-        </a>
-        @endif
-
-        @if($this->getPendingDeliveryPlanCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\DeliveryPlanResource::getUrl('index') }}" class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3 hover:bg-gray-55 dark:hover:bg-white/5 transition duration-200 block">
-            <span style="color: #f59e0b !important;">
-                <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
-            </span>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __(':count delivery plans for tomorrow have no driver or fleet assigned.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingDeliveryPlanCount().'</strong>']) !!}
-            </p>
-        </a>
-        @endif
-
-        @if($this->getPendingGrMaterialCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\GoodsReceiptMaterialResource::getUrl('drafts') }}" class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3 hover:bg-gray-55 dark:hover:bg-white/5 transition duration-200 block">
-            <span style="color: #f59e0b !important;">
-                <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
-            </span>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count PO Material baru yang siap diterima/dibuatkan GRM.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingGrMaterialCount().'</strong>']) !!}
-            </p>
-        </a>
-        @endif
-
-        @if($this->getPendingGrProductCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\GoodsReceiptProductResource::getUrl('drafts') }}" class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3 hover:bg-gray-55 dark:hover:bg-white/5 transition duration-200 block">
-            <span style="color: #f59e0b !important;">
-                <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
-            </span>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count PO Beef baru yang siap diterima/dibuatkan GRB.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingGrProductCount().'</strong>']) !!}
-            </p>
-        </a>
-        @endif
-
-        @if($this->getPendingBoningLockCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\BoningResource::getUrl('index') }}" class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3 hover:bg-gray-55 dark:hover:bg-white/5 transition duration-200 block">
-            <span style="color: #f59e0b !important;">
-                <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
-            </span>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count boning yang belum dikunci.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingBoningLockCount().'</strong>']) !!}
-            </p>
-        </a>
-        @endif
-
-        @if($this->getPendingDeliveryOrderCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\DeliveryOrderResource::getUrl('draft') }}" class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3 hover:bg-gray-55 dark:hover:bg-white/5 transition duration-200 block">
-            <span style="color: #f59e0b !important;">
-                <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
-            </span>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count Tally yang siap dibuatkan DO.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingDeliveryOrderCount().'</strong>']) !!}
-            </p>
-        </a>
-        @endif
-
-        @if($this->getPendingDeliveryReceiptCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\DeliveryOrderResource::getUrl('index') }}" class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3 hover:bg-gray-55 dark:hover:bg-white/5 transition duration-200 block">
-            <span style="color: #f59e0b !important;">
-                <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
-            </span>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count Delivery Order status Ready yang siap dilakukan pemeriksaan kiriman.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingDeliveryReceiptCount().'</strong>']) !!}
-            </p>
-        </a>
-        @endif
-
-        @if($this->getPendingInvoiceExchangeCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\InvoiceResource::getUrl('index') }}" class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3 hover:bg-gray-55 dark:hover:bg-white/5 transition duration-200 block">
-            <span style="color: #f59e0b !important;">
-                <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
-            </span>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count invoice yang belum di-tukar faktur.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingInvoiceExchangeCount().'</strong>']) !!}
-            </p>
-        </a>
-        @endif
-
-        @if($this->getPendingMutationCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\MutationResource::getUrl('index') }}" class="p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-x-3 hover:bg-gray-55 dark:hover:bg-white/5 transition duration-200 block">
-            <span style="color: #f59e0b !important;">
-                <x-filament::icon icon="heroicon-o-exclamation-triangle" class="w-5 h-5" />
-            </span>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {!! __('Ada :count mutasi yang belum diterima.', ['count' => '<strong style="color: #f59e0b !important;">'.$this->getPendingMutationCount().'</strong>']) !!}
-            </p>
-        </a>
-        @endif
-        @if($this->getAging60DaysCount() > 0)
-        <a href="{{ \App\Filament\Admin\Resources\BeefStockAgingResource::getUrl('index') }}" class="p-3 rounded-lg shadow-sm border border-red-500 dark:border-red-800 bg-red-50 dark:bg-red-900/30 flex items-center gap-x-3 hover:bg-red-100 dark:hover:bg-red-900/50 transition duration-200 block">
-            <span class="text-red-600 dark:text-red-400">
-                <x-filament::icon icon="heroicon-s-exclamation-circle" class="w-5 h-5" />
-            </span>
-            <p class="text-sm font-medium text-red-700 dark:text-red-400">
-                {!! __('Ada :count barang yang sudah lebih dari 60 hari.', ['count' => '<strong class="text-red-700 dark:text-red-400">'.$this->getAging60DaysCount().'</strong>']) !!}
-            </p>
-        </a>
-        @endif
-    </div>
     @endif
 </x-filament-widgets::widget>
