@@ -140,17 +140,22 @@ class PendingTaskWidget extends Widget
             // Dua yang pertama paling menentukan: selama Goods Receipt belum
             // dikunci, HUTANGNYA TIDAK TERBENTUK. Barangnya sudah diterima,
             // pemasoknya menunggu, dan sistem tidak mencatat apa pun yang
-            // harus dibayar. Karena itu diletakkan di atas dan berwarna
-            // merah.
+            // harus dibayar.
+            //
+            // Kalimatnya tetap sependek baris lain, dan warna merah serta
+            // letaknya di paling atas yang membawa beratnya. Versi pertama
+            // menjelaskan akibatnya di dalam kalimat -- benar isinya, tetapi
+            // panjangnya sendiri yang membuat daftarnya tidak lagi seragam
+            // dan justru lebih sulit dibaca sekilas.
             [
                 $this->getUnlockedGrProductCount(),
-                ':count beef receipts have not been locked, so no payable exists for them yet.',
+                ':count beef receipts have not been locked yet.',
                 \App\Filament\Admin\Resources\GoodsReceiptProductResource::getUrl('index'),
                 'danger',
             ],
             [
                 $this->getUnlockedGrMaterialCount(),
-                ':count material receipts have not been locked, so no payable exists for them yet.',
+                ':count material receipts have not been locked yet.',
                 \App\Filament\Admin\Resources\GoodsReceiptMaterialResource::getUrl('index'),
                 'danger',
             ],
