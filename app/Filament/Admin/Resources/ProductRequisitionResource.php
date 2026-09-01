@@ -17,8 +17,6 @@ class ProductRequisitionResource extends Resource
     protected static ?string $model = ProductRequisition::class;
     protected static ?int $navigationSort = 11;
     protected static ?string $navigationIcon = 'heroicon-o-document-duplicate';
-    protected static ?string $navigationLabel = 'Beef Request';
-    protected static ?string $modelLabel = 'Beef Request';
 
     public static function parseNumber($value): float
     {

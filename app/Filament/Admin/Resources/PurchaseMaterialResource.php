@@ -13,12 +13,20 @@ use Filament\Support\RawJs;
 
 class PurchaseMaterialResource extends Resource
 {
+    public static function getModelLabel(): string
+    {
+        return __('PO Material');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('PO Material');
+    }
+
     protected static ?string $model = PurchaseMaterial::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
     protected static ?int $navigationSort = 11;
-    protected static ?string $navigationLabel = 'PO Material';
-    protected static ?string $modelLabel = 'PO Material';
 
     public static function canCreate(): bool
     {

@@ -12,13 +12,17 @@ use Filament\Tables;
 
 class SalesOrderDetailList extends Page implements HasTable
 {
+    public function getTitle(): string | \Illuminate\Contracts\Support\Htmlable
+    {
+        return __('Sales Order Items Detail');
+    }
+
     use InteractsWithTable;
 
     protected static string $resource = SalesOrderResource::class;
 
     protected static string $view = 'filament.admin.resources.sales-order.pages.detail-list';
 
-    protected static ?string $title = 'Sales Order Items Detail';
 
     public function table(Table $table): Table
     {

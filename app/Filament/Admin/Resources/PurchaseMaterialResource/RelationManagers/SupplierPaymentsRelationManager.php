@@ -14,6 +14,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class SupplierPaymentsRelationManager extends RelationManager
 {
+    protected static function getModelLabel(): ?string
+    {
+        return __('Payment');
+    }
+
     protected static string $relationship = 'supplierPayments';
 
     public static function getTitle(Model $ownerRecord, string $pageClass): string
@@ -21,7 +26,6 @@ class SupplierPaymentsRelationManager extends RelationManager
         return __('Payment History');
     }
 
-    protected static ?string $modelLabel = 'Pembayaran';
 
     public function form(Form $form): Form
     {

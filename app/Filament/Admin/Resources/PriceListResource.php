@@ -15,6 +15,21 @@ use Filament\Support\RawJs;
 
 class PriceListResource extends Resource
 {
+    public static function getPluralModelLabel(): string
+    {
+        return __('Price Lists');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('Price List');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Price List');
+    }
+
     protected static ?string $model = CustomerGroup::class;
 
     /**
@@ -60,9 +75,6 @@ class PriceListResource extends Resource
     }
 
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
-    protected static ?string $navigationLabel = 'Price List';
-    protected static ?string $pluralModelLabel = 'Price Lists';
-    protected static ?string $modelLabel = 'Price List';
 
     public static function form(Form $form): Form
     {

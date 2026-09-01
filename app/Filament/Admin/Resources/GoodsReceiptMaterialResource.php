@@ -18,12 +18,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class GoodsReceiptMaterialResource extends Resource
 {
+    public static function getModelLabel(): string
+    {
+        return __('Material Receipt');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Material Receipt');
+    }
+
     protected static ?string $model = GoodsReceiptMaterial::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-truck';
     protected static ?int $navigationSort = 15;
-    protected static ?string $navigationLabel = 'Material Receipt';
-    protected static ?string $modelLabel = 'Material Receipt';
 
     public static function form(Form $form): Form
     {

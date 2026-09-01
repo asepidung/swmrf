@@ -12,9 +12,17 @@ use Filament\Notifications\Notification;
 
 class MyProfile extends Page
 {
+    public function getTitle(): string | \Illuminate\Contracts\Support\Htmlable
+    {
+        return __('Edit Profile');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('My Profile');
+    }
+
     protected static ?string $navigationIcon = 'heroicon-o-user';
-    protected static ?string $navigationLabel = 'My Profile';
-    protected static ?string $title = 'Edit Profile';
     protected static ?string $slug = 'my-profile';
     protected static bool $shouldRegisterNavigation = false;
 

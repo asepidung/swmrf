@@ -14,13 +14,17 @@ use Illuminate\Database\Eloquent\Builder;
 
 class InvoiceDetailList extends Page implements HasTable
 {
+    public function getTitle(): string | \Illuminate\Contracts\Support\Htmlable
+    {
+        return __('Invoice Items Detail');
+    }
+
     use InteractsWithTable;
 
     protected static string $resource = InvoiceResource::class;
 
     protected static string $view = 'filament.admin.resources.invoice-resource.pages.detail-list';
 
-    protected static ?string $title = 'Invoice Items Detail';
 
     public function table(Table $table): Table
     {

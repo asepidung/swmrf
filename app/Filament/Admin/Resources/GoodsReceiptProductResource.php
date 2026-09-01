@@ -15,12 +15,20 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class GoodsReceiptProductResource extends Resource
 {
+    public static function getModelLabel(): string
+    {
+        return __('Beef Receipt');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Beef Receipt');
+    }
+
     protected static ?string $model = GoodsReceiptProduct::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-inbox-arrow-down';
     protected static ?int $navigationSort = 16;
-    protected static ?string $navigationLabel = 'Beef Receipt';
-    protected static ?string $modelLabel = 'Beef Receipt';
 
     public static function form(Form $form): Form
     {

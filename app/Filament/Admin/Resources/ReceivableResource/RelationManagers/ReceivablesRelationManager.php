@@ -13,9 +13,13 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ReceivablesRelationManager extends RelationManager
 {
+    public static function getTitle(\Illuminate\Database\Eloquent\Model $ownerRecord, string $pageClass): string
+    {
+        return __('Invoice Details (Receivables)');
+    }
+
     protected static string $relationship = 'receivables';
 
-    protected static ?string $title = 'Rincian Invoice (Piutang)';
 
     public function form(Form $form): Form
     {

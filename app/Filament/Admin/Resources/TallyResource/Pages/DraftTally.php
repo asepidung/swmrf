@@ -16,13 +16,17 @@ use Filament\Forms;
 
 class DraftTally extends Page implements HasTable
 {
+    public function getTitle(): string | \Illuminate\Contracts\Support\Htmlable
+    {
+        return __('Draft Tally');
+    }
+
     use InteractsWithTable;
 
     protected static string $resource = TallyResource::class;
 
     protected static string $view = 'filament.admin.resources.tally-resource.pages.draft-tally';
 
-    protected static ?string $title = 'Draft Tally';
 
     public function table(Table $table): Table
     {
