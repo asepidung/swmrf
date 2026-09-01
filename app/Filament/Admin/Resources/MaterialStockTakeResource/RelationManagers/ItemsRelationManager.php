@@ -12,9 +12,13 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ItemsRelationManager extends RelationManager
 {
+    public static function getTitle(\Illuminate\Database\Eloquent\Model $ownerRecord, string $pageClass): string
+    {
+        return __('Material Counts Detail');
+    }
+
     protected static string $relationship = 'items';
 
-    protected static ?string $title = 'Material Counts Detail';
 
     public function isReadOnly(): bool
     {

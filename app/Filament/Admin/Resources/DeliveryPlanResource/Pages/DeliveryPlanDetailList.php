@@ -13,13 +13,17 @@ use Illuminate\Database\Eloquent\Builder;
 
 class DeliveryPlanDetailList extends Page implements HasTable
 {
+    public function getTitle(): string | \Illuminate\Contracts\Support\Htmlable
+    {
+        return __('Plan Delivery Items Detail');
+    }
+
     use InteractsWithTable;
 
     protected static string $resource = DeliveryPlanResource::class;
 
     protected static string $view = 'filament.admin.resources.delivery-plan.pages.detail-list';
 
-    protected static ?string $title = 'Plan Delivery Items Detail';
 
     public function table(Table $table): Table
     {

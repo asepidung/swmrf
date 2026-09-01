@@ -13,13 +13,17 @@ use Illuminate\Database\Eloquent\Builder;
 
 class DeliveryOrderDetailList extends Page implements HasTable
 {
+    public function getTitle(): string | \Illuminate\Contracts\Support\Htmlable
+    {
+        return __('Delivery Order Items Detail');
+    }
+
     use InteractsWithTable;
 
     protected static string $resource = DeliveryOrderResource::class;
 
     protected static string $view = 'filament.admin.resources.delivery-order-resource.pages.detail-list';
 
-    protected static ?string $title = 'Delivery Order Items Detail';
 
     public function table(Table $table): Table
     {

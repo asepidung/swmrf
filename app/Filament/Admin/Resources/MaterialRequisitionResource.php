@@ -17,8 +17,6 @@ class MaterialRequisitionResource extends Resource
     protected static ?string $model = MaterialRequisition::class;
     protected static ?int $navigationSort = 11;
     protected static ?string $navigationIcon = 'heroicon-o-document-duplicate';
-    protected static ?string $navigationLabel = 'Material Request';
-    protected static ?string $modelLabel = 'Material Request';
 
     public static function parseNumber($value): float
     {

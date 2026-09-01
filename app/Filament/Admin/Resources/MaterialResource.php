@@ -15,6 +15,16 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class MaterialResource extends Resource
 {
+    public static function getModelLabel(): string
+    {
+        return __('Material Item');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Material Items');
+    }
+
     protected static ?string $model = Material::class;
 
     protected static ?string $cluster = \App\Filament\Clusters\Materials::class;
@@ -23,11 +33,9 @@ class MaterialResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-cube';
     
-    protected static ?string $navigationLabel = 'Material Items';
 
     protected static ?int $navigationSort = 1;
 
-    protected static ?string $modelLabel = 'Material Item';
 
     public static function form(Form $form): Form
     {

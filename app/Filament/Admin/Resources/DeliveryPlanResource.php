@@ -15,11 +15,14 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class DeliveryPlanResource extends Resource
 {
+    public static function getNavigationLabel(): string
+    {
+        return __('Plan Delivery');
+    }
+
     protected static ?string $model = DeliveryPlan::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-truck';
-    protected static ?string $navigationLabel = 'Plan Delivery';
-    protected static ?string $pluralModelLabel = 'Plan Deliveries';
 
     public static function getModelLabel(): string
     {

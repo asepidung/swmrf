@@ -22,11 +22,19 @@ use Illuminate\Support\Str;
 
 class SalesOrderResource extends Resource
 {
+    public static function getPluralModelLabel(): string
+    {
+        return __('Sales Orders');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Sales Order');
+    }
+
     protected static ?string $model = SalesOrder::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
-    protected static ?string $navigationLabel = 'Sales Order';
-    protected static ?string $pluralModelLabel = 'Sales Orders';
 
     public static function form(Form $form): Form
     {

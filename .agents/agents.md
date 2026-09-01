@@ -1162,27 +1162,25 @@ panel -- entah dengan mendaftarkan build Vite aplikasi, atau dengan memperluas
 `missing-color-utilities.blade.php` menjadi berkas utilitas umum. Sudah
 disepakati Owner sebagai pekerjaan tersendiri, bukan disisipkan sambil lalu.
 
-### Aturan penagihan berat: yang ditagih adalah yang LEBIH KECIL
+### Penagihan berat: invoice memakai berat DO Receipt APA ADANYA
 
-Aturan pelanggan, disampaikan Owner 1 September 2026:
+**Jangan memasang pembatas otomatis di invoice.** Pernah dipasang
+(`min(diterima, PO)`) dan langsung dicabut lagi atas koreksi Owner.
 
-| Berat diterima | Yang ditagih |
-|---|---|
-| kurang dari PO | berat diterima |
-| lebih dari PO | berat PO |
+Aturan pelanggan memang berbunyi: berat kurang ditagih sesuai yang diterima,
+berat lebih ditagih sesuai PO. Tetapi **penyesuaiannya dikerjakan MANUSIA di
+DO Receipt**, bukan oleh rumus di invoice.
 
-Jadi `min(berat_diterima, berat_po)`, ada di `InvoiceResource::billableWeight()`
-dan dipakai keempat tempat perhitungan.
+Alurnya: barang datang 52 kg untuk PO 50 kg, petugas menurunkan angkanya
+menjadi 50 di DO Receipt, dan selisih 2 kg tercatat sebagai Financial Loss
+lewat perbandingan berat kirim lawan berat terima yang sudah ada di halaman
+Approve.
 
-Sebelumnya invoice selalu memakai berat diterima apa adanya. Sisi kurangnya
-sudah benar dengan sendirinya, tetapi sisi lebihnya berarti **pelanggan
-ditagih untuk daging yang tidak ia pesan** -- tanpa satu pun error, karena
-angkanya memang berat yang betul-betul terkirim.
-
-Batas atasnya utuh karena satu Sales Order hanya melahirkan satu Delivery
-Order (SO punya satu Tally, Tally punya satu DO). Kalau suatu saat satu SO
-boleh dikirim beberapa kali, rumus ini **wajib ditinjau ulang** -- berat PO
-per produk tidak lagi menjadi batas untuk satu pengiriman.
+Membatasinya otomatis merusak dua hal sekaligus: penyesuaian yang seharusnya
+terlihat menjadi tersembunyi, dan kerugian 2 kg itu tidak pernah tercatat sama
+sekali. Kodenya yang sekarang terlihat "salah" bila hanya dibaca sepintas --
+karena itu alasannya ditulis di dalam `InvoiceResource` dan dikunci oleh
+`InvoiceBillableWeightTest`.
 
 ### HPP belum ada, karena itu susut kirim tercatat Rp 0
 

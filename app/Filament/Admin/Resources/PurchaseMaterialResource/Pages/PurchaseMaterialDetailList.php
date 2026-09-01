@@ -13,13 +13,17 @@ use Filament\Forms;
 
 class PurchaseMaterialDetailList extends Page implements HasTable
 {
+    public function getTitle(): string | \Illuminate\Contracts\Support\Htmlable
+    {
+        return __('PO Material Items Detail');
+    }
+
     use InteractsWithTable;
 
     protected static string $resource = PurchaseMaterialResource::class;
 
     protected static string $view = 'filament.admin.resources.purchase-material-resource.pages.detail-list';
 
-    protected static ?string $title = 'PO Material Items Detail';
 
     public function table(Table $table): Table
     {

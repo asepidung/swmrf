@@ -6,17 +6,21 @@ use App\Models\DeliveryOrder;
 use Tests\TestCase;
 
 /**
- * Yang ditagih adalah berat diterima ATAU berat PO, mana yang lebih kecil.
+ * Invoice menagih berat pada DO Receipt APA ADANYA.
  *
- * Aturan pelanggan, disampaikan Project Owner 1 September 2026:
+ * Keputusan bisnis Project Owner, 1 September 2026, dan sengaja dicatat di
+ * sini karena tampak "salah" bila hanya membaca kodenya.
  *
- *     berat diterima KURANG dari PO  -> tagihan mengikuti berat diterima
- *     berat diterima LEBIH dari PO   -> tagihan mengikuti PO
+ * Aturan pelanggan memang berbunyi: berat lebih ditagih sesuai PO. Tetapi
+ * penyesuaiannya dikerjakan MANUSIA di DO Receipt, bukan oleh rumus di
+ * invoice. Barang datang 52 kg untuk PO 50 kg, petugas menurunkan angkanya
+ * menjadi 50 di DO Receipt, dan selisih 2 kg tercatat sebagai Financial Loss
+ * lewat perbandingan berat kirim lawan berat terima yang sudah ada.
  *
- * Sebelumnya invoice selalu memakai berat diterima apa adanya. Sisi kurangnya
- * sudah benar dengan sendirinya, tetapi sisi lebihnya berarti pelanggan
- * ditagih untuk daging yang tidak ia pesan -- dan tidak ada error apa pun yang
- * memberitahu, karena angkanya memang berat yang betul-betul terkirim.
+ * Membatasinya otomatis di invoice -- `min(diterima, PO)` -- pernah dipasang
+ * dan langsung dicabut lagi, karena merusak dua hal sekaligus: penyesuaian
+ * yang seharusnya terlihat menjadi tersembunyi, dan kerugian 2 kg itu tidak
+ * pernah tercatat sama sekali. JANGAN dipasang lagi.
  */
 class InvoiceBillableWeightTest extends TestCase
 {
@@ -25,68 +29,57 @@ class InvoiceBillableWeightTest extends TestCase
         return file_get_contents(app_path('Filament/Admin/Resources/InvoiceResource.php'));
     }
 
-    /** Batasnya dihitung dengan satu rumus, dipakai keempat tempat. */
-    public function test_all_four_calculations_use_the_same_billable_weight(): void
+    /** Keempat perhitungan memakai berat resi tanpa pembanding apa pun. */
+    public function test_every_calculation_bills_the_receipt_weight_as_it_stands(): void
     {
         $source = $this->invoiceSource();
 
-        $this->assertStringContainsString('protected static function billableWeight(', $source);
-
         $this->assertSame(
             4,
-            substr_count($source, '$gross = static::billableWeight($item, $soItem) * $price;'),
-            'Keempat tempat perhitungan harus memakai berat yang sama.',
+            substr_count($source, '$gross = $item->weight * $price;'),
+            'Keempat tempat perhitungan harus memakai berat resi apa adanya.',
         );
-
-        // Tidak boleh ada lagi yang memakai berat diterima tanpa batas.
-        $this->assertStringNotContainsString('$gross = $item->weight * $price;', $source);
     }
 
     /**
-     * Rumusnya benar-benar mengambil yang lebih kecil.
+     * Pembatasan otomatis tidak boleh kembali.
      *
-     * Diuji melalui refleksi karena metodenya protected dan tidak butuh
-     * basis data sama sekali -- yang diperiksa memang aritmetikanya.
+     * Penyesuaian berat adalah keputusan manusia di DO Receipt, dan di situlah
+     * selisihnya menjadi Financial Loss. Rumus yang diam-diam memangkas
+     * angkanya menghapus keduanya.
      */
-    public function test_the_smaller_of_the_two_weights_is_billed(): void
+    public function test_no_automatic_cap_is_reintroduced(): void
     {
-        $method = new \ReflectionMethod(
-            \App\Filament\Admin\Resources\InvoiceResource::class,
-            'billableWeight',
+        $source = $this->invoiceSource();
+
+        $this->assertStringNotContainsString('billableWeight', $source);
+        $this->assertStringNotContainsString('min($received', $source);
+        $this->assertStringNotContainsString('$soItem->weight)', $source);
+    }
+
+    /** Alasannya ditinggal di kode, supaya tidak "diperbaiki" lagi. */
+    public function test_the_reason_is_written_down_where_it_matters(): void
+    {
+        $this->assertStringContainsString(
+            'penyesuaiannya dilakukan MANUSIA di',
+            $this->invoiceSource(),
         );
-        $method->setAccessible(true);
-
-        $receipt = fn (float $weight) => (object) ['weight' => $weight];
-        $so = fn (float $weight) => (object) ['weight' => $weight];
-
-        // Kurang dari PO: tagihan mengikuti yang diterima.
-        $this->assertSame(48.5, $method->invoke(null, $receipt(48.5), $so(50)));
-
-        // Lebih dari PO: tagihan mengikuti PO.
-        $this->assertSame(50.0, $method->invoke(null, $receipt(52.3), $so(50)));
-
-        // Pas: sama saja.
-        $this->assertSame(50.0, $method->invoke(null, $receipt(50), $so(50)));
     }
 
     /**
-     * Baris tanpa pasangan di Sales Order ditagih apa adanya.
+     * Selisih berat kirim lawan berat terima tetap menjadi Financial Loss.
      *
-     * Tidak ada angka PO untuk dibandingkan, dan menolak menagihnya justru
-     * menghilangkan barang yang benar-benar dikirim.
+     * Inilah yang menangkap penyesuaian 52 menjadi 50 tadi. Kalau bagian ini
+     * hilang, penurunan angkanya tidak meninggalkan jejak apa pun.
      */
-    public function test_an_item_without_a_sales_order_line_is_billed_as_delivered(): void
+    public function test_the_shipping_shrinkage_is_still_recorded(): void
     {
-        $method = new \ReflectionMethod(
-            \App\Filament\Admin\Resources\InvoiceResource::class,
-            'billableWeight',
-        );
-        $method->setAccessible(true);
+        $approve = file_get_contents(app_path(
+            'Filament/Admin/Resources/DeliveryOrderResource/Pages/ApproveDeliveryOrder.php'
+        ));
 
-        $this->assertSame(
-            12.75,
-            $method->invoke(null, (object) ['weight' => 12.75], null),
-        );
+        $this->assertStringContainsString('if ($receivedWeight < $shippedWeight)', $approve);
+        $this->assertStringContainsString('financialLoss()->updateOrCreate', $approve);
     }
 
     /**
@@ -98,7 +91,7 @@ class InvoiceBillableWeightTest extends TestCase
      * apa pun dan nomor resi menjadi SAMA PERSIS dengan nomor DO.
      *
      * Tidak ada yang menahannya: index unique pada `receipt_number` sudah
-     * dilepas 1 Juli 2026.
+     * dilepas pada migrasi 1 Juli 2026.
      */
     public function test_the_document_prefixes_have_one_home(): void
     {
@@ -111,9 +104,6 @@ class InvoiceBillableWeightTest extends TestCase
 
         $this->assertStringContainsString('DeliveryOrder::NUMBER_PREFIX', $approve);
         $this->assertStringContainsString('DeliveryOrder::RECEIPT_NUMBER_PREFIX', $approve);
-
-        // Awalannya tidak boleh diketik ulang sebagai teks di mana pun selain
-        // konstantanya sendiri.
         $this->assertStringNotContainsString("'SWM-DO#'", $approve);
         $this->assertStringNotContainsString("'SWM-REC#'", $approve);
 
@@ -126,14 +116,12 @@ class InvoiceBillableWeightTest extends TestCase
     /** Penggantian awalannya menghasilkan nomor resi yang benar. */
     public function test_the_receipt_number_mirrors_the_delivery_order_number(): void
     {
-        $doNumber = DeliveryOrder::NUMBER_PREFIX.'260001';
-
         $this->assertSame(
             'SWM-REC#260001',
             str_replace(
                 DeliveryOrder::NUMBER_PREFIX,
                 DeliveryOrder::RECEIPT_NUMBER_PREFIX,
-                $doNumber,
+                DeliveryOrder::NUMBER_PREFIX.'260001',
             ),
         );
     }
