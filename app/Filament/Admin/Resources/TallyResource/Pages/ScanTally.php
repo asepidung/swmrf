@@ -238,7 +238,7 @@ class ScanTally extends Page implements HasForms, HasTable
                                     ->default($record->pack_date?->format('Y-m-d') ?? now()->format('Y-m-d'))
                                     ->live(),
                                 Forms\Components\Checkbox::make('show_exp')
-                                    ->label(__('Show Expiry Date on Label'))
+                                    ->label(__('Show Expiry'))
                                     ->default(false),
                             ])
                             ->action(function (TallyItem $record, array $data, $livewire) {

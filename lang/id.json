@@ -373,7 +373,6 @@
     "Edit Header": "Edit Header",
     "Warehouse": "Gudang",
     "Pack Date": "Tanggal Pack",
-    "Show Expiry Date on Label": "Tampilkan Tanggal Kedaluwarsa di Label",
     "Weight/Pcs (e.g. 22.5/8)": "Berat/Pcs (mis. 22.5/8)",
     "PH (5.4 - 5.7)": "PH (5.4 - 5.7)",
     "Weight": "Berat",
@@ -878,7 +877,7 @@
     "pH cannot be higher than 5.7.": "pH tidak boleh lebih dari 5,7.",
     "Choose a warehouse first": "Pilih gudang lebih dulu",
     "The scanned goods need to be recorded somewhere.": "Barang yang dipindai harus tercatat di suatu gudang.",
-    "Show expiry": "Tampilkan exp",
     "Wait for the rest": "Tunggu sisanya",
-    "Close the PO": "Tutup PO"
+    "Close the PO": "Tutup PO",
+    "Show Expiry": "Tampilkan Exp"
 }

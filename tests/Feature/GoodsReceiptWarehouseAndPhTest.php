@@ -121,6 +121,26 @@ class GoodsReceiptWarehouseAndPhTest extends TestCase
     }
 
     /**
+     * Semua halaman pembuatan label memakai label centang yang sama.
+     *
+     * Dulu tiga halaman memakai dua kunci berbeda untuk maksud yang sama,
+     * sehingga menerjemahkan salah satunya meninggalkan yang lain.
+     */
+    public function test_every_label_page_uses_the_same_expiry_wording(): void
+    {
+        foreach ([
+            'Filament/Admin/Resources/GoodsReceiptProductResource/Pages/LabelingGoodsReceiptProduct.php',
+            'Filament/Admin/Resources/BoningResource/Pages/LabelingBoning.php',
+            'Filament/Admin/Resources/TallyResource/Pages/ScanTally.php',
+        ] as $file) {
+            $source = file_get_contents(app_path($file));
+
+            $this->assertStringContainsString("__('Show Expiry')", $source, basename($file));
+            $this->assertStringNotContainsString('Show Expiry Date on Label', $source, basename($file));
+        }
+    }
+
+    /**
      * Modal "barang kurang dari pesanan" tidak lagi mengundang penutupan.
      *
      * Tombol yang MENUTUP PO dulu berwarna hijau, sehingga terbaca sebagai

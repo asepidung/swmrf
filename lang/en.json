@@ -307,7 +307,6 @@
     "Warehouse": "Warehouse",
     "Grade": "Grade",
     "Pack Date": "Pack Date",
-    "Show Expiry Date on Label": "Show Expiry Date on Label",
     "Weight/Pcs (e.g. 22.5/8)": "Weight/Pcs (e.g. 22.5/8)",
     "PH (5.4 - 5.7)": "PH (5.4 - 5.7)",
     "Barcode": "Barcode",
@@ -878,7 +877,7 @@
     "pH cannot be higher than 5.7.": "pH cannot be higher than 5.7.",
     "Choose a warehouse first": "Choose a warehouse first",
     "The scanned goods need to be recorded somewhere.": "The scanned goods need to be recorded somewhere.",
-    "Show expiry": "Show expiry",
     "Wait for the rest": "Wait for the rest",
-    "Close the PO": "Close the PO"
+    "Close the PO": "Close the PO",
+    "Show Expiry": "Show Expiry"
 }
