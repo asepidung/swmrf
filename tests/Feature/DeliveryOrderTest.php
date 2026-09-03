@@ -307,8 +307,14 @@ class DeliveryOrderTest extends TestCase
             'weight' => 20.0,
         ]);
 
+        // Lewat HTTP dulu, karena di sanalah Filament menyerahkan MODEL dan
+        // bukan angka id. Livewire::test di bawah menyerahkan angka -- jalur
+        // yang tidak pernah dilalui peramban -- dan pernah menutupi 404 yang
+        // dialami setiap orang yang membuka halaman ini.
+        $this->get('/admin/delivery-orders/'.$do->id.'/approve')->assertSuccessful();
+
         Livewire::test(\App\Filament\Admin\Resources\DeliveryOrderResource\Pages\ApproveDeliveryOrder::class, [
-            'record' => $do->id,
+            'record' => $do,
         ])
             ->call('submit');
 
@@ -436,7 +442,7 @@ class DeliveryOrderTest extends TestCase
         ]);
 
         Livewire::test(\App\Filament\Admin\Resources\DeliveryOrderResource\Pages\ApproveDeliveryOrder::class, [
-            'record' => $do->id,
+            'record' => $do,
         ])
             ->callAction('rejections', data: [
                 'rejected_barcodes' => [$tallyItem->barcode],
