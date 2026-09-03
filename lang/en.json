@@ -924,5 +924,6 @@
     "Received by": "Received by",
     "Total Settled": "Total Settled",
     "Number": "Number",
-    "Printed on :date": "Printed on :date"
+    "Printed on :date": "Printed on :date",
+    "Total Outstanding": "Total Outstanding"
 }

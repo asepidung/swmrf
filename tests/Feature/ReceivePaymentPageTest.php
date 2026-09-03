@@ -105,6 +105,20 @@ class ReceivePaymentPageTest extends TestCase
     }
 
     /**
+     * Total piutang grupnya ikut ditampilkan.
+     *
+     * Tanpa angka ini yang mencatat mengetik nominal tanpa pembanding apa
+     * pun -- ia tahu sisa tiap invoice satu per satu, tetapi tidak tahu
+     * berapa seluruhnya.
+     */
+    public function test_the_page_shows_the_total_outstanding(): void
+    {
+        $this->get('/admin/receivables/'.$this->group->id.'/payment')
+            ->assertSuccessful()
+            ->assertSee('11.179.000');
+    }
+
+    /**
      * Halamannya terbuka lewat URL yang sungguhan.
      *
      * Sengaja lewat HTTP, bukan lewat Livewire::test, supaya jalurnya sama
