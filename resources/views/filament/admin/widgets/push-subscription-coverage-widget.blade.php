@@ -4,13 +4,15 @@
     $subscribed = $coverage['subscribed'];
     $total = $coverage['total'];
 
-    // Di bawah separuh, notifikasi praktis tidak sampai ke sebagian besar orang.
-    $tone = $percentage >= 80 ? 'success' : ($percentage >= 50 ? 'warning' : 'danger');
+    // Widget ini hanya tampil saat masih ada yang tertinggal, jadi tidak ada
+    // nada "success" di sini: selalu ada sisa yang perlu ditagih. Di bawah
+    // separuh, notifikasi praktis tidak sampai ke sebagian besar orang.
+    $tone = $percentage >= 50 ? 'warning' : 'danger';
 @endphp
 
 <x-filament-widgets::widget>
     <x-filament::section
-        :icon="$tone === 'success' ? 'heroicon-o-bell-alert' : 'heroicon-o-bell-slash'"
+        icon="heroicon-o-bell-slash"
         :icon-color="$tone"
         :heading="__('Device Notifications')"
     >
@@ -29,7 +31,7 @@
                     @elseif ($percentage < 50)
                         {{ __('Most users still miss every alert. Ask them to turn notifications on from the bell icon.') }}
                     @else
-                        {{ __('Active users who will receive task alerts on their device.') }}
+                        {{ __(':count of :total active users still miss every alert. Ask them to turn notifications on from the bell icon.', ['count' => $total - $subscribed, 'total' => $total]) }}
                     @endif
                 </p>
             </div>
@@ -45,7 +47,6 @@
             <div
                 @class([
                     'h-2 rounded-full',
-                    'bg-success-500' => $tone === 'success',
                     'bg-warning-500' => $tone === 'warning',
                     'bg-danger-500' => $tone === 'danger',
                 ])

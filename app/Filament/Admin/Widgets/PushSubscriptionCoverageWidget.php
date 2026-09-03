@@ -16,6 +16,12 @@ use Filament\Widgets\Widget;
  *
  * Angkanya ditampilkan sejak hari pertama supaya kegagalan itu terlihat,
  * bukan tersembunyi.
+ *
+ * MUNCUL HANYA SAAT BELUM SEMUANYA BERLANGGANAN. "3 / 3 (100%)" tidak
+ * menyuruh siapa pun melakukan apa pun, dan pengumuman yang tidak menuntut
+ * tindakan justru mengajari orang melewati baris itu -- termasuk pada hari
+ * angkanya turun. Yang dijaga tetap sama: kegagalannya terlihat. Yang berubah
+ * hanya keberhasilannya berhenti minta tempat.
  */
 class PushSubscriptionCoverageWidget extends Widget
 {
@@ -25,12 +31,24 @@ class PushSubscriptionCoverageWidget extends Widget
 
     protected static ?int $sort = -2;
 
-    /** Hanya ditampilkan kepada yang mengawasi sistem. */
+    /** Hanya kepada yang mengawasi sistem, dan hanya saat masih ada yang tertinggal. */
     public static function canView(): bool
     {
         $user = auth()->user();
 
-        return $user && ($user->isProgrammer() || $user->hasPermission('view_users'));
+        if (! $user || ! ($user->isProgrammer() || $user->hasPermission('view_users'))) {
+            return false;
+        }
+
+        $coverage = TaskNotifier::subscriptionCoverage();
+
+        // Tanpa satu pun pengguna aktif tidak ada yang bisa ditagih, jadi
+        // tidak ada yang perlu dikatakan.
+        if ($coverage['total'] === 0) {
+            return false;
+        }
+
+        return $coverage['subscribed'] < $coverage['total'];
     }
 
     /** @return array{subscribed: int, total: int} */

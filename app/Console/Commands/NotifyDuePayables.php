@@ -4,9 +4,9 @@ namespace App\Console\Commands;
 
 use App\Filament\Admin\Resources\PayableResource;
 use App\Models\Payable;
+use App\Support\ScheduledRun;
 use App\Support\TaskNotifier;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * Mengingatkan hutang yang mendekati atau melewati jatuh tempo.
@@ -34,8 +34,13 @@ class NotifyDuePayables extends Command
      * TIDAK menghasilkan gejala apa pun: tidak ada error, tidak ada notifikasi,
      * dan tidak ada yang menyadari bahwa peringatan jatuh tempo sudah lama
      * berhenti terkirim.
+     *
+     * Disimpan di basis data, BUKAN di cache. Deploy kami menjalankan
+     * `optimize:clear`, dan penanda yang tersimpan di cache ikut terhapus
+     * setiap rilis -- membuat Dashboard mengumumkan kerusakan yang tidak
+     * pernah terjadi. Lihat App\Support\ScheduledRun.
      */
-    public const LAST_RUN_CACHE_KEY = 'payables.due_reminder.last_run';
+    public const LAST_RUN_KEY = 'payables.due_reminder.last_run';
 
     protected $signature = 'payables:notify-due';
 
@@ -48,7 +53,7 @@ class NotifyDuePayables extends Command
         // Dicatat lebih dulu, apa pun hasilnya. Yang perlu diketahui Dashboard
         // adalah "pemeriksaannya berjalan", bukan "ada yang dikirim" -- hari
         // tanpa tagihan jatuh tempo memang tidak mengirim apa-apa.
-        Cache::forever(static::LAST_RUN_CACHE_KEY, now()->toIso8601String());
+        ScheduledRun::stamp(static::LAST_RUN_KEY);
 
         if ($summary['total'] === 0) {
             $this->info('Tidak ada hutang yang mendekati atau melewati jatuh tempo.');
