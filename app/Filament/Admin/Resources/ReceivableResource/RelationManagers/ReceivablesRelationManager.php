@@ -39,7 +39,7 @@ class ReceivablesRelationManager extends RelationManager
                     ->color('primary'),
 
                 Tables\Columns\TextColumn::make('customer.name')
-                    ->label(__('Customer (Cabang)'))
+                    ->label(__('Customer (Branch)'))
                     ->searchable()
                     ->sortable(),
 
@@ -95,7 +95,7 @@ class ReceivablesRelationManager extends RelationManager
                         $tukarfaktur = $record->customer->invoice_exchange ?? false;
                         $tgltf = $invoice->invoice_exchange_date;
                         if ($tukarfaktur && empty($tgltf) && $invoice->status === 'Belum TF') {
-                            return __('Belum Tukar Faktur');
+                            return __('Not Yet Exchanged');
                         }
 
                         $today = now()->startOfDay();

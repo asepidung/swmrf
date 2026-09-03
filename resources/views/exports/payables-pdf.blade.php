@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Payables Export</title>
+    <title>{{ __('Payables') }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -36,20 +36,28 @@
     </style>
 </head>
 <body>
-    <h2>{{ $title ?? 'Data Hutang Supplier' }}</h2>
+    <h2>{{ $title ?? __('Payables') }}</h2>
     <table>
         <thead>
             <tr>
-                <th style="width: 5%">No</th>
-                <th>Tanggal Timbul</th>
-                <th>No. Dokumen</th>
-                <th>Kategori</th>
-                <th>Supplier</th>
-                <th class="text-right">Total Hutang</th>
-                <th class="text-right">Telah Dibayar</th>
-                <th class="text-right">Sisa Hutang</th>
-                <th>Jatuh Tempo</th>
-                <th class="text-center">Status</th>
+                <th style="width: 5%">{{ __('No') }}</th>
+                <th>{{ __('Date') }}</th>
+                <th>{{ __('Document Number') }}</th>
+                <th>{{ __('Category') }}</th>
+                <th>{{ __('Supplier') }}</th>
+                <th class="text-right">{{ __('Total Amount') }}</th>
+                {{-- Kompensasi WAJIB ikut tercetak.
+
+                     Tanpa kolom ini ketiga angka di kertas tidak bisa
+                     dicocokkan: total dikurangi yang sudah dibayar tidak sama
+                     dengan sisanya, dan pembacanya tidak punya cara tahu
+                     kenapa. Ekspor ini tidak ikut diperbarui waktu kompensasi
+                     pemasok ditambahkan. --}}
+                <th class="text-right">{{ __('Compensation') }}</th>
+                <th class="text-right">{{ __('Paid') }}</th>
+                <th class="text-right">{{ __('Outstanding Balance') }}</th>
+                <th>{{ __('Due Date') }}</th>
+                <th class="text-center">{{ __('Status') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -61,6 +69,7 @@
                     <td>{{ \App\Models\Payable::sourceLabel($record->payableable_type) }}</td>
                     <td>{{ $record->supplier->name ?? '-' }}</td>
                     <td class="text-right">Rp {{ number_format($record->amount, 0, ',', '.') }}</td>
+                    <td class="text-right">Rp {{ number_format($record->compensation, 0, ',', '.') }}</td>
                     <td class="text-right">Rp {{ number_format($record->paid_amount, 0, ',', '.') }}</td>
                     <td class="text-right">Rp {{ number_format($record->balance, 0, ',', '.') }}</td>
                     <td>{{ $record->due_date ? \Carbon\Carbon::parse($record->due_date)->format('d/m/Y') : '-' }}</td>
