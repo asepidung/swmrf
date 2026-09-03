@@ -14,6 +14,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Form;
+use Filament\Support\RawJs;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
 use Illuminate\Support\Facades\DB;
@@ -84,16 +85,43 @@ class ReceivePayment extends Page
         ]);
     }
 
+    /**
+     * Satu field uang, diformat sama di seluruh halaman ini.
+     *
+     * Halaman ini mengetik angka belasan juta, dan sampai 4 September 2026
+     * setiap fieldnya masih `->numeric()` polos: bertombol panah, tanpa satu
+     * pun pemisah ribuan. Alokasi 11.179.000 harus diketik tanpa penuntun,
+     * lalu dicocokkan dengan mata melawan angka bertitik di labelnya.
+     *
+     * `mutateStateForValidation` di Filament ikut membuang titiknya, jadi
+     * aturan seperti `maxValue()` tetap membandingkan angka -- bukan teks
+     * bertitik.
+     */
+    private function money(string $name): TextInput
+    {
+        return TextInput::make($name)
+            ->prefix('Rp')
+            ->formatStateUsing(fn ($state): ?string => $state === null || $state === ''
+                ? null
+                : number_format((float) $state, 0, ',', '.'))
+            ->mask(RawJs::make('$money($input, ',', '.', 0)'))
+            ->stripCharacters('.')
+            ->extraInputAttributes([
+                'class' => 'text-right',
+                'inputmode' => 'numeric',
+                'x-on:focus' => '$el.select()',
+            ]);
+    }
+
     public function form(Form $form): Form
     {
         $invoiceFields = [];
         foreach ($this->getOutstandingInvoices() as $inv) {
             $balanceStr = number_format($inv->balance, 0, ',', '.');
-            $invoiceFields[] = TextInput::make("allocations.{$inv->id}")
+            $invoiceFields[] = $this->money("allocations.{$inv->id}")
                 ->label($inv->invoice_number.' | '.__('Outstanding').': Rp '.$balanceStr)
-                ->numeric()
-                ->prefix('Rp')
                 ->default(0)
+                ->rules(['numeric', 'gte:0'])
                 ->maxValue($inv->balance);
         }
 
@@ -110,12 +138,11 @@ class ReceivePayment extends Page
                         DatePicker::make('payment_date')
                             ->label(__('Payment Date'))
                             ->required(),
-                        TextInput::make('amount')
+                        $this->money('amount')
                             ->label(__('Amount Received in Bank'))
-                            ->numeric()
-                            ->prefix('Rp')
                             ->required()
-                            ->minValue(0),
+                            ->default(0)
+                            ->rules(['numeric', 'gte:0']),
                         TextInput::make('reference_number')
                             ->label(__('Transfer Reference'))
                             ->maxLength(255),
@@ -135,11 +162,11 @@ class ReceivePayment extends Page
                                     ->required()
                                     ->maxLength(255)
                                     ->columnSpan(2),
-                                TextInput::make('amount')
+                                $this->money('amount')
+                                    ->hiddenLabel()
                                     ->placeholder(__('Amount (Rp)'))
-                                    ->numeric()
                                     ->required()
-                                    ->minValue(1)
+                                    ->rules(['numeric', 'gt:0'])
                                     ->columnSpan(1),
                             ])
                             ->columns(3)
@@ -149,7 +176,25 @@ class ReceivePayment extends Page
 
                 Section::make(__('Allocation to Invoices'))
                     ->description(__('Split the amount received plus its deductions across the invoices below.'))
-                    ->schema(count($invoiceFields) > 0 ? $invoiceFields : [
+                    // Total piutang grup ini ditampilkan lebih dulu.
+                    //
+                    // Tanpa angka ini, yang mencatat mengetik nominal tanpa
+                    // pembanding apa pun: ia tahu sisa tiap invoice satu per
+                    // satu, tetapi tidak tahu berapa seluruhnya. Padahal
+                    // pertanyaan pertama saat uang masuk justru "ini melunasi
+                    // semuanya atau sebagian?".
+                    ->schema(count($invoiceFields) > 0 ? array_merge([
+                        \Filament\Forms\Components\Placeholder::make('total_outstanding')
+                            ->label(__('Total Outstanding'))
+                            ->content(fn (): string => 'Rp '.number_format(
+                                $this->getOutstandingInvoices()->sum('balance'),
+                                0,
+                                ',',
+                                '.',
+                            ))
+                            ->extraAttributes(['class' => 'text-lg font-bold'])
+                            ->columnSpanFull(),
+                    ], $invoiceFields) : [
                         \Filament\Forms\Components\Placeholder::make('no_invoice')
                             ->label('')
                             ->content(__('This group has no invoice waiting to be paid.')),
