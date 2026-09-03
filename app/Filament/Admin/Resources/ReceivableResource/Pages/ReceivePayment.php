@@ -104,7 +104,7 @@ class ReceivePayment extends Page
             ->formatStateUsing(fn ($state): ?string => $state === null || $state === ''
                 ? null
                 : number_format((float) $state, 0, ',', '.'))
-            ->mask(RawJs::make('$money($input, ',', '.', 0)'))
+            ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
             ->stripCharacters('.')
             ->extraInputAttributes([
                 'class' => 'text-right',
