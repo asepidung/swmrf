@@ -44,9 +44,23 @@ php artisan optimize:clear && php artisan config:cache && php artisan route:cach
 
 Migrasi tetap ikut jalan di langkah itu, jadi tulis migrasi yang aman. Workflow GitHub Actions dipertahankan tapi hanya bisa dipicu manual dari tab Actions.
 
-**DEPLOY BELUM SELESAI SEBELUM LOKAL OWNER IKUT DIMIGRASI.** Setiap kali sebuah
-PR yang membawa migrasi di-merge, sebutkan kepada Owner bahwa ia perlu
-menjalankan `php artisan migrate` di lokalnya juga.
+**DEPLOY BELUM SELESAI SEBELUM LOKAL IKUT DIMIGRASI, DAN ITU PEKERJAAN KITA --
+BUKAN PEKERJAAN OWNER.** Keputusan Owner, 4 September 2026: "pokoknya saya
+terima beres". Kedua lingkungan diserahkan sepenuhnya; keduanya percobaan.
+
+Jadi setiap kali sebuah PR di-merge, KEDUA sisi diselesaikan sendiri:
+
+```
+# lokal (direktori kerja ini sendiri)
+git checkout main && git pull origin main
+php artisan migrate            # bila PR-nya membawa migrasi
+
+# hosting
+tunggu klon otomatis sampai, lalu migrate --force + hangatkan cache
+```
+
+Lalu laporkan keduanya sudah sama -- commit yang sama, migrasi yang sama.
+Jangan menyuruh Owner menjalankan apa pun.
 
 Ini bukan formalitas. **3 September 2026** lokal Owner tertinggal empat migrasi
 sekaligus karena tidak pernah sekali pun disebut, dan baru ketahuan saat ia
