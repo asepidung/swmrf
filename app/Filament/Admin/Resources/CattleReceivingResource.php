@@ -97,7 +97,7 @@ class CattleReceivingResource extends Resource
                                 Forms\Components\Placeholder::make('col_initial_weight')->label(__('Weight')),
                                 Forms\Components\Placeholder::make('col_notes')->label(__('Notes')),
                             ])
-                            ->extraAttributes(['class' => 'hidden md:grid']),
+                            ->extraAttributes(['class' => 'swm-wide-only']),
 
                         Forms\Components\Repeater::make('items')
                             ->relationship('items')

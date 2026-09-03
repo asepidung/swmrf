@@ -42,43 +42,43 @@ class PurchaseMaterialResource extends Resource
                         Forms\Components\TextInput::make('po_number')
                             ->label('PO Number')
                             ->disabled()
-                            ->columnSpan(['default' => 12, 'md' => 4]),
+                            ->columnSpan(['default' => 'full', 'lg' => 4]),
 
                         Forms\Components\DatePicker::make('po_date')
                             ->label('PO Date')
                             ->disabled()
-                            ->columnSpan(['default' => 12, 'md' => 4]),
+                            ->columnSpan(['default' => 'full', 'lg' => 4]),
 
                         Forms\Components\TextInput::make('request_number')
                             ->label('Request Number')
                             ->disabled()
                             ->dehydrated(false)
                             ->formatStateUsing(fn ($record) => data_get($record, 'materialRequisition.document_number'))
-                            ->columnSpan(['default' => 12, 'md' => 4]),
+                            ->columnSpan(['default' => 'full', 'lg' => 4]),
 
                         Forms\Components\TextInput::make('requester_name')
                             ->label('Requester')
                             ->disabled()
                             ->dehydrated(false)
                             ->formatStateUsing(fn ($record) => data_get($record, 'materialRequisition.user.name'))
-                            ->columnSpan(['default' => 12, 'md' => 4]),
+                            ->columnSpan(['default' => 'full', 'lg' => 4]),
 
                         Forms\Components\Select::make('supplier_id')
                             ->label('Supplier')
                             ->relationship('supplier', 'name')
                             ->disabled()
-                            ->columnSpan(['default' => 12, 'md' => 4]),
+                            ->columnSpan(['default' => 'full', 'lg' => 4]),
 
                         Forms\Components\Select::make('approved_by')
                             ->label('Approved By')
                             ->relationship('approvedBy', 'name')
                             ->disabled()
-                            ->columnSpan(['default' => 12, 'md' => 4]),
+                            ->columnSpan(['default' => 'full', 'lg' => 4]),
 
                         Forms\Components\Textarea::make('note')
                             ->label('Note')
                             ->disabled()
-                            ->columnSpan(12),
+                            ->columnSpan(['default' => 'full', 'lg' => 12]),
                     ])->columns(12),
 
                 Forms\Components\Section::make('Item Details')
@@ -88,18 +88,18 @@ class PurchaseMaterialResource extends Resource
                             ->schema([
                                 Forms\Components\Placeholder::make('col_material')
                                     ->label(__('Material'))
-                                    ->columnSpan(['default' => 12, 'md' => 4]),
+                                    ->columnSpan(['default' => 'full', 'lg' => 4]),
                                 Forms\Components\Placeholder::make('col_qty')
                                     ->label(__('Qty'))
-                                    ->columnSpan(['default' => 6, 'md' => 2]),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
                                 Forms\Components\Placeholder::make('col_price')
                                     ->label(__('Price'))
-                                    ->columnSpan(['default' => 6, 'md' => 3]),
+                                    ->columnSpan(['default' => 'full', 'lg' => 3]),
                                 Forms\Components\Placeholder::make('col_subtotal')
                                     ->label(__('Subtotal'))
-                                    ->columnSpan(['default' => 12, 'md' => 3]),
+                                    ->columnSpan(['default' => 'full', 'lg' => 3]),
                             ])
-                            ->extraAttributes(['class' => 'hidden md:grid']),
+                            ->extraAttributes(['class' => 'swm-wide-only']),
 
                         Forms\Components\Repeater::make('items')
                             ->relationship()
@@ -111,14 +111,14 @@ class PurchaseMaterialResource extends Resource
                                     ->relationship('material', 'name')
                                     ->disabled()
                                     ->hiddenLabel()
-                                    ->columnSpan(['default' => 12, 'md' => 4]),
+                                    ->columnSpan(['default' => 'full', 'lg' => 4]),
 
                                 Forms\Components\TextInput::make('qty')
                                     ->disabled()
                                     ->hiddenLabel()
                                     ->extraInputAttributes(['class' => 'text-right'])
                                     ->formatStateUsing(fn($state) => number_format($state ?? 0, 2, ',', '.'))
-                                    ->columnSpan(['default' => 6, 'md' => 2]),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
 
                                 Forms\Components\TextInput::make('price')
                                     ->hiddenLabel()
@@ -126,7 +126,7 @@ class PurchaseMaterialResource extends Resource
                                     ->disabled()
                                     ->extraInputAttributes(['class' => 'text-right'])
                                     ->formatStateUsing(fn($state) => number_format($state ?? 0, 0, ',', '.'))
-                                    ->columnSpan(['default' => 6, 'md' => 3]),
+                                    ->columnSpan(['default' => 'full', 'lg' => 3]),
 
                                 Forms\Components\TextInput::make('subtotal')
                                     ->hiddenLabel()
@@ -134,7 +134,7 @@ class PurchaseMaterialResource extends Resource
                                     ->disabled()
                                     ->extraInputAttributes(['class' => 'text-right'])
                                     ->formatStateUsing(fn($state) => number_format($state ?? 0, 0, ',', '.'))
-                                    ->columnSpan(['default' => 12, 'md' => 3]),
+                                    ->columnSpan(['default' => 'full', 'lg' => 3]),
                             ])
                             ->columns(12),
                     ]),
@@ -168,7 +168,7 @@ class PurchaseMaterialResource extends Resource
                                     })
                                     ->extraAttributes(['class' => 'font-bold text-lg text-primary-600']),
                             ])
-                            ->columnSpan(12),
+                            ->columnSpan(['default' => 'full', 'lg' => 12]),
                     ])->columns(12),
             ]);
     }

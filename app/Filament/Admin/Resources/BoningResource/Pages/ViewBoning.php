@@ -103,12 +103,12 @@ class ViewBoning extends ViewRecord
                             ->state(fn ($record) => $record->carcasses->map(fn($c) => $c->carcass->carcass_number ?? '-')->toArray())
                             ->badge()
                             ->color('success')
-                            ->columnSpan(2),
+                            ->columnSpan(['default' => 'full', 'lg' => 2]),
                             
                         Infolists\Components\TextEntry::make('note')
                             ->label(__('Note'))
                             ->default('-')
-                            ->columnSpan(2),
+                            ->columnSpan(['default' => 'full', 'lg' => 2]),
                     ])->columns(4),
 
                 Infolists\Components\Section::make(__('Production Summary'))

@@ -124,7 +124,7 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
                                 Forms\Components\Placeholder::make('col_po_qty')->label(__('Qty PO')),
                                 Forms\Components\Placeholder::make('col_qty_received')->label(__('Qty Received')),
                             ])
-                            ->extraAttributes(['class' => 'hidden md:grid']),
+                            ->extraAttributes(['class' => 'swm-wide-only']),
 
                         Forms\Components\Repeater::make('items')
                             ->hiddenLabel()

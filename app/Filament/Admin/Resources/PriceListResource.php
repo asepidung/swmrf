@@ -98,15 +98,15 @@ class PriceListResource extends Resource
                             ->schema([
                                 Forms\Components\Placeholder::make('col_product')
                                     ->label(__('Product'))
-                                    ->columnSpan(4),
+                                    ->columnSpan(['default' => 'full', 'lg' => 4]),
                                 Forms\Components\Placeholder::make('col_price')
                                     ->label(__('Price'))
-                                    ->columnSpan(4),
+                                    ->columnSpan(['default' => 'full', 'lg' => 4]),
                                 Forms\Components\Placeholder::make('col_note')
                                     ->label(__('Note (Optional)'))
-                                    ->columnSpan(4),
+                                    ->columnSpan(['default' => 'full', 'lg' => 4]),
                             ])
-                            ->extraAttributes(['class' => 'hidden md:grid']),
+                            ->extraAttributes(['class' => 'swm-wide-only']),
 
                         Forms\Components\Repeater::make('items')
                             ->relationship('items')
@@ -124,7 +124,7 @@ class PriceListResource extends Resource
                                     ->extraAttributes([
                                         'class' => 'product-select-column',
                                     ])
-                                    ->columnSpan(4),
+                                    ->columnSpan(['default' => 'full', 'lg' => 4]),
 
                                 // Harga di sini menentukan harga SATU GRUP
                                 // PELANGGAN sekaligus, jadi tergeser sedikit
@@ -166,7 +166,7 @@ class PriceListResource extends Resource
                                             }
                                         "
                                     ])
-                                    ->columnSpan(4),
+                                    ->columnSpan(['default' => 'full', 'lg' => 4]),
 
                                 Forms\Components\TextInput::make('note')
                                     ->label('')
@@ -186,7 +186,7 @@ class PriceListResource extends Resource
                                             }
                                         "
                                     ])
-                                    ->columnSpan(4),
+                                    ->columnSpan(['default' => 'full', 'lg' => 4]),
                             ])
                             ->columns(12)
                             ->addActionLabel(__('Add Product'))

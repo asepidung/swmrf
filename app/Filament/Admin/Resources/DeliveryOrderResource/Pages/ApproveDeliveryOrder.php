@@ -77,14 +77,14 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                                     ->options(\App\Models\Product::pluck('name', 'id'))
                                     ->disabled()
                                     ->dehydrated(true)
-                                    ->columnSpan(4),
+                                    ->columnSpan(['default' => 'full', 'lg' => 4]),
 
                                 Forms\Components\TextInput::make('shipped_weight')
                                     ->label(__('Shipped Weight'))
                                     ->disabled()
                                     ->numeric()
                                     ->extraInputAttributes(['class' => 'text-right'])
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
 
                                 // Satu-satunya isian yang benar-benar diketik
                                 // di halaman ini, dan angkanya menentukan
@@ -107,7 +107,7 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                                         'numeric' => __('Received weight must be a number.'),
                                         'min' => __('Received weight cannot be negative.'),
                                     ])
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
 
                                 // Satu produk = satu baris. Sebelumnya Notes
                                 // memakai dua belas kolom sehingga selalu
@@ -115,7 +115,7 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                                 // memakan dua baris layar.
                                 Forms\Components\TextInput::make('notes')
                                     ->label(__('Notes'))
-                                    ->columnSpan(4),
+                                    ->columnSpan(['default' => 'full', 'lg' => 4]),
                             ])
                             ->columns(12)
                             ->disableItemCreation()
