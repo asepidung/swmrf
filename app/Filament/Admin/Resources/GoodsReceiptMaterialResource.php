@@ -75,7 +75,7 @@ class GoodsReceiptMaterialResource extends Resource
                                 Forms\Components\Placeholder::make('col_qty_received')->label(__('Qty Received')),
                                 Forms\Components\Placeholder::make('col_subtotal')->label(__('Subtotal')),
                             ])
-                            ->extraAttributes(['class' => 'hidden md:grid']),
+                            ->extraAttributes(['class' => 'swm-wide-only']),
 
                         Forms\Components\Repeater::make('items')
                             ->relationship()

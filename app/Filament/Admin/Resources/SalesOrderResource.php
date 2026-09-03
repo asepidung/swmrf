@@ -92,7 +92,7 @@ class SalesOrderResource extends Resource
                         Forms\Components\Textarea::make('shipping_address')
                             ->label(__('Shipping Address'))
                             ->rows(2)
-                            ->columnSpan(2)
+                            ->columnSpan(['default' => 'full', 'lg' => 2])
                             ->disabled(fn (?SalesOrder $record) => $record?->status === 'processing')
                             ->dehydrated(),
 
@@ -128,7 +128,7 @@ class SalesOrderResource extends Resource
                             ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                             ->stripCharacters('.')
                             ->extraInputAttributes(['onfocus' => 'this.select()', 'class' => 'text-right'])
-                            ->columnSpan(3),
+                            ->columnSpan(['default' => 'full', 'lg' => 3]),
 
                         Forms\Components\Hidden::make('created_by')
                             ->default(fn() => auth()->id()),
@@ -261,12 +261,13 @@ class SalesOrderResource extends Resource
                         // Clean Repeater Header UI
                         Forms\Components\Grid::make(12)
                             ->schema([
-                                Forms\Components\Placeholder::make('col_produk')->label(__('Product'))->columnSpan(3),
-                                Forms\Components\Placeholder::make('col_berat')->label(__('Weight/Qty'))->columnSpan(2),
-                                Forms\Components\Placeholder::make('col_harga')->label(__('Price'))->columnSpan(2),
-                                Forms\Components\Placeholder::make('col_diskon')->label(__('Discount (%)'))->columnSpan(2),
-                                Forms\Components\Placeholder::make('col_note')->label(__('Note'))->columnSpan(3),
-                            ]),
+                                Forms\Components\Placeholder::make('col_produk')->label(__('Product'))->columnSpan(['default' => 'full', 'lg' => 3]),
+                                Forms\Components\Placeholder::make('col_berat')->label(__('Weight/Qty'))->columnSpan(['default' => 'full', 'lg' => 2]),
+                                Forms\Components\Placeholder::make('col_harga')->label(__('Price'))->columnSpan(['default' => 'full', 'lg' => 2]),
+                                Forms\Components\Placeholder::make('col_diskon')->label(__('Discount (%)'))->columnSpan(['default' => 'full', 'lg' => 2]),
+                                Forms\Components\Placeholder::make('col_note')->label(__('Note'))->columnSpan(['default' => 'full', 'lg' => 3]),
+                            ])
+                            ->extraAttributes(['class' => 'swm-wide-only']),
 
                         Forms\Components\Repeater::make('items')
                             ->hiddenLabel()
@@ -292,7 +293,7 @@ class SalesOrderResource extends Resource
                                     ->extraAttributes([
                                         'class' => 'so-product-select-column',
                                     ])
-                                    ->columnSpan(3),
+                                    ->columnSpan(['default' => 'full', 'lg' => 3]),
 
                                 Forms\Components\TextInput::make('weight')
                                     ->hiddenLabel()
@@ -304,7 +305,7 @@ class SalesOrderResource extends Resource
                                         'onclick' => 'this.select()',
                                         'inputmode' => 'numeric',
                                     ])
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
 
                                 Forms\Components\TextInput::make('price')
                                     ->hiddenLabel()
@@ -316,7 +317,7 @@ class SalesOrderResource extends Resource
                                         'onclick' => 'this.select()',
                                         'inputmode' => 'numeric',
                                     ])
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
 
                                 // Diskon ini PERSEN, dan angkanya dipakai langsung
                                 // oleh Invoice sebagai gross * (discount / 100).
@@ -348,7 +349,7 @@ class SalesOrderResource extends Resource
                                         'onclick' => 'this.select()',
                                         'inputmode' => 'numeric',
                                     ])
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
 
                                 Forms\Components\TextInput::make('note')
                                     ->hiddenLabel()
@@ -357,7 +358,7 @@ class SalesOrderResource extends Resource
                                     ->extraInputAttributes([
                                         'class' => 'so-note-input-column',
                                     ])
-                                    ->columnSpan(3),
+                                    ->columnSpan(['default' => 'full', 'lg' => 3]),
                             ]),
                     ])
                     ->disabled(fn (?SalesOrder $record) => in_array($record?->status, ['cancelled', 'canceled', 'ready']))

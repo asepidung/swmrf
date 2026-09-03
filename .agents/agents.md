@@ -1336,15 +1336,35 @@ Baris judul kolom palsu di atas repeater hanya masuk akal saat kolomnya
 berjajar. Kelas `.swm-wide-only` di `missing-color-utilities.blade.php`
 menyembunyikannya di bawah 1024px, ambang yang sama dengan lg milik Filament.
 
-**MASIH TERBUKA: dua belas Resource lain punya ketimpangan yang sama.**
-Carcass, DO Receipt, Delivery Order, Delivery Plan, GR Beef, Material
-Requisition, Price List, Product Requisition, PO Material, PO Beef, Repack,
-dan Sales Order -- semuanya memakai `columns(int)` berdampingan dengan
-`columnSpan(int)` telanjang. Sales Order yang terparah dengan 13 rentang.
-Belum dikerjakan karena mengubah tata letak modul yang belum disisir tanpa
-melihat hasilnya di layar sungguhan justru cara yang bagus untuk merusak
-diam-diam. Kerjakan saat modulnya tiba gilirannya, atau sebagai satu sapuan
-tersendiri bila Owner meminta.
+**SUDAH DISAPU KE SELURUH MODUL YANG SUDAH DISISIR, 3 September 2026.**
+Sembilan belas berkas dirapikan sekaligus. Rentangnya kini disebut per
+breakpoint di mana pun, dan `ResponsiveColumnSpanTest` menolak `columnSpan(N)`
+telanjang dengan N dua atau lebih.
+
+Menyapunya memunculkan **kerusakan kedua yang lebih diam lagi**. Sepuluh berkas
+menyembunyikan baris judul repeaternya dengan:
+
+```php
+->extraAttributes(['class' => 'hidden md:grid'])
+```
+
+`md:grid` termasuk kelas yang **tidak ada CSS-nya** di panel ini -- lihat
+bagian "Panel admin TIDAK memuat CSS hasil build aplikasi". Yang benar-benar
+berlaku hanya `hidden`, dan tidak ada apa pun yang membatalkannya di layar
+lebar. Artinya baris judul itu **tidak pernah tampil di ukuran layar mana
+pun**, termasuk di layar lebar tempat ia justru dibutuhkan, sejak hari ia
+ditulis. Semuanya kini memakai `.swm-wide-only`, yang punya CSS-nya sendiri
+dan dijaga oleh test yang sama.
+
+**Halaman pemindai sengaja DILUAR sapuan ini.** Scan Tally, Scan GR Product,
+Scan Mutation, dan Found Item Scanner memang menyembunyikan sidebar dan
+dirancang untuk layar lebar dengan alat pemindai di tangan, bukan untuk HP.
+Keputusan Owner: pastikan nyaman di layar lebar, layar kecil ditangani nanti
+kalau memang perlu.
+
+**Modul yang belum disisir diperbaiki sambil jalan**, bukan disapu di muka --
+juga keputusan Owner. Satu yang ikut terbawa sapuan ini karena polanya sama
+persis: halaman Receive Payment di modul Receivable.
 
 ### Invoice: satu rumus, arti kolom yang dikunci, dan penghapusan yang membereskan jejaknya
 

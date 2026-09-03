@@ -112,7 +112,7 @@ class ReceivePayment extends Page
                                     ->placeholder(__('Keterangan Potongan'))
                                     ->required()
                                     ->maxLength(255)
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
                                 TextInput::make('amount')
                                     ->placeholder(__('Nominal (Rp)'))
                                     ->numeric()
