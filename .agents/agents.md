@@ -44,6 +44,27 @@ php artisan optimize:clear && php artisan config:cache && php artisan route:cach
 
 Migrasi tetap ikut jalan di langkah itu, jadi tulis migrasi yang aman. Workflow GitHub Actions dipertahankan tapi hanya bisa dipicu manual dari tab Actions.
 
+**DEPLOY BELUM SELESAI SEBELUM LOKAL OWNER IKUT DIMIGRASI.** Setiap kali sebuah
+PR yang membawa migrasi di-merge, sebutkan kepada Owner bahwa ia perlu
+menjalankan `php artisan migrate` di lokalnya juga.
+
+Ini bukan formalitas. **3 September 2026** lokal Owner tertinggal empat migrasi
+sekaligus karena tidak pernah sekali pun disebut, dan baru ketahuan saat ia
+membukanya: dashboard langsung Internal Server Error karena
+`scheduled_run_marks` belum ada.
+
+Akibatnya jauh lebih besar daripada satu halaman error. **Produksi berjalan
+dengan `APP_DEBUG=false`, jadi satu-satunya tempat Owner bisa melihat pesan
+kesalahan yang utuh adalah lokalnya.** Membiarkan lokal itu basi berarti
+mencabut satu-satunya alat diagnosis yang ia punya, tepat pada saat ia paling
+membutuhkannya.
+
+**404 TIDAK PERNAH MASUK LOG.** `NotFoundHttpException` dan
+`ModelNotFoundException` ada di daftar `dontReport` bawaan Laravel, jadi
+halaman yang menjawab 404 di produksi tidak meninggalkan jejak apa pun di Log
+Viewer. Jangan menyimpulkan "tidak ada error di log, berarti tidak ada
+masalah" -- untuk 404, log memang selalu kosong.
+
 `migrate:fresh` **tidak pernah** dijalankan otomatis, dan memang dilarang.
 
 ---
