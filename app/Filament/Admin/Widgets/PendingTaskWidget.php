@@ -160,6 +160,18 @@ class PendingTaskWidget extends Widget
                 'danger',
             ],
 
+            // Bukti terima yang sudah masuk tetapi belum ditagihkan. Selama
+            // belum, uangnya tidak pernah diminta -- barangnya sudah sampai,
+            // pelanggannya sudah menandatangani, dan tidak ada tagihan yang
+            // berjalan. Bentuk kelalaian yang sama dengan GR yang belum
+            // dikunci, hanya di sisi sebaliknya.
+            [
+                $this->getDraftInvoiceCount(),
+                ':count delivery receipts have not been invoiced yet.',
+                \App\Filament\Admin\Resources\InvoiceResource::getUrl('draft'),
+                'warning',
+            ],
+
             [
                 $this->getPendingReceivingCount(),
                 ':count cattle purchases have not been received yet.',
@@ -285,6 +297,23 @@ class PendingTaskWidget extends Widget
         }
 
         return \App\Models\GoodsReceiptProduct::where('is_locked', false)->count();
+    }
+
+    /**
+     * Bukti terima pengiriman yang belum dibuatkan invoice.
+     *
+     * Mengikuti daftar Draft Invoice apa adanya, supaya angka di dashboard dan
+     * isi halamannya tidak pernah berbeda.
+     */
+    public function getDraftInvoiceCount(): int
+    {
+        if (! $this->may('create_invoices')) {
+            return 0;
+        }
+
+        return \App\Models\DeliveryOrderReceipt::query()
+            ->whereDoesntHave('invoice')
+            ->count();
     }
 
     /** Goods Receipt material yang belum dikunci; akibatnya sama. */

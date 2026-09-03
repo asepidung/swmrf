@@ -8,14 +8,16 @@ use Tests\TestCase;
 /**
  * Penghitungan total di form Invoice.
  *
- * `updateTotals()` membuang titik dari harga sebelum membacanya sebagai
- * angka. Itu benar HANYA kalau titiknya memang pemisah ribuan yang dipasang
- * JavaScript form. Di Invoice tidak ada mask uang sama sekali -- field
- * harganya cuma `->numeric()` -- jadi titik yang muncul di sana hanya bisa
- * berarti koma desimal.
+ * Rumusnya dulu disalin LIMA KALI di satu berkas, dan salinannya sudah
+ * berbeda arah: `subtotal` versi nilai awal berisi barang saja, sementara
+ * `updateTotals()` menimpanya dengan barang ditambah biaya tambahan.
  *
- * Pengujian ini memotret perilaku yang ada apa adanya, supaya perbaikannya
- * nanti punya pembanding.
+ * Sekarang semuanya lewat `App\Support\InvoiceTotals`, dan arti tiap kolom
+ * dikunci:
+ *
+ *     subtotal = barang, sesudah diskon barisnya
+ *     charge   = biaya tambahan, sesudah diskon barisnya
+ *     balance  = subtotal + charge - uang muka
  */
 class InvoiceTotalsTest extends TestCase
 {
@@ -40,7 +42,7 @@ class InvoiceTotalsTest extends TestCase
         return $state;
     }
 
-    /** Harga bulat, tanpa titik: ini jalur yang normal dan memang benar. */
+    /** Harga bulat, jalur yang normal. */
     public function test_a_whole_price_is_billed_as_typed(): void
     {
         $hasil = $this->hitung([
@@ -56,59 +58,76 @@ class InvoiceTotalsTest extends TestCase
     }
 
     /**
-     * Harga berdesimal ditagih SERATUS KALI LIPAT.
+     * Titik pada uang SELALU pemisah ribuan, dan sekarang masknya memang
+     * memasangnya.
      *
-     * Titiknya dibuang sebagai "pemisah ribuan", padahal di Invoice tidak ada
-     * mask yang memasangnya. 1.234,56 per kilo terbaca 123.456 per kilo.
+     * Sebelumnya pembersihan ini berjalan pada field yang tidak berformat
+     * sama sekali, sehingga `1234.56` yang dimaksudkan sebagai seribu dua
+     * ratus rupiah lebih terbaca 123.456 -- tagihannya seratus kali lipat.
+     * Sekarang tidak ada lagi cara mengetik koma desimal ke sana.
      */
-    public function test_a_decimal_price_is_billed_a_hundred_times_over(): void
+    public function test_a_thousands_separator_is_read_as_one(): void
     {
         $hasil = $this->hitung([
             'items' => [
-                ['weight' => 1, 'price' => '1234.56', 'discount_percent' => 0],
+                ['weight' => 1, 'price' => '1.234.560', 'discount_percent' => 0],
             ],
             'additionalCharges' => [],
             'down_payment' => 0,
         ]);
 
-        $this->assertSame(
-            123456.0,
-            (float) $hasil['items'][0]['amount'],
-            'Kalau angka ini sudah 1234.56, perilakunya sudah diperbaiki -- perbarui pengujian ini.',
-        );
+        $this->assertSame(1234560.0, (float) $hasil['items'][0]['amount']);
     }
 
     /**
-     * Baris biaya tambahan memperlakukan titik dengan cara yang BERBEDA.
+     * Barang dan biaya tambahan membaca ketikan yang sama dengan cara yang
+     * sama.
      *
-     * Harga barang membuang titiknya; harga biaya tambahan membacanya sebagai
-     * desimal. Dua field sejenis di satu halaman, dua hasil berbeda untuk
-     * ketikan yang sama persis.
+     * Dulu tidak: harga barang membuang titiknya, harga biaya tambahan
+     * membacanya sebagai desimal. Dua field sejenis di satu halaman, dua
+     * hasil berbeda untuk ketikan yang sama persis.
      */
-    public function test_the_same_typing_means_two_different_things_on_one_page(): void
+    public function test_both_repeaters_read_the_same_typing_the_same_way(): void
     {
         $hasil = $this->hitung([
             'items' => [
-                ['weight' => 1, 'price' => '1234.56', 'discount_percent' => 0],
+                ['weight' => 1, 'price' => '1.500.000', 'discount_percent' => 0],
             ],
             'additionalCharges' => [
-                ['qty' => 1, 'price' => '1234.56', 'discount_percent' => 0],
+                ['qty' => 1, 'price' => '1.500.000', 'discount_percent' => 0],
             ],
             'down_payment' => 0,
         ]);
 
-        $this->assertSame(123456.0, (float) $hasil['items'][0]['amount']);
-        $this->assertSame(1235.0, (float) $hasil['additionalCharges'][0]['amount']);
+        $this->assertSame(1500000.0, (float) $hasil['items'][0]['amount']);
+        $this->assertSame(1500000.0, (float) $hasil['additionalCharges'][0]['amount']);
     }
 
     /**
-     * `subtotal` berisi barang DITAMBAH biaya tambahan, bukan subtotal barang.
+     * Persen diskon TIDAK dibersihkan seperti uang.
      *
-     * Nilai awal field yang sama -- saat form baru dibuka dan belum disentuh --
-     * dihitung dari barang SAJA. Jadi satu kolom yang sama berisi dua hal yang
-     * berbeda, tergantung apakah ada yang mengetik sesuatu atau tidak.
+     * Field diskon sengaja tidak berformat, jadi titik di sana hanya bisa
+     * berarti koma desimal. Membuangnya mengubah 2,5% menjadi 25% -- bug yang
+     * sudah pernah terjadi di Sales Order.
      */
-    public function test_subtotal_actually_holds_the_grand_total(): void
+    public function test_a_decimal_discount_is_not_multiplied_by_a_hundred(): void
+    {
+        $hasil = $this->hitung([
+            'items' => [
+                ['weight' => 1, 'price' => 1000000, 'discount_percent' => '2.5'],
+            ],
+            'additionalCharges' => [],
+            'down_payment' => 0,
+        ]);
+
+        $this->assertSame(25000.0, (float) $hasil['items'][0]['discount_rp']);
+        $this->assertSame(975000.0, (float) $hasil['items'][0]['amount']);
+    }
+
+    /**
+     * Tiap kolom total berisi satu hal, dan hanya hal itu.
+     */
+    public function test_each_total_column_holds_exactly_one_thing(): void
     {
         $hasil = $this->hitung([
             'items' => [
@@ -117,10 +136,28 @@ class InvoiceTotalsTest extends TestCase
             'additionalCharges' => [
                 ['qty' => 2, 'price' => 25000, 'discount_percent' => 0],
             ],
+            'down_payment' => 100000,
+        ]);
+
+        $this->assertSame(500000.0, (float) $hasil['subtotal'], 'subtotal berisi barang saja');
+        $this->assertSame(50000.0, (float) $hasil['charge'], 'charge berisi biaya tambahan saja');
+        $this->assertSame(450000.0, (float) $hasil['balance'], 'balance = subtotal + charge - DP');
+    }
+
+    /** Diskon per baris ikut terhitung ke total diskonnya. */
+    public function test_line_discounts_add_up(): void
+    {
+        $hasil = $this->hitung([
+            'items' => [
+                ['weight' => 10, 'price' => 50000, 'discount_percent' => 2],
+                ['weight' => 5, 'price' => 40000, 'discount_percent' => 2],
+            ],
+            'additionalCharges' => [],
             'down_payment' => 0,
         ]);
 
-        $this->assertSame(550000.0, (float) $hasil['subtotal']);
-        $this->assertSame(550000.0, (float) $hasil['balance']);
+        $this->assertSame(14000.0, (float) $hasil['total_discount']);
+        $this->assertSame(686000.0, (float) $hasil['subtotal']);
+        $this->assertSame(15.0, (float) $hasil['total_weight']);
     }
 }
