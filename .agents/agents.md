@@ -1836,6 +1836,16 @@ perubahan alur.
 3. **Blade cetak** (`resources/views/print/`, `exports/`) hampir seluruhnya hardcode, tidak lewat `__()`. Belum diputuskan perlu bilingual atau tidak.
 4. **Urutan Tab di banyak form** belum wajar — lihat bagian utang teknis di atas.
 5. **Alokasi uang muka per pembayaran** tidak dicatat per pasangan. Total selalu tepat; hanya laporan alokasi per pembayaran yang belum mungkin. Kalau kelak dibutuhkan, jawabannya tabel alokasi tersendiri.
+6. **B.O.M (Bill of Materials) belum ada sama sekali.** Tidak ada satu pun tempat yang menyatakan "satu unit produk jadi butuh bahan apa saja, berapa banyak". Akibatnya berantai dan diam:
+   - Pemakaian bahan penolong dicatat MANUAL di Material Usage, tanpa apa pun yang membandingkannya dengan yang seharusnya terpakai. Salah input sepuluh kali lipat tidak menghasilkan gejala.
+   - HPP tidak bisa dihitung utuh, karena porsi bahan penolong per produk tidak diketahui. Ini salah satu sebab susut kirim masih tercatat Rp 0.
+   - Boning dan Repack tidak bisa memperkirakan kebutuhan bahan di muka, jadi kekurangan stok baru ketahuan saat produksinya berjalan.
+
+   Belum dikerjakan karena BOM menyentuh Boning, Repack, Material Usage, dan HPP sekaligus. Perlu sesi tersendiri bersama Owner, dan mestinya SESUDAH metode input Material Usage diputuskan — lihat bagian "TERBUKA: metode input Material Usage perlu dirombak".
+
+7. **Modul QC/QA belum ada.** Sudah tercatat `[ ]` di `checklist_modul.md` sejak awal, dan sampai sekarang tidak ada satu pun kode yang menyentuhnya. Yang sekarang berjalan hanya pemeriksaan yang menempel di dokumen lain — pH di Boning dan Goods Receipt, Grade di setiap baris stok — tanpa ada tempat yang menyatakan lulus atau tidaknya suatu batch, siapa yang memeriksanya, dan apa akibatnya kalau gagal.
+
+   Yang membuatnya berutang bukan ketiadaannya, melainkan bahwa **kegagalan mutu saat ini tidak punya jalur**. Kompensasi pemasok sudah ada di Payable, tetapi ia dicatat sesudah kejadian, tanpa dokumen pemeriksaan apa pun yang mendasarinya. Kalau QC/QA kelak dibuat, itulah yang harus menjadi asal-usul kompensasi — bukan angka yang diketik langsung.
 
 ### Yang belum sempat diperiksa di jahitan Payable
 
