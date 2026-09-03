@@ -287,7 +287,7 @@ class CarcassResource extends Resource
                                 ]),
                             Forms\Components\TextInput::make('notes')
                                 ->label(__('Note'))
-                                ->columnSpan(['default' => 'full', 'lg' => 2])
+                                ->columnSpan(2)
                                 ->extraInputAttributes([
                                     'class' => 'enter-to-next-notes',
                                     'onkeydown' => "

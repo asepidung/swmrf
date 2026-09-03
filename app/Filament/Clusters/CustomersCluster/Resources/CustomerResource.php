@@ -76,7 +76,7 @@ class CustomerResource extends Resource
                             ->maxLength(255)
                             ->autofocus()
                             ->extraInputAttributes(['style' => 'text-transform:uppercase'])
-                            ->columnSpan(['default' => 'full', 'lg' => 4]),
+                            ->columnSpan(4),
 
                         // Tanpa helperText: keterangannya sudah ada di
                         // deskripsi kartu, satu baris untuk seluruh form,
@@ -98,7 +98,7 @@ class CustomerResource extends Resource
                                     ->label(fn() => __('Head Office Address'))
                                     ->columnSpanFull(),
                             ])
-                            ->columnSpan(['default' => 'full', 'lg' => 4]),
+                            ->columnSpan(4),
 
                         Forms\Components\Select::make('customer_segment_id')
                             ->relationship('segment', 'name')
@@ -112,7 +112,7 @@ class CustomerResource extends Resource
                                     ->required()
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                             ])
-                            ->columnSpan(['default' => 'full', 'lg' => 4]),
+                            ->columnSpan(4),
 
                         // Tanpa ->numeric(), yang akan membuat input menjadi
                         // type=number lengkap dengan tombol panah. TOP
@@ -125,7 +125,7 @@ class CustomerResource extends Resource
                             ->maxLength(3)
                             ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right'])
                             ->rules(['integer', 'min:0'])
-                            ->columnSpan(['default' => 'full', 'lg' => 2]),
+                            ->columnSpan(2),
 
                         // Mengisi NILAI AWAL kolom diskon di Sales Order,
                         // sejajar dengan cara price list mengisi harga. Yang
@@ -155,7 +155,7 @@ class CustomerResource extends Resource
                                 'min' => __('Discount cannot be negative.'),
                                 'max' => __('Discount cannot be more than 100%.'),
                             ])
-                            ->columnSpan(['default' => 'full', 'lg' => 2]),
+                            ->columnSpan(2),
 
                         Forms\Components\Select::make('invoice_exchange')
                             ->label(fn() => __('Invoice Exchange'))
@@ -165,18 +165,18 @@ class CustomerResource extends Resource
                             ])
                             ->required()
                             ->native(false)
-                            ->columnSpan(['default' => 'full', 'lg' => 2]),
+                            ->columnSpan(2),
 
                         Forms\Components\TextInput::make('pic')
                             ->label(fn() => __('PIC / Person In Charge'))
                             ->maxLength(255)
-                            ->columnSpan(['default' => 'full', 'lg' => 3]),
+                            ->columnSpan(3),
 
                         Forms\Components\TextInput::make('phone')
                             ->label(fn() => __('Phone Number'))
                             ->tel()
                             ->maxLength(255)
-                            ->columnSpan(['default' => 'full', 'lg' => 3]),
+                            ->columnSpan(3),
 
                         Forms\Components\Textarea::make('address')
                             ->label(fn() => __('Full Address'))
@@ -188,7 +188,7 @@ class CustomerResource extends Resource
                             ->label(fn() => __('Active'))
                             ->default(true)
                             ->visibleOn('edit')
-                            ->columnSpan(['default' => 'full', 'lg' => 2]),
+                            ->columnSpan(2),
                     ]),
 
                 Forms\Components\Section::make(__('Required Documents'))

@@ -66,7 +66,7 @@ class PurchaseCattleResource extends Resource
                             Forms\Components\Placeholder::make('col_price')->label(__('Price / Kg')),
                             Forms\Components\Placeholder::make('col_item_notes')->label(__('Item Note')),
                         ])
-                        ->extraAttributes(['class' => 'swm-wide-only']),
+                        ->extraAttributes(['class' => 'hidden md:grid']),
 
                     Forms\Components\Repeater::make('items')
                         ->relationship()
