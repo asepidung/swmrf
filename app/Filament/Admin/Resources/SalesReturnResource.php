@@ -4,15 +4,15 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\SalesReturnResource\Pages;
 use App\Models\SalesReturn;
+use App\Support\TrashedRecords;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\TrashedFilter;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class SalesReturnResource extends Resource
 {
@@ -111,7 +111,8 @@ class SalesReturnResource extends Resource
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
-                TrashedFilter::make(),
+                TrashedFilter::make()
+                    ->visible(fn () => auth()->user()?->hasPermission('view_deleted_sales_returns') ?? false),
                 Filter::make('date_range')
                     ->form([
                         Forms\Components\DatePicker::make('date_from')->label(__('From Date'))->default(now()->startOfMonth()),
@@ -172,10 +173,10 @@ class SalesReturnResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
+        return TrashedRecords::visibleTo(
+            parent::getEloquentQuery(),
+            'view_deleted_sales_returns',
+        );
     }
 
     public static function getNavigationGroup(): ?string

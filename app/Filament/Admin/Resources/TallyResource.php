@@ -4,13 +4,13 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\TallyResource\Pages;
 use App\Models\Tally;
+use App\Support\TrashedRecords;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class TallyResource extends Resource
 {
@@ -204,9 +204,9 @@ class TallyResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
+        return TrashedRecords::visibleTo(
+            parent::getEloquentQuery(),
+            'view_deleted_tallies',
+        );
     }
 }

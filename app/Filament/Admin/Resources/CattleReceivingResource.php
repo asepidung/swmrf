@@ -3,15 +3,15 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\CattleReceivingResource\Pages;
-use App\Models\CattleReceiving;
 use App\Models\CattleClass;
+use App\Models\CattleReceiving;
+use App\Support\TrashedRecords;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
 
@@ -411,9 +411,9 @@ class CattleReceivingResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
+        return TrashedRecords::visibleTo(
+            parent::getEloquentQuery(),
+            'view_deleted_cattle_receivings',
+        );
     }
 }

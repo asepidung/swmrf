@@ -5,17 +5,17 @@ namespace App\Filament\Admin\Resources;
 use App\Filament\Admin\Resources\StockTakeResource\Pages;
 use App\Filament\Admin\Resources\StockTakeResource\RelationManagers;
 use App\Models\StockTake;
+use App\Models\Warehouse;
+use App\Support\TrashedRecords;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Filament\Infolists;
-use Filament\Infolists\Infolist;
-
-use App\Models\Warehouse;
 use Illuminate\Support\Carbon;
 
 class StockTakeResource extends Resource
@@ -119,7 +119,7 @@ class StockTakeResource extends Resource
                             );
                     }),
                 Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->user()->can('view_deleted_stock_takes')),
+                    ->visible(fn () => auth()->user()?->hasPermission('view_deleted_stock_takes') ?? false),
             ])
             ->actions([
                 Tables\Actions\Action::make('scan')
@@ -310,4 +310,11 @@ class StockTakeResource extends Resource
         return __('Opname Beef');
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return TrashedRecords::visibleTo(
+            parent::getEloquentQuery(),
+            'view_deleted_stock_takes',
+        );
+    }
 }

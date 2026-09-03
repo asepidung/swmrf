@@ -5,13 +5,13 @@ namespace App\Filament\Admin\Resources;
 use App\Filament\Admin\Resources\CarcassResource\Pages;
 use App\Filament\Admin\Resources\CarcassResource\RelationManagers;
 use App\Models\Carcass;
+use App\Support\TrashedRecords;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class CarcassResource extends Resource
 {
@@ -459,7 +459,8 @@ class CarcassResource extends Resource
                     ->color('success'),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()?->hasPermission('view_deleted_carcasses') ?? false),
             ])
             ->actions([])
             ->bulkActions([
@@ -492,9 +493,9 @@ class CarcassResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
+        return TrashedRecords::visibleTo(
+            parent::getEloquentQuery(),
+            'view_deleted_carcasses',
+        );
     }
 }

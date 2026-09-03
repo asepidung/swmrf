@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources;
 use App\Filament\Admin\Resources\CattleWeighingResource\Pages;
 use App\Filament\Admin\Resources\CattleWeighingResource\RelationManagers;
 use App\Models\CattleWeighing;
+use App\Support\TrashedRecords;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -12,7 +13,6 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class CattleWeighingResource extends Resource
 {
@@ -403,9 +403,9 @@ class CattleWeighingResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
+        return TrashedRecords::visibleTo(
+            parent::getEloquentQuery(),
+            'view_deleted_cattle_weighings',
+        );
     }
 }
