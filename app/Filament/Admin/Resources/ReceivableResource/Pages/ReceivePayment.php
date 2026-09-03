@@ -90,7 +90,7 @@ class ReceivePayment extends Page
         foreach ($this->getOutstandingInvoices() as $inv) {
             $balanceStr = number_format($inv->balance, 0, ',', '.');
             $invoiceFields[] = TextInput::make("allocations.{$inv->id}")
-                ->label("{$inv->invoice_number} | Sisa Piutang: Rp {$balanceStr}")
+                ->label($inv->invoice_number.' | '.__('Outstanding').': Rp '.$balanceStr)
                 ->numeric()
                 ->prefix('Rp')
                 ->default(0)
@@ -99,60 +99,60 @@ class ReceivePayment extends Page
 
         return $form
             ->schema([
-                Section::make(__('Data Pembayaran (Mutasi Masuk)'))
+                Section::make(__('Payment Received'))
                     ->schema([
                         Select::make('bank_account_id')
-                            ->label(__('Masuk ke Rekening'))
+                            ->label(__('Into Account'))
                             ->options(BankAccount::where('is_active', true)->pluck('initial', 'id'))
                             ->required()
                             ->searchable()
                             ->autofocus(),
                         DatePicker::make('payment_date')
-                            ->label(__('Tanggal Bayar'))
+                            ->label(__('Payment Date'))
                             ->required(),
                         TextInput::make('amount')
-                            ->label(__('Nominal Uang Riil (Masuk Bank)'))
+                            ->label(__('Amount Received in Bank'))
                             ->numeric()
                             ->prefix('Rp')
                             ->required()
                             ->minValue(0),
                         TextInput::make('reference_number')
-                            ->label(__('Bukti Transfer / Referensi'))
+                            ->label(__('Transfer Reference'))
                             ->maxLength(255),
                         Textarea::make('note')
-                            ->label(__('Catatan Khusus'))
+                            ->label(__('Note'))
                             ->columnSpanFull(),
                     ])->columns(2),
 
-                Section::make(__('Potongan Administrasi / Promo (Deductions)'))
-                    ->description(__('Masukkan jika pelanggan membayar tidak utuh karena ada potongan admin bank, klaim promo, dll.'))
+                Section::make(__('Deductions'))
+                    ->description(__('Fill this in when the customer pays less than the full amount because of bank fees, promotion claims, and the like.'))
                     ->schema([
                         Repeater::make('deductions')
                             ->hiddenLabel()
                             ->schema([
                                 TextInput::make('description')
-                                    ->placeholder(__('Keterangan Potongan'))
+                                    ->placeholder(__('Deduction Description'))
                                     ->required()
                                     ->maxLength(255)
                                     ->columnSpan(2),
                                 TextInput::make('amount')
-                                    ->placeholder(__('Nominal (Rp)'))
+                                    ->placeholder(__('Amount (Rp)'))
                                     ->numeric()
                                     ->required()
                                     ->minValue(1)
                                     ->columnSpan(1),
                             ])
                             ->columns(3)
-                            ->addActionLabel(__('Tambah Potongan'))
+                            ->addActionLabel(__('Add Deduction'))
                             ->defaultItems(0)
                     ]),
 
-                Section::make(__('Alokasi Pelunasan Invoice'))
-                    ->description(__('Pecah total nominal uang + potongan ke masing-masing invoice di bawah ini.'))
+                Section::make(__('Allocation to Invoices'))
+                    ->description(__('Split the amount received plus its deductions across the invoices below.'))
                     ->schema(count($invoiceFields) > 0 ? $invoiceFields : [
                         \Filament\Forms\Components\Placeholder::make('no_invoice')
                             ->label('')
-                            ->content(__('Tidak ada invoice yang perlu dilunasi untuk grup ini.')),
+                            ->content(__('This group has no invoice waiting to be paid.')),
                     ])->columns(2),
             ])
             ->statePath('data');
@@ -171,7 +171,7 @@ class ReceivePayment extends Page
 
     public function getTitle(): string
     {
-        return __('Receive Payment: ') . $this->record->name;
+        return __('Receive Payment').': '.$this->record->name;
     }
 
     public function save(): void
@@ -195,14 +195,18 @@ class ReceivePayment extends Page
         }
 
         if ($totalAvailable <= 0) {
-            Notification::make()->danger()->title('Nominal pembayaran atau potongan harus lebih dari 0.')->send();
+            Notification::make()->danger()->title(__('The payment or its deductions must be more than zero.'))->send();
             return;
         }
 
         if (abs($totalAvailable - $totalAllocated) > 0.01) {
             Notification::make()->danger()
-                ->title('Alokasi Tidak Seimbang!')
-                ->body("Total Dana (Rp " . number_format($totalAvailable, 0, ',', '.') . ") TIDAK SAMA dengan Total Dialokasikan (Rp " . number_format($totalAllocated, 0, ',', '.') . "). Selisih: Rp " . number_format(abs($totalAvailable - $totalAllocated), 0, ',', '.'))
+                ->title(__('Allocation does not balance'))
+                ->body(__('Money received is Rp :available while Rp :allocated has been allocated. The difference is Rp :difference.', [
+                    'available' => number_format($totalAvailable, 0, ',', '.'),
+                    'allocated' => number_format($totalAllocated, 0, ',', '.'),
+                    'difference' => number_format(abs($totalAvailable - $totalAllocated), 0, ',', '.'),
+                ]))
                 ->send();
             return;
         }
@@ -272,13 +276,13 @@ class ReceivePayment extends Page
 
             DB::commit();
 
-            Notification::make()->success()->title('Pembayaran berhasil dicatat.')->send();
+            Notification::make()->success()->title(__('Payment recorded'))->send();
             
             $this->redirect(ReceivableResource::getUrl('view', ['record' => $this->record->id]));
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Notification::make()->danger()->title('Terjadi kesalahan server.')->body($e->getMessage())->send();
+            Notification::make()->danger()->title(__('Something went wrong.'))->body($e->getMessage())->send();
         }
     }
 }

@@ -99,7 +99,7 @@ class ReceivableResource extends Resource
                     ->color('primary'),
 
                 Tables\Columns\TextColumn::make('total_piutang')
-                    ->label(__('Total Piutang'))
+                    ->label(__('Total Receivable'))
                     ->getStateUsing(function (\App\Models\CustomerGroup $record) {
                         return $record->receivables()
                             ->join('invoices', 'receivables.invoice_id', '=', 'invoices.id')
@@ -118,7 +118,7 @@ class ReceivableResource extends Resource
                     ->weight('bold'),
 
                 Tables\Columns\TextColumn::make('akan_jatuh_tempo')
-                    ->label(__('Akan Jatuh Tempo'))
+                    ->label(__('Due Soon'))
                     ->getStateUsing(function (\App\Models\CustomerGroup $record) {
                         return $record->receivables()
                             ->join('invoices', 'receivables.invoice_id', '=', 'invoices.id')
@@ -141,7 +141,7 @@ class ReceivableResource extends Resource
                     ->color('warning'),
 
                 Tables\Columns\TextColumn::make('sudah_jatuh_tempo')
-                    ->label(__('Sudah Jatuh Tempo'))
+                    ->label(__('Overdue'))
                     ->getStateUsing(function (\App\Models\CustomerGroup $record) {
                         return $record->receivables()
                             ->join('invoices', 'receivables.invoice_id', '=', 'invoices.id')

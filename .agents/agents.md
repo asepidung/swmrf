@@ -1406,6 +1406,39 @@ dirancang untuk layar lebar dengan alat pemindai di tangan, bukan untuk HP.
 Keputusan Owner: pastikan nyaman di layar lebar, layar kecil ditangani nanti
 kalau memang perlu.
 
+### Penjaga bilingual hanya melihat kunci yang SUDAH terdaftar
+
+**3 September 2026.** Owner melaporkan bahasa modul Receivable belum beres.
+Pemeriksaannya menemukan 17 kunci berbahasa Indonesia, 22 kunci yang tidak
+pernah ada di `id.json`, dan 4 teks yang tidak lewat penerjemah sama sekali.
+
+Yang lebih penting: **`BilingualParityTest` tidak melihat satu pun dari
+semuanya.** Penjaga itu hanya memindai kunci yang sudah terdaftar di
+`id.json`. Kunci yang berbahasa Indonesia DAN tidak pernah didaftarkan lolos
+sepenuhnya -- padahal justru itu kasus yang paling buruk, karena Laravel
+menampilkan kuncinya sendiri saat terjemahannya tidak ada. Pengguna yang
+memilih bahasa Inggris membaca kalimat Indonesia utuh, tanpa satu pun gejala.
+
+Penjaganya sekarang ikut memindai `app/` dan `resources/views/`. Registernya
+naik dari 41 menjadi 75, dan **kenaikan itu bukan utang bertambah melainkan
+utang yang akhirnya terlihat**: 34 kunci sudah ada di sana selama ini tanpa
+pernah terhitung.
+
+**Pola yang berulang di proyek ini:** penjaga yang memeriksa tempat yang salah
+memberi rasa aman yang justru lebih berbahaya daripada tidak ada penjaga.
+Sama seperti `TrashedFilter` yang tidak menyaring apa pun saat disembunyikan,
+dan `Livewire::test()` yang lulus lewat pintu belakang.
+
+**Istilah utang/piutang hanya untuk PERCAKAPAN dengan Owner**, supaya tidak
+tertukar seperti hari itu. Di aplikasinya tetap Payable dan Receivable; Owner
+menegaskan penamaan itu tidak bermasalah.
+
+**Ikut dibereskan:** PDF ekspor Payable tidak punya kolom kompensasi, sehingga
+di kertas `Total - Telah Dibayar` tidak sama dengan `Sisa` dan pembacanya
+tidak punya cara mencocokkannya. Ekspornya tidak ikut diperbarui waktu
+kompensasi ditambahkan. Judul dan kepala kolomnya juga campur -- judul
+Inggris, kolom Indonesia, tanpa `__()` -- dan kini lewat penerjemah semua.
+
 ### Halaman Resource menerima MODEL, bukan angka id -- dan pengujiannya ikut tertipu
 
 **3 September 2026.** Owner melaporkan halaman Receive Payment menjawab

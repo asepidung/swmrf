@@ -85,13 +85,62 @@ class BilingualParityTest extends TestCase
         ];
     }
 
+    /**
+     * Setiap kunci `__('...')` yang benar-benar ditulis di kode.
+     *
+     * Memindai KODE, bukan hanya berkas terjemahan. Ini lubang yang membuat
+     * seluruh modul Receivable lolos: kuncinya berbahasa Indonesia DAN tidak
+     * pernah didaftarkan di `id.json` sama sekali, jadi penjaga yang hanya
+     * membaca `id.json` tidak pernah melihatnya.
+     *
+     * Yang tidak terdaftar justru yang paling buruk. Laravel menampilkan
+     * kuncinya sendiri saat terjemahan tidak ada, sehingga pengguna yang
+     * memilih bahasa Inggris melihat kalimat Indonesia utuh -- tanpa satu pun
+     * gejala bahwa ada yang salah.
+     *
+     * @return array<int, string>
+     */
+    protected function keysWrittenInCode(): array
+    {
+        $keys = [];
+
+        foreach (['app', 'resources/views'] as $root) {
+            $files = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator(base_path($root))
+            );
+
+            foreach ($files as $file) {
+                if (! $file->isFile() || $file->getExtension() !== 'php') {
+                    continue;
+                }
+
+                preg_match_all(
+                    "/__\('([^']+)'/",
+                    file_get_contents($file->getPathname()),
+                    $matches,
+                );
+
+                foreach ($matches[1] as $key) {
+                    $keys[$key] = true;
+                }
+            }
+        }
+
+        return array_keys($keys);
+    }
+
     /** @return array<int, string> */
     protected function indonesianKeys(): array
     {
         $words = $this->indonesianWords();
         $offenders = [];
 
-        foreach (array_keys($this->strings('id')) as $key) {
+        $candidates = array_unique(array_merge(
+            array_keys($this->strings('id')),
+            $this->keysWrittenInCode(),
+        ));
+
+        foreach ($candidates as $key) {
             preg_match_all('/[A-Za-z]+/', mb_strtolower($key), $matches);
 
             foreach ($matches[0] as $word) {
@@ -117,11 +166,18 @@ class BilingualParityTest extends TestCase
      * masalahnya. Yang benar: ganti kuncinya di KODE menjadi Bahasa Inggris,
      * lalu daftarkan terjemahan Indonesianya di `id.json`.
      *
-     * Per 28 Agustus 2026 masih ada 43 kunci semacam itu, tersebar sampai ke
-     * modul yang belum disisir (Repack, Sales Return, Cattle Weighing, dan
-     * lain-lain). Membereskan semuanya pekerjaan tersendiri; daftarnya
-     * dicatat di `tests/Fixtures/indonesian-translation-keys.json` sebagai
-     * register utang yang terlihat.
+     * Daftarnya dicatat di `tests/Fixtures/indonesian-translation-keys.json`
+     * sebagai register utang yang terlihat, tersebar sampai ke modul yang
+     * belum disisir (Repack, Sales Return, Cattle Weighing, dan lain-lain).
+     *
+     * **Angkanya naik dari 41 menjadi 75 pada 3 September 2026, dan itu bukan
+     * berarti utangnya bertambah.** Sampai hari itu penjaga ini hanya membaca
+     * `id.json`, sehingga kunci Indonesia yang TIDAK PERNAH DIDAFTARKAN lolos
+     * sepenuhnya -- padahal justru itu yang paling buruk, karena Laravel
+     * menampilkan kuncinya sendiri dan pengguna berbahasa Inggris melihat
+     * kalimat Indonesia utuh. Seluruh modul Receivable lolos dengan cara itu.
+     * Sejak sekarang kodenya ikut dipindai, dan 34 kunci yang selama ini tidak
+     * terlihat masuk ke register.
      *
      * Test ini bersifat ratchet: kunci baru berbahasa Indonesia langsung
      * gagal, sementara yang lama dibiarkan sampai gilirannya disisir. Saat
