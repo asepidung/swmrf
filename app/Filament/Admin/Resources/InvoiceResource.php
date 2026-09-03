@@ -249,9 +249,20 @@ class InvoiceResource extends Resource
 
                 Forms\Components\Section::make()
                     ->schema([
+                        // Semua angka uang berdiri dalam SATU kolom di kanan,
+                        // satu baris masing-masing, dibaca dari atas ke bawah
+                        // seperti struk: barang, biaya, diskon, uang muka, lalu
+                        // yang benar-benar ditagihkan.
+                        //
+                        // Sebelumnya empat di antaranya dijejalkan ke satu
+                        // baris. Kotaknya jadi terlalu sempit untuk angka
+                        // jutaan, dan "1.200.000" terpotong menjadi "1.200.0" --
+                        // angka yang salah baca, bukan sekadar tampilan sesak.
+                        // Berat total ikut dikecilkan karena isinya paling
+                        // pendek di antara semuanya.
                         Forms\Components\Grid::make(12)
                             ->schema([
-                                Forms\Components\Placeholder::make('empty1')->label('')->content('')->columnSpan(1),
+                                Forms\Components\Placeholder::make('empty1')->label('')->content('')->columnSpan(7),
                                 Forms\Components\TextInput::make('total_weight')
                                     ->hiddenLabel()
                                     ->prefix('Total')
@@ -260,21 +271,12 @@ class InvoiceResource extends Resource
                                     ->dehydrated(true)
                                     ->extraInputAttributes(['class' => 'text-right'])
                                     ->default(fn () => \App\Models\DeliveryOrderReceipt::find(request()->query('delivery_order_receipt_id'))?->total_weight ?? 0.0)
-                                    ->columnSpan(3),
-                                static::money('total_discount')
-                                    ->hiddenLabel()
-                                    ->prefix(__('Total Disc'))
-                                    ->disabled()
-                                    ->dehydrated(true)
-                                    ->default(fn () => static::initialTotal('total_discount'))
-                                    ->columnSpan(2),
-                                static::money('charge')
-                                    ->hiddenLabel()
-                                    ->prefix(__('Charges'))
-                                    ->disabled()
-                                    ->dehydrated(true)
-                                    ->default(0)
-                                    ->columnSpan(2),
+                                    ->columnSpan(5),
+                            ]),
+
+                        Forms\Components\Grid::make(12)
+                            ->schema([
+                                Forms\Components\Placeholder::make('empty2')->label('')->content('')->columnSpan(7),
                                 static::money('subtotal')
                                     ->hiddenLabel()
                                     // Dulu berlabel "Total Amount" padahal isinya
@@ -285,12 +287,36 @@ class InvoiceResource extends Resource
                                     ->disabled()
                                     ->dehydrated(true)
                                     ->default(fn () => static::initialTotal('subtotal'))
-                                    ->columnSpan(4),
+                                    ->columnSpan(5),
                             ]),
 
                         Forms\Components\Grid::make(12)
                             ->schema([
-                                Forms\Components\Placeholder::make('empty3')->label('')->content('')->columnSpan(8),
+                                Forms\Components\Placeholder::make('empty3')->label('')->content('')->columnSpan(7),
+                                static::money('charge')
+                                    ->hiddenLabel()
+                                    ->prefix(__('Charges'))
+                                    ->disabled()
+                                    ->dehydrated(true)
+                                    ->default(0)
+                                    ->columnSpan(5),
+                            ]),
+
+                        Forms\Components\Grid::make(12)
+                            ->schema([
+                                Forms\Components\Placeholder::make('empty4')->label('')->content('')->columnSpan(7),
+                                static::money('total_discount')
+                                    ->hiddenLabel()
+                                    ->prefix(__('Total Disc'))
+                                    ->disabled()
+                                    ->dehydrated(true)
+                                    ->default(fn () => static::initialTotal('total_discount'))
+                                    ->columnSpan(5),
+                            ]),
+
+                        Forms\Components\Grid::make(12)
+                            ->schema([
+                                Forms\Components\Placeholder::make('empty5')->label('')->content('')->columnSpan(7),
                                 static::money('down_payment')
                                     ->hiddenLabel()
                                     ->prefix('DP')
@@ -301,19 +327,19 @@ class InvoiceResource extends Resource
                                     )?->salesOrder?->down_payment ?? 0))
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(fn (callable $get, callable $set) => self::updateTotals($get, $set))
-                                    ->columnSpan(4),
+                                    ->columnSpan(5),
                             ]),
 
                         Forms\Components\Grid::make(12)
                             ->schema([
-                                Forms\Components\Placeholder::make('empty4')->label('')->content('')->columnSpan(8),
+                                Forms\Components\Placeholder::make('empty6')->label('')->content('')->columnSpan(7),
                                 static::money('balance')
                                     ->hiddenLabel()
                                     ->prefix(__('Total Billed'))
                                     ->disabled()
                                     ->dehydrated(true)
                                     ->default(fn () => static::initialTotal('balance'))
-                                    ->columnSpan(4),
+                                    ->columnSpan(5),
                             ]),
                     ]),
             ]);
