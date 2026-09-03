@@ -275,6 +275,7 @@ class DatabaseSeeder extends Seeder
             ['name' => 'create_material_stock_takes', 'module_name' => 'Material Stock Takes', 'description' => 'Create material stock takes'],
             ['name' => 'edit_material_stock_takes', 'module_name' => 'Material Stock Takes', 'description' => 'Edit material stock takes'],
             ['name' => 'delete_material_stock_takes', 'module_name' => 'Material Stock Takes', 'description' => 'Delete material stock takes'],
+            ['name' => 'view_deleted_material_stock_takes', 'module_name' => 'Material Stock Takes', 'description' => 'View deleted material stock takes'],
             
             // Permission Stock Takes (Beef) SENGAJA tidak diulang di sini --
             // seluruhnya sudah didaftarkan di blok "Stock Takes Module" di
@@ -286,6 +287,7 @@ class DatabaseSeeder extends Seeder
             ['name' => 'create_sales_returns', 'module_name' => 'Sales Returns', 'description' => 'Create sales returns'],
             ['name' => 'edit_sales_returns', 'module_name' => 'Sales Returns', 'description' => 'Edit sales returns'],
             ['name' => 'delete_sales_returns', 'module_name' => 'Sales Returns', 'description' => 'Delete sales returns'],
+            ['name' => 'view_deleted_sales_returns', 'module_name' => 'Sales Returns', 'description' => 'View deleted sales returns'],
             
             // Beef Stock Aging Module
             ['name' => 'view_beef_stock_aging', 'module_name' => 'Beef Stock Aging', 'description' => 'View beef stock aging'],

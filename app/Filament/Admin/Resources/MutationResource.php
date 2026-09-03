@@ -5,13 +5,13 @@ namespace App\Filament\Admin\Resources;
 use App\Filament\Admin\Resources\MutationResource\Pages;
 use App\Filament\Admin\Resources\MutationResource\RelationManagers;
 use App\Models\Mutation;
+use App\Support\TrashedRecords;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class MutationResource extends Resource
 {
@@ -93,7 +93,7 @@ class MutationResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->filters([
                 Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->check() && auth()->user()->can('view_deleted_mutations')),
+                    ->visible(fn () => auth()->user()?->hasPermission('view_deleted_mutations') ?? false),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -163,13 +163,10 @@ class MutationResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
-        
-        if (auth()->check() && auth()->user()->can('view_deleted_mutations')) {
-            $query->withoutGlobalScopes([SoftDeletingScope::class]);
-        }
-        
-        return $query;
+        return TrashedRecords::visibleTo(
+            parent::getEloquentQuery(),
+            'view_deleted_mutations',
+        );
     }
 
     public static function getNavigationGroup(): ?string

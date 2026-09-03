@@ -1299,6 +1299,58 @@ dan beda dari membayar.
 **Belum ada cara membatalkan kompensasi.** Owner sudah diberi tahu; menunggu
 pembahasan tersendiri.
 
+### Dokumen terhapus: izinnya dulu menyembunyikan TOMBOL, bukan DATA
+
+**3 September 2026, ditemukan saat menyisir Invoice.** Sepuluh Resource
+menulis ini:
+
+```php
+return parent::getEloquentQuery()
+    ->withoutGlobalScopes([SoftDeletingScope::class]);
+```
+
+lalu mengandalkan `TrashedFilter` yang dibungkus
+`->visible(fn () => auth()->user()->hasPermission('view_deleted_...'))` untuk
+menyaring baris terhapus kembali.
+
+**Filter yang tidak terlihat tidak menyaring apa pun.** Filament membuang
+filter yang `isVisible()`-nya false SEBELUM query dijalankan. Jadi izin itu
+hanya menyembunyikan tombolnya; datanya tetap masuk. Pengguna tanpa hak
+melihat dokumen terhapus bercampur dengan yang hidup, tanpa penanda apa pun.
+
+Sudah dibuktikan dengan pengujian dari sisi pengguna, bukan dibaca dari kode:
+`DeletedInvoiceVisibilityTest`.
+
+Menyisir lubang itu memunculkan **dua varian lain dari sebab yang sama**:
+
+**Izin yang tidak mengizinkan apa-apa.** Mutation, Material Stock Take, dan
+Stock Take memeriksa haknya dengan `auth()->user()->can('view_deleted_...')`.
+Proyek ini tidak mendaftarkan nama izin sebagai Gate dan tidak punya
+`Gate::before`, jadi jawabannya **selalu tidak** -- filternya tidak pernah
+muncul untuk siapa pun, programmer sekalipun. Izinnya bisa diberikan lewat
+User Management, dan pemberiannya tidak berakibat apa-apa. **Selalu
+`hasPermission()`, jangan `can()`, untuk nama izin proyek ini.**
+
+**Izin yang tidak pernah dipasang.** `view_deleted_carcasses` ada di seeder
+sejak lama tanpa satu pun kode yang membacanya, sementara Carcass dan Sales
+Return membuka baris terhapusnya tanpa pemeriksaan sama sekali.
+`view_deleted_sales_returns` dan `view_deleted_material_stock_takes` malah
+belum pernah ada di seeder, jadi tidak bisa diberikan kepada siapa pun.
+
+Semuanya sekarang lewat `App\Support\TrashedRecords::visibleTo($query, $izin)`.
+Izinnya menjadi batas yang sebenarnya, dan `TrashedFilter` kembali menjadi apa
+yang seharusnya: kemudahan tampilan, bukan pengaman.
+
+**Catatan yang perlu diingat:** `TrashedFilter` memasang `baseQuery`-nya
+sendiri yang mematikan `SoftDeletingScope`, jadi filternya tetap bekerja tanpa
+`withoutGlobalScopes` di `getEloquentQuery()`. Yang tetap membutuhkannya adalah
+halaman Edit/View -- ia menyelesaikan recordnya lewat `getEloquentQuery()`,
+sehingga pemegang izin tidak akan bisa MEMBUKA dokumen terhapus tanpa itu.
+
+Tiga penjaga pola dipasang di `DeletedRecordVisibilityTest`: tidak ada
+`withoutGlobalScopes` tanpa pemeriksaan izin, tidak ada `can('view_deleted_*')`,
+dan setiap izin `view_deleted_*` yang dipakai kode benar-benar ada di seeder.
+
 ### Penanda cron JANGAN disimpan di cache, dan dua widget pengawas kini diam saat sehat
 
 **3 September 2026.** Owner bertanya soal dua notifikasi di Dashboard --

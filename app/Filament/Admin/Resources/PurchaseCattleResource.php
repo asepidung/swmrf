@@ -5,18 +5,19 @@ namespace App\Filament\Admin\Resources;
 use App\Filament\Admin\Resources\PurchaseCattleResource\Pages;
 use App\Filament\Admin\Resources\PurchaseCattleResource\RelationManagers;
 use App\Models\PurchaseCattle;
+use App\Support\TrashedRecords;
+use Carbon\Carbon;
 use Filament\Forms;
-use Filament\Support\RawJs;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Support\RawJs;
 use Filament\Tables;
-use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Illuminate\Database\Eloquent\Model;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
-use Carbon\Carbon;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+
 class PurchaseCattleResource extends Resource
 {
     protected static ?string $model = PurchaseCattle::class;
@@ -299,9 +300,9 @@ class PurchaseCattleResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
+        return TrashedRecords::visibleTo(
+            parent::getEloquentQuery(),
+            'view_deleted_purchase_cattles',
+        );
     }
 }

@@ -3,21 +3,21 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\SalesOrderResource\Pages;
-use App\Models\SalesOrder;
 use App\Models\Customer;
-use App\Models\Product;
 use App\Models\PriceList;
 use App\Models\PriceListItem;
+use App\Models\Product;
+use App\Models\SalesOrder;
+use App\Support\TrashedRecords;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Resources\Resource;
+use Filament\Support\RawJs;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Filament\Support\RawJs;
 use Illuminate\Support\Str;
 
 class SalesOrderResource extends Resource
@@ -556,10 +556,10 @@ class SalesOrderResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
+        return TrashedRecords::visibleTo(
+            parent::getEloquentQuery(),
+            'view_deleted_sales_orders',
+        );
     }
 
     public static function getNavigationGroup(): ?string

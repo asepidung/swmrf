@@ -5,13 +5,13 @@ namespace App\Filament\Admin\Resources;
 use App\Filament\Admin\Resources\MaterialStockTakeResource\Pages;
 use App\Filament\Admin\Resources\MaterialStockTakeResource\RelationManagers;
 use App\Models\MaterialStockTake;
+use App\Support\TrashedRecords;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Carbon;
 
 class MaterialStockTakeResource extends Resource
@@ -114,7 +114,8 @@ class MaterialStockTakeResource extends Resource
                 default => null,
             })
             ->filters([
-                Tables\Filters\TrashedFilter::make()->visible(fn () => auth()->user()->can('view_deleted_material_stock_takes')),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()?->hasPermission('view_deleted_material_stock_takes') ?? false),
                 Tables\Filters\Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')->label(__('Start Date')),
@@ -173,14 +174,9 @@ class MaterialStockTakeResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
-        
-        if (auth()->check() && auth()->user()->can('view_deleted_material_stock_takes')) {
-            $query->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
-        }
-
-        return $query;
+        return TrashedRecords::visibleTo(
+            parent::getEloquentQuery(),
+            'view_deleted_material_stock_takes',
+        );
     }
 }

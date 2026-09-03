@@ -3,15 +3,15 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\DeliveryOrderReceiptResource\Pages;
-use App\Models\DeliveryOrderReceipt;
 use App\Filament\Admin\Resources\InvoiceResource;
+use App\Models\DeliveryOrderReceipt;
+use App\Support\TrashedRecords;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class DeliveryOrderReceiptResource extends Resource
 {
@@ -244,9 +244,9 @@ class DeliveryOrderReceiptResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
+        return TrashedRecords::visibleTo(
+            parent::getEloquentQuery(),
+            'view_deleted_delivery_orders',
+        );
     }
 }

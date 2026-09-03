@@ -5,13 +5,13 @@ namespace App\Filament\Admin\Resources;
 use App\Filament\Admin\Resources\DeliveryPlanResource\Pages;
 use App\Models\DeliveryPlan;
 use App\Models\SalesOrder;
+use App\Support\TrashedRecords;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class DeliveryPlanResource extends Resource
 {
@@ -256,15 +256,14 @@ class DeliveryPlanResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
+        $query = parent::getEloquentQuery()
             ->withCount('salesOrders')
             // Dimuat sekaligus. Kolom Qty dan Notes membaca Sales Order
             // beserta barisnya untuk setiap jadwal; tanpa ini, satu kueri
             // menembak untuk setiap Sales Order pada setiap baris tabel.
-            ->with(['salesOrders:id,delivery_plan_id,status,delivery_note', 'salesOrders.items:id,sales_order_id,weight'])
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
+            ->with(['salesOrders:id,delivery_plan_id,status,delivery_note', 'salesOrders.items:id,sales_order_id,weight']);
+
+        return TrashedRecords::visibleTo($query, 'view_deleted_delivery_plans');
     }
 
     public static function getNavigationGroup(): ?string
