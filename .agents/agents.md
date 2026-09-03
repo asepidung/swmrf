@@ -1406,6 +1406,62 @@ dirancang untuk layar lebar dengan alat pemindai di tangan, bukan untuk HP.
 Keputusan Owner: pastikan nyaman di layar lebar, layar kecil ditangani nanti
 kalau memang perlu.
 
+### Halaman Resource menerima MODEL, bukan angka id -- dan pengujiannya ikut tertipu
+
+**3 September 2026.** Owner melaporkan halaman Receive Payment menjawab
+**404 Not Found** di produksi, tanpa keterangan apa pun.
+
+Penyebabnya:
+
+```php
+public function mount(int|string $record): void
+{
+    $this->record = CustomerGroup::findOrFail($record);   // <- 404 di sini
+}
+```
+
+Filament memasang route binding untuk `{record}` di setiap route Resource,
+jadi saat `mount()` berjalan parameternya **sudah berupa objek model**.
+`findOrFail()` lalu mencari grup yang idnya berupa OBJEK, tidak pernah
+menemukannya, dan menjawab dengan 404.
+
+**Kenapa ini bentuk kegagalan yang paling menyesatkan.** Laravel TIDAK
+mencatat 404 ke log -- `ModelNotFoundException` dan `NotFoundHttpException`
+ada di daftar `dontReport` bawaan. Jadi di produksi halamannya hanya menjawab
+"404 Not Found" tanpa meninggalkan satu baris pun di Log Viewer, dan terlihat
+persis seperti halaman yang memang tidak ada -- padahal kodenya berjalan,
+routenya terdaftar, dan datanya lengkap.
+
+**DAN PENGUJIANNYA IKUT TERTIPU. Ini bagian terpentingnya.**
+
+```php
+Livewire::test($page, ['record' => $do->id]);   // menyerahkan ANGKA
+```
+
+Peramban tidak pernah melalui jalur itu. Jadi pengujiannya hijau sementara
+halamannya 404 bagi setiap orang yang membukanya. Halaman Approve Delivery
+Order punya dua pengujian yang lulus bertahun-tahun dengan cara ini, dan
+ternyata **ia juga rusak** -- dibuktikan dengan mengembalikan kodenya sebentar
+dan melihat pengujian HTTP yang baru langsung merah.
+
+**Aturannya sekarang:**
+
+- Halaman berparameter record menerima modelnya:
+  `mount(int|string|Model $record)` lalu `$record instanceof Model ? $record : Model::findOrFail($record)`.
+- Halaman berparameter record **WAJIB diuji lewat HTTP**
+  (`$this->get('/admin/.../{id}/aksi')->assertSuccessful()`), bukan hanya
+  lewat `Livewire::test()`. `Livewire::test()` boleh dipakai untuk menguji
+  aksinya, tetapi serahkan MODEL, bukan id.
+- `ResourcePageRecordBindingTest` menjaga polanya.
+
+**Pelajaran yang lebih luas: pengujian yang memasuki lewat pintu belakang
+tidak membuktikan pintu depannya terbuka.** Halaman Receive Payment --
+halaman yang MENERIMA UANG -- tidak punya satu pun pengujian sampai hari ini,
+karena mencobanya dengan tangan menuntut merangkai pelanggan, produk, Sales
+Order, tally, surat jalan, bukti terima, dan invoice lebih dulu. Berkas
+`ReceivePaymentPageTest` merangkai semuanya dalam hitungan detik; itu yang
+seharusnya ada sejak awal.
+
 ### Piutang: pembayaran pelanggan berhenti ditimpakan ke kolom tagihan
 
 **3 September 2026, temuan terberat sejauh ini.** Penerimaan piutang MENIMPA

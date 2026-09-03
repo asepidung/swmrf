@@ -40,11 +40,33 @@ class ReceivePayment extends Page
         return auth()->user()?->hasPermission('receive_receivables') ?? false;
     }
 
-    public function mount(int|string $record): void
+    /**
+     * Filament SUDAH menyerahkan modelnya, bukan angka id.
+     *
+     * Sebelumnya tanda tangannya `mount(int|string $record)` dan isinya
+     * `CustomerGroup::findOrFail($record)`. Padahal route resource sudah
+     * mengubah `{record}` menjadi objek CustomerGroup sebelum mount berjalan,
+     * jadi findOrFail mencari grup yang idnya berupa OBJEK -- tidak pernah
+     * ketemu, dan ia menjawab dengan 404.
+     *
+     * Bentuk kegagalan yang paling menyesatkan yang bisa dipilih: Laravel
+     * TIDAK mencatat 404 ke log (`ModelNotFoundException` ada di daftar
+     * `dontReport` bawaan), sehingga di produksi halaman ini hanya menjawab
+     * "404 Not Found" tanpa meninggalkan satu baris pun di Log Viewer. Terlihat
+     * seperti halaman yang tidak ada, padahal kodenya berjalan dan datanya
+     * lengkap.
+     *
+     * Tidak ada yang menahannya karena halaman ini -- yang MENERIMA UANG --
+     * tidak punya satu pun pengujian, dan mencobanya dengan tangan menuntut
+     * merangkai pelanggan sampai invoice lebih dulu.
+     */
+    public function mount(int|string|CustomerGroup $record): void
     {
         abort_unless(static::canAccess(), 403);
 
-        $this->record = CustomerGroup::findOrFail($record);
+        $this->record = $record instanceof CustomerGroup
+            ? $record
+            : CustomerGroup::findOrFail($record);
 
         // Pre-fill allocations with 0 for all outstanding invoices
         $allocations = [];

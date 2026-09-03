@@ -25,9 +25,23 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
 
     public ?array $data = [];
 
-    public function mount($record): void
+    /**
+     * Filament SUDAH menyerahkan modelnya, bukan angka id.
+     *
+     * `DeliveryOrder::findOrFail($record)` dengan objek sebagai id tidak
+     * pernah menemukan apa pun, dan findOrFail menjawab 404 -- tanpa satu
+     * baris pun di log, karena Laravel tidak melaporkan
+     * `ModelNotFoundException`.
+     *
+     * Pengujian halaman ini hijau selama ini karena `Livewire::test()`
+     * menyerahkan ANGKA, jalur yang tidak pernah dilalui peramban. Lihat
+     * ResourcePageRecordBindingTest.
+     */
+    public function mount(int|string|DeliveryOrder $record): void
     {
-        $this->record = DeliveryOrder::findOrFail($record);
+        $this->record = $record instanceof DeliveryOrder
+            ? $record
+            : DeliveryOrder::findOrFail($record);
 
         if ($this->record->status !== 'Ready') {
             Notification::make()
