@@ -1336,15 +1336,54 @@ Baris judul kolom palsu di atas repeater hanya masuk akal saat kolomnya
 berjajar. Kelas `.swm-wide-only` di `missing-color-utilities.blade.php`
 menyembunyikannya di bawah 1024px, ambang yang sama dengan lg milik Filament.
 
-**MASIH TERBUKA: dua belas Resource lain punya ketimpangan yang sama.**
-Carcass, DO Receipt, Delivery Order, Delivery Plan, GR Beef, Material
-Requisition, Price List, Product Requisition, PO Material, PO Beef, Repack,
-dan Sales Order -- semuanya memakai `columns(int)` berdampingan dengan
-`columnSpan(int)` telanjang. Sales Order yang terparah dengan 13 rentang.
-Belum dikerjakan karena mengubah tata letak modul yang belum disisir tanpa
-melihat hasilnya di layar sungguhan justru cara yang bagus untuk merusak
-diam-diam. Kerjakan saat modulnya tiba gilirannya, atau sebagai satu sapuan
-tersendiri bila Owner meminta.
+**MASIH TERBUKA di dua belas Resource lain**, dan SUDAH PERNAH DICOBA DISAPU
+SEKALIGUS LALU DIBATALKAN. Baca bagian di bawah sebelum mencobanya lagi.
+
+### Sapuan tata letak serentak DIBATALKAN, 3 September 2026
+
+Sembilan belas berkas pernah dirapikan sekaligus lewat PR #204: seluruh
+`columnSpan(N)` telanjang diubah menjadi `['default' => 'full', 'lg' => N]`,
+lengkap dengan penjaga polanya. Semua test hijau, dan tidak ada satu pun
+halaman yang pernah dilihat di layar sungguhan sebelum dirilis.
+
+Owner memeriksa satu halaman -- **Create Request Material** -- dan hasilnya
+**lebih berantakan daripada sebelumnya**. PR itu di-revert utuh.
+
+**Pelajarannya bukan bahwa perbaikannya salah, melainkan bahwa bentuk
+pekerjaannya salah.** Test bisa membuktikan rentangnya sudah per breakpoint;
+tidak ada test yang bisa membuktikan halamannya enak dilihat. Tata letak hanya
+bisa dinilai dengan mata, di layar sungguhan, satu halaman pada satu waktu.
+
+Satu dugaan penyebabnya, karena ini ikut terbawa dalam sapuan yang sama:
+sepuluh berkas menyembunyikan baris judul repeaternya dengan
+
+```php
+->extraAttributes(['class' => 'hidden md:grid'])
+```
+
+`md:grid` termasuk kelas yang **tidak ada CSS-nya** di panel ini -- lihat
+bagian "Panel admin TIDAK memuat CSS hasil build aplikasi". Yang benar-benar
+berlaku hanya `hidden`, dan tidak ada apa pun yang membatalkannya di layar
+lebar. Artinya baris judul itu **tidak pernah tampil di ukuran layar mana
+pun**, termasuk di layar lebar tempat ia dibutuhkan, sejak hari ia ditulis.
+
+Memperbaikinya berarti **memunculkan baris judul yang belum pernah ada** di
+sepuluh form sekaligus. Kalau lebar kolomnya tidak pas dengan isinya, hasilnya
+justru lebih kacau daripada tidak ada judul sama sekali. Itu bug yang nyata dan
+tetap perlu dibereskan -- tapi satu per satu, sambil dilihat.
+
+**Cara mengerjakannya nanti:** ikut giliran modulnya. Saat sebuah modul
+disisir, rapikan rentangnya, munculkan baris judulnya, lalu MINTA OWNER
+MELIHATNYA sebelum lanjut. Persis cara Invoice dikerjakan, dan itu berhasil.
+
+Kelas `.swm-wide-only` di `missing-color-utilities.blade.php` tetap ada dan
+sudah dipakai Invoice; itu pengganti `hidden md:grid` yang benar.
+
+**Halaman pemindai sengaja DILUAR semua ini.** Scan Tally, Scan GR Product,
+Scan Mutation, dan Found Item Scanner memang menyembunyikan sidebar dan
+dirancang untuk layar lebar dengan alat pemindai di tangan, bukan untuk HP.
+Keputusan Owner: pastikan nyaman di layar lebar, layar kecil ditangani nanti
+kalau memang perlu.
 
 ### Invoice: satu rumus, arti kolom yang dikunci, dan penghapusan yang membereskan jejaknya
 
