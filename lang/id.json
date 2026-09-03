@@ -916,5 +916,6 @@
     "Not Yet Exchanged": "Belum Tukar Faktur",
     "Group Name": "Nama Grup",
     "Due Date": "Jatuh Tempo",
-    "Receivable": "Piutang"
+    "Receivable": "Piutang",
+    ":count Inv": ":count Inv"
 }

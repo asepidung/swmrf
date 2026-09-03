@@ -64,36 +64,76 @@ class Payment extends Model
         return $this->hasMany(PaymentDeduction::class, 'payment_id');
     }
 
+    /** Awalan nomor pembayaran, ditulis di satu tempat. */
+    public const NUMBER_PREFIX = 'PAY-';
+
+    /**
+     * Nomor pembayaran berikutnya.
+     *
+     * Bentuknya `PAY-0001/IX/26` -- urutannya di TENGAH, bukan di ujung,
+     * sehingga `DocumentNumber::next()` tidak bisa dipakai apa adanya. Yang
+     * penting dijaga di sini sama persis dengan yang dijaga di sana.
+     *
+     * Rakitan sebelumnya punya dua cara gagal, keduanya berakhir dengan
+     * nomor yang sudah dipakai dicoba lagi -- dan `payment_number` bertanda
+     * unique, jadi akibatnya bukan salah nomor melainkan CRASH di tengah hari
+     * kerja:
+     *
+     *  - ia mengambil pembayaran TERAKHIR menurut id, lalu membaca urutannya
+     *    dengan regex. Kalau nomor baris itu saja yang tidak cocok -- data
+     *    lama, impor, apa pun -- urutannya dikembalikan ke 1;
+     *  - ia tidak menghitung baris yang sudah dihapus lunak, padahal dokumen
+     *    boleh hilang dan nomornya tetap tidak boleh dipakai ulang.
+     *
+     * Sekarang yang diambil urutan TERBESAR di tahun berjalan, dari seluruh
+     * baris termasuk yang terhapus. Satu baris yang tidak terbaca tidak lagi
+     * bisa mengembalikan hitungannya ke nol.
+     *
+     * Tahunnya dibaca dari NOMORNYA sendiri, bukan dari `created_at`.
+     * Dokumen bertanggal mundur akan salah kelompok kalau dipilah dengan
+     * tanggal pembuatannya -- persoalan yang sama sudah diberesi di Invoice.
+     *
+     * `lockForUpdate()` hanya berlaku selama transaksi yang membukanya, dan
+     * halaman penerimaan pembayaran memang membungkus penyimpanannya dalam
+     * satu transaksi.
+     */
+    public static function nextNumber(): string
+    {
+        $year = date('y');
+
+        $romanMonths = [
+            1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV',
+            5 => 'V', 6 => 'VI', 7 => 'VII', 8 => 'VIII',
+            9 => 'IX', 10 => 'X', 11 => 'XI', 12 => 'XII',
+        ];
+
+        $sequence = static::withTrashed()
+            ->where('payment_number', 'like', static::NUMBER_PREFIX.'%/'.$year)
+            ->lockForUpdate()
+            ->pluck('payment_number')
+            ->map(function (string $number): int {
+                preg_match('#^'.preg_quote(static::NUMBER_PREFIX, '#').'(\d+)/#', $number, $match);
+
+                return (int) ($match[1] ?? 0);
+            })
+            ->max() ?? 0;
+
+        return sprintf(
+            '%s%04d/%s/%s',
+            static::NUMBER_PREFIX,
+            $sequence + 1,
+            $romanMonths[(int) date('n')],
+            $year,
+        );
+    }
+
     protected static function boot()
     {
         parent::boot();
 
         static::creating(function ($model) {
             if (empty($model->payment_number)) {
-                $currentYearFull = date('Y');
-                $year2Digit = date('y');
-                $currentMonth = date('n');
-                
-                $romanMonths = [
-                    1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV',
-                    5 => 'V', 6 => 'VI', 7 => 'VII', 8 => 'VIII',
-                    9 => 'IX', 10 => 'X', 11 => 'XI', 12 => 'XII'
-                ];
-                $romanMonth = $romanMonths[$currentMonth];
-
-                $lastPayment = self::whereYear('created_at', $currentYearFull)
-                                   ->orderBy('id', 'desc')
-                                   ->first();
-
-                if ($lastPayment && preg_match('/PAY-(\d+)\/[A-Z]+\/\d+/', $lastPayment->payment_number, $matches)) {
-                    $lastNumber = intval($matches[1]);
-                    $newNumber = $lastNumber + 1;
-                } else {
-                    $newNumber = 1;
-                }
-
-                $paddedNumber = str_pad($newNumber, 4, '0', STR_PAD_LEFT);
-                $model->payment_number = "PAY-{$paddedNumber}/{$romanMonth}/{$year2Digit}";
+                $model->payment_number = static::nextNumber();
             }
 
             if (empty($model->created_by)) {

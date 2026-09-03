@@ -916,5 +916,6 @@
     "Not Yet Exchanged": "Not Yet Exchanged",
     "Group Name": "Group Name",
     "Due Date": "Due Date",
-    "Receivable": "Receivable"
+    "Receivable": "Receivable",
+    ":count Inv": ":count Inv"
 }

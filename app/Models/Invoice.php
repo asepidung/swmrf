@@ -15,6 +15,16 @@ class Invoice extends Model
 {
     use SoftDeletes, LogsActivity;
 
+    /**
+     * Satu-satunya tempat kata 'Lunas' ditulis.
+     *
+     * Status invoice adalah kolom teks berisi lima nilai campur bahasa, dan
+     * "sudah dibayar atau belum" ditentukan dengan membandingkannya ke teks
+     * ini di banyak tempat. Satu salah ketik berarti invoice yang sudah lunas
+     * ikut terhitung sebagai piutang, tanpa satu pun gejala.
+     */
+    public const STATUS_PAID = 'Lunas';
+
     protected $table = 'invoices';
 
     protected $fillable = [
@@ -181,8 +191,8 @@ class Invoice extends Model
         // bukan keadaan pembayaran, jadi ia hanya boleh ditimpa saat tagihannya
         // benar-benar habis.
         if ($this->balance <= 0) {
-            $this->status = 'Lunas';
-        } elseif ($this->status === 'Lunas') {
+            $this->status = static::STATUS_PAID;
+        } elseif ($this->status === static::STATUS_PAID) {
             $this->status = 'Belum Dibayar';
         }
     }
@@ -270,7 +280,7 @@ class Invoice extends Model
             // Tanggal itu sudah menjadi riwayat, dan menghitungnya ulang dari
             // tanggal invoice akan menggeser jatuh tempo hasil tukar faktur
             // justru pada saat pelanggannya membayar.
-            if ($model->status === 'Lunas') {
+            if ($model->status === static::STATUS_PAID) {
                 return;
             }
 

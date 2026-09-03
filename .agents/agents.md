@@ -1406,6 +1406,56 @@ dirancang untuk layar lebar dengan alat pemindai di tangan, bukan untuk HP.
 Keputusan Owner: pastikan nyaman di layar lebar, layar kecil ditangani nanti
 kalau memang perlu.
 
+### Daftar piutang: satu aturan, satu kueri, dan nomor yang tidak bisa terulang
+
+**3 September 2026.** Tiga sisa temuan Receivable dibereskan sekaligus.
+
+**Nominal dan hitungan invoice dulu dihitung dengan dua aturan berbeda.**
+Nominalnya dijumlahkan lewat `join` mentah -- yang MELEWATI penyaring
+hapus-lunak invoice -- sementara hitungan "N Inv" memakai `whereHas` yang
+MENERAPKANNYA. Satu grup bisa menampilkan **"Rp 5.000.000 / 0 Inv"**: dua
+angka bersebelahan yang saling membantah, dan tidak ada cara tahu mana yang
+benar.
+
+Sekarang keduanya berangkat dari relasi yang sama, `CustomerGroup::invoices()`
+(`HasManyThrough` ke Invoice lewat Receivable). HasManyThrough menerapkan
+penyaring hapus-lunak pada baris piutang MAUPUN invoicenya, jadi pertanyaan
+yang sama tidak bisa lagi dijawab dua cara.
+
+**Enam kueri per baris grup.** Tiap kolom punya `getStateUsing` dan
+`description` yang berkueri sendiri-sendiri; dua puluh grup berarti seratus
+dua puluh kueri hanya untuk membuka satu halaman. Keenamnya kini menjadi
+subkueri agregat pada kueri tabelnya -- satu kali untuk seluruh halaman.
+
+Pengujiannya sengaja TIDAK mematok jumlah kueri, melainkan membandingkan lima
+grup lawan sepuluh grup dan menuntut angkanya SAMA. Yang dijaga bukan
+angkanya, melainkan bahwa menambah baris tidak menambah kueri.
+
+**Nomor pembayaran punya dua cara terulang**, keduanya berakhir crash karena
+`payment_number` bertanda unique:
+
+- ia mengambil pembayaran TERAKHIR menurut id lalu membaca urutannya dengan
+  regex, dan mengembalikan hitungannya ke **1** begitu nomor baris itu tidak
+  cocok -- data lama, impor, apa pun;
+- ia tidak menghitung baris yang sudah dihapus lunak, padahal dokumen boleh
+  hilang dan nomornya tetap tidak boleh dipakai ulang.
+
+`Payment::nextNumber()` sekarang mengambil urutan TERBESAR di tahun berjalan
+dari seluruh baris termasuk yang terhapus, dan tahunnya dibaca dari NOMORNYA
+sendiri, bukan dari `created_at` -- dokumen bertanggal mundur akan salah
+kelompok kalau dipilah dengan tanggal pembuatannya.
+
+Bentuk `PAY-0001/IX/26` menaruh urutannya di TENGAH, jadi
+`DocumentNumber::next()` tidak bisa dipakai apa adanya. Mengubah bentuknya
+berarti mengubah nomor dokumen yang dipegang keuangan, dan itu keputusan
+Owner -- bukan efek samping perbaikan.
+
+**`Invoice::STATUS_PAID`** kini satu-satunya tempat kata `'Lunas'` ditulis.
+Status invoice adalah kolom teks berisi lima nilai campur bahasa, dan "sudah
+dibayar atau belum" ditentukan dengan membandingkannya ke teks itu di banyak
+tempat; satu salah ketik berarti invoice lunas ikut terhitung sebagai piutang
+tanpa satu pun gejala.
+
 ### Penjaga bilingual hanya melihat kunci yang SUDAH terdaftar
 
 **3 September 2026.** Owner melaporkan bahasa modul Receivable belum beres.
