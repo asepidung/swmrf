@@ -39,6 +39,7 @@ class Invoice extends Model
         'charge',
         'additional_charges',
         'down_payment',
+        'paid_amount',
         'balance',
         'created_by',
     ];
@@ -55,6 +56,7 @@ class Invoice extends Model
         'charge' => 'float',
         'additional_charges' => 'array',
         'down_payment' => 'float',
+        'paid_amount' => 'float',
         'balance' => 'float',
     ];
 
@@ -141,6 +143,69 @@ class Invoice extends Model
         $receipt->deliveryOrder?->update(['status' => 'Invoiced']);
     }
 
+    /**
+     * Berapa yang ditagihkan kepada pelanggan.
+     *
+     * Dihitung, bukan disimpan. Ketiga kolomnya sudah ada dan sudah punya
+     * arti masing-masing sejak `charge` dipakai; menyimpan jumlahnya lagi
+     * hanya menambah satu angka yang bisa berbeda dari penyusunnya.
+     */
+    public function billedAmount(): float
+    {
+        return (float) $this->subtotal
+            + (float) $this->charge
+            - (float) $this->down_payment;
+    }
+
+    /**
+     * Sisa tagihan dan statusnya, dari satu tempat saja.
+     *
+     * Dulu `balance` dipakai bergantian oleh dua pihak yang tidak saling
+     * tahu: form Invoice menghitungnya dari barang dan uang muka, sementara
+     * penerimaan piutang menimpanya dengan sisa tagihan. Siapa pun yang
+     * menyentuhnya terakhir menang, dan yang kalah adalah uang yang sudah
+     * dibayar pelanggan.
+     *
+     * Sekarang `balance` TIDAK PERNAH ditulis dari luar. Ia selalu turunan
+     * dari yang ditagihkan dikurangi yang sudah dibayar -- mengikuti
+     * Payable::recalculate().
+     */
+    public function recalculate(): void
+    {
+        $billed = $this->billedAmount();
+        $paid = (float) $this->paid_amount;
+
+        $this->balance = max($billed - $paid, 0);
+
+        // Status TF ('Belum TF' / 'Sudah TF') menyimpan riwayat tukar faktur,
+        // bukan keadaan pembayaran, jadi ia hanya boleh ditimpa saat tagihannya
+        // benar-benar habis.
+        if ($this->balance <= 0) {
+            $this->status = 'Lunas';
+        } elseif ($this->status === 'Lunas') {
+            $this->status = 'Belum Dibayar';
+        }
+    }
+
+    /**
+     * Catat satu pembayaran pelanggan.
+     *
+     * Yang bertambah adalah `paid_amount`; `balance` menyusul dengan
+     * sendirinya. Tidak ada satu pun jalur yang boleh mengurangi `balance`
+     * secara langsung lagi.
+     */
+    public function applyPayment(float $amount): void
+    {
+        if ($amount <= 0) {
+            throw new \InvalidArgumentException(__('Payment must be more than zero.'));
+        }
+
+        $this->paid_amount = (float) $this->paid_amount + $amount;
+
+        $this->recalculate();
+        $this->save();
+    }
+
     protected static function boot()
     {
         parent::boot();
@@ -193,7 +258,22 @@ class Invoice extends Model
             $model->markDeliveryDocumentsInvoiced();
         });
 
+        // Sisa tagihan diturunkan ulang setiap kali barisnya disimpan, apa pun
+        // yang dikirim form. Inilah yang membuat menyunting invoice tidak bisa
+        // lagi menghapus pembayaran yang sudah diterima.
+        static::saving(function (Invoice $model) {
+            $model->recalculate();
+        });
+
         static::saving(function ($model) {
+            // Invoice yang sudah lunas TIDAK dihitung ulang jatuh temponya.
+            // Tanggal itu sudah menjadi riwayat, dan menghitungnya ulang dari
+            // tanggal invoice akan menggeser jatuh tempo hasil tukar faktur
+            // justru pada saat pelanggannya membayar.
+            if ($model->status === 'Lunas') {
+                return;
+            }
+
             if ($model->status === 'Belum TF') {
                 $model->due_date = null;
             } elseif ($model->status === 'Sudah TF') {

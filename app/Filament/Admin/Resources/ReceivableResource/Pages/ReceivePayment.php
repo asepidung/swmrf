@@ -218,25 +218,17 @@ class ReceivePayment extends Page
                     ]);
 
                     $invoice = \App\Models\Invoice::find($invId);
-                    if ($invoice) {
-                        $newBalance = $invoice->balance - $allocAmount;
-                        // Avoid negative balance
-                        if ($newBalance < 0) {
-                            $newBalance = 0;
-                        }
 
-                        $invoice->balance = $newBalance;
-                        
-                        if ($newBalance <= 0) {
-                            $invoice->status = 'Lunas';
-                        } else {
-                            if ($invoice->status === 'Sudah TF') {
-                                // Kept or changed to Cicilan? 'Cicilan' not defined previously, just keep 'Sudah TF' or 'Cicilan'.
-                                // For now, we can leave it as it was, or we can use the balance to know it's partial.
-                            }
-                        }
-                        $invoice->save();
-                    }
+                    // Yang bertambah adalah jumlah yang SUDAH DIBAYAR, bukan
+                    // sisa tagihannya. Sisa tagihan diturunkan sendiri oleh
+                    // Invoice::recalculate(), dan hanya di sana.
+                    //
+                    // Dulu baris ini menimpa `balance` langsung. Kolom yang
+                    // sama juga dihitung ulang oleh form Invoice dari barang
+                    // dan uang muka, tanpa tahu apa-apa tentang pembayaran --
+                    // jadi cukup menyunting invoicenya sekali dan pembayaran
+                    // ini lenyap dari tagihan.
+                    $invoice?->applyPayment($allocAmount);
                 }
             }
 

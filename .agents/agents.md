@@ -1385,6 +1385,77 @@ dirancang untuk layar lebar dengan alat pemindai di tangan, bukan untuk HP.
 Keputusan Owner: pastikan nyaman di layar lebar, layar kecil ditangani nanti
 kalau memang perlu.
 
+### Piutang: pembayaran pelanggan berhenti ditimpakan ke kolom tagihan
+
+**3 September 2026, temuan terberat sejauh ini.** Penerimaan piutang MENIMPA
+`invoices.balance` dengan sisa tagihan:
+
+```php
+$invoice->balance = $invoice->balance - $allocAmount;
+```
+
+Kolom yang semula berarti "berapa yang ditagihkan" berubah makna menjadi
+"berapa yang masih kurang", dan jumlah aslinya tidak disimpan di mana pun.
+
+Sementara itu form Invoice menghitung ulang **kolom yang sama** dari barang,
+biaya, dan uang muka -- tanpa tahu apa-apa tentang pembayaran. Jadi:
+
+> Pelanggan bayar 600rb dari tagihan 1jt, sisa 400rb. Siapa pun membuka
+> invoice itu dan mengubah **satu angka apa saja**, sisa tagihan melompat
+> kembali ke **1jt**. Pembayarannya lenyap dari tagihan, sementara catatan
+> alokasinya tetap ada. Tanpa error, tanpa peringatan.
+
+Sudah dibuktikan lewat halaman Edit yang sungguhan, bukan dibaca dari kode:
+`ReceivablePaymentIntegrityTest`.
+
+Ini juga sebabnya penjaga hapus yang dipasang sehari sebelumnya belum cukup.
+Invoice yang sudah dibayar memang tidak bisa DIHAPUS, tetapi masih bisa
+DISUNTING sampai pembayarannya hilang.
+
+**Sekarang keduanya kolom yang berbeda, mengikuti Payable:**
+
+```
+ditagihkan  = subtotal + charge - down_payment   (dihitung, tidak disimpan)
+paid_amount = jumlah seluruh alokasi pembayaran   (kolom baru)
+balance     = ditagihkan - paid_amount            (turunan, milik model)
+```
+
+`Invoice::recalculate()` satu-satunya yang menulis `balance`, dipanggil dari
+hook `saving` sehingga berlaku apa pun yang dikirim form. Field `balance` di
+form kini `->dehydrated(false)`: ia hanya ditampilkan.
+
+Pembayaran masuk lewat `Invoice::applyPayment()`, yang menambah `paid_amount`
+dan membiarkan sisanya menyusul sendiri.
+
+**Migrasi `2026_09_03_160000` sekaligus MEMPERBAIKI data yang sudah rusak.**
+`paid_amount` dihitung ulang dari `payment_allocations` -- catatan yang tidak
+pernah ditimpa -- lalu `balance` dan `status` diturunkan ulang dari sana.
+Invoice yang tadinya tampak lunas hanya karena balancenya pernah tertimpa nol
+akan kembali bersisa, dan sebaliknya.
+
+**Jatuh tempo invoice lunas tidak lagi dihitung ulang.** Hook `saving`
+sebelumnya menghitung ulang `due_date` untuk status apa pun selain TF, jadi
+membayar invoice hasil tukar faktur menggeser jatuh temponya kembali ke
+tanggal invoice -- justru pada saat pelanggannya membayar. Status `'Lunas'`
+kini melewati perhitungan itu; tanggalnya sudah menjadi riwayat.
+
+Dua penjaga pola: tidak ada berkas selain modelnya yang boleh menulis
+`$invoice->balance`, dan field balance di form wajib `dehydrated(false)`.
+
+**Sisa temuan Receivable, BELUM dikerjakan** (kerapian, bukan uang):
+
+- **Nominal dan hitungan invoice di daftar dihitung dengan dua aturan
+  berbeda.** Nominalnya memakai `join` mentah yang MELEWATI penyaring
+  hapus-lunak invoice; hitungan "N Inv" memakai `whereHas` yang
+  MENERAPKANNYA. Satu grup bisa menampilkan "Rp 5.000.000 / 0 Inv".
+- **Enam kueri per baris grup.** Tiga kolom, masing-masing punya
+  `getStateUsing` dan `description` yang berkueri sendiri.
+- **Lunas ditentukan dengan `status != 'Lunas'`** pada kolom teks berisi lima
+  nilai campur bahasa.
+- **Penomoran pembayaran masih rakitan lama** -- `whereYear` + id terbesar +
+  regex, dan bila regexnya tidak cocok nomornya kembali ke 1. `payment_number`
+  unique, jadi akibatnya crash. `DocumentNumber::next()` sudah ada.
+
 ### Invoice: satu rumus, arti kolom yang dikunci, dan penghapusan yang membereskan jejaknya
 
 **3 September 2026.** Modul Invoice disisir. Temuan pentingnya:

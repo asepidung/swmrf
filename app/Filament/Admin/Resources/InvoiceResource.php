@@ -339,7 +339,14 @@ class InvoiceResource extends Resource
                                     ->hiddenLabel()
                                     ->prefix(__('Total Billed'))
                                     ->disabled()
-                                    ->dehydrated(true)
+                                    // TIDAK dikirim ke basis data. Kolom ini
+                                    // milik Invoice::recalculate() sepenuhnya,
+                                    // karena ia juga menampung pembayaran
+                                    // pelanggan -- dan form tidak tahu apa-apa
+                                    // tentang itu. Selama form ikut menulisnya,
+                                    // menyunting invoice yang sudah dicicil
+                                    // menghapus pembayarannya.
+                                    ->dehydrated(false)
                                     ->default(fn () => static::initialTotal('balance'))
                                     ->columnSpan(['default' => 'full', 'lg' => 5])
                                     ->columnStart(['lg' => 8]),
@@ -436,6 +443,10 @@ class InvoiceResource extends Resource
         $rootSet('subtotal', $subtotal);
         $rootSet('total_discount', $totalDiscount);
         $rootSet('charge', $charge);
+
+        // Hanya untuk ditampilkan. Field balance tidak dikirim ke basis data,
+        // karena angka sebenarnya juga memperhitungkan pembayaran pelanggan --
+        // dan form tidak tahu apa-apa tentang itu.
         $rootSet('balance', round($subtotal + $charge - $downPayment, 0));
     }
 

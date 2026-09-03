@@ -21,7 +21,12 @@ namespace App\Support;
  *
  *     subtotal = barang, sesudah diskon barisnya
  *     charge   = biaya tambahan, sesudah diskon barisnya
- *     balance  = subtotal + charge - uang muka
+ *     balance  = subtotal + charge - uang muka - yang sudah dibayar
+ *
+ * Bagian "yang sudah dibayar" TIDAK dihitung di sini. Form tidak tahu
+ * apa-apa tentang pembayaran pelanggan, jadi `balance` yang dihasilkannya
+ * hanya untuk DITAMPILKAN -- Invoice::recalculate() yang menurunkan angka
+ * sebenarnya saat barisnya disimpan.
  *
  * Kolom `charge` sudah ada di tabel sejak awal dan tidak pernah diisi.
  * Sekarang ia yang menampung biaya tambahan, jadi `subtotal` bisa kembali
