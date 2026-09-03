@@ -203,6 +203,30 @@ class WebPushNotificationTest extends TestCase
             ->assertSee('1 / 2');
     }
 
+    /**
+     * Dan ia menyingkir begitu semua orang sudah berlangganan.
+     *
+     * "3 / 3 (100%)" tidak menyuruh siapa pun melakukan apa pun, dan
+     * pengumuman yang tidak menuntut tindakan justru mengajari orang melewati
+     * baris itu -- termasuk pada hari angkanya turun. Yang dijaga tetap sama:
+     * kegagalannya terlihat.
+     */
+    /** @test */
+    public function it_hides_the_coverage_widget_once_everyone_is_subscribed()
+    {
+        $programmer = $this->makeUser('coverage_full_one', 'programmer', [], subscribed: true);
+        $this->makeUser('coverage_full_two', 'employee', [], subscribed: true);
+
+        $this->actingAs($programmer);
+
+        $this->assertFalse(\App\Filament\Admin\Widgets\PushSubscriptionCoverageWidget::canView());
+
+        // Satu orang baru yang belum menyalakan notifikasi mengembalikannya.
+        $this->makeUser('coverage_full_three', 'employee', [], subscribed: false);
+
+        $this->assertTrue(\App\Filament\Admin\Widgets\PushSubscriptionCoverageWidget::canView());
+    }
+
     /** @test */
     public function it_hides_the_coverage_widget_from_users_who_do_not_oversee_the_system()
     {

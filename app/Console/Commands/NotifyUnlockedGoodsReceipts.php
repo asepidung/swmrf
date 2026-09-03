@@ -5,9 +5,9 @@ namespace App\Console\Commands;
 use App\Filament\Admin\Resources\GoodsReceiptMaterialResource;
 use App\Models\GoodsReceiptMaterial;
 use App\Models\GoodsReceiptProduct;
+use App\Support\ScheduledRun;
 use App\Support\TaskNotifier;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * Mengingatkan Goods Receipt yang sudah lewat sehari tetapi belum dikunci.
@@ -48,8 +48,13 @@ class NotifyUnlockedGoodsReceipts extends Command
      * TIDAK menghasilkan gejala apa pun: tidak ada error, tidak ada
      * notifikasi, dan tidak ada yang menyadari bahwa peringatannya sudah lama
      * berhenti terkirim.
+     *
+     * Disimpan di basis data, BUKAN di cache. Deploy kami menjalankan
+     * `optimize:clear`, dan penanda yang tersimpan di cache ikut terhapus
+     * setiap rilis -- membuat Dashboard mengumumkan kerusakan yang tidak
+     * pernah terjadi. Lihat App\Support\ScheduledRun.
      */
-    public const LAST_RUN_CACHE_KEY = 'goods_receipts.unlocked_reminder.last_run';
+    public const LAST_RUN_KEY = 'goods_receipts.unlocked_reminder.last_run';
 
     protected $signature = 'goods-receipts:notify-unlocked';
 
@@ -62,7 +67,7 @@ class NotifyUnlockedGoodsReceipts extends Command
         // Dicatat lebih dulu, apa pun hasilnya. Yang perlu diketahui
         // Dashboard adalah "pemeriksaannya berjalan", bukan "ada yang
         // dikirim" -- hari tanpa GR menggantung memang tidak mengirim apa-apa.
-        Cache::forever(static::LAST_RUN_CACHE_KEY, now()->toIso8601String());
+        ScheduledRun::stamp(static::LAST_RUN_KEY);
 
         if ($summary['total'] === 0) {
             $this->info('Tidak ada Goods Receipt yang menggantung.');

@@ -4,25 +4,34 @@ namespace App\Filament\Admin\Widgets;
 
 use App\Console\Commands\NotifyDuePayables;
 use App\Console\Commands\NotifyUnlockedGoodsReceipts;
+use App\Support\ScheduledRun;
 use Carbon\Carbon;
 use Filament\Widgets\Widget;
-use Illuminate\Support\Facades\Cache;
 
 /**
- * Apakah pemeriksaan jatuh tempo benar-benar berjalan?
+ * Apakah pemeriksaan terjadwal benar-benar berjalan?
  *
- * Peringatan hutang jatuh tempo bergantung pada satu baris cron di hPanel
- * Hostinger. Kalau baris itu tidak pernah dipasang, terhapus, atau berhenti
- * karena apa pun, akibatnya TIDAK menghasilkan gejala sama sekali: tidak ada
- * error, tidak ada halaman rusak, hanya notifikasi yang tidak pernah datang
- * lagi. Tagihan lewat jatuh tempo baru ketahuan saat supplier menagih.
+ * Peringatan hutang jatuh tempo dan Goods Receipt menggantung bergantung pada
+ * satu baris cron di hPanel Hostinger. Kalau baris itu tidak pernah dipasang,
+ * terhapus, atau berhenti karena apa pun, akibatnya TIDAK menghasilkan gejala
+ * sama sekali: tidak ada error, tidak ada halaman rusak, hanya notifikasi yang
+ * tidak pernah datang lagi. Tagihan lewat jatuh tempo baru ketahuan saat
+ * pemasok menagih.
  *
  * Ini pelajaran yang sama dengan penghitung langganan notifikasi: kegagalan
- * yang tidak dihitung tidak akan pernah disadari. Karena itu waktu
- * pemeriksaan terakhir ditampilkan, bukan diasumsikan berjalan.
+ * yang tidak dihitung tidak akan pernah disadari.
+ *
+ * MUNCUL HANYA SAAT ADA YANG SALAH. Sebelumnya widget ini memakai satu baris
+ * penuh setiap hari untuk mengatakan "semuanya normal", dan pengumuman yang
+ * selalu sama akan berhenti dibaca -- termasuk pada hari isinya berubah.
+ * Dashboard yang bersih di sini berarti pemeriksaannya sehat.
  *
  * Yang ditandai adalah PEMERIKSAANNYA, bukan pengirimannya. Hari tanpa
  * tagihan jatuh tempo memang tidak mengirim apa-apa, dan itu benar.
+ *
+ * Hitungan "berapa yang perlu ditangani" sengaja TIDAK ada di sini. Itu sudah
+ * menjadi tugas PendingTaskWidget, dan menampilkan angka yang sama dua kali
+ * di satu halaman hanya membuat orang bertanya-tanya mana yang benar.
  */
 class ScheduledReminderHealthWidget extends Widget
 {
@@ -32,12 +41,18 @@ class ScheduledReminderHealthWidget extends Widget
 
     protected static ?int $sort = -1;
 
-    /** Hanya ditampilkan kepada yang mengawasi sistem. */
+    /**
+     * Hanya kepada yang mengawasi sistem, dan hanya saat ada yang salah.
+     */
     public static function canView(): bool
     {
         $user = auth()->user();
 
-        return $user && ($user->isProgrammer() || $user->hasPermission('view_users'));
+        if (! $user || ! ($user->isProgrammer() || $user->hasPermission('view_users'))) {
+            return false;
+        }
+
+        return ! static::isHealthy();
     }
 
     /**
@@ -50,11 +65,11 @@ class ScheduledReminderHealthWidget extends Widget
      *
      * @return array<int, string>
      */
-    protected function watchedCommands(): array
+    protected static function watchedCommands(): array
     {
         return [
-            NotifyDuePayables::LAST_RUN_CACHE_KEY,
-            NotifyUnlockedGoodsReceipts::LAST_RUN_CACHE_KEY,
+            NotifyDuePayables::LAST_RUN_KEY,
+            NotifyUnlockedGoodsReceipts::LAST_RUN_KEY,
         ];
     }
 
@@ -66,18 +81,18 @@ class ScheduledReminderHealthWidget extends Widget
      * belum pernah berjalan sudah cukup untuk menyatakan pemeriksaannya
      * tidak utuh.
      */
-    public function getLastRun(): ?Carbon
+    public static function getLastRun(): ?Carbon
     {
         $waktu = [];
 
-        foreach ($this->watchedCommands() as $key) {
-            $stamp = Cache::get($key);
+        foreach (static::watchedCommands() as $key) {
+            $stamp = ScheduledRun::lastRunAt($key);
 
             if (! $stamp) {
                 return null;
             }
 
-            $waktu[] = Carbon::parse($stamp);
+            $waktu[] = $stamp;
         }
 
         return $waktu === [] ? null : min($waktu);
@@ -90,22 +105,10 @@ class ScheduledReminderHealthWidget extends Widget
      * sesaat -- server sibuk, jadwal bergeser sedikit -- tidak langsung
      * dilaporkan sebagai kerusakan.
      */
-    public function isHealthy(): bool
+    public static function isHealthy(): bool
     {
-        $lastRun = $this->getLastRun();
+        $lastRun = static::getLastRun();
 
         return $lastRun !== null && $lastRun->greaterThan(now()->subDays(2));
-    }
-
-    /** @return array{overdue:int, today:int, soon:int, total:int} */
-    public function getSummary(): array
-    {
-        return NotifyDuePayables::summary();
-    }
-
-    /** @return array{beef:int, material:int, total:int} */
-    public function getUnlockedSummary(): array
-    {
-        return NotifyUnlockedGoodsReceipts::summary();
     }
 }

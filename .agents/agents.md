@@ -1299,6 +1299,57 @@ dan beda dari membayar.
 **Belum ada cara membatalkan kompensasi.** Owner sudah diberi tahu; menunggu
 pembahasan tersendiri.
 
+### Penanda cron JANGAN disimpan di cache, dan dua widget pengawas kini diam saat sehat
+
+**3 September 2026.** Owner bertanya soal dua notifikasi di Dashboard --
+Scheduled Reminders dan Device Notifications -- apakah memang perlu.
+Pemeriksaannya menemukan dua hal.
+
+**Yang pertama sebuah bug, dan bug yang tepat merusak alatnya sendiri.** Waktu
+jalan terakhir kedua perintah terjadwal disimpan dengan `Cache::forever`.
+Namanya menjanjikan selamanya, tetapi langkah deploy kami selalu menjalankan
+`php artisan optimize:clear`, dan di dalamnya ada `cache:clear`. Jadi setiap
+rilis menghapus penandanya, dan Dashboard mengumumkan **"Never"** walaupun
+cron-nya sehat.
+
+Ini bukan sekadar tampilan yang salah. Widget itu dipasang justru untuk
+menemukan kegagalan yang tidak bergejala, dan **alarm palsu yang berulang
+mengajari orang mengabaikannya**. Saat cron benar-benar mati nanti, tidak akan
+ada lagi yang percaya. Alat pendeteksi yang berbohong berkala lebih buruk
+daripada tidak ada alat sama sekali.
+
+Penandanya sekarang di tabel `scheduled_run_marks` lewat `App\Support\ScheduledRun`.
+Bedanya halus tapi menentukan: **cache boleh hilang karena isinya bisa dihitung
+ulang; angka ini tidak bisa.** Kalau ia hilang, yang tersisa cuma
+ketidaktahuan, dan ketidaktahuan di sini terbaca sama persis dengan kerusakan.
+
+Dijaga dua test. Yang satu meniru deploy secara harfiah -- jalankan perintah,
+`Cache::flush()`, lalu pastikan Dashboard masih menyatakan sehat. Yang satu
+lagi menyisir seluruh `app/Console/Commands` dan menolak `Cache::forever`
+muncul lagi di sana.
+
+**Yang kedua keputusan tampilan: keduanya hanya muncul saat ada yang salah.**
+Sebelumnya masing-masing memakan satu baris penuh setiap hari, dan 99% waktu
+isinya "semuanya normal". `3 / 3 (100%)` tidak menyuruh siapa pun melakukan
+apa pun. Pengumuman yang tidak menuntut tindakan mengajari orang melewati
+baris itu -- **termasuk pada hari isinya berubah**.
+
+Sekarang Scheduled Reminders muncul hanya bila pemeriksaannya belum pernah
+jalan atau sudah lewat dua hari, dan Device Notifications hanya bila masih ada
+pengguna aktif yang belum berlangganan. **Dashboard yang bersih di kedua
+tempat itu berarti sehat.** Yang dijaga tetap sama, kegagalannya terlihat; yang
+berubah, keberhasilannya berhenti minta tempat.
+
+Ikut dibuang: kolom "Needing attention" di widget kesehatan, yang menampilkan
+hitungan Goods Receipt menggantung padahal `PendingTaskWidget` sudah
+menampilkan angka yang sama di halaman yang sama.
+
+**Catatan untuk rilis ini.** Tabelnya berangkat kosong, jadi tepat setelah
+deploy widget kesehatan akan berkata "belum pernah berjalan" sampai cron jam
+08:00 berikutnya menandainya. Itu jujur dan sengaja dibiarkan: menyetempel
+tabelnya dari migrasi berarti menyatakan sesuatu sudah berjalan padahal belum,
+dan justru itu yang menyembunyikan cron yang memang tidak terpasang.
+
 ### Rumus saldo hutang hanya ada di SATU tempat
 
 `Payable::recalculate()`. Sebelumnya rumus saldo dan status disalin di **enam

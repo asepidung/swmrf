@@ -10,8 +10,8 @@ use App\Models\Payable;
 use App\Models\Permission;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Support\ScheduledRun;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -166,11 +166,11 @@ class DuePayableReminderTest extends TestCase
      */
     public function test_the_check_records_that_it_ran_even_on_a_quiet_day(): void
     {
-        Cache::forget(NotifyDuePayables::LAST_RUN_CACHE_KEY);
+        ScheduledRun::forget(NotifyDuePayables::LAST_RUN_KEY);
 
         $this->artisan('payables:notify-due')->assertSuccessful();
 
-        $this->assertNotNull(Cache::get(NotifyDuePayables::LAST_RUN_CACHE_KEY));
+        $this->assertNotNull(ScheduledRun::lastRunAt(NotifyDuePayables::LAST_RUN_KEY));
     }
 
     /**
@@ -181,7 +181,7 @@ class DuePayableReminderTest extends TestCase
      */
     public function test_the_dashboard_shows_when_the_check_has_never_run(): void
     {
-        Cache::forget(NotifyDuePayables::LAST_RUN_CACHE_KEY);
+        ScheduledRun::forget(NotifyDuePayables::LAST_RUN_KEY);
 
         $widget = new ScheduledReminderHealthWidget();
 
@@ -194,13 +194,13 @@ class DuePayableReminderTest extends TestCase
     {
         $widget = new ScheduledReminderHealthWidget();
 
-        $segar = now()->subHours(2)->toIso8601String();
+        $segar = now()->subHours(2);
 
-        Cache::forever(NotifyDuePayables::LAST_RUN_CACHE_KEY, now()->subDays(5)->toIso8601String());
-        Cache::forever(NotifyUnlockedGoodsReceipts::LAST_RUN_CACHE_KEY, $segar);
+        ScheduledRun::stampAt(NotifyDuePayables::LAST_RUN_KEY, now()->subDays(5));
+        ScheduledRun::stampAt(NotifyUnlockedGoodsReceipts::LAST_RUN_KEY, $segar);
         $this->assertFalse($widget->isHealthy());
 
-        Cache::forever(NotifyDuePayables::LAST_RUN_CACHE_KEY, $segar);
+        ScheduledRun::stampAt(NotifyDuePayables::LAST_RUN_KEY, $segar);
         $this->assertTrue($widget->isHealthy());
     }
 
@@ -217,8 +217,8 @@ class DuePayableReminderTest extends TestCase
     {
         $widget = new ScheduledReminderHealthWidget();
 
-        Cache::forever(NotifyDuePayables::LAST_RUN_CACHE_KEY, now()->subHours(2)->toIso8601String());
-        Cache::forever(NotifyUnlockedGoodsReceipts::LAST_RUN_CACHE_KEY, now()->subDays(5)->toIso8601String());
+        ScheduledRun::stampAt(NotifyDuePayables::LAST_RUN_KEY, now()->subHours(2));
+        ScheduledRun::stampAt(NotifyUnlockedGoodsReceipts::LAST_RUN_KEY, now()->subDays(5));
 
         $this->assertFalse($widget->isHealthy());
     }
@@ -233,8 +233,8 @@ class DuePayableReminderTest extends TestCase
     {
         $widget = new ScheduledReminderHealthWidget();
 
-        Cache::forever(NotifyDuePayables::LAST_RUN_CACHE_KEY, now()->subHours(2)->toIso8601String());
-        Cache::forget(NotifyUnlockedGoodsReceipts::LAST_RUN_CACHE_KEY);
+        ScheduledRun::stampAt(NotifyDuePayables::LAST_RUN_KEY, now()->subHours(2));
+        ScheduledRun::forget(NotifyUnlockedGoodsReceipts::LAST_RUN_KEY);
 
         $this->assertNull($widget->getLastRun());
         $this->assertFalse($widget->isHealthy());
@@ -274,5 +274,75 @@ class DuePayableReminderTest extends TestCase
         $this->artisan('goods-receipts:notify-unlocked')->assertSuccessful();
 
         Notification::assertNothingSent();
+    }
+
+    /**
+     * PENANDANYA HARUS SELAMAT DARI DEPLOY.
+     *
+     * Ini pengujian yang paling penting di berkas ini, karena ia meniru bug
+     * yang benar-benar terjadi. Penanda ini dulu disimpan dengan
+     * Cache::forever, sementara setiap rilis menjalankan `optimize:clear` --
+     * yang di dalamnya ada `cache:clear`. Akibatnya Dashboard mengumumkan
+     * "belum pernah berjalan" tiap habis rilis, padahal cron-nya sehat.
+     *
+     * Alarm palsu yang berulang lebih buruk daripada tidak ada alarm sama
+     * sekali: orang belajar mengabaikannya, dan saat cron benar-benar mati
+     * tidak ada lagi yang percaya.
+     *
+     * Cache::flush() di bawah ini adalah `cache:clear` itu sendiri.
+     */
+    public function test_the_run_mark_survives_a_cache_clear(): void
+    {
+        $this->artisan('payables:notify-due')->assertSuccessful();
+        $this->artisan('goods-receipts:notify-unlocked')->assertSuccessful();
+
+        $this->assertTrue(ScheduledReminderHealthWidget::isHealthy());
+
+        \Illuminate\Support\Facades\Cache::flush();
+
+        $this->assertNotNull(ScheduledRun::lastRunAt(NotifyDuePayables::LAST_RUN_KEY));
+        $this->assertTrue(
+            ScheduledReminderHealthWidget::isHealthy(),
+            'Deploy menghapus penanda jalan terakhir, dan Dashboard melaporkan kerusakan yang tidak pernah terjadi.',
+        );
+    }
+
+    /** Dan tidak ada satu pun perintah terjadwal yang kembali menyimpannya di cache. */
+    public function test_no_scheduled_command_stores_its_run_mark_in_the_cache(): void
+    {
+        foreach (glob(app_path('Console/Commands/*.php')) as $berkas) {
+            $this->assertStringNotContainsString(
+                'Cache::'.'forever',
+                file_get_contents($berkas),
+                basename($berkas).' menyimpan penanda di cache, yang ikut terhapus setiap deploy.',
+            );
+        }
+    }
+
+    /**
+     * Dashboard yang bersih berarti sehat.
+     *
+     * Widget ini dulu memakai satu baris penuh setiap hari untuk mengatakan
+     * "semuanya normal". Pengumuman yang selalu sama akan berhenti dibaca --
+     * termasuk pada hari isinya berubah.
+     */
+    public function test_the_health_widget_stays_out_of_the_way_while_everything_works(): void
+    {
+        $pengawas = User::create([
+            'name' => 'Pengawas', 'username' => 'pengawas_widget', 'password' => 'secret-password',
+            'gender' => 'L', 'role' => 'programmer', 'is_active' => true,
+        ]);
+
+        $this->actingAs($pengawas);
+
+        ScheduledRun::stampAt(NotifyDuePayables::LAST_RUN_KEY, now()->subHours(2));
+        ScheduledRun::stampAt(NotifyUnlockedGoodsReceipts::LAST_RUN_KEY, now()->subHours(2));
+
+        $this->assertFalse(ScheduledReminderHealthWidget::canView());
+
+        // Tapi begitu satu pemeriksaan tertinggal, ia harus muncul.
+        ScheduledRun::stampAt(NotifyDuePayables::LAST_RUN_KEY, now()->subDays(5));
+
+        $this->assertTrue(ScheduledReminderHealthWidget::canView());
     }
 }
