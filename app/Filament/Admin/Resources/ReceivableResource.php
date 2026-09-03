@@ -192,6 +192,7 @@ class ReceivableResource extends Resource
     {
         return [
             \App\Filament\Admin\Resources\ReceivableResource\RelationManagers\ReceivablesRelationManager::class,
+            \App\Filament\Admin\Resources\ReceivableResource\RelationManagers\PaymentsRelationManager::class,
         ];
     }
 

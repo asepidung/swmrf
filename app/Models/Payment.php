@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -64,66 +65,34 @@ class Payment extends Model
         return $this->hasMany(PaymentDeduction::class, 'payment_id');
     }
 
-    /** Awalan nomor pembayaran, ditulis di satu tempat. */
-    public const NUMBER_PREFIX = 'PAY-';
+    /**
+     * Awalan nomor bukti terima pembayaran pelanggan.
+     *
+     * PR = Payment Receipt. Bentuknya disamakan dengan dokumen lain di
+     * aplikasi ini -- awalan, dua digit tahun, lalu urutannya di UJUNG --
+     * supaya `DocumentNumber::next()` bisa dipakai apa adanya.
+     *
+     * Bentuk lamanya `PAY-0001/IX/26` menaruh urutan di TENGAH, sehingga
+     * penomorannya harus dirakit sendiri, dan rakitan itulah yang punya dua
+     * cara terulang. Keputusan Project Owner, 3 September 2026: PR# untuk
+     * uang masuk, PV# untuk uang keluar -- awalannya langsung memberi tahu
+     * arah uangnya.
+     */
+    public const NUMBER_PREFIX = 'PR#';
 
     /**
-     * Nomor pembayaran berikutnya.
+     * Nomor berikutnya, lewat satu-satunya penomoran dokumen di aplikasi ini.
      *
-     * Bentuknya `PAY-0001/IX/26` -- urutannya di TENGAH, bukan di ujung,
-     * sehingga `DocumentNumber::next()` tidak bisa dipakai apa adanya. Yang
-     * penting dijaga di sini sama persis dengan yang dijaga di sana.
-     *
-     * Rakitan sebelumnya punya dua cara gagal, keduanya berakhir dengan
-     * nomor yang sudah dipakai dicoba lagi -- dan `payment_number` bertanda
-     * unique, jadi akibatnya bukan salah nomor melainkan CRASH di tengah hari
-     * kerja:
-     *
-     *  - ia mengambil pembayaran TERAKHIR menurut id, lalu membaca urutannya
-     *    dengan regex. Kalau nomor baris itu saja yang tidak cocok -- data
-     *    lama, impor, apa pun -- urutannya dikembalikan ke 1;
-     *  - ia tidak menghitung baris yang sudah dihapus lunak, padahal dokumen
-     *    boleh hilang dan nomornya tetap tidak boleh dipakai ulang.
-     *
-     * Sekarang yang diambil urutan TERBESAR di tahun berjalan, dari seluruh
-     * baris termasuk yang terhapus. Satu baris yang tidak terbaca tidak lagi
-     * bisa mengembalikan hitungannya ke nol.
-     *
-     * Tahunnya dibaca dari NOMORNYA sendiri, bukan dari `created_at`.
-     * Dokumen bertanggal mundur akan salah kelompok kalau dipilah dengan
-     * tanggal pembuatannya -- persoalan yang sama sudah diberesi di Invoice.
-     *
-     * `lockForUpdate()` hanya berlaku selama transaksi yang membukanya, dan
-     * halaman penerimaan pembayaran memang membungkus penyimpanannya dalam
-     * satu transaksi.
+     * Nomor milik dokumen yang sudah dihapus TETAP dihitung: dokumen boleh
+     * hilang, nomornya tidak boleh dipakai ulang.
      */
     public static function nextNumber(): string
     {
-        $year = date('y');
-
-        $romanMonths = [
-            1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV',
-            5 => 'V', 6 => 'VI', 7 => 'VII', 8 => 'VIII',
-            9 => 'IX', 10 => 'X', 11 => 'XI', 12 => 'XII',
-        ];
-
-        $sequence = static::withTrashed()
-            ->where('payment_number', 'like', static::NUMBER_PREFIX.'%/'.$year)
-            ->lockForUpdate()
-            ->pluck('payment_number')
-            ->map(function (string $number): int {
-                preg_match('#^'.preg_quote(static::NUMBER_PREFIX, '#').'(\d+)/#', $number, $match);
-
-                return (int) ($match[1] ?? 0);
-            })
-            ->max() ?? 0;
-
-        return sprintf(
-            '%s%04d/%s/%s',
-            static::NUMBER_PREFIX,
-            $sequence + 1,
-            $romanMonths[(int) date('n')],
-            $year,
+        return DocumentNumber::next(
+            query: static::withTrashed(),
+            column: 'payment_number',
+            prefix: static::NUMBER_PREFIX.date('y'),
+            padding: 4,
         );
     }
 

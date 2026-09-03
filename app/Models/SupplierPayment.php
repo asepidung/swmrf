@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -107,25 +108,41 @@ class SupplierPayment extends Model
 
     }
 
+    /**
+     * Awalan nomor bukti pengeluaran ke pemasok.
+     *
+     * PV = Payment Voucher. Keputusan Project Owner, 3 September 2026,
+     * berpasangan dengan PR# untuk uang masuk: awalannya langsung memberi
+     * tahu arah uangnya. Sebelumnya SP#, yang tidak menyatakan apa-apa selain
+     * "supplier".
+     *
+     * Nomor SP# yang SUDAH TERBIT sengaja tidak diubah. Menulis ulang nomor
+     * dokumen yang sudah keluar adalah hal yang tidak boleh dilakukan
+     * pembukuan, sekecil apa pun datanya.
+     */
+    public const NUMBER_PREFIX = 'PV#';
+
+    /**
+     * Nomor berikutnya, lewat satu-satunya penomoran dokumen di aplikasi ini.
+     *
+     * Rakitan sebelumnya membaca urutannya dengan `preg_match('/(\d{4})$/')`
+     * -- persis batas yang membuat `DocumentNumber` dibuat. Selama urutannya
+     * masih empat digit semuanya benar; dokumen ke-10.000 pun masih benar.
+     * Yang gagal adalah dokumen SESUDAHNYA: `10000` terbaca `0000`, urutan
+     * berikutnya dihitung 1, dan nomor yang sudah dipakai dicoba lagi. Kolom
+     * ini bertanda unique, jadi akibatnya crash tanpa peringatan apa pun.
+     *
+     * Ia juga mengambil baris TERAKHIR menurut id lalu mengembalikan
+     * urutannya ke 1 kalau nomor baris itu tidak cocok regex.
+     */
     public static function generateNumber(): string
     {
-        $year = date('y');
-        $prefix = 'SP#' . $year;
-
-        // Dikunci supaya dua pembayaran yang dibuat bersamaan tidak memperoleh
-        // nomor yang sama, mengikuti pola generator dokumen lain di proyek ini.
-        $last = static::withTrashed()
-            ->where('payment_number', 'like', $prefix . '%')
-            ->lockForUpdate()
-            ->orderBy('id', 'desc')
-            ->first();
-
-        $sequence = 1;
-        if ($last && preg_match('/(\d{4})$/', $last->payment_number, $matches)) {
-            $sequence = ((int) $matches[1]) + 1;
-        }
-
-        return $prefix . str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
+        return DocumentNumber::next(
+            query: static::withTrashed(),
+            column: 'payment_number',
+            prefix: static::NUMBER_PREFIX.date('y'),
+            padding: 4,
+        );
     }
 
     public function supplier(): BelongsTo

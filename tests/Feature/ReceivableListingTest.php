@@ -188,7 +188,7 @@ class ReceivableListingTest extends TestCase
     }
 
     /**
-     * Nomor pembayaran tidak terulang meski nomor terakhir tidak terbaca.
+     * Nomor pembayaran tidak terulang meski ada nomor yang tidak terbaca.
      *
      * Rakitan lama membaca nomor pembayaran TERAKHIR menurut id dengan regex,
      * dan mengembalikan urutannya ke 1 begitu nomor itu tidak cocok. Nomor
@@ -197,29 +197,24 @@ class ReceivableListingTest extends TestCase
      */
     public function test_an_unreadable_number_does_not_reset_the_sequence(): void
     {
-        $tahun = date('y');
-        $bulan = date('n');
-        $romawi = [1 => 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][$bulan];
+        $prefix = Payment::NUMBER_PREFIX.date('y');
 
-        $this->pembayaran("PAY-0007/{$romawi}/{$tahun}");
+        $this->pembayaran($prefix.'0007');
 
         // Baris terakhir sengaja berformat lain -- data lama, impor, apa pun.
         $this->pembayaran('WARISAN-LAMA');
 
-        $this->assertSame("PAY-0008/{$romawi}/{$tahun}", Payment::nextNumber());
+        $this->assertSame($prefix.'0008', Payment::nextNumber());
     }
 
     /** Nomor milik dokumen yang sudah dihapus tidak boleh dipakai ulang. */
     public function test_a_deleted_payment_keeps_its_number_reserved(): void
     {
-        $tahun = date('y');
-        $bulan = date('n');
-        $romawi = [1 => 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][$bulan];
+        $prefix = Payment::NUMBER_PREFIX.date('y');
 
-        $payment = $this->pembayaran("PAY-0012/{$romawi}/{$tahun}");
-
+        $payment = $this->pembayaran($prefix.'0012');
         $payment->delete();
 
-        $this->assertSame("PAY-0013/{$romawi}/{$tahun}", Payment::nextNumber());
+        $this->assertSame($prefix.'0013', Payment::nextNumber());
     }
 }
