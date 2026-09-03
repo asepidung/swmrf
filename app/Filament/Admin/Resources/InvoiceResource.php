@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources;
 use App\Filament\Admin\Resources\InvoiceResource\Pages;
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Support\InvoiceTotals;
 use App\Support\TrashedRecords;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -132,15 +133,14 @@ class InvoiceResource extends Resource
                                     ->extraInputAttributes(['class' => 'text-right'])
                                     ->columnSpan(2),
 
-                                Forms\Components\TextInput::make('price')
+                                static::money('price')
                                     ->hiddenLabel()
                                     ->placeholder(__('Price (Rp)'))
-                                    ->numeric()
                                     ->required()
-                                    ->numeric()
-                                                                        ->live(onBlur: true)
+                                    ->rules(['numeric', 'gte:0'])
+                                    ->live(onBlur: true)
                                     ->afterStateUpdated(fn (callable $get, callable $set) => self::updateTotals($get, $set))
-                                    ->extraInputAttributes(['class' => 'text-right', 'onfocus' => 'this.select()'])
+                                    ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'numeric', 'onfocus' => 'this.select()'])
                                     ->columnSpan(2),
 
                                 Forms\Components\TextInput::make('discount_percent')
@@ -148,31 +148,29 @@ class InvoiceResource extends Resource
                                     ->placeholder(__('Disc %'))
                                     ->numeric()
                                     ->default(0)
+                                    // Persen bulat, mengikuti seluruh sistem. Aturan
+                                    // numeric-nya disebut eksplisit: `min`/`max` tanpa
+                                    // itu memeriksa PANJANG TEKS, bukan besar angkanya.
+                                    ->rules(['numeric', 'min:0', 'max:100'])
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(fn (callable $get, callable $set) => self::updateTotals($get, $set))
                                     ->extraInputAttributes(['class' => 'text-right', 'onfocus' => 'this.select()'])
                                     ->columnSpan(1),
 
-                                Forms\Components\TextInput::make('discount_rp')
+                                static::money('discount_rp')
                                     ->hiddenLabel()
                                     ->placeholder(__('Disc Rp'))
-                                    ->numeric()
                                     ->default(0)
                                     ->disabled()
                                     ->dehydrated(true)
-                                    ->numeric()
-                                                                        ->extraInputAttributes(['class' => 'text-right'])
                                     ->columnSpan(2),
 
-                                Forms\Components\TextInput::make('amount')
+                                static::money('amount')
                                     ->hiddenLabel()
                                     ->placeholder(__('Amount (Rp)'))
-                                    ->numeric()
                                     ->default(0)
                                     ->disabled()
                                     ->dehydrated(true)
-                                    ->numeric()
-                                                                        ->extraInputAttributes(['class' => 'text-right'])
                                     ->columnSpan(2),
                              ])
                              ->columns(12)
@@ -180,79 +178,9 @@ class InvoiceResource extends Resource
                             ->disableItemDeletion()
                             ->disableItemMovement()
                             ->hiddenLabel()
-                            ->default(function () {
-                                $receiptId = request()->query('delivery_order_receipt_id');
-                                if (!$receiptId) return [];
-                                $receipt = \App\Models\DeliveryOrderReceipt::with('items', 'customer')->find($receiptId);
-                                if (!$receipt) return [];
-                                
-                                $items = [];
-                                foreach ($receipt->items as $item) {
-                                    $soItem = \App\Models\SalesOrderItem::where('sales_order_id', $receipt->sales_order_id)
-                                        ->where('product_id', $item->product_id)
-                                        ->first();
-                                    
-                                    $price = $soItem ? (float)$soItem->price : 0.0;
-
-                                    // Diskonnya diambil apa adanya dari Sales
-                                    // Order dan TIDAK ditimpa di sini.
-                                    //
-                                    // Dulu berkas ini memberi 2% kepada
-                                    // pelanggan yang NAMANYA mengandung DCA,
-                                    // DCB, atau DCC, di empat tempat terpisah.
-                                    // Aturannya benar secara bisnis -- tiga
-                                    // Distribution Center Lion Superindo memang
-                                    // disepakati mendapat diskon itu -- tetapi
-                                    // tempatnya keliru, dengan dua akibat:
-                                    //
-                                    //  - SO tertulis 0% sementara invoice
-                                    //    menagih 2%, sehingga dokumen yang
-                                    //    dipegang pelanggan tidak cocok dengan
-                                    //    tagihan yang dikirim;
-                                    //  - mengganti nama pelanggan diam-diam
-                                    //    mengubah harganya, dan pelanggan baru
-                                    //    yang namanya kebetulan memuat huruf
-                                    //    itu ikut mendapat diskon.
-                                    //
-                                    // Sekarang diskonnya berasal dari kolom
-                                    // customers.default_discount, terisi
-                                    // sendiri saat SO dibuat, dan terlihat di
-                                    // sana. Jangan mengembalikan penggantian
-                                    // di tempat ini.
-                                    $discountPercent = $soItem ? (float)$soItem->discount : 0.0;
-
-                                    // Yang ditagih adalah berat pada DO Receipt
-                                    // APA ADANYA, tanpa dibandingkan dengan
-                                    // berat PO.
-                                    //
-                                    // Keputusan bisnis Project Owner: kalau
-                                    // barang yang datang lebih berat daripada
-                                    // PO, penyesuaiannya dilakukan MANUSIA di
-                                    // DO Receipt -- angkanya diturunkan ke
-                                    // berat PO, dan selisihnya tercatat sebagai
-                                    // Financial Loss lewat perbandingan berat
-                                    // kirim lawan berat terima.
-                                    //
-                                    // Membatasinya otomatis di sini justru
-                                    // merusak: penyesuaiannya hilang dari
-                                    // pandangan, dan kerugiannya tidak pernah
-                                    // tercatat. Jangan dipasang lagi.
-                                    $gross = $item->weight * $price;
-                                    $discountRp = round($gross * ($discountPercent / 100), 0);
-                                    $amount = round($gross - $discountRp, 0);
-
-                                    $items[] = [
-                                        'product_id' => $item->product_id,
-                                        'box' => $item->box,
-                                        'weight' => $item->weight,
-                                        'price' => $price,
-                                        'discount_percent' => $discountPercent,
-                                        'discount_rp' => $discountRp,
-                                        'amount' => $amount,
-                                    ];
-                                }
-                                return $items;
-                            }),
+                            ->default(fn () => static::billableLines(
+                                request()->query('delivery_order_receipt_id'),
+                            )),
                     ]),
 
                 Forms\Components\Section::make(__('Other Charges (Shipping, etc.)'))
@@ -282,12 +210,12 @@ class InvoiceResource extends Resource
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(fn (callable $get, callable $set) => self::updateTotals($get, $set))
                                     ->columnSpan(2),
-                                Forms\Components\TextInput::make('price')
+                                static::money('price')
                                     ->hiddenLabel()
                                     ->placeholder(__('Price (Rp)'))
-                                    ->numeric()
                                     ->required()
-                                    ->extraInputAttributes(['class' => 'text-right', 'onfocus' => 'this.select()'])
+                                    ->rules(['numeric', 'gte:0'])
+                                    ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'numeric', 'onfocus' => 'this.select()'])
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(fn (callable $get, callable $set) => self::updateTotals($get, $set))
                                     ->columnSpan(2),
@@ -299,22 +227,18 @@ class InvoiceResource extends Resource
                                     ->disabled()
                                     ->extraInputAttributes(['class' => 'text-right'])
                                     ->columnSpan(1),
-                                Forms\Components\TextInput::make('discount_rp')
+                                static::money('discount_rp')
                                     ->hiddenLabel()
                                     ->placeholder(__('Disc Rp'))
-                                    ->numeric()
                                     ->default(0)
                                     ->disabled()
-                                    ->extraInputAttributes(['class' => 'text-right'])
                                     ->columnSpan(2),
-                                Forms\Components\TextInput::make('amount')
+                                static::money('amount')
                                     ->hiddenLabel()
                                     ->placeholder(__('Amount (Rp)'))
-                                    ->numeric()
                                     ->default(0)
                                     ->disabled()
                                     ->dehydrated(true)
-                                    ->extraInputAttributes(['class' => 'text-right'])
                                     ->columnSpan(2),
                             ])
                             ->columns(12)
@@ -327,7 +251,7 @@ class InvoiceResource extends Resource
                     ->schema([
                         Forms\Components\Grid::make(12)
                             ->schema([
-                                Forms\Components\Placeholder::make('empty1')->label('')->content('')->columnSpan(2),
+                                Forms\Components\Placeholder::make('empty1')->label('')->content('')->columnSpan(1),
                                 Forms\Components\TextInput::make('total_weight')
                                     ->hiddenLabel()
                                     ->prefix('Total')
@@ -337,74 +261,45 @@ class InvoiceResource extends Resource
                                     ->extraInputAttributes(['class' => 'text-right'])
                                     ->default(fn () => \App\Models\DeliveryOrderReceipt::find(request()->query('delivery_order_receipt_id'))?->total_weight ?? 0.0)
                                     ->columnSpan(3),
-                                Forms\Components\TextInput::make('total_discount')
+                                static::money('total_discount')
                                     ->hiddenLabel()
-                                    ->prefix('Total Disc')
+                                    ->prefix(__('Total Disc'))
                                     ->disabled()
                                     ->dehydrated(true)
-                                    ->extraInputAttributes(['class' => 'text-right'])
-                                    ->numeric()
-                                                                        ->default(function () {
-                                        $receiptId = request()->query('delivery_order_receipt_id');
-                                        if (!$receiptId) return 0.0;
-                                        $receipt = \App\Models\DeliveryOrderReceipt::find($receiptId);
-                                        if (!$receipt) return 0.0;
-                                        $totalDiscount = 0.0;
-                                        foreach ($receipt->items as $item) {
-                                            $soItem = \App\Models\SalesOrderItem::where('sales_order_id', $receipt->sales_order_id)
-                                                ->where('product_id', $item->product_id)
-                                                ->first();
-                                            $price = $soItem ? (float)$soItem->price : 0.0;
-                                            $discountPercent = $soItem ? (float)$soItem->discount : 0.0;
-                                            $gross = $item->weight * $price;
-                                            $totalDiscount += round($gross * ($discountPercent / 100), 0);
-                                        }
-                                        return round($totalDiscount, 0);
-                                    })
-                                    ->columnSpan(3),
-                                Forms\Components\TextInput::make('subtotal')
+                                    ->default(fn () => static::initialTotal('total_discount'))
+                                    ->columnSpan(2),
+                                static::money('charge')
                                     ->hiddenLabel()
-                                    ->prefix('Total Amount')
+                                    ->prefix(__('Charges'))
                                     ->disabled()
                                     ->dehydrated(true)
-                                    ->extraInputAttributes(['class' => 'text-right'])
-                                    ->numeric()
-                                                                        ->default(function () {
-                                        $receiptId = request()->query('delivery_order_receipt_id');
-                                        if (!$receiptId) return 0.0;
-                                        $receipt = \App\Models\DeliveryOrderReceipt::find($receiptId);
-                                        if (!$receipt) return 0.0;
-                                        $subtotal = 0.0;
-                                        foreach ($receipt->items as $item) {
-                                            $soItem = \App\Models\SalesOrderItem::where('sales_order_id', $receipt->sales_order_id)
-                                                ->where('product_id', $item->product_id)
-                                                ->first();
-                                            $price = $soItem ? (float)$soItem->price : 0.0;
-                                            $discountPercent = $soItem ? (float)$soItem->discount : 0.0;
-                                            $gross = $item->weight * $price;
-                                            $discountRp = round($gross * ($discountPercent / 100), 0);
-                                            $subtotal += ($gross - $discountRp);
-                                        }
-                                        return round($subtotal, 0);
-                                    })
+                                    ->default(0)
+                                    ->columnSpan(2),
+                                static::money('subtotal')
+                                    ->hiddenLabel()
+                                    // Dulu berlabel "Total Amount" padahal isinya
+                                    // kadang barang saja, kadang barang ditambah
+                                    // biaya tambahan. Sekarang isinya pasti barang
+                                    // saja, dan labelnya mengatakan itu.
+                                    ->prefix(__('Products'))
+                                    ->disabled()
+                                    ->dehydrated(true)
+                                    ->default(fn () => static::initialTotal('subtotal'))
                                     ->columnSpan(4),
                             ]),
 
                         Forms\Components\Grid::make(12)
                             ->schema([
                                 Forms\Components\Placeholder::make('empty3')->label('')->content('')->columnSpan(8),
-                                Forms\Components\TextInput::make('down_payment')
+                                static::money('down_payment')
                                     ->hiddenLabel()
                                     ->prefix('DP')
-                                    ->numeric()
-                                    ->extraInputAttributes(['class' => 'text-right', 'onfocus' => 'this.select()'])
-                                    ->default(function () {
-                                        $receiptId = request()->query('delivery_order_receipt_id');
-                                        if (!$receiptId) return 0.0;
-                                        return \App\Models\DeliveryOrderReceipt::find($receiptId)?->salesOrder?->down_payment ?? 0.0;
-                                    })
-                                    ->numeric()
-                                                                        ->live(onBlur: true)
+                                    ->rules(['numeric', 'gte:0'])
+                                    ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'numeric', 'onfocus' => 'this.select()'])
+                                    ->default(fn () => (float) (\App\Models\DeliveryOrderReceipt::find(
+                                        request()->query('delivery_order_receipt_id')
+                                    )?->salesOrder?->down_payment ?? 0))
+                                    ->live(onBlur: true)
                                     ->afterStateUpdated(fn (callable $get, callable $set) => self::updateTotals($get, $set))
                                     ->columnSpan(4),
                             ]),
@@ -412,44 +307,56 @@ class InvoiceResource extends Resource
                         Forms\Components\Grid::make(12)
                             ->schema([
                                 Forms\Components\Placeholder::make('empty4')->label('')->content('')->columnSpan(8),
-                                Forms\Components\TextInput::make('balance')
+                                static::money('balance')
                                     ->hiddenLabel()
-                                    ->prefix('Balance')
+                                    ->prefix(__('Total Billed'))
                                     ->disabled()
                                     ->dehydrated(true)
-                                    ->extraInputAttributes(['class' => 'text-right'])
-                                    ->default(function () {
-                                        $receiptId = request()->query('delivery_order_receipt_id');
-                                        if (!$receiptId) return 0.0;
-                                        $receipt = \App\Models\DeliveryOrderReceipt::find($receiptId);
-                                        if (!$receipt) return 0.0;
-                                        $subtotal = 0.0;
-                                        foreach ($receipt->items as $item) {
-                                            $soItem = \App\Models\SalesOrderItem::where('sales_order_id', $receipt->sales_order_id)
-                                                ->where('product_id', $item->product_id)
-                                                ->first();
-                                            $price = $soItem ? (float)$soItem->price : 0.0;
-                                            $discountPercent = $soItem ? (float)$soItem->discount : 0.0;
-                                            $gross = $item->weight * $price;
-                                            $discountRp = round($gross * ($discountPercent / 100), 0);
-                                            $subtotal += ($gross - $discountRp);
-                                        }
-                                        $downPayment = \App\Models\DeliveryOrderReceipt::find($receiptId)?->salesOrder?->down_payment ?? 0.0;
-                                        return round($subtotal - $downPayment, 0);
-                                    })
-                                    ->numeric()
-                                                                        ->columnSpan(4),
+                                    ->default(fn () => static::initialTotal('balance'))
+                                    ->columnSpan(4),
                             ]),
                     ]),
             ]);
     }
 
+    /**
+     * Satu field uang, diformat sama di seluruh halaman ini.
+     *
+     * Sebelumnya tidak ada satu pun mask uang di form Invoice -- fieldnya cuma
+     * `->numeric()`, jadi angkanya tampil polos tanpa pemisah ribuan dan
+     * bertombol panah. Padahal `updateTotals()` sudah membuang titik dari
+     * harga seolah titik itu pemisah ribuan yang dipasang mask. Pembersih yang
+     * menunggu mask yang tidak pernah ada: ketik `1234.56` dan tagihannya
+     * seratus kali lipat.
+     *
+     * Sekarang masknya benar-benar ada, jadi pembersihannya benar, angkanya
+     * terbaca, dan koma desimal tidak mungkin lagi masuk.
+     *
+     * `formatStateUsing` WAJIB. Nilai dari kolom decimal(15,2) berbentuk
+     * "1200000.00", dan mask $money membuang seluruh karakter non-digit --
+     * dua nol di belakang titik ikut terbaca sebagai digit dan angkanya
+     * membengkak seratus kali setiap form dibuka lalu disimpan ulang.
+     */
+    protected static function money(string $name): Forms\Components\TextInput
+    {
+        return Forms\Components\TextInput::make($name)
+            ->formatStateUsing(fn ($state): ?string => $state === null || $state === ''
+                ? null
+                : number_format((float) $state, 0, ',', '.'))
+            ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
+            ->stripCharacters('.')
+            ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'numeric']);
+    }
+
     public static function updateTotals(callable $get, callable $set): void
     {
         $items = $get('items');
+
         if ($items === null) {
-            $rootGet = function(string $path) use ($get) { return $get('../../' . $path); };
-            $rootSet = function(string $path, $val) use ($set) { return $set('../../' . $path, $val); };
+            // Dipanggil dari dalam sebuah baris repeater: naik dua tingkat
+            // untuk sampai ke state form-nya.
+            $rootGet = fn (string $path) => $get('../../'.$path);
+            $rootSet = fn (string $path, $val) => $set('../../'.$path, $val);
             $items = $rootGet('items') ?? [];
         } else {
             $rootGet = $get;
@@ -461,67 +368,164 @@ class InvoiceResource extends Resource
         $totalDiscount = 0.0;
 
         foreach ($items as $key => $item) {
-            $weightStr = (string)($item['weight'] ?? '0');
-            $weight = (float) str_replace(',', '.', $weightStr);
+            $weight = InvoiceTotals::number($item['weight'] ?? 0);
+            $price = InvoiceTotals::number($item['price'] ?? 0);
+            $discount = InvoiceTotals::percent($item['discount_percent'] ?? 0);
 
-            $priceStr = (string)($item['price'] ?? '0');
-            $priceStr = str_replace('.', '', $priceStr);
-            $price = (float) str_replace(',', '.', $priceStr);
-
-            $discPercentStr = (string)($item['discount_percent'] ?? '0');
-            $discPercentStr = str_replace('.', '', $discPercentStr);
-            $discPercent = (float) str_replace(',', '.', $discPercentStr);
-
-            $gross = $weight * $price;
-            $discRp = round($gross * ($discPercent / 100), 0);
-            $amount = round($gross - $discRp, 0);
+            $baris = InvoiceTotals::line($weight, $price, $discount);
 
             $totalWeight += $weight;
-            $totalDiscount += $discRp;
-            $subtotal += $amount;
+            $totalDiscount += $baris['discount_rp'];
+            $subtotal += $baris['amount'];
 
-            $rootSet("items.{$key}.discount_rp", $discRp);
-            $rootSet("items.{$key}.amount", $amount);
+            $rootSet("items.{$key}.discount_rp", $baris['discount_rp']);
+            $rootSet("items.{$key}.amount", $baris['amount']);
         }
 
-        $additionalCharges = $rootGet('additionalCharges') ?? [];
-        $totalCharges = 0.0;
-        foreach ($additionalCharges as $key => $chargeItem) {
-            $qtyStr = (string)($chargeItem['qty'] ?? '1');
-            $qty = (float) str_replace(',', '.', $qtyStr);
-            
-            $priceStr = (string)($chargeItem['price'] ?? $chargeItem['amount'] ?? '0');
-            $price = (float) str_replace(',', '.', $priceStr);
-            
-            $discPercentStr = (string)($chargeItem['discount_percent'] ?? '0');
-            $discPercent = (float) str_replace(',', '.', $discPercentStr);
-            
-            $gross = $qty * $price;
-            $discRp = round($gross * ($discPercent / 100), 0);
-            $amount = round($gross - $discRp, 0);
-            
-            $totalCharges += $amount;
-            
-            $rootSet("additionalCharges.{$key}.discount_rp", $discRp);
-            $rootSet("additionalCharges.{$key}.amount", $amount);
-        }
-        
-        $downPaymentStr = (string)($rootGet('down_payment') ?? '0');
-        $downPaymentStr = str_replace('.', '', $downPaymentStr);
-        $downPayment = (float) str_replace(',', '.', $downPaymentStr);
-        
-        $grandTotal = $subtotal + $totalCharges;
-        $balance = round($grandTotal - $downPayment, 0);
+        $charge = 0.0;
 
+        foreach ($rootGet('additionalCharges') ?? [] as $key => $item) {
+            $qty = InvoiceTotals::number($item['qty'] ?? 1);
+            $price = InvoiceTotals::number($item['price'] ?? 0);
+            $discount = InvoiceTotals::percent($item['discount_percent'] ?? 0);
+
+            $baris = InvoiceTotals::line($qty, $price, $discount);
+
+            $charge += $baris['amount'];
+
+            $rootSet("additionalCharges.{$key}.discount_rp", $baris['discount_rp']);
+            $rootSet("additionalCharges.{$key}.amount", $baris['amount']);
+        }
+
+        $downPayment = InvoiceTotals::number($rootGet('down_payment'));
+
+        // subtotal berisi BARANG saja, charge berisi biaya tambahan, dan
+        // balance yang menjumlahkan keduanya. Dulu subtotal diisi jumlah
+        // keduanya di sini sementara nilai awalnya diisi barang saja, jadi
+        // satu kolom berarti dua hal tergantung ada tidaknya yang mengetik.
         $rootSet('total_weight', round($totalWeight, 2));
-        $rootSet('subtotal', $grandTotal);
+        $rootSet('subtotal', $subtotal);
         $rootSet('total_discount', $totalDiscount);
-        $rootSet('balance', $balance);
+        $rootSet('charge', $charge);
+        $rootSet('balance', round($subtotal + $charge - $downPayment, 0));
+    }
+
+    /**
+     * Baris tagihan yang berasal dari satu bukti terima.
+     *
+     * Dipakai sebagai nilai awal repeater DAN sebagai dasar nilai awal semua
+     * kolom totalnya, supaya tidak ada lagi empat salinan rumus yang sama
+     * yang bisa berjalan sendiri-sendiri.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function billableLines(?int $receiptId): array
+    {
+        if (! $receiptId) {
+            return [];
+        }
+
+        $receipt = \App\Models\DeliveryOrderReceipt::with('items')->find($receiptId);
+
+        if (! $receipt) {
+            return [];
+        }
+
+        // Harga dan diskon Sales Order diambil sekali untuk seluruh baris.
+        // Sebelumnya setiap salinan rumus menembakkan satu kueri per baris,
+        // jadi membuka satu invoice dua puluh baris berarti puluhan kueri.
+        $soItems = \App\Models\SalesOrderItem::query()
+            ->where('sales_order_id', $receipt->sales_order_id)
+            ->get()
+            ->keyBy('product_id');
+
+        $lines = [];
+
+        foreach ($receipt->items as $item) {
+            $soItem = $soItems->get($item->product_id);
+
+            $price = (float) ($soItem->price ?? 0);
+
+            // Diskonnya diambil apa adanya dari Sales Order dan TIDAK ditimpa
+            // di sini.
+            //
+            // Dulu berkas ini memberi 2% kepada pelanggan yang NAMANYA
+            // mengandung DCA, DCB, atau DCC, di empat tempat terpisah.
+            // Aturannya benar secara bisnis -- tiga Distribution Center Lion
+            // Superindo memang disepakati mendapat diskon itu -- tetapi
+            // tempatnya keliru, dengan dua akibat:
+            //
+            //  - SO tertulis 0% sementara invoice menagih 2%, sehingga dokumen
+            //    yang dipegang pelanggan tidak cocok dengan tagihan yang
+            //    dikirim;
+            //  - mengganti nama pelanggan diam-diam mengubah harganya, dan
+            //    pelanggan baru yang namanya kebetulan memuat huruf itu ikut
+            //    mendapat diskon.
+            //
+            // Sekarang diskonnya berasal dari kolom customers.default_discount,
+            // terisi sendiri saat SO dibuat, dan terlihat di sana. Jangan
+            // mengembalikan penggantian di tempat ini.
+            $discount = (float) ($soItem->discount ?? 0);
+
+            // Yang ditagih adalah berat pada DO Receipt APA ADANYA, tanpa
+            // dibandingkan dengan berat PO.
+            //
+            // Keputusan bisnis Project Owner: kalau barang yang datang lebih
+            // berat daripada PO, penyesuaiannya dilakukan MANUSIA di DO
+            // Receipt -- angkanya diturunkan ke berat PO, dan selisihnya
+            // tercatat sebagai Financial Loss lewat perbandingan berat kirim
+            // lawan berat terima.
+            //
+            // Membatasinya otomatis di sini justru merusak: penyesuaiannya
+            // hilang dari pandangan, dan kerugiannya tidak pernah tercatat.
+            // Jangan dipasang lagi.
+            $baris = InvoiceTotals::line((float) $item->weight, $price, $discount);
+
+            $lines[] = [
+                'product_id' => $item->product_id,
+                'box' => $item->box,
+                'weight' => $item->weight,
+                'price' => $price,
+                'discount_percent' => $discount,
+                'discount_rp' => $baris['discount_rp'],
+                'amount' => $baris['amount'],
+            ];
+        }
+
+        return $lines;
+    }
+
+    /** Nilai awal satu kolom total, dihitung dari baris yang sama. */
+    protected static function initialTotal(string $key): float
+    {
+        $lines = static::billableLines(request()->query('delivery_order_receipt_id'));
+
+        if ($key === 'total_discount') {
+            return round(array_sum(array_column($lines, 'discount_rp')), 0);
+        }
+
+        $subtotal = round(array_sum(array_column($lines, 'amount')), 0);
+
+        if ($key === 'subtotal') {
+            return $subtotal;
+        }
+
+        // balance. Biaya tambahan selalu kosong saat form baru dibuka, jadi
+        // tidak ada yang perlu dijumlahkan di sini.
+        $downPayment = (float) (\App\Models\DeliveryOrderReceipt::find(
+            request()->query('delivery_order_receipt_id')
+        )?->salesOrder?->down_payment ?? 0);
+
+        return round($subtotal - $downPayment, 0);
     }
 
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->with([
+                'deliveryOrderReceipt:id,delivery_order_id',
+                'deliveryOrderReceipt.deliveryOrder:id',
+            ]))
             ->columns([
                 Tables\Columns\TextColumn::make('invoice_number')
                     ->label(__('Invoice Number'))
@@ -549,15 +553,34 @@ class InvoiceResource extends Resource
                     ->label(__('DO Number'))
                     ->searchable()
                     ->sortable()
+                    // Dipendekkan menjadi enam digit terakhir atas permintaan
+                    // Project Owner; kolomnya jadi terbaca sekilas.
                     ->formatStateUsing(function ($state) {
-                        if (!$state) return __('-');
+                        if (! $state) {
+                            return __('-');
+                        }
+
                         preg_match_all('/\d+/', $state, $matches);
                         $digits = implode('', $matches[0]);
-                        if (strlen($digits) >= 6) {
-                            return substr($digits, -6);
-                        }
-                        return $state;
-                    }),
+
+                        return strlen($digits) >= 6 ? substr($digits, -6) : $state;
+                    })
+                    // Dan bisa diklik langsung ke halaman cetak surat jalannya,
+                    // supaya penagih tidak perlu mencarinya di modul lain.
+                    ->url(function (Invoice $record): ?string {
+                        $deliveryOrder = $record->deliveryOrderReceipt?->deliveryOrder;
+
+                        return $deliveryOrder
+                            ? route('print.delivery-order', $deliveryOrder->id)
+                            : null;
+                    })
+                    ->openUrlInNewTab()
+                    ->color(fn (Invoice $record): ?string => $record->deliveryOrderReceipt?->deliveryOrder
+                        ? 'primary'
+                        : null)
+                    ->tooltip(fn (Invoice $record): ?string => $record->deliveryOrderReceipt?->deliveryOrder
+                        ? __('Open the delivery order print page')
+                        : null),
 
                 Tables\Columns\TextColumn::make('balance')
                     ->label(__('Total Amount'))

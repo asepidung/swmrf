@@ -189,10 +189,12 @@ class InvoiceTest extends TestCase
                 // lewat mutateFormDataBeforeCreate(). Nilainya dicek di bawah
                 // pada record yang sudah tersimpan.
                 'total_weight' => 10.0,
-                'subtotal' => 1000000.0,
-                'total_discount' => 0.0,
+                // Field uang kini bermask, jadi state form-nya teks
+                // berpemisah ribuan -- bukan float mentah.
+                'subtotal' => '1.000.000',
+                'total_discount' => '0',
                 'tax' => 0.0, // Non-taxable
-                'balance' => 1000000.0,
+                'balance' => '1.000.000',
             ]);
 
         $items = $lw->get('data.items');
@@ -266,15 +268,15 @@ class InvoiceTest extends TestCase
                 // dibiarkan sama persis seperti sebelum diskonnya dipindahkan
                 // dari pencocokan nama ke data -- yang berubah asal-usulnya,
                 // bukan hasilnya.
-                'subtotal' => 1960000.0,
-                'total_discount' => 40000.0,
+                'subtotal' => '1.960.000',
+                'total_discount' => '40.000',
                 // Tidak ada baris 'tax' di sini karena memang tidak boleh ada:
                 // Wijaya Meat berstatus nonPKP, sehingga invoice dan penjualan
                 // tidak dikenai PPN. Pajak hanya relevan pada pembelian
                 // material. Kolom invoices.tax dan flag customers.is_taxable
                 // adalah sisa desain lama yang tidak terpakai di sisi
                 // penjualan, jadi balance = subtotal tanpa tambahan pajak.
-                'balance' => 1960000.0,
+                'balance' => '1.960.000',
             ]);
 
         $items = $lw->get('data.items');

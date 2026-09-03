@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
@@ -100,6 +101,46 @@ class Invoice extends Model
         return $this->hasMany(PaymentAllocation::class, 'invoice_id');
     }
 
+    public function receivable(): HasOne
+    {
+        return $this->hasOne(Receivable::class, 'invoice_id');
+    }
+
+    /**
+     * Kembalikan surat jalan dan bukti terimanya ke keadaan belum ditagih.
+     *
+     * Tanpa ini keduanya tetap bertanda 'Invoiced' padahal invoicenya sudah
+     * tidak ada, dan bukti terima itu tidak akan pernah muncul lagi di daftar
+     * Draft Invoice untuk ditagihkan ulang.
+     */
+    public function releaseDeliveryDocuments(): void
+    {
+        $receipt = $this->deliveryOrderReceipt;
+
+        if (! $receipt) {
+            return;
+        }
+
+        // 'Approved' adalah keadaan keduanya tepat sebelum ditagihkan:
+        // bawaan kolom status bukti terima, dan yang dipasang halaman Approve
+        // pada surat jalannya.
+        $receipt->update(['status' => 'Approved']);
+        $receipt->deliveryOrder?->update(['status' => 'Approved']);
+    }
+
+    /** Kebalikannya, dipakai saat invoicenya dipulihkan. */
+    public function markDeliveryDocumentsInvoiced(): void
+    {
+        $receipt = $this->deliveryOrderReceipt;
+
+        if (! $receipt) {
+            return;
+        }
+
+        $receipt->update(['status' => 'Invoiced']);
+        $receipt->deliveryOrder?->update(['status' => 'Invoiced']);
+    }
+
     protected static function boot()
     {
         parent::boot();
@@ -126,6 +167,30 @@ class Invoice extends Model
             if (empty($model->created_by)) {
                 $model->created_by = auth()->id() ?? 1;
             }
+        });
+
+        // Pembayaran pelanggan sudah tercatat menunjuk ke invoice ini. Kalau
+        // invoicenya hilang, pembayaran itu menunjuk ke dokumen yang tidak ada
+        // lagi -- dan uang yang sudah masuk lenyap dari jejaknya tanpa satu pun
+        // error. Mengikuti penjagaan yang sama pada PO daging dan PO bahan.
+        static::deleting(function (Invoice $model) {
+            if ($model->paymentAllocations()->exists()) {
+                throw new \Exception(__('This invoice cannot be deleted because a customer payment is already recorded against it.'));
+            }
+
+            // Hapus lunak TIDAK memicu cascade di basis data -- itu UPDATE,
+            // bukan DELETE. Tanpa baris ini piutangnya tetap hidup dan tetap
+            // ditagihkan kepada pelanggan untuk invoice yang sudah tidak ada.
+            if (! $model->isForceDeleting()) {
+                $model->receivable?->delete();
+                $model->releaseDeliveryDocuments();
+            }
+        });
+
+        // Dan pemulihannya harus mengembalikan keduanya, bukan cuma invoicenya.
+        static::restored(function (Invoice $model) {
+            $model->receivable()->withTrashed()->first()?->restore();
+            $model->markDeliveryDocumentsInvoiced();
         });
 
         static::saving(function ($model) {

@@ -1299,6 +1299,91 @@ dan beda dari membayar.
 **Belum ada cara membatalkan kompensasi.** Owner sudah diberi tahu; menunggu
 pembahasan tersendiri.
 
+### Invoice: satu rumus, arti kolom yang dikunci, dan penghapusan yang membereskan jejaknya
+
+**3 September 2026.** Modul Invoice disisir. Temuan pentingnya:
+
+**Rumus tagihan disalin LIMA KALI di satu berkas.** Sekali di `updateTotals()`
+dan empat kali lagi sebagai nilai awal `items`, `total_discount`, `subtotal`,
+dan `balance`. Salinannya sudah berbeda arah: `subtotal` versi nilai awal
+berisi barang SAJA, sementara `updateTotals()` menimpanya dengan barang
+DITAMBAH biaya tambahan. **Satu kolom, dua arti, tergantung apakah ada yang
+sempat mengetik sesuatu di form** -- dan tidak ada cara membedakannya dari
+baris yang sudah tersimpan.
+
+Sekarang semuanya lewat `App\Support\InvoiceTotals`, dan artinya dikunci:
+
+```
+subtotal = barang, sesudah diskon barisnya
+charge   = biaya tambahan, sesudah diskon barisnya
+balance  = subtotal + charge - uang muka
+```
+
+Kolom `charge` sudah ada di tabel sejak awal dan tidak pernah diisi. Sekarang
+ia yang menampung biaya tambahan, sehingga `subtotal` bisa kembali berarti
+subtotal. Migrasi `2026_09_03_120100` menghitung ulang keduanya dari baris
+anaknya. **`balance` sengaja TIDAK disentuh** -- itu angka yang benar-benar
+ditagihkan, kedua rumus lama menghasilkan nilai yang sama untuknya, dan kalau
+ada yang meleset yang meleset itu tagihan.
+
+**Harga berdesimal ditagih seratus kali lipat.** `updateTotals()` membuang
+titik dari harga seolah titik itu pemisah ribuan yang dipasang mask -- padahal
+di Invoice **tidak ada satu pun mask uang**. Fieldnya cuma `->numeric()`. Ketik
+`1234.56` dan tagihannya `123.456`, sementara harga yang tersimpan tetap
+1234.56: invoice memperlihatkan harga benar dengan jumlah salah.
+
+Pembersih yang menunggu mask yang tidak pernah ada. Sekarang masknya
+benar-benar dipasang lewat `static::money()`, jadi pembersihannya benar dan
+koma desimal tidak mungkin lagi masuk. Sekaligus menjawab keluhan Owner
+tentang uang tanpa pemisah ribuan dan input bertombol panah.
+
+**Diskon TIDAK dibersihkan seperti uang.** `InvoiceTotals::percent()` sengaja
+tidak membuang titik. Field diskon tidak berformat, jadi titik di sana hanya
+bisa berarti koma desimal -- membuangnya mengubah 2,5% menjadi 25%, bug yang
+sudah pernah terjadi di Sales Order.
+
+**Menghapus invoice dulu meninggalkan piutangnya tetap hidup.** Foreign
+key-nya `cascadeOnDelete`, tetapi Invoice memakai SoftDeletes -- dan hapus
+lunak adalah UPDATE, bukan DELETE. Cascade itu tidak pernah jalan. Piutangnya
+tetap tercatat dan tetap ditagihkan kepada pelanggan untuk invoice yang sudah
+tidak ada, dan surat jalan beserta bukti terimanya tetap bertanda 'Invoiced'.
+
+Sekarang `deleting` ikut membatalkan piutangnya dan mengembalikan kedua
+dokumen kirim ke 'Approved'; `restored` mengembalikan ketiganya. Ini juga yang
+membuat bukti terimanya muncul lagi di daftar Draft Invoice, jadi
+penghapusannya bisa dibetulkan.
+
+**Invoice yang sudah dibayar tidak bisa dihapus.** Permintaan Owner, dan
+mengikuti penjagaan yang sama pada PO daging dan PO bahan: pembayaran yang
+menunjuk ke dokumen yang tidak ada lagi membuat uang yang sudah masuk lenyap
+dari jejaknya tanpa satu pun error.
+
+**Nomor DO di daftar bisa diklik ke halaman cetak surat jalannya.** Pemendekan
+menjadi enam digit terakhir memang disengaja Owner; yang ditambahkan hanya
+tautannya.
+
+**Dashboard memberitahu berapa bukti terima yang belum ditagihkan.** Selama
+belum, uangnya tidak pernah diminta -- barangnya sudah sampai, pelanggannya
+sudah menandatangani, dan tidak ada tagihan yang berjalan. Hanya terlihat oleh
+pemegang `create_invoices`.
+
+**Yang BELUM dikerjakan di modul ini**, dicatat supaya tidak hilang:
+
+- `invoices.additional_charges` (kolom cast array) menganggur berdampingan
+  dengan tabel `invoice_additional_charges` yang benar-benar dipakai. Dua
+  penyimpanan untuk satu hal.
+- Status masih campur bahasa: `'Belum TF'`, `'Sudah TF'`, `'Belum Dibayar'`,
+  `'Invoiced'`, `'Lunas'`. Label seperti `__('Proses Invoice')` dan
+  `__('Tanggal Tukar Faktur')` dibungkus penerjemah tetapi sumbernya
+  Indonesia, jadi tampilan Inggris tetap berbahasa Indonesia.
+- `created_by = auth()->id() ?? 1` diam-diam mengatasnamakan pengguna nomor 1.
+- Kolom `tax` tetap tidak pernah diisi; Wijaya Meat nonPKP, jadi itu memang
+  sisa desain lama.
+
+**JANGAN menjalankan `php artisan db:seed` di server.** `DatabaseSeeder`
+mengatur ulang akun superuser dan **menyetel ulang passwordnya ke bawaan**
+setiap kali dijalankan. Izin baru ditambahkan lewat MIGRASI, bukan seeder.
+
 ### Dokumen terhapus: izinnya dulu menyembunyikan TOMBOL, bukan DATA
 
 **3 September 2026, ditemukan saat menyisir Invoice.** Sepuluh Resource

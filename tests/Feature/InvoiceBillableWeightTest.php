@@ -29,15 +29,21 @@ class InvoiceBillableWeightTest extends TestCase
         return file_get_contents(app_path('Filament/Admin/Resources/InvoiceResource.php'));
     }
 
-    /** Keempat perhitungan memakai berat resi tanpa pembanding apa pun. */
-    public function test_every_calculation_bills_the_receipt_weight_as_it_stands(): void
+    /**
+     * Perhitungannya memakai berat resi tanpa pembanding apa pun.
+     *
+     * Dulu penjagaan ini menghitung EMPAT salinan rumus yang harus seragam.
+     * Salinannya sudah dihapus -- rumusnya hidup di satu tempat, dan itulah
+     * yang membuat keseragamannya tidak lagi perlu dijaga dengan menghitung.
+     */
+    public function test_the_calculation_bills_the_receipt_weight_as_it_stands(): void
     {
         $source = $this->invoiceSource();
 
         $this->assertSame(
-            4,
-            substr_count($source, '$gross = $item->weight * $price;'),
-            'Keempat tempat perhitungan harus memakai berat resi apa adanya.',
+            1,
+            substr_count($source, 'InvoiceTotals::line((float) $item->weight, $price, $discount)'),
+            'Berat resi dipakai apa adanya, di satu tempat saja.',
         );
     }
 

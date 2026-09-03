@@ -112,16 +112,23 @@ class CustomerDefaultDiscountTest extends TestCase
         )));
     }
 
-    /** Invoice memakai diskon dari SO, tanpa menimpanya. */
+    /**
+     * Invoice memakai diskon dari SO, tanpa menimpanya.
+     *
+     * Dulu penjagaan ini menghitung EMPAT salinan rumus yang harus sama.
+     * Salinannya sendiri sudah dihapus -- rumusnya kini hidup di satu tempat
+     * saja -- jadi yang dijaga sekarang justru ketunggalannya.
+     */
     public function test_the_invoice_uses_the_discount_recorded_on_the_sales_order(): void
     {
         $source = file_get_contents(app_path('Filament/Admin/Resources/InvoiceResource.php'));
 
         $this->assertStringNotContainsString('$discountPercent = 2.0;', $source);
+
         $this->assertSame(
-            4,
-            substr_count($source, '$discountPercent = $soItem ? (float)$soItem->discount : 0.0;'),
-            'Keempat tempat perhitungan harus sama-sama memakai diskon dari SO.',
+            1,
+            substr_count($source, '$discount = (float) ($soItem->discount ?? 0);'),
+            'Diskon invoice harus berasal dari Sales Order, di satu tempat saja.',
         );
     }
 
