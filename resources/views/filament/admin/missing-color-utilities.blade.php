@@ -29,6 +29,22 @@
     memastikan test itu ikut hijau.
 --}}
 <style>
+    /*
+        Baris judul kolom yang hanya masuk akal saat kolomnya berjajar.
+
+        Filament memetakan `->columns(12)` ke breakpoint lg ke ATAS saja,
+        sementara `->columnSpan(3)` berlaku di SEMUA ukuran. Di layar sempit
+        gridnya jadi satu kolom sementara isinya tetap minta rentang tiga, dan
+        fieldnya mengerut jadi kotak sempit yang tidak bisa dibaca maupun
+        diisi. Rentangnya kini disebut per breakpoint; kelas ini yang
+        menyembunyikan baris judulnya, karena judul berjajar kehilangan
+        maknanya begitu isinya menumpuk.
+
+        Ambang 1024px sengaja sama dengan lg milik Filament.
+    */
+    .swm-wide-only { display: none; }
+    @media (min-width: 1024px) { .swm-wide-only { display: grid; } }
+
     .bg-danger-50 { background-color: rgba(var(--danger-50),1); }
     .bg-danger-500 { background-color: rgba(var(--danger-500),1); }
     .bg-gradient-to-b { background-image: linear-gradient(to bottom, var(--tw-gradient-stops)); }

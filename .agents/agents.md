@@ -1299,6 +1299,53 @@ dan beda dari membayar.
 **Belum ada cara membatalkan kompensasi.** Owner sudah diberi tahu; menunggu
 pembahasan tersendiri.
 
+### Pemetaan kolom Filament TIDAK simetris, dan itu merusak layar HP
+
+**3 September 2026.** Owner mengirim tangkapan layar Create Invoice dari HP:
+fieldnya mengerut jadi kotak-kotak sempit yang tidak bisa dibaca maupun diisi.
+
+Sebabnya ada di Filament sendiri, dan halus:
+
+```php
+->columns(12)      // -> ['lg' => 12]      HANYA dari lg ke atas
+->columnSpan(3)    // -> ['default' => 3]  SEMUA ukuran
+```
+
+`Grid::columns(int)` dipetakan ke breakpoint **lg**, sementara
+`columnSpan(int)` dipetakan ke **default**. Jadi di layar sempit gridnya
+menjadi satu kolom sementara isinya tetap meminta rentang tiga.
+
+Dan CSS tidak mengabaikan permintaan itu: kolom eksplisitnya cuma satu, jadi
+browser membuat kolom implisit untuk menampung rentangnya, dan kolom implisit
+berukuran `auto` -- menyusut ke isinya. Itulah kotak-kotak sempit yang
+berjajar di kiri pada tangkapan layar Owner.
+
+**Aturannya: kalau `columns()` disebut per breakpoint, `columnSpan()` juga
+harus.**
+
+```php
+->columns(['default' => 1, 'lg' => 12])
+->columnSpan(['default' => 'full', 'lg' => 3])
+```
+
+Untuk menempatkan sesuatu di kanan, pakai `->columnStart(['lg' => 8])` --
+BUKAN Placeholder kosong sebagai pengganjal. Di layar sempit pengganjal
+seperti itu berubah menjadi baris kosong yang ikut memakan tempat.
+
+Baris judul kolom palsu di atas repeater hanya masuk akal saat kolomnya
+berjajar. Kelas `.swm-wide-only` di `missing-color-utilities.blade.php`
+menyembunyikannya di bawah 1024px, ambang yang sama dengan lg milik Filament.
+
+**MASIH TERBUKA: dua belas Resource lain punya ketimpangan yang sama.**
+Carcass, DO Receipt, Delivery Order, Delivery Plan, GR Beef, Material
+Requisition, Price List, Product Requisition, PO Material, PO Beef, Repack,
+dan Sales Order -- semuanya memakai `columns(int)` berdampingan dengan
+`columnSpan(int)` telanjang. Sales Order yang terparah dengan 13 rentang.
+Belum dikerjakan karena mengubah tata letak modul yang belum disisir tanpa
+melihat hasilnya di layar sungguhan justru cara yang bagus untuk merusak
+diam-diam. Kerjakan saat modulnya tiba gilirannya, atau sebagai satu sapuan
+tersendiri bila Owner meminta.
+
 ### Invoice: satu rumus, arti kolom yang dikunci, dan penghapusan yang membereskan jejaknya
 
 **3 September 2026.** Modul Invoice disisir. Temuan pentingnya:

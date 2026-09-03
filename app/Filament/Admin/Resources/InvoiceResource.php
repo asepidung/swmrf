@@ -85,32 +85,45 @@ class InvoiceResource extends Resource
 
                 Forms\Components\Section::make(__('Products List'))
                     ->schema([
-                        Forms\Components\Grid::make(12)
+                        // Baris judul kolom, hanya untuk layar lebar.
+                        //
+                        // Di layar sempit repeaternya menumpuk satu kolom, dan
+                        // judul yang berjajar di atasnya kehilangan seluruh
+                        // maknanya -- yang tersisa lima label menggantung tanpa
+                        // isi. Di sana fieldnya memakai label sendiri.
+                        Forms\Components\Grid::make(['default' => 1, 'lg' => 12])
+                            ->extraAttributes(['class' => 'swm-wide-only'])
                             ->schema([
                                 Forms\Components\Placeholder::make('h_product')
                                     ->label('')
                                     ->content(new \Illuminate\Support\HtmlString('<div class="text-sm font-medium text-gray-950 dark:text-white">Product</div>'))
-                                    ->columnSpan(3),
+                                    ->columnSpan(['default' => 'full', 'lg' => 3]),
+
                                 Forms\Components\Placeholder::make('h_weight')
                                     ->label('')
                                     ->content(new \Illuminate\Support\HtmlString('<div class="text-sm font-medium text-gray-950 dark:text-white text-right">Weight (Kg)</div>'))
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
+
                                 Forms\Components\Placeholder::make('h_price')
                                     ->label('')
                                     ->content(new \Illuminate\Support\HtmlString('<div class="text-sm font-medium text-gray-950 dark:text-white text-right">Price (Rp)*</div>'))
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
+
                                 Forms\Components\Placeholder::make('h_disc_pct')
                                     ->label('')
                                     ->content(new \Illuminate\Support\HtmlString('<div class="text-sm font-medium text-gray-950 dark:text-white text-right">Disc %</div>'))
-                                    ->columnSpan(1),
+                                    ->columnSpan(['default' => 'full', 'lg' => 1]),
+
                                 Forms\Components\Placeholder::make('h_disc_rp')
                                     ->label('')
                                     ->content(new \Illuminate\Support\HtmlString('<div class="text-sm font-medium text-gray-950 dark:text-white text-right">Disc Rp</div>'))
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
+
                                 Forms\Components\Placeholder::make('h_amount')
                                     ->label('')
                                     ->content(new \Illuminate\Support\HtmlString('<div class="text-sm font-medium text-gray-950 dark:text-white text-right">Amount (Rp)</div>'))
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
+
                             ]),
                         Forms\Components\Repeater::make('items')
                             ->relationship()
@@ -122,7 +135,7 @@ class InvoiceResource extends Resource
                                     ->required()
                                     ->disabled()
                                     ->dehydrated(true)
-                                    ->columnSpan(3),
+                                    ->columnSpan(['default' => 'full', 'lg' => 3]),
 
                                 Forms\Components\TextInput::make('weight')
                                     ->hiddenLabel()
@@ -131,7 +144,7 @@ class InvoiceResource extends Resource
                                     ->disabled()
                                     ->dehydrated(true)
                                     ->extraInputAttributes(['class' => 'text-right'])
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
 
                                 static::money('price')
                                     ->hiddenLabel()
@@ -141,7 +154,7 @@ class InvoiceResource extends Resource
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(fn (callable $get, callable $set) => self::updateTotals($get, $set))
                                     ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'numeric', 'onfocus' => 'this.select()'])
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
 
                                 Forms\Components\TextInput::make('discount_percent')
                                     ->hiddenLabel()
@@ -155,7 +168,7 @@ class InvoiceResource extends Resource
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(fn (callable $get, callable $set) => self::updateTotals($get, $set))
                                     ->extraInputAttributes(['class' => 'text-right', 'onfocus' => 'this.select()'])
-                                    ->columnSpan(1),
+                                    ->columnSpan(['default' => 'full', 'lg' => 1]),
 
                                 static::money('discount_rp')
                                     ->hiddenLabel()
@@ -163,7 +176,7 @@ class InvoiceResource extends Resource
                                     ->default(0)
                                     ->disabled()
                                     ->dehydrated(true)
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
 
                                 static::money('amount')
                                     ->hiddenLabel()
@@ -171,9 +184,9 @@ class InvoiceResource extends Resource
                                     ->default(0)
                                     ->disabled()
                                     ->dehydrated(true)
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
                              ])
-                             ->columns(12)
+                             ->columns(['default' => 1, 'lg' => 12])
                             ->disableItemCreation()
                             ->disableItemDeletion()
                             ->disableItemMovement()
@@ -199,7 +212,7 @@ class InvoiceResource extends Resource
                                         'Delivery Cost' => 'Delivery Cost',
                                     ])
                                     ->required()
-                                    ->columnSpan(3),
+                                    ->columnSpan(['default' => 'full', 'lg' => 3]),
                                 Forms\Components\TextInput::make('qty')
                                     ->hiddenLabel()
                                     ->placeholder(__('Qty'))
@@ -209,7 +222,7 @@ class InvoiceResource extends Resource
                                     ->extraInputAttributes(['class' => 'text-right', 'onfocus' => 'this.select()'])
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(fn (callable $get, callable $set) => self::updateTotals($get, $set))
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
                                 static::money('price')
                                     ->hiddenLabel()
                                     ->placeholder(__('Price (Rp)'))
@@ -218,7 +231,7 @@ class InvoiceResource extends Resource
                                     ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'numeric', 'onfocus' => 'this.select()'])
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(fn (callable $get, callable $set) => self::updateTotals($get, $set))
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
                                 Forms\Components\TextInput::make('discount_percent')
                                     ->hiddenLabel()
                                     ->placeholder(__('Disc %'))
@@ -226,22 +239,22 @@ class InvoiceResource extends Resource
                                     ->default(0)
                                     ->disabled()
                                     ->extraInputAttributes(['class' => 'text-right'])
-                                    ->columnSpan(1),
+                                    ->columnSpan(['default' => 'full', 'lg' => 1]),
                                 static::money('discount_rp')
                                     ->hiddenLabel()
                                     ->placeholder(__('Disc Rp'))
                                     ->default(0)
                                     ->disabled()
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
                                 static::money('amount')
                                     ->hiddenLabel()
                                     ->placeholder(__('Amount (Rp)'))
                                     ->default(0)
                                     ->disabled()
                                     ->dehydrated(true)
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
                             ])
-                            ->columns(12)
+                            ->columns(['default' => 1, 'lg' => 12])
                             ->default([])
                             ->live(onBlur: true)
                             ->afterStateUpdated(fn (callable $get, callable $set) => self::updateTotals($get, $set)),
@@ -251,19 +264,23 @@ class InvoiceResource extends Resource
                     ->schema([
                         // Semua angka uang berdiri dalam SATU kolom di kanan,
                         // satu baris masing-masing, dibaca dari atas ke bawah
-                        // seperti struk: barang, biaya, diskon, uang muka, lalu
-                        // yang benar-benar ditagihkan.
+                        // seperti struk: berat, barang, biaya, diskon, uang
+                        // muka, lalu yang benar-benar ditagihkan.
                         //
                         // Sebelumnya empat di antaranya dijejalkan ke satu
                         // baris. Kotaknya jadi terlalu sempit untuk angka
                         // jutaan, dan "1.200.000" terpotong menjadi "1.200.0" --
                         // angka yang salah baca, bukan sekadar tampilan sesak.
-                        // Berat total ikut dikecilkan karena isinya paling
-                        // pendek di antara semuanya.
-                        Forms\Components\Grid::make(12)
+                        //
+                        // Letak kanannya dipasang dengan columnStart, BUKAN
+                        // dengan placeholder kosong sebagai pengganjal. Di
+                        // layar sempit gridnya menjadi satu kolom, dan
+                        // pengganjal seperti itu berubah menjadi baris kosong
+                        // yang ikut memakan tempat.
+                        Forms\Components\Grid::make(['default' => 1, 'lg' => 12])
                             ->schema([
-                                Forms\Components\Placeholder::make('empty1')->label('')->content('')->columnSpan(7),
                                 Forms\Components\TextInput::make('total_weight')
+                                    ->label(__('Total Weight'))
                                     ->hiddenLabel()
                                     ->prefix('Total')
                                     ->suffix('Kg')
@@ -271,12 +288,9 @@ class InvoiceResource extends Resource
                                     ->dehydrated(true)
                                     ->extraInputAttributes(['class' => 'text-right'])
                                     ->default(fn () => \App\Models\DeliveryOrderReceipt::find(request()->query('delivery_order_receipt_id'))?->total_weight ?? 0.0)
-                                    ->columnSpan(5),
-                            ]),
+                                    ->columnSpan(['default' => 'full', 'lg' => 5])
+                                    ->columnStart(['lg' => 8]),
 
-                        Forms\Components\Grid::make(12)
-                            ->schema([
-                                Forms\Components\Placeholder::make('empty2')->label('')->content('')->columnSpan(7),
                                 static::money('subtotal')
                                     ->hiddenLabel()
                                     // Dulu berlabel "Total Amount" padahal isinya
@@ -287,36 +301,27 @@ class InvoiceResource extends Resource
                                     ->disabled()
                                     ->dehydrated(true)
                                     ->default(fn () => static::initialTotal('subtotal'))
-                                    ->columnSpan(5),
-                            ]),
+                                    ->columnSpan(['default' => 'full', 'lg' => 5])
+                                    ->columnStart(['lg' => 8]),
 
-                        Forms\Components\Grid::make(12)
-                            ->schema([
-                                Forms\Components\Placeholder::make('empty3')->label('')->content('')->columnSpan(7),
                                 static::money('charge')
                                     ->hiddenLabel()
                                     ->prefix(__('Charges'))
                                     ->disabled()
                                     ->dehydrated(true)
                                     ->default(0)
-                                    ->columnSpan(5),
-                            ]),
+                                    ->columnSpan(['default' => 'full', 'lg' => 5])
+                                    ->columnStart(['lg' => 8]),
 
-                        Forms\Components\Grid::make(12)
-                            ->schema([
-                                Forms\Components\Placeholder::make('empty4')->label('')->content('')->columnSpan(7),
                                 static::money('total_discount')
                                     ->hiddenLabel()
                                     ->prefix(__('Total Disc'))
                                     ->disabled()
                                     ->dehydrated(true)
                                     ->default(fn () => static::initialTotal('total_discount'))
-                                    ->columnSpan(5),
-                            ]),
+                                    ->columnSpan(['default' => 'full', 'lg' => 5])
+                                    ->columnStart(['lg' => 8]),
 
-                        Forms\Components\Grid::make(12)
-                            ->schema([
-                                Forms\Components\Placeholder::make('empty5')->label('')->content('')->columnSpan(7),
                                 static::money('down_payment')
                                     ->hiddenLabel()
                                     ->prefix('DP')
@@ -327,19 +332,17 @@ class InvoiceResource extends Resource
                                     )?->salesOrder?->down_payment ?? 0))
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(fn (callable $get, callable $set) => self::updateTotals($get, $set))
-                                    ->columnSpan(5),
-                            ]),
+                                    ->columnSpan(['default' => 'full', 'lg' => 5])
+                                    ->columnStart(['lg' => 8]),
 
-                        Forms\Components\Grid::make(12)
-                            ->schema([
-                                Forms\Components\Placeholder::make('empty6')->label('')->content('')->columnSpan(7),
                                 static::money('balance')
                                     ->hiddenLabel()
                                     ->prefix(__('Total Billed'))
                                     ->disabled()
                                     ->dehydrated(true)
                                     ->default(fn () => static::initialTotal('balance'))
-                                    ->columnSpan(5),
+                                    ->columnSpan(['default' => 'full', 'lg' => 5])
+                                    ->columnStart(['lg' => 8]),
                             ]),
                     ]),
             ]);
