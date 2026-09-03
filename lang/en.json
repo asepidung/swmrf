@@ -917,5 +917,12 @@
     "Group Name": "Group Name",
     "Due Date": "Due Date",
     "Receivable": "Receivable",
-    ":count Inv": ":count Inv"
+    ":count Inv": ":count Inv",
+    "Payment Receipt": "Payment Receipt",
+    "Payments Received": "Payments Received",
+    "Received from": "Received from",
+    "Received by": "Received by",
+    "Total Settled": "Total Settled",
+    "Number": "Number",
+    "Printed on :date": "Printed on :date"
 }

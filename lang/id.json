@@ -917,5 +917,12 @@
     "Group Name": "Nama Grup",
     "Due Date": "Jatuh Tempo",
     "Receivable": "Piutang",
-    ":count Inv": ":count Inv"
+    ":count Inv": ":count Inv",
+    "Payment Receipt": "Bukti Terima Pembayaran",
+    "Payments Received": "Pembayaran Diterima",
+    "Received from": "Telah terima dari",
+    "Received by": "Diterima oleh",
+    "Total Settled": "Total Dilunasi",
+    "Number": "Nomor",
+    "Printed on :date": "Dicetak pada :date"
 }

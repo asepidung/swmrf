@@ -1406,6 +1406,57 @@ dirancang untuk layar lebar dengan alat pemindai di tangan, bukan untuk HP.
 Keputusan Owner: pastikan nyaman di layar lebar, layar kecil ditangani nanti
 kalau memang perlu.
 
+### Nomor dokumen uang: PR# masuk, PV# keluar -- dan bukti terima yang bisa dicetak
+
+**3-4 September 2026, keputusan Project Owner.**
+
+```
+PR#260001   uang masuk dari pelanggan   (Payment Receipt)
+PV#260001   uang keluar ke pemasok      (Payment Voucher)
+```
+
+Awalannya langsung memberi tahu ARAH uangnya. Bentuk lamanya tidak:
+`PAY-0001/IX/26` untuk uang masuk dan `SP#260001` untuk uang keluar -- dua
+format berbeda, dan tidak satu pun menyatakan masuk atau keluar.
+
+Bentuk barunya menaruh urutan di UJUNG, sehingga keduanya kini memakai
+`DocumentNumber::next()`. Itu sekaligus membereskan dua rakitan penomoran yang
+masing-masing punya cara terulang sendiri; `SupplierPayment::generateNumber()`
+membaca urutannya dengan `preg_match('/(\d{4})$/')` -- persis batas yang
+membuat `DocumentNumber` dibuat.
+
+**Nomor SP# yang SUDAH TERBIT sengaja tidak ditulis ulang.** Menulis ulang
+nomor dokumen yang sudah keluar adalah hal yang tidak boleh dilakukan
+pembukuan, sekecil apa pun datanya. Urutan PV# berangkat dari awal, dan
+keduanya hidup berdampingan karena awalannya berbeda.
+
+**Pembayaran pelanggan yang sudah tercatat dulu TIDAK BISA DILIHAT LAGI.**
+Tidak ada Resource, tidak ada daftar, tidak ada halaman. Uang masuk lalu
+hilang dari pandangan; keberadaannya hanya bisa disimpulkan dari sisa tagihan
+invoice yang berkurang. Kalau pelanggan bertanya "transfer saya tanggal sekian
+sudah masuk belum", tidak ada satu pun layar yang bisa menjawabnya -- dan
+karena tidak ada tempatnya, tidak ada pula tempat untuk tombol cetaknya.
+`PaymentsRelationManager` di halaman piutang grup yang menjawabnya sekarang.
+
+**SATU dokumen, bukan dua.** Keputusan Owner: bagian atas untuk pelanggan
+(telah terima dari siapa, berapa, referensi transfernya), rincian alokasi per
+invoice di bawahnya untuk keuangan. Dipecah menjadi kwitansi dan bukti bank
+masuk yang terpisah hanya kalau nanti diminta.
+
+Potongan ditampilkan terpisah di dokumen itu, dan itu bukan hiasan: uang yang
+benar-benar masuk bank LEBIH KECIL daripada tagihan yang lunas, dan tanpa
+barisnya pembaca akan mencocokkan kertas dengan rekening koran lalu menemukan
+selisih yang tidak dijelaskan apa pun.
+
+**CSS-nya menyatu di berkasnya, tidak memanggil CDN** seperti halaman cetak
+lain. Dokumen ini diserahkan kepada pelanggan dan sering dicetak dari gudang;
+halaman yang tata letaknya runtuh saat internet lambat bukan bukti pembayaran
+yang bisa dipegang. Ketergantungan CDN di halaman cetak lain tetap tercatat
+sebagai utang tersendiri.
+
+**BELUM ADA: dokumen cetak untuk uang keluar (PV).** Penomorannya sudah, tetapi
+vouchernya belum dibuat. Menunggu Owner memutuskan isinya.
+
 ### Daftar piutang: satu aturan, satu kueri, dan nomor yang tidak bisa terulang
 
 **3 September 2026.** Tiga sisa temuan Receivable dibereskan sekaligus.

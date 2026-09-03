@@ -156,7 +156,10 @@ class SupplierAdvancePaymentTest extends TestCase
         $first = $this->recordAdvance($requisition, 1000);
         $second = $this->recordAdvance($requisition, 2000);
 
-        $this->assertStringStartsWith('SP#' . date('y'), $first->payment_number);
+        // PV = Payment Voucher, keputusan Owner 3 September 2026. Awalannya
+        // langsung memberi tahu arah uangnya; SP# yang lama hanya menyebut
+        // "supplier" tanpa menyatakan masuk atau keluar.
+        $this->assertStringStartsWith(\App\Models\SupplierPayment::NUMBER_PREFIX . date('y'), $first->payment_number);
         $this->assertNotSame($first->payment_number, $second->payment_number);
     }
 

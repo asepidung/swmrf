@@ -190,6 +190,23 @@ Route::middleware(['web', 'auth'])->group(function () {
     })->name('print.invoice');
 
     // ------------------------------------------
+    // 9b. BUKTI TERIMA PEMBAYARAN PELANGGAN
+    // ------------------------------------------
+    //
+    // Sampai 3 September 2026 pembayaran pelanggan yang sudah tercatat TIDAK
+    // BISA DILIHAT LAGI di mana pun: tidak ada daftarnya, tidak ada
+    // halamannya, dan karena itu tidak ada tempat untuk menaruh tombol
+    // cetaknya. Uang masuk, lalu hilang dari pandangan -- keberadaannya hanya
+    // bisa disimpulkan dari sisa tagihan invoice yang berkurang.
+    Route::get('/print/payment-receipt/{id}', function ($id) {
+        $record = \App\Models\Payment::withTrashed()
+            ->with(['customerGroup', 'bankAccount', 'deductions', 'allocations.invoice', 'creator'])
+            ->findOrFail($id);
+
+        return view('print.payment-receipt', compact('record'));
+    })->name('print.payment-receipt');
+
+    // ------------------------------------------
     // 10. MODUL SALES RETURN
     // ------------------------------------------
     Route::get('/print-sales-return-label/{id}', function ($id) {
