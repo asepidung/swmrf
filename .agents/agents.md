@@ -1336,13 +1336,26 @@ Baris judul kolom palsu di atas repeater hanya masuk akal saat kolomnya
 berjajar. Kelas `.swm-wide-only` di `missing-color-utilities.blade.php`
 menyembunyikannya di bawah 1024px, ambang yang sama dengan lg milik Filament.
 
-**SUDAH DISAPU KE SELURUH MODUL YANG SUDAH DISISIR, 3 September 2026.**
-Sembilan belas berkas dirapikan sekaligus. Rentangnya kini disebut per
-breakpoint di mana pun, dan `ResponsiveColumnSpanTest` menolak `columnSpan(N)`
-telanjang dengan N dua atau lebih.
+**MASIH TERBUKA di dua belas Resource lain**, dan SUDAH PERNAH DICOBA DISAPU
+SEKALIGUS LALU DIBATALKAN. Baca bagian di bawah sebelum mencobanya lagi.
 
-Menyapunya memunculkan **kerusakan kedua yang lebih diam lagi**. Sepuluh berkas
-menyembunyikan baris judul repeaternya dengan:
+### Sapuan tata letak serentak DIBATALKAN, 3 September 2026
+
+Sembilan belas berkas pernah dirapikan sekaligus lewat PR #204: seluruh
+`columnSpan(N)` telanjang diubah menjadi `['default' => 'full', 'lg' => N]`,
+lengkap dengan penjaga polanya. Semua test hijau, dan tidak ada satu pun
+halaman yang pernah dilihat di layar sungguhan sebelum dirilis.
+
+Owner memeriksa satu halaman -- **Create Request Material** -- dan hasilnya
+**lebih berantakan daripada sebelumnya**. PR itu di-revert utuh.
+
+**Pelajarannya bukan bahwa perbaikannya salah, melainkan bahwa bentuk
+pekerjaannya salah.** Test bisa membuktikan rentangnya sudah per breakpoint;
+tidak ada test yang bisa membuktikan halamannya enak dilihat. Tata letak hanya
+bisa dinilai dengan mata, di layar sungguhan, satu halaman pada satu waktu.
+
+Satu dugaan penyebabnya, karena ini ikut terbawa dalam sapuan yang sama:
+sepuluh berkas menyembunyikan baris judul repeaternya dengan
 
 ```php
 ->extraAttributes(['class' => 'hidden md:grid'])
@@ -1352,19 +1365,25 @@ menyembunyikan baris judul repeaternya dengan:
 bagian "Panel admin TIDAK memuat CSS hasil build aplikasi". Yang benar-benar
 berlaku hanya `hidden`, dan tidak ada apa pun yang membatalkannya di layar
 lebar. Artinya baris judul itu **tidak pernah tampil di ukuran layar mana
-pun**, termasuk di layar lebar tempat ia justru dibutuhkan, sejak hari ia
-ditulis. Semuanya kini memakai `.swm-wide-only`, yang punya CSS-nya sendiri
-dan dijaga oleh test yang sama.
+pun**, termasuk di layar lebar tempat ia dibutuhkan, sejak hari ia ditulis.
 
-**Halaman pemindai sengaja DILUAR sapuan ini.** Scan Tally, Scan GR Product,
+Memperbaikinya berarti **memunculkan baris judul yang belum pernah ada** di
+sepuluh form sekaligus. Kalau lebar kolomnya tidak pas dengan isinya, hasilnya
+justru lebih kacau daripada tidak ada judul sama sekali. Itu bug yang nyata dan
+tetap perlu dibereskan -- tapi satu per satu, sambil dilihat.
+
+**Cara mengerjakannya nanti:** ikut giliran modulnya. Saat sebuah modul
+disisir, rapikan rentangnya, munculkan baris judulnya, lalu MINTA OWNER
+MELIHATNYA sebelum lanjut. Persis cara Invoice dikerjakan, dan itu berhasil.
+
+Kelas `.swm-wide-only` di `missing-color-utilities.blade.php` tetap ada dan
+sudah dipakai Invoice; itu pengganti `hidden md:grid` yang benar.
+
+**Halaman pemindai sengaja DILUAR semua ini.** Scan Tally, Scan GR Product,
 Scan Mutation, dan Found Item Scanner memang menyembunyikan sidebar dan
 dirancang untuk layar lebar dengan alat pemindai di tangan, bukan untuk HP.
 Keputusan Owner: pastikan nyaman di layar lebar, layar kecil ditangani nanti
 kalau memang perlu.
-
-**Modul yang belum disisir diperbaiki sambil jalan**, bukan disapu di muka --
-juga keputusan Owner. Satu yang ikut terbawa sapuan ini karena polanya sama
-persis: halaman Receive Payment di modul Receivable.
 
 ### Invoice: satu rumus, arti kolom yang dikunci, dan penghapusan yang membereskan jejaknya
 
@@ -1817,6 +1836,16 @@ perubahan alur.
 3. **Blade cetak** (`resources/views/print/`, `exports/`) hampir seluruhnya hardcode, tidak lewat `__()`. Belum diputuskan perlu bilingual atau tidak.
 4. **Urutan Tab di banyak form** belum wajar — lihat bagian utang teknis di atas.
 5. **Alokasi uang muka per pembayaran** tidak dicatat per pasangan. Total selalu tepat; hanya laporan alokasi per pembayaran yang belum mungkin. Kalau kelak dibutuhkan, jawabannya tabel alokasi tersendiri.
+6. **B.O.M (Bill of Materials) belum ada sama sekali.** Tidak ada satu pun tempat yang menyatakan "satu unit produk jadi butuh bahan apa saja, berapa banyak". Akibatnya berantai dan diam:
+   - Pemakaian bahan penolong dicatat MANUAL di Material Usage, tanpa apa pun yang membandingkannya dengan yang seharusnya terpakai. Salah input sepuluh kali lipat tidak menghasilkan gejala.
+   - HPP tidak bisa dihitung utuh, karena porsi bahan penolong per produk tidak diketahui. Ini salah satu sebab susut kirim masih tercatat Rp 0.
+   - Boning dan Repack tidak bisa memperkirakan kebutuhan bahan di muka, jadi kekurangan stok baru ketahuan saat produksinya berjalan.
+
+   Belum dikerjakan karena BOM menyentuh Boning, Repack, Material Usage, dan HPP sekaligus. Perlu sesi tersendiri bersama Owner, dan mestinya SESUDAH metode input Material Usage diputuskan — lihat bagian "TERBUKA: metode input Material Usage perlu dirombak".
+
+7. **Modul QC/QA belum ada.** Sudah tercatat `[ ]` di `checklist_modul.md` sejak awal, dan sampai sekarang tidak ada satu pun kode yang menyentuhnya. Yang sekarang berjalan hanya pemeriksaan yang menempel di dokumen lain — pH di Boning dan Goods Receipt, Grade di setiap baris stok — tanpa ada tempat yang menyatakan lulus atau tidaknya suatu batch, siapa yang memeriksanya, dan apa akibatnya kalau gagal.
+
+   Yang membuatnya berutang bukan ketiadaannya, melainkan bahwa **kegagalan mutu saat ini tidak punya jalur**. Kompensasi pemasok sudah ada di Payable, tetapi ia dicatat sesudah kejadian, tanpa dokumen pemeriksaan apa pun yang mendasarinya. Kalau QC/QA kelak dibuat, itulah yang harus menjadi asal-usul kompensasi — bukan angka yang diketik langsung.
 
 ### Yang belum sempat diperiksa di jahitan Payable
 

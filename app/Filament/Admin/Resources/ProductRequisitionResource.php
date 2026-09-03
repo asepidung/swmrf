@@ -43,7 +43,7 @@ class ProductRequisitionResource extends Resource
                             ->required()
                             ->default(now())
                             ->disabled(fn($record) => $record && $record->status !== 'Requested')
-                            ->columnSpan(['default' => 'full', 'lg' => 6]),
+                            ->columnSpan(['default' => 12, 'md' => 6]),
 
                         Forms\Components\Select::make('supplier_id')
                             ->label(fn() => __('Supplier'))
@@ -52,11 +52,11 @@ class ProductRequisitionResource extends Resource
                             ->preload()
                             ->required()
                             ->live()
-                            ->columnSpan(['default' => 'full', 'lg' => 6]),
+                            ->columnSpan(['default' => 12, 'md' => 6]),
 
                         Forms\Components\Textarea::make('note')
                             ->label(fn() => __('Note'))
-                            ->columnSpan(['default' => 'full', 'lg' => 12]),
+                            ->columnSpan(12),
 
                         Forms\Components\Hidden::make('user_id')->default(fn() => Auth::id()),
                         Forms\Components\Hidden::make('total_amount'),
@@ -136,19 +136,19 @@ class ProductRequisitionResource extends Resource
                                     ->columnSpan(['default' => 12, 'md' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 4 : 3]),
                                 Forms\Components\Placeholder::make('col_qty')
                                     ->label(fn() => __('Qty'))
-                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
+                                    ->columnSpan(['default' => 6, 'md' => 2]),
                                 Forms\Components\Placeholder::make('col_price')
                                     ->label(fn() => __('Price'))
-                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
+                                    ->columnSpan(['default' => 6, 'md' => 2]),
                                 Forms\Components\Placeholder::make('col_item_total')
                                     ->label(fn() => __('Subtotal'))
-                                    ->columnSpan(['default' => 'full', 'lg' => 2])
+                                    ->columnSpan(['default' => 6, 'md' => 2])
                                     ->hidden(fn ($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord),
                                 Forms\Components\Placeholder::make('col_note')
                                     ->label(fn() => __('Notes'))
                                     ->columnSpan(['default' => 6, 'md' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 4 : 3]),
                             ])
-                            ->extraAttributes(['class' => 'swm-wide-only']),
+                            ->extraAttributes(['class' => 'hidden md:grid']),
 
                         Forms\Components\Repeater::make('items')
                             ->hiddenLabel()
@@ -176,7 +176,7 @@ class ProductRequisitionResource extends Resource
                                     ->placeholder(fn() => __('Qty'))
                                     ->default(0)
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'qty-input text-right', 'inputmode' => 'decimal', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll(".qty-input")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
-                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
+                                    ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('price')
                                     ->hiddenLabel()
@@ -203,7 +203,7 @@ class ProductRequisitionResource extends Resource
                                     ->prefix('Rp')
                                     ->default(0)
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'price-input text-right', 'inputmode' => 'numeric', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll(".price-input")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
-                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
+                                    ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('item_total')
                                     ->hiddenLabel()
@@ -217,7 +217,7 @@ class ProductRequisitionResource extends Resource
                                         $price = self::parseNumber($get('price'));
                                         $component->state(number_format($qty * $price, 0, ',', '.'));
                                     })
-                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
+                                    ->columnSpan(['default' => 12, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('note')
                                     ->hiddenLabel()
@@ -282,7 +282,7 @@ class ProductRequisitionResource extends Resource
                                     })
                                     ->extraAttributes(['class' => 'font-bold text-lg text-primary-600']),
                             ])
-                            ->columnSpan(['default' => 'full', 'lg' => 12]),
+                            ->columnSpan(12),
                     ])->columns(12),
 
                 Forms\Components\Section::make(fn() => __('Rejection Info'))

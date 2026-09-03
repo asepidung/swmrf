@@ -155,7 +155,7 @@ class DeliveryOrderResource extends Resource
                                     ->required()
                                     ->disabled()
                                     ->dehydrated(true)
-                                    ->columnSpan(['default' => 'full', 'lg' => 4]),
+                                    ->columnSpan(4),
 
                                 Forms\Components\TextInput::make('box')
                                     ->label(__('Box'))
@@ -164,7 +164,7 @@ class DeliveryOrderResource extends Resource
                                     ->disabled()
                                     ->dehydrated(true)
                                     ->extraInputAttributes(['class' => 'text-center font-bold', 'style' => 'text-align: center;'])
-                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
+                                    ->columnSpan(2),
 
                                 Forms\Components\TextInput::make('weight')
                                     ->label(__('Weight'))
@@ -173,7 +173,7 @@ class DeliveryOrderResource extends Resource
                                     ->disabled()
                                     ->dehydrated(true)
                                     ->extraInputAttributes(['class' => 'text-right font-bold', 'style' => 'text-align: right;'])
-                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
+                                    ->columnSpan(2),
 
                                 Forms\Components\TextInput::make('received_weight')
                                     ->label(__('Received Weight'))
@@ -188,7 +188,7 @@ class DeliveryOrderResource extends Resource
                                         $receiptItem = $receipt->items()->where('product_id', $record->product_id)->first();
                                         return $receiptItem?->weight;
                                     })
-                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
+                                    ->columnSpan(2),
 
                                 Forms\Components\TextInput::make('notes')
                                     ->label(__('Notes'))

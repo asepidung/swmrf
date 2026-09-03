@@ -93,22 +93,22 @@ class DeliveryOrderReceiptResource extends Resource
                                     ->label(__('Product'))
                                     ->placeholder(fn ($record) => $record?->product?->name)
                                     ->disabled()
-                                    ->columnSpan(['default' => 'full', 'lg' => 6]),
+                                    ->columnSpan(6),
 
                                 Forms\Components\TextInput::make('box')
                                     ->label(__('Box'))
                                     ->disabled()
-                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
+                                    ->columnSpan(2),
 
                                 Forms\Components\TextInput::make('weight')
                                     ->label(__('Weight'))
                                     ->disabled()
-                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
+                                    ->columnSpan(2),
 
                                 Forms\Components\TextInput::make('notes')
                                     ->label(__('Notes'))
                                     ->disabled()
-                                    ->columnSpan(['default' => 'full', 'lg' => 2]),
+                                    ->columnSpan(2),
                             ])
                             ->columns(12)
                             ->disableItemCreation()
