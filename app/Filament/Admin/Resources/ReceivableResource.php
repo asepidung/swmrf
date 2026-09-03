@@ -87,9 +87,62 @@ class ReceivableResource extends Resource
         return $form->schema([]);
     }
 
+    /**
+     * Batas "akan jatuh tempo": tujuh hari ke depan.
+     */
+    protected const DUE_SOON_DAYS = 7;
+
+    /**
+     * Ketiga angka di daftar piutang, dihitung SEKALI untuk seluruh halaman.
+     *
+     * Sebelumnya tiap kolom punya `getStateUsing` dan `description` yang
+     * berkueri sendiri-sendiri: enam kueri per baris grup, jadi dua puluh grup
+     * berarti seratus dua puluh kueri hanya untuk membuka satu halaman.
+     *
+     * Sekarang keenamnya menjadi subkueri agregat pada kueri tabelnya, dan
+     * yang lebih penting: keenamnya berangkat dari relasi yang SAMA, sehingga
+     * nominal dan hitungannya tidak mungkin lagi menjawab dengan aturan yang
+     * berbeda.
+     */
+    protected static function withReceivableTotals(Builder $query): Builder
+    {
+        $outstanding = fn (Builder $invoices) => $invoices
+            ->where('invoices.status', '!=', Invoice::STATUS_PAID);
+
+        $dueSoon = fn (Builder $invoices) => $outstanding($invoices)
+            ->whereNotNull('invoices.due_date')
+            ->whereBetween('invoices.due_date', [
+                now()->toDateString(),
+                now()->addDays(static::DUE_SOON_DAYS)->toDateString(),
+            ]);
+
+        $overdue = fn (Builder $invoices) => $outstanding($invoices)
+            ->whereNotNull('invoices.due_date')
+            ->whereDate('invoices.due_date', '<', now()->toDateString());
+
+        return $query
+            ->withSum(['invoices as total_receivable' => $outstanding], 'balance')
+            ->withCount(['invoices as total_receivable_count' => $outstanding])
+            ->withSum(['invoices as due_soon' => $dueSoon], 'balance')
+            ->withCount(['invoices as due_soon_count' => $dueSoon])
+            ->withSum(['invoices as overdue' => $overdue], 'balance')
+            ->withCount(['invoices as overdue_count' => $overdue]);
+    }
+
+    /** Keterangan "N Inv" di bawah nominalnya, kosong bila memang tidak ada. */
+    protected static function invoiceCount(?int $count, bool $alwaysShow = false): ?string
+    {
+        if (! $count) {
+            return $alwaysShow ? __(':count Inv', ['count' => 0]) : null;
+        }
+
+        return __(':count Inv', ['count' => $count]);
+    }
+
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => static::withReceivableTotals($query))
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label(__('Group Name'))
@@ -98,84 +151,40 @@ class ReceivableResource extends Resource
                     ->weight('bold')
                     ->color('primary'),
 
-                Tables\Columns\TextColumn::make('total_piutang')
+                Tables\Columns\TextColumn::make('total_receivable')
                     ->label(__('Total Receivable'))
-                    ->getStateUsing(function (\App\Models\CustomerGroup $record) {
-                        return $record->receivables()
-                            ->join('invoices', 'receivables.invoice_id', '=', 'invoices.id')
-                            ->where('invoices.status', '!=', 'Lunas')
-                            ->sum('invoices.balance');
-                    })
                     ->money('IDR', locale: 'id')
-                    ->description(function (\App\Models\CustomerGroup $record) {
-                        $count = $record->receivables()
-                            ->whereHas('invoice', function ($q) {
-                                $q->where('status', '!=', 'Lunas');
-                            })->count();
-                        return $count . ' Inv';
-                    })
+                    ->sortable()
+                    ->description(fn ($record): ?string => static::invoiceCount(
+                        $record->total_receivable_count,
+                        alwaysShow: true,
+                    ))
                     ->alignEnd()
                     ->weight('bold'),
 
-                Tables\Columns\TextColumn::make('akan_jatuh_tempo')
+                Tables\Columns\TextColumn::make('due_soon')
                     ->label(__('Due Soon'))
-                    ->getStateUsing(function (\App\Models\CustomerGroup $record) {
-                        return $record->receivables()
-                            ->join('invoices', 'receivables.invoice_id', '=', 'invoices.id')
-                            ->where('invoices.status', '!=', 'Lunas')
-                            ->whereNotNull('invoices.due_date')
-                            ->whereBetween('invoices.due_date', [now()->toDateString(), now()->addDays(7)->toDateString()])
-                            ->sum('invoices.balance');
-                    })
                     ->money('IDR', locale: 'id')
-                    ->description(function (\App\Models\CustomerGroup $record) {
-                        $count = $record->receivables()
-                            ->whereHas('invoice', function ($q) {
-                                $q->where('status', '!=', 'Lunas')
-                                  ->whereNotNull('due_date')
-                                  ->whereBetween('due_date', [now()->toDateString(), now()->addDays(7)->toDateString()]);
-                            })->count();
-                        return $count > 0 ? $count . ' Inv' : '';
-                    })
+                    ->sortable()
+                    ->description(fn ($record): ?string => static::invoiceCount($record->due_soon_count))
                     ->alignEnd()
                     ->color('warning'),
 
-                Tables\Columns\TextColumn::make('sudah_jatuh_tempo')
+                Tables\Columns\TextColumn::make('overdue')
                     ->label(__('Overdue'))
-                    ->getStateUsing(function (\App\Models\CustomerGroup $record) {
-                        return $record->receivables()
-                            ->join('invoices', 'receivables.invoice_id', '=', 'invoices.id')
-                            ->where('invoices.status', '!=', 'Lunas')
-                            ->whereNotNull('invoices.due_date')
-                            ->whereDate('invoices.due_date', '<', now()->toDateString())
-                            ->sum('invoices.balance');
-                    })
                     ->money('IDR', locale: 'id')
-                    ->description(function (\App\Models\CustomerGroup $record) {
-                        $count = $record->receivables()
-                            ->whereHas('invoice', function ($q) {
-                                $q->where('status', '!=', 'Lunas')
-                                  ->whereNotNull('due_date')
-                                  ->whereDate('due_date', '<', now()->toDateString());
-                            })->count();
-                        return $count > 0 ? $count . ' Inv' : '';
-                    })
+                    ->sortable()
+                    ->description(fn ($record): ?string => static::invoiceCount($record->overdue_count))
                     ->alignEnd()
                     ->color('danger'),
             ])
-            ->filters([
-                // We can add simple filters if needed, but for now we keep it clean.
-            ])
-            ->actions([
-                // No static actions, we only click the row to view details.
-            ])
-            ->headerActions([
-                // 
-            ])
+            ->filters([])
+            ->actions([])
+            ->headerActions([])
             ->bulkActions([])
-            ->recordUrl(function (\App\Models\CustomerGroup $record) {
-                return Pages\ViewReceivable::getUrl([$record->id]);
-            })
+            ->recordUrl(
+                fn (\App\Models\CustomerGroup $record): string => Pages\ViewReceivable::getUrl([$record->id]),
+            )
             ->defaultSort('name', 'asc');
     }
 
@@ -199,7 +208,7 @@ class ReceivableResource extends Resource
     {
         return parent::getEloquentQuery()
             ->whereHas('receivables.invoice', function (Builder $query) {
-                $query->where('status', '!=', 'Lunas');
+                $query->where('status', '!=', Invoice::STATUS_PAID);
             });
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class CustomerGroup extends Model
@@ -38,5 +39,31 @@ class CustomerGroup extends Model
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * Invoice milik grup ini, lewat baris piutangnya.
+     *
+     * Dibuat supaya nominal dan HITUNGAN invoice di daftar piutang memakai
+     * satu aturan yang sama. Sebelumnya nominalnya dijumlahkan lewat `join`
+     * mentah -- yang MELEWATI penyaring hapus-lunak invoice -- sementara
+     * hitungannya memakai `whereHas` yang MENERAPKANNYA. Satu grup bisa
+     * menampilkan "Rp 5.000.000 / 0 Inv": dua angka bersebelahan yang saling
+     * membantah.
+     *
+     * HasManyThrough menerapkan penyaring hapus-lunak pada keduanya --
+     * baris piutangnya maupun invoicenya -- jadi pertanyaannya tidak bisa
+     * lagi dijawab dua cara.
+     */
+    public function invoices(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Invoice::class,
+            Receivable::class,
+            'customer_group_id',
+            'id',
+            'id',
+            'invoice_id',
+        );
     }
 }
