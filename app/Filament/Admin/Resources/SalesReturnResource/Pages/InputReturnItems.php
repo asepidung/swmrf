@@ -89,11 +89,17 @@ class InputReturnItems extends Page implements HasForms, HasTable
 
         $defaultPackDate = now()->format('Y-m-d');
         
-        $this->scanForm->fill([]);
+        $gudangPenerima = $this->receivingWarehouseId();
+
+        $this->scanForm->fill([
+            'warehouse_id' => $gudangPenerima,
+        ]);
 
         $this->weighForm->fill([
             'pack_date' => $defaultPackDate,
-            'warehouse_id' => $this->defaultWarehouseId(),
+            // Satu gudang penerima untuk kedua tab. Barang yang dipindai dan
+            // barang yang ditimbang ulang datang dari truk yang sama.
+            'warehouse_id' => $gudangPenerima,
             'grade_id' => Grade::where('is_active', true)->orderBy('id')->value('id'),
             'ph_level' => session('sr_ph_level_' . $this->record->id),
             'show_exp' => session('sr_show_exp_' . $this->record->id, true),
@@ -113,6 +119,29 @@ class InputReturnItems extends Page implements HasForms, HasTable
     {
         return $form
             ->schema([
+                // Gudang PENERIMA, dan karena itu sebuah pilihan yang terlihat.
+                //
+                // Sempat diambil diam-diam dari gudang tempat barangnya keluar.
+                // Project Owner yang menangkapnya: "kalo diterima dari gudang
+                // lain gimana?" -- barang retur tidak selalu mendarat di gudang
+                // asalnya, dan yang menentukan adalah orang yang menerimanya,
+                // bukan riwayat pengirimannya.
+                //
+                // Gudang asal tetap dipakai sebagai nilai bawaan karena itu
+                // tebakan yang paling mungkin. Bedanya sekarang ia terbaca di
+                // layar dan bisa diganti sebelum barcode pertama dipindai.
+                Forms\Components\Select::make('warehouse_id')
+                    ->label(__('Receiving Warehouse'))
+                    ->options(Warehouse::where('is_active', true)->orderBy('name')->pluck('name', 'id'))
+                    ->required()
+                    ->searchable()
+                    ->live()
+                    ->afterStateUpdated(fn ($state) => session([
+                        'sr_warehouse_'.$this->record->id => $state,
+                    ]))
+                    ->extraAttributes(['tabindex' => '-1'])
+                    ->extraInputAttributes(['tabindex' => '-1']),
+
                 Forms\Components\TextInput::make('barcode')
                     ->hiddenLabel()
                     ->placeholder(__('Scan Barcode Lama (Karton Utuh)'))
@@ -217,7 +246,27 @@ class InputReturnItems extends Page implements HasForms, HasTable
     }
 
     /**
-     * Gudang yang dipakai kalau barangnya sendiri tidak menyebutkan.
+     * Gudang penerima retur ini.
+     *
+     * Urutannya: yang sudah dipilih orangnya, lalu gudang tempat barang itu
+     * keluar sebagai tebakan awal, lalu gudang aktif pertama sebagai jaring
+     * terakhir. Nomor 1 tidak muncul di mana pun.
+     */
+    private function receivingWarehouseId(): ?int
+    {
+        $dipilih = session('sr_warehouse_'.$this->record->id);
+
+        if ($dipilih && Warehouse::whereKey($dipilih)->where('is_active', true)->exists()) {
+            return (int) $dipilih;
+        }
+
+        $gudangAsal = $this->record->deliveryOrder?->tally?->items()->value('warehouse_id');
+
+        return $gudangAsal ? (int) $gudangAsal : $this->defaultWarehouseId();
+    }
+
+    /**
+     * Gudang yang dipakai kalau tidak ada satu pun petunjuk lain.
      *
      * Gudang pertama yang aktif, bukan angka 1 yang ditulis langsung. Kalau
      * suatu saat gudang berid 1 dinonaktifkan atau terhapus, yang dipaku akan
@@ -295,13 +344,17 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 throw new \Exception(__('This barcode is already on another return that is still a draft.'));
             }
             
+            $gudangPenerima = $formData['warehouse_id']
+                ?? $tallyItem->warehouse_id
+                ?? $this->defaultWarehouseId();
+
             $productId = $tallyItem->product_id;
             $gradeId = $tallyItem->grade_id;
             $weight = $tallyItem->weight;
             $pcs = $tallyItem->qty_pcs;
             $origin = $tallyItem->origin;
 
-            DB::transaction(function () use ($barcode, $productId, $gradeId, $weight, $pcs, $origin, $tallyItem) {
+            DB::transaction(function () use ($barcode, $productId, $gradeId, $weight, $pcs, $origin, $tallyItem, $gudangPenerima) {
                 // Cek duplikat wajib berada di dalam transaksi dan terkunci, supaya
                 // dua scan berbarengan (klik ganda / glitch scanner) tidak sama-sama
                 // lolos pengecekan lalu menyisipkan barcode kembar.
@@ -317,11 +370,9 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 SalesReturnItem::create([
                     'sales_return_id' => $this->record->id,
                     'product_id' => $productId,
-                    // Gudang diambil dari barangnya sendiri saat dikirim, bukan
-                    // dipaku ke angka 1. Barang retur mendarat kembali di gudang
-                    // asalnya, dan memakukannya membuat seluruh retur menumpuk
-                    // di satu gudang ke mana pun sebenarnya ia dikembalikan.
-                    'warehouse_id' => $tallyItem->warehouse_id ?? $this->defaultWarehouseId(),
+                    // Gudang PENERIMA yang dipilih di layar, bukan gudang asal
+                    // barangnya. Lihat catatan di scanForm().
+                    'warehouse_id' => $gudangPenerima,
                     'grade_id' => $gradeId,
                     'barcode' => $barcode,
                     'weight' => $weight,
@@ -334,7 +385,10 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 ]);
             });
 
-            $this->scanForm->fill([]);
+            // Hanya barcodenya yang dikosongkan. Mengisi ulang seluruh form
+            // akan menghapus gudang penerima yang baru saja dipilih orangnya,
+            // dan pindaian berikutnya diam-diam mendarat di gudang lain.
+            $this->dataScan['barcode'] = null;
             Notification::make()->title(__('Barcode scanned'))->success()->send();
         } catch (\Exception $e) {
             Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
@@ -436,6 +490,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
             session([
                 'sr_show_exp_' . $this->record->id => $showExp,
                 'sr_ph_level_' . $this->record->id => $formData['ph_level'] ?? null,
+                'sr_warehouse_' . $this->record->id => $formData['warehouse_id'] ?? null,
             ]);
 
             $this->weighForm->fill([

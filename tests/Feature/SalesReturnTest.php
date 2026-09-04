@@ -46,6 +46,8 @@ class SalesReturnTest extends TestCase
 
     private Warehouse $perum;
 
+    private Warehouse $bogor;
+
     private Grade $grade;
 
     protected function setUp(): void
@@ -81,6 +83,7 @@ class SalesReturnTest extends TestCase
         // dipakai -- dan tesnya yang menangkap, bukan penggunanya.
         $this->jonggol = Warehouse::create(['code' => 'JONGGOL', 'name' => 'JONGGOL', 'is_active' => false]);
         $this->perum = Warehouse::create(['code' => 'PERUM', 'name' => 'PERUM', 'is_active' => true]);
+        $this->bogor = Warehouse::create(['code' => 'BOGOR', 'name' => 'BOGOR', 'is_active' => true]);
 
         $this->grade = Grade::create(['name' => 'CHILL', 'is_active' => true]);
     }
@@ -394,19 +397,20 @@ class SalesReturnTest extends TestCase
     }
 
     /**
-     * Barang retur mendarat kembali di gudang ASALNYA.
+     * Bawaannya gudang tempat barang itu keluar -- tebakan, bukan keputusan.
      *
      * Gudangnya dulu dipaku ke angka 1, sehingga tiap retur menumpuk di satu
      * gudang ke mana pun sebenarnya barangnya dikembalikan. Di sini gudang
      * berid 1 bahkan sudah dinonaktifkan.
      */
-    public function test_a_scanned_item_lands_back_in_the_warehouse_it_came_from(): void
+    public function test_the_receiving_warehouse_defaults_to_where_the_goods_went_out_from(): void
     {
         $do = $this->suratJalan('BARCODE-A');
         $retur = $this->retur($do);
         $this->bolehMemakaiHalamanInput();
 
         Livewire::test(InputReturnItems::class, ['record' => $retur])
+            ->assertSet('dataScan.warehouse_id', $this->perum->id)
             ->set('dataScan.barcode', 'BARCODE-A')
             ->call('processScan');
 
@@ -415,6 +419,52 @@ class SalesReturnTest extends TestCase
             'warehouse_id' => $this->perum->id,
         ]);
         $this->assertNotEquals(1, $this->perum->id, 'Gudang uji tidak boleh kebetulan berid 1.');
+    }
+
+    /**
+     * Barang retur BOLEH diterima di gudang lain.
+     *
+     * Pertanyaan Project Owner, 4 September 2026: "kalo diterima dari gudang
+     * lain gimana?" -- barang retur tidak selalu mendarat di gudang asalnya,
+     * dan yang menentukan adalah orang yang menerimanya.
+     */
+    public function test_the_receiving_warehouse_can_be_somewhere_else_entirely(): void
+    {
+        $do = $this->suratJalan('BARCODE-A', 'BARCODE-B');
+        $retur = $this->retur($do);
+        $this->bolehMemakaiHalamanInput();
+
+        Livewire::test(InputReturnItems::class, ['record' => $retur])
+            ->set('dataScan.warehouse_id', $this->bogor->id)
+            ->set('dataScan.barcode', 'BARCODE-A')
+            ->call('processScan')
+            // Pindaian KEDUA harus mendarat di gudang yang sama. Dulu seluruh
+            // form diisi ulang sesudah tiap pindaian, sehingga pilihan gudangnya
+            // terhapus dan barang berikutnya diam-diam masuk ke gudang lain.
+            ->set('dataScan.barcode', 'BARCODE-B')
+            ->call('processScan');
+
+        $this->assertDatabaseHas('sales_return_items', [
+            'barcode' => 'BARCODE-A',
+            'warehouse_id' => $this->bogor->id,
+        ]);
+        $this->assertDatabaseHas('sales_return_items', [
+            'barcode' => 'BARCODE-B',
+            'warehouse_id' => $this->bogor->id,
+        ]);
+    }
+
+    /**
+     * Gudang penerima yang dipilih ikut ke barang timbang ulang.
+     */
+    public function test_the_relabel_tab_starts_from_the_same_receiving_warehouse(): void
+    {
+        $do = $this->suratJalan('BARCODE-A');
+        $retur = $this->retur($do);
+        $this->bolehMemakaiHalamanInput();
+
+        Livewire::test(InputReturnItems::class, ['record' => $retur])
+            ->assertSet('dataWeigh.warehouse_id', $this->perum->id);
     }
 
     public function test_the_same_barcode_cannot_be_scanned_twice_on_one_return(): void

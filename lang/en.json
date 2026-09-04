@@ -953,5 +953,6 @@
     "Barcode scanned": "Barcode scanned",
     "Failed": "Failed",
     "Every item on this return will be put into stock.": "Every item on this return will be put into stock.",
-    "Every item from this return that already went into stock will be pulled back out.": "Every item from this return that already went into stock will be pulled back out."
+    "Every item from this return that already went into stock will be pulled back out.": "Every item from this return that already went into stock will be pulled back out.",
+    "Receiving Warehouse": "Receiving Warehouse"
 }
