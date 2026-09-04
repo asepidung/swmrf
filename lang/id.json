@@ -280,12 +280,10 @@
     "Print Berita Acara": "Cetak Berita Acara",
     "Approve Return": "Setujui Retur",
     "Approve Sales Return": "Setujui Retur Penjualan",
-    "Anda yakin ingin menyetujui retur ini? Semua barang akan dimasukkan ke stok.": "Anda yakin ingin menyetujui retur ini? Semua barang akan dimasukkan ke stok.",
     "Return Approved & Stock Updated": "Retur Disetujui & Stok Diperbarui",
     "Unlock Return": "Buka Kunci Retur",
     "Unlock / Cancel Approval": "Buka Kunci / Batal Setuju",
     "Unlock Sales Return": "Buka Kunci Retur Penjualan",
-    "Anda yakin ingin melakukan unlock? Semua barang dari retur ini yang sudah masuk ke stok akan dihapus/ditarik kembali.": "Anda yakin ingin melakukan unlock? Semua barang dari retur ini yang sudah masuk ke stok akan dihapus/ditarik kembali.",
     "Return Unlocked & Stock Reverted": "Retur Dibuka & Stok Ditarik",
     "Edit": "Ubah",
     "Delete": "Hapus",
@@ -947,5 +945,13 @@
     "Allocation is larger than the money available": "Alokasinya lebih besar daripada uang yang ada",
     "Money available is Rp :available while Rp :allocated has been allocated.": "Uang yang tersedia Rp :available, sementara yang dialokasikan Rp :allocated.",
     "Deductions are larger than what is being settled": "Potongannya lebih besar daripada yang dilunasi",
-    "A deduction only makes sense against a bill it settles.": "Potongan hanya berarti bila ada tagihan yang dilunasinya."
+    "A deduction only makes sense against a bill it settles.": "Potongan hanya berarti bila ada tagihan yang dilunasinya.",
+    "This barcode was not on the delivery note being returned.": "Barcode ini tidak ada di surat jalan yang sedang diretur.",
+    "This item is still in the warehouse, so it cannot be returned.": "Barang ini masih ada di gudang, jadi tidak bisa diretur.",
+    "This barcode is already on another return that is still a draft.": "Barcode ini sudah tercatat di retur lain yang masih draft.",
+    "This barcode has already been scanned on this return.": "Barcode ini sudah dipindai di retur ini.",
+    "Barcode scanned": "Barcode terpindai",
+    "Failed": "Gagal",
+    "Every item on this return will be put into stock.": "Semua barang di retur ini akan dimasukkan ke stok.",
+    "Every item from this return that already went into stock will be pulled back out.": "Semua barang dari retur ini yang sudah masuk stok akan ditarik kembali."
 }

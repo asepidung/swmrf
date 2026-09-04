@@ -254,12 +254,10 @@
     "Print Berita Acara": "Print Handover Report",
     "Approve Return": "Approve Return",
     "Approve Sales Return": "Approve Sales Return",
-    "Anda yakin ingin menyetujui retur ini? Semua barang akan dimasukkan ke stok.": "Are you sure you want to approve this return? All items will be added to stock.",
     "Return Approved & Stock Updated": "Return Approved & Stock Updated",
     "Unlock Return": "Unlock Return",
     "Unlock / Cancel Approval": "Unlock / Cancel Approval",
     "Unlock Sales Return": "Unlock Sales Return",
-    "Anda yakin ingin melakukan unlock? Semua barang dari retur ini yang sudah masuk ke stok akan dihapus/ditarik kembali.": "Are you sure you want to unlock? All items from this return that entered the stock will be removed.",
     "Return Unlocked & Stock Reverted": "Return Unlocked & Stock Reverted",
     "Edit": "Edit",
     "Delete": "Delete",
@@ -947,5 +945,13 @@
     "Allocation is larger than the money available": "Allocation is larger than the money available",
     "Money available is Rp :available while Rp :allocated has been allocated.": "Money available is Rp :available while Rp :allocated has been allocated.",
     "Deductions are larger than what is being settled": "Deductions are larger than what is being settled",
-    "A deduction only makes sense against a bill it settles.": "A deduction only makes sense against a bill it settles."
+    "A deduction only makes sense against a bill it settles.": "A deduction only makes sense against a bill it settles.",
+    "This barcode was not on the delivery note being returned.": "This barcode was not on the delivery note being returned.",
+    "This item is still in the warehouse, so it cannot be returned.": "This item is still in the warehouse, so it cannot be returned.",
+    "This barcode is already on another return that is still a draft.": "This barcode is already on another return that is still a draft.",
+    "This barcode has already been scanned on this return.": "This barcode has already been scanned on this return.",
+    "Barcode scanned": "Barcode scanned",
+    "Failed": "Failed",
+    "Every item on this return will be put into stock.": "Every item on this return will be put into stock.",
+    "Every item from this return that already went into stock will be pulled back out.": "Every item from this return that already went into stock will be pulled back out."
 }

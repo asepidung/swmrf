@@ -5,11 +5,7 @@ namespace App\Filament\Admin\Resources\SalesReturnResource\Pages;
 use App\Filament\Admin\Resources\SalesReturnResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
-use Illuminate\Support\Facades\DB;
-use App\Models\BeefStock;
-use App\Models\BeefStockMovement;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\Auth;
 
 class ViewSalesReturn extends ViewRecord
 {
@@ -35,47 +31,23 @@ class ViewSalesReturn extends ViewRecord
                 ->color('danger')
                 ->requiresConfirmation()
                 ->modalHeading(__('Unlock Sales Return'))
-                ->modalDescription(__('Anda yakin ingin melakukan unlock? Semua barang dari retur ini yang sudah masuk ke stok akan dihapus/ditarik kembali.'))
-                ->hidden(fn () => $this->record->status !== 'Approved')
-                ->action(function () {
+                ->modalDescription(__('Every item from this return that already went into stock will be pulled back out.'))
+                // Izinnya sendiri, sama seperti di halaman Edit. Tombol yang
+                // sama pernah ada di DUA halaman dengan penjagaan berbeda --
+                // menambal yang satu meninggalkan yang lain terbuka.
+                ->hidden(fn (): bool => $this->record->status !== 'Approved'
+                    || ! (auth()->user()?->hasPermission('unlock_sales_returns') ?? false))
+                ->action(function (): void {
                     try {
-                        DB::transaction(function () {
-                            $returnItems = $this->record->items;
-                            
-                            foreach ($returnItems as $item) {
-                                $stock = BeefStock::where('barcode', $item->barcode)->lockForUpdate()->first();
-                                if (!$stock) {
-                                    throw new \Exception(__('Gagal: Barang :barcode tidak ditemukan di stok (sudah terpakai/dikirim).', ['barcode' => $item->barcode]));
-                                }
-                                if ($stock->status !== 'IN_STOCK') {
-                                    throw new \Exception(__('Gagal: Barang :barcode sudah tidak berada di stok (status: :status).', ['barcode' => $item->barcode, 'status' => $stock->status]));
-                                }
-                            }
+                        $this->record->unlock();
+                    } catch (\Throwable $e) {
+                        Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
 
-                            foreach ($returnItems as $item) {
-                                BeefStockMovement::create([
-                                    'product_id' => $item->product_id,
-                                    'warehouse_id' => $item->warehouse_id,
-                                    'condition' => $item->grade_id,
-                                    'barcode' => $item->barcode,
-                                    'transaction_type' => 'CANCEL_SALES_RETURN',
-                                    'reference_document' => $this->record->return_number,
-                                    'weight_out' => $item->weight,
-                                    'pcs_out' => $item->qty_pcs,
-                                    'created_by' => Auth::id() ?? 1,
-                                    'note' => 'Unlock/Cancel Sales Return',
-                                ]);
-
-                                BeefStock::where('barcode', $item->barcode)->delete();
-                            }
-
-                            $this->record->update(['status' => 'Draft']);
-                        });
-                        Notification::make()->title(__('Return Unlocked & Stock Reverted'))->success()->send();
-                        $this->redirect($this->getResource()::getUrl('edit', ['record' => $this->record]));
-                    } catch (\Exception $e) {
-                        Notification::make()->title(__('Error'))->body($e->getMessage())->danger()->send();
+                        return;
                     }
+
+                    Notification::make()->title(__('Return Unlocked & Stock Reverted'))->success()->send();
+                    $this->redirect($this->getResource()::getUrl('edit', ['record' => $this->record]));
                 }),
 
             Actions\Action::make('Back')
