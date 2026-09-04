@@ -253,4 +253,57 @@ class CustomerDepositTest extends TestCase
             'Uangnya sudah dibalik keluar, jadi tidak ada deposit yang tersisa.',
         );
     }
+
+    /**
+     * Depositnya terlihat di daftar piutang.
+     *
+     * Sampai 4 September 2026 ia hanya muncul di halaman Terima Pembayaran --
+     * artinya tidak ada satu pun layar yang bisa menjawab "pelanggan mana saja
+     * yang masih punya deposit".
+     */
+    public function test_the_deposit_shows_up_on_the_listing(): void
+    {
+        $invoice = $this->invoice(9000000);
+        $this->bayar(10000000, [$invoice->id => 9000000]);
+
+        Livewire::actingAs($this->user->fresh())
+            ->test(\App\Filament\Admin\Resources\ReceivableResource\Pages\ListReceivables::class)
+            ->assertSuccessful()
+            ->assertCanSeeTableRecords([$this->group])
+            ->assertSee('1.000.000');
+    }
+
+    /**
+     * Dan grup yang seluruh tagihannya LUNAS tetap muncul selama depositnya ada.
+     *
+     * Ini lubang yang paling mudah terlewat: daftar piutang hanya menampilkan
+     * yang masih berutang, jadi pelanggan yang sudah lunas tetapi menyimpan
+     * deposit lenyap sama sekali dari layar -- berikut uang perusahaan yang
+     * dipegang atas namanya.
+     */
+    public function test_a_group_with_no_debt_but_a_deposit_still_appears(): void
+    {
+        $invoice = $this->invoice(9000000);
+        $this->bayar(10000000, [$invoice->id => 9000000]);
+
+        $this->assertSame(0.0, (float) $invoice->fresh()->balance, 'Prasyarat: tidak ada tagihan tersisa.');
+        $this->assertSame(1000000.0, $this->group->availableDeposit());
+
+        Livewire::actingAs($this->user->fresh())
+            ->test(\App\Filament\Admin\Resources\ReceivableResource\Pages\ListReceivables::class)
+            ->assertCanSeeTableRecords([$this->group]);
+    }
+
+    /** Begitu depositnya habis dan tagihannya lunas, grupnya boleh hilang. */
+    public function test_a_settled_group_without_a_deposit_drops_off_the_listing(): void
+    {
+        $invoice = $this->invoice(9000000);
+        $this->bayar(9000000, [$invoice->id => 9000000]);
+
+        $this->assertSame(0.0, $this->group->availableDeposit());
+
+        Livewire::actingAs($this->user->fresh())
+            ->test(\App\Filament\Admin\Resources\ReceivableResource\Pages\ListReceivables::class)
+            ->assertCanNotSeeTableRecords([$this->group]);
+    }
 }

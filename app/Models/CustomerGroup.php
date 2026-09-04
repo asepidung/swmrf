@@ -42,6 +42,24 @@ class CustomerGroup extends Model
     }
 
     /**
+     * Alokasi pembayaran milik grup ini, lewat pembayarannya.
+     *
+     * Dipakai untuk menghitung deposit dalam SATU kueri di daftar piutang --
+     * tanpa relasi ini, tiap baris grup harus ditanya sendiri-sendiri.
+     */
+    public function paymentAllocations(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            PaymentAllocation::class,
+            Payment::class,
+            'customer_group_id',
+            'payment_id',
+            'id',
+            'id',
+        );
+    }
+
+    /**
      * Deposit grup ini: uang yang sudah diterima tetapi belum menutup tagihan.
      *
      * Lahir dari pelanggan yang mentransfer lebih besar daripada piutangnya --
