@@ -966,5 +966,7 @@
     "Part of this return is not attached to any invoice yet; it will reduce the invoice made for its delivery order.": "Sebagian retur ini belum menempel ke invoice mana pun; ia akan memotong invoice yang dibuat untuk surat jalannya.",
     "Quantity Lost": "Jumlah Hilang",
     "Not valued yet, waiting for cost price": "Belum dinilai, menunggu harga pokok",
-    "Delivery shrinkage on :document": "Susut kirim pada :document"
+    "Delivery shrinkage on :document": "Susut kirim pada :document",
+    "Original Delivery Order": "Surat Jalan Asal",
+    "Credited Weight": "Berat Dikreditkan"
 }

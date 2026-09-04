@@ -966,5 +966,7 @@
     "Part of this return is not attached to any invoice yet; it will reduce the invoice made for its delivery order.": "Part of this return is not attached to any invoice yet; it will reduce the invoice made for its delivery order.",
     "Quantity Lost": "Quantity Lost",
     "Not valued yet, waiting for cost price": "Not valued yet, waiting for cost price",
-    "Delivery shrinkage on :document": "Delivery shrinkage on :document"
+    "Delivery shrinkage on :document": "Delivery shrinkage on :document",
+    "Original Delivery Order": "Original Delivery Order",
+    "Credited Weight": "Credited Weight"
 }
