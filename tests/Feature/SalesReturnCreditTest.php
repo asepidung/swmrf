@@ -21,6 +21,7 @@ use App\Models\SalesOrderItem;
 use App\Models\SalesReturn;
 use App\Models\SalesReturnItem;
 use App\Models\Tally;
+use App\Models\TallyItem;
 use App\Models\User;
 use App\Models\Warehouse;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -102,6 +103,8 @@ class SalesReturnCreditTest extends TestCase
 
     private DeliveryOrderReceipt $receipt;
 
+    private Tally $tally;
+
     /**
      * @param  array<int, array{produk: Product, berat: float, harga: float, diskon: float}>  $baris
      */
@@ -124,7 +127,8 @@ class SalesReturnCreditTest extends TestCase
             ]);
         }
 
-        $tally = Tally::create(['sales_order_id' => $this->salesOrder->id, 'status' => 'locked']);
+        $this->tally = Tally::create(['sales_order_id' => $this->salesOrder->id, 'status' => 'locked']);
+        $tally = $this->tally;
 
         $this->deliveryOrder = DeliveryOrder::create([
             'tally_id' => $tally->id,
@@ -213,12 +217,31 @@ class SalesReturnCreditTest extends TestCase
         ]);
 
         foreach ($baris as $i => $b) {
+            $barcode = 'RET-'.$retur->id.'-'.$i;
+
+            // Kartonnya benar-benar pernah dikirim: barcodenya ada di tally
+            // kiriman ini. Inilah yang dipakai kode untuk menemukan asal tiap
+            // karton, dan tanpa ini tesnya menguji jalur yang salah.
+            $tally = $b['tally'] ?? $this->tally;
+
+            TallyItem::create([
+                'tally_id' => $tally->id,
+                'barcode' => $barcode,
+                'product_id' => $b['produk']->id,
+                'warehouse_id' => $this->warehouse->id,
+                'grade_id' => $this->grade->id,
+                'weight' => $b['berat'],
+                'qty_pcs' => 1,
+                'pack_date' => now()->toDateString(),
+                'origin' => '1',
+            ]);
+
             SalesReturnItem::create([
                 'sales_return_id' => $retur->id,
                 'product_id' => $b['produk']->id,
                 'warehouse_id' => $this->warehouse->id,
                 'grade_id' => $this->grade->id,
-                'barcode' => 'RET-'.$retur->id.'-'.$i,
+                'barcode' => $barcode,
                 'weight' => $b['berat'],
                 'qty_pcs' => 1,
                 'pack_date' => now()->toDateString(),
@@ -227,6 +250,46 @@ class SalesReturnCreditTest extends TestCase
         }
 
         return $retur->fresh();
+    }
+
+    /**
+     * Satu karton retur yang berasal dari tally tertentu.
+     *
+     * Dipakai untuk retur lintas pengiriman, tempat tiap karton punya asal
+     * yang berbeda dan returnya sendiri tidak menyebut surat jalan apa pun.
+     */
+    private function kartonDari(
+        SalesReturn $retur,
+        Tally $tally,
+        Product $produk,
+        float $berat,
+        ?string $barcode = null,
+    ): SalesReturnItem {
+        $barcode ??= 'KARTON-'.$tally->id.'-'.$produk->id;
+
+        TallyItem::create([
+            'tally_id' => $tally->id,
+            'barcode' => $barcode,
+            'product_id' => $produk->id,
+            'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id,
+            'weight' => $berat,
+            'qty_pcs' => 1,
+            'pack_date' => now()->toDateString(),
+            'origin' => '1',
+        ]);
+
+        return SalesReturnItem::create([
+            'sales_return_id' => $retur->id,
+            'product_id' => $produk->id,
+            'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id,
+            'barcode' => $barcode,
+            'weight' => $berat,
+            'qty_pcs' => 1,
+            'pack_date' => now()->toDateString(),
+            'origin' => '1',
+        ]);
     }
 
     private function bayar(Invoice $invoice, float $jumlah): Payment
@@ -278,7 +341,7 @@ class SalesReturnCreditTest extends TestCase
         $this->assertSame(2000000.0, $invoice->returnedAmount());
         $this->assertSame(8000000.0, $invoice->billedAmount());
         $this->assertSame(8000000.0, (float) $invoice->balance);
-        $this->assertSame($invoice->id, $retur->fresh()->invoice_id);
+        $this->assertSame($invoice->id, $retur->items()->first()->invoice_id);
     }
 
     /**
@@ -350,14 +413,14 @@ class SalesReturnCreditTest extends TestCase
         $retur->approve();
 
         // Belum menempel ke mana pun, tapi sudah dinilai.
-        $this->assertNull($retur->fresh()->invoice_id);
+        $this->assertNull($retur->items()->first()->invoice_id);
         $this->assertSame(2000000.0, (float) $retur->fresh()->credit_amount);
 
         $invoice = $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
         $invoice->collectPendingSalesReturns();
 
         $invoice->refresh();
-        $this->assertSame($invoice->id, $retur->fresh()->invoice_id);
+        $this->assertSame($invoice->id, $retur->items()->first()->invoice_id);
         $this->assertSame(2000000.0, $invoice->returnedAmount());
         $this->assertSame(8000000.0, (float) $invoice->balance);
     }
@@ -520,18 +583,208 @@ class SalesReturnCreditTest extends TestCase
         $retur = $this->retur([['produk' => $this->sirloin, 'berat' => 20]]);
         $retur->approve();
 
-        $this->assertSame($invoice->id, $retur->fresh()->invoice_id);
+        $this->assertSame($invoice->id, $retur->items()->first()->invoice_id);
 
         $invoice->delete();
 
-        $this->assertNull($retur->fresh()->invoice_id);
+        $this->assertNull($retur->items()->first()->invoice_id);
         $this->assertSame(2000000.0, (float) $retur->fresh()->credit_amount);
 
         $pengganti = $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
         $pengganti->collectPendingSalesReturns();
 
-        $this->assertSame($pengganti->id, $retur->fresh()->invoice_id);
+        $this->assertSame($pengganti->id, $retur->items()->first()->invoice_id);
         $this->assertSame(8000000.0, (float) $pengganti->fresh()->balance);
+    }
+
+    // =====================================================================
+    // Retur lintas pengiriman -- kasus Lion Superindo
+    // =====================================================================
+
+    /**
+     * Satu retur, barang dari DUA kiriman, memotong DUA invoice.
+     *
+     * Project Owner, 4 September 2026: "kadang ada customer yang terlalu oper
+     * power contoh lion superindo, kadang dia retur dari beberapa kiriman,
+     * makanya di retur itu ada unindentified delivery".
+     *
+     * Returnya sendiri TIDAK menyebut surat jalan apa pun. Yang menentukan
+     * asal tiap karton adalah barcodenya.
+     */
+    public function test_one_return_can_reduce_two_different_invoices(): void
+    {
+        // Kiriman pertama, ditagih 10 juta.
+        $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000, 'diskon' => 0]]);
+        $tallySatu = $this->tally;
+        $invoiceSatu = $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
+
+        // Kiriman kedua, produk lain, harga lain, ditagih 4 juta.
+        $this->kirim([['produk' => $this->ribeye, 'berat' => 20, 'harga' => 200000, 'diskon' => 0]]);
+        $tallyDua = $this->tally;
+        $invoiceDua = $this->tagih([['produk' => $this->ribeye, 'berat' => 20, 'harga' => 200000]]);
+
+        // Satu retur, tanpa surat jalan, memuat barang dari keduanya.
+        $retur = SalesReturn::create([
+            'return_date' => now()->toDateString(),
+            'delivery_order_id' => null,
+            'customer_id' => $this->customer->id,
+            'status' => 'Draft',
+            'created_by' => $this->user->id,
+        ]);
+
+        $this->kartonDari($retur, $tallySatu, $this->sirloin, 20);
+        $this->kartonDari($retur, $tallyDua, $this->ribeye, 5);
+
+        $retur->refresh()->approve();
+
+        // 20 kg x 100.000 = 2 juta dari invoice pertama
+        $this->assertSame(2000000.0, $invoiceSatu->fresh()->returnedAmount());
+        $this->assertSame(8000000.0, (float) $invoiceSatu->fresh()->balance);
+
+        // 5 kg x 200.000 = 1 juta dari invoice kedua
+        $this->assertSame(1000000.0, $invoiceDua->fresh()->returnedAmount());
+        $this->assertSame(3000000.0, (float) $invoiceDua->fresh()->balance);
+
+        // Dan returnya sendiri menjumlahkan keduanya.
+        $this->assertSame(3000000.0, (float) $retur->fresh()->credit_amount);
+        $this->assertCount(2, $retur->fresh()->billsReduced());
+    }
+
+    /**
+     * Membuka kunci retur lintas pengiriman mengembalikan KEDUA tagihannya.
+     */
+    public function test_unlocking_a_cross_delivery_return_restores_every_bill(): void
+    {
+        $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000, 'diskon' => 0]]);
+        $tallySatu = $this->tally;
+        $invoiceSatu = $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
+
+        $this->kirim([['produk' => $this->ribeye, 'berat' => 20, 'harga' => 200000, 'diskon' => 0]]);
+        $tallyDua = $this->tally;
+        $invoiceDua = $this->tagih([['produk' => $this->ribeye, 'berat' => 20, 'harga' => 200000]]);
+
+        $retur = SalesReturn::create([
+            'return_date' => now()->toDateString(),
+            'customer_id' => $this->customer->id,
+            'status' => 'Draft',
+            'created_by' => $this->user->id,
+        ]);
+
+        $this->kartonDari($retur, $tallySatu, $this->sirloin, 20);
+        $this->kartonDari($retur, $tallyDua, $this->ribeye, 5);
+
+        $retur->refresh()->approve();
+        $retur->fresh()->unlock();
+
+        $this->assertSame(0.0, $invoiceSatu->fresh()->returnedAmount());
+        $this->assertSame(10000000.0, (float) $invoiceSatu->fresh()->balance);
+        $this->assertSame(0.0, $invoiceDua->fresh()->returnedAmount());
+        $this->assertSame(4000000.0, (float) $invoiceDua->fresh()->balance);
+        $this->assertSame(0.0, (float) $retur->fresh()->credit_amount);
+    }
+
+    /**
+     * Satu karton yang pernah diretur lalu DIKIRIM LAGI memakai barcode yang
+     * sama. Yang dipotong invoice kiriman TERAKHIR, bukan yang pertama.
+     */
+    public function test_a_carton_shipped_twice_credits_its_latest_delivery(): void
+    {
+        $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000, 'diskon' => 0]]);
+        $tallyLama = $this->tally;
+        $invoiceLama = $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
+
+        // Dikirim lagi keesokan harinya dengan harga yang sudah naik.
+        $this->travel(1)->days();
+        $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 120000, 'diskon' => 0]]);
+        $tallyBaru = $this->tally;
+        $invoiceBaru = $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 120000]]);
+
+        $retur = SalesReturn::create([
+            'return_date' => now()->toDateString(),
+            'customer_id' => $this->customer->id,
+            'status' => 'Draft',
+            'created_by' => $this->user->id,
+        ]);
+
+        // Barcode yang sama ada di KEDUA tally.
+        $barcode = 'KARTON-KEMBALI';
+        $this->kartonDari($retur, $tallyLama, $this->sirloin, 25, $barcode);
+        TallyItem::create([
+            'tally_id' => $tallyBaru->id,
+            'barcode' => $barcode,
+            'product_id' => $this->sirloin->id,
+            'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id,
+            'weight' => 25,
+            'qty_pcs' => 1,
+            'pack_date' => now()->toDateString(),
+            'origin' => '1',
+        ]);
+
+        $retur->refresh()->approve();
+
+        // 25 x 120.000 = 3 juta, dari kiriman terakhir.
+        $this->assertSame(0.0, $invoiceLama->fresh()->returnedAmount());
+        $this->assertSame(3000000.0, $invoiceBaru->fresh()->returnedAmount());
+    }
+
+    // =====================================================================
+    // Batas berat
+    // =====================================================================
+
+    /**
+     * Tidak bisa mengembalikan lebih banyak daripada yang pernah ditagihkan.
+     */
+    public function test_returning_more_than_was_billed_is_refused(): void
+    {
+        $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000, 'diskon' => 0]]);
+        $invoice = $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
+
+        $retur = $this->retur([['produk' => $this->sirloin, 'berat' => 120]]);
+
+        try {
+            $retur->approve();
+            $this->fail('Retur melebihi tagihan seharusnya ditolak.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('120.00', $e->getMessage());
+            $this->assertStringContainsString($invoice->invoice_number, $e->getMessage());
+        }
+
+        // Tidak satu pun akibatnya boleh terjadi.
+        $this->assertSame('Draft', $retur->fresh()->status);
+        $this->assertSame(10000000.0, $invoice->fresh()->billedAmount());
+        $this->assertDatabaseCount('beef_stocks', 0);
+    }
+
+    /**
+     * Dua retur kecil bersama-sama pun tidak bisa melewati batasnya.
+     */
+    public function test_two_small_returns_cannot_together_exceed_what_was_billed(): void
+    {
+        $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000, 'diskon' => 0]]);
+        $invoice = $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
+
+        $this->retur([['produk' => $this->sirloin, 'berat' => 70]])->approve();
+
+        $kedua = $this->retur([['produk' => $this->sirloin, 'berat' => 40]]);
+
+        $this->expectException(\RuntimeException::class);
+
+        $kedua->approve();
+    }
+
+    /**
+     * Mengembalikan SELURUHNYA masih boleh -- batasnya tepat, bukan kurang.
+     */
+    public function test_returning_exactly_everything_is_still_allowed(): void
+    {
+        $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000, 'diskon' => 0]]);
+        $invoice = $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
+
+        $this->retur([['produk' => $this->sirloin, 'berat' => 100]])->approve();
+
+        $this->assertSame(0.0, $invoice->fresh()->billedAmount());
+        $this->assertSame(0.0, (float) $invoice->fresh()->balance);
     }
 
     /**

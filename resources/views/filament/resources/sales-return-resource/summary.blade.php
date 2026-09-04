@@ -61,11 +61,20 @@
     </div>
 
     @if($adaNilai)
+        @php
+            // Satu retur bisa memotong BEBERAPA invoice sekaligus: pelanggan
+            // mengembalikan barang dari beberapa kiriman dalam satu kali jalan.
+            $invoices = $record->items->pluck('invoice.invoice_number')->filter()->unique();
+            $adaYangMenunggu = $record->items->contains(fn ($item) => $item->invoice_id === null
+                && (float) $item->line_amount > 0);
+        @endphp
+
         <p class="mt-3 text-sm text-gray-600 dark:text-gray-400">
-            @if($record->invoice)
-                {{ __('This return reduces invoice :number.', ['number' => $record->invoice->invoice_number]) }}
-            @else
-                {{ __('This return is not attached to any invoice yet; it will reduce the invoice made for this delivery order.') }}
+            @if($invoices->isNotEmpty())
+                {{ __('This return reduces :invoices.', ['invoices' => $invoices->join(', ')]) }}
+            @endif
+            @if($adaYangMenunggu)
+                {{ __('Part of this return is not attached to any invoice yet; it will reduce the invoice made for its delivery order.') }}
             @endif
         </p>
     @endif

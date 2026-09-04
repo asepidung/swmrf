@@ -21,7 +21,6 @@ class SalesReturn extends Model
         'return_number',
         'return_date',
         'delivery_order_id',
-        'invoice_id',
         'credit_amount',
         'customer_id',
         'note',
@@ -75,6 +74,8 @@ class SalesReturn extends Model
         if ($this->items->isEmpty()) {
             throw new \RuntimeException(__('This return has no item yet.'));
         }
+
+        $this->guardAgainstOverReturn();
 
         DB::transaction(function (): void {
             $this->update(['status' => 'Approved']);
@@ -181,72 +182,144 @@ class SalesReturn extends Model
     // =================================================================
 
     /**
-     * Invoice yang dipotong retur ini, kalau sudah menempel.
-     */
-    public function invoice(): BelongsTo
-    {
-        return $this->belongsTo(Invoice::class);
-    }
-
-    /**
-     * Invoice untuk surat jalan yang diretur ini -- kalau memang sudah ada.
+     * Tidak boleh mengembalikan lebih banyak daripada yang pernah ditagihkan.
      *
-     * Jalurnya surat jalan -> bukti terima -> invoice, karena invoice memang
-     * lahir dari bukti terima, bukan langsung dari surat jalannya.
+     * Diperiksa per INVOICE per PRODUK, bukan sekadar totalnya: mengembalikan
+     * 20 kg sirloin yang tidak pernah dikirim tetap salah walaupun invoicenya
+     * memuat 500 kg ribeye.
+     *
+     * Retur yang sudah disetujui sebelumnya ikut dihitung, jadi dua retur
+     * kecil tidak bisa bersama-sama melewati batas yang tidak bisa dilewati
+     * satu retur besar.
+     *
+     * Yang TIDAK bisa ditangkap dari sini: kalau sebuah box ditolak dengan
+     * cara MENURUNKAN "Received Weight" di halaman Approve DO alih-alih
+     * memakai tombol Rejections, lalu belakangan box itu dibuatkan Sales
+     * Return. Bukti terima hanya menyimpan total per produk, bukan per
+     * barcode, jadi tidak ada data yang bisa membedakannya. Menutupnya berarti
+     * membuat Rejections satu-satunya jalan menolak box -- pekerjaan
+     * tersendiri.
+     *
+     * @throws \RuntimeException
      */
-    public function billForThisDelivery(): ?Invoice
+    private function guardAgainstOverReturn(): void
     {
-        if (! $this->delivery_order_id) {
-            return null;
+        $rekap = [];
+
+        foreach ($this->items as $item) {
+            $invoice = $item->billItWasChargedOn();
+
+            // Karton yang kirimannya belum ditagihkan tidak punya batas untuk
+            // dibandingkan. Ia diperiksa lagi nanti, saat invoicenya terbit
+            // dan memungutnya.
+            if (! $invoice) {
+                continue;
+            }
+
+            $kunci = $invoice->getKey().':'.$item->product_id;
+
+            $rekap[$kunci] ??= [
+                'invoice' => $invoice,
+                'product_id' => (int) $item->product_id,
+                'berat' => 0.0,
+            ];
+
+            $rekap[$kunci]['berat'] += (float) $item->weight;
         }
 
-        return Invoice::query()
-            ->whereHas(
-                'deliveryOrderReceipt',
-                fn ($q) => $q->where('delivery_order_id', $this->delivery_order_id),
-            )
-            ->first();
+        foreach ($rekap as $baris) {
+            $invoice = $baris['invoice'];
+            $ditagih = $invoice->billedWeightFor($baris['product_id']);
+
+            // Produk yang TIDAK ADA di invoice ini tidak punya batas untuk
+            // dilanggar -- ia memang berharga nol, dan nolnya terbaca di layar.
+            // Itu terjadi pada barang yang ditimbang ulang dengan produk yang
+            // berbeda dari yang dikirim. Menolak returnya berarti menahan
+            // barangnya di luar stok hanya karena uangnya nol.
+            if ($ditagih <= 0) {
+                continue;
+            }
+
+            $sudahDiretur = $invoice->returnedWeightFor($baris['product_id']);
+            $seluruhnya = round($sudahDiretur + $baris['berat'], 2);
+
+            if ($seluruhnya > $ditagih) {
+                throw new \RuntimeException(__(
+                    'Returning :returned kg of :product is more than the :billed kg billed on invoice :invoice.',
+                    [
+                        'returned' => number_format($seluruhnya, 2),
+                        'product' => Product::find($baris['product_id'])?->name ?? '-',
+                        'billed' => number_format($ditagih, 2),
+                        'invoice' => $invoice->invoice_number,
+                    ],
+                ));
+            }
+        }
     }
 
     /**
-     * Rekam harga jual tiap barang, lalu tempelkan nilainya ke invoice.
+     * Invoice yang dipotong retur ini -- bisa LEBIH DARI SATU.
+     *
+     * Tautannya ada di kartonnya, bukan di returnya. Satu retur boleh memuat
+     * barang dari beberapa kiriman sekaligus, dan tiap kiriman punya
+     * invoicenya sendiri. Project Owner, 4 September 2026: pelanggan sebesar
+     * Lion Superindo memang mengembalikan barang dari beberapa kiriman dalam
+     * satu kali jalan, dan justru untuk itulah retur tanpa surat jalan
+     * ("Unidentified Delivery") disediakan.
+     *
+     * @return \Illuminate\Support\Collection<int, Invoice>
+     */
+    public function billsReduced(): \Illuminate\Support\Collection
+    {
+        return Invoice::query()
+            ->whereIn('id', $this->items()->whereNotNull('invoice_id')->pluck('invoice_id')->unique())
+            ->get();
+    }
+
+    /**
+     * Rekam harga jual tiap karton, lalu tempelkan nilainya ke invoicenya
+     * masing-masing.
      *
      * Harganya DI-SNAPSHOT, bukan dibaca ulang tiap kali dibutuhkan. Harga
      * bergerak -- lewat Price List, lewat diskon pelanggan, lewat Sales Order
      * berikutnya -- dan nota retur yang ikut bergerak berarti angka yang sudah
      * disepakati berubah sendiri di belakang punggung orang.
      *
-     * Kalau invoicenya BELUM ada, returnya tetap dinilai tetapi belum menempel
-     * ke mana-mana. Ia menunggu, dan `Invoice` yang lahir kemudian untuk surat
-     * jalan ini yang memungutnya.
+     * Karton yang kirimannya BELUM ditagihkan tetap dinilai tetapi belum
+     * menempel ke mana-mana. Ia menunggu, dan invoice yang lahir kemudian
+     * untuk surat jalan itu yang memungutnya.
      */
     public function attachToBill(): void
     {
-        $invoice = $this->billForThisDelivery();
-
         $total = 0.0;
+        $invoices = [];
 
         foreach ($this->items as $item) {
+            $invoice = $item->billItWasChargedOn();
             [$perKg, $jumlah] = $this->sellingPriceFor($item, $invoice);
 
             $item->forceFill([
+                'invoice_id' => $invoice?->getKey(),
                 'unit_price' => $perKg,
                 'line_amount' => $jumlah,
             ])->save();
 
             $total += $jumlah;
+
+            if ($invoice) {
+                $invoices[$invoice->getKey()] = $invoice;
+            }
         }
 
-        $this->forceFill([
-            'credit_amount' => round($total, 2),
-            'invoice_id' => $invoice?->getKey(),
-        ])->save();
+        $this->forceFill(['credit_amount' => round($total, 2)])->save();
 
-        $invoice?->settleAfterCreditNote();
+        foreach ($invoices as $invoice) {
+            $invoice->settleAfterCreditNote();
+        }
     }
 
     /**
-     * Lepaskan potongannya kembali.
+     * Lepaskan potongannya kembali dari semua invoice yang tersentuh.
      *
      * Alokasi pembayaran yang sudah TERLANJUR dilepas tidak dipasang kembali
      * di sini. Uang itu sekarang menjadi deposit pelanggan, dan dipakai lagi
@@ -256,28 +329,29 @@ class SalesReturn extends Model
      */
     public function detachFromBill(): void
     {
-        $invoice = $this->invoice;
+        $invoices = $this->billsReduced();
 
-        $this->forceFill([
-            'credit_amount' => 0,
-            'invoice_id' => null,
-        ])->save();
+        $this->items()->update(['invoice_id' => null, 'line_amount' => 0]);
+        $this->forceFill(['credit_amount' => 0])->save();
 
-        $invoice?->settleAfterCreditNote();
+        foreach ($invoices as $invoice) {
+            $invoice->settleAfterCreditNote();
+        }
     }
 
     /**
-     * Harga jual satu barang retur: per kg, dan jumlah barisnya.
+     * Harga jual satu karton retur: per kg, dan jumlah barisnya.
      *
      * Dua sumber, dengan urutan yang tidak boleh dibalik:
      *
      *  1. baris INVOICE untuk produk yang sama. `amount / weight` sudah
      *     memperhitungkan diskon barisnya, jadi yang dikembalikan kepada
      *     pelanggan persis sebesar yang ditagihkan kepadanya;
-     *  2. baris SALES ORDER, lewat `InvoiceTotals::line()` -- rumus yang sama
-     *     persis dengan yang dipakai `InvoiceResource::billableLines()` untuk
-     *     melahirkan invoice. Dipakai kalau invoicenya belum ada, supaya
-     *     angkanya tidak bisa berbeda dari invoice yang akan terbit.
+     *  2. baris SALES ORDER dari kiriman kartonnya sendiri, lewat
+     *     `InvoiceTotals::line()` -- rumus yang sama persis dengan yang
+     *     dipakai `InvoiceResource::billableLines()` untuk melahirkan invoice.
+     *     Dipakai kalau invoicenya belum ada, supaya angkanya tidak bisa
+     *     berbeda dari invoice yang akan terbit.
      *
      * Kalau produknya tidak ketemu di keduanya, harganya nol dan terbaca nol
      * di layar. Itu bisa terjadi pada barang yang ditimbang ulang dengan
@@ -300,7 +374,10 @@ class SalesReturn extends Model
             }
         }
 
-        $salesOrderId = $this->deliveryOrder?->sales_order_id;
+        // Sales Order diambil dari kiriman KARTONNYA, bukan dari surat jalan
+        // yang tertulis di returnya. Retur tanpa surat jalan pun tetap
+        // berharga, dan retur lintas kiriman memakai harga masing-masing.
+        $salesOrderId = $item->originDelivery()?->sales_order_id;
 
         if ($salesOrderId) {
             $baris = SalesOrderItem::query()
