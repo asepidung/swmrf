@@ -149,7 +149,7 @@ class DeliveryOrder extends Model
                 $do->tally->update(['status' => 'do']);
             }
             if ($do->salesOrder) {
-                $do->salesOrder->update(['status' => 'on_delivery']);
+                $do->salesOrder->update(['status' => SalesOrder::STATUS_ON_DELIVERY]);
             }
         });
 
@@ -164,7 +164,7 @@ class DeliveryOrder extends Model
                 $do->tally->update(['status' => 'locked']);
             }
             if ($do->salesOrder) {
-                $do->salesOrder->update(['status' => 'processing']);
+                $do->salesOrder->update(['status' => SalesOrder::STATUS_PROCESSING]);
             }
         });
 

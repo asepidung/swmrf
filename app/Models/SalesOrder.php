@@ -13,6 +13,55 @@ class SalesOrder extends Model
 {
     use HasFactory, SoftDeletes, LogsActivity;
 
+    /**
+     * Satu-satunya tempat status Sales Order ditulis.
+     *
+     * Enam nilai, dan seluruhnya ditulis sebagai teks mentah tersebar di
+     * belasan berkas -- sama seperti status Invoice sebelum dirapikan. Yang
+     * membuatnya lebih berbahaya di sini: kata `processing` dan `cancelled`
+     * JUGA dipakai sebagai status Tally, jadi teks yang sama berarti dua hal
+     * berbeda tergantung tabel yang sedang dibicarakan. Konstanta membuat
+     * kalimatnya menyebut miliknya sendiri.
+     *
+     * Aplikasi ini memakai DUA ejaan untuk kata batal: `cancelled` di Sales
+     * Order, Tally, dan Delivery Plan; `canceled` di PO dan Goods Receipt.
+     * Keduanya nyata dan dipakai modul yang berbeda -- yang salah bukan
+     * ejaannya, melainkan kode Sales Order yang memeriksa KEDUANYA dengan
+     * `in_array()` seolah miliknya sendiri bisa berbentuk dua rupa. Diperiksa
+     * di basis data hosting: `completed=3 waiting=4`, tidak ada satu pun baris
+     * berejaan satu L. Pemeriksaan gandanya dilepas.
+     */
+    public const STATUS_WAITING = 'waiting';
+
+    public const STATUS_PROCESSING = 'processing';
+
+    public const STATUS_READY = 'ready';
+
+    public const STATUS_ON_DELIVERY = 'on_delivery';
+
+    public const STATUS_COMPLETED = 'completed';
+
+    public const STATUS_CANCELLED = 'cancelled';
+
+    /** Status yang membuat dokumennya tidak boleh disunting lagi. */
+    public const STATUS_LOCKED_FOR_EDIT = [
+        self::STATUS_CANCELLED,
+        self::STATUS_READY,
+    ];
+
+    /** @return array<string, string> */
+    public static function statuses(): array
+    {
+        return [
+            self::STATUS_WAITING => self::STATUS_WAITING,
+            self::STATUS_PROCESSING => self::STATUS_PROCESSING,
+            self::STATUS_READY => self::STATUS_READY,
+            self::STATUS_ON_DELIVERY => self::STATUS_ON_DELIVERY,
+            self::STATUS_COMPLETED => self::STATUS_COMPLETED,
+            self::STATUS_CANCELLED => self::STATUS_CANCELLED,
+        ];
+    }
+
     protected $fillable = [
         'so_number',
         'customer_id',

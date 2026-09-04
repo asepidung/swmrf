@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Resources\SalesOrderResource\Pages;
 
+use App\Models\SalesOrder;
+
 use App\Filament\Admin\Resources\SalesOrderResource;
 use App\Models\SalesOrderItem;
 use Filament\Resources\Pages\Page;
@@ -56,7 +58,7 @@ class SalesOrderDetailList extends Page implements HasTable
                     ->state(function (SalesOrderItem $record) {
                         $sentWeight = \App\Models\DeliveryOrderItem::whereHas('deliveryOrder', function ($q) use ($record) {
                             $q->where('sales_order_id', $record->sales_order_id)
-                              ->whereNotIn('status', ['cancelled', 'canceled']);
+                              ->where('status', '!=', SalesOrder::STATUS_CANCELLED);
                         })
                         ->where('product_id', $record->product_id)
                         ->sum('weight');

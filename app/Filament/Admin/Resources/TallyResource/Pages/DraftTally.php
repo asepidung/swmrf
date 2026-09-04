@@ -33,7 +33,7 @@ class DraftTally extends Page implements HasTable
         return $table
             ->query(
                 SalesOrder::query()
-                    ->where('status', 'waiting')
+                    ->where('status', SalesOrder::STATUS_WAITING)
                     ->orderBy('delivery_date', 'asc')
             )
             ->columns([
@@ -105,7 +105,7 @@ class DraftTally extends Page implements HasTable
                     ->requiresConfirmation()
                     ->action(function (SalesOrder $record) {
                         DB::transaction(function () use ($record) {
-                            $record->update(['status' => 'cancelled']);
+                            $record->update(['status' => SalesOrder::STATUS_CANCELLED]);
 
                             activity('sales_order')
                                 ->performedOn($record)
