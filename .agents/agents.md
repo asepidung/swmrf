@@ -2807,19 +2807,55 @@ sebagai **Carcase Yield**. Diperiksa terhadap laporan sungguhan 27 Agustus
 2026: 3.943,32 / 6.856,00 = 57,52%, cocok dengan yang tercetak. Aplikasi baru
 tidak menghitungnya sama sekali -- **regresi, bukan fitur yang belum dibuat.**
 
-#### Label "Offal" di aplikasi lama KELIRU
+#### Berat OFFAL adalah kesepakatan, bukan pengukuran
 
     // Offal = total carcase + total tails
     $offal = $totalCarcass + $totalTails;
 
-Jumlah karkas dan buntut BUKAN jeroan -- itu bahan yang masuk boning. Angkanya
-tercetak di Carcas Report dengan label "Offal 3.968,22 Kg", dan ikut muncul di
-ringkasan boning sebagai baris produk bernama OFFAL, padahal ia bahan masuk
-bukan hasil keluar. Ringkasan boning juga memuat KULIT 449,81 yang sama-sama
-bukan hasil boning.
+Rumus ini sempat dituduh SALAH di catatan ini -- karkas ditambah buntut jelas
+bukan jeroan. **Tuduhannya yang keliru, bukan kodenya.** Project Owner,
+4 September 2026:
 
-**TERBUKA:** jeroan yang sungguhan -- yang dijual ke kontraktor -- tidak pernah
-tercatat di mana pun. Itu pendapatan tanpa dokumen. Belum ditanyakan ke Owner.
+> "ketika sapi di potong, beberapa bagian seperti jeroan hati, usus, kepala,
+> kaki dan lain-lain itu dipisahkan menjadi 1 item offal nah untuk beratnya
+> TIDAK DITIMBANG ... total berat karkas a dan karkas b ditambah buntut yang
+> total beratnya sudah ketahuan ITULAH yang jadi berat offal"
+
+Contohnya: karkas A 100 + karkas B 110 + buntut 40 = **offal 250**. Cara ini
+berlaku di rumah potong modern, dan angkanya BUKAN pengukuran melainkan
+konvensi.
+
+Jadi satu angka yang sama menjawab dua pertanyaan berbeda: berapa yang masuk
+boning, dan berapa berat offal yang dijual. `Carcass::offalWeight()` sengaja
+diberi nama sendiri walaupun mengembalikan angka yang sama dengan
+`boningInputWeight()` -- yang membacanya menanyakan hal berbeda, dan kalau
+kesepakatannya kelak berubah hanya salah satunya yang ikut berubah. **Jangan
+digabung menjadi satu metode.**
+
+**Pelajaran untuk yang membaca berikutnya:** pengetahuan umum tentang sebuah
+kata ("offal artinya jeroan") bukan dasar yang cukup untuk menyebut kode
+salah. Yang tampak seperti kekeliruan penamaan ternyata aturan bisnis yang
+disengaja, dan menanyakannya lebih murah daripada memperbaikinya.
+
+#### Kulit dan offal KELUAR sebagai barang jual
+
+Keduanya diberi label, masuk stok, dibuatkan SO, dan berakhir sebagai piutang
+-- terlihat di ringkasan boning aplikasi lama sebagai baris OFFAL dan KULIT.
+
+**Perpindahannya ke boning masih MANUAL.** Owner: *"walaupun proses transfer
+data kulit dan offal ini ke boning masih dilakukan manual, karena gw gak nemu
+skema otomatisnya, karena harus melewati berbagai tahap, bikin boning baru,
+bikin label kulit dan offal"*.
+
+Karena itu ada dokumen boning yang **TIDAK PUNYA KARKAS** sama sekali -- isinya
+hanya label kulit dan offal. `Boning::lock()` sempat mensyaratkan adanya
+karkas, dan syarat itu akan membuat dokumen semacam itu tidak pernah bisa
+dikunci. Syaratnya dicabut; susutnya memang tidak bisa dinilai, dan itu
+terbaca sendiri sebagai "tanpa karkas" di daftarnya.
+
+**TERBUKA:** menjadikan kulit dan offal masuk stok LANGSUNG dari dokumen
+Karkas, tanpa perlu dokumen boning palsu. Itu skema otomatis yang dicari Owner
+dan belum dikerjakan.
 
 #### Angka susut boning yang pertama
 

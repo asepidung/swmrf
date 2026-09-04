@@ -112,8 +112,10 @@ class Boning extends Model
      * muncul SEKALI di seluruh `BoningResource`, dan itu pun `->weight('bold')`
      * -- ketebalan huruf.
      *
-     * Kulit dan jeroan tidak ikut: keduanya dijual langsung ke kontraktor dan
-     * tidak pernah masuk ruang boning.
+     * Kulit tidak ikut: ia dijual langsung ke kontraktor.
+     *
+     * Jeroan pun tidak ikut -- dan beratnya memang TIDAK PERNAH DITIMBANG.
+     * Lihat catatan di `Carcass::boningInputWeight()`.
      */
     public function inputWeight(): float
     {
@@ -207,9 +209,18 @@ class Boning extends Model
             throw new \RuntimeException(__('This boning is already locked.'));
         }
 
-        if ($this->carcasses()->doesntExist()) {
-            throw new \RuntimeException(__('This boning has no carcass yet.'));
-        }
+        // TIDAK ADA syarat harus punya karkas.
+        //
+        // Sempat ada, dan itu keliru: kulit dan jeroan masuk stok lewat
+        // dokumen boning TERSENDIRI yang memang tidak punya karkas -- Project
+        // Owner menyebutnya "bikin boning baru, bikin label kulit dan offal".
+        // Mensyaratkan karkas berarti dokumen semacam itu tidak akan pernah
+        // bisa dikunci.
+        //
+        // Boning tanpa karkas memang tidak bisa dinilai susutnya, dan itu
+        // sudah terbaca sendiri: `shrinkPercent()` mengembalikan `null`, dan
+        // daftarnya menuliskan "tanpa karkas" alih-alih angka. Menahannya
+        // bukan cara menyampaikan itu.
 
         if ($this->items()->doesntExist()) {
             throw new \RuntimeException(__('This boning has no output goods yet.'));
