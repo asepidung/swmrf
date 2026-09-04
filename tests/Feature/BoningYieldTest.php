@@ -307,18 +307,15 @@ class BoningYieldTest extends TestCase
     }
 
     /**
-     * Boning TANPA KARKAS tetap bisa dikunci.
+     * Boning WAJIB punya karkas.
      *
-     * Kulit dan jeroan masuk stok lewat dokumen boning tersendiri yang memang
-     * tidak punya karkas -- Project Owner menyebutnya "bikin boning baru,
-     * bikin label kulit dan offal". Sempat ada syarat harus punya karkas, dan
-     * syarat itu akan membuat dokumen semacam itu tidak pernah bisa dikunci.
-     *
-     * Susutnya memang tidak bisa dinilai, dan itu terbaca sendiri: persennya
-     * `null`, dan daftarnya menuliskan "tanpa karkas" alih-alih angka.
-     * Menahannya bukan cara menyampaikan itu.
+     * Syarat ini sempat dicabut karena disangka ada dokumen boning khusus
+     * kulit dan offal yang tidak punya karkas. Itu salah baca: kulit dan offal
+     * diberi label DI DALAM boning yang sama, yang karkasnya memang dipilih
+     * saat dokumennya dibuat. Project Owner: "pas create boning kan kita pilih
+     * karkas mana yang di boning bahkan bisa pilih beberapa karkas".
      */
-    public function test_a_boning_without_a_carcass_can_still_be_locked(): void
+    public function test_a_boning_without_a_carcass_cannot_be_locked(): void
     {
         $boning = Boning::create([
             'boning_date' => now()->toDateString(),
@@ -330,17 +327,16 @@ class BoningYieldTest extends TestCase
             'product_id' => $this->product->id,
             'warehouse_id' => $this->warehouse->id,
             'grade_id' => $this->grade->id,
-            'barcode' => 'KULIT-001',
-            'weight' => 449.81,
+            'barcode' => 'HASIL-TANPA-KARKAS',
+            'weight' => 100.00,
             'qty_pcs' => 1,
             'pack_date' => now()->toDateString(),
             'created_by' => $this->user->id,
         ]);
 
-        $boning->fresh()->lock();
+        $this->expectException(\RuntimeException::class);
 
-        $this->assertTrue($boning->fresh()->kunci);
-        $this->assertNull($boning->fresh()->shrinkPercent());
+        $boning->fresh()->lock();
     }
 
     /**

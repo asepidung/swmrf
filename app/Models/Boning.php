@@ -209,18 +209,21 @@ class Boning extends Model
             throw new \RuntimeException(__('This boning is already locked.'));
         }
 
-        // TIDAK ADA syarat harus punya karkas.
+        // Tiap boning WAJIB punya karkas.
         //
-        // Sempat ada, dan itu keliru: kulit dan jeroan masuk stok lewat
-        // dokumen boning TERSENDIRI yang memang tidak punya karkas -- Project
-        // Owner menyebutnya "bikin boning baru, bikin label kulit dan offal".
-        // Mensyaratkan karkas berarti dokumen semacam itu tidak akan pernah
-        // bisa dikunci.
+        // Syarat ini sempat dicabut karena disangka ada dokumen boning khusus
+        // kulit dan offal yang tidak punya karkas. Itu salah baca: kulit dan
+        // offal DIBERI LABEL DI DALAM boning yang sama, yang karkasnya memang
+        // dipilih saat dokumennya dibuat. Project Owner:
         //
-        // Boning tanpa karkas memang tidak bisa dinilai susutnya, dan itu
-        // sudah terbaca sendiri: `shrinkPercent()` mengembalikan `null`, dan
-        // daftarnya menuliskan "tanpa karkas" alih-alih angka. Menahannya
-        // bukan cara menyampaikan itu.
+        //   "pas create boning kan kita pilih karkas mana yang di boning
+        //    bahkan bisa pilih beberapa karkas"
+        //
+        // Jadi tidak pernah ada boning tanpa karkas, dan boning yang tidak
+        // menyebut karkasnya adalah dokumen yang belum selesai dibuat.
+        if ($this->carcasses()->doesntExist()) {
+            throw new \RuntimeException(__('This boning has no carcass yet.'));
+        }
 
         if ($this->items()->doesntExist()) {
             throw new \RuntimeException(__('This boning has no output goods yet.'));
