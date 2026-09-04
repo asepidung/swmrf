@@ -54,3 +54,7 @@ audit_report.md
 
 # Catatan: file project.md SENGAJA TIDAK DI-IGNORE 
 # agar dokumentasi/aturan main ikut terbawa di GitHub.
+
+# Berkas kerja Owner yang tidak boleh ikut ke repositori publik.
+contoh costing.xlsx
+*.xlsx
