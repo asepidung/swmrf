@@ -1420,6 +1420,61 @@ dirancang untuk layar lebar dengan alat pemindai di tangan, bukan untuk HP.
 Keputusan Owner: pastikan nyaman di layar lebar, layar kecil ditangani nanti
 kalau memang perlu.
 
+### Pembayaran pelanggan bisa DIBATALKAN -- membalik, bukan menghapus
+
+**4 September 2026, keputusan Project Owner** -- jawaban atas pertanyaan
+nomor 4 dari lima yang lama menggantung.
+
+Sampai hari itu tidak ada jalan mundur sama sekali. Salah ketik nominal --
+5.500.000 menjadi 55.000.000 -- hanya bisa diperbaiki lewat basis data
+langsung.
+
+**MENYUNTING SENGAJA TIDAK DIBUAT, dan Owner menyetujuinya.** Bukti terima
+`PR#...` sudah dicetak dan diserahkan kepada pelanggan; kalau angkanya bisa
+disunting diam-diam, kertas yang dipegang pelanggan dan catatan di sistem bisa
+berbeda TANPA JEJAK bahwa pernah berbeda. Yang benar: batalkan lalu catat
+ulang, supaya riwayatnya terbaca.
+
+**Membatalkan berarti membalik LIMA hal**, dan melewatkan satu saja membuat
+saldo bank atau piutang salah tanpa gejala:
+
+1. alokasi ke tiap invoice -- `paid_amount` turun kembali;
+2. sisa tagihan dan status invoice -- lewat `recalculate()`;
+3. baris buku kas yang masuk -- dibalik dengan baris keluar;
+4. baris buku kas potongannya -- dibalik dengan baris masuk;
+5. pembayarannya sendiri -- DITANDAI batal, bukan dihapus.
+
+**Baris buku kas aslinya TIDAK disentuh.** Menghapusnya membuat buku kas
+berbohong tentang masa lalu; yang benar menambahkan lawannya, supaya keduanya
+terbaca dan selisihnya nol.
+
+Baris pembalik memakai penanda tersendiri, `Payment::CANCELLATION_REFERENCE` --
+mengikuti pola `BankAccount::OPENING_BALANCE_REFERENCE`. Tanpa penanda itu
+baris pembalik tidak bisa dibedakan dari baris aslinya, dan pembatalan
+berikutnya akan ikut membalik baris pembaliknya sendiri.
+
+**Nomor dokumennya tetap terpakai.** Nomor yang sudah terbit tidak boleh
+dipakai ulang, dan penomoran kita memang sudah menghitung yang terhapus.
+
+**Izinnya sendiri: `cancel_receivable_payments`**, tidak menumpang
+`receive_receivables`. Mencatat uang masuk dan membatalkannya dua kewenangan
+yang berbeda, dan biasanya orangnya juga berbeda.
+
+**Penjaga hapus invoice ikut disesuaikan.** Alokasi milik pembayaran yang sudah
+dibatalkan tidak lagi menahan penghapusan -- kalau ikut dihitung, satu kali
+salah catat akan mengunci invoicenya selamanya walaupun pembayarannya sudah
+dibalik.
+
+**Jebakan yang sempat menghantam:** metode pembantu tidak boleh dinamai seperti
+relasi. `bankTransactions()` yang mengembalikan Collection membuat Eloquent
+melemparnya sebagai `LogicException` begitu diakses sebagai properti. Namanya
+kini `cashBookLines()`.
+
+**Setiap penjumlahan uang wajib lewat `Payment::scopeActive()`.** Yang
+dibatalkan tetap ada -- itu inti dari membalik alih-alih menghapus -- jadi
+tanpa penyaring itu ia ikut terhitung dan angkanya terlalu besar tanpa satu
+pun gejala.
+
 ### Potongan akhirnya punya rumah: MASUK seluruh tagihan, KELUAR potongannya
 
 **4 September 2026, keputusan Project Owner** -- jawaban atas pertanyaan

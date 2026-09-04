@@ -249,7 +249,14 @@ class Invoice extends Model
         // lagi -- dan uang yang sudah masuk lenyap dari jejaknya tanpa satu pun
         // error. Mengikuti penjagaan yang sama pada PO daging dan PO bahan.
         static::deleting(function (Invoice $model) {
-            if ($model->paymentAllocations()->exists()) {
+            // Alokasi milik pembayaran yang SUDAH DIBATALKAN tidak menahan apa
+            // pun. Kalau ikut dihitung, satu kali salah catat akan mengunci
+            // invoicenya selamanya walaupun pembayarannya sudah dibalik.
+            $masihAdaPembayaran = $model->paymentAllocations()
+                ->whereHas('payment', fn ($q) => $q->whereNull('cancelled_at'))
+                ->exists();
+
+            if ($masihAdaPembayaran) {
                 throw new \Exception(__('This invoice cannot be deleted because a customer payment is already recorded against it.'));
             }
 

@@ -41,7 +41,14 @@ class PaymentsRelationManager extends RelationManager
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
-                    ->color('primary'),
+                    // Yang sudah dibatalkan TETAP ADA di daftar -- itu inti
+                    // dari membalik alih-alih menghapus. Warnanya yang
+                    // membedakan, supaya tidak terbaca sebagai pembayaran yang
+                    // masih berlaku.
+                    ->color(fn (Payment $record): string => $record->isCancelled() ? 'danger' : 'primary')
+                    ->description(fn (Payment $record): ?string => $record->isCancelled()
+                        ? __('Cancelled: :reason', ['reason' => $record->cancellation_reason])
+                        : null),
 
                 Tables\Columns\TextColumn::make('payment_date')
                     ->label(__('Payment Date'))
@@ -77,6 +84,45 @@ class PaymentsRelationManager extends RelationManager
                     ->weight('bold'),
             ])
             ->actions([
+                Tables\Actions\Action::make('cancel')
+                    ->label(__('Cancel Payment'))
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    // Izinnya SENDIRI, tidak menumpang receive_receivables.
+                    // Keputusan Project Owner: mencatat uang masuk dan
+                    // membatalkannya dua kewenangan yang berbeda, dan biasanya
+                    // orangnya juga berbeda.
+                    ->visible(fn (Payment $record): bool => ! $record->isCancelled()
+                        && (auth()->user()?->hasPermission('cancel_receivable_payments') ?? false))
+                    ->requiresConfirmation()
+                    ->modalHeading(__('Cancel Payment'))
+                    ->modalDescription(__('The allocation goes back to each invoice and the cash book gets its reversing lines. The payment itself stays on record.'))
+                    ->form([
+                        \Filament\Forms\Components\Textarea::make('reason')
+                            ->label(__('Reason'))
+                            ->placeholder(__('For example: wrong amount, wrong customer group.'))
+                            ->required()
+                            ->maxLength(255)
+                            ->rows(2),
+                    ])
+                    ->action(function (Payment $record, array $data): void {
+                        try {
+                            $record->cancel($data['reason']);
+                        } catch (\Throwable $e) {
+                            \Filament\Notifications\Notification::make()
+                                ->title($e->getMessage())
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        \Filament\Notifications\Notification::make()
+                            ->title(__('Payment cancelled'))
+                            ->success()
+                            ->send();
+                    }),
+
                 Tables\Actions\Action::make('print')
                     ->label(__('Print'))
                     ->icon('heroicon-o-printer')

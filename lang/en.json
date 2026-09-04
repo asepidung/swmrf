@@ -934,5 +934,12 @@
     "Deduction is larger than the invoice it points to": "Deduction is larger than the invoice it points to",
     "Deduction for :invoice is Rp :deduction while its outstanding balance is only Rp :balance.": "Deduction for :invoice is Rp :deduction while its outstanding balance is only Rp :balance.",
     ":kind on :number: :note": ":kind on :number: :note",
-    "For Invoice": "For Invoice"
+    "For Invoice": "For Invoice",
+    "Cancel Payment": "Cancel Payment",
+    "Cancelled: :reason": "Cancelled: :reason",
+    "Payment cancelled": "Payment cancelled",
+    "This payment has already been cancelled.": "This payment has already been cancelled.",
+    "Cancellation of :number": "Cancellation of :number",
+    "The allocation goes back to each invoice and the cash book gets its reversing lines. The payment itself stays on record.": "The allocation goes back to each invoice and the cash book gets its reversing lines. The payment itself stays on record.",
+    "For example: wrong amount, wrong customer group.": "For example: wrong amount, wrong customer group."
 }
