@@ -2913,6 +2913,61 @@ lain. Ambang global di `settings`, gerbang mati selama ambangnya kosong,
 penembusan butuh izin sendiri dan alasan tertulis, tombol Lock MATI dengan
 keterangan alih-alih lenyap.
 
+### Pengguna DINONAKTIFKAN, tidak dihapus -- 5 September 2026
+
+Keputusan Project Owner: *"user mah jangan ada hapus aktif non aktif aja"*.
+
+Alasannya bukan sekadar kehati-hatian. Ada **37 kunci asing** yang menunjuk ke
+`users`, dan tiga di antaranya dulu memakai **CASCADE**:
+
+    material_requisitions.user_id
+    product_requisitions.user_id
+    material_findings.created_by
+
+Menghapus satu pengguna akan ikut menghapus permintaan bahan dan permintaan
+produk yang pernah ia buat. Saat ditemukan, ada 5 dan 3 dokumen yang berdiri di
+atas kunci itu. Lima belas kunci lain memakai `nullOnDelete()`, yang diam-diam
+menghapus jejak "siapa yang mengerjakan" dari dokumen yang tetap ada. Dan
+`users` TIDAK memakai hapus lunak, jadi tidak ada yang bisa dipulihkan.
+
+`UserPolicy::delete()`, `restore()`, dan `forceDelete()` mengembalikan `false`
+untuk SIAPA PUN, termasuk programmer -- berbeda dari hampir semua penjagaan
+lain di aplikasi ini. Yang ditahan bukan kewenangan melainkan akibatnya, dan
+akibatnya sama saja siapa pun yang menekan. Tombol hapusnya juga dicabut dari
+daftar; membiarkannya berdiri sambil ditolak policy hanya menawarkan sesuatu
+yang tidak akan pernah berhasil.
+
+Ketiga cascade tetap diubah menjadi RESTRICT, dan definisinya diperbaiki di
+migrasi ASLINYA juga -- supaya instalasi baru tidak membangun ulang bahaya yang
+sama lalu menambalnya sendiri beberapa langkah kemudian. Penjagaan di policy
+bisa dilepas orang berikutnya; kunci asing menolak di lapisan yang tidak bisa
+dilewati kode aplikasi mana pun.
+
+#### `hasPermission()` mengingat jawabannya selama satu permintaan
+
+Sebelumnya tiap pemanggilan menembakkan satu kueri, dan pemanggilnya terus
+bertambah: hampir tiap tombol yang menggerakkan angka sungguhan dijaga izin.
+Sekarang seluruh izinnya diambil SEKALI lalu diingat.
+
+**Akibat yang harus diketahui:** menyematkan izin lalu menanyakannya dalam
+permintaan yang SAMA akan menjawab dengan keadaan lama. Di aplikasi hal itu
+tidak terjadi -- form User menyimpan lalu memuat ulang halamannya. Di pengujian
+ia terjadi, dan jawabannya `actingAs($user->fresh())` atau
+`forgetCachedPermissions()`.
+
+Empat test lama tersandung ini, dan satu di antaranya membuka kekeliruan yang
+sudah lama ada: `CashBookTest` mengoper `$outsider->fresh()` ke
+`CashBookResource::canViewAny()`, yang **tidak menerima argumen sama sekali**.
+PHP mengabaikannya tanpa suara, dan testnya lolos hanya karena izin dulu dibaca
+ulang dari basis data setiap kali.
+
+#### Yang TIDAK perlu diperbaiki di rumpun ini
+
+`ActivityPolicy` mengembalikan `false` untuk create, update, delete, restore,
+dan forceDelete -- persis yang seharusnya untuk catatan audit.
+`ForceChangePassword` juga sudah benar. Dicatat supaya tidak ada yang
+"merapikan" keduanya di kemudian hari.
+
 ### Kerugian menyimpan JUMLAH, bukan hanya rupiah -- 4 September 2026
 
 Susut kirim di halaman Approve DO sudah dicatat sejak lama, tetapi rupiahnya

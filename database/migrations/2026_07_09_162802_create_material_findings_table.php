@@ -18,7 +18,14 @@ return new class extends Migration
             $table->foreignId('material_id')->constrained('materials')->onDelete('cascade');
             $table->decimal('qty', 10, 2);
             $table->text('note')->nullable();
-            $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
+            // RESTRICT, bukan cascade.
+            //
+            // Dulu `cascadeOnDelete()`, yang berarti menghapus satu pengguna
+            // ikut menghapus dokumen ini. Definisinya diperbaiki di sini juga
+            // -- bukan hanya lewat migrasi perbaikan -- supaya instalasi baru
+            // tidak membangun ulang bahaya yang sama lalu menambalnya sendiri
+            // beberapa langkah kemudian.
+            $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
             $table->timestamps();
         });
     }

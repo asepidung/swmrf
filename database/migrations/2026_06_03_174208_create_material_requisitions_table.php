@@ -14,7 +14,14 @@ return new class extends Migration
         Schema::create('material_requisitions', function (Blueprint $table) {
             $table->id();
             $table->string('document_number')->unique();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            // RESTRICT, bukan cascade.
+            //
+            // Dulu `cascadeOnDelete()`, yang berarti menghapus satu pengguna
+            // ikut menghapus dokumen ini. Definisinya diperbaiki di sini juga
+            // -- bukan hanya lewat migrasi perbaikan -- supaya instalasi baru
+            // tidak membangun ulang bahaya yang sama lalu menambalnya sendiri
+            // beberapa langkah kemudian.
+            $table->foreignId('user_id')->constrained('users')->restrictOnDelete();
             $table->foreignId('supplier_id')->nullable()->constrained('suppliers')->nullOnDelete();
             $table->date('due_date');
             $table->text('note')->nullable();

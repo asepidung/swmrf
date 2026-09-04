@@ -191,9 +191,14 @@ class UserResource extends Resource
                     ->color('warning')
                     ->icon('heroicon-o-arrow-path'),
             ])
+            // TIDAK ADA aksi hapus, baik satuan maupun massal.
+            //
+            // Pengguna dinonaktifkan, tidak dihapus -- lihat alasan lengkapnya
+            // di `UserPolicy::delete()`. Membiarkan tombolnya berdiri sambil
+            // ditolak policy hanya menawarkan sesuatu yang tidak akan pernah
+            // berhasil.
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->recordUrl(fn (User $record): string => Pages\EditUser::getUrl(['record' => $record]));

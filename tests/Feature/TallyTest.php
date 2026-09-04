@@ -441,7 +441,10 @@ class TallyTest extends TestCase
         );
         $userWithoutPermission->permissions()->attach($permission->id);
 
-        Livewire::actingAs($userWithoutPermission)
+        // Izin diingat selama satu permintaan, jadi instance yang sudah pernah
+        // ditanya tetap menjawab dengan keadaan lama. Yang dipakai di sini
+        // instance BARU -- persis seperti permintaan berikutnya di peramban.
+        Livewire::actingAs($userWithoutPermission->fresh())
             ->test(ScanTally::class, ['record' => $tally])
             ->assertActionVisible('approve');
     }
@@ -473,6 +476,11 @@ class TallyTest extends TestCase
             ['module_name' => 'Tallies', 'description' => 'Create tallies']
         );
         $employee->permissions()->attach($permission->id);
+
+        // Izin diingat selama satu permintaan; masuk ulang supaya jawabannya
+        // dibaca dari keadaan yang baru, seperti permintaan berikutnya.
+        $this->actingAs($employee->fresh());
+
         $this->assertEquals(1, $widget->getPendingTallyCount());
     }
 

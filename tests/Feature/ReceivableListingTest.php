@@ -148,6 +148,11 @@ class ReceivableListingTest extends TestCase
             $this->grupDenganInvoice($nama, 1000000);
         }
 
+        // Izin pengguna dibaca SEKALI per permintaan lalu diingat. Kalau
+        // pemanasannya jatuh di dalam pengukuran pertama saja, kedua angkanya
+        // berbeda karena alasan yang sama sekali bukan yang sedang diuji.
+        $this->app['auth']->user()->hasPermission('view_receivables');
+
         DB::enableQueryLog();
         Livewire::test(ListReceivables::class)->assertSuccessful();
         $lima = count(DB::getQueryLog());
