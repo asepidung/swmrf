@@ -58,7 +58,7 @@
                     $status = $invoice->status ?? '-';
                     $tgltf = $invoice->invoice_exchange_date ?? null;
                     
-                    if ($tukarfaktur && empty($tgltf) && $status === 'Belum TF') {
+                    if ($tukarfaktur && empty($tgltf) && $status === \App\Models\Invoice::STATUS_EXCHANGE_PENDING) {
                         $jatuhTempoFormatted = 'BTF';
                     } else {
                         $jatuhTempoFormatted = $invoice->due_date ? $invoice->due_date->format('d/m/Y') : '-';

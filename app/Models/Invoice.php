@@ -16,14 +16,45 @@ class Invoice extends Model
     use SoftDeletes, LogsActivity;
 
     /**
-     * Satu-satunya tempat kata 'Lunas' ditulis.
+     * Satu-satunya tempat status invoice ditulis.
      *
-     * Status invoice adalah kolom teks berisi lima nilai campur bahasa, dan
-     * "sudah dibayar atau belum" ditentukan dengan membandingkannya ke teks
-     * ini di banyak tempat. Satu salah ketik berarti invoice yang sudah lunas
-     * ikut terhitung sebagai piutang, tanpa satu pun gejala.
+     * Status invoice adalah kolom TEKS berbahasa Indonesia, dan "sudah dibayar
+     * atau belum" ditentukan dengan membandingkannya ke teks itu di banyak
+     * tempat. Satu salah ketik berarti invoice yang sudah lunas ikut terhitung
+     * sebagai piutang -- tanpa satu pun gejala, karena perbandingan string
+     * yang meleset tidak menghasilkan error, hanya jawaban yang salah.
+     *
+     * Dulu hanya 'Lunas' yang punya konstanta, dan itu pun baru dibuat saat
+     * modul Piutang dikerjakan. Tiga sisanya masih ditulis ulang sebagai teks
+     * di dua puluh tujuh tempat. Sekarang keempatnya punya rumah.
+     *
+     * NILAINYA TIDAK DIUBAH. Kolomnya sudah berisi teks ini di basis data yang
+     * sedang berjalan, dan menggantinya berarti memindahkan data sungguhan --
+     * pekerjaan tersendiri yang tidak dititipkan pada perapian ini.
      */
     public const STATUS_PAID = 'Lunas';
+
+    public const STATUS_UNPAID = 'Belum Dibayar';
+
+    /**
+     * Tukar faktur: jatuh temponya BELUM dihitung sampai fakturnya ditukar.
+     * Lihat hook `saving()` di bawah -- di sana kedua status ini menentukan
+     * `due_date`, dan itu satu-satunya tempat yang boleh menghitungnya.
+     */
+    public const STATUS_EXCHANGE_PENDING = 'Belum TF';
+
+    public const STATUS_EXCHANGED = 'Sudah TF';
+
+    /** Seluruh status yang sah, untuk penyaring dan pilihan di form. */
+    public static function statuses(): array
+    {
+        return [
+            static::STATUS_UNPAID => static::STATUS_UNPAID,
+            static::STATUS_EXCHANGE_PENDING => static::STATUS_EXCHANGE_PENDING,
+            static::STATUS_EXCHANGED => static::STATUS_EXCHANGED,
+            static::STATUS_PAID => static::STATUS_PAID,
+        ];
+    }
 
     protected $table = 'invoices';
 
@@ -47,7 +78,6 @@ class Invoice extends Model
         'total_discount',
         'tax',
         'charge',
-        'additional_charges',
         'down_payment',
         'paid_amount',
         'balance',
@@ -64,7 +94,6 @@ class Invoice extends Model
         'total_discount' => 'float',
         'tax' => 'float',
         'charge' => 'float',
-        'additional_charges' => 'array',
         'down_payment' => 'float',
         'paid_amount' => 'float',
         'balance' => 'float',
@@ -321,7 +350,7 @@ class Invoice extends Model
         if ($this->balance <= 0) {
             $this->status = static::STATUS_PAID;
         } elseif ($this->status === static::STATUS_PAID) {
-            $this->status = 'Belum Dibayar';
+            $this->status = static::STATUS_UNPAID;
         }
     }
 
@@ -488,9 +517,9 @@ class Invoice extends Model
                 return;
             }
 
-            if ($model->status === 'Belum TF') {
+            if ($model->status === static::STATUS_EXCHANGE_PENDING) {
                 $model->due_date = null;
-            } elseif ($model->status === 'Sudah TF') {
+            } elseif ($model->status === static::STATUS_EXCHANGED) {
                 if ($model->invoice_exchange_date) {
                     $model->due_date = \Carbon\Carbon::parse($model->invoice_exchange_date)->addDays((int)$model->term_of_payment)->toDateString();
                 }

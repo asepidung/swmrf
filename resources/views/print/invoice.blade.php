@@ -260,7 +260,7 @@
                                         $tukarfaktur = $record->customer->invoice_exchange ?? false;
                                         $tgltf = $record->invoice_exchange_date ?? null;
                                     @endphp
-                                    @if ($tukarfaktur && empty($tgltf) && $record->status === 'Belum TF')
+                                    @if ($tukarfaktur && empty($tgltf) && $record->status === \App\Models\Invoice::STATUS_EXCHANGE_PENDING)
                                         <span class="text-danger font-weight-bold">BTF (Belum Tukar Faktur)</span>
                                     @else
                                         {{ $record->due_date ? $record->due_date->format('d-M-Y') : '-' }}

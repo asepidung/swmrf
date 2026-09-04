@@ -674,7 +674,7 @@ class InvoiceResource extends Resource
                                 // invoice_exchange_date + term_of_payment, jadi rumusnya
                                 // cukup hidup di satu tempat.
                                 $record->update([
-                                    'status' => 'Sudah TF',
+                                    'status' => Invoice::STATUS_EXCHANGED,
                                     'invoice_exchange_date' => $data['invoice_exchange_date'],
                                     'exchange_by' => $data['exchange_by'],
                                     'exchange_note' => $data['exchange_note'],

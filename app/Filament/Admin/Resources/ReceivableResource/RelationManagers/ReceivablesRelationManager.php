@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Resources\ReceivableResource\RelationManagers;
 
+use App\Models\Invoice;
+
 use App\Models\Receivable;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -58,8 +60,8 @@ class ReceivablesRelationManager extends RelationManager
                         $status = $invoice->status;
                         $tgltf = $invoice->invoice_exchange_date;
 
-                        if ($tukarfaktur && empty($tgltf) && $status === 'Belum TF') {
-                            return 'Belum TF';
+                        if ($tukarfaktur && empty($tgltf) && $status === Invoice::STATUS_EXCHANGE_PENDING) {
+                            return Invoice::STATUS_EXCHANGE_PENDING;
                         }
                         
                         return $invoice->due_date ? $invoice->due_date->format('d M Y') : '-';
@@ -67,11 +69,11 @@ class ReceivablesRelationManager extends RelationManager
                     ->badge()
                     ->color(function (Receivable $record) {
                         $invoice = $record->invoice;
-                        if (!$invoice || $invoice->status === 'Lunas') return 'gray';
+                        if (!$invoice || $invoice->status === Invoice::STATUS_PAID) return 'gray';
                         
                         $tukarfaktur = $record->customer->invoice_exchange ?? false;
                         $tgltf = $invoice->invoice_exchange_date;
-                        if ($tukarfaktur && empty($tgltf) && $invoice->status === 'Belum TF') {
+                        if ($tukarfaktur && empty($tgltf) && $invoice->status === Invoice::STATUS_EXCHANGE_PENDING) {
                             return 'danger';
                         }
                         
@@ -90,11 +92,11 @@ class ReceivablesRelationManager extends RelationManager
                     })
                     ->tooltip(function (Receivable $record): ?string {
                         $invoice = $record->invoice;
-                        if (!$invoice || !$invoice->due_date || $invoice->status === 'Lunas') return null;
+                        if (!$invoice || !$invoice->due_date || $invoice->status === Invoice::STATUS_PAID) return null;
                         
                         $tukarfaktur = $record->customer->invoice_exchange ?? false;
                         $tgltf = $invoice->invoice_exchange_date;
-                        if ($tukarfaktur && empty($tgltf) && $invoice->status === 'Belum TF') {
+                        if ($tukarfaktur && empty($tgltf) && $invoice->status === Invoice::STATUS_EXCHANGE_PENDING) {
                             return __('Not Yet Exchanged');
                         }
 
@@ -121,9 +123,9 @@ class ReceivablesRelationManager extends RelationManager
                     ->label(__('Status'))
                     ->badge()
                     ->colors([
-                        'danger' => 'Belum TF',
-                        'success' => 'Sudah TF',
-                        'primary' => 'Lunas',
+                        'danger' => Invoice::STATUS_EXCHANGE_PENDING,
+                        'success' => Invoice::STATUS_EXCHANGED,
+                        'primary' => Invoice::STATUS_PAID,
                         'gray' => '-',
                     ])
                     ->formatStateUsing(fn ($state) => __($state)),
