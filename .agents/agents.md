@@ -1420,6 +1420,36 @@ dirancang untuk layar lebar dengan alat pemindai di tangan, bukan untuk HP.
 Keputusan Owner: pastikan nyaman di layar lebar, layar kecil ditangani nanti
 kalau memang perlu.
 
+### Alokasi pembayaran diisi sendiri, TERTUA DULU menurut TANGGAL INVOICE
+
+**4 September 2026.** Owner bertanya untuk apa alokasi per invoice, dan apakah
+memang harus ditempatkan manual.
+
+**Alokasinya memang perlu ada.** Uang masuk dari GRUP, sementara yang punya
+jatuh tempo, umur, dan status tukar faktur adalah INVOICE satu per satu. Kalau
+pembayaran cuma mengurangi total utang grup tanpa menyebut invoicenya, kolom
+"Sudah Jatuh Tempo" kehilangan artinya -- sistem tahu grup itu bersisa sekian,
+tetapi tidak tahu dari invoice mana, jadi tidak tahu sudah lewat tempo atau
+belum.
+
+**Tetapi manualnya berlebihan.** Hampir selalu jawabannya sama: lunasi yang
+paling lama menunggu, lalu turun sampai uangnya habis. Yang benar-benar butuh
+keputusan manusia cuma kasus khusus -- pelanggan sedang komplain satu invoice,
+atau menyebut sendiri invoice mana yang ia bayar.
+
+Sekarang kotaknya terisi sendiri begitu nominal uang masuk atau potongannya
+diisi. Ini **hanya mengisikan, bukan mengunci**: tiap kotak tetap bisa diubah,
+dan penjaga keseimbangannya tidak berubah sama sekali.
+
+**Urutannya dari TANGGAL INVOICE, bukan jatuh tempo.** Keputusan Owner, dan
+bedanya nyata: invoice tukar faktur yang fakturnya belum ditukar **belum punya
+jatuh tempo sama sekali**. Kalau diurutkan dari jatuh tempo ia tersingkir ke
+belakang -- padahal justru dialah yang paling lama menunggu. Ada test khusus
+untuk kasus itu.
+
+Potongan ikut dihitung sebagai uang yang membayar, karena memang begitu:
+tagihan yang dianggap lunas meski uangnya tidak pernah masuk.
+
 ### Baris hantu di repeater: nilai menggantung MEMBUAT ULANG baris yang sudah dihapus
 
 **4 September 2026.** Owner menambah beberapa baris potongan di halaman

@@ -6,6 +6,7 @@ use App\Filament\Admin\Resources\ReceivableResource;
 use App\Models\BankAccount;
 use App\Models\BankTransaction;
 use App\Models\CustomerGroup;
+use App\Models\Invoice;
 use App\Models\Payment;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
@@ -142,7 +143,9 @@ class ReceivePayment extends Page
                             ->label(__('Amount Received in Bank'))
                             ->required()
                             ->default(0)
-                            ->rules(['numeric', 'gte:0']),
+                            ->rules(['numeric', 'gte:0'])
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(fn () => $this->autoAllocate()),
                         TextInput::make('reference_number')
                             ->label(__('Transfer Reference'))
                             ->maxLength(255),
@@ -178,6 +181,7 @@ class ReceivePayment extends Page
                                     ->required()
                                     ->rules(['numeric', 'gt:0'])
                                     ->live(onBlur: true)
+                                    ->afterStateUpdated(fn () => $this->autoAllocate())
                                     ->columnSpan(1),
                             ])
                             ->columns(3)
@@ -214,6 +218,15 @@ class ReceivePayment extends Page
             ->statePath('data');
     }
 
+    /**
+     * Invoice yang masih menunggu dibayar, TERTUA LEBIH DULU.
+     *
+     * Urutannya dari TANGGAL INVOICE, bukan jatuh tempo. Keputusan Project
+     * Owner, 4 September 2026, dan bedanya nyata: invoice tukar faktur yang
+     * fakturnya belum ditukar belum punya jatuh tempo sama sekali, jadi kalau
+     * diurutkan dari jatuh tempo ia akan tersingkir ke belakang -- padahal
+     * justru dialah yang paling lama menunggu.
+     */
     protected function getOutstandingInvoices()
     {
         return $this->record->receivables()
@@ -221,8 +234,61 @@ class ReceivePayment extends Page
             ->get()
             ->pluck('invoice')
             ->filter(function ($invoice) {
-                return $invoice && $invoice->status !== 'Lunas' && $invoice->balance > 0;
-            });
+                return $invoice && $invoice->status !== Invoice::STATUS_PAID && $invoice->balance > 0;
+            })
+            ->sortBy('invoice_date')
+            ->values();
+    }
+
+    /**
+     * Baca angka dari state form, yang masih membawa titik pemisah ribuan.
+     *
+     * `stripCharacters` baru bekerja saat penyimpanan dan validasi, sementara
+     * di sini kita membaca `$this->data` mentah-mentah.
+     */
+    private function angka(mixed $nilai): float
+    {
+        return (float) str_replace('.', '', (string) ($nilai ?? '0'));
+    }
+
+    /**
+     * Bagikan uang yang masuk ke invoice, TERTUA DULU.
+     *
+     * Hampir selalu ini yang dimaksud: lunasi yang paling lama menunggu, lalu
+     * turun sampai uangnya habis. Yang benar-benar butuh keputusan manusia
+     * cuma kasus khusus -- pelanggan sedang komplain satu invoice, atau
+     * menyebut sendiri invoice mana yang ia bayar.
+     *
+     * Karena itu ini hanya MENGISIKAN, bukan mengunci. Setiap kotak tetap bisa
+     * diubah sesudahnya, dan penjaga keseimbangannya tidak berubah sama
+     * sekali: total alokasi tetap wajib sama dengan uang masuk ditambah
+     * potongannya.
+     *
+     * Potongan ikut dihitung sebagai uang yang membayar, karena memang
+     * begitu: tagihan yang dianggap lunas meski uangnya tidak pernah masuk.
+     */
+    public function autoAllocate(): void
+    {
+        $tersedia = $this->angka($this->data['amount'] ?? 0);
+
+        foreach ($this->data['deductions'] ?? [] as $potongan) {
+            if (is_array($potongan)) {
+                $tersedia += $this->angka($potongan['amount'] ?? 0);
+            }
+        }
+
+        $alokasi = [];
+
+        foreach ($this->getOutstandingInvoices() as $invoice) {
+            $ambil = max(min($tersedia, (float) $invoice->balance), 0);
+            $tersedia -= $ambil;
+
+            // Ditulis berpemisah ribuan supaya sama bentuknya dengan yang
+            // diketik tangan; titiknya dibuang lagi saat disimpan.
+            $alokasi[$invoice->id] = number_format($ambil, 0, ',', '.');
+        }
+
+        $this->data['allocations'] = $alokasi;
     }
 
     public function getTitle(): string
