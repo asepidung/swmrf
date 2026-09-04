@@ -968,5 +968,6 @@
     "Not valued yet, waiting for cost price": "Not valued yet, waiting for cost price",
     "Delivery shrinkage on :document": "Delivery shrinkage on :document",
     "Original Delivery Order": "Original Delivery Order",
-    "Credited Weight": "Credited Weight"
+    "Credited Weight": "Credited Weight",
+    "These goods have not been received by the customer yet. If they were refused, handle it on the Delivery Order approval.": "These goods have not been received by the customer yet. If they were refused, handle it on the Delivery Order approval."
 }

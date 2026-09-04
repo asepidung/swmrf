@@ -116,10 +116,20 @@ class SalesReturnResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('Status'))
                     ->badge()
+                    // 'Canceled' pernah punya warna di sini padahal tidak ada
+                    // satu pun kode yang menyetelnya -- cabang mati yang
+                    // membuat orang mengira ada fitur batal.
+                    //
+                    // Pembatalan sudah punya jalurnya: retur Draft dihapus
+                    // (hapus lunak, masih terlihat oleh pemegang
+                    // `view_deleted_sales_returns`), dan retur Approved dibuka
+                    // kuncinya dulu supaya stoknya ditarik dan jejaknya
+                    // tercatat, baru dihapus. Menambah status Canceled yang
+                    // sungguhan berarti membuat jalur KEDUA untuk hal yang
+                    // sama.
                     ->color(fn (string $state): string => match ($state) {
                         'Draft' => 'warning',
                         'Approved' => 'success',
-                        'Canceled' => 'danger',
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('created_at')

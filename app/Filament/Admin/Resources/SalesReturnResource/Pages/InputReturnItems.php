@@ -331,8 +331,8 @@ class InputReturnItems extends Page implements HasForms, HasTable
 
         try {
             // ------------------------------------------------------------------
-            // Tiga pertanyaan yang harus dijawab sebelum sebuah barcode boleh
-            // diretur. Keputusan Project Owner, 4 September 2026.
+            // Empat pertanyaan yang harus dijawab sebelum sebuah barcode
+            // boleh diretur. Keputusan Project Owner, 4 September 2026.
             //
             // Sebelumnya hanya satu yang ditanyakan -- "barcode ini pernah ada
             // di Tally?" -- sehingga barang yang tidak pernah dikirim ke
@@ -371,7 +371,28 @@ class InputReturnItems extends Page implements HasForms, HasTable
                     : __('This barcode was never shipped by us.'));
             }
 
-            // DUA: barangnya memang sedang TIDAK di gudang?
+            // DUA: barangnya sudah benar-benar DITERIMA pelanggan?
+            //
+            // Urutan dokumennya SO -> Tally -> Surat Jalan -> Bukti Terima ->
+            // Invoice, dan Project Owner menegaskan retur SELALU sesudah bukti
+            // terima. Yang belum ada bukti terimanya berarti barangnya masih
+            // di jalan, atau baru sedang diperiksa di tempat pelanggan.
+            //
+            // Kalau barang semacam itu ditolak, namanya TOLAKAN, dan tolakan
+            // ditangani di halaman Approve DO -- di sana tally itemnya dihapus,
+            // stoknya kembali, dan bukti terimanya lahir sudah berkurang
+            // sehingga invoicenya pun ikut berkurang.
+            //
+            // Tanpa penjagaan ini, tolakan yang salah pintu akan memasukkan
+            // barang ke stok padahal fisiknya belum kembali, dan memotong
+            // tagihan yang belum pernah terbit.
+            $suratJalanAsal = $tallyItem->tally?->deliveryOrder;
+
+            if ($suratJalanAsal && ! $suratJalanAsal->receipt()->exists()) {
+                throw new \Exception(__('These goods have not been received by the customer yet. If they were refused, handle it on the Delivery Order approval.'));
+            }
+
+            // TIGA: barangnya memang sedang TIDAK di gudang?
             //
             // Barang yang masih tercatat di stok berarti belum pernah keluar --
             // dan sesuatu yang belum keluar tidak bisa kembali. Ini juga yang
@@ -385,7 +406,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 throw new \Exception(__('This item is still in the warehouse, so it cannot be returned.'));
             }
 
-            // TIGA: belum tercatat di retur lain yang masih berjalan?
+            // EMPAT: belum tercatat di retur lain yang masih berjalan?
             //
             // Dua retur berstatus Draft bisa memegang barcode yang sama tanpa
             // satu pun dari keduanya menyentuh stok, jadi pertanyaan KEDUA tidak
