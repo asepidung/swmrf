@@ -176,13 +176,30 @@ class ReceivePaymentPageTest extends TestCase
     }
 
     /**
-     * Alokasi yang tidak seimbang DITOLAK, dan tidak menyisakan apa pun.
+     * Yang masih DITOLAK adalah alokasi yang MELEBIHI uangnya.
      *
-     * Uang yang masuk harus habis dibagi ke invoice. Kalau tidak, pembayaran
-     * tercatat sementara tagihannya tidak berkurang sebanyak itu -- selisihnya
-     * hilang tanpa jejak.
+     * Kekurangannya tidak lagi ditolak sejak 4 September 2026 -- sisanya
+     * menjadi deposit pelanggan. Yang tidak boleh justru kebalikannya:
+     * mengalokasikan uang yang tidak pernah ada, karena itu membuat tagihan
+     * berkurang tanpa satu rupiah pun menutupnya.
      */
-    public function test_an_unbalanced_allocation_is_refused(): void
+    public function test_allocating_more_than_the_money_available_is_refused(): void
+    {
+        Livewire::test(ReceivePayment::class, ['record' => $this->group])
+            ->fillForm([
+                'bank_account_id' => $this->bank->id,
+                'payment_date' => now()->toDateString(),
+                'amount' => 1000000,
+                'allocations.'.$this->invoice->id => 5000000,
+            ])
+            ->call('save');
+
+        $this->assertSame(0, Payment::count(), 'Pembayaran tidak boleh tercatat.');
+        $this->assertSame(0.0, (float) $this->invoice->fresh()->paid_amount);
+    }
+
+    /** Dan kekurangannya menjadi deposit, bukan ditolak. */
+    public function test_money_left_over_becomes_a_deposit(): void
     {
         Livewire::test(ReceivePayment::class, ['record' => $this->group])
             ->fillForm([
@@ -193,8 +210,9 @@ class ReceivePaymentPageTest extends TestCase
             ])
             ->call('save');
 
-        $this->assertSame(0, Payment::count(), 'Pembayaran tidak boleh tercatat.');
-        $this->assertSame(0.0, (float) $this->invoice->fresh()->paid_amount);
+        $this->assertSame(1, Payment::count());
+        $this->assertSame(1000000.0, (float) $this->invoice->fresh()->paid_amount);
+        $this->assertSame(4000000.0, $this->group->availableDeposit());
     }
 
     /** Yang tidak berhak menerima uang tidak boleh membuka halamannya. */

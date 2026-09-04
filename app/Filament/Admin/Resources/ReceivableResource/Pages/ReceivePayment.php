@@ -246,6 +246,19 @@ class ReceivePayment extends Page
                             ))
                             ->extraAttributes(['class' => 'text-lg font-bold'])
                             ->columnSpanFull(),
+
+                        // Deposit hanya ditampilkan kalau memang ada. Baris
+                        // "Deposit: Rp 0" pada hampir setiap pembayaran cuma
+                        // mengajari orang melewatinya, termasuk pada hari
+                        // angkanya tidak nol.
+                        \Filament\Forms\Components\Placeholder::make('customer_deposit')
+                            ->label(__('Customer Deposit'))
+                            ->visible(fn (): bool => $this->record->availableDeposit() > 0)
+                            ->content(fn (): string => 'Rp '.number_format(
+                                $this->record->availableDeposit(), 0, ',', '.',
+                            ).' — '.__('used first, before the money received today'))
+                            ->extraAttributes(['class' => 'font-bold'])
+                            ->columnSpanFull(),
                     ], $invoiceFields) : [
                         \Filament\Forms\Components\Placeholder::make('no_invoice')
                             ->label('')
@@ -367,10 +380,27 @@ class ReceivePayment extends Page
      * dan itu memang benar untuk biaya bank: pelanggan bermaksud membayar
      * penuh, banknya yang memotong di jalan.
      */
+    /**
+     * Seluruh uang yang bisa dipakai membayar hari ini.
+     *
+     * Uang yang baru masuk, ditambah potongannya, ditambah DEPOSIT yang sudah
+     * ada dari pembayaran sebelumnya. Deposit itu uang yang benar-benar sudah
+     * diterima -- ia hanya belum menempel ke tagihan mana pun.
+     */
+    private function availableMoney(): float
+    {
+        return $this->angka($this->data['amount'] ?? 0)
+            + $this->pooledDeductions()
+            + array_sum($this->attachedDeductions())
+            + $this->record->availableDeposit();
+    }
+
     public function autoAllocate(): void
     {
         $tertuju = $this->attachedDeductions();
-        $kantong = $this->angka($this->data['amount'] ?? 0) + $this->pooledDeductions();
+        $kantong = $this->angka($this->data['amount'] ?? 0)
+            + $this->pooledDeductions()
+            + $this->record->availableDeposit();
 
         $alokasi = [];
 
@@ -457,8 +487,16 @@ class ReceivePayment extends Page
             $totalAllocated += (float) $allocAmount;
         }
 
-        if ($totalAvailable <= 0) {
-            Notification::make()->danger()->title(__('The payment or its deductions must be more than zero.'))->send();
+        $deposit = $this->record->availableDeposit();
+
+        // Nol boleh, ASAL ada depositnya. Melunasi tagihan sepenuhnya dari
+        // deposit memang berbentuk begitu: tidak ada uang baru yang masuk hari
+        // ini, yang dipakai uang yang sudah lama diterima.
+        if ($totalAvailable <= 0 && $deposit <= 0) {
+            Notification::make()->danger()
+                ->title(__('The payment or its deductions must be more than zero.'))
+                ->send();
+
             return;
         }
 
@@ -483,15 +521,31 @@ class ReceivePayment extends Page
             }
         }
 
-        if (abs($totalAvailable - $totalAllocated) > 0.01) {
+        $batasAtas = $totalAvailable + $deposit;
+
+        // Uang tidak boleh dialokasikan melebihi yang benar-benar ada --
+        // termasuk deposit yang sudah tersimpan dari pembayaran sebelumnya.
+        if ($totalAllocated > $batasAtas + 0.01) {
             Notification::make()->danger()
-                ->title(__('Allocation does not balance'))
-                ->body(__('Money received is Rp :available while Rp :allocated has been allocated. The difference is Rp :difference.', [
-                    'available' => number_format($totalAvailable, 0, ',', '.'),
+                ->title(__('Allocation is larger than the money available'))
+                ->body(__('Money available is Rp :available while Rp :allocated has been allocated.', [
+                    'available' => number_format($batasAtas, 0, ',', '.'),
                     'allocated' => number_format($totalAllocated, 0, ',', '.'),
-                    'difference' => number_format(abs($totalAvailable - $totalAllocated), 0, ',', '.'),
                 ]))
                 ->send();
+
+            return;
+        }
+
+        // Potongan harus habis terpakai. Potongan yang tidak menutup tagihan
+        // apa pun tidak punya arti -- ia diberikan justru KARENA ada tagihan
+        // yang dianggap lunas tanpa uangnya masuk.
+        if ($totalAllocated < $totalDeduction - 0.01) {
+            Notification::make()->danger()
+                ->title(__('Deductions are larger than what is being settled'))
+                ->body(__('A deduction only makes sense against a bill it settles.'))
+                ->send();
+
             return;
         }
 
@@ -520,28 +574,64 @@ class ReceivePayment extends Page
                 }
             }
 
-            // 3. Process Allocations & Update Invoices
+            // 3. Alokasi ke invoice, DEPOSIT DIPAKAI LEBIH DULU.
+            //
+            // Deposit adalah uang yang sudah lama diterima dan menganggur.
+            // Menghabiskannya lebih dulu membuatnya tidak menumpuk, dan
+            // membuat pertanyaan "kenapa pelanggan ini masih punya deposit
+            // padahal tagihannya banyak" tidak pernah muncul.
+            //
+            // Tiap sumber mendapat baris alokasinya sendiri, jadi deposit yang
+            // terpakai tetap bisa ditelusuri ke pembayaran asalnya -- dan
+            // membatalkan pembayaran lama otomatis mengembalikan tagihan yang
+            // ditutupnya, karena alokasinya memang melekat di sana.
+            $sumber = [];
+
+            foreach ($this->record->depositPayments() as $deposit) {
+                $sumber[] = ['payment' => $deposit, 'sisa' => $deposit->unallocatedAmount()];
+            }
+
+            $sumber[] = ['payment' => $payment, 'sisa' => $totalAvailable];
+
             foreach ($allocations as $invId => $allocAmount) {
                 $allocAmount = (float) $allocAmount;
-                if ($allocAmount > 0) {
-                    $payment->allocations()->create([
+
+                if ($allocAmount <= 0) {
+                    continue;
+                }
+
+                $belumTertutup = $allocAmount;
+
+                foreach ($sumber as $i => $asal) {
+                    if ($belumTertutup <= 0.01) {
+                        break;
+                    }
+
+                    if ($asal['sisa'] <= 0.01) {
+                        continue;
+                    }
+
+                    $ambil = min($belumTertutup, $asal['sisa']);
+
+                    $asal['payment']->allocations()->create([
                         'invoice_id' => $invId,
-                        'amount_allocated' => $allocAmount,
+                        'amount_allocated' => $ambil,
                     ]);
 
-                    $invoice = \App\Models\Invoice::find($invId);
-
-                    // Yang bertambah adalah jumlah yang SUDAH DIBAYAR, bukan
-                    // sisa tagihannya. Sisa tagihan diturunkan sendiri oleh
-                    // Invoice::recalculate(), dan hanya di sana.
-                    //
-                    // Dulu baris ini menimpa `balance` langsung. Kolom yang
-                    // sama juga dihitung ulang oleh form Invoice dari barang
-                    // dan uang muka, tanpa tahu apa-apa tentang pembayaran --
-                    // jadi cukup menyunting invoicenya sekali dan pembayaran
-                    // ini lenyap dari tagihan.
-                    $invoice?->applyPayment($allocAmount);
+                    $sumber[$i]['sisa'] -= $ambil;
+                    $belumTertutup -= $ambil;
                 }
+
+                // Yang bertambah adalah jumlah yang SUDAH DIBAYAR, bukan sisa
+                // tagihannya. Sisa tagihan diturunkan sendiri oleh
+                // Invoice::recalculate(), dan hanya di sana.
+                //
+                // Dulu baris ini menimpa `balance` langsung. Kolom yang sama
+                // juga dihitung ulang oleh form Invoice dari barang dan uang
+                // muka, tanpa tahu apa-apa tentang pembayaran -- jadi cukup
+                // menyunting invoicenya sekali dan pembayaran ini lenyap dari
+                // tagihan.
+                \App\Models\Invoice::find($invId)?->applyPayment($allocAmount);
             }
 
             // 4. Buku kas: seluruh tagihan yang lunas MASUK, potongannya KELUAR.

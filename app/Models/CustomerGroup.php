@@ -42,6 +42,36 @@ class CustomerGroup extends Model
     }
 
     /**
+     * Deposit grup ini: uang yang sudah diterima tetapi belum menutup tagihan.
+     *
+     * Lahir dari pelanggan yang mentransfer lebih besar daripada piutangnya --
+     * dulu ditolak di pintu karena tidak ada tempat menaruhnya, sehingga
+     * kelebihannya harus diurus di luar sistem.
+     *
+     * @return \Illuminate\Support\Collection<int, Payment>
+     */
+    public function depositPayments(): \Illuminate\Support\Collection
+    {
+        return $this->payments()
+            ->active()
+            ->with('allocations')
+            ->orderBy('payment_date')
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (Payment $payment): bool => $payment->unallocatedAmount() > 0)
+            ->values();
+    }
+
+    /** Seluruh depositnya, dalam rupiah. */
+    public function availableDeposit(): float
+    {
+        return round(
+            $this->depositPayments()->sum(fn (Payment $payment): float => $payment->unallocatedAmount()),
+            2,
+        );
+    }
+
+    /**
      * Invoice milik grup ini, lewat baris piutangnya.
      *
      * Dibuat supaya nominal dan HITUNGAN invoice di daftar piutang memakai
