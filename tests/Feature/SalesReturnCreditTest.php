@@ -999,6 +999,53 @@ class SalesReturnCreditTest extends TestCase
     }
 
     /**
+     * Menghitung ulang sebuah retur tidak boleh menghapus potongannya sendiri.
+     *
+     * Retur lintas pengiriman dihitung ulang setiap kali salah satu kartonnya
+     * dipungut invoice yang baru terbit -- dan itu keadaan biasa: sebagian
+     * kiriman sudah ditagih, sebagian belum.
+     *
+     * Tanpa penjagaan ini, pada hitungan KEDUA returnya melihat kreditnya
+     * sendiri sebagai jatah yang sudah habis, lalu mengkreditkan dirinya nol.
+     * Potongan sepuluh juta yang sudah benar lenyap tanpa satu pun gejala.
+     * Terlihat hanya kalau jatahnya memang terpakai HABIS -- retur separuh
+     * jatah tetap benar, dan itu yang membuatnya lolos dari tes pertama.
+     */
+    public function test_recomputing_a_return_keeps_the_credit_it_already_earned(): void
+    {
+        // Kiriman pertama sudah ditagih, dan diretur SELURUHNYA.
+        $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000, 'diskon' => 0]]);
+        $tallySatu = $this->tally;
+        $invoiceSatu = $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
+
+        // Kiriman kedua belum ditagih sama sekali.
+        $this->kirim([['produk' => $this->ribeye, 'berat' => 20, 'harga' => 200000, 'diskon' => 0]]);
+        $tallyDua = $this->tally;
+
+        $retur = SalesReturn::create([
+            'return_date' => now()->toDateString(),
+            'customer_id' => $this->customer->id,
+            'status' => 'Draft',
+            'created_by' => $this->user->id,
+        ]);
+        $this->kartonDari($retur, $tallySatu, $this->sirloin, 100);
+        $this->kartonDari($retur, $tallyDua, $this->ribeye, 5);
+
+        $retur->refresh()->approve();
+        $this->assertSame(10000000.0, $invoiceSatu->fresh()->returnedAmount());
+
+        // Invoice kedua terbit dan memungut karton yang masih menunggu.
+        $invoiceDua = $this->tagih([['produk' => $this->ribeye, 'berat' => 20, 'harga' => 200000]]);
+        $invoiceDua->collectPendingSalesReturns();
+
+        // Potongan invoice PERTAMA tidak boleh ikut berubah...
+        $this->assertSame(10000000.0, $invoiceSatu->fresh()->returnedAmount());
+        // ...dan yang kedua mendapat bagiannya.
+        $this->assertSame(1000000.0, $invoiceDua->fresh()->returnedAmount());
+        $this->assertSame(11000000.0, (float) $retur->fresh()->credit_amount);
+    }
+
+    /**
      * Dua retur pada invoice yang sama dijumlahkan, tidak saling menimpa.
      */
     public function test_two_returns_on_one_bill_add_up(): void
