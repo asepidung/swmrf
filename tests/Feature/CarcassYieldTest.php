@@ -14,7 +14,6 @@ use App\Models\Grade;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\PurchaseCattle;
-use App\Models\Setting;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Warehouse;
@@ -22,19 +21,21 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Boning: karkas yang masuk dibanding produk yang keluar.
+ * Rendemen karkas, dan syarat mengunci sebuah batch boning.
  *
- * Berat karkasnya SUDAH tercatat sejak lama -- di `carcass_items`, per ekor,
- * sebagai belahan A, belahan B, kulit, dan buntut. Yang tidak ada hanyalah
- * satu baris kode yang membacanya: sampai 4 September 2026 kata `weight` cuma
- * muncul SEKALI di seluruh `BoningResource`, dan itu pun `->weight('bold')` --
- * ketebalan huruf, bukan berat.
+ * SUSUT BONING SENGAJA TIDAK DIHITUNG. Keputusan Project Owner, 5 September
+ * 2026, dan alasannya ada pada bentuk pekerjaannya: kulit dan offal diberi
+ * label DI DALAM dokumen boning yang sama -- satu-satunya pintu agar keduanya
+ * punya stok, karena kontraktor mengambilnya hari itu juga lewat DO yang butuh
+ * SO, Tally, dan stok. Akibatnya hasil sebuah boning memuat barang yang tidak
+ * berasal dari karkasnya, dan tiap batch akan terbaca hasilnya jauh melebihi
+ * bahannya. Alarm palsu pada SETIAP dokumen.
  *
- * Yang masuk boning: belahan A + belahan B + buntut. Kulit dan jeroan tidak
- * ikut, keduanya dijual langsung ke kontraktor. Keputusan Project Owner, 4
- * September 2026, dan rumus yang sama persis ada di aplikasi lama.
+ * Yang tetap diukur: RENDEMEN KARKAS -- berapa persen bobot hidup yang menjadi
+ * karkas. Ia tidak menyentuh hasil boning sama sekali, sudah ada di aplikasi
+ * lama, dan hilangnya saat ditulis ulang adalah regresi.
  */
-class BoningYieldTest extends TestCase
+class CarcassYieldTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -223,122 +224,6 @@ class BoningYieldTest extends TestCase
         $this->assertNull($karkas->yieldPercent());
     }
 
-    // =====================================================================
-    // Susut boning
-    // =====================================================================
-
-    public function test_it_measures_the_carcass_that_went_in_against_the_products_that_came_out(): void
-    {
-        $karkas = $this->karkas([
-            ['hidup' => 531.00, 'a' => 150.00, 'b' => 150.00, 'kulit' => 34.60, 'buntut' => 10.00],
-        ]);
-
-        $boning = $this->boning($karkas, [200.00, 100.00]);
-
-        $this->assertSame(310.00, $boning->inputWeight());
-        $this->assertSame(300.00, $boning->outputWeight());
-        $this->assertSame(10.00, $boning->shrinkWeight());
-        $this->assertSame(3.23, $boning->shrinkPercent());
-    }
-
-    public function test_a_boning_without_carcass_has_no_percentage_at_all(): void
-    {
-        $boning = Boning::create(['boning_date' => now()->toDateString(), 'created_by' => $this->user->id]);
-
-        $this->assertNull($boning->shrinkPercent());
-    }
-
-    public function test_without_a_limit_nothing_is_held_back(): void
-    {
-        $karkas = $this->karkas([['hidup' => 500.00, 'a' => 150.00, 'b' => 150.00, 'kulit' => 30.00, 'buntut' => 0.00]]);
-        $boning = $this->boning($karkas, [100.00]);
-
-        $this->assertNull(Boning::shrinkLimitPercent());
-        $this->assertTrue($boning->isWithinShrinkLimit());
-
-        $boning->lock();
-
-        $this->assertTrue($boning->fresh()->kunci);
-        $this->assertNull($boning->fresh()->yield_override_at);
-    }
-
-    public function test_beyond_the_limit_it_refuses_without_a_reason(): void
-    {
-        Setting::write(Setting::BONING_MAX_SHRINK_PERCENT, 5, $this->user->id);
-
-        $karkas = $this->karkas([['hidup' => 500.00, 'a' => 150.00, 'b' => 150.00, 'kulit' => 30.00, 'buntut' => 0.00]]);
-        $boning = $this->boning($karkas, [200.00]);
-
-        $this->assertFalse($boning->isWithinShrinkLimit());
-        $this->expectException(\RuntimeException::class);
-
-        $boning->lock();
-    }
-
-    public function test_beyond_the_limit_it_locks_with_a_written_reason(): void
-    {
-        Setting::write(Setting::BONING_MAX_SHRINK_PERCENT, 5, $this->user->id);
-
-        $karkas = $this->karkas([['hidup' => 500.00, 'a' => 150.00, 'b' => 150.00, 'kulit' => 30.00, 'buntut' => 0.00]]);
-        $boning = $this->boning($karkas, [200.00]);
-
-        $boning->lock('Karkasnya berlemak tebal, trimming banyak.', $this->user->id);
-
-        $tersimpan = $boning->fresh();
-
-        $this->assertTrue($tersimpan->kunci);
-        $this->assertSame('Karkasnya berlemak tebal, trimming banyak.', $tersimpan->yield_override_reason);
-        $this->assertSame($this->user->id, $tersimpan->yield_override_by);
-        $this->assertTrue($tersimpan->shrinkLimitWasOverridden());
-    }
-
-    /**
-     * Hasil LEBIH BERAT daripada karkasnya selalu di luar batas.
-     */
-    public function test_output_heavier_than_the_carcass_is_never_within_any_limit(): void
-    {
-        Setting::write(Setting::BONING_MAX_SHRINK_PERCENT, 100, $this->user->id);
-
-        $karkas = $this->karkas([['hidup' => 500.00, 'a' => 150.00, 'b' => 150.00, 'kulit' => 30.00, 'buntut' => 0.00]]);
-        $boning = $this->boning($karkas, [500.00]);
-
-        $this->assertSame(-200.00, $boning->shrinkWeight());
-        $this->assertFalse($boning->isWithinShrinkLimit());
-    }
-
-    /**
-     * Boning WAJIB punya karkas.
-     *
-     * Syarat ini sempat dicabut karena disangka ada dokumen boning khusus
-     * kulit dan offal yang tidak punya karkas. Itu salah baca: kulit dan offal
-     * diberi label DI DALAM boning yang sama, yang karkasnya memang dipilih
-     * saat dokumennya dibuat. Project Owner: "pas create boning kan kita pilih
-     * karkas mana yang di boning bahkan bisa pilih beberapa karkas".
-     */
-    public function test_a_boning_without_a_carcass_cannot_be_locked(): void
-    {
-        $boning = Boning::create([
-            'boning_date' => now()->toDateString(),
-            'created_by' => $this->user->id,
-        ]);
-
-        BoningItem::create([
-            'boning_id' => $boning->id,
-            'product_id' => $this->product->id,
-            'warehouse_id' => $this->warehouse->id,
-            'grade_id' => $this->grade->id,
-            'barcode' => 'HASIL-TANPA-KARKAS',
-            'weight' => 100.00,
-            'qty_pcs' => 1,
-            'pack_date' => now()->toDateString(),
-            'created_by' => $this->user->id,
-        ]);
-
-        $this->expectException(\RuntimeException::class);
-
-        $boning->fresh()->lock();
-    }
-
     /**
      * Berat offal SAMA PERSIS dengan berat bahan boning, dan itu disengaja.
      *
@@ -356,6 +241,30 @@ class BoningYieldTest extends TestCase
         $this->assertSame(250.00, $karkas->boningInputWeight());
     }
 
+    // =====================================================================
+    // Syarat mengunci sebuah batch boning
+    // =====================================================================
+
+    /**
+     * Boning WAJIB punya karkas.
+     *
+     * Karkasnya dipilih saat dokumennya dibuat -- Project Owner: "pas create
+     * boning kan kita pilih karkas mana yang di boning bahkan bisa pilih
+     * beberapa karkas". Boning yang tidak menyebut karkasnya adalah dokumen
+     * yang belum selesai dibuat.
+     */
+    public function test_a_boning_without_a_carcass_cannot_be_locked(): void
+    {
+        $boning = Boning::create([
+            'boning_date' => now()->toDateString(),
+            'created_by' => $this->user->id,
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+
+        $boning->lock();
+    }
+
     public function test_a_boning_without_output_cannot_be_locked(): void
     {
         $karkas = $this->karkas([['hidup' => 500.00, 'a' => 150.00, 'b' => 150.00, 'kulit' => 30.00, 'buntut' => 0.00]]);
@@ -366,20 +275,50 @@ class BoningYieldTest extends TestCase
         $boning->lock();
     }
 
-    public function test_unlocking_clears_the_override_trace(): void
+    public function test_a_locked_boning_cannot_be_locked_twice(): void
     {
-        Setting::write(Setting::BONING_MAX_SHRINK_PERCENT, 5, $this->user->id);
-
         $karkas = $this->karkas([['hidup' => 500.00, 'a' => 150.00, 'b' => 150.00, 'kulit' => 30.00, 'buntut' => 0.00]]);
         $boning = $this->boning($karkas, [200.00]);
-        $boning->lock('Alasan lama', $this->user->id);
 
+        $boning->lock();
+
+        $this->assertTrue($boning->fresh()->kunci);
+        $this->assertSame('LOCKED', $boning->fresh()->status);
+
+        $this->expectException(\RuntimeException::class);
+
+        $boning->fresh()->lock();
+    }
+
+    public function test_unlocking_reopens_the_batch(): void
+    {
+        $karkas = $this->karkas([['hidup' => 500.00, 'a' => 150.00, 'b' => 150.00, 'kulit' => 30.00, 'buntut' => 0.00]]);
+        $boning = $this->boning($karkas, [200.00]);
+
+        $boning->lock();
         $boning->fresh()->unlock();
 
-        $tersimpan = $boning->fresh();
+        $this->assertFalse($boning->fresh()->kunci);
+        $this->assertSame('OPEN', $boning->fresh()->status);
+    }
 
-        $this->assertFalse($tersimpan->kunci);
-        $this->assertNull($tersimpan->yield_override_reason);
-        $this->assertFalse($tersimpan->shrinkLimitWasOverridden());
+    /**
+     * Susut boning TIDAK dihitung, dan itu disengaja.
+     *
+     * Kulit dan offal diberi label di dalam dokumen boning yang sama, jadi
+     * hasilnya memuat barang yang tidak berasal dari karkasnya. Menghitung
+     * susutnya akan menghasilkan alarm palsu pada SETIAP dokumen -- dan alarm
+     * yang selalu menyala mengajari orang mengabaikannya.
+     *
+     * Penjaga ini menahan fiturnya dihidupkan kembali tanpa sengaja.
+     */
+    public function test_boning_deliberately_has_no_shrinkage_calculation(): void
+    {
+        foreach (['inputWeight', 'outputWeight', 'shrinkWeight', 'shrinkPercent', 'isWithinShrinkLimit'] as $metode) {
+            $this->assertFalse(
+                method_exists(Boning::class, $metode),
+                "Boning::{$metode}() dihidupkan kembali. Baca alur satu batch boning di agents.md lebih dulu.",
+            );
+        }
     }
 }

@@ -2867,14 +2867,36 @@ keduanya diberi label DI DALAM boning yang sama. Syaratnya dikembalikan.
 label daging hari kedua sesudah pelayuan. Yang harus selesai dalam sehari
 adalah pekerjaan memotong dagingnya, bukan umur dokumennya.
 
-**TERBUKA dan PENTING -- susutnya belum benar.** Karena kulit dan offal ikut
-menjadi label di dalam boning, `outputWeight()` menjumlahkan mereka bersama
-daging, sementara `inputWeight()` hanya karkas ditambah buntut. Akibatnya tiap
-batch akan terbaca hasilnya jauh melebihi bahannya. Belum menggigit karena
-ambangnya masih kosong dan produk OFFAL/KULIT belum ada di master, tetapi ia
-akan menggigit begitu alurnya dijalankan. Yang dibutuhkan: cara menandai
-produk mana yang by-product karkas supaya dikeluarkan dari hitungan susut --
-menunggu keputusan Owner.
+#### SUSUT BONING TIDAK DIHITUNG -- keputusan, bukan kelalaian
+
+Karena kulit dan offal ikut menjadi label di dalam boning, hasil sebuah batch
+memuat barang yang TIDAK berasal dari karkasnya:
+
+    bahan = karkas + buntut
+    hasil = daging + offal + kulit
+
+Tiap batch akan terbaca hasilnya jauh melebihi bahannya -- alarm palsu pada
+SETIAP dokumen, yang justru mengajari orang mengabaikan alarm.
+
+Bisa diperbaiki dengan menandai produk mana yang by-product karkas, tetapi itu
+menambah satu daftar yang harus dirawat manusia demi angka yang memang tidak
+dibutuhkan. Project Owner memilih **mencabut fiturnya**, 5 September 2026.
+
+Yang ikut dicabut: kolom `bonings.yield_override_*`, izin
+`set_boning_yield_limit` dan `override_boning_yield`, setelan
+`boning.max_shrink_percent`, serta kolom susut di daftar Boning. Kolomnya
+DIHAPUS, tidak dibiarkan menganggur -- pelajaran dari
+`invoices.additional_charges` hari yang sama.
+
+Yang TETAP: `Carcass::yieldPercent()` (rendemen karkas, tidak menyentuh hasil
+boning sama sekali) dan `Boning::lock()`/`unlock()` yang mengumpulkan syarat
+penguncian ke satu tempat.
+
+`CarcassYieldTest::test_boning_deliberately_has_no_shrinkage_calculation()`
+menahannya dihidupkan kembali tanpa sengaja.
+
+**Susut REPACK tetap dihitung** -- di sana bahan dan hasil sama-sama daging,
+tidak ada by-product yang menumpang lewat.
 
 #### Angka susut boning yang pertama
 
