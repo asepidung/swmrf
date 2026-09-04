@@ -1420,6 +1420,47 @@ dirancang untuk layar lebar dengan alat pemindai di tangan, bukan untuk HP.
 Keputusan Owner: pastikan nyaman di layar lebar, layar kecil ditangani nanti
 kalau memang perlu.
 
+### Baris hantu di repeater: nilai menggantung MEMBUAT ULANG baris yang sudah dihapus
+
+**4 September 2026.** Owner menambah beberapa baris potongan di halaman
+penerimaan pembayaran, menghapus semuanya, lalu menekan simpan -- dan SATU
+baris muncul kembali lengkap dengan pesan kesalahan. Pembayarannya gagal
+tersimpan.
+
+Sebabnya di Livewire, bukan di kode kita. Nilai yang diketik dikirim dengan
+penundaan (`wire:model` bawaan Filament). Kalau barisnya dihapus sebelum
+nilainya sempat terkirim, nilai itu **menumpang permintaan berikutnya** -- dan
+menulis properti bersarang ke kunci yang sudah tidak ada **MEMBUAT ULANG**
+kuncinya.
+
+Yang lahir kembali bukan barisnya yang utuh, melainkan satu field saja:
+
+```
+baris asli  : {"description": null, "amount": null}
+baris hantu : {"amount": "5000"}
+```
+
+**Pembeda itulah yang dipakai untuk membuangnya**, dan ia aman: baris yang
+benar-benar ditambahkan SELALU punya seluruh kunci skemanya sejak lahir.
+Baris kosong tetapi utuh TIDAK dibuang -- itu baris yang sungguh ditambahkan
+lalu tidak diisi, dan penggunanya berhak diberi tahu.
+
+Diperbaiki dua lapis:
+
+1. **Menghilangkan sebabnya** -- kedua field potongan kini `live(onBlur: true)`,
+   jadi tidak ada nilai menggantung saat barisnya dihapus.
+2. **Menjaring sisanya** -- `forgetGhostDeductionRows()` membuang baris yang
+   tidak punya seluruh kunci skemanya, dijalankan sebelum validasi.
+
+Lapis kedua tetap dipasang meski lapis pertama sudah menutup jalurnya, karena
+yang dipertaruhkan uang: baris hantu yang lolos akan tercatat sebagai potongan
+yang tidak pernah dimasukkan siapa pun.
+
+**Waspadai pola yang sama di repeater lain.** Aplikasi ini penuh repeater, dan
+sebabnya ada di Livewire -- bukan khusus halaman ini. Belum disapu; kerjakan
+saat modulnya tiba gilirannya, dan periksa dengan mengetik-lalu-menghapus,
+bukan dengan membaca kode.
+
 ### Nomor dokumen uang: PR# masuk, PV# keluar -- dan bukti terima yang bisa dicetak
 
 **3-4 September 2026, keputusan Project Owner.**
