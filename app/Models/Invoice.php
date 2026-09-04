@@ -157,11 +157,23 @@ class Invoice extends Model
      * Memakai berat fisik di sini akan membuat sisa jatah retur menyusut lebih
      * cepat daripada seharusnya.
      */
-    public function returnedWeightFor(int $productId): float
+    public function returnedWeightFor(int $productId, ?int $exceptSalesReturnId = null): float
     {
         return round((float) $this->returnedItems()
             ->where('product_id', $productId)
-            ->whereHas('salesReturn', fn ($q) => $q->where('status', 'Approved'))
+            ->whereHas('salesReturn', fn ($q) => $q
+                ->where('status', 'Approved')
+                // Satu retur TIDAK boleh menghitung dirinya sendiri sebagai
+                // jatah yang sudah terpakai.
+                //
+                // Nilainya dihitung ulang setiap kali salah satu kartonnya
+                // dipungut invoice yang baru terbit -- dan itu memang terjadi
+                // pada retur lintas pengiriman, tempat sebagian kiriman sudah
+                // ditagih dan sebagian belum. Tanpa pengecualian ini, pada
+                // hitungan kedua returnya melihat kreditnya sendiri sebagai
+                // jatah yang habis, lalu mengkreditkan dirinya NOL. Potongan
+                // yang sudah benar lenyap tanpa satu pun gejala.
+                ->when($exceptSalesReturnId, fn ($q) => $q->whereKeyNot($exceptSalesReturnId)))
             ->sum('credited_weight'), 2);
     }
 

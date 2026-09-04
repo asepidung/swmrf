@@ -248,7 +248,7 @@ class SalesReturn extends Model
                 if (! array_key_exists($kunci, $sisaJatah)) {
                     $sisaJatah[$kunci] = max(
                         $invoice->billedWeightFor((int) $item->product_id)
-                            - $invoice->returnedWeightFor((int) $item->product_id),
+                            - $invoice->returnedWeightFor((int) $item->product_id, $this->getKey()),
                         0,
                     );
                 }
