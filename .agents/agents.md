@@ -1420,6 +1420,49 @@ dirancang untuk layar lebar dengan alat pemindai di tangan, bukan untuk HP.
 Keputusan Owner: pastikan nyaman di layar lebar, layar kecil ditangani nanti
 kalau memang perlu.
 
+### Potongan pembayaran punya JENIS, dan boleh menunjuk satu invoice
+
+**4 September 2026.** Owner bertanya bagaimana potongan diperlakukan bila ada
+tiga invoice -- 1jt, 3jt, 5jt -- dan pelanggan mentransfer 5.500.000 dengan
+potongan.
+
+Jawaban sistem waktu itu: potongan **larut ke kantong** uang yang membayar,
+lalu dibagi tertua-dulu bersama uang riilnya. Untuk contoh itu 500 ribunya
+mendarat di invoice 5jt -- tempat uangnya kebetulan habis.
+
+**Untuk biaya bank itu benar; untuk promo tidak.**
+
+| Jenis | Milik siapa | Perlakuan |
+|---|---|---|
+| Biaya admin bank | TRANSFERNYA | larut ke kantong -- pelanggan bermaksud bayar penuh, banknya memotong di jalan |
+| Klaim promo | SATU INVOICE tertentu | menempel pada invoice itu |
+
+Melarutkan promo membuat totalnya tetap benar tetapi **catatan invoice MANA
+yang sebenarnya didiskon menjadi salah**, dan salahnya bergantung pada hal
+yang sama sekali tidak relevan: di invoice mana uangnya kebetulan habis.
+
+Sekarang tiap baris potongan punya:
+
+- **`type`** -- Biaya Bank / Promo / Lainnya;
+- **`invoice_id`** yang BOLEH KOSONG. Kosong adalah pernyataan, bukan
+  kelalaian: "potongan ini milik transfernya".
+
+`autoAllocate()` memasang potongan bertujuan lebih dulu ke invoicenya, baru
+membagi sisa uangnya tertua-dulu. Penjaga keseimbangannya tidak berubah sama
+sekali -- total alokasi tetap wajib sama dengan uang masuk ditambah SELURUH
+potongan.
+
+Ada penjaga tambahan: potongan bertujuan tidak boleh lebih besar daripada
+tagihan invoice yang ditunjuknya. Kalau dibiarkan, kelebihannya diam-diam
+menutup tagihan invoice LAIN -- persis kekacauan yang hendak dihindari dengan
+menunjuknya.
+
+**`type` baru DICATAT, belum dibukukan.** Ke akun mana biaya bank dan promo
+mendarat masih pertanyaan terbuka -- lihat lima pertanyaan skema piutang.
+Tanpa itu, potongan masih menguap dari pembukuan: kas bertambah 5,5jt, piutang
+berkurang 6jt, dan 500 ribunya tidak ke mana-mana. Yang sudah berubah hanya
+ini: sekarang datanya cukup untuk menjawabnya nanti.
+
 ### Alokasi pembayaran diisi sendiri, TERTUA DULU menurut TANGGAL INVOICE
 
 **4 September 2026.** Owner bertanya untuk apa alokasi per invoice, dan apakah

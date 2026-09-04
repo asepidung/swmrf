@@ -197,7 +197,17 @@
                 <tbody>
                     @foreach ($record->deductions as $deduction)
                         <tr>
-                            <td>{{ $deduction->description }}</td>
+                            <td>
+                                {{ \App\Models\PaymentDeduction::typeLabel($deduction->type) }}
+                                &mdash; {{ $deduction->description }}
+                                {{-- Potongan yang menunjuk satu invoice harus terbaca
+                                     menunjuk invoice itu. Tanpa keterangan ini,
+                                     pembacanya tidak punya cara tahu kenapa satu
+                                     invoice lunas dengan uang yang lebih sedikit. --}}
+                                @if ($deduction->invoice)
+                                    <br><small>{{ $deduction->invoice->invoice_number }}</small>
+                                @endif
+                            </td>
                             <td class="right">Rp {{ number_format($deduction->amount, 0, ',', '.') }}</td>
                         </tr>
                     @endforeach

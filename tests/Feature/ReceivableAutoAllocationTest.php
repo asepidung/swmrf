@@ -230,4 +230,134 @@ class ReceivableAutoAllocationTest extends TestCase
         $this->assertSame(0.0, (float) $tua->fresh()->balance);
         $this->assertSame(2500000.0, (float) $muda->fresh()->balance);
     }
+
+    /**
+     * Potongan yang MENUNJUK sebuah invoice mendarat di invoice itu.
+     *
+     * Skenario Project Owner: tiga invoice 1jt, 3jt, dan 5jt, pelanggan
+     * mentransfer 5.500.000 dengan potongan promo 500 ribu.
+     *
+     * Tanpa penunjukan, 500 ribu itu larut ke kantong dan mendarat di invoice
+     * 5jt -- tempat uangnya kebetulan habis. Padahal promonya untuk invoice
+     * 1jt. Totalnya tetap benar, tetapi catatan invoice MANA yang didiskon
+     * jadi salah.
+     */
+    public function test_a_deduction_that_points_at_an_invoice_lands_there(): void
+    {
+        $satu = $this->invoice(1000000, now()->subDays(30)->toDateString());
+        $tiga = $this->invoice(3000000, now()->subDays(20)->toDateString());
+        $lima = $this->invoice(5000000, now()->subDays(10)->toDateString());
+
+        $lw = Livewire::test(ReceivePayment::class, ['record' => $this->group])
+            ->set('data.amount', '5.500.000')
+            ->set('data.deductions', [
+                'p1' => [
+                    'type' => \App\Models\PaymentDeduction::TYPE_PROMOTION,
+                    'invoice_id' => $satu->id,
+                    'description' => 'Klaim promo',
+                    'amount' => '500.000',
+                ],
+            ])
+            ->call('autoAllocate');
+
+        $alokasi = $lw->get('data')['allocations'];
+
+        // Invoice 1jt: 500rb dari promonya + 500rb dari uang transfer.
+        $this->assertSame(1000000.0, $this->angka($alokasi[$satu->id]));
+        $this->assertSame(3000000.0, $this->angka($alokasi[$tiga->id]));
+        $this->assertSame(2000000.0, $this->angka($alokasi[$lima->id]));
+
+        // Totalnya tetap sama dengan uang masuk ditambah potongannya.
+        $this->assertSame(
+            6000000.0,
+            array_sum(array_map(fn ($v) => $this->angka($v), $alokasi)),
+        );
+    }
+
+    /**
+     * Potongan TANPA tujuan tetap dibagi bersama uang riilnya.
+     *
+     * Itu perlakuan yang benar untuk biaya bank: pelanggan bermaksud membayar
+     * penuh, banknya yang memotong di jalan.
+     */
+    public function test_a_deduction_without_a_target_is_still_pooled(): void
+    {
+        $satu = $this->invoice(1000000, now()->subDays(30)->toDateString());
+        $lima = $this->invoice(5000000, now()->subDays(10)->toDateString());
+
+        $lw = Livewire::test(ReceivePayment::class, ['record' => $this->group])
+            ->set('data.amount', '1.500.000')
+            ->set('data.deductions', [
+                'p1' => [
+                    'type' => \App\Models\PaymentDeduction::TYPE_BANK_FEE,
+                    'invoice_id' => null,
+                    'description' => 'Biaya admin bank',
+                    'amount' => '25.000',
+                ],
+            ])
+            ->call('autoAllocate');
+
+        $alokasi = $lw->get('data')['allocations'];
+
+        $this->assertSame(1000000.0, $this->angka($alokasi[$satu->id]));
+        $this->assertSame(525000.0, $this->angka($alokasi[$lima->id]), 'Sisanya termasuk biaya banknya.');
+    }
+
+    /**
+     * Potongan bertujuan yang lebih besar daripada invoicenya DITOLAK.
+     *
+     * Kalau dibiarkan, kelebihannya akan diam-diam menutup tagihan invoice
+     * lain -- persis kekacauan yang hendak dihindari dengan menunjuknya.
+     */
+    public function test_a_targeted_deduction_larger_than_its_invoice_is_refused(): void
+    {
+        $satu = $this->invoice(1000000, now()->subDays(30)->toDateString());
+        $lima = $this->invoice(5000000, now()->subDays(10)->toDateString());
+
+        Livewire::test(ReceivePayment::class, ['record' => $this->group])
+            ->set('data.bank_account_id', $this->bank->id)
+            ->set('data.payment_date', now()->toDateString())
+            ->set('data.amount', '1.000.000')
+            ->set('data.deductions', [
+                'p1' => [
+                    'type' => \App\Models\PaymentDeduction::TYPE_PROMOTION,
+                    'invoice_id' => $satu->id,
+                    'description' => 'Promo kebesaran',
+                    'amount' => '2.000.000',
+                ],
+            ])
+            ->call('autoAllocate')
+            ->call('save');
+
+        $this->assertSame(0, \App\Models\Payment::count(), 'Tidak boleh ada yang tersimpan.');
+        $this->assertSame(1000000.0, (float) $satu->fresh()->balance);
+        $this->assertSame(5000000.0, (float) $lima->fresh()->balance);
+    }
+
+    /** Jenis dan tujuan potongannya ikut tersimpan. */
+    public function test_the_kind_and_the_target_are_recorded(): void
+    {
+        $satu = $this->invoice(1000000, now()->subDays(30)->toDateString());
+
+        Livewire::test(ReceivePayment::class, ['record' => $this->group])
+            ->set('data.bank_account_id', $this->bank->id)
+            ->set('data.payment_date', now()->toDateString())
+            ->set('data.amount', '500.000')
+            ->set('data.deductions', [
+                'p1' => [
+                    'type' => \App\Models\PaymentDeduction::TYPE_PROMOTION,
+                    'invoice_id' => $satu->id,
+                    'description' => 'Klaim promo',
+                    'amount' => '500.000',
+                ],
+            ])
+            ->call('autoAllocate')
+            ->call('save');
+
+        $potongan = \App\Models\PaymentDeduction::firstOrFail();
+
+        $this->assertSame(\App\Models\PaymentDeduction::TYPE_PROMOTION, $potongan->type);
+        $this->assertSame($satu->id, $potongan->invoice_id);
+        $this->assertSame(0.0, (float) $satu->fresh()->balance, 'Tagihannya lunas oleh 500rb uang + 500rb promo.');
+    }
 }

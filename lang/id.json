@@ -925,5 +925,12 @@
     "Total Settled": "Total Dilunasi",
     "Number": "Nomor",
     "Printed on :date": "Dicetak pada :date",
-    "Total Outstanding": "Total Piutang"
+    "Total Outstanding": "Total Piutang",
+    "Deduction Type": "Jenis Potongan",
+    "Bank Fee": "Biaya Bank",
+    "Promotion": "Promo",
+    "Other": "Lainnya",
+    "For all invoices": "Untuk seluruh invoice",
+    "Deduction is larger than the invoice it points to": "Potongannya lebih besar daripada invoice yang ditunjuk",
+    "Deduction for :invoice is Rp :deduction while its outstanding balance is only Rp :balance.": "Potongan untuk :invoice sebesar Rp :deduction, sementara sisa tagihannya hanya Rp :balance."
 }

@@ -169,12 +169,41 @@ class ReceivePayment extends Page
                                 // BERIKUTNYA, dan Livewire MEMBUAT ULANG kunci
                                 // baris yang sudah tidak ada. Itulah baris hantu
                                 // yang muncul saat tombol simpan ditekan.
+                                Select::make('type')
+                                    ->placeholder(__('Deduction Type'))
+                                    ->options(\App\Models\PaymentDeduction::typeOptions())
+                                    ->default(\App\Models\PaymentDeduction::TYPE_BANK_FEE)
+                                    ->required()
+                                    ->columnSpan(2),
+
+                                // Boleh dikosongkan, dan kosong itu BUKAN
+                                // kelalaian melainkan pernyataan: potongan ini
+                                // milik transfernya sendiri, bukan milik satu
+                                // invoice. Itu perlakuan yang benar untuk biaya
+                                // bank -- pelanggan bermaksud membayar penuh,
+                                // banknya yang memotong di jalan.
+                                //
+                                // Diisi berarti sebaliknya: potongannya melekat
+                                // pada invoice itu, dan tidak boleh mendarat di
+                                // invoice lain hanya karena di situ uangnya
+                                // kebetulan habis.
+                                Select::make('invoice_id')
+                                    ->placeholder(__('For all invoices'))
+                                    ->options(fn (): array => $this->getOutstandingInvoices()
+                                        ->mapWithKeys(fn ($invoice): array => [
+                                            $invoice->id => $invoice->invoice_number,
+                                        ])
+                                        ->all())
+                                    ->live()
+                                    ->afterStateUpdated(fn () => $this->autoAllocate())
+                                    ->columnSpan(2),
+
                                 TextInput::make('description')
                                     ->placeholder(__('Deduction Description'))
                                     ->required()
                                     ->maxLength(255)
                                     ->live(onBlur: true)
-                                    ->columnSpan(2),
+                                    ->columnSpan(3),
                                 $this->money('amount')
                                     ->hiddenLabel()
                                     ->placeholder(__('Amount (Rp)'))
@@ -182,9 +211,9 @@ class ReceivePayment extends Page
                                     ->rules(['numeric', 'gt:0'])
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(fn () => $this->autoAllocate())
-                                    ->columnSpan(1),
+                                    ->columnSpan(2),
                             ])
-                            ->columns(3)
+                            ->columns(['default' => 1, 'lg' => 9])
                             ->addActionLabel(__('Add Deduction'))
                             ->defaultItems(0)
                     ]),
@@ -267,25 +296,90 @@ class ReceivePayment extends Page
      * Potongan ikut dihitung sebagai uang yang membayar, karena memang
      * begitu: tagihan yang dianggap lunas meski uangnya tidak pernah masuk.
      */
-    public function autoAllocate(): void
+    /**
+     * Potongan yang MENUNJUK satu invoice, dikelompokkan per invoice.
+     *
+     * @return array<int, float>
+     */
+    private function attachedDeductions(): array
     {
-        $tersedia = $this->angka($this->data['amount'] ?? 0);
+        $tertuju = [];
 
         foreach ($this->data['deductions'] ?? [] as $potongan) {
-            if (is_array($potongan)) {
-                $tersedia += $this->angka($potongan['amount'] ?? 0);
+            if (! is_array($potongan)) {
+                continue;
+            }
+
+            $invoiceId = $potongan['invoice_id'] ?? null;
+
+            if (blank($invoiceId)) {
+                continue;
+            }
+
+            $tertuju[(int) $invoiceId] = ($tertuju[(int) $invoiceId] ?? 0)
+                + $this->angka($potongan['amount'] ?? 0);
+        }
+
+        return $tertuju;
+    }
+
+    /** Potongan yang TIDAK menunjuk invoice mana pun. */
+    private function pooledDeductions(): float
+    {
+        $jumlah = 0.0;
+
+        foreach ($this->data['deductions'] ?? [] as $potongan) {
+            if (is_array($potongan) && blank($potongan['invoice_id'] ?? null)) {
+                $jumlah += $this->angka($potongan['amount'] ?? 0);
             }
         }
+
+        return $jumlah;
+    }
+
+    /**
+     * Bagikan uang yang masuk ke invoice, TERTUA DULU.
+     *
+     * Hampir selalu ini yang dimaksud: lunasi yang paling lama menunggu, lalu
+     * turun sampai uangnya habis. Yang benar-benar butuh keputusan manusia
+     * cuma kasus khusus -- pelanggan sedang komplain satu invoice, atau
+     * menyebut sendiri invoice mana yang ia bayar.
+     *
+     * Karena itu ini hanya MENGISIKAN, bukan mengunci. Setiap kotak tetap bisa
+     * diubah sesudahnya, dan penjaga keseimbangannya tidak berubah sama
+     * sekali: total alokasi tetap wajib sama dengan uang masuk ditambah
+     * seluruh potongannya.
+     *
+     * POTONGAN YANG MENUNJUK INVOICE DIDAHULUKAN. Ia dipasang lebih dulu ke
+     * invoicenya sendiri, baru sisa uangnya dibagi tertua-dulu. Tanpa langkah
+     * itu, potongan promo untuk invoice tertentu akan larut dan mendarat di
+     * invoice lain -- di mana pun uangnya kebetulan habis.
+     *
+     * Potongan yang TIDAK menunjuk invoice tetap dibagi bersama uang riilnya,
+     * dan itu memang benar untuk biaya bank: pelanggan bermaksud membayar
+     * penuh, banknya yang memotong di jalan.
+     */
+    public function autoAllocate(): void
+    {
+        $tertuju = $this->attachedDeductions();
+        $kantong = $this->angka($this->data['amount'] ?? 0) + $this->pooledDeductions();
 
         $alokasi = [];
 
         foreach ($this->getOutstandingInvoices() as $invoice) {
-            $ambil = max(min($tersedia, (float) $invoice->balance), 0);
-            $tersedia -= $ambil;
+            $sisa = (float) $invoice->balance;
+
+            // Potongan yang memang ditujukan ke invoice ini dipasang lebih
+            // dulu, dan tidak boleh melebihi tagihannya sendiri.
+            $dariPotongan = min($tertuju[$invoice->id] ?? 0, $sisa);
+            $sisa -= $dariPotongan;
+
+            $dariKantong = max(min($kantong, $sisa), 0);
+            $kantong -= $dariKantong;
 
             // Ditulis berpemisah ribuan supaya sama bentuknya dengan yang
             // diketik tangan; titiknya dibuang lagi saat disimpan.
-            $alokasi[$invoice->id] = number_format($ambil, 0, ',', '.');
+            $alokasi[$invoice->id] = number_format($dariPotongan + $dariKantong, 0, ',', '.');
         }
 
         $this->data['allocations'] = $alokasi;
@@ -360,6 +454,27 @@ class ReceivePayment extends Page
             return;
         }
 
+        // Potongan yang menunjuk sebuah invoice tidak boleh lebih besar
+        // daripada tagihan invoice itu sendiri. Kalau dibiarkan, kelebihannya
+        // akan diam-diam menutup tagihan invoice LAIN -- persis kekacauan yang
+        // hendak dihindari dengan menunjuknya.
+        foreach ($this->attachedDeductions() as $invoiceId => $jumlah) {
+            $invoice = $this->getOutstandingInvoices()->firstWhere('id', $invoiceId);
+
+            if ($invoice && $jumlah > (float) $invoice->balance + 0.01) {
+                Notification::make()->danger()
+                    ->title(__('Deduction is larger than the invoice it points to'))
+                    ->body(__('Deduction for :invoice is Rp :deduction while its outstanding balance is only Rp :balance.', [
+                        'invoice' => $invoice->invoice_number,
+                        'deduction' => number_format($jumlah, 0, ',', '.'),
+                        'balance' => number_format((float) $invoice->balance, 0, ',', '.'),
+                    ]))
+                    ->send();
+
+                return;
+            }
+        }
+
         if (abs($totalAvailable - $totalAllocated) > 0.01) {
             Notification::make()->danger()
                 ->title(__('Allocation does not balance'))
@@ -387,8 +502,10 @@ class ReceivePayment extends Page
 
             // 2. Insert Deductions
             foreach ($deductions as $deduction) {
-                if ((float)$deduction['amount'] > 0) {
+                if ((float) $deduction['amount'] > 0) {
                     $payment->deductions()->create([
+                        'type' => $deduction['type'] ?? \App\Models\PaymentDeduction::TYPE_OTHER,
+                        'invoice_id' => $deduction['invoice_id'] ?? null,
                         'description' => $deduction['description'],
                         'amount' => $deduction['amount'],
                     ]);
