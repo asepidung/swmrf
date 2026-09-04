@@ -963,5 +963,8 @@
     "This barcode was never shipped by us.": "Barcode ini tidak pernah kita kirim.",
     "Returning :returned kg of :product is more than the :billed kg billed on invoice :invoice.": "Mengembalikan :returned kg :product melebihi :billed kg yang ditagihkan invoice :invoice.",
     "This return reduces :invoices.": "Retur ini memotong :invoices.",
-    "Part of this return is not attached to any invoice yet; it will reduce the invoice made for its delivery order.": "Sebagian retur ini belum menempel ke invoice mana pun; ia akan memotong invoice yang dibuat untuk surat jalannya."
+    "Part of this return is not attached to any invoice yet; it will reduce the invoice made for its delivery order.": "Sebagian retur ini belum menempel ke invoice mana pun; ia akan memotong invoice yang dibuat untuk surat jalannya.",
+    "Quantity Lost": "Jumlah Hilang",
+    "Not valued yet, waiting for cost price": "Belum dinilai, menunggu harga pokok",
+    "Delivery shrinkage on :document": "Susut kirim pada :document"
 }

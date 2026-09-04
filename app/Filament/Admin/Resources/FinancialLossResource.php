@@ -104,9 +104,34 @@ class FinancialLossResource extends Resource
                     ->badge()
                     ->color('info'),
 
+                // Berapa BANYAK yang hilang, di sebelah berapa rupiahnya.
+                //
+                // Susut kirim tahu persis kilogramnya tetapi belum tahu
+                // rupiahnya -- menilainya butuh HPP, dan HPP menunggu B.O.M.
+                // Tanpa kolom ini satu-satunya jejak kuantitasnya ada di dalam
+                // kalimat catatan, tidak bisa dijumlah maupun diurut.
+                Tables\Columns\TextColumn::make('quantity')
+                    ->label(__('Quantity Lost'))
+                    ->alignRight()
+                    ->placeholder('-')
+                    ->formatStateUsing(fn ($state, $record): string => $state === null
+                        ? '-'
+                        : number_format((float) $state, 2, ',', '.').' '.($record->unit ?? ''))
+                    ->sortable()
+                    ->summarize([
+                        Tables\Columns\Summarizers\Sum::make()
+                            ->numeric(decimalPlaces: 2)
+                            ->label(__('Total')),
+                    ]),
+
                 Tables\Columns\TextColumn::make('amount')
                     ->label(__('Total Loss'))
                     ->money('IDR', locale: 'id')
+                    // Nol yang berarti "belum dinilai" tidak boleh terbaca sama
+                    // dengan nol yang berarti "memang tidak rugi".
+                    ->description(fn ($record): ?string => $record->isNotPricedYet()
+                        ? __('Not valued yet, waiting for cost price')
+                        : null)
                     ->sortable()
                     ->weight('bold')
                     ->color('danger')

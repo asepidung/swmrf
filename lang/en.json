@@ -963,5 +963,8 @@
     "This barcode was never shipped by us.": "This barcode was never shipped by us.",
     "Returning :returned kg of :product is more than the :billed kg billed on invoice :invoice.": "Returning :returned kg of :product is more than the :billed kg billed on invoice :invoice.",
     "This return reduces :invoices.": "This return reduces :invoices.",
-    "Part of this return is not attached to any invoice yet; it will reduce the invoice made for its delivery order.": "Part of this return is not attached to any invoice yet; it will reduce the invoice made for its delivery order."
+    "Part of this return is not attached to any invoice yet; it will reduce the invoice made for its delivery order.": "Part of this return is not attached to any invoice yet; it will reduce the invoice made for its delivery order.",
+    "Quantity Lost": "Quantity Lost",
+    "Not valued yet, waiting for cost price": "Not valued yet, waiting for cost price",
+    "Delivery shrinkage on :document": "Delivery shrinkage on :document"
 }

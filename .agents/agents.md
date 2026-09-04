@@ -2584,6 +2584,11 @@ potongannya dobel. Bukti terima hanya menyimpan total per produk, bukan per
 barcode, jadi tidak ada data yang bisa membedakannya. Menutupnya berarti membuat
 Rejections satu-satunya jalan menolak box -- pekerjaan tersendiri.
 
+**Nota returnya memuat harga**, dikelompokkan per invoice, karena retur
+terjadi H+1 atau lebih -- sering sesudah invoicenya terbit dan berada di tangan
+pelanggan. Selama masih Draft dokumennya tidak memuat angka uang sama sekali:
+nol di dokumen pelanggan terbaca "gratis", bukan "belum dihitung".
+
 Untuk diingat: **ada DUA pintu barang kembali**, dan keduanya benar.
 
 | | Rejections (Approve DO) | Sales Return |
@@ -2601,6 +2606,33 @@ kembali otomatis saat retur di-unlock. Uangnya menjadi deposit dan dipakai lagi
 lewat halaman Terima Pembayaran, sama seperti lebih bayar biasa. Memasangnya
 kembali berarti menebak pembayaran mana yang dulu menutup invoice mana,
 padahal jejaknya sudah tidak ada.
+
+### Kerugian menyimpan JUMLAH, bukan hanya rupiah -- 4 September 2026
+
+Susut kirim di halaman Approve DO sudah dicatat sejak lama, tetapi rupiahnya
+DIPAKU NOL dan kilogramnya hanya ada di dalam kalimat catatan. Laporan kerugian
+menampilkan Rp 0 untuk tiap susut kirim, dan angka kg-nya tidak bisa dijumlah,
+disaring, atau diurut.
+
+`financial_losses` sekarang punya `quantity` dan `unit`. Susut kirim mengisinya;
+`amount` MASIH nol dan itu disengaja.
+
+**Kenapa bukan dinilai sekarang.** Menilai susut kirim dengan harga jual
+melebih-lebihkan -- perusahaan tidak kehilangan sebesar harga jual, melainkan
+sebesar modalnya ditambah margin yang tidak jadi didapat. Angka yang benar HPP,
+dan HPP menunggu B.O.M. Project Owner memilih memindahkan kuantitasnya sekarang
+supaya saat HPP tiba rupiahnya tinggal `quantity x HPP` dari kolom yang sama,
+tanpa menggali ulang ratusan catatan lama.
+
+**Yang harus disadari:** sampai HPP ada, laporan kerugian TETAP menampilkan
+Rp 0 untuk susut kirim. Kolom ini tidak membuat uangnya benar, ia membuat
+datanya siap. `FinancialLoss::isNotPricedYet()` membedakan nol yang berarti
+"belum dinilai" dari nol yang berarti "memang tidak rugi", dan tabelnya
+menuliskan bedanya.
+
+Cattle Weighing memakai kolom yang sama. Ia sudah menghitung rupiahnya tetapi
+membuang berat susutnya begitu saja -- dua modul kerugian di satu aplikasi yang
+menyimpan hal berbeda.
 
 ### Yang belum sempat diperiksa di jahitan Payable
 

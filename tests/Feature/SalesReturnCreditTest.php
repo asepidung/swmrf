@@ -787,6 +787,55 @@ class SalesReturnCreditTest extends TestCase
         $this->assertSame(0.0, (float) $invoice->fresh()->balance);
     }
 
+    // =====================================================================
+    // Nota retur yang dipegang pelanggan
+    // =====================================================================
+
+    /**
+     * Dokumen returnya menyebut nilainya DAN invoice mana yang dipotong.
+     *
+     * Project Owner, 4 September 2026: "kalo mau dikasih harga juga gak
+     * apa-apa deh ... soalnya ini buat dokumen customer kan". Retur terjadi
+     * H+1 atau lebih -- sering sesudah invoicenya terbit dan berada di tangan
+     * pelanggan -- jadi mereka butuh dokumen yang menerangkan tagihan mana
+     * yang berkurang berapa.
+     */
+    public function test_the_printed_return_note_states_its_value_and_the_bill_it_reduces(): void
+    {
+        $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000, 'diskon' => 0]]);
+        $invoice = $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
+
+        $retur = $this->retur([['produk' => $this->sirloin, 'berat' => 20]]);
+        $retur->approve();
+
+        $this->get(route('sales-return.pdf', $retur->fresh()))
+            ->assertOk()
+            ->assertSee($retur->return_number)
+            ->assertSee($invoice->invoice_number)
+            ->assertSee('2.000.000')
+            ->assertSee('Nilai retur');
+    }
+
+    /**
+     * Selama masih Draft harganya BELUM ADA, dan dokumennya tidak memuat nol.
+     *
+     * Angka nol di dokumen pelanggan terbaca sebagai "gratis", bukan sebagai
+     * "belum dihitung".
+     */
+    public function test_a_draft_return_note_carries_no_money_at_all(): void
+    {
+        $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000, 'diskon' => 0]]);
+        $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
+
+        $retur = $this->retur([['produk' => $this->sirloin, 'berat' => 20]]);
+
+        $this->get(route('sales-return.pdf', $retur))
+            ->assertOk()
+            ->assertSee($retur->return_number)
+            ->assertDontSee('Nilai retur')
+            ->assertDontSee('Price / Kg');
+    }
+
     /**
      * Dua retur pada invoice yang sama dijumlahkan, tidak saling menimpa.
      */

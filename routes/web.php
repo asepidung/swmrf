@@ -215,7 +215,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     })->name('sales-return.label');
 
     Route::get('/print/sales-return/{record}', function (\App\Models\SalesReturn $record) {
-        $record->load(['customer', 'items.product']);
+        $record->load(['customer', 'items.product', 'items.invoice', 'deliveryOrder']);
         return view('print.sales-return', compact('record'));
     })->name('sales-return.pdf');
 

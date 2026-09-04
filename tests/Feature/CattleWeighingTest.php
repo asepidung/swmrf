@@ -119,6 +119,15 @@ class CattleWeighingTest extends TestCase
         $this->assertNotNull($loss);
         $this->assertEquals(10 * 55000, $loss->amount);
         $this->assertSame('Cattle Weighing', $loss->transaction_type);
+
+        // Beratnya ikut disimpan, bukan dibuang sesudah dikalikan. Rupiahnya
+        // saja tidak menjawab "berapa kilo yang hilang bulan ini", dan
+        // kolomnya dipakai bersama dengan susut kirim.
+        $this->assertEquals(10.0, (float) $loss->quantity);
+        $this->assertSame('Kg', $loss->unit);
+
+        // Yang ini SUDAH dinilai, jadi tidak boleh dianggap menunggu harga.
+        $this->assertFalse($loss->isNotPricedYet());
     }
 
     /** Sapi yang justru bertambah berat tidak menghasilkan kerugian. */
