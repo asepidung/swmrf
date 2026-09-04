@@ -932,5 +932,7 @@
     "Other": "Other",
     "For all invoices": "For all invoices",
     "Deduction is larger than the invoice it points to": "Deduction is larger than the invoice it points to",
-    "Deduction for :invoice is Rp :deduction while its outstanding balance is only Rp :balance.": "Deduction for :invoice is Rp :deduction while its outstanding balance is only Rp :balance."
+    "Deduction for :invoice is Rp :deduction while its outstanding balance is only Rp :balance.": "Deduction for :invoice is Rp :deduction while its outstanding balance is only Rp :balance.",
+    ":kind on :number: :note": ":kind on :number: :note",
+    "For Invoice": "For Invoice"
 }
