@@ -170,48 +170,6 @@ class BoningResource extends Resource
                     ->badge()
                     ->color('info'),
 
-                // Berat karkas yang masuk sudah tercatat di `carcass_items`
-                // sejak lama -- per ekor, sebagai belahan A, belahan B, kulit,
-                // dan buntut. Yang tidak ada hanyalah satu baris kode yang
-                // membacanya: sampai 4 September 2026 kata `weight` cuma
-                // muncul SEKALI di berkas ini, dan itu pun `->weight('bold')`.
-                Tables\Columns\TextColumn::make('berat_karkas')
-                    ->label(__('Carcass In'))
-                    ->state(fn (Boning $record): float => $record->inputWeight())
-                    ->numeric(2)
-                    ->alignRight()
-                    ->suffix(' Kg'),
-
-                Tables\Columns\TextColumn::make('berat_hasil')
-                    ->label(__('Products Out'))
-                    ->state(fn (Boning $record): float => $record->outputWeight())
-                    ->numeric(2)
-                    ->alignRight()
-                    ->suffix(' Kg'),
-
-                Tables\Columns\TextColumn::make('susut')
-                    ->label(__('Susut'))
-                    ->state(function (Boning $record): string {
-                        $persen = $record->shrinkPercent();
-
-                        // Karkasnya belum dipilih berarti dokumennya belum
-                        // selesai dibuat -- bukan keadaan yang sah untuk
-                        // dikunci. Yang ditulis alasannya, bukan tanda hubung
-                        // yang bisa berarti apa saja.
-                        if ($persen === null) {
-                            return __('No carcass');
-                        }
-
-                        return number_format($record->shrinkWeight(), 2, ',', '.')
-                            .' Kg ('.number_format($persen, 2, ',', '.').'%)';
-                    })
-                    ->alignRight()
-                    ->badge()
-                    ->color(fn (Boning $record): string => $record->isWithinShrinkLimit() ? 'gray' : 'danger')
-                    ->description(fn (Boning $record): ?string => $record->shrinkLimitWasOverridden()
-                        ? __('Approved by :name', ['name' => $record->yieldOverriddenBy?->name ?? '-'])
-                        : null),
-
                 Tables\Columns\TextColumn::make('user.name')
                     ->label(__('Created By'))
                     ->sortable(),
@@ -267,30 +225,9 @@ class BoningResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading(__('Lock Boning Data'))
                     ->modalDescription(__('Are you sure you want to lock this data? Once locked, you cannot modify it.'))
-                    // Susut di luar batas TIDAK membuang dokumennya dan tidak
-                    // menyembunyikan tombolnya. Tombolnya mati dengan
-                    // keterangan, supaya yang mengerjakan tahu ia sedang
-                    // menunggu siapa. Bentuknya sama persis dengan Repack.
-                    ->disabled(fn (Boning $record): bool => ! $record->isWithinShrinkLimit()
-                        && ! (auth()->user()?->hasPermission('override_boning_yield') ?? false))
-                    ->form(fn (Boning $record): array => $record->isWithinShrinkLimit() ? [] : [
-                        Forms\Components\Placeholder::make('ringkasan')
-                            ->label(__('Shrinkage'))
-                            ->content(fn (): string => number_format($record->shrinkWeight(), 2, ',', '.')
-                                .' Kg ('.number_format((float) $record->shrinkPercent(), 2, ',', '.').'%) '
-                                .__('of the :limit% limit', [
-                                    'limit' => number_format((float) Boning::shrinkLimitPercent(), 2, ',', '.'),
-                                ])),
-
-                        Forms\Components\Textarea::make('yield_override_reason')
-                            ->label(__('Reason for approving beyond the limit'))
-                            ->required()
-                            ->maxLength(500)
-                            ->rows(3),
-                    ])
-                    ->action(function (Boning $record, array $data) {
+                    ->action(function (Boning $record) {
                         try {
-                            $record->lock($data['yield_override_reason'] ?? null);
+                            $record->lock();
                         } catch (\Throwable $e) {
                             Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
 
