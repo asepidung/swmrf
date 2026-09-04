@@ -29,6 +29,29 @@ class FoundItemScanner extends Page implements HasForms, HasTable
 
     protected static ?string $navigationIcon = 'heroicon-o-viewfinder-circle';
     protected static ?string $cluster = BeefStocks::class;
+
+    /**
+     * Halaman ini MENCETAK STOK, jadi izinnya sendiri.
+     *
+     * Ia membuat baris `BeefStock` baru dari isian orang -- barang yang
+     * ditemukan di gudang tetapi tidak pernah tercatat. Itu satu-satunya
+     * tempat di aplikasi ini yang menambah persediaan tanpa dokumen asal.
+     *
+     * Sebelumnya ia hanya dijaga gerbang clusternya, yang berisi izin MELIHAT:
+     * `view_beef_stocks`, `view_beef_stock_movements`, atau
+     * `view_beef_stock_aging`. Artinya siapa pun yang boleh melihat stok juga
+     * boleh mencetaknya. Melihat dan mencetak dua kewenangan yang berbeda --
+     * bentuk yang sama sudah ditambal pada Approve retur dan Lock repack.
+     */
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasPermission('record_found_items') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
+    }
     protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
     protected static ?int $navigationSort = 4;
 
@@ -248,12 +271,32 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                 $pcsStr = str_pad($pcs, 2, '0', STR_PAD_LEFT);
                 $phStr = isset($data['ph_level']) ? str_pad(round($data['ph_level'] * 10), 2, '0', STR_PAD_LEFT) : '00';
 
+                // Urutan barcode barang temuan.
+                //
+                // Bentuk lamanya memuat tiga hal yang sudah diberantas di
+                // `InputReturnItems` pada #230, dan ternyata hidup juga di
+                // sini:
+                //
+                //  - PANJANG barcode dipakai sebagai penanda sah (`>= 26`).
+                //    Project Owner sudah menegaskan tidak semua barcode 26
+                //    karakter, jadi panjangnya tidak pernah boleh menjadi
+                //    tanda benar atau salah;
+                //  - `substr(-4)` memotong tepat empat karakter terakhir,
+                //    sehingga urutan ke-10.000 terbaca `0000` dan penomorannya
+                //    mulai dari 1 lagi;
+                //  - `orderBy('barcode', 'desc')` mengurutkan sebagai TEKS,
+                //    bukan angka.
+                //
+                // Sekarang urutannya dibaca dari bagian sesudah awalannya dan
+                // yang diambil yang TERBESAR.
                 $prefix = $origin . $dateStr;
-                $latestItem = BeefStock::where('barcode', 'like', $prefix . '%')
-                    ->orderBy('barcode', 'desc')
-                    ->first();
-                
-                $counter = ($latestItem && strlen($latestItem->barcode) >= 26) ? ((int) substr($latestItem->barcode, -4) + 1) : 1;
+
+                $counter = BeefStock::where('barcode', 'like', $prefix . '%')
+                    ->pluck('barcode')
+                    ->map(fn (string $lama): int => (int) substr($lama, -4))
+                    ->max();
+
+                $counter = ($counter ?? 0) + 1;
                 $counterStr = str_pad($counter, 4, '0', STR_PAD_LEFT);
 
                 $finalBarcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;

@@ -94,17 +94,17 @@ class ScanMutation extends Page implements HasForms, HasTable
                     ->exists();
 
                 if ($alreadyScanned) {
-                    throw new \Exception('Barcode sudah di-scan di mutasi ini!');
+                    throw new \Exception(__('This barcode has already been scanned on this mutation.'));
                 }
 
                 $stock = BeefStock::where('barcode', $barcode)->lockForUpdate()->first();
 
                 if (!$stock) {
-                    throw new \Exception('Barang tidak ditemukan di stok!');
+                    throw new \Exception(__('This item is not in stock.'));
                 }
 
                 if ($stock->warehouse_id !== $this->record->from_warehouse_id) {
-                    throw new \Exception('Barang ini bukan dari Gudang Asal mutasi!');
+                    throw new \Exception(__('This item does not belong to the source warehouse of this mutation.'));
                 }
 
                 MutationItem::create([
@@ -138,9 +138,9 @@ class ScanMutation extends Page implements HasForms, HasTable
                 $stock->delete();
             });
 
-            Notification::make()->title('Sukses ditambahkan')->success()->send();
+            Notification::make()->title(__('Barcode scanned'))->success()->send();
         } catch (\Exception $e) {
-            Notification::make()->title('Gagal Scan')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
         }
         
         $this->dispatch('focus-barcode');
@@ -164,8 +164,8 @@ class ScanMutation extends Page implements HasForms, HasTable
                 Tables\Actions\DeleteAction::make()
                     ->label('')
                     ->icon('heroicon-o-trash')
-                    ->tooltip('Delete')
-                    ->successNotificationTitle('Barang dihapus & dikembalikan ke IN_STOCK'),
+                    ->tooltip(__('Delete'))
+                    ->successNotificationTitle(__('Item removed and returned to stock')),
             ])
             ->defaultSort('created_at', 'desc');
     }
@@ -182,9 +182,25 @@ class ScanMutation extends Page implements HasForms, HasTable
                 ->color('success')
                 ->icon('heroicon-o-check-circle')
                 ->requiresConfirmation()
+                // Mutasi KOSONG tidak bisa dikirim.
+                //
+                // Tanpa penjagaan ini, dokumen tanpa satu pun barang bisa
+                // berstatus SENT, lalu diterima di gudang tujuan, lalu
+                // selesai -- dokumen lengkap yang tidak memindahkan apa pun.
+                ->disabled(fn (): bool => $this->record->items()->doesntExist())
                 ->action(function () {
+                    if ($this->record->items()->doesntExist()) {
+                        Notification::make()
+                            ->title(__('Nothing has been scanned yet'))
+                            ->body(__('Scan at least one item before sending this mutation.'))
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
+
                     $this->record->update(['status' => 'SENT']);
-                    Notification::make()->title('Mutasi dikunci & dikirim')->success()->send();
+                    Notification::make()->title(__('Mutation locked and sent'))->success()->send();
                     $this->redirect(MutationResource::getUrl('view', ['record' => $this->record->id]));
                 }),
         ];

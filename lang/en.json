@@ -1004,5 +1004,12 @@
     "Leave it empty if you do not want to change your password.": "Leave it empty if you do not want to change your password.",
     "Profile updated successfully": "Profile updated successfully",
     ":label cannot be deleted": ":label cannot be deleted",
-    "It is still used by existing documents. Deactivate it instead — it will stop appearing in new documents while the old ones stay readable.": "It is still used by existing documents. Deactivate it instead — it will stop appearing in new documents while the old ones stay readable."
+    "It is still used by existing documents. Deactivate it instead — it will stop appearing in new documents while the old ones stay readable.": "It is still used by existing documents. Deactivate it instead — it will stop appearing in new documents while the old ones stay readable.",
+    "Nothing has been scanned yet": "Nothing has been scanned yet",
+    "Scan at least one item before sending this mutation.": "Scan at least one item before sending this mutation.",
+    "Mutation locked and sent": "Mutation locked and sent",
+    "This barcode has already been scanned on this mutation.": "This barcode has already been scanned on this mutation.",
+    "This item is not in stock.": "This item is not in stock.",
+    "This item does not belong to the source warehouse of this mutation.": "This item does not belong to the source warehouse of this mutation.",
+    "Item removed and returned to stock": "Item removed and returned to stock"
 }
