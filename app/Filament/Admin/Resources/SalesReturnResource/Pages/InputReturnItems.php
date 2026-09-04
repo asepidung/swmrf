@@ -297,20 +297,35 @@ class InputReturnItems extends Page implements HasForms, HasTable
             // di gudang bisa "diretur" lalu masuk stok untuk kedua kalinya.
             // ------------------------------------------------------------------
 
-            // SATU: benarkah barang ini yang kita kirim pada surat jalan INI?
+            // SATU: barang ini benar-benar pernah KITA kirim?
             //
             // Tally adalah penyiapan barang untuk dikirim, dan tiap surat jalan
             // lahir dari satu tally. Jadi pertanyaannya dijawab dengan mencari
-            // barcodenya di tally milik surat jalan retur ini -- bukan di
-            // seluruh tally yang pernah ada.
+            // barcodenya di tally.
+            //
+            // Yang dicari TIDAK LAGI dibatasi pada tally milik surat jalan
+            // retur ini. Project Owner, 4 September 2026: pelanggan sebesar
+            // Lion Superindo mengembalikan barang dari BEBERAPA kiriman
+            // sekaligus, dan justru untuk itulah retur tanpa surat jalan
+            // disediakan. Membatasinya pada satu surat jalan membuat retur
+            // semacam itu tidak bisa dipindai sama sekali.
             $tally = $this->record->deliveryOrder?->tally;
 
             $tallyItem = $tally
+                // Kalau returnya MENYEBUT sebuah surat jalan, barangnya wajib
+                // dari sana. Penjagaannya tidak dilonggarkan, hanya tidak lagi
+                // dipaksakan pada retur yang memang tidak menyebut apa pun.
                 ? TallyItem::where('tally_id', $tally->id)->where('barcode', $barcode)->first()
-                : null;
+                // Tanpa surat jalan: tally MANA PUN, dan yang diambil yang
+                // TERBARU. Barcode unik per tally, bukan global -- satu karton
+                // yang pernah diretur lalu dikirim lagi memakai barcode yang
+                // sama, dan yang sedang dikembalikan tentu kiriman terakhirnya.
+                : TallyItem::where('barcode', $barcode)->orderByDesc('tally_id')->first();
 
             if (! $tallyItem) {
-                throw new \Exception(__('This barcode was not on the delivery note being returned.'));
+                throw new \Exception($tally
+                    ? __('This barcode was not on the delivery note being returned.')
+                    : __('This barcode was never shipped by us.'));
             }
 
             // DUA: barangnya memang sedang TIDAK di gudang?

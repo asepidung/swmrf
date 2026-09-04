@@ -118,24 +118,51 @@ class Invoice extends Model
         return $this->hasOne(Receivable::class, 'invoice_id');
     }
 
-    /** Retur penjualan yang memotong invoice ini. */
-    public function salesReturns(): HasMany
+    /**
+     * Karton retur yang memotong invoice ini.
+     *
+     * Tautannya di KARTONNYA, bukan di returnya. Satu retur boleh memuat
+     * barang dari beberapa kiriman sekaligus -- dan karena itu memotong
+     * beberapa invoice sekaligus. Lihat catatan di
+     * `SalesReturnItem::deliveryItWasShippedOn()`.
+     */
+    public function returnedItems(): HasMany
     {
-        return $this->hasMany(SalesReturn::class, 'invoice_id');
+        return $this->hasMany(SalesReturnItem::class, 'invoice_id');
     }
 
     /**
      * Berapa yang dikembalikan pelanggan, dalam rupiah.
      *
-     * Hanya retur yang SUDAH DISETUJUI. Retur yang masih Draft belum
-     * menggerakkan apa pun -- barangnya belum masuk stok, jadi uangnya pun
-     * belum boleh memotong tagihan.
+     * Hanya karton dari retur yang SUDAH DISETUJUI. Retur yang masih Draft
+     * belum menggerakkan apa pun -- barangnya belum masuk stok, jadi uangnya
+     * pun belum boleh memotong tagihan.
      */
     public function returnedAmount(): float
     {
-        return round((float) $this->salesReturns()
-            ->where('status', 'Approved')
-            ->sum('credit_amount'), 2);
+        return round((float) $this->returnedItems()
+            ->whereHas('salesReturn', fn ($q) => $q->where('status', 'Approved'))
+            ->sum('line_amount'), 2);
+    }
+
+    /**
+     * Berat yang sudah dikembalikan untuk satu produk.
+     *
+     * Dipakai penjaga batas: pelanggan tidak bisa mengembalikan lebih banyak
+     * daripada yang pernah ditagihkan kepadanya.
+     */
+    public function returnedWeightFor(int $productId): float
+    {
+        return round((float) $this->returnedItems()
+            ->where('product_id', $productId)
+            ->whereHas('salesReturn', fn ($q) => $q->where('status', 'Approved'))
+            ->sum('weight'), 2);
+    }
+
+    /** Berat yang ditagihkan invoice ini untuk satu produk. */
+    public function billedWeightFor(int $productId): float
+    {
+        return round((float) $this->items()->where('product_id', $productId)->sum('weight'), 2);
     }
 
     /**
@@ -185,11 +212,31 @@ class Invoice extends Model
             return;
         }
 
-        SalesReturn::query()
-            ->where('delivery_order_id', $deliveryOrderId)
-            ->where('status', 'Approved')
+        // Yang dicari KARTONNYA, bukan returnya -- dan lewat barcodenya,
+        // bukan lewat surat jalan yang tertulis di returnya. Retur lintas
+        // pengiriman punya barang dari beberapa surat jalan sekaligus, jadi
+        // yang menentukan adalah asal tiap karton.
+        $menunggu = SalesReturnItem::query()
             ->whereNull('invoice_id')
-            ->update(['invoice_id' => $this->getKey()]);
+            ->whereHas('salesReturn', fn ($q) => $q->where('status', 'Approved'))
+            ->get()
+            ->filter(fn (SalesReturnItem $item): bool =>
+                $item->originDelivery()?->getKey() === $deliveryOrderId);
+
+        if ($menunggu->isEmpty()) {
+            return;
+        }
+
+        foreach ($menunggu as $item) {
+            $item->forceFill(['invoice_id' => $this->getKey()])->save();
+        }
+
+        // Harganya dihitung ulang dari invoice yang baru terbit ini. Waktu
+        // returnya disetujui invoicenya belum ada, jadi harganya diambil dari
+        // Sales Order; sekarang sumber yang lebih tepat sudah tersedia.
+        foreach ($menunggu->pluck('salesReturn')->unique('id') as $retur) {
+            $retur->refresh()->attachToBill();
+        }
 
         $this->settleAfterCreditNote();
     }
@@ -394,9 +441,9 @@ class Invoice extends Model
 
                 // Nota returnya dilepaskan, bukan ikut terhapus. Barangnya
                 // sudah benar-benar kembali ke gudang; yang hilang hanya
-                // invoice yang dipotongnya. Retur yang dilepas akan memungut
-                // sendiri invoice pengganti untuk surat jalan yang sama.
-                $model->salesReturns()->update(['invoice_id' => null]);
+                // invoice yang dipotongnya. Karton yang dilepas akan dipungut
+                // sendiri oleh invoice pengganti untuk surat jalan yang sama.
+                $model->returnedItems()->update(['invoice_id' => null]);
             }
         });
 

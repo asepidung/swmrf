@@ -95,10 +95,18 @@ class SalesReturnResource extends Resource
                     ->money('IDR', locale: 'id')
                     ->alignRight()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('invoice.invoice_number')
+                // Satu retur bisa memotong BEBERAPA invoice: pelanggan
+                // mengembalikan barang dari beberapa kiriman dalam satu kali
+                // jalan. Karena itu yang ditampilkan daftar, bukan satu nomor.
+                Tables\Columns\TextColumn::make('invoice_numbers')
                     ->label(__('Reduces Invoice'))
                     ->placeholder(__('Not billed yet'))
-                    ->searchable()
+                    ->state(fn (SalesReturn $record): ?string => $record->items
+                        ->pluck('invoice.invoice_number')
+                        ->filter()
+                        ->unique()
+                        ->join(', ') ?: null)
+                    ->wrap()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('note')
                     ->label(__('Note'))
@@ -120,6 +128,7 @@ class SalesReturnResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('items.invoice'))
             ->defaultSort('created_at', 'desc')
             ->filters([
                 TrashedFilter::make()

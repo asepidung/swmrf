@@ -397,6 +397,70 @@ class SalesReturnTest extends TestCase
     }
 
     /**
+     * Retur TANPA surat jalan bisa dipindai, dan barangnya ketemu sendiri.
+     *
+     * Project Owner, 4 September 2026: pelanggan sebesar Lion Superindo
+     * mengembalikan barang dari beberapa kiriman sekaligus, dan justru untuk
+     * itulah retur "Unidentified Delivery" disediakan.
+     *
+     * Sebelumnya penjaganya mencari tally lewat surat jalan RETURNYA. Retur
+     * tanpa surat jalan tidak punya tally, jadi barcode apa pun ditolak dan
+     * fitur itu tidak berfungsi sama sekali.
+     */
+    public function test_a_return_without_a_delivery_note_can_still_be_scanned(): void
+    {
+        $this->suratJalan('BARCODE-A');
+        $retur = $this->retur(null);
+        $this->bolehMemakaiHalamanInput();
+
+        Livewire::test(InputReturnItems::class, ['record' => $retur])
+            ->set('dataScan.barcode', 'BARCODE-A')
+            ->call('processScan');
+
+        $this->assertDatabaseHas('sales_return_items', [
+            'sales_return_id' => $retur->id,
+            'barcode' => 'BARCODE-A',
+        ]);
+    }
+
+    /**
+     * Tapi barcode yang TIDAK PERNAH kita kirim tetap ditolak.
+     *
+     * Melonggarkan penjaganya untuk retur tanpa surat jalan tidak boleh
+     * berarti apa saja boleh masuk stok.
+     */
+    public function test_a_barcode_we_never_shipped_is_refused_even_without_a_delivery_note(): void
+    {
+        $this->suratJalan('BARCODE-A');
+        $retur = $this->retur(null);
+        $this->bolehMemakaiHalamanInput();
+
+        Livewire::test(InputReturnItems::class, ['record' => $retur])
+            ->set('dataScan.barcode', 'BARCODE-KARANGAN')
+            ->call('processScan');
+
+        $this->assertSame(0, $retur->items()->count());
+    }
+
+    /**
+     * Kalau returnya MENYEBUT surat jalan, barangnya wajib dari sana.
+     */
+    public function test_naming_a_delivery_note_still_refuses_goods_from_another_one(): void
+    {
+        $do = $this->suratJalan('BARCODE-A');
+        $this->suratJalan('BARCODE-LAIN');
+
+        $retur = $this->retur($do);
+        $this->bolehMemakaiHalamanInput();
+
+        Livewire::test(InputReturnItems::class, ['record' => $retur])
+            ->set('dataScan.barcode', 'BARCODE-LAIN')
+            ->call('processScan');
+
+        $this->assertSame(0, $retur->items()->count());
+    }
+
+    /**
      * Bawaannya gudang tempat barang itu keluar -- tebakan, bukan keputusan.
      *
      * Gudangnya dulu dipaku ke angka 1, sehingga tiap retur menumpuk di satu

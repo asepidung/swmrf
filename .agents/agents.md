@@ -2530,6 +2530,72 @@ bahwa ia belum berharga.
 Barangnya sudah benar-benar kembali ke gudang; yang hilang cuma invoice yang
 dipotongnya, dan invoice pengganti untuk surat jalan yang sama memungutnya lagi.
 
+#### Koreksi 4 September 2026 sore: retur lintas pengiriman
+
+Dua koreksi Project Owner yang mengubah bentuknya.
+
+**Retur TIDAK terjadi sebelum invoice.** "retur itu terjadi bukan di hari kirim
+tapi h+1 setelah kirim atau lebih", dan "kadang retur itu terjadi malah seminggu
+setelahnya setelah invoice terbit". Jadi keadaan normalnya justru INVOICE SUDAH
+ADA, dan bisa juga sudah lunas. Jalur "retur menunggu invoice" tetap ada
+-- jendelanya sempit antara bukti terima hari-0 dan invoice H+1 -- tetapi ia
+pengecualian, bukan aturan.
+
+**Satu retur bisa dari BEBERAPA kiriman.** "kadang ada customer yang terlalu
+oper power contoh lion superindo, kadang dia retur dari beberapa kiriman,
+makanya di retur itu ada unindentified delivery".
+
+Andaian "satu retur = satu pengiriman = satu invoice" yang dipakai #234 salah,
+dan akibatnya retur tanpa surat jalan tidak berfungsi sama sekali: tidak bisa
+dipindai (penjaganya mencari tally lewat surat jalan returnya), dan tiap
+barisnya berharga nol tanpa gejala.
+
+**Sekarang tautan invoice ada di KARTONNYA**, bukan di returnya. Barcodenya
+yang menjawab: barcode -> tally -> surat jalan -> bukti terima -> invoice, lewat
+`SalesReturnItem::originDelivery()` dan `billItWasChargedOn()`. Satu retur bisa
+memotong beberapa invoice sekaligus, dan itu terbaca di daftar maupun di
+ringkasan barangnya.
+
+Barcode unik **per tally**, bukan global -- satu karton yang pernah diretur lalu
+dikirim lagi memakai barcode yang sama. Yang diambil **kiriman TERAKHIR**;
+itulah yang sedang dikembalikan. Dijaga
+`test_a_carton_shipped_twice_credits_its_latest_delivery`.
+
+Barang **timbang ulang** tidak punya jejak itu: ia diberi barcode BARU berawalan
+4 saat diretur, dan barcode baru tidak pernah ada di tally mana pun. Untuk
+barang semacam itu yang menjawab surat jalan yang tertulis di returnya. Itu
+sebabnya `originDelivery()` punya dua jawaban, bukan satu.
+
+**Penjaga barcode berubah bentuk**, dari "harus ada di DO ini" menjadi: pernah
+kita kirim (ada di suatu tally); dan kalau returnya menyebut sebuah surat jalan,
+tally itu harus miliknya. Melonggarkannya untuk retur tanpa surat jalan tidak
+berarti apa saja boleh masuk -- barcode karangan tetap ditolak.
+
+**Batas berat.** Total retur untuk satu produk pada satu invoice tidak boleh
+melebihi berat yang ditagihkan invoice itu, dan retur yang sudah disetujui
+sebelumnya ikut dihitung. Produk yang TIDAK ADA di invoice itu dilewati: ia
+memang berharga nol, dan menolak returnya berarti menahan barangnya di luar
+stok hanya karena uangnya nol.
+
+**TERBUKA -- lubang yang tidak bisa ditutup dari sisi retur.** Kalau sebuah box
+ditolak dengan cara MENURUNKAN "Received Weight" di halaman Approve DO alih-alih
+memakai tombol **Rejections**, lalu belakangan box itu dibuatkan Sales Return,
+potongannya dobel. Bukti terima hanya menyimpan total per produk, bukan per
+barcode, jadi tidak ada data yang bisa membedakannya. Menutupnya berarti membuat
+Rejections satu-satunya jalan menolak box -- pekerjaan tersendiri.
+
+Untuk diingat: **ada DUA pintu barang kembali**, dan keduanya benar.
+
+| | Rejections (Approve DO) | Sales Return |
+|---|---|---|
+| Kapan | ditolak SAAT dikirim, driver bawa pulang hari itu | sudah diterima pelanggan, dikembalikan H+1 atau lebih |
+| Stok | balik lewat hapus tally item (`DO_REJECT`) | balik lewat approve retur |
+| Uang | invoice belum pernah terbit, tidak ada yang dipotong | nota retur memotong invoice |
+
+Keduanya tidak bisa dobel: barang yang sudah lewat Rejections tally itemnya
+hilang (penjaga pertama menolak) dan barangnya ada di stok (penjaga kedua
+menolak).
+
 **Yang sengaja tidak dikerjakan:** alokasi yang sudah dilepas TIDAK dipasang
 kembali otomatis saat retur di-unlock. Uangnya menjadi deposit dan dipakai lagi
 lewat halaman Terima Pembayaran, sama seperti lebih bayar biasa. Memasangnya
