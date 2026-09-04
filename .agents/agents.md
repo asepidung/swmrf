@@ -1420,6 +1420,43 @@ dirancang untuk layar lebar dengan alat pemindai di tangan, bukan untuk HP.
 Keputusan Owner: pastikan nyaman di layar lebar, layar kecil ditangani nanti
 kalau memang perlu.
 
+### Potongan akhirnya punya rumah: MASUK seluruh tagihan, KELUAR potongannya
+
+**4 September 2026, keputusan Project Owner** -- jawaban atas pertanyaan
+nomor 2 dari lima yang lama menggantung.
+
+```
+masuk   6.000.000   seluruh tagihan yang lunas
+keluar    500.000   potongannya
+─────────────────
+saldo   5.500.000   sama dengan rekening sungguhan
+```
+
+**Usul pertamanya justru salah, dan sempat hampir dipakai:** mencatat MASUK
+5,5 juta lalu KELUAR 500 ribu membuat saldonya 5 juta, padahal di bank ada 5,5
+juta. Potongannya terhitung dua kali -- sekali karena tidak pernah masuk,
+sekali lagi karena dicatat keluar. Saldo rekening di sistem ini memang
+diturunkan dari `total masuk - total keluar`; lihat `BankAccount::currentBalance()`.
+
+Ini menutup dua lubang sekaligus:
+
+- **Potongan tidak lagi menguap.** Sebelumnya kas bertambah 5,5 juta, piutang
+  berkurang 6 juta, dan 500 ribunya tidak ke mana-mana -- tidak ada laporan
+  yang bisa menjawab "bulan ini biaya bank berapa, promo berapa". Sekarang
+  tinggal menjumlahkan baris keluarnya per jenis.
+- **Pembayaran yang SELURUHNYA potongan meninggalkan jejak.** Dulu baris buku
+  kas hanya dibuat kalau uang riilnya lebih dari nol, jadi tagihan yang
+  dilunasi penuh oleh promo lenyap dari piutang tanpa satu baris pun di buku
+  kas.
+
+**Harganya disepakati di muka:** rekening koran menampilkan SATU baris 5,5
+juta sementara buku kas menampilkan DUA. Karena itu kedua barisnya membawa
+NOMOR DOKUMEN YANG SAMA, supaya sekali lihat terbaca sebagai satu peristiwa
+dan bukan dua transfer. Ada test yang menjaga itu.
+
+Satu baris keluar PER POTONGAN, bukan satu baris gabungan -- jenisnya
+berbeda-beda, dan justru per jenis itulah yang nanti ditanyakan.
+
 ### Potongan pembayaran punya JENIS, dan boleh menunjuk satu invoice
 
 **4 September 2026.** Owner bertanya bagaimana potongan diperlakukan bila ada

@@ -169,8 +169,15 @@ class ReceivePayment extends Page
                                 // BERIKUTNYA, dan Livewire MEMBUAT ULANG kunci
                                 // baris yang sudah tidak ada. Itulah baris hantu
                                 // yang muncul saat tombol simpan ditekan.
+                                // Keempat field di baris ini WAJIB seragam
+                                // perlakuan labelnya. Dua di antaranya sempat
+                                // dibiarkan memakai label bawaan Filament --
+                                // "Type" dan "Invoice id" -- sementara yang lain
+                                // tidak berlabel sama sekali, sehingga barisnya
+                                // tidak sejajar dan setengahnya berbahasa
+                                // Inggris.
                                 Select::make('type')
-                                    ->placeholder(__('Deduction Type'))
+                                    ->label(__('Deduction Type'))
                                     ->options(\App\Models\PaymentDeduction::typeOptions())
                                     ->default(\App\Models\PaymentDeduction::TYPE_BANK_FEE)
                                     ->required()
@@ -188,6 +195,7 @@ class ReceivePayment extends Page
                                 // invoice lain hanya karena di situ uangnya
                                 // kebetulan habis.
                                 Select::make('invoice_id')
+                                    ->label(__('For Invoice'))
                                     ->placeholder(__('For all invoices'))
                                     ->options(fn (): array => $this->getOutstandingInvoices()
                                         ->mapWithKeys(fn ($invoice): array => [
@@ -199,14 +207,14 @@ class ReceivePayment extends Page
                                     ->columnSpan(2),
 
                                 TextInput::make('description')
+                                    ->label(__('Description'))
                                     ->placeholder(__('Deduction Description'))
                                     ->required()
                                     ->maxLength(255)
                                     ->live(onBlur: true)
                                     ->columnSpan(3),
                                 $this->money('amount')
-                                    ->hiddenLabel()
-                                    ->placeholder(__('Amount (Rp)'))
+                                    ->label(__('Amount (Rp)'))
                                     ->required()
                                     ->rules(['numeric', 'gt:0'])
                                     ->live(onBlur: true)
@@ -536,20 +544,65 @@ class ReceivePayment extends Page
                 }
             }
 
-            // 4. Update Bank Account Balance & Record Transaction
+            // 4. Buku kas: seluruh tagihan yang lunas MASUK, potongannya KELUAR.
+            //
+            // Keputusan Project Owner, 4 September 2026. Yang dicatat masuk
+            // adalah 6 juta -- seluruh tagihan yang benar-benar lunas -- lalu
+            // potongannya keluar 500 ribu. Selisihnya 5,5 juta, sama persis
+            // dengan uang yang ada di rekening.
+            //
+            // Usul pertamanya justru salah dan sempat hampir dipakai: mencatat
+            // MASUK 5,5 juta lalu KELUAR 500 ribu membuat saldonya 5 juta,
+            // padahal di bank ada 5,5 juta. Potongannya terhitung dua kali --
+            // sekali karena tidak pernah masuk, sekali lagi karena dicatat
+            // keluar.
+            //
+            // Inilah yang akhirnya memberi potongan sebuah RUMAH. Sebelumnya
+            // kas bertambah 5,5 juta, piutang berkurang 6 juta, dan 500 ribunya
+            // menguap tanpa satu pun tempat yang mencatatnya -- tidak ada
+            // laporan yang bisa menjawab "bulan ini biaya bank berapa, promo
+            // berapa".
+            //
+            // HARGANYA, dan ini disepakati di muka: rekening koran menampilkan
+            // SATU baris 5,5 juta sementara buku kas menampilkan DUA. Karena
+            // itu keduanya membawa nomor dokumen yang sama, supaya sekali lihat
+            // langsung terbaca sebagai satu peristiwa, bukan dua transfer.
             $bankAccount = BankAccount::find($data['bank_account_id']);
+
             // Saldo TIDAK ditulis ke master data. Ia dihitung dari baris
             // buku kas di bawah ini -- lihat BankAccount::currentBalance().
-            if ($bankAccount && $amountTransfer > 0) {
+            if ($bankAccount && $totalAvailable > 0) {
                 BankTransaction::create([
                     'bank_account_id' => $bankAccount->id,
-                    'type' => 'in', // Uang masuk
-                    'amount' => $amountTransfer,
+                    'type' => 'in',
+                    'amount' => $totalAvailable,
                     'reference_type' => Payment::class,
                     'reference_id' => $payment->id,
-                    'description' => "Penerimaan Pembayaran Piutang Grup: {$this->record->name} (No: {$payment->payment_number})",
+                    'description' => __('Receivable payment from :group (:number)', [
+                        'group' => $this->record->name,
+                        'number' => $payment->payment_number,
+                    ]),
                     'transaction_date' => $data['payment_date'],
                 ]);
+
+                // Satu baris keluar per potongan, bukan satu baris gabungan:
+                // jenisnya berbeda-beda, dan justru per jenis itulah yang
+                // nanti ditanyakan.
+                foreach ($payment->deductions as $deduction) {
+                    BankTransaction::create([
+                        'bank_account_id' => $bankAccount->id,
+                        'type' => 'out',
+                        'amount' => $deduction->amount,
+                        'reference_type' => \App\Models\PaymentDeduction::class,
+                        'reference_id' => $deduction->id,
+                        'description' => __(':kind on :number: :note', [
+                            'kind' => \App\Models\PaymentDeduction::typeLabel($deduction->type),
+                            'number' => $payment->payment_number,
+                            'note' => $deduction->description,
+                        ]),
+                        'transaction_date' => $data['payment_date'],
+                    ]);
+                }
             }
 
             DB::commit();

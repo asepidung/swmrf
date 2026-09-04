@@ -360,4 +360,117 @@ class ReceivableAutoAllocationTest extends TestCase
         $this->assertSame($satu->id, $potongan->invoice_id);
         $this->assertSame(0.0, (float) $satu->fresh()->balance, 'Tagihannya lunas oleh 500rb uang + 500rb promo.');
     }
+
+    /**
+     * Buku kas: seluruh tagihan yang lunas MASUK, potongannya KELUAR.
+     *
+     * Keputusan Project Owner, 4 September 2026. Yang penting dijaga di sini
+     * bukan dua barisnya, melainkan SELISIHNYA: saldo rekening harus tetap
+     * sama dengan uang yang benar-benar ada di bank.
+     *
+     * Usul pertamanya sempat hampir dipakai dan justru salah: mencatat MASUK
+     * 5,5 juta lalu KELUAR 500 ribu membuat saldonya 5 juta, padahal di bank
+     * ada 5,5 juta. Potongannya terhitung dua kali.
+     */
+    public function test_the_cash_book_records_the_settled_amount_in_and_the_deduction_out(): void
+    {
+        $invoice = $this->invoice(6000000, now()->subDays(10)->toDateString());
+
+        Livewire::test(ReceivePayment::class, ['record' => $this->group])
+            ->set('data.bank_account_id', $this->bank->id)
+            ->set('data.payment_date', now()->toDateString())
+            ->set('data.amount', '5.500.000')
+            ->set('data.deductions', [
+                'p1' => [
+                    'type' => \App\Models\PaymentDeduction::TYPE_BANK_FEE,
+                    'invoice_id' => null,
+                    'description' => 'Biaya admin bank',
+                    'amount' => '500.000',
+                ],
+            ])
+            ->call('autoAllocate')
+            ->call('save');
+
+        $masuk = \App\Models\BankTransaction::where('type', 'in')->sum('amount');
+        $keluar = \App\Models\BankTransaction::where('type', 'out')->sum('amount');
+
+        $this->assertSame(6000000.0, (float) $masuk, 'Yang masuk adalah seluruh tagihan yang lunas.');
+        $this->assertSame(500000.0, (float) $keluar, 'Potongannya tercatat keluar.');
+
+        $this->assertSame(
+            5500000.0,
+            $this->bank->fresh()->currentBalance(),
+            'Dan selisihnya harus sama dengan uang yang benar-benar ada di bank.',
+        );
+
+        $this->assertSame(0.0, (float) $invoice->fresh()->balance);
+    }
+
+    /**
+     * Kedua barisnya membawa nomor dokumen yang sama.
+     *
+     * Rekening koran menampilkan SATU baris, buku kas menampilkan DUA. Nomor
+     * yang sama itulah yang membuat keduanya terbaca sebagai satu peristiwa,
+     * bukan dua transfer yang tidak berhubungan.
+     */
+    public function test_both_cash_book_lines_carry_the_same_document_number(): void
+    {
+        $this->invoice(6000000, now()->subDays(10)->toDateString());
+
+        Livewire::test(ReceivePayment::class, ['record' => $this->group])
+            ->set('data.bank_account_id', $this->bank->id)
+            ->set('data.payment_date', now()->toDateString())
+            ->set('data.amount', '5.500.000')
+            ->set('data.deductions', [
+                'p1' => [
+                    'type' => \App\Models\PaymentDeduction::TYPE_PROMOTION,
+                    'invoice_id' => null,
+                    'description' => 'Klaim promo',
+                    'amount' => '500.000',
+                ],
+            ])
+            ->call('autoAllocate')
+            ->call('save');
+
+        $nomor = \App\Models\Payment::firstOrFail()->payment_number;
+
+        foreach (\App\Models\BankTransaction::all() as $baris) {
+            $this->assertStringContainsString(
+                $nomor,
+                (string) $baris->description,
+                'Setiap baris buku kas harus menyebut nomor pembayarannya.',
+            );
+        }
+    }
+
+    /**
+     * Pembayaran yang SELURUHNYA potongan tetap meninggalkan jejak.
+     *
+     * Dulu baris buku kas hanya dibuat kalau uang riilnya lebih dari nol, jadi
+     * tagihan yang dilunasi sepenuhnya oleh potongan lenyap dari piutang tanpa
+     * satu baris pun di buku kas.
+     */
+    public function test_a_payment_made_entirely_of_deductions_still_leaves_a_trace(): void
+    {
+        $invoice = $this->invoice(500000, now()->subDays(10)->toDateString());
+
+        Livewire::test(ReceivePayment::class, ['record' => $this->group])
+            ->set('data.bank_account_id', $this->bank->id)
+            ->set('data.payment_date', now()->toDateString())
+            ->set('data.amount', '0')
+            ->set('data.deductions', [
+                'p1' => [
+                    'type' => \App\Models\PaymentDeduction::TYPE_PROMOTION,
+                    'invoice_id' => null,
+                    'description' => 'Promo penuh',
+                    'amount' => '500.000',
+                ],
+            ])
+            ->call('autoAllocate')
+            ->call('save');
+
+        $this->assertSame(0.0, (float) $invoice->fresh()->balance, 'Tagihannya lunas.');
+        $this->assertSame(2, \App\Models\BankTransaction::count(), 'Dan jejaknya ada: satu masuk, satu keluar.');
+        $this->assertSame(0.0, $this->bank->fresh()->currentBalance(), 'Tanpa menggeser saldo sepeser pun.');
+    }
 }
