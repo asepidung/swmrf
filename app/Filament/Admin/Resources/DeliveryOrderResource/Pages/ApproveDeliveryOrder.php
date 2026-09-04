@@ -443,7 +443,7 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
             }
 
             if ($this->record->salesOrder) {
-                $this->record->salesOrder->update(['status' => 'completed']);
+                $this->record->salesOrder->update(['status' => \App\Models\SalesOrder::STATUS_COMPLETED]);
             }
         });
 

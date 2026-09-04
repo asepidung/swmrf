@@ -104,7 +104,7 @@ class ViewDeliveryOrder extends ViewRecord
                         $this->record->financialLoss()->delete();
 
                         if ($this->record->salesOrder) {
-                            $this->record->salesOrder->update(['status' => 'on_delivery']);
+                            $this->record->salesOrder->update(['status' => \App\Models\SalesOrder::STATUS_ON_DELIVERY]);
                         }
                     });
 

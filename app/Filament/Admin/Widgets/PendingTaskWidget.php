@@ -411,7 +411,7 @@ class PendingTaskWidget extends Widget
         if (!$user->isProgrammer() && !$user->hasPermission('create_tallies')) {
             return 0;
         }
-        return \App\Models\SalesOrder::where('status', 'waiting')->count();
+        return \App\Models\SalesOrder::where('status', \App\Models\SalesOrder::STATUS_WAITING)->count();
     }
 
     public function getPendingDeliveryPlanCount(): int

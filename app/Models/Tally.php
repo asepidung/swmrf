@@ -80,7 +80,7 @@ class Tally extends Model
 
             // Revert sales order status to 'waiting'
             if ($tally->salesOrder) {
-                $tally->salesOrder->update(['status' => 'waiting']);
+                $tally->salesOrder->update(['status' => \App\Models\SalesOrder::STATUS_WAITING]);
             }
         });
     }

@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\SalesOrderResource\Pages;
 
 use App\Filament\Admin\Resources\SalesOrderResource;
+use App\Models\SalesOrder;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
@@ -19,23 +20,23 @@ class EditSalesOrder extends EditRecord
                 ->color('success')
                 ->url(fn(): string => route('print.salesorder', $this->record))
                 ->openUrlInNewTab()
-                ->visible(fn(): bool => !in_array($this->record->status, ['cancelled', 'canceled'])),
+                ->visible(fn(): bool => !$this->record->status === SalesOrder::STATUS_CANCELLED),
             Actions\Action::make('cancel')
                 ->label(__('Cancel'))
                 ->color('gray')
                 ->url($this->getResource()::getUrl('index')),
             Actions\DeleteAction::make()
-                ->hidden(fn(): bool => in_array($this->record->status, ['cancelled', 'canceled', 'ready'])),
+                ->hidden(fn(): bool => in_array($this->record->status, SalesOrder::STATUS_LOCKED_FOR_EDIT, true)),
             Actions\ForceDeleteAction::make()
-                ->hidden(fn(): bool => in_array($this->record->status, ['cancelled', 'canceled', 'ready'])),
+                ->hidden(fn(): bool => in_array($this->record->status, SalesOrder::STATUS_LOCKED_FOR_EDIT, true)),
             Actions\RestoreAction::make()
-                ->hidden(fn(): bool => in_array($this->record->status, ['cancelled', 'canceled', 'ready'])),
+                ->hidden(fn(): bool => in_array($this->record->status, SalesOrder::STATUS_LOCKED_FOR_EDIT, true)),
         ];
     }
 
     protected function getFormActions(): array
     {
-        if (in_array($this->record->status, ['cancelled', 'canceled', 'ready'])) {
+        if (in_array($this->record->status, SalesOrder::STATUS_LOCKED_FOR_EDIT, true)) {
             return [];
         }
         return [

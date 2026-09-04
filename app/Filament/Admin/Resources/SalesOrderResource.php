@@ -50,7 +50,7 @@ class SalesOrderResource extends Resource
                             ->preload()
                             ->required()
                             ->live()
-                            ->disabled(fn (?SalesOrder $record) => $record?->status === 'processing')
+                            ->disabled(fn (?SalesOrder $record) => $record?->status === SalesOrder::STATUS_PROCESSING)
                             ->dehydrated()
                             ->afterStateUpdated(function (Get $get, Set $set, $state) {
                                 if ($state) {
@@ -82,7 +82,7 @@ class SalesOrderResource extends Resource
                             ->label(__('Delivery Date'))
                             ->required()
                             ->default(now())
-                            ->disabled(fn (?SalesOrder $record) => $record?->status === 'processing')
+                            ->disabled(fn (?SalesOrder $record) => $record?->status === SalesOrder::STATUS_PROCESSING)
                             ->dehydrated(),
 
                         Forms\Components\TextInput::make('po_number')
@@ -93,7 +93,7 @@ class SalesOrderResource extends Resource
                             ->label(__('Shipping Address'))
                             ->rows(2)
                             ->columnSpan(2)
-                            ->disabled(fn (?SalesOrder $record) => $record?->status === 'processing')
+                            ->disabled(fn (?SalesOrder $record) => $record?->status === SalesOrder::STATUS_PROCESSING)
                             ->dehydrated(),
 
                         Forms\Components\Textarea::make('note')
@@ -105,7 +105,7 @@ class SalesOrderResource extends Resource
                             ->label(__('Down Payment (DP)'))
                             ->numeric()
                             ->default(0)
-                            ->disabled(fn (?SalesOrder $record) => in_array($record?->status, ['processing', 'cancelled', 'canceled', 'ready']))
+                            ->disabled(fn (?SalesOrder $record) => in_array($record?->status, [SalesOrder::STATUS_PROCESSING, ...SalesOrder::STATUS_LOCKED_FOR_EDIT], true))
                             ->dehydrated()
                             /*
                              * WAJIB, dan ini bukan soal tampilan saja.
@@ -133,7 +133,7 @@ class SalesOrderResource extends Resource
                         Forms\Components\Hidden::make('created_by')
                             ->default(fn() => auth()->id()),
                     ])->columns(3)
-                    ->disabled(fn (?SalesOrder $record) => in_array($record?->status, ['cancelled', 'canceled', 'ready'])),
+                    ->disabled(fn (?SalesOrder $record) => in_array($record?->status, SalesOrder::STATUS_LOCKED_FOR_EDIT, true)),
 
                 Forms\Components\Section::make(__('Products Detail'))
                     ->compact()
@@ -206,7 +206,7 @@ class SalesOrderResource extends Resource
                         Forms\Components\Actions\Action::make('add_products')
                             ->label(__('Add Products'))
                             ->icon('heroicon-m-plus')
-                            ->visible(fn (?SalesOrder $record) => !in_array($record?->status, ['cancelled', 'canceled', 'ready']))
+                            ->visible(fn (?SalesOrder $record) => !in_array($record?->status, SalesOrder::STATUS_LOCKED_FOR_EDIT, true))
                             ->form([
                                 Forms\Components\Select::make('product_ids')
                                     ->label(__('Select Products'))
@@ -273,7 +273,7 @@ class SalesOrderResource extends Resource
                             ->defaultItems(0) // Start empty, force use of modal
                             ->disableItemMovement()
                             ->disableItemCreation() // Disable standard "Add Item" to force modal usage
-                            ->disableItemDeletion(fn (?SalesOrder $record) => $record?->status === 'processing')
+                            ->disableItemDeletion(fn (?SalesOrder $record) => $record?->status === SalesOrder::STATUS_PROCESSING)
                             ->validationMessages([
                                 'min' => __('Sales order cannot be created without any products.'),
                             ])
@@ -287,7 +287,7 @@ class SalesOrderResource extends Resource
                                     ->options(fn() => \App\Models\Product::pluck('name', 'id'))
                                     ->searchable()
                                     ->required()
-                                    ->disabled(fn (Get $get, ?SalesOrder $record) => $record?->status === 'processing' && !empty($get('id')))
+                                    ->disabled(fn (Get $get, ?SalesOrder $record) => $record?->status === SalesOrder::STATUS_PROCESSING && !empty($get('id')))
                                     ->dehydrated()
                                     ->extraAttributes([
                                         'class' => 'so-product-select-column',
@@ -360,7 +360,7 @@ class SalesOrderResource extends Resource
                                     ->columnSpan(3),
                             ]),
                     ])
-                    ->disabled(fn (?SalesOrder $record) => in_array($record?->status, ['cancelled', 'canceled', 'ready']))
+                    ->disabled(fn (?SalesOrder $record) => in_array($record?->status, SalesOrder::STATUS_LOCKED_FOR_EDIT, true))
             ]);
     }
 
@@ -462,12 +462,19 @@ class SalesOrderResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('Status'))
                     ->badge()
+                    // Peta warnanya dulu BOHONG di dua arah sekaligus.
+                    //
+                    // 'prepared' tidak pernah ditulis oleh satu baris kode pun
+                    // -- warna untuk keadaan yang tidak ada. Sementara
+                    // 'on_delivery', keadaan yang justru paling sering
+                    // dilihat, TIDAK ADA di sini sama sekali, sehingga Sales
+                    // Order yang sedang dikirim tampil tanpa warna dan
+                    // terbaca seperti keadaan yang tidak dikenali.
                     ->colors([
-                        'gray' => 'waiting',
-                        'info' => 'processing',
-                        'warning' => 'prepared',
-                        'success' => ['completed', 'ready'],
-                        'danger' => 'cancelled',
+                        'gray' => SalesOrder::STATUS_WAITING,
+                        'info' => [SalesOrder::STATUS_PROCESSING, SalesOrder::STATUS_ON_DELIVERY],
+                        'success' => [SalesOrder::STATUS_COMPLETED, SalesOrder::STATUS_READY],
+                        'danger' => SalesOrder::STATUS_CANCELLED,
                     ])
                     ->formatStateUsing(fn(string $state): string => ucfirst($state)),
 
