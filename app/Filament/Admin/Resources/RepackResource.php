@@ -115,41 +115,54 @@ class RepackResource extends Resource
                     ->sortable(),
 
                 /* Kalkulasi Total Bahan (Input) */
+                // Ketiga angka ini dulu dihitung dengan `DB::table()` mentah,
+                // masing-masing mengulang rumusnya sendiri. Salah satunya
+                // menyaring `deleted_at` dan yang lain tidak -- padahal hanya
+                // `repack_results` yang punya hapus lunak, jadi penyaringnya
+                // ditulis ulang dengan tangan di tempat yang kebetulan tepat.
+                // Sekarang semuanya lewat model, dan penyaringnya datang
+                // sendiri dari relasinya.
                 Tables\Columns\TextColumn::make('total_bahan')
                     ->label(__('Total Bahan'))
-                    ->getStateUsing(function (Repack $record) {
-                        return DB::table('repack_materials')->where('repack_id', $record->id)->sum('weight');
-                    })
+                    ->state(fn (Repack $record): float => $record->inputWeight())
                     ->numeric(2)
+                    ->alignRight()
                     ->suffix(' Kg'),
 
-                /* Kalkulasi Total Hasil (Output) */
                 Tables\Columns\TextColumn::make('total_hasil')
                     ->label(__('Total Hasil'))
-                    ->getStateUsing(function (Repack $record) {
-                        return DB::table('repack_results')
-                            ->where('repack_id', $record->id)
-                            ->whereNull('deleted_at')
-                            ->sum('weight');
-                    })
+                    ->state(fn (Repack $record): float => $record->outputWeight())
                     ->numeric(2)
+                    ->alignRight()
                     ->suffix(' Kg'),
 
-                /* Kalkulasi Lost / Balance */
-                Tables\Columns\TextColumn::make('lost')
-                    ->label(__('Balance (Lost)'))
-                    ->getStateUsing(function (Repack $record) {
-                        $bahan = DB::table('repack_materials')->where('repack_id', $record->id)->sum('weight');
-                        $hasil = DB::table('repack_results')
-                            ->where('repack_id', $record->id)
-                            ->whereNull('deleted_at')
-                            ->sum('weight');
-                        return $hasil - $bahan;
+                // Warnanya dulu TERBALIK. Kolomnya menghitung `hasil - bahan`,
+                // lalu memberi warna merah pada nilai negatif dan hijau pada
+                // positif -- sehingga dokumen yang hasilnya LEBIH BERAT
+                // daripada bahannya, yang mustahil secara fisik dan hampir
+                // pasti salah ketik, terbaca sebagai kabar baik.
+                //
+                // Sekarang yang ditampilkan susutnya (bahan - hasil), dan
+                // warnanya mengikuti arti: wajar abu-abu, di luar batas merah,
+                // hasil lebih berat daripada bahan juga merah.
+                Tables\Columns\TextColumn::make('susut')
+                    ->label(__('Susut'))
+                    ->state(function (Repack $record): string {
+                        $persen = $record->shrinkPercent();
+
+                        if ($persen === null) {
+                            return '-';
+                        }
+
+                        return number_format($record->shrinkWeight(), 2, ',', '.')
+                            .' Kg ('.number_format($persen, 2, ',', '.').'%)';
                     })
-                    ->numeric(2)
-                    ->suffix(' Kg')
+                    ->alignRight()
                     ->badge()
-                    ->color(fn($state) => $state < 0 ? 'danger' : 'success'),
+                    ->color(fn (Repack $record): string => $record->isWithinShrinkLimit() ? 'gray' : 'danger')
+                    ->description(fn (Repack $record): ?string => $record->shrinkLimitWasOverridden()
+                        ? __('Approved by :name', ['name' => $record->yieldOverriddenBy?->name ?? '-'])
+                        : null),
 
                 Tables\Columns\TextColumn::make('note')
                     ->label(__('Catatan'))
@@ -164,16 +177,49 @@ class RepackResource extends Resource
                         // lihat catatan yang sama di BoningResource.
                         ->icon('heroicon-o-lock-open')
                         ->color('success')
-                        ->tooltip(__('Kunci Repack (Final)'))
+                        ->tooltip(fn (Repack $record): string => $record->isWithinShrinkLimit()
+                            ? __('Kunci Repack (Final)')
+                            : __('Shrinkage is outside the reasonable limit; QC approval is needed.'))
                         ->requiresConfirmation()
                         ->modalHeading(__('Lock Repack Data'))
                         ->modalDescription(__('Are you sure you want to lock this data? Once locked, you cannot modify it.'))
-                        ->action(function (Repack $record) {
-                            $record->update(['kunci' => true, 'status' => 'LOCKED']);
+                        // Susut di luar batas TIDAK membuang dokumennya dan
+                        // tidak menyembunyikan tombolnya. Tombolnya mati dengan
+                        // keterangan, supaya yang mengerjakan tahu ia sedang
+                        // menunggu siapa -- bukan menghadapi tombol yang lenyap
+                        // tanpa penjelasan.
+                        ->disabled(fn (Repack $record): bool => ! $record->isWithinShrinkLimit()
+                            && ! (auth()->user()?->hasPermission('override_repack_yield') ?? false))
+                        // Alasannya hanya diminta ketika memang menembus.
+                        ->form(fn (Repack $record): array => $record->isWithinShrinkLimit() ? [] : [
+                            Forms\Components\Placeholder::make('ringkasan')
+                                ->label(__('Shrinkage'))
+                                ->content(fn (): string => number_format($record->shrinkWeight(), 2, ',', '.')
+                                    .' Kg ('.number_format((float) $record->shrinkPercent(), 2, ',', '.').'%) '
+                                    .__('of the :limit% limit', [
+                                        'limit' => number_format((float) Repack::shrinkLimitPercent(), 2, ',', '.'),
+                                    ])),
+
+                            Forms\Components\Textarea::make('yield_override_reason')
+                                ->label(__('Reason for approving beyond the limit'))
+                                ->required()
+                                ->maxLength(500)
+                                ->rows(3),
+                        ])
+                        ->action(function (Repack $record, array $data) {
+                            try {
+                                $record->lock($data['yield_override_reason'] ?? null);
+                            } catch (\Throwable $e) {
+                                Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
+
+                                return;
+                            }
+
                             Notification::make()->title(__('Repack Locked'))->success()->send();
+
                             return redirect(static::getUrl('index'));
                         })
-                        ->hidden(fn(Repack $record) => !auth()->user()->hasPermission('lock_repacks') || $record->kunci || !$record->materialUsages()->exists()),
+                        ->hidden(fn (Repack $record) => ! auth()->user()->hasPermission('lock_repacks') || $record->kunci || ! $record->materialUsages()->exists()),
 
                     /* Tombol Unlock */
                     Tables\Actions\Action::make('unlock')
@@ -185,8 +231,9 @@ class RepackResource extends Resource
                         ->modalHeading(__('Unlock Repack Data'))
                         ->modalDescription(__('Are you sure you want to unlock this data? It will become editable again.'))
                         ->action(function (Repack $record) {
-                            $record->update(['kunci' => false, 'status' => 'OPEN']);
+                            $record->unlock();
                             Notification::make()->title(__('Repack Unlocked'))->success()->send();
+
                             return redirect(static::getUrl('index'));
                         })
                         ->hidden(fn(Repack $record) => !auth()->user()->hasPermission('lock_repacks') || !$record->kunci),
@@ -213,6 +260,17 @@ class RepackResource extends Resource
                         ->label(__('Input Hasil & Labeling'))
                         ->icon('heroicon-o-qr-code')
                         ->color('info')
+                        // Hasil tidak bisa diinput sebelum bahannya ada.
+                        //
+                        // Aturan ini sudah ada di aplikasi lama dan HILANG saat
+                        // ditulis ulang -- tombolnya hanya disembunyikan ketika
+                        // dokumennya terkunci. Tanpa bahan, hasil yang diinput
+                        // menjadi stok yang tidak berasal dari mana pun, dan
+                        // susutnya tidak bisa dihitung sama sekali.
+                        ->disabled(fn (Repack $record): bool => $record->materials()->doesntExist())
+                        ->tooltip(fn (Repack $record): ?string => $record->materials()->doesntExist()
+                            ? __('Input the goods first before entering the results.')
+                            : null)
                         ->hidden(fn(Repack $record) => $record->kunci == 1)
                         ->url(fn(Repack $record) => static::getUrl('input-hasil', ['record' => $record->id])),
                 ]),

@@ -2721,6 +2721,62 @@ lewat halaman Terima Pembayaran, sama seperti lebih bayar biasa. Memasangnya
 kembali berarti menebak pembayaran mana yang dulu menutup invoice mana,
 padahal jejaknya sudah tidak ada.
 
+### Repack: pembanding bahan masuk lawan hasil keluar -- 4 September 2026
+
+Sampai hari ini **tidak ada satu baris pun** yang membandingkan
+`Repack::materials()` dengan `Repack::results()`. Tombol Lock hanya menyetel
+penanda, jadi dokumen dengan bahan 100 kg dan hasil 500 kg bisa dikunci --
+stoknya bertambah 400 kg dari udara, dan permanen karena sesudah terkunci tidak
+bisa diubah.
+
+Lebih luas: kata `weight` muncul SATU KALI di seluruh `BoningResource.php`, dan
+itu `->weight('bold')` -- ketebalan huruf. `Carcass` bahkan tidak punya kolom
+berat. **Boning belum dikerjakan**, dan di sana angka masuknya bahkan belum
+tercatat.
+
+**Bentuk penjagaannya**, dari dua tawaran Project Owner sendiri -- tolak keras
+membuat pekerjaan berhenti saat kenyataan jomplang, peringatan biasa diabaikan:
+
+| | Aturan |
+|---|---|
+| Selalu | susutnya DIHITUNG dari barisnya, tidak disimpan |
+| Ambangnya | satu angka GLOBAL di tabel `settings`, berlaku untuk semua dokumen -- keputusan Owner: "ambang yang diisi qc jangan per batch, berlaku untuk semua" |
+| Belum diisi | gerbangnya BELUM MENYALA -- dokumen tetap bisa dikunci, angkanya tetap tercatat |
+| Diisi & dilanggar | tombol Lock MATI untuk pengguna biasa, dengan keterangan -- bukan lenyap |
+| Yang menembus | pemegang `override_repack_yield`, dengan alasan tertulis yang tersimpan beserta nama dan waktunya |
+
+Gerbangnya sengaja mati saat ambangnya kosong: belum ada satu pun data susut
+yang pernah tersimpan, jadi angka apa pun yang dikarang akan salah.
+Menghalangi pekerjaan dengan angka yang tidak dipilih manusia mana pun sudah
+menjadi kesalahan pada penjaga berat retur hari ini -- tidak diulang.
+
+**Dua izin sengaja dipisah.** `set_repack_yield_limit` MENENTUKAN apa yang
+wajar (keputusan mutu, pemegangnya QC); `override_repack_yield` MELEWATI batas
+itu untuk satu dokumen. Digabung berarti siapa pun yang boleh menembus juga
+boleh menurunkan ambangnya sampai tidak ada lagi yang perlu ditembus, dan
+penjagaannya lenyap tanpa satu pun catatan penembusan.
+
+**Hasil lebih berat daripada bahan selalu di luar batas**, berapa pun
+ambangnya. Itu mustahil secara fisik; tidak ada persentase yang membenarkannya.
+
+**Warna kolom `lost` dulu TERBALIK.** Ia menghitung `hasil - bahan` lalu
+memberi merah pada negatif dan hijau pada positif -- sehingga dokumen yang
+hasilnya lebih berat daripada bahannya, yang hampir pasti salah ketik, terbaca
+sebagai kabar baik. Sekarang yang ditampilkan susutnya, dan warnanya mengikuti
+apakah ia di dalam batas.
+
+**Aturan legacy yang hilang dikembalikan:** hasil tidak bisa diinput sebelum
+bahannya ada. Owner menawarkan mencabutnya bila ada pengganti yang lebih baik;
+DIPERTAHANKAN, karena tiap hasil LANGSUNG membuat baris `BeefStock` saat
+dipindai, bukan saat dikunci. Penjaga di tombol Lock datang terlambat -- dua
+ratus hasil sudah masuk stok sebelum ada yang memberi tahu.
+
+**`settings` adalah tabel baru** untuk angka yang dipilih manusia. Sengaja
+kecil: kunci, nilai, siapa yang terakhir mengubah. Batas POD di Tally yang
+sekarang memakai `session()` -- sehingga angkanya milik satu peramban dan
+berbeda antar orang -- sebaiknya kelak pindah ke sini; tidak dikerjakan
+sekarang supaya perubahannya tetap satu urusan.
+
 ### Kerugian menyimpan JUMLAH, bukan hanya rupiah -- 4 September 2026
 
 Susut kirim di halaman Approve DO sudah dicatat sejak lama, tetapi rupiahnya
