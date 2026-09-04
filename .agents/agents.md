@@ -2631,7 +2631,7 @@ terjadi H+1 atau lebih -- sering sesudah invoicenya terbit dan berada di tangan
 pelanggan. Selama masih Draft dokumennya tidak memuat angka uang sama sekali:
 nol di dokumen pelanggan terbaca "gratis", bukan "belum dihitung".
 
-#### Retur SELALU sesudah bukti terima -- 4 September 2026
+#### Retur SELALU sesudah bukti terima -- SEDANG DIUJI, belum diputuskan
 
 > "urutannya so - tally - do - do receipt - invoice, retur itu pasti setelah do
 > receipt, karena kalo belum di receipt berarti masih dalam pengiriman atau baru
@@ -2646,6 +2646,33 @@ Tolakan, sesudahnya Retur Jual.
 
 Tanpa penjagaan itu, tolakan yang salah pintu memasukkan barang ke stok padahal
 fisiknya belum kembali, dan memotong tagihan yang belum pernah terbit.
+
+**JANGAN diperlakukan sebagai keputusan final.** Project Owner, 4 September
+2026, sesudah penjaganya terpasang:
+
+> "kalau ini maksudnya gak bisa input barcode kalo do nya belum ada di receipt
+> akan ditolak saran gw jangan bro, itu memang bagus tapi dilapangan kita gak
+> bisa saklek / tapi sementara biarin gitu dulu nanti mau gw uji sendiri, karena
+> aturan itu sebenarnya belum diperlukan untuk ada"
+
+Jadi penjaganya DIBIARKAN untuk diuji Owner sendiri, bukan karena sudah
+disepakati. Yang ditunggu satu pertanyaan: apakah ia pernah menghalangi di saat
+yang wajar -- misalnya barang balik cepat sementara DO-nya belum sempat
+di-approve karena orangnya tidak ada atau POD-nya masih di driver.
+
+Dua kemungkinan hasilnya, keduanya sudah jelas:
+
+- **pernah menghalangi** -> penjaganya DICABUT. Tiga penjaga lain (pernah kita
+  kirim / tidak lagi di gudang / tidak ada di retur Draft lain) tetap berdiri
+  dan tidak bergantung padanya;
+- **tidak pernah** -> dipasang JUGA di tab Relabel, baru ia layak disebut
+  aturan.
+
+Sebab bentuknya sekarang belum utuh: ia menutup tab Scan dan MEMBIARKAN tab
+Relabel terbuka. Kalau aturannya penting ia harus menutup keduanya; kalau tidak
+penting ia tidak boleh menutup satu pun. Setengah penjaga persis pola yang
+diberantas sepanjang hari ini -- penjagaan di satu lapisan yang membuat orang
+mengira sudah aman.
 
 Untuk diingat: **ada DUA pintu barang kembali**, dan keduanya benar.
 
