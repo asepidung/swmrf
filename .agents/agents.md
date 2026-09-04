@@ -2837,25 +2837,44 @@ kata ("offal artinya jeroan") bukan dasar yang cukup untuk menyebut kode
 salah. Yang tampak seperti kekeliruan penamaan ternyata aturan bisnis yang
 disengaja, dan menanyakannya lebih murah daripada memperbaikinya.
 
-#### Kulit dan offal KELUAR sebagai barang jual
+#### Alur satu batch boning, apa adanya
 
-Keduanya diberi label, masuk stok, dibuatkan SO, dan berakhir sebagai piutang
--- terlihat di ringkasan boning aplikasi lama sebagai baris OFFAL dan KULIT.
+Diceritakan Project Owner 5 September 2026, sesudah dua kesimpulan keliru
+berturut-turut dari potongan kalimatnya. **Baca ini utuh sebelum menyentuh
+Boning.**
 
-**Perpindahannya ke boning masih MANUAL.** Owner: *"walaupun proses transfer
-data kulit dan offal ini ke boning masih dilakukan manual, karena gw gak nemu
-skema otomatisnya, karena harus melewati berbagai tahap, bikin boning baru,
-bikin label kulit dan offal"*.
+Hari ini 10 sapi dipotong. Jadilah karkas, offal, dan kulit -- ketiganya sudah
+diketahui beratnya (offal 250, kulit 100, misalnya).
 
-Karena itu ada dokumen boning yang **TIDAK PUNYA KARKAS** sama sekali -- isinya
-hanya label kulit dan offal. `Boning::lock()` sempat mensyaratkan adanya
-karkas, dan syarat itu akan membuat dokumen semacam itu tidak pernah bisa
-dikunci. Syaratnya dicabut; susutnya memang tidak bisa dinilai, dan itu
-terbaca sendiri sebagai "tanpa karkas" di daftarnya.
+1. Orang produksi membuka modul Boning, **membuat boning dan MEMILIH karkas**
+   yang tadi dibuat. Bisa memilih BEBERAPA karkas sekaligus.
+2. Di dalam boning itu ia membuat **dua label**: offal 250 kg dan kulit 100 kg.
+   Sekarang keduanya punya stok.
+3. Gunanya: kulit dan offal **diambil kontraktor hari itu juga**. Untuk membawa
+   barang ia butuh DO; untuk DO butuh Sales Order, lalu Tally; dan Tally butuh
+   STOK. Label boning inilah yang membuat stoknya ada.
+4. DO dibuat, barang dijual, bukti terima dicatat, invoice terbit. Selesai
+   untuk hari itu -- dagingnya menunggu proses PELAYUAN semalam.
+5. **Besoknya** orang produksi membuka LAGI batch boning yang sama, dan
+   melanjutkan membuat label untuk item-item daging yang sudah selesai
+   dilayukan.
 
-**TERBUKA:** menjadikan kulit dan offal masuk stok LANGSUNG dari dokumen
-Karkas, tanpa perlu dokumen boning palsu. Itu skema otomatis yang dicari Owner
-dan belum dikerjakan.
+**Jadi tidak pernah ada boning tanpa karkas.** Syarat itu sempat dicabut karena
+disangka kulit dan offal dicatat di dokumen boning tersendiri. Salah baca:
+keduanya diberi label DI DALAM boning yang sama. Syaratnya dikembalikan.
+
+**Dan satu dokumen boning hidup DUA HARI** -- label by-product hari pertama,
+label daging hari kedua sesudah pelayuan. Yang harus selesai dalam sehari
+adalah pekerjaan memotong dagingnya, bukan umur dokumennya.
+
+**TERBUKA dan PENTING -- susutnya belum benar.** Karena kulit dan offal ikut
+menjadi label di dalam boning, `outputWeight()` menjumlahkan mereka bersama
+daging, sementara `inputWeight()` hanya karkas ditambah buntut. Akibatnya tiap
+batch akan terbaca hasilnya jauh melebihi bahannya. Belum menggigit karena
+ambangnya masih kosong dan produk OFFAL/KULIT belum ada di master, tetapi ia
+akan menggigit begitu alurnya dijalankan. Yang dibutuhkan: cara menandai
+produk mana yang by-product karkas supaya dikeluarkan dari hitungan susut --
+menunggu keputusan Owner.
 
 #### Angka susut boning yang pertama
 
