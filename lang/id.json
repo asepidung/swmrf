@@ -953,5 +953,6 @@
     "Barcode scanned": "Barcode terpindai",
     "Failed": "Gagal",
     "Every item on this return will be put into stock.": "Semua barang di retur ini akan dimasukkan ke stok.",
-    "Every item from this return that already went into stock will be pulled back out.": "Semua barang dari retur ini yang sudah masuk stok akan ditarik kembali."
+    "Every item from this return that already went into stock will be pulled back out.": "Semua barang dari retur ini yang sudah masuk stok akan ditarik kembali.",
+    "Receiving Warehouse": "Gudang Penerima"
 }
