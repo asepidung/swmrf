@@ -157,16 +157,27 @@ class ReceivePayment extends Page
                         Repeater::make('deductions')
                             ->hiddenLabel()
                             ->schema([
+                                // Kedua field ini sengaja dikirim saat kehilangan
+                                // fokus, bukan ditunda sampai tombol disentuh.
+                                //
+                                // Dengan penundaan bawaan Livewire, nilai yang
+                                // baru diketik masih menggantung saat barisnya
+                                // dihapus -- lalu ikut terkirim pada permintaan
+                                // BERIKUTNYA, dan Livewire MEMBUAT ULANG kunci
+                                // baris yang sudah tidak ada. Itulah baris hantu
+                                // yang muncul saat tombol simpan ditekan.
                                 TextInput::make('description')
                                     ->placeholder(__('Deduction Description'))
                                     ->required()
                                     ->maxLength(255)
+                                    ->live(onBlur: true)
                                     ->columnSpan(2),
                                 $this->money('amount')
                                     ->hiddenLabel()
                                     ->placeholder(__('Amount (Rp)'))
                                     ->required()
                                     ->rules(['numeric', 'gt:0'])
+                                    ->live(onBlur: true)
                                     ->columnSpan(1),
                             ])
                             ->columns(3)
@@ -219,8 +230,47 @@ class ReceivePayment extends Page
         return __('Receive Payment').': '.$this->record->name;
     }
 
+    /**
+     * Buang baris potongan yang tidak pernah benar-benar diketik siapa pun.
+     *
+     * Dilaporkan Project Owner, 4 September 2026: menambah beberapa baris
+     * potongan lalu menghapus semuanya membuat SATU baris hantu muncul saat
+     * tombol simpan ditekan, lengkap dengan pesan kesalahan.
+     *
+     * Sebabnya di Livewire, bukan di sini. Nilai yang diketik dikirim dengan
+     * penundaan; kalau barisnya dihapus sebelum nilainya sempat terkirim,
+     * nilai itu ikut menumpang permintaan BERIKUTNYA -- dan menulis properti
+     * bersarang ke kunci yang sudah tidak ada MEMBUAT ULANG kuncinya. Yang
+     * lahir kembali bukan barisnya yang utuh, melainkan satu field saja.
+     *
+     * Itulah pembedanya, dan pembeda ini aman: baris yang benar-benar
+     * ditambahkan SELALU punya kedua kuncinya sejak lahir --
+     * `['description' => null, 'amount' => null]` -- sedangkan yang lahir dari
+     * nilai menggantung hanya punya kunci yang kebetulan tertulis.
+     *
+     * Baris yang kosong tetapi utuh TIDAK dibuang: itu memang baris yang
+     * ditambahkan lalu tidak diisi, dan pengguna berhak diberi tahu.
+     */
+    private function forgetGhostDeductionRows(): void
+    {
+        $rows = $this->data['deductions'] ?? null;
+
+        if (! is_array($rows)) {
+            return;
+        }
+
+        $this->data['deductions'] = array_filter(
+            $rows,
+            fn ($row): bool => is_array($row)
+                && array_key_exists('description', $row)
+                && array_key_exists('amount', $row),
+        );
+    }
+
     public function save(): void
     {
+        $this->forgetGhostDeductionRows();
+
         $data = $this->form->getState();
 
         $amountTransfer = (float) $data['amount'];
