@@ -682,15 +682,25 @@ class DeliveryOrderTest extends TestCase
 
         $this->assertEquals('Approved', $do->fresh()->status);
 
-        // Assert financial loss is created
+        // Kilogramnya sekarang ada di KOLOMNYA, bukan cuma di dalam kalimat.
+        //
+        // Sebelumnya 1,50 Kg itu hanya hidup di dalam teks catatan, jadi
+        // laporan kerugian menampilkan Rp 0 dan angkanya tidak bisa dijumlah
+        // maupun diurut. `amount` MASIH nol dan itu disengaja: menilai susut
+        // kirim butuh HPP, dan HPP menunggu B.O.M.
         $this->assertDatabaseHas('financial_losses', [
             'lossable_type' => DeliveryOrder::class,
             'lossable_id' => $do->id,
             'transaction_type' => 'Delivery Order',
             'reference_number' => $do->delivery_order_number,
             'amount' => 0.00,
-            'note' => 'Susut Kirim DO: ' . $do->delivery_order_number . ' sebesar 1.50 Kg',
+            'quantity' => 1.50,
+            'unit' => 'Kg',
         ]);
+
+        // Dan nol yang berarti "belum dinilai" bisa dibedakan dari nol yang
+        // berarti "memang tidak rugi".
+        $this->assertTrue($do->fresh()->financialLoss->isNotPricedYet());
 
         // Now, let's test that unapproving deletes the financial loss record
         Livewire::test(\App\Filament\Admin\Resources\DeliveryOrderResource\Pages\ViewDeliveryOrder::class, [

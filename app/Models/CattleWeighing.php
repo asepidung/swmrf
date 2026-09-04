@@ -110,6 +110,7 @@ class CattleWeighing extends Model
         $receiving = CattleReceiving::with('purchaseCattle.items')->find($this->cattle_receiving_id);
         
         $totalLoss = 0;
+        $totalLossWeight = 0.0;
         
         if ($receiving && $receiving->purchaseCattle) {
             $po = $receiving->purchaseCattle;
@@ -150,14 +151,25 @@ class CattleWeighing extends Model
                     }
                     
                     $totalLoss += ($lossWeight * $price);
+                    $totalLossWeight += $lossWeight;
                 }
             }
         }
         
         if ($totalLoss > 0) {
+            // Beratnya ikut disimpan, bukan dibuang sesudah dikalikan.
+            // Rupiahnya saja tidak cukup untuk menjawab "berapa kilo yang
+            // hilang bulan ini" -- dan kolomnya sudah ada, dipakai bersama
+            // dengan susut kirim.
             $this->financialLoss()->updateOrCreate(
                 ['transaction_type' => 'Cattle Weighing', 'reference_number' => $this->weighing_number],
-                ['date' => $this->weighing_date, 'amount' => $totalLoss, 'note' => __('Cattle re-weighing shrinkage')]
+                [
+                    'date' => $this->weighing_date,
+                    'amount' => $totalLoss,
+                    'quantity' => round($totalLossWeight, 2),
+                    'unit' => 'Kg',
+                    'note' => __('Cattle re-weighing shrinkage'),
+                ]
             );
         } else {
             $this->financialLoss()->delete();

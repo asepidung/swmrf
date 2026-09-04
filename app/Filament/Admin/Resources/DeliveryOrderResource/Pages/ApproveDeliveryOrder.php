@@ -408,6 +408,21 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
             }
 
             if ($totalLossWeight > 0) {
+                // Kilogramnya masuk ke KOLOMNYA SENDIRI, bukan cuma ke dalam
+                // kalimat catatan.
+                //
+                // Dulu angka itu hanya hidup di dalam teks 'sebesar 12,50 Kg',
+                // sehingga laporan kerugian menampilkan Rp 0 dan kilogramnya
+                // tidak bisa dijumlah, disaring, atau diurut -- hanya bisa
+                // dibaca satu per satu.
+                //
+                // `amount` MASIH nol, dan itu disengaja. Menilai susut kirim
+                // dengan harga jual melebih-lebihkan: perusahaan tidak
+                // kehilangan sebesar harga jual, melainkan sebesar modalnya
+                // ditambah margin yang tidak jadi didapat. Angka yang benar
+                // HPP, dan HPP menunggu B.O.M. Saat itu tiba, rupiahnya
+                // tinggal `quantity x HPP` dari kolom ini -- tanpa menggali
+                // ulang ratusan catatan lama.
                 $this->record->financialLoss()->updateOrCreate(
                     [
                         'transaction_type' => 'Delivery Order',
@@ -416,7 +431,11 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                     [
                         'date' => $this->record->delivery_date,
                         'amount' => 0.00,
-                        'note' => 'Susut Kirim DO: ' . $this->record->delivery_order_number . ' sebesar ' . number_format($totalLossWeight, 2) . ' Kg',
+                        'quantity' => round($totalLossWeight, 2),
+                        'unit' => 'Kg',
+                        'note' => __('Delivery shrinkage on :document', [
+                            'document' => $this->record->delivery_order_number,
+                        ]),
                     ]
                 );
             } else {
