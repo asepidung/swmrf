@@ -23,18 +23,18 @@ class ViewMutation extends ViewRecord
                 ->visible(fn ($record) => $record->status === 'SENT'),
 
             Actions\Action::make('print')
-                ->label(__('Cetak Laporan'))
+                ->label(__('Print Report'))
                 ->hiddenLabel()
-                ->tooltip('Cetak Laporan')
+                ->tooltip(__('Print Report'))
                 ->icon('heroicon-o-printer')
                 ->color('gray')
                 ->url(fn ($record) => route('filament.admin.resources.mutations.print', ['record' => $record]))
                 ->openUrlInNewTab(),
 
             Actions\Action::make('scan')
-                ->label(__('Scan Barang'))
+                ->label(__('Scan Goods'))
                 ->hiddenLabel()
-                ->tooltip('Scan Barang')
+                ->tooltip(__('Scan Goods'))
                 ->icon('heroicon-o-qr-code')
                 ->color('info')
                 ->url(fn ($record) => MutationResource::getUrl('scan', ['record' => $record]))
@@ -48,7 +48,7 @@ class ViewMutation extends ViewRecord
 
             Actions\DeleteAction::make()
                 ->hiddenLabel()
-                ->tooltip('Delete')
+                ->tooltip(__('Delete'))
                 ->icon('heroicon-o-trash')
                 ->visible(fn ($record) => $record->status === 'DRAFT' && $record->items()->count() === 0),
                 

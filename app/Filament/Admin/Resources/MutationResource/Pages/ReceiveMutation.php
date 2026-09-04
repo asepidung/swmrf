@@ -45,7 +45,7 @@ class ReceiveMutation extends Page implements HasForms, HasTable
         $this->record = $record;
 
         if ($this->record->status !== 'SENT') {
-            Notification::make()->title('Mutasi belum dikirim atau sudah selesai.')->warning()->send();
+            Notification::make()->title(__('This mutation has not been sent yet, or is already finished.'))->warning()->send();
             $this->redirect(MutationResource::getUrl('view', ['record' => $this->record->id]));
             return;
         }
@@ -56,7 +56,7 @@ class ReceiveMutation extends Page implements HasForms, HasTable
         return [
             Forms\Components\TextInput::make('barcode')
                 ->label(__('Scan Barcode'))
-                ->placeholder('Arahkan kursor ke sini dan mulai scan penerimaan...')
+                ->placeholder(__('Put the cursor here and start scanning the goods received...'))
                 ->required()
                 ->autofocus()
                 ->extraInputAttributes([
@@ -79,20 +79,20 @@ class ReceiveMutation extends Page implements HasForms, HasTable
             ->first();
 
         if (!$item) {
-            Notification::make()->title('Barcode tidak ditemukan di mutasi ini!')->danger()->send();
+            Notification::make()->title(__('This barcode is not on this mutation.'))->danger()->send();
             $this->dispatch('focus-barcode');
             return;
         }
 
         if ($item->is_received) {
-            Notification::make()->title('Barcode ini sudah di-scan (diterima)!')->warning()->send();
+            Notification::make()->title(__('This barcode has already been received.'))->warning()->send();
             $this->dispatch('focus-barcode');
             return;
         }
 
         $item->update(['is_received' => true]);
 
-        Notification::make()->title('Sukses di-scan')->success()->send();
+        Notification::make()->title(__('Barcode scanned'))->success()->send();
         $this->dispatch('focus-barcode');
     }
 
@@ -114,12 +114,12 @@ class ReceiveMutation extends Page implements HasForms, HasTable
                 Tables\Actions\Action::make('cancel_receive')
                     ->label('')
                     ->icon('heroicon-o-x-mark')
-                    ->tooltip('Batal Terima')
+                    ->tooltip(__('Undo receiving'))
                     ->color('danger')
                     ->action(function (MutationItem $record) {
                         $record->update(['is_received' => false]);
                     })
-                    ->successNotificationTitle('Penerimaan item dibatalkan'),
+                    ->successNotificationTitle(__('Receiving undone')),
             ])
             ->defaultSort('updated_at', 'desc');
     }
@@ -141,7 +141,7 @@ class ReceiveMutation extends Page implements HasForms, HasTable
                     MutationItem::where('mutation_id', $this->record->id)
                         ->where('is_received', false)
                         ->update(['is_received' => true]);
-                    Notification::make()->title('Semua item ditandai sebagai diterima')->success()->send();
+                    Notification::make()->title(__('Every item has been marked as received'))->success()->send();
                 }),
 
             Actions\Action::make('finish')
@@ -200,7 +200,7 @@ class ReceiveMutation extends Page implements HasForms, HasTable
                         ]);
                     });
 
-                    Notification::make()->title('Mutasi selesai dan barang masuk ke stok gudang.')->success()->send();
+                    Notification::make()->title(__('Mutation finished; the goods are now in the destination warehouse.'))->success()->send();
                     $this->redirect(MutationResource::getUrl('view', ['record' => $this->record->id]));
                 }),
         ];

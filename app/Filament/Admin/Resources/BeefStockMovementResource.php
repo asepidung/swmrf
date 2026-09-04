@@ -216,7 +216,7 @@ class BeefStockMovementResource extends Resource
                             }, 'excel.xlsx');
                         }),
                     Tables\Actions\Action::make('pdf')
-                        ->label('PDF')
+                        ->label(__('PDF'))
                         ->icon('heroicon-o-document-arrow-down')
                         ->color('danger')
                         ->action(function ($livewire) {
@@ -228,7 +228,7 @@ class BeefStockMovementResource extends Resource
                             return response()->streamDownload(fn () => print($pdf->output()), 'export_beef_stock_movements.pdf');
                         }),
                 ])
-                ->label('Export Data')
+                ->label(__('Export Data'))
                 ->icon('heroicon-m-arrow-down-tray')
                 ->button()
                 ->color('success'),
