@@ -120,13 +120,40 @@ class ReceivableResource extends Resource
             ->whereNotNull('invoices.due_date')
             ->whereDate('invoices.due_date', '<', now()->toDateString());
 
+        // Deposit dihitung dari dua penjumlahan: seluruh uang pembayaran yang
+        // masih berlaku, dikurangi yang sudah menempel ke invoice. Keduanya
+        // subkueri pada kueri tabelnya, jadi menambah grup tidak menambah
+        // kueri.
+        $aktif = fn (Builder $q) => $q->whereNull('payments.cancelled_at');
+
         return $query
+            ->withSum(
+                ['payments as deposit_received' => $aktif],
+                \Illuminate\Support\Facades\DB::raw('amount + total_deduction'),
+            )
+            ->withSum(['paymentAllocations as deposit_used' => $aktif], 'amount_allocated')
             ->withSum(['invoices as total_receivable' => $outstanding], 'balance')
             ->withCount(['invoices as total_receivable_count' => $outstanding])
             ->withSum(['invoices as due_soon' => $dueSoon], 'balance')
             ->withCount(['invoices as due_soon_count' => $dueSoon])
             ->withSum(['invoices as overdue' => $overdue], 'balance')
             ->withCount(['invoices as overdue_count' => $overdue]);
+    }
+
+    /**
+     * Deposit sebuah grup, dari dua agregat yang sudah ikut terbawa kueri.
+     *
+     * Dikembalikan nol -- bukan angka negatif -- kalau alokasinya melebihi
+     * uang yang diterima. Itu keadaan yang seharusnya mustahil, dan
+     * menampilkannya sebagai deposit negatif hanya akan membingungkan tanpa
+     * menjelaskan apa pun.
+     */
+    protected static function depositOf(\App\Models\CustomerGroup $record): float
+    {
+        return round(max(
+            (float) ($record->deposit_received ?? 0) - (float) ($record->deposit_used ?? 0),
+            0,
+        ), 2);
     }
 
     /** Keterangan "N Inv" di bawah nominalnya, kosong bila memang tidak ada. */
@@ -177,6 +204,19 @@ class ReceivableResource extends Resource
                     ->description(fn ($record): ?string => static::invoiceCount($record->overdue_count))
                     ->alignEnd()
                     ->color('danger'),
+
+                // Deposit adalah uang PERUSAHAAN YANG DIPEGANG atas nama
+                // pelanggan, bukan piutang. Sampai 4 September 2026 ia hanya
+                // terlihat di halaman Terima Pembayaran -- artinya tidak ada
+                // satu pun layar yang bisa menjawab "pelanggan mana saja yang
+                // masih punya deposit".
+                Tables\Columns\TextColumn::make('deposit')
+                    ->label(__('Customer Deposit'))
+                    ->getStateUsing(fn ($record): float => static::depositOf($record))
+                    ->money('IDR', locale: 'id')
+                    ->alignEnd()
+                    ->color('success')
+                    ->placeholder('-'),
             ])
             ->filters([])
             ->actions([])
@@ -205,11 +245,33 @@ class ReceivableResource extends Resource
         ];
     }
 
+    /**
+     * Grup yang perlu terlihat di daftar piutang.
+     *
+     * Bukan hanya yang masih berutang. Grup yang seluruh invoicenya sudah
+     * lunas TETAPI masih menyimpan deposit juga harus muncul -- kalau tidak,
+     * uang perusahaan yang dipegang atas nama pelanggan itu lenyap dari layar
+     * dan tidak ada satu pun halaman yang bisa menemukannya kembali.
+     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->whereHas('receivables.invoice', function (Builder $query) {
-                $query->where('status', '!=', Invoice::STATUS_PAID);
+            ->where(function (Builder $query) {
+                $query
+                    ->whereHas('receivables.invoice', function (Builder $invoices) {
+                        $invoices->where('status', '!=', Invoice::STATUS_PAID);
+                    })
+                    ->orWhereRaw('EXISTS (
+                        SELECT 1 FROM payments
+                        WHERE payments.customer_group_id = customer_groups.id
+                          AND payments.deleted_at IS NULL
+                          AND payments.cancelled_at IS NULL
+                          AND (payments.amount + payments.total_deduction) > (
+                              SELECT COALESCE(SUM(payment_allocations.amount_allocated), 0)
+                              FROM payment_allocations
+                              WHERE payment_allocations.payment_id = payments.id
+                          )
+                    )');
             });
     }
 }

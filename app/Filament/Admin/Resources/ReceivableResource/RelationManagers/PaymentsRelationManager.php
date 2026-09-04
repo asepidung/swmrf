@@ -82,6 +82,17 @@ class PaymentsRelationManager extends RelationManager
                     ->money('IDR', locale: 'id')
                     ->alignEnd()
                     ->weight('bold'),
+
+                // Sisa yang belum menempel ke invoice mana pun -- inilah
+                // deposit, dan di sinilah terlihat dari pembayaran MANA ia
+                // berasal.
+                Tables\Columns\TextColumn::make('deposit')
+                    ->label(__('Customer Deposit'))
+                    ->getStateUsing(fn (Payment $record): float => $record->unallocatedAmount())
+                    ->money('IDR', locale: 'id')
+                    ->alignEnd()
+                    ->color('success')
+                    ->placeholder('-'),
             ])
             ->actions([
                 Tables\Actions\Action::make('cancel')

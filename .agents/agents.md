@@ -1420,6 +1420,35 @@ dirancang untuk layar lebar dengan alat pemindai di tangan, bukan untuk HP.
 Keputusan Owner: pastikan nyaman di layar lebar, layar kecil ditangani nanti
 kalau memang perlu.
 
+### Deposit yang tidak bisa dilihat sama saja dengan uang yang hilang
+
+**4 September 2026.** Owner bertanya di mana deposit pelanggan bisa dilihat.
+Jawabannya waktu itu: hanya di halaman Terima Pembayaran, dan hanya untuk grup
+yang sedang dibuka.
+
+Dua akibatnya, dan yang kedua jauh lebih buruk:
+
+- tidak ada satu pun layar yang bisa menjawab **"pelanggan mana saja yang
+  masih punya deposit"**;
+- grup yang seluruh invoicenya SUDAH LUNAS **lenyap sama sekali** dari daftar
+  piutang, karena daftarnya menyaring "punya invoice belum lunas" -- berikut
+  uang perusahaan yang dipegang atas namanya.
+
+Yang kedua itu bentuk kegagalan yang sama persis dengan yang diberantas
+sepanjang hari: uang yang tidak punya tempat untuk terlihat.
+
+Sekarang:
+
+- **kolom Deposit di daftar piutang**, dihitung lewat dua subkueri agregat
+  pada kueri tabelnya -- menambah grup tidak menambah kueri;
+- **daftarnya ikut memuat grup yang tidak berutang tetapi menyimpan deposit**,
+  lewat `EXISTS` pada pembayaran yang belum habis teralokasi;
+- **kolom Deposit per pembayaran** di daftar pembayaran grup, supaya terlihat
+  dari pembayaran MANA depositnya berasal.
+
+Begitu depositnya habis DAN tagihannya lunas, grupnya baru boleh hilang dari
+daftar. Ada test untuk ketiga keadaan itu.
+
 ### Lebih bayar menjadi DEPOSIT PELANGGAN
 
 **4 September 2026, keputusan Project Owner** -- pertanyaan terakhir dari lima
