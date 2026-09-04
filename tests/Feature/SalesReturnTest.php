@@ -9,6 +9,7 @@ use App\Models\BeefStock;
 use App\Models\Customer;
 use App\Models\CustomerSegment;
 use App\Models\DeliveryOrder;
+use App\Models\DeliveryOrderReceipt;
 use App\Models\Grade;
 use App\Models\Permission;
 use App\Models\Product;
@@ -131,13 +132,41 @@ class SalesReturnTest extends TestCase
             ]);
         }
 
-        return DeliveryOrder::create([
+        $do = DeliveryOrder::create([
             'tally_id' => $tally->id,
             'sales_order_id' => $so->id,
             'customer_id' => $this->customer->id,
             'delivery_date' => now()->toDateString(),
             'driver' => 'Joko',
             'status' => 'Delivered',
+        ]);
+
+        if ($this->denganBuktiTerima) {
+            $this->buktiTerima($do);
+        }
+
+        return $do;
+    }
+
+    /**
+     * Retur SELALU sesudah bukti terima. Yang belum ada bukti terimanya
+     * berarti barangnya masih di jalan atau baru diperiksa di tempat
+     * pelanggan -- dan itu tolakan, bukan retur.
+     */
+    private bool $denganBuktiTerima = true;
+
+    private function buktiTerima(DeliveryOrder $do): DeliveryOrderReceipt
+    {
+        return DeliveryOrderReceipt::create([
+            'delivery_order_id' => $do->id,
+            'sales_order_id' => $do->sales_order_id,
+            'customer_id' => $do->customer_id,
+            'delivery_date' => $do->delivery_date,
+            'receipt_number' => 'POD-'.$do->id,
+            'total_box' => 0,
+            'total_weight' => 0,
+            'status' => 'Approved',
+            'created_by' => $this->user->id,
         ]);
     }
 
@@ -458,6 +487,42 @@ class SalesReturnTest extends TestCase
             ->call('processScan');
 
         $this->assertSame(0, $retur->items()->count());
+    }
+
+    /**
+     * Barang yang BELUM ada bukti terimanya bukan urusan Retur Jual.
+     *
+     * Project Owner, 4 September 2026: "retur itu pasti setelah do receipt,
+     * karena kalo belum di receipt berarti masih dalam pengiriman atau baru di
+     * cek customer dan itu tidak masuk retur itu masuknya tolakan akan
+     * ditangani di do receipt".
+     *
+     * Tanpa penjagaan ini, tolakan yang salah pintu memasukkan barang ke stok
+     * padahal fisiknya belum kembali, dan memotong tagihan yang belum pernah
+     * terbit.
+     */
+    public function test_goods_the_customer_has_not_received_cannot_be_returned(): void
+    {
+        $this->denganBuktiTerima = false;
+
+        $do = $this->suratJalan('BARCODE-A');
+        $retur = $this->retur($do);
+        $this->bolehMemakaiHalamanInput();
+
+        Livewire::test(InputReturnItems::class, ['record' => $retur])
+            ->set('dataScan.barcode', 'BARCODE-A')
+            ->call('processScan');
+
+        $this->assertSame(0, $retur->items()->count());
+
+        // Begitu bukti terimanya ada, barang yang sama boleh diretur.
+        $this->buktiTerima($do);
+
+        Livewire::test(InputReturnItems::class, ['record' => $retur])
+            ->set('dataScan.barcode', 'BARCODE-A')
+            ->call('processScan');
+
+        $this->assertSame(1, $retur->items()->count());
     }
 
     /**

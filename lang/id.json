@@ -968,5 +968,6 @@
     "Not valued yet, waiting for cost price": "Belum dinilai, menunggu harga pokok",
     "Delivery shrinkage on :document": "Susut kirim pada :document",
     "Original Delivery Order": "Surat Jalan Asal",
-    "Credited Weight": "Berat Dikreditkan"
+    "Credited Weight": "Berat Dikreditkan",
+    "These goods have not been received by the customer yet. If they were refused, handle it on the Delivery Order approval.": "Barang ini belum diterima pelanggan. Kalau ditolak, tangani di Approve DO."
 }

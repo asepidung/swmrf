@@ -2631,6 +2631,22 @@ terjadi H+1 atau lebih -- sering sesudah invoicenya terbit dan berada di tangan
 pelanggan. Selama masih Draft dokumennya tidak memuat angka uang sama sekali:
 nol di dokumen pelanggan terbaca "gratis", bukan "belum dihitung".
 
+#### Retur SELALU sesudah bukti terima -- 4 September 2026
+
+> "urutannya so - tally - do - do receipt - invoice, retur itu pasti setelah do
+> receipt, karena kalo belum di receipt berarti masih dalam pengiriman atau baru
+> di cek customer dan itu tidak masuk retur itu masuknya tolakan akan ditangani
+> di do receipt"
+
+Aturan ini tidak pernah tertulis di kode sampai sekarang. Barcode yang surat
+jalannya BELUM punya bukti terima ditolak di halaman Input Barang, dengan pesan
+yang mengarahkan ke Approve DO. Inilah penjaga terakhir untuk dua pintu di
+bawah -- pintunya kini benar-benar terpisah oleh WAKTU: sebelum bukti terima
+Tolakan, sesudahnya Retur Jual.
+
+Tanpa penjagaan itu, tolakan yang salah pintu memasukkan barang ke stok padahal
+fisiknya belum kembali, dan memotong tagihan yang belum pernah terbit.
+
 Untuk diingat: **ada DUA pintu barang kembali**, dan keduanya benar.
 
 | | Rejections (Approve DO) | Sales Return |
@@ -2642,6 +2658,35 @@ Untuk diingat: **ada DUA pintu barang kembali**, dan keduanya benar.
 Keduanya tidak bisa dobel: barang yang sudah lewat Rejections tally itemnya
 hilang (penjaga pertama menolak) dan barangnya ada di stok (penjaga kedua
 menolak).
+
+#### Jawaban Owner atas daftar ganjalan Retur Jual -- 4 September 2026
+
+| Ganjalan | Keputusan |
+|---|---|
+| Barang retur langsung siap dijual lagi | Sudah ada penanganannya di lapangan, biasanya masuk jalur **Repack**. Dan **modul QC akan dibuat** -- di situ nanti rumah resminya |
+| Grade & pH diwarisi dari tally lama | Sama: Repack atau metode lain **sesuai keputusan QC** |
+| Retur berharga nol bisa disetujui tanpa peringatan | Biarkan nol dulu sampai HPP ada |
+| HPP barang retur, nilai susut kirim | Menunggu **sesi khusus HPP** |
+
+**Untuk yang membangun modul QC nanti:** barang retur adalah salah satu yang
+harus dilewatkannya. Sekarang tiap karton retur masuk stok sebagai `IN_STOCK`
+dan langsung bisa dijual lagi, dengan grade dan pH yang disalin dari tally
+kiriman lamanya -- padahal justru kondisinya yang berubah, dan itu sebabnya ia
+diretur. Owner menyatakan di lapangan sudah ada penanganannya lewat Repack;
+yang belum ada adalah tempat di SISTEM yang menyatakan lulus atau tidaknya.
+
+**Status `Canceled` DICABUT dari warna badge.** Ia punya warna tetapi tidak ada
+satu pun kode yang menyetelnya. Pembatalan sudah punya jalurnya: retur Draft
+dihapus (hapus lunak, masih terlihat oleh pemegang
+`view_deleted_sales_returns`), retur Approved dibuka kuncinya dulu supaya
+stoknya ditarik dan jejaknya tercatat, baru dihapus. Menambah status Canceled
+yang sungguhan berarti membuat jalur KEDUA untuk hal yang sama.
+
+**DICABUT dari daftar ganjalan:** "retur yang menunggu invoice tidak ada yang
+mengingatkan". Bukti terima yang belum ditagihkan sudah muncul sendiri di
+dashboard lewat `PendingTaskWidget::getDraftInvoiceCount()`, dan mengejar bukti
+terima itulah yang menyelesaikan returnya. Peringatan tersendiri hanya akan
+menjadi angka kedua untuk hal yang sama.
 
 **Yang sengaja tidak dikerjakan:** alokasi yang sudah dilepas TIDAK dipasang
 kembali otomatis saat retur di-unlock. Uangnya menjadi deposit dan dipakai lagi
