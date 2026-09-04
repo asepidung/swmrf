@@ -10,11 +10,13 @@ class SalesReturnItem extends Model
     protected $fillable = [
         'sales_return_id',
         'invoice_id',
+        'origin_delivery_order_id',
         'product_id',
         'warehouse_id',
         'grade_id',
         'barcode',
         'weight',
+        'credited_weight',
         'qty_pcs',
         'unit_price',
         'line_amount',
@@ -27,6 +29,7 @@ class SalesReturnItem extends Model
 
     protected $casts = [
         'weight' => 'float',
+        'credited_weight' => 'float',
         'qty_pcs' => 'integer',
         'unit_price' => 'decimal:2',
         'line_amount' => 'decimal:2',
@@ -92,7 +95,24 @@ class SalesReturnItem extends Model
      */
     public function originDelivery(): ?DeliveryOrder
     {
+        // Yang DITULIS orangnya menang atas apa pun yang bisa ditebak.
+        //
+        // Karton yang rusak dan sulit dibaca barcodenya di-barcode ULANG saat
+        // diretur, sehingga barcodenya baru dan tidak menunjuk ke kiriman mana
+        // pun. Kalau returnya juga tidak menyebut surat jalan -- dan retur
+        // lintas pengiriman memang tidak -- tidak ada yang bisa ditebak sama
+        // sekali, dan barang itu dulu berharga nol tanpa satu pun gejala.
+        if ($this->origin_delivery_order_id) {
+            return $this->originDeliveryOrder;
+        }
+
         return $this->deliveryItWasShippedOn() ?? $this->salesReturn?->deliveryOrder;
+    }
+
+    /** Surat jalan asal yang ditulis orangnya, kalau memang diisi. */
+    public function originDeliveryOrder(): BelongsTo
+    {
+        return $this->belongsTo(DeliveryOrder::class, 'origin_delivery_order_id');
     }
 
     /**

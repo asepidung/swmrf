@@ -2571,18 +2571,60 @@ kita kirim (ada di suatu tally); dan kalau returnya menyebut sebuah surat jalan,
 tally itu harus miliknya. Melonggarkannya untuk retur tanpa surat jalan tidak
 berarti apa saja boleh masuk -- barcode karangan tetap ditolak.
 
-**Batas berat.** Total retur untuk satu produk pada satu invoice tidak boleh
-melebihi berat yang ditagihkan invoice itu, dan retur yang sudah disetujui
-sebelumnya ikut dihitung. Produk yang TIDAK ADA di invoice itu dilewati: ia
-memang berharga nol, dan menolak returnya berarti menahan barangnya di luar
-stok hanya karena uangnya nol.
+#### Berat fisik dan berat yang dikreditkan -- koreksi 4 September 2026 malam
 
-**TERBUKA -- lubang yang tidak bisa ditutup dari sisi retur.** Kalau sebuah box
-ditolak dengan cara MENURUNKAN "Received Weight" di halaman Approve DO alih-alih
-memakai tombol **Rejections**, lalu belakangan box itu dibuatkan Sales Return,
-potongannya dobel. Bukti terima hanya menyimpan total per produk, bukan per
-barcode, jadi tidak ada data yang bisa membedakannya. Menutupnya berarti membuat
-Rejections satu-satunya jalan menolak box -- pekerjaan tersendiri.
+Batas berat yang dipasang #236 sempat MENOLAK retur yang normal, dan itu
+ketahuan dari penjelasan Project Owner:
+
+> "misal kita kirim 1 box 20kg, customer timbang ulang dan ternyata hanya
+> 19.80kg, dan itu yang akan di catat customer dan ukuran pembayaran, jadi pas
+> do receipt akan d sesuaikan menjadi 19.80 dasar perhitungan invoice"
+
+Yang terpindai saat retur berat KIRIM kita (20,00, dari tally item), sementara
+yang ditagihkan berat TERIMA pelanggan (19,80). Setiap box yang selisih
+timbangannya sedikit pun tertolak. Dibuktikan dengan test sebelum diperbaiki.
+
+**Kesalahannya memaksa dua angka yang memang tidak harus sama menjadi satu.**
+
+    weight           berat FISIK yang masuk gudang    -> stok
+    credited_weight  berat yang pernah DITAGIHKAN     -> uang
+
+Batasnya berhenti menolak dan menjadi pembatas nilai: sisa jatah per (invoice,
+produk) dihitung sekali lalu dipakai bersama oleh semua karton di retur itu --
+kalau dibaca ulang per baris, dua karton akan melihat jatah yang sama dan
+sama-sama lolos penuh. Dijaga
+`test_two_cartons_in_one_return_share_the_same_budget`.
+
+Retur berlebihan yang sungguhan tetap tertahan di PINTU MASUK, bukan di
+perhitungan uangnya: barcode yang tidak pernah dikirim ditolak, dan barcode
+yang sama tidak bisa dipindai dua kali.
+
+**"Received Weight" TIDAK BOLEH DIKUNCI.** Rencana membuat Rejections
+satu-satunya jalan menolak box -- sempat dicatat sebagai utang -- DIBATALKAN.
+Field itu memang untuk selisih timbangan, dan mengunci besarnya perubahan akan
+merusak alur yang benar. Yang tersisa hanya kemungkinan teoretis bahwa seseorang
+memakainya untuk menolak satu box utuh lalu membuatkan Sales Return untuk box
+yang sama; menurut Owner itu bukan yang terjadi di lapangan.
+
+#### Barang timbang ulang
+
+> "kadang customer retur banyak barang yang kartonnya gak utuh jadi susah dicari
+> kode barcodenya, nah akhirnya di barcode ulang bahkan ditimbang ulang jadi
+> barcode itu akan baru"
+
+Barcodenya BARU, jadi tidak menunjuk ke kiriman mana pun. Asalnya dulu diambil
+dari surat jalan yang tertulis di returnya -- dan retur lintas pengiriman tidak
+menyebut surat jalan apa pun. Justru kombinasi itu yang paling mungkin terjadi:
+pelanggan besar mengembalikan banyak barang sekaligus, dan sebagian kartonnya
+rusak. Akibatnya barang semacam itu berharga NOL tanpa satu pun gejala.
+
+Sekarang asalnya DITANYAKAN: tab Relabel punya pilihan Surat Jalan Asal
+(`sales_return_items.origin_delivery_order_id`), bawaannya surat jalan returnya
+kalau ada, dibatasi pada surat jalan pelanggan itu sendiri. Kosong pun boleh --
+yang hilang cuma harganya, dan nolnya terbaca di layar.
+
+`SalesReturnItem::originDelivery()` menjawab dengan urutan: yang DITULIS
+orangnya, lalu barcodenya, lalu surat jalan returnya.
 
 **Nota returnya memuat harga**, dikelompokkan per invoice, karena retur
 terjadi H+1 atau lebih -- sering sesudah invoicenya terbit dan berada di tangan

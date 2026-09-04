@@ -100,6 +100,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
             // Satu gudang penerima untuk kedua tab. Barang yang dipindai dan
             // barang yang ditimbang ulang datang dari truk yang sama.
             'warehouse_id' => $gudangPenerima,
+            'origin_delivery_order_id' => $this->record->delivery_order_id,
             'grade_id' => Grade::where('is_active', true)->orderBy('id')->value('id'),
             'ph_level' => session('sr_ph_level_' . $this->record->id),
             'show_exp' => session('sr_show_exp_' . $this->record->id, true),
@@ -165,6 +166,28 @@ class InputReturnItems extends Page implements HasForms, HasTable
                         ->options(\App\Models\Warehouse::where('is_active', true)->pluck('name', 'id'))
                         ->required()
                         ->searchable()
+                        ->extraAttributes(['tabindex' => '-1'])
+                        ->extraInputAttributes(['tabindex' => '-1']),
+
+                    // Karton yang rusak dan sulit dibaca barcodenya di-barcode
+                    // ULANG di tab ini, sehingga barcodenya BARU dan tidak
+                    // menunjuk ke kiriman mana pun.
+                    //
+                    // Selama ini asalnya diambil dari surat jalan yang tertulis
+                    // di returnya. Retur lintas pengiriman tidak menyebut surat
+                    // jalan apa pun -- dan justru di situlah barang timbang
+                    // ulang paling sering muncul, karena pelanggan besar
+                    // mengembalikan banyak barang sekaligus. Akibatnya barang
+                    // semacam itu berharga NOL tanpa satu pun gejala.
+                    //
+                    // Jadi asalnya DITANYAKAN. Kosong pun tidak apa-apa: yang
+                    // hilang cuma harganya, dan nolnya terbaca di layar.
+                    Forms\Components\Select::make('origin_delivery_order_id')
+                        ->hiddenLabel()
+                        ->placeholder(__('Original Delivery Order'))
+                        ->options(fn (): array => $this->originDeliveryOptions())
+                        ->searchable()
+                        ->preload()
                         ->extraAttributes(['tabindex' => '-1'])
                         ->extraInputAttributes(['tabindex' => '-1']),
 
@@ -243,6 +266,26 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 ]),
             ])
             ->statePath('dataWeigh');
+    }
+
+    /**
+     * Surat jalan yang pernah dikirim ke pelanggan retur ini.
+     *
+     * Dibatasi pada pelanggannya sendiri -- barang pelanggan lain tidak pernah
+     * menjadi jawaban -- dan yang terbaru lebih dulu, karena retur biasanya
+     * menyangkut kiriman yang belum lama.
+     *
+     * @return array<int, string>
+     */
+    private function originDeliveryOptions(): array
+    {
+        return \App\Models\DeliveryOrder::query()
+            ->where('customer_id', $this->record->customer_id)
+            ->orderByDesc('delivery_date')
+            ->orderByDesc('id')
+            ->limit(50)
+            ->pluck('delivery_order_number', 'id')
+            ->all();
     }
 
     /**
@@ -476,6 +519,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
 
                 $insertedItem = SalesReturnItem::create([
                     'sales_return_id' => $this->record->id,
+                    'origin_delivery_order_id' => $formData['origin_delivery_order_id'] ?? null,
                     'product_id' => $formData['product_id'],
                     'warehouse_id' => $formData['warehouse_id'] ?? $this->defaultWarehouseId(),
                     'grade_id' => $gradeId,
@@ -510,6 +554,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
 
             $this->weighForm->fill([
                 'warehouse_id' => $formData['warehouse_id'] ?? null,
+                'origin_delivery_order_id' => $formData['origin_delivery_order_id'] ?? null,
                 'product_id' => $formData['product_id'] ?? null,
                 'grade_id' => $formData['grade_id'] ?? null,
                 'pack_date' => $formData['pack_date'] ?? null,

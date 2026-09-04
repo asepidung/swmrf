@@ -146,17 +146,23 @@ class Invoice extends Model
     }
 
     /**
-     * Berat yang sudah dikembalikan untuk satu produk.
+     * Berat yang sudah DIKREDITKAN untuk satu produk -- bukan berat fisiknya.
      *
-     * Dipakai penjaga batas: pelanggan tidak bisa mengembalikan lebih banyak
-     * daripada yang pernah ditagihkan kepadanya.
+     * Dua angka itu memang bisa berbeda. Kita mengirim satu box 20,00 kg;
+     * pelanggan menimbang ulang dan mendapat 19,80 kg, dan itu yang
+     * ditagihkan. Saat boxnya dikembalikan, 20,00 kg masuk gudang tetapi yang
+     * boleh dikreditkan tetap 19,80 kg -- karena hanya sebesar itu yang pernah
+     * ditagihkan kepada mereka.
+     *
+     * Memakai berat fisik di sini akan membuat sisa jatah retur menyusut lebih
+     * cepat daripada seharusnya.
      */
     public function returnedWeightFor(int $productId): float
     {
         return round((float) $this->returnedItems()
             ->where('product_id', $productId)
             ->whereHas('salesReturn', fn ($q) => $q->where('status', 'Approved'))
-            ->sum('weight'), 2);
+            ->sum('credited_weight'), 2);
     }
 
     /** Berat yang ditagihkan invoice ini untuk satu produk. */

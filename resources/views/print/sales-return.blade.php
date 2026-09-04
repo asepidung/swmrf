@@ -140,7 +140,16 @@
                         $firstItem = $items->first();
                         $sumPcs = $items->sum('qty_pcs');
                         $sumWeight = $items->sum('weight');
+                        $sumCredited = $items->sum('credited_weight');
                         $sumAmount = $items->sum('line_amount');
+
+                        // Berat yang masuk gudang bisa berbeda dari berat yang
+                        // dikreditkan: kita menimbang 20,00 kg, pelanggan
+                        // menimbang ulang 19,80 kg, dan yang ditagihkan angka
+                        // mereka. Selisihnya ditulis supaya terbaca kedua
+                        // pihak -- bukan menjadi bahan perdebatan nanti.
+                        $beratBerbeda = $adaNilai
+                            && round((float) $sumCredited, 2) !== round((float) $sumWeight, 2);
 
                         $totalBox += $sumPcs;
                         $totalWeight += $sumWeight;
@@ -151,7 +160,14 @@
                         <td>{{ $firstItem->product?->code }}</td>
                         <td class="left-align">{{ $firstItem->product?->name }}</td>
                         <td>{{ $sumPcs }}</td>
-                        <td class="right-align">{{ number_format($sumWeight, 2) }} Kg</td>
+                        <td class="right-align">
+                            {{ number_format($sumWeight, 2) }} Kg
+                            @if ($beratBerbeda)
+                                <br /><span style="font-size: 11px; color: #555;">
+                                    ditagih {{ number_format((float) $sumCredited, 2) }} Kg
+                                </span>
+                            @endif
+                        </td>
                         @if ($adaNilai)
                             <td class="right-align">{{ number_format((float) $firstItem->unit_price, 0, ',', '.') }}</td>
                             <td class="right-align">{{ number_format((float) $sumAmount, 0, ',', '.') }}</td>

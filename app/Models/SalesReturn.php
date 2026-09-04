@@ -75,7 +75,6 @@ class SalesReturn extends Model
             throw new \RuntimeException(__('This return has no item yet.'));
         }
 
-        $this->guardAgainstOverReturn();
 
         DB::transaction(function (): void {
             $this->update(['status' => 'Approved']);
@@ -182,82 +181,6 @@ class SalesReturn extends Model
     // =================================================================
 
     /**
-     * Tidak boleh mengembalikan lebih banyak daripada yang pernah ditagihkan.
-     *
-     * Diperiksa per INVOICE per PRODUK, bukan sekadar totalnya: mengembalikan
-     * 20 kg sirloin yang tidak pernah dikirim tetap salah walaupun invoicenya
-     * memuat 500 kg ribeye.
-     *
-     * Retur yang sudah disetujui sebelumnya ikut dihitung, jadi dua retur
-     * kecil tidak bisa bersama-sama melewati batas yang tidak bisa dilewati
-     * satu retur besar.
-     *
-     * Yang TIDAK bisa ditangkap dari sini: kalau sebuah box ditolak dengan
-     * cara MENURUNKAN "Received Weight" di halaman Approve DO alih-alih
-     * memakai tombol Rejections, lalu belakangan box itu dibuatkan Sales
-     * Return. Bukti terima hanya menyimpan total per produk, bukan per
-     * barcode, jadi tidak ada data yang bisa membedakannya. Menutupnya berarti
-     * membuat Rejections satu-satunya jalan menolak box -- pekerjaan
-     * tersendiri.
-     *
-     * @throws \RuntimeException
-     */
-    private function guardAgainstOverReturn(): void
-    {
-        $rekap = [];
-
-        foreach ($this->items as $item) {
-            $invoice = $item->billItWasChargedOn();
-
-            // Karton yang kirimannya belum ditagihkan tidak punya batas untuk
-            // dibandingkan. Ia diperiksa lagi nanti, saat invoicenya terbit
-            // dan memungutnya.
-            if (! $invoice) {
-                continue;
-            }
-
-            $kunci = $invoice->getKey().':'.$item->product_id;
-
-            $rekap[$kunci] ??= [
-                'invoice' => $invoice,
-                'product_id' => (int) $item->product_id,
-                'berat' => 0.0,
-            ];
-
-            $rekap[$kunci]['berat'] += (float) $item->weight;
-        }
-
-        foreach ($rekap as $baris) {
-            $invoice = $baris['invoice'];
-            $ditagih = $invoice->billedWeightFor($baris['product_id']);
-
-            // Produk yang TIDAK ADA di invoice ini tidak punya batas untuk
-            // dilanggar -- ia memang berharga nol, dan nolnya terbaca di layar.
-            // Itu terjadi pada barang yang ditimbang ulang dengan produk yang
-            // berbeda dari yang dikirim. Menolak returnya berarti menahan
-            // barangnya di luar stok hanya karena uangnya nol.
-            if ($ditagih <= 0) {
-                continue;
-            }
-
-            $sudahDiretur = $invoice->returnedWeightFor($baris['product_id']);
-            $seluruhnya = round($sudahDiretur + $baris['berat'], 2);
-
-            if ($seluruhnya > $ditagih) {
-                throw new \RuntimeException(__(
-                    'Returning :returned kg of :product is more than the :billed kg billed on invoice :invoice.',
-                    [
-                        'returned' => number_format($seluruhnya, 2),
-                        'product' => Product::find($baris['product_id'])?->name ?? '-',
-                        'billed' => number_format($ditagih, 2),
-                        'invoice' => $invoice->invoice_number,
-                    ],
-                ));
-            }
-        }
-    }
-
-    /**
      * Invoice yang dipotong retur ini -- bisa LEBIH DARI SATU.
      *
      * Tautannya ada di kartonnya, bukan di returnya. Satu retur boleh memuat
@@ -288,19 +211,65 @@ class SalesReturn extends Model
      * Karton yang kirimannya BELUM ditagihkan tetap dinilai tetapi belum
      * menempel ke mana-mana. Ia menunggu, dan invoice yang lahir kemudian
      * untuk surat jalan itu yang memungutnya.
+     *
+     * BERAT FISIK dan BERAT YANG DIKREDITKAN dipisah, dan itu inti dari
+     * rutin ini. Kita mengirim satu box 20,00 kg; pelanggan menimbang ulang
+     * dan mendapat 19,80 kg, dan angka itulah yang ditagihkan. Saat boxnya
+     * kembali, 20,00 kg masuk gudang -- itu yang benar-benar ada di sana --
+     * tetapi yang boleh dikreditkan tetap 19,80 kg.
+     *
+     * Versi sebelumnya MENOLAK retur semacam itu, karena mengira berat kirim
+     * dan berat tagih harus sama. Project Owner menegaskan selisih timbangan
+     * adalah alur yang biasa, bukan penyimpangan; penolakannya yang salah,
+     * bukan returnya. Retur berlebihan yang sungguhan tetap tertahan di pintu
+     * masuk: barcode yang tidak pernah dikirim ditolak, dan barcode yang sama
+     * tidak bisa dipindai dua kali.
      */
     public function attachToBill(): void
     {
         $total = 0.0;
         $invoices = [];
 
+        // Sisa jatah kredit per (invoice, produk), dipakai bersama oleh semua
+        // karton di retur ini supaya dua baris tidak sama-sama memakai jatah
+        // yang sama.
+        $sisaJatah = [];
+
         foreach ($this->items as $item) {
             $invoice = $item->billItWasChargedOn();
-            [$perKg, $jumlah] = $this->sellingPriceFor($item, $invoice);
+            [$perKg, $hargaPenuh] = $this->sellingPriceFor($item, $invoice);
+
+            $beratFisik = (float) $item->weight;
+            $beratKredit = $beratFisik;
+
+            if ($invoice) {
+                $kunci = $invoice->getKey().':'.$item->product_id;
+
+                if (! array_key_exists($kunci, $sisaJatah)) {
+                    $sisaJatah[$kunci] = max(
+                        $invoice->billedWeightFor((int) $item->product_id)
+                            - $invoice->returnedWeightFor((int) $item->product_id),
+                        0,
+                    );
+                }
+
+                $beratKredit = min($beratFisik, $sisaJatah[$kunci]);
+                $sisaJatah[$kunci] = round($sisaJatah[$kunci] - $beratKredit, 2);
+            }
+
+            $beratKredit = round($beratKredit, 2);
+
+            // Nilainya dihitung dari berat yang DIKREDITKAN, bukan berat
+            // fisiknya. Kalau keduanya sama -- dan itu keadaan biasa --
+            // hasilnya persis sama dengan harga penuhnya.
+            $jumlah = $beratKredit === round($beratFisik, 2)
+                ? $hargaPenuh
+                : round($beratKredit * $perKg, 0);
 
             $item->forceFill([
                 'invoice_id' => $invoice?->getKey(),
                 'unit_price' => $perKg,
+                'credited_weight' => $beratKredit,
                 'line_amount' => $jumlah,
             ])->save();
 
@@ -331,7 +300,11 @@ class SalesReturn extends Model
     {
         $invoices = $this->billsReduced();
 
-        $this->items()->update(['invoice_id' => null, 'line_amount' => 0]);
+        $this->items()->update([
+            'invoice_id' => null,
+            'credited_weight' => null,
+            'line_amount' => 0,
+        ]);
         $this->forceFill(['credit_amount' => 0])->save();
 
         foreach ($invoices as $invoice) {

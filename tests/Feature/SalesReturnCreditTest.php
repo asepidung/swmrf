@@ -729,37 +729,70 @@ class SalesReturnCreditTest extends TestCase
     }
 
     // =====================================================================
-    // Batas berat
+    // Berat fisik lawan berat yang dikreditkan
     // =====================================================================
 
     /**
-     * Tidak bisa mengembalikan lebih banyak daripada yang pernah ditagihkan.
+     * Selisih timbangan: kirim 20,00 kg, ditagih 19,80 kg, diretur 20,00 kg.
+     *
+     * Project Owner, 4 September 2026: "misal kita kirim 1 box 20kg, customer
+     * timbang ulang dan ternyata hanya 19.80kg, dan itu yang akan di catat
+     * customer dan ukuran pembayaran, jadi pas do receipt akan d sesuaikan
+     * menjadi 19.80 dasar perhitungan invoice".
+     *
+     * Versi sebelumnya MENOLAK retur ini. Yang benar: stok menerima 20,00
+     * karena itu yang ada di gudang, tetapi kreditnya 19,80 karena hanya
+     * sebesar itu yang pernah ditagihkan.
      */
-    public function test_returning_more_than_was_billed_is_refused(): void
+    public function test_a_weighing_difference_does_not_block_the_return(): void
+    {
+        $this->kirim([['produk' => $this->sirloin, 'berat' => 20, 'harga' => 100000, 'diskon' => 0]]);
+        $invoice = $this->tagih([['produk' => $this->sirloin, 'berat' => 19.80, 'harga' => 100000]]);
+
+        // Yang terpindai berat KIRIM kita.
+        $retur = $this->retur([['produk' => $this->sirloin, 'berat' => 20]]);
+        $retur->approve();
+
+        $this->assertSame('Approved', $retur->fresh()->status);
+
+        $karton = $retur->items()->first();
+
+        // Stok menerima berat fisiknya...
+        $this->assertSame(20.0, (float) $karton->weight);
+        $this->assertDatabaseHas('beef_stocks', ['weight' => 20.0]);
+
+        // ...tapi uangnya sebesar yang pernah ditagihkan.
+        $this->assertSame(19.80, (float) $karton->credited_weight);
+        $this->assertSame(1980000.0, (float) $retur->fresh()->credit_amount);
+        $this->assertSame(0.0, (float) $invoice->fresh()->balance);
+    }
+
+    /**
+     * Kelebihan yang sungguhan dikreditkan NOL, bukan ditolak.
+     *
+     * Barangnya tetap masuk gudang -- ia memang ada di sana. Yang tidak
+     * pernah ditagihkan tidak bisa dikembalikan uangnya.
+     */
+    public function test_returning_more_than_was_billed_is_credited_only_up_to_the_bill(): void
     {
         $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000, 'diskon' => 0]]);
         $invoice = $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
 
         $retur = $this->retur([['produk' => $this->sirloin, 'berat' => 120]]);
+        $retur->approve();
 
-        try {
-            $retur->approve();
-            $this->fail('Retur melebihi tagihan seharusnya ditolak.');
-        } catch (\RuntimeException $e) {
-            $this->assertStringContainsString('120.00', $e->getMessage());
-            $this->assertStringContainsString($invoice->invoice_number, $e->getMessage());
-        }
+        $this->assertSame('Approved', $retur->fresh()->status);
+        $this->assertSame(100.0, (float) $retur->items()->first()->credited_weight);
+        $this->assertSame(10000000.0, (float) $retur->fresh()->credit_amount);
 
-        // Tidak satu pun akibatnya boleh terjadi.
-        $this->assertSame('Draft', $retur->fresh()->status);
-        $this->assertSame(10000000.0, $invoice->fresh()->billedAmount());
-        $this->assertDatabaseCount('beef_stocks', 0);
+        // Tagihannya habis, tidak menjadi negatif.
+        $this->assertSame(0.0, $invoice->fresh()->billedAmount());
     }
 
     /**
-     * Dua retur kecil bersama-sama pun tidak bisa melewati batasnya.
+     * Jatahnya dibagi antar retur: yang kedua hanya mendapat sisanya.
      */
-    public function test_two_small_returns_cannot_together_exceed_what_was_billed(): void
+    public function test_a_second_return_is_credited_only_what_is_left(): void
     {
         $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000, 'diskon' => 0]]);
         $invoice = $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
@@ -767,16 +800,41 @@ class SalesReturnCreditTest extends TestCase
         $this->retur([['produk' => $this->sirloin, 'berat' => 70]])->approve();
 
         $kedua = $this->retur([['produk' => $this->sirloin, 'berat' => 40]]);
-
-        $this->expectException(\RuntimeException::class);
-
         $kedua->approve();
+
+        // Sisanya tinggal 30 kg.
+        $this->assertSame(30.0, (float) $kedua->items()->first()->credited_weight);
+        $this->assertSame(3000000.0, (float) $kedua->fresh()->credit_amount);
+        $this->assertSame(10000000.0, $invoice->fresh()->returnedAmount());
+        $this->assertSame(0.0, $invoice->fresh()->billedAmount());
     }
 
     /**
-     * Mengembalikan SELURUHNYA masih boleh -- batasnya tepat, bukan kurang.
+     * Dua karton dalam SATU retur pun berbagi jatah yang sama.
+     *
+     * Kalau jatahnya dibaca ulang dari basis data untuk tiap baris, karton
+     * kedua akan melihat jatah yang belum berkurang oleh karton pertama --
+     * keduanya lolos penuh, dan kreditnya melebihi tagihan.
      */
-    public function test_returning_exactly_everything_is_still_allowed(): void
+    public function test_two_cartons_in_one_return_share_the_same_budget(): void
+    {
+        $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000, 'diskon' => 0]]);
+        $invoice = $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
+
+        $retur = $this->retur([
+            ['produk' => $this->sirloin, 'berat' => 80],
+            ['produk' => $this->sirloin, 'berat' => 80],
+        ]);
+        $retur->approve();
+
+        $this->assertSame(10000000.0, (float) $retur->fresh()->credit_amount);
+        $this->assertSame(0.0, $invoice->fresh()->billedAmount());
+    }
+
+    /**
+     * Mengembalikan SELURUHNYA tetap dikreditkan penuh.
+     */
+    public function test_returning_exactly_everything_is_credited_in_full(): void
     {
         $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000, 'diskon' => 0]]);
         $invoice = $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
@@ -785,6 +843,89 @@ class SalesReturnCreditTest extends TestCase
 
         $this->assertSame(0.0, $invoice->fresh()->billedAmount());
         $this->assertSame(0.0, (float) $invoice->fresh()->balance);
+    }
+
+    /**
+     * Barang TIMBANG ULANG di retur tanpa surat jalan tetap berharga.
+     *
+     * Project Owner, 4 September 2026: "kadang customer retur banyak barang
+     * yang kartonnya gak utuh jadi susah dicari kode barcodenya, nah akhirnya
+     * di barcode ulang bahkan ditimbang ulang jadi barcode itu akan baru".
+     *
+     * Barcode baru tidak menunjuk ke kiriman mana pun, dan retur lintas
+     * pengiriman tidak menyebut surat jalan apa pun -- jadi tidak ada yang
+     * bisa ditebak. Asalnya ditulis di barisnya sendiri.
+     */
+    public function test_a_relabelled_carton_is_priced_from_the_delivery_named_on_its_row(): void
+    {
+        $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000, 'diskon' => 0]]);
+        $deliveryOrder = $this->deliveryOrder;
+        $invoice = $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
+
+        $retur = SalesReturn::create([
+            'return_date' => now()->toDateString(),
+            'delivery_order_id' => null,
+            'customer_id' => $this->customer->id,
+            'status' => 'Draft',
+            'created_by' => $this->user->id,
+        ]);
+
+        // Barcode BARU, tidak ada di tally mana pun -- persis seperti barang
+        // yang di-barcode ulang karena kartonnya rusak.
+        SalesReturnItem::create([
+            'sales_return_id' => $retur->id,
+            'origin_delivery_order_id' => $deliveryOrder->id,
+            'product_id' => $this->sirloin->id,
+            'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id,
+            'barcode' => '4040926000001',
+            'weight' => 15,
+            'qty_pcs' => 1,
+            'pack_date' => now()->toDateString(),
+            'origin' => '4',
+            'is_repacked' => true,
+        ]);
+
+        $retur->refresh()->approve();
+
+        $this->assertSame(1500000.0, (float) $retur->fresh()->credit_amount);
+        $this->assertSame($invoice->id, $retur->items()->first()->invoice_id);
+    }
+
+    /**
+     * Tanpa asal yang ditulis, barang timbang ulang memang berharga nol --
+     * dan nolnya terbaca, bukan ditebak.
+     */
+    public function test_a_relabelled_carton_with_no_origin_is_credited_zero(): void
+    {
+        $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000, 'diskon' => 0]]);
+        $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
+
+        $retur = SalesReturn::create([
+            'return_date' => now()->toDateString(),
+            'delivery_order_id' => null,
+            'customer_id' => $this->customer->id,
+            'status' => 'Draft',
+            'created_by' => $this->user->id,
+        ]);
+
+        SalesReturnItem::create([
+            'sales_return_id' => $retur->id,
+            'product_id' => $this->sirloin->id,
+            'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id,
+            'barcode' => '4040926000002',
+            'weight' => 15,
+            'qty_pcs' => 1,
+            'pack_date' => now()->toDateString(),
+            'origin' => '4',
+            'is_repacked' => true,
+        ]);
+
+        $retur->refresh()->approve();
+
+        $this->assertSame(0.0, (float) $retur->fresh()->credit_amount);
+        $this->assertNull($retur->items()->first()->invoice_id);
     }
 
     // =====================================================================
@@ -814,6 +955,27 @@ class SalesReturnCreditTest extends TestCase
             ->assertSee($invoice->invoice_number)
             ->assertSee('2.000.000')
             ->assertSee('Nilai retur');
+    }
+
+    /**
+     * Selisih timbangannya tertulis di dokumen pelanggan.
+     *
+     * Kalau berat yang masuk gudang berbeda dari yang ditagihkan, angkanya
+     * dituliskan berdampingan. Selisih yang tidak terbaca akan menjadi bahan
+     * perdebatan berminggu-minggu kemudian.
+     */
+    public function test_the_printed_note_shows_both_weights_when_they_differ(): void
+    {
+        $this->kirim([['produk' => $this->sirloin, 'berat' => 20, 'harga' => 100000, 'diskon' => 0]]);
+        $this->tagih([['produk' => $this->sirloin, 'berat' => 19.80, 'harga' => 100000]]);
+
+        $retur = $this->retur([['produk' => $this->sirloin, 'berat' => 20]]);
+        $retur->approve();
+
+        $this->get(route('sales-return.pdf', $retur->fresh()))
+            ->assertOk()
+            ->assertSee('20.00 Kg')
+            ->assertSee('ditagih 19.80 Kg');
     }
 
     /**
