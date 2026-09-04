@@ -1420,6 +1420,48 @@ dirancang untuk layar lebar dengan alat pemindai di tangan, bukan untuk HP.
 Keputusan Owner: pastikan nyaman di layar lebar, layar kecil ditangani nanti
 kalau memang perlu.
 
+### Lebih bayar menjadi DEPOSIT PELANGGAN
+
+**4 September 2026, keputusan Project Owner** -- pertanyaan terakhir dari lima
+yang lama menggantung. Kelebihan transfer dulu ditolak di pintu karena tidak
+ada tempat menaruhnya, sehingga harus diurus di luar sistem.
+
+Bentuknya mencerminkan uang muka pemasok yang sudah lebih dulu bekerja di sisi
+pembelian: uang yang sudah benar-benar diterima, belum menempel ke tagihan
+mana pun, menunggu invoice berikutnya.
+
+**Bedanya satu, dan disengaja: depositnya DIHITUNG, bukan disimpan.** Sisi
+pemasok menyimpannya di kolom `allocated_amount`; kolom semacam itu selalu
+bisa melenceng dari baris alokasinya sendiri tanpa ada yang menyadarinya. Di
+sini alokasinya yang menjadi satu-satunya kebenaran, jadi tidak ada kolom baru
+sama sekali -- dan tidak ada migrasi.
+
+**Deposit dipakai LEBIH DULU**, sebelum uang yang masuk hari ini. Itu membuat
+deposit tidak menumpuk, dan membuat pertanyaan "kenapa pelanggan ini masih
+punya deposit padahal tagihannya banyak" tidak pernah muncul.
+
+**Alokasinya melekat pada pembayaran yang MEMBERI uangnya**, bukan pada
+pembayaran yang kebetulan sedang dicatat. Itu yang membuat deposit terpakai
+tetap bisa ditelusuri ke asalnya -- dan yang membuat membatalkan pembayaran
+lama otomatis mengembalikan tagihan yang ditutupnya belakangan.
+
+**Aturan keseimbangannya berubah bentuk**, dari "harus sama persis" menjadi
+dua batas:
+
+- alokasi tidak boleh MELEBIHI uang yang ada (termasuk deposit);
+- alokasi tidak boleh KURANG dari potongannya. Potongan diberikan justru
+  karena ada tagihan yang dianggap lunas tanpa uangnya masuk; potongan yang
+  tidak menempel ke tagihan mana pun berarti uang hilang tanpa sebab.
+
+**Pembayaran bernominal NOL kini sah, asal ada depositnya.** Melunasi tagihan
+sepenuhnya dari deposit memang berbentuk begitu: tidak ada uang baru hari ini,
+yang dipakai uang yang sudah lama diterima. Penjaga lama menolak semua
+nominal nol dan sempat menutup jalur ini.
+
+Buku kas tidak berubah perlakuannya: yang masuk tetap seluruh uang yang
+diterima, potongannya tetap keluar. Deposit bukan peristiwa kas -- uangnya
+sudah masuk sejak hari pembayarannya.
+
 ### Pembayaran pelanggan bisa DIBATALKAN -- membalik, bukan menghapus
 
 **4 September 2026, keputusan Project Owner** -- jawaban atas pertanyaan

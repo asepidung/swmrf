@@ -164,13 +164,17 @@ class ReceivableSplitPaymentTest extends TestCase
     }
 
     /**
-     * Uang yang tidak habis dibagi DITOLAK.
+     * Uang yang tidak habis dibagi menjadi DEPOSIT, bukan ditolak.
      *
-     * Kalau 2.500.000 masuk tetapi hanya 2.000.000 yang dialokasikan, sisanya
-     * 500 ribu tidak menempel ke tagihan mana pun -- uang yang sudah diterima
-     * tetapi tidak mengurangi piutang siapa pun.
+     * Sampai 4 September 2026 ini ditolak, dengan alasan uang yang tidak
+     * menempel ke tagihan mana pun akan hilang tanpa jejak. Alasannya benar
+     * waktu itu -- memang tidak ada tempat menaruhnya.
+     *
+     * Sekarang ada: sisanya menjadi deposit pelanggan, terlihat di halaman
+     * pembayaran dan dipakai lebih dulu pada pembayaran berikutnya. Yang
+     * dulu ditakutkan justru sudah terjawab, bukan diabaikan.
      */
-    public function test_money_that_is_not_fully_split_is_refused(): void
+    public function test_money_that_is_not_fully_split_becomes_a_deposit(): void
     {
         $duaJuta = $this->invoice(2000000);
         $this->invoice(3000000);
@@ -184,8 +188,13 @@ class ReceivableSplitPaymentTest extends TestCase
             ])
             ->call('save');
 
-        $this->assertSame(0, Payment::count(), 'Tidak boleh ada yang tersimpan.');
-        $this->assertSame(2000000.0, (float) $duaJuta->fresh()->balance);
+        $this->assertSame(1, Payment::count(), 'Pembayarannya tersimpan.');
+        $this->assertSame(0.0, (float) $duaJuta->fresh()->balance, 'Yang dialokasikan tetap lunas.');
+        $this->assertSame(
+            500000.0,
+            $this->group->availableDeposit(),
+            'Dan sisanya tercatat sebagai deposit, bukan lenyap.',
+        );
     }
 
     /** Invoice biasa: jatuh tempo dihitung dari tanggal invoice + TOP. */

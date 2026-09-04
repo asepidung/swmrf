@@ -941,5 +941,11 @@
     "This payment has already been cancelled.": "This payment has already been cancelled.",
     "Cancellation of :number": "Cancellation of :number",
     "The allocation goes back to each invoice and the cash book gets its reversing lines. The payment itself stays on record.": "The allocation goes back to each invoice and the cash book gets its reversing lines. The payment itself stays on record.",
-    "For example: wrong amount, wrong customer group.": "For example: wrong amount, wrong customer group."
+    "For example: wrong amount, wrong customer group.": "For example: wrong amount, wrong customer group.",
+    "Customer Deposit": "Customer Deposit",
+    "used first, before the money received today": "used first, before the money received today",
+    "Allocation is larger than the money available": "Allocation is larger than the money available",
+    "Money available is Rp :available while Rp :allocated has been allocated.": "Money available is Rp :available while Rp :allocated has been allocated.",
+    "Deductions are larger than what is being settled": "Deductions are larger than what is being settled",
+    "A deduction only makes sense against a bill it settles.": "A deduction only makes sense against a bill it settles."
 }

@@ -44,6 +44,33 @@ class Payment extends Model
             ->dontSubmitEmptyLogs();
     }
 
+    /**
+     * Uang pembayaran ini yang BELUM menempel ke invoice mana pun.
+     *
+     * Inilah deposit pelanggan: uang yang sudah benar-benar diterima tetapi
+     * belum menutup tagihan apa pun, menunggu invoice berikutnya. Cerminan
+     * dari uang muka pemasok yang sudah lebih dulu bekerja di sisi pembelian
+     * -- lihat `SupplierPayment::unallocated_amount`.
+     *
+     * DIHITUNG, bukan disimpan. Sisi pemasok menyimpannya di kolom
+     * `allocated_amount`, dan kolom semacam itu selalu bisa melenceng dari
+     * baris alokasinya sendiri tanpa ada yang menyadarinya. Di sini alokasinya
+     * yang menjadi satu-satunya kebenaran.
+     *
+     * Pembayaran yang sudah dibatalkan tidak menyisakan deposit apa pun --
+     * uangnya sudah dibalik keluar.
+     */
+    public function unallocatedAmount(): float
+    {
+        if ($this->isCancelled()) {
+            return 0.0;
+        }
+
+        $tersedia = (float) $this->amount + (float) $this->total_deduction;
+
+        return round(max($tersedia - (float) $this->allocations()->sum('amount_allocated'), 0), 2);
+    }
+
     /** Sudah dibatalkan atau belum. */
     public function isCancelled(): bool
     {

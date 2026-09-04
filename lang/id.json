@@ -941,5 +941,11 @@
     "This payment has already been cancelled.": "Pembayaran ini sudah dibatalkan.",
     "Cancellation of :number": "Pembatalan :number",
     "The allocation goes back to each invoice and the cash book gets its reversing lines. The payment itself stays on record.": "Alokasinya dikembalikan ke tiap invoice dan buku kas mendapat baris pembaliknya. Pembayarannya sendiri tetap tercatat.",
-    "For example: wrong amount, wrong customer group.": "Misalnya: nominalnya salah, grup pelanggannya keliru."
+    "For example: wrong amount, wrong customer group.": "Misalnya: nominalnya salah, grup pelanggannya keliru.",
+    "Customer Deposit": "Deposit Pelanggan",
+    "used first, before the money received today": "dipakai lebih dulu, sebelum uang yang masuk hari ini",
+    "Allocation is larger than the money available": "Alokasinya lebih besar daripada uang yang ada",
+    "Money available is Rp :available while Rp :allocated has been allocated.": "Uang yang tersedia Rp :available, sementara yang dialokasikan Rp :allocated.",
+    "Deductions are larger than what is being settled": "Potongannya lebih besar daripada yang dilunasi",
+    "A deduction only makes sense against a bill it settles.": "Potongan hanya berarti bila ada tagihan yang dilunasinya."
 }
