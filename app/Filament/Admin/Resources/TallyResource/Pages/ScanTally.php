@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\TallyResource\Pages;
 
 use App\Filament\Admin\Resources\TallyResource;
+use App\Models\SalesOrder;
 use App\Models\Tally;
 use App\Models\TallyItem;
 use App\Models\BeefStock;
@@ -51,7 +52,7 @@ class ScanTally extends Page implements HasForms, HasTable
     {
         $this->record = $record;
 
-        if ($this->record->status !== 'processing' || in_array($this->record->salesOrder?->status, ['cancelled', 'canceled'])) {
+        if ($this->record->status !== Tally::STATUS_PROCESSING || $this->record->salesOrder?->status === SalesOrder::STATUS_CANCELLED) {
             $this->redirect(TallyResource::getUrl('view', ['record' => $this->record->id]));
             return;
         }
@@ -105,7 +106,7 @@ class ScanTally extends Page implements HasForms, HasTable
                 ->action(function (array $data) {
                     DB::transaction(function () use ($data) {
                         $this->record->update([
-                            'status' => 'locked',
+                            'status' => Tally::STATUS_LOCKED,
                             'seal_number' => $data['seal_number'] ?? null,
                         ]);
                         $this->record->salesOrder->update([
@@ -145,7 +146,7 @@ class ScanTally extends Page implements HasForms, HasTable
                         ->send();
                     $this->redirect(TallyResource::getUrl('index'));
                 })
-                ->visible(fn () => $this->record->status === 'processing' && auth()->user()->hasPermission('delete_tallies')),
+                ->visible(fn () => $this->record->status === Tally::STATUS_PROCESSING && auth()->user()->hasPermission('delete_tallies')),
         ];
     }
 
@@ -370,7 +371,7 @@ class ScanTally extends Page implements HasForms, HasTable
 
     public function scan()
     {
-        if ($this->record->status !== 'processing' || in_array($this->record->salesOrder?->status, ['cancelled', 'canceled'])) {
+        if ($this->record->status !== Tally::STATUS_PROCESSING || $this->record->salesOrder?->status === SalesOrder::STATUS_CANCELLED) {
             return;
         }
 

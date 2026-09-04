@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\TallyResource\Pages;
+use App\Models\SalesOrder;
 use App\Models\Tally;
 use App\Support\TrashedRecords;
 use Filament\Forms;
@@ -76,10 +77,23 @@ class TallyResource extends Resource
                     ->label(__('Status'))
                     ->badge()
                     ->colors([
-                        'info' => 'processing',
-                        'success' => 'locked',
+                        // 'do' dulu TIDAK ADA di peta ini, padahal ia status
+                        // yang paling banyak dimiliki dokumen sungguhan
+                        // (diperiksa di hosting: do=3). Tally yang sudah
+                        // menjadi surat jalan tampil tanpa warna, terbaca
+                        // seperti keadaan yang tidak dikenali -- persis bug
+                        // yang sama dengan 'on_delivery' di Sales Order.
+                        'info' => Tally::STATUS_PROCESSING,
+                        'success' => Tally::STATUS_LOCKED,
+                        'gray' => Tally::STATUS_DELIVERED,
                     ])
-                    ->formatStateUsing(fn (string $state): string => $state === 'locked' ? __('Approved') : ucfirst($state)),
+                    // 'do' dulu tampil sebagai "Do" -- hasil `ucfirst()` pada
+                    // singkatan, yang tidak berarti apa-apa bagi pembacanya.
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        Tally::STATUS_LOCKED => __('Approved'),
+                        Tally::STATUS_DELIVERED => __('Delivery Order'),
+                        default => ucfirst($state),
+                    }),
 
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label(__('Created By'))
@@ -177,7 +191,7 @@ class TallyResource extends Resource
                     ->color('primary')
                     ->tooltip(__('Scan'))
                     ->url(fn (Tally $record): string => static::getUrl('scan', ['record' => $record->id]))
-                    ->visible(fn (Tally $record) => $record->status === 'processing' && !in_array($record->salesOrder?->status, ['cancelled', 'canceled'])),
+                    ->visible(fn (Tally $record) => $record->status === Tally::STATUS_PROCESSING && $record->salesOrder?->status !== SalesOrder::STATUS_CANCELLED),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

@@ -3,6 +3,8 @@
 namespace App\Filament\Admin\Resources\TallyResource\Pages;
 
 use App\Filament\Admin\Resources\TallyResource;
+use App\Models\SalesOrder;
+use App\Models\Tally;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Pages\ViewRecord;
@@ -43,7 +45,7 @@ class ViewTally extends ViewRecord
                 ->color('primary')
                 ->iconButton()
                 ->url(fn () => $this->getResource()::getUrl('scan', ['record' => $this->record->id]))
-                ->visible(fn () => $this->record->status === 'processing' && !in_array($this->record->salesOrder?->status, ['cancelled', 'canceled'])),
+                ->visible(fn () => $this->record->status === Tally::STATUS_PROCESSING && $this->record->salesOrder?->status !== SalesOrder::STATUS_CANCELLED),
 
             Actions\Action::make('approve')
                 ->label('')
@@ -62,7 +64,7 @@ class ViewTally extends ViewRecord
                 ->action(function (array $data) {
                     DB::transaction(function () use ($data) {
                         $this->record->update([
-                            'status' => 'locked',
+                            'status' => Tally::STATUS_LOCKED,
                             'seal_number' => $data['seal_number'] ?? null,
                         ]);
                         $this->record->salesOrder->update([
@@ -81,7 +83,7 @@ class ViewTally extends ViewRecord
 
                     $this->redirect($this->getResource()::getUrl('view', ['record' => $this->record->id]));
                 })
-                ->visible(fn () => $this->record->status === 'processing' && auth()->user()->hasPermission('lock_tallies')),
+                ->visible(fn () => $this->record->status === Tally::STATUS_PROCESSING && auth()->user()->hasPermission('lock_tallies')),
 
             Actions\Action::make('print')
                 ->label('')
@@ -104,10 +106,10 @@ class ViewTally extends ViewRecord
                 ->action(function () {
                     DB::transaction(function () {
                         $this->record->update([
-                            'status' => 'processing',
+                            'status' => Tally::STATUS_PROCESSING,
                         ]);
                         $this->record->salesOrder->update([
-                            'status' => 'processing',
+                            'status' => Tally::STATUS_PROCESSING,
                         ]);
 
                         activity('tally')
@@ -122,7 +124,7 @@ class ViewTally extends ViewRecord
 
                     $this->redirect($this->getResource()::getUrl('scan', ['record' => $this->record->id]));
                 })
-                ->visible(fn () => $this->record->status === 'locked' && auth()->user()->hasPermission('lock_tallies')),
+                ->visible(fn () => $this->record->status === Tally::STATUS_LOCKED && auth()->user()->hasPermission('lock_tallies')),
 
             Actions\Action::make('delete')
                 ->label('')
@@ -143,7 +145,7 @@ class ViewTally extends ViewRecord
                         ->send();
                     $this->redirect($this->getResource()::getUrl('index'));
                 })
-                ->visible(fn () => $this->record->status === 'processing' && auth()->user()->hasPermission('delete_tallies')),
+                ->visible(fn () => $this->record->status === Tally::STATUS_PROCESSING && auth()->user()->hasPermission('delete_tallies')),
         ];
     }
 
