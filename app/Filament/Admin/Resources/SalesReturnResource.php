@@ -90,10 +90,21 @@ class SalesReturnResource extends Resource
                     ->label(__('Customer'))
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('credit_amount')
+                    ->label(__('Credit Value'))
+                    ->money('IDR', locale: 'id')
+                    ->alignRight()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('invoice.invoice_number')
+                    ->label(__('Reduces Invoice'))
+                    ->placeholder(__('Not billed yet'))
+                    ->searchable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('note')
                     ->label(__('Note'))
                     ->searchable()
-                    ->limit(50),
+                    ->limit(50)
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('Status'))
                     ->badge()

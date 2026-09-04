@@ -73,6 +73,12 @@ class CreateInvoice extends CreateRecord
                 }
             }
 
+            // Retur yang sudah disetujui sebelum invoice ini lahir menempel
+            // sekarang. Barangnya sudah kembali ke gudang berhari-hari lalu;
+            // tanpa ini invoicenya menagih barang yang tidak pernah dipegang
+            // pelanggan.
+            $invoice->collectPendingSalesReturns();
+
             // Create Receivable
             Receivable::create([
                 'invoice_id' => $invoice->id,

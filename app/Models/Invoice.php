@@ -118,6 +118,26 @@ class Invoice extends Model
         return $this->hasOne(Receivable::class, 'invoice_id');
     }
 
+    /** Retur penjualan yang memotong invoice ini. */
+    public function salesReturns(): HasMany
+    {
+        return $this->hasMany(SalesReturn::class, 'invoice_id');
+    }
+
+    /**
+     * Berapa yang dikembalikan pelanggan, dalam rupiah.
+     *
+     * Hanya retur yang SUDAH DISETUJUI. Retur yang masih Draft belum
+     * menggerakkan apa pun -- barangnya belum masuk stok, jadi uangnya pun
+     * belum boleh memotong tagihan.
+     */
+    public function returnedAmount(): float
+    {
+        return round((float) $this->salesReturns()
+            ->where('status', 'Approved')
+            ->sum('credit_amount'), 2);
+    }
+
     /**
      * Kembalikan surat jalan dan bukti terimanya ke keadaan belum ditagih.
      *
@@ -138,6 +158,40 @@ class Invoice extends Model
         // pada surat jalannya.
         $receipt->update(['status' => 'Approved']);
         $receipt->deliveryOrder?->update(['status' => 'Approved']);
+    }
+
+    /**
+     * Pungut retur yang sudah disetujui tapi belum menempel ke invoice mana pun.
+     *
+     * Retur bisa terjadi SEBELUM invoicenya dibuat -- barangnya balik hari itu
+     * juga, tagihannya menyusul seminggu kemudian. Ketika itu returnya menunggu
+     * dengan `invoice_id` kosong, dan invoice yang lahir untuk surat jalan yang
+     * sama inilah yang memungutnya.
+     *
+     * Invoicenya tetap terbit PENUH lalu berkurang oleh nota returnya, bukan
+     * lahir dengan angka yang diam-diam sudah dikurangi. Bedanya terlihat di
+     * dokumen: pelanggan bisa membaca apa yang ditagihkan dan apa yang
+     * dikembalikan sebagai dua baris, bukan satu angka yang harus dipercaya.
+     */
+    public function collectPendingSalesReturns(): void
+    {
+        if (! $this->delivery_order_receipt_id) {
+            return;
+        }
+
+        $deliveryOrderId = $this->deliveryOrderReceipt?->delivery_order_id;
+
+        if (! $deliveryOrderId) {
+            return;
+        }
+
+        SalesReturn::query()
+            ->where('delivery_order_id', $deliveryOrderId)
+            ->where('status', 'Approved')
+            ->whereNull('invoice_id')
+            ->update(['invoice_id' => $this->getKey()]);
+
+        $this->settleAfterCreditNote();
     }
 
     /** Kebalikannya, dipakai saat invoicenya dipulihkan. */
@@ -164,7 +218,16 @@ class Invoice extends Model
     {
         return (float) $this->subtotal
             + (float) $this->charge
-            - (float) $this->down_payment;
+            - (float) $this->down_payment
+            // Barang yang dikembalikan pelanggan tidak jadi ditagihkan.
+            //
+            // Dikurangkan DI SINI, bukan dengan mengubah baris invoicenya.
+            // Invoice yang sudah terbit ada di tangan pelanggan; menggeser
+            // angkanya membuat dokumen yang mereka pegang tidak cocok dengan
+            // tagihan yang kita kirim. Yang benar adalah nota retur tersendiri
+            // yang terbaca sebagai pengurang -- pola yang sama dengan potongan
+            // pembayaran.
+            - $this->returnedAmount();
     }
 
     /**
@@ -214,6 +277,68 @@ class Invoice extends Model
 
         $this->recalculate();
         $this->save();
+    }
+
+    /**
+     * Hitung ulang sesudah nilai returnya berubah.
+     *
+     * Urutannya penting. Yang sudah dibayar dilepaskan LEBIH DULU, baru sisa
+     * tagihannya diturunkan -- kalau dibalik, `recalculate()` memangkas
+     * balance di nol dan kelebihannya lenyap dari pandangan tanpa satu pun
+     * gejala.
+     */
+    public function settleAfterCreditNote(): void
+    {
+        $this->refresh();
+        $this->releaseOverpaidAllocations();
+
+        // recalculate() dipanggil sendiri oleh hook saving().
+        $this->save();
+    }
+
+    /**
+     * Kembalikan uang yang jadi kelebihan karena adanya retur.
+     *
+     * Pelanggan sudah membayar penuh, lalu mengembalikan barang. Tidak ada
+     * lagi yang bisa dipotong dari tagihan ini -- uangnya sudah masuk. Yang
+     * benar: alokasinya DILEPAS sebesar kelebihannya, sehingga uang itu
+     * kembali menjadi deposit pelanggan lewat `Payment::unallocatedAmount()`
+     * yang sudah ada.
+     *
+     * Satu kolam deposit, satu aturan. Membuat kolam kedua khusus retur
+     * berarti dua tempat yang harus sepakat tentang "berapa uang pelanggan
+     * yang belum terpakai" -- dan dua tempat semacam itu selalu berselisih
+     * pada akhirnya.
+     *
+     * Yang dilepas alokasi TERBARU dulu, kebalikan dari urutan pemasangannya.
+     * Pembayaran paling lama tetap menempel di tempatnya, jadi riwayat
+     * pelunasan yang sudah lama tidak ikut terusik.
+     */
+    protected function releaseOverpaidAllocations(): void
+    {
+        $lebih = round((float) $this->paid_amount - $this->billedAmount(), 2);
+
+        if ($lebih <= 0) {
+            return;
+        }
+
+        foreach ($this->paymentAllocations()->orderByDesc('id')->get() as $alokasi) {
+            if ($lebih <= 0) {
+                break;
+            }
+
+            $diambil = min($lebih, (float) $alokasi->amount_allocated);
+            $sisa = round((float) $alokasi->amount_allocated - $diambil, 2);
+
+            if ($sisa > 0) {
+                $alokasi->update(['amount_allocated' => $sisa]);
+            } else {
+                $alokasi->delete();
+            }
+
+            $this->paid_amount = max(round((float) $this->paid_amount - $diambil, 2), 0);
+            $lebih = round($lebih - $diambil, 2);
+        }
     }
 
     protected static function boot()
@@ -266,6 +391,12 @@ class Invoice extends Model
             if (! $model->isForceDeleting()) {
                 $model->receivable?->delete();
                 $model->releaseDeliveryDocuments();
+
+                // Nota returnya dilepaskan, bukan ikut terhapus. Barangnya
+                // sudah benar-benar kembali ke gudang; yang hilang hanya
+                // invoice yang dipotongnya. Retur yang dilepas akan memungut
+                // sendiri invoice pengganti untuk surat jalan yang sama.
+                $model->salesReturns()->update(['invoice_id' => null]);
             }
         });
 
@@ -273,6 +404,7 @@ class Invoice extends Model
         static::restored(function (Invoice $model) {
             $model->receivable()->withTrashed()->first()?->restore();
             $model->markDeliveryDocumentsInvoiced();
+            $model->collectPendingSalesReturns();
         });
 
         // Sisa tagihan diturunkan ulang setiap kali barisnya disimpan, apa pun

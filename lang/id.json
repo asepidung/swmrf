@@ -954,5 +954,10 @@
     "Failed": "Gagal",
     "Every item on this return will be put into stock.": "Semua barang di retur ini akan dimasukkan ke stok.",
     "Every item from this return that already went into stock will be pulled back out.": "Semua barang dari retur ini yang sudah masuk stok akan ditarik kembali.",
-    "Receiving Warehouse": "Gudang Penerima"
+    "Receiving Warehouse": "Gudang Penerima",
+    "Credit Value": "Nilai Potongan",
+    "Reduces Invoice": "Memotong Invoice",
+    "Not billed yet": "Belum ditagihkan",
+    "This return reduces invoice :number.": "Retur ini memotong invoice :number.",
+    "This return is not attached to any invoice yet; it will reduce the invoice made for this delivery order.": "Retur ini belum menempel ke invoice mana pun; ia akan memotong invoice yang dibuat untuk surat jalan ini."
 }

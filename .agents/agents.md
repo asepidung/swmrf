@@ -2474,9 +2474,67 @@ diambil yang TERBESAR. Yang lama memakai `strlen >= 26` sebagai penanda sah
 (padahal tidak semua barcode 26 karakter) dan membaca baris terakhir menurut
 `id`; keduanya bisa melahirkan barcode kembar.
 
-**TERBUKA -- nomor 1: retur belum menyentuh uang.** Menyetujui retur
-mengembalikan barangnya ke stok, tetapi tidak mengurangi tagihan pelanggan sama
-sekali. Bahasannya ada di bagian berikut.
+**Gudang PENERIMA dipilih, bukan ditebak.** Sempat diambil dari gudang tempat
+barangnya keluar; Project Owner yang menangkapnya -- "kalo diterima dari gudang
+lain gimana?". Barang retur tidak selalu mendarat di gudang asalnya. Sekarang ada
+Select di tab Scan, diingat per retur, dipakai kedua tab, dengan gudang asal
+sebagai nilai bawaan. Sesudah tiap pindaian yang dikosongkan HANYA barcodenya --
+mengisi ulang seluruh form menghapus gudang yang baru dipilih.
+
+### Retur memotong tagihan pelanggan -- nomor 1 bagian A, 4 September 2026
+
+Nomor 1 dulu kelihatan tidak bisa disentuh karena dianggap satu paket dengan HPP.
+Ternyata **dua urusan yang kecampur**:
+
+- **A -- sisi pelanggan.** Berapa yang dipotong dari tagihan. Angkanya HARGA
+  JUAL, dan harga jual ada di invoice. Tidak butuh HPP sama sekali.
+- **B -- sisi persediaan.** Nilai barang yang masuk gudang lagi. Ini yang HPP,
+  dan ini yang nyangkut boning/repack.
+
+**A sudah dikerjakan. B masih parkir sampai BOM.**
+
+**Bentuknya nota retur, bukan invoice yang diubah.** Invoice yang sudah terbit
+ada di tangan pelanggan; menggeser angkanya membuat dokumen yang mereka pegang
+tidak cocok dengan tagihan kita. Yang dikurangi `Invoice::billedAmount()` --
+satu tempat, seperti biasa -- lewat `Invoice::returnedAmount()`.
+
+Satu mekanisme untuk tiga keadaan:
+
+| Keadaan | Yang terjadi |
+|---|---|
+| Invoice ada, belum lunas | nilai returnya mengurangi tagihan; sisa tagihan turun sendiri |
+| Invoice belum dibuat | returnya MENUNGGU dengan `invoice_id` kosong. `Invoice::collectPendingSalesReturns()` memungutnya saat invoice untuk surat jalan itu lahir -- dipanggil dari `CreateInvoice::afterCreate()` dan dari hook `restored` |
+| Invoice sudah dibayar | uangnya sudah masuk, tidak ada yang bisa dipotong. Alokasinya DILEPAS sebesar kelebihannya, dan uang itu kembali menjadi deposit lewat `Payment::unallocatedAmount()` yang sudah ada |
+
+Keadaan ketiga sengaja TIDAK membuat kolam deposit kedua. Dua tempat yang
+harus sepakat tentang "berapa uang pelanggan yang belum terpakai" selalu
+berselisih pada akhirnya. Yang dilepas alokasi TERBARU dulu, supaya riwayat
+pelunasan yang sudah lama tidak ikut terusik.
+
+**Harganya SNAPSHOT.** `sales_return_items.unit_price` dan `line_amount`
+direkam saat retur disetujui, dan `sales_returns.credit_amount` menyimpan
+nilai nota returnya. Harga bergerak -- lewat Price List, lewat diskon
+pelanggan, lewat SO berikutnya -- dan nota retur yang ikut bergerak berarti
+angka yang sudah disepakati berubah sendiri di belakang punggung orang.
+Dijaga `test_the_credit_does_not_move_when_the_invoice_price_changes_later`.
+
+Sumber harganya dua, urutannya tidak boleh dibalik: baris INVOICE untuk produk
+yang sama (`amount / weight`, sudah termasuk diskon barisnya), lalu baris SALES
+ORDER lewat `InvoiceTotals::line()` -- rumus yang sama persis dengan
+`InvoiceResource::billableLines()`, supaya angkanya tidak bisa berbeda dari
+invoice yang akan terbit. Produk yang tidak ketemu di keduanya berharga NOL
+dan nolnya terbaca di layar; menebak harganya lebih buruk daripada menunjukkan
+bahwa ia belum berharga.
+
+**Invoice yang dihapus MELEPASKAN returnya**, bukan menyeretnya ikut hilang.
+Barangnya sudah benar-benar kembali ke gudang; yang hilang cuma invoice yang
+dipotongnya, dan invoice pengganti untuk surat jalan yang sama memungutnya lagi.
+
+**Yang sengaja tidak dikerjakan:** alokasi yang sudah dilepas TIDAK dipasang
+kembali otomatis saat retur di-unlock. Uangnya menjadi deposit dan dipakai lagi
+lewat halaman Terima Pembayaran, sama seperti lebih bayar biasa. Memasangnya
+kembali berarti menebak pembayaran mana yang dulu menutup invoice mana,
+padahal jejaknya sudah tidak ada.
 
 ### Yang belum sempat diperiksa di jahitan Payable
 
