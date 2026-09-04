@@ -998,5 +998,11 @@
     "This boning has no output goods yet.": "This boning has no output goods yet.",
     "The shrinkage of this boning is outside the reasonable limit, so it needs an approval with a written reason.": "The shrinkage of this boning is outside the reasonable limit, so it needs an approval with a written reason.",
     "While this is empty, no boning is held back — the shrinkage is still recorded and shown.": "While this is empty, no boning is held back — the shrinkage is still recorded and shown.",
-    "No carcass": "No carcass"
+    "No carcass": "No carcass",
+    "Ensure your account is using a long, random password to stay secure.": "Ensure your account is using a long, random password to stay secure.",
+    "Current Password": "Current Password",
+    "Leave it empty if you do not want to change your password.": "Leave it empty if you do not want to change your password.",
+    "Profile updated successfully": "Profile updated successfully",
+    ":label cannot be deleted": ":label cannot be deleted",
+    "It is still used by existing documents. Deactivate it instead — it will stop appearing in new documents while the old ones stay readable.": "It is still used by existing documents. Deactivate it instead — it will stop appearing in new documents while the old ones stay readable."
 }

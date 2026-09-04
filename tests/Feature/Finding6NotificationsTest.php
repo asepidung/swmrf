@@ -161,25 +161,33 @@ class Finding6NotificationsTest extends TestCase
         $this->assertEquals(0, $widget->getPendingDeliveryOrderCount());
         $this->assertEquals(0, $widget->getPendingDeliveryReceiptCount());
 
+        // Izin diingat selama satu permintaan, jadi sesudah menyematkannya
+        // penggunanya harus dimasuki ulang -- persis seperti yang terjadi
+        // sungguhan: izin baru berlaku pada permintaan BERIKUTNYA.
         // Grant individual permissions and assert counts increment
         $p1 = Permission::create(['name' => 'create_gr_materials', 'module_name' => 'GR Material']);
         $this->employee->permissions()->attach($p1->id);
+        $this->actingAs($this->employee->fresh());
         $this->assertEquals(1, $widget->getPendingGrMaterialCount());
 
         $p2 = Permission::create(['name' => 'create_goods_receipt_products', 'module_name' => 'GR Beef']);
         $this->employee->permissions()->attach($p2->id);
+        $this->actingAs($this->employee->fresh());
         $this->assertEquals(1, $widget->getPendingGrProductCount());
 
         $p3 = Permission::create(['name' => 'lock_bonings', 'module_name' => 'Boning']);
         $this->employee->permissions()->attach($p3->id);
+        $this->actingAs($this->employee->fresh());
         $this->assertEquals(1, $widget->getPendingBoningLockCount());
 
         $p4 = Permission::create(['name' => 'create_delivery_orders', 'module_name' => 'Delivery Orders']);
         $this->employee->permissions()->attach($p4->id);
+        $this->actingAs($this->employee->fresh());
         $this->assertEquals(1, $widget->getPendingDeliveryOrderCount());
 
         $p5 = Permission::create(['name' => 'view_delivery_receipts', 'module_name' => 'Delivery Orders']);
         $this->employee->permissions()->attach($p5->id);
+        $this->actingAs($this->employee->fresh());
         $this->assertEquals(1, $widget->getPendingDeliveryReceiptCount());
     }
 

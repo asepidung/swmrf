@@ -56,24 +56,24 @@ class MyProfile extends Page
                             ->unique(table: 'users', ignorable: auth()->user()),
                     ]),
 
-                Section::make('Change Password')
-                    ->description('Ensure your account is using a long, random password to stay secure.')
+                Section::make(__('Change Password'))
+                    ->description(__('Ensure your account is using a long, random password to stay secure.'))
                     ->schema([
                         TextInput::make('current_password')
-                            ->label('Current Password')
+                            ->label(__('Current Password'))
                             ->password()
                             ->revealable()
                             ->currentPassword()
                             ->requiredWith('new_password'),
                         TextInput::make('new_password')
-                            ->label('New Password')
+                            ->label(__('New Password'))
                             ->password()
                             ->revealable()
-                            ->helperText('Biarkan kosong jika tidak ingin mengubah password.')
+                            ->helperText(__('Leave it empty if you do not want to change your password.'))
                             ->minLength(8)
                             ->same('new_password_confirmation'),
                         TextInput::make('new_password_confirmation')
-                            ->label('Confirm New Password')
+                            ->label(__('Confirm New Password'))
                             ->password()
                             ->revealable()
                             ->requiredWith('new_password'),
@@ -112,7 +112,7 @@ class MyProfile extends Page
         $user->save();
 
         Notification::make()
-            ->title('Profile updated successfully')
+            ->title(__('Profile updated successfully'))
             ->success()
             ->send();
             

@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources;
 use App\Filament\Admin\Resources\GradeResource\Pages;
 use App\Filament\Clusters\ProductsCluster;
 use App\Models\Grade;
+use App\Support\MasterDataDeletion;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -117,7 +118,20 @@ class GradeResource extends Resource
             )
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Basis data sudah menolak menghapus yang masih dipakai --
+                    // kunci asingnya RESTRICT. Yang ditambahkan di sini hanya
+                    // penerjemahnya, supaya penolakan itu sampai ke layar
+                    // sebagai kalimat, bukan galat SQL lengkap dengan nama
+                    // constraint.
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records): void {
+                            foreach ($records as $record) {
+                                MasterDataDeletion::attempt(
+                                    fn () => $record->delete(),
+                                    __('Grade').' '.$record->name,
+                                );
+                            }
+                        }),
                 ]),
             ]);
     }

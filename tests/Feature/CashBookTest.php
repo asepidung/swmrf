@@ -117,7 +117,17 @@ class CashBookTest extends TestCase
         );
         $outsider->permissions()->attach($permission->id);
 
-        $this->assertTrue(CashBookResource::canViewAny($outsider->fresh()));
+        // `canViewAny()` TIDAK menerima argumen -- ia membaca `auth()->user()`.
+        // Sebelumnya test ini mengopernya `$outsider->fresh()`, yang diabaikan
+        // PHP tanpa suara, dan lolos hanya karena izin dulu dibaca ulang dari
+        // basis data pada tiap pemanggilan.
+        //
+        // Sekarang izin diingat selama satu permintaan, jadi yang harus
+        // diperbarui adalah pengguna yang SEDANG MASUK -- persis seperti yang
+        // terjadi sungguhan: izin baru berlaku pada permintaan berikutnya.
+        $this->actingAs($outsider->fresh());
+
+        $this->assertTrue(CashBookResource::canViewAny());
     }
 
     /** Permission-nya wajib sampai ke server lewat migrasi, bukan seeder. */

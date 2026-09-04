@@ -998,5 +998,11 @@
     "This boning has no output goods yet.": "Boning ini belum ada hasilnya.",
     "The shrinkage of this boning is outside the reasonable limit, so it needs an approval with a written reason.": "Susut boning ini di luar batas wajar, jadi perlu persetujuan dengan alasan tertulis.",
     "While this is empty, no boning is held back — the shrinkage is still recorded and shown.": "Selama ini kosong, tidak ada boning yang ditahan — susutnya tetap dicatat dan terlihat.",
-    "No carcass": "Tanpa karkas"
+    "No carcass": "Tanpa karkas",
+    "Ensure your account is using a long, random password to stay secure.": "Pastikan akun Anda memakai password yang panjang dan acak agar tetap aman.",
+    "Current Password": "Password Saat Ini",
+    "Leave it empty if you do not want to change your password.": "Biarkan kosong jika tidak ingin mengubah password.",
+    "Profile updated successfully": "Profil berhasil diperbarui",
+    ":label cannot be deleted": ":label tidak bisa dihapus",
+    "It is still used by existing documents. Deactivate it instead — it will stop appearing in new documents while the old ones stay readable.": "Masih dipakai dokumen yang sudah ada. Nonaktifkan saja — ia berhenti muncul di dokumen baru, sementara yang lama tetap bisa dibaca."
 }

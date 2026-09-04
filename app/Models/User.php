@@ -78,7 +78,30 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * Check if the user has a specific permission.
+     * Nama izin yang dipegang pengguna ini, diingat selama satu permintaan.
+     *
+     * @var array<string, true>|null
+     */
+    private ?array $izinTersimpan = null;
+
+    /**
+     * Punya izin ini atau tidak.
+     *
+     * Jawabannya DIINGAT sampai permintaan berakhir. Sebelumnya tiap
+     * pemanggilan menembakkan satu kueri sendiri, dan pemanggilnya banyak:
+     * hampir setiap tombol yang menggerakkan angka sungguhan dijaga izin, dan
+     * jumlahnya terus bertambah -- Approve dan Unlock retur, batas susut
+     * Repack, pembatalan pembayaran, dan seterusnya. Satu halaman daftar dua
+     * puluh baris beraksi bisa menembakkan puluhan kueri untuk pertanyaan yang
+     * jawabannya sama persis.
+     *
+     * Seluruh izinnya diambil sekali, bukan satu per satu, karena pengguna
+     * yang ditanya satu izin hampir selalu ditanya izin lain di halaman yang
+     * sama.
+     *
+     * Ingatannya HANYA seumur permintaan. Mengubah izin lewat form User
+     * berlaku pada permintaan berikutnya, dan itu memang yang terjadi:
+     * halamannya dimuat ulang sesudah disimpan.
      */
     public function hasPermission(string $permissionName): bool
     {
@@ -86,7 +109,28 @@ class User extends Authenticatable implements FilamentUser
             return true;
         }
 
-        return $this->permissions()->where('name', $permissionName)->exists();
+        if ($this->izinTersimpan === null) {
+            $this->izinTersimpan = $this->permissions()
+                ->pluck('name')
+                ->flip()
+                ->map(fn (): bool => true)
+                ->all();
+        }
+
+        return isset($this->izinTersimpan[$permissionName]);
+    }
+
+    /**
+     * Lupakan izin yang sudah diingat.
+     *
+     * Dipakai sesudah izinnya diubah dalam permintaan yang sama -- misalnya di
+     * pengujian, yang menyematkan izin lalu langsung menanyakannya.
+     */
+    public function forgetCachedPermissions(): static
+    {
+        $this->izinTersimpan = null;
+
+        return $this;
     }
 }
 
