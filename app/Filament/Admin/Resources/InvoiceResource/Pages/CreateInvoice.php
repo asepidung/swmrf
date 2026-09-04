@@ -47,7 +47,7 @@ class CreateInvoice extends CreateRecord
         // due_date tetap null sampai fakturnya benar-benar ditukar, dan yang
         // dipakai modul Receivable untuk menandai piutang yang belum bisa ditagih.
         $isExchange = (bool) ($receipt?->customer?->invoice_exchange);
-        $data['status'] = $isExchange ? 'Belum TF' : 'Belum Dibayar';
+        $data['status'] = $isExchange ? Invoice::STATUS_EXCHANGE_PENDING : Invoice::STATUS_UNPAID;
 
         // due_date sengaja tidak dihitung di sini. Hook saving() di model Invoice
         // sudah menjadi satu-satunya pemilik logika itu dan akan menimpa nilai
