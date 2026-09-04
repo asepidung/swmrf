@@ -925,5 +925,12 @@
     "Total Settled": "Total Settled",
     "Number": "Number",
     "Printed on :date": "Printed on :date",
-    "Total Outstanding": "Total Outstanding"
+    "Total Outstanding": "Total Outstanding",
+    "Deduction Type": "Deduction Type",
+    "Bank Fee": "Bank Fee",
+    "Promotion": "Promotion",
+    "Other": "Other",
+    "For all invoices": "For all invoices",
+    "Deduction is larger than the invoice it points to": "Deduction is larger than the invoice it points to",
+    "Deduction for :invoice is Rp :deduction while its outstanding balance is only Rp :balance.": "Deduction for :invoice is Rp :deduction while its outstanding balance is only Rp :balance."
 }
