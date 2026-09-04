@@ -1,6 +1,4 @@
 [
-    "Anda yakin ingin melakukan unlock? Semua barang dari retur ini yang sudah masuk ke stok akan dihapus/ditarik kembali.",
-    "Anda yakin ingin menyetujui retur ini? Semua barang akan dimasukkan ke stok.",
     "Apakah Anda yakin ingin membatalkan persetujuan Surat Jalan ini? Tanda terima terkait akan dihapus dan barang tolakan akan dikembalikan ke Tally.",
     "Apakah Anda yakin ingin membatalkan persetujuan Tally ini? Status Tally akan kembali ke processing dan Sales Order akan kembali ke processing.",
     "Apakah Anda yakin ingin membuka kunci GR ini? Perhatian: Data hutang (Payable) terkait akan dihapus (jika belum ada pembayaran).",

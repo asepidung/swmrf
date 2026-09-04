@@ -515,7 +515,7 @@ Ditemukan sekalian: `Nomor Segel` ternyata **duplikat** — `Seal Number` sudah 
 
 #### Utang yang tersisa: 43 kunci, dijaga ratchet
 
-Masih ada **43 kunci berbahasa Indonesia** yang sudah terdaftar di kedua berkas, tersebar sampai ke modul yang belum disisir (Repack, Sales Return, Cattle Weighing, Boning). Membereskannya pekerjaan tersendiri dan **belum dikerjakan**.
+Masih ada **73 kunci berbahasa Indonesia** yang sudah terdaftar di kedua berkas, tersebar sampai ke modul yang belum disisir (Repack, Sales Return, Cattle Weighing, Boning). Membereskannya pekerjaan tersendiri dan **belum dikerjakan**.
 
 Daftarnya dicatat di `tests/Fixtures/indonesian-translation-keys.json` sebagai register utang yang terlihat, dan `no_new_indonesian_translation_keys_are_introduced` menjaganya sebagai **ratchet**: kunci Indonesia BARU langsung gagal, sementara yang lama dibiarkan sampai gilirannya. Saat ada yang dibereskan, test itu justru gagal juga bila barisnya lupa dihapus dari baseline — supaya utang yang sudah lunas tidak bisa diam-diam kembali.
 
@@ -2404,7 +2404,7 @@ perubahan alur.
 
 ### Utang yang DIKETAHUI dan sengaja ditunda
 
-1. **43 kunci berbahasa Indonesia** masih dipakai sebagai kunci terjemahan, tersebar sampai Repack, Sales Return, Cattle Weighing, Boning. Daftarnya di `tests/Fixtures/indonesian-translation-keys.json`, dijaga ratchet supaya tidak bertambah. **Tidak darurat** — server berjalan di `APP_LOCALE=id`, jadi pengguna sehari-hari melihat teks yang benar.
+1. **73 kunci berbahasa Indonesia** masih dipakai sebagai kunci terjemahan, tersebar sampai Repack, Sales Return, Cattle Weighing, Boning. Daftarnya di `tests/Fixtures/indonesian-translation-keys.json`, dijaga ratchet supaya tidak bertambah. **Tidak darurat** — server berjalan di `APP_LOCALE=id`, jadi pengguna sehari-hari melihat teks yang benar.
 2. **Label formulir modul Request** banyak yang belum terdaftar bilingual. Pemindainya sengaja dibatasi pada teks notifikasi.
 3. **Blade cetak** (`resources/views/print/`, `exports/`) hampir seluruhnya hardcode, tidak lewat `__()`. Belum diputuskan perlu bilingual atau tidak.
 4. **Urutan Tab di banyak form** belum wajar — lihat bagian utang teknis di atas.
@@ -2419,6 +2419,64 @@ perubahan alur.
 7. **Modul QC/QA belum ada.** Sudah tercatat `[ ]` di `checklist_modul.md` sejak awal, dan sampai sekarang tidak ada satu pun kode yang menyentuhnya. Yang sekarang berjalan hanya pemeriksaan yang menempel di dokumen lain — pH di Boning dan Goods Receipt, Grade di setiap baris stok — tanpa ada tempat yang menyatakan lulus atau tidaknya suatu batch, siapa yang memeriksanya, dan apa akibatnya kalau gagal.
 
    Yang membuatnya berutang bukan ketiadaannya, melainkan bahwa **kegagalan mutu saat ini tidak punya jalur**. Kompensasi pemasok sudah ada di Payable, tetapi ia dicatat sesudah kejadian, tanpa dokumen pemeriksaan apa pun yang mendasarinya. Kalau QC/QA kelak dibuat, itulah yang harus menjadi asal-usul kompensasi — bukan angka yang diketik langsung.
+
+### Retur penjualan — keputusan 4 September 2026
+
+**Approve dan Unlock punya izinnya sendiri**, `approve_sales_returns` dan
+`unlock_sales_returns`, tidak menumpang `edit_sales_returns`. Keduanya
+MENGGERAKKAN STOK: Approve memasukkan tiap barang retur ke gudang, Unlock
+menariknya keluar lagi. Sebelumnya keduanya dijaga izin yang sama dengan
+membetulkan tanggal.
+
+Dipisah menjadi DUA, bukan satu, karena Unlock **menghapus baris stok yang
+sudah ada** -- lebih berbahaya daripada menambah, dan biasanya dipegang lebih
+sedikit orang.
+
+**Retur yang sudah disetujui tidak boleh dihapus.** Menghapusnya tidak menarik
+stoknya kembali, jadi barangnya tetap di gudang tanpa satu pun dokumen yang
+menjelaskan dari mana ia datang. Urutan yang benar: buka kuncinya dulu -- di
+situ stoknya ditarik dan jejaknya tercatat -- baru returnya dihapus.
+
+**Tiga pertanyaan sebelum sebuah barcode boleh diretur** (dulu hanya satu,
+"pernah ada di Tally?" -- tally mana pun):
+
+1. benarkah barang ini yang kita kirim pada **surat jalan INI**? Dijawab dengan
+   mencari barcodenya di tally milik surat jalan retur ini saja;
+2. barangnya memang sedang **TIDAK di gudang**? Yang masih tercatat di stok
+   berarti belum pernah keluar, dan yang belum keluar tidak bisa kembali. Ini
+   juga yang menahan barcode yang sama diretur dua kali;
+3. belum tercatat di **retur lain yang masih Draft**? Dua Draft bisa memegang
+   barcode yang sama tanpa satu pun menyentuh stok, jadi pertanyaan kedua tidak
+   menangkapnya.
+
+Owner sudah menegaskan barang yang diretur BISA saja barang retur pelanggan
+lain yang sudah direpack -- itu sebabnya pertanyaannya soal "sedang tidak di
+gudang", bukan soal riwayatnya.
+
+**Gudang tidak lagi dipaku ke angka 1.** Barang retur mendarat kembali di
+gudang asalnya (`$tallyItem->warehouse_id`); kalau barangnya sendiri tidak
+menyebutkan, dipakai gudang aktif pertama, bukan id 1 yang bisa saja sudah
+dinonaktifkan. Tesnya sengaja menonaktifkan gudang berid 1.
+
+**Rutin stoknya satu rumah**: `SalesReturn::approve()` dan
+`SalesReturn::unlock()`. Rutin itu dulu disalin UTUH di tiga halaman -- Edit,
+View, dan Input Barang -- masing-masing dengan penjagaan izin berbeda, sehingga
+menambal yang satu meninggalkan dua lainnya terbuka. Pola yang sama sudah
+pernah ditemukan pada saldo hutang (6 salinan) dan rumus tagihan (5 salinan).
+Dijaga `SalesReturnTest::test_no_sales_return_page_moves_stock_on_its_own`.
+
+`unlock()` memeriksa SEMUA barangnya dulu, baru menarik satu pun. Menarik
+separuh lalu berhenti di tengah -- karena satu barang terlanjur dikirim lagi --
+meninggalkan stok yang tidak cocok dengan dokumen mana pun.
+
+**Urutan barcode timbang manual** dibaca dari bagian sesudah awalannya dan
+diambil yang TERBESAR. Yang lama memakai `strlen >= 26` sebagai penanda sah
+(padahal tidak semua barcode 26 karakter) dan membaca baris terakhir menurut
+`id`; keduanya bisa melahirkan barcode kembar.
+
+**TERBUKA -- nomor 1: retur belum menyentuh uang.** Menyetujui retur
+mengembalikan barangnya ke stok, tetapi tidak mengurangi tagihan pelanggan sama
+sekali. Bahasannya ada di bagian berikut.
 
 ### Yang belum sempat diperiksa di jahitan Payable
 

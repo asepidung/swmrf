@@ -7,7 +7,9 @@ use App\Models\SalesReturn;
 use App\Models\SalesReturnItem;
 use App\Models\Product;
 use App\Models\Grade;
+use App\Models\BeefStock;
 use App\Models\TallyItem;
+use App\Models\Warehouse;
 use Filament\Resources\Pages\Page;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Contracts\HasTable;
@@ -40,51 +42,28 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 ->color('success')
                 ->hiddenLabel()
                 ->requiresConfirmation()
-                ->hidden(fn () => $this->record->status !== 'Draft')
-                ->action(function () {
+                ->modalHeading(__('Approve Sales Return'))
+                ->modalDescription(__('Every item on this return will be put into stock.'))
+                // Tombol ini menambah stok, sama persis dengan tombol Approve di
+                // halaman Edit -- jadi izinnya pun sama. Rutinnya dulu disalin
+                // utuh di TIGA halaman: Edit, View, dan di sini. Yang ini yang
+                // terakhir ditemukan, dan satu-satunya yang sama sekali tanpa
+                // penjagaan izin.
+                ->hidden(fn (): bool => $this->record->status !== 'Draft'
+                    || ! (auth()->user()?->hasPermission('approve_sales_returns') ?? false))
+                ->action(function (): void {
                     try {
-                        \Illuminate\Support\Facades\DB::transaction(function () {
-                            $this->record->update(['status' => 'Approved']);
+                        $this->record->approve();
+                    } catch (\Throwable $e) {
+                        Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
 
-                            foreach ($this->record->items as $item) {
-                                // Add to BeefStock
-                                \App\Models\BeefStock::create([
-                                    'barcode' => $item->barcode,
-                                    'product_id' => $item->product_id,
-                                    'warehouse_id' => $item->warehouse_id,
-                                    'grade_id' => $item->grade_id,
-                                    'weight' => $item->weight,
-                                    'qty_pcs' => $item->qty_pcs,
-                                    'ph_level' => $item->ph_level,
-                                    'pack_date' => $item->pack_date,
-                                    'exp_date' => $item->exp_date,
-                                    'origin' => $item->origin,
-                                    'status' => 'IN_STOCK',
-                                    'note' => 'Sales Return ' . $this->record->return_number,
-                                ]);
-
-                                // Log to BeefStockMovement
-                                \App\Models\BeefStockMovement::create([
-                                    'product_id' => $item->product_id,
-                                    'warehouse_id' => $item->warehouse_id,
-                                    'condition' => $item->grade_id,
-                                    'barcode' => $item->barcode,
-                                    'transaction_type' => 'SALES_RETURN',
-                                    'reference_document' => $this->record->return_number,
-                                    'weight_in' => $item->weight,
-                                    'pcs_in' => $item->qty_pcs,
-                                    'created_by' => \Illuminate\Support\Facades\Auth::id() ?? 1,
-                                    'note' => 'Sales Return from Customer',
-                                ]);
-                            }
-                        });
-                        Notification::make()->title(__('Return Approved & Stock Updated'))->success()->send();
-                        $this->redirect(SalesReturnResource::getUrl('view', ['record' => $this->record]));
-                    } catch (\Exception $e) {
-                        Notification::make()->title(__('Error'))->body($e->getMessage())->danger()->send();
+                        return;
                     }
+
+                    Notification::make()->title(__('Return Approved & Stock Updated'))->success()->send();
+                    $this->redirect(SalesReturnResource::getUrl('view', ['record' => $this->record]));
                 }),
-                
+
             Actions\Action::make('back')
                 ->tooltip(__('Back'))
                 ->color('gray')
@@ -114,8 +93,8 @@ class InputReturnItems extends Page implements HasForms, HasTable
 
         $this->weighForm->fill([
             'pack_date' => $defaultPackDate,
-            'warehouse_id' => 1,
-            'grade_id' => 1,
+            'warehouse_id' => $this->defaultWarehouseId(),
+            'grade_id' => Grade::where('is_active', true)->orderBy('id')->value('id'),
             'ph_level' => session('sr_ph_level_' . $this->record->id),
             'show_exp' => session('sr_show_exp_' . $this->record->id, true),
             'exp_date' => Carbon::parse($defaultPackDate)->addMonths(3)->format('Y-m-d'),
@@ -237,16 +216,83 @@ class InputReturnItems extends Page implements HasForms, HasTable
             ->statePath('dataWeigh');
     }
 
+    /**
+     * Gudang yang dipakai kalau barangnya sendiri tidak menyebutkan.
+     *
+     * Gudang pertama yang aktif, bukan angka 1 yang ditulis langsung. Kalau
+     * suatu saat gudang berid 1 dinonaktifkan atau terhapus, yang dipaku akan
+     * menunjuk ke gudang yang tidak ada -- tanpa satu pun gejala sampai
+     * seseorang mencari barangnya.
+     */
+    private function defaultWarehouseId(): ?int
+    {
+        return Warehouse::query()
+            ->where('is_active', true)
+            ->orderBy('id')
+            ->value('id');
+    }
+
     public function processScan(): void
     {
         $formData = $this->scanForm->getState();
         $barcode = $formData['barcode'];
 
         try {
-            $tallyItem = TallyItem::where('barcode', $barcode)->orderBy('id', 'desc')->first();
-            
-            if (!$tallyItem) {
-                throw new \Exception('Barcode tidak ditemukan di sistem (Tally).');
+            // ------------------------------------------------------------------
+            // Tiga pertanyaan yang harus dijawab sebelum sebuah barcode boleh
+            // diretur. Keputusan Project Owner, 4 September 2026.
+            //
+            // Sebelumnya hanya satu yang ditanyakan -- "barcode ini pernah ada
+            // di Tally?" -- sehingga barang yang tidak pernah dikirim ke
+            // pelanggan ini pun bisa diretur, dan barang yang masih tergeletak
+            // di gudang bisa "diretur" lalu masuk stok untuk kedua kalinya.
+            // ------------------------------------------------------------------
+
+            // SATU: benarkah barang ini yang kita kirim pada surat jalan INI?
+            //
+            // Tally adalah penyiapan barang untuk dikirim, dan tiap surat jalan
+            // lahir dari satu tally. Jadi pertanyaannya dijawab dengan mencari
+            // barcodenya di tally milik surat jalan retur ini -- bukan di
+            // seluruh tally yang pernah ada.
+            $tally = $this->record->deliveryOrder?->tally;
+
+            $tallyItem = $tally
+                ? TallyItem::where('tally_id', $tally->id)->where('barcode', $barcode)->first()
+                : null;
+
+            if (! $tallyItem) {
+                throw new \Exception(__('This barcode was not on the delivery note being returned.'));
+            }
+
+            // DUA: barangnya memang sedang TIDAK di gudang?
+            //
+            // Barang yang masih tercatat di stok berarti belum pernah keluar --
+            // dan sesuatu yang belum keluar tidak bisa kembali. Ini juga yang
+            // menahan barcode yang sama diretur dua kali: sesudah retur pertama
+            // disetujui, barangnya ada di stok lagi.
+            //
+            // Kalau kelak barang itu benar-benar dikirim lagi dengan barcode
+            // yang sama, ia keluar dari stok lagi, dan returnya boleh -- persis
+            // seperti yang seharusnya.
+            if (BeefStock::where('barcode', $barcode)->exists()) {
+                throw new \Exception(__('This item is still in the warehouse, so it cannot be returned.'));
+            }
+
+            // TIGA: belum tercatat di retur lain yang masih berjalan?
+            //
+            // Dua retur berstatus Draft bisa memegang barcode yang sama tanpa
+            // satu pun dari keduanya menyentuh stok, jadi pertanyaan KEDUA tidak
+            // menangkapnya. Yang sudah disetujui tidak perlu diperiksa di sini
+            // -- barangnya sudah kembali ke gudang dan pertanyaan kedua yang
+            // menahannya.
+            $adaDiReturLain = SalesReturnItem::where('barcode', $barcode)
+                ->whereHas('salesReturn', fn ($q) => $q
+                    ->where('id', '!=', $this->record->id)
+                    ->where('status', 'Draft'))
+                ->exists();
+
+            if ($adaDiReturLain) {
+                throw new \Exception(__('This barcode is already on another return that is still a draft.'));
             }
             
             $productId = $tallyItem->product_id;
@@ -265,13 +311,17 @@ class InputReturnItems extends Page implements HasForms, HasTable
                     ->exists();
 
                 if ($alreadyScanned) {
-                    throw new \Exception('Barcode sudah di-scan di retur ini.');
+                    throw new \Exception(__('This barcode has already been scanned on this return.'));
                 }
 
                 SalesReturnItem::create([
                     'sales_return_id' => $this->record->id,
                     'product_id' => $productId,
-                    'warehouse_id' => 1,
+                    // Gudang diambil dari barangnya sendiri saat dikirim, bukan
+                    // dipaku ke angka 1. Barang retur mendarat kembali di gudang
+                    // asalnya, dan memakukannya membuat seluruh retur menumpuk
+                    // di satu gudang ke mana pun sebenarnya ia dikembalikan.
+                    'warehouse_id' => $tallyItem->warehouse_id ?? $this->defaultWarehouseId(),
                     'grade_id' => $gradeId,
                     'barcode' => $barcode,
                     'weight' => $weight,
@@ -285,9 +335,9 @@ class InputReturnItems extends Page implements HasForms, HasTable
             });
 
             $this->scanForm->fill([]);
-            Notification::make()->title('Sukses scan barcode!')->success()->send();
+            Notification::make()->title(__('Barcode scanned'))->success()->send();
         } catch (\Exception $e) {
-            Notification::make()->title('Gagal')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
         }
     }
 
@@ -324,9 +374,33 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 $pcsStr = str_pad($pcs, 2, '0', STR_PAD_LEFT);
                 $phStr = !empty($formData['ph_level']) ? str_pad(round($formData['ph_level'] * 10), 2, '0', STR_PAD_LEFT) : '00';
 
+                // Urutan barcode barang timbang manual.
+                //
+                // Dua hal yang sudah pernah diberantas di proyek ini sempat
+                // hidup berdampingan di baris ini:
+                //
+                //  - PANJANG barcode dipakai sebagai penanda sah (`>= 26`).
+                //    Project Owner sudah menegaskan tidak semua barcode 26
+                //    karakter, jadi panjangnya tidak pernah boleh menjadi
+                //    tanda benar atau salah;
+                //  - `substr(-4)` memotong tepat empat karakter terakhir,
+                //    sehingga urutan ke-10.000 terbaca `0000` dan nomor
+                //    berikutnya dihitung 1 lagi -- persis batas yang membuat
+                //    `DocumentNumber` dibuat.
+                //
+                // Sekarang urutannya dibaca dari bagian SESUDAH awalannya,
+                // berapa pun panjangnya, dan yang diambil urutan TERBESAR --
+                // bukan baris terakhir menurut id, yang bisa saja justru
+                // barisnya yang formatnya lain.
                 $prefix = $origin . $dateStr;
-                $latestItem = SalesReturnItem::where('barcode', 'like', $prefix . '%')->lockForUpdate()->orderBy('id', 'desc')->first();
-                $counter = ($latestItem && strlen($latestItem->barcode) >= 26) ? ((int) substr($latestItem->barcode, -4) + 1) : 1;
+
+                $counter = SalesReturnItem::where('barcode', 'like', $prefix . '%')
+                    ->lockForUpdate()
+                    ->pluck('barcode')
+                    ->map(fn (string $lama): int => (int) substr($lama, -4))
+                    ->max();
+
+                $counter = ($counter ?? 0) + 1;
                 $counterStr = str_pad($counter, 4, '0', STR_PAD_LEFT);
 
                 $barcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
@@ -334,7 +408,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 $insertedItem = SalesReturnItem::create([
                     'sales_return_id' => $this->record->id,
                     'product_id' => $formData['product_id'],
-                    'warehouse_id' => $formData['warehouse_id'] ?? 1,
+                    'warehouse_id' => $formData['warehouse_id'] ?? $this->defaultWarehouseId(),
                     'grade_id' => $gradeId,
                     'barcode' => $barcode,
                     'weight' => $weight,
@@ -380,7 +454,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
             
             $this->dispatch('refreshTable');
         } catch (\Exception $e) {
-            Notification::make()->title('Gagal')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
         }
     }
 
