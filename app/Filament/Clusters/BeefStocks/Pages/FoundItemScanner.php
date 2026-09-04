@@ -66,7 +66,7 @@ class FoundItemScanner extends Page implements HasForms, HasTable
 
     public function getTitle(): string
     {
-        return __('Temuan Barang');
+        return __('Found Items');
     }
 
     public function scan()
@@ -83,7 +83,7 @@ class FoundItemScanner extends Page implements HasForms, HasTable
         $exists = BeefStock::where('barcode', $barcode)->where('status', 'IN_STOCK')->first();
         if ($exists) {
             Notification::make()
-                ->title(__('Barang sudah terdaftar di stok'))
+                ->title(__('This item is already registered in stock'))
                 ->warning()
                 ->send();
             return;
@@ -159,7 +159,7 @@ class FoundItemScanner extends Page implements HasForms, HasTable
     public function confirmStockInAction(): Action
     {
         return Action::make('confirmStockIn')
-            ->modalHeading(__('Konfirmasi Temuan'))
+            ->modalHeading(__('Confirm the Find'))
             ->modalDescription(fn (array $arguments) => $arguments['historyMessage'] ?? '')
             ->modalSubmitActionLabel(__('Lanjutkan Stock In'))
             ->action(function (array $arguments) {
@@ -198,14 +198,14 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                 Forms\Components\Grid::make(2)
                     ->schema([
                         Forms\Components\Select::make('warehouse_id')
-                            ->label(__('Lokasi Gudang Temuan'))
+                            ->label(__('Warehouse Where It Was Found'))
                             ->options(Warehouse::pluck('name', 'id'))
                             ->searchable()
                             ->required()
                             ->columnSpanFull(),
                         Forms\Components\TextInput::make('barcode')
-                            ->label(__('Barcode Asli (Opsional)'))
-                            ->helperText(__('Sistem akan generate barcode baru (prefix 0) untuk semua temuan. Barcode lama disimpan di catatan.'))
+                            ->label(__('Original Barcode (Optional)'))
+                            ->helperText(__('A new barcode (prefix 0) is generated for every find. The old barcode is kept in the note.'))
                             ->disabled()
                             ->dehydrated()
                             ->columnSpanFull(),
@@ -220,14 +220,14 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                             ->searchable()
                             ->required(),
                         Forms\Components\TextInput::make('qty_pcs_combined')
-                            ->label(__('Berat/Pcs (Contoh: 10.15/5)'))
+                            ->label(__('Weight/Pcs (e.g. 10.15/5)'))
                             ->placeholder(__('10.15/5'))
                             ->required()
                             ->extraInputAttributes([
                                 'oninput' => "this.value = this.value.replace(/,/g, '.');"
                             ]),
                         Forms\Components\TextInput::make('ph_level')
-                            ->label('pH Level')
+                            ->label(__('pH Level'))
                             ->numeric()
                             ->inputMode('decimal')
                             ->minValue(5.4)
@@ -237,11 +237,11 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                             ->label(__('Pack Date'))
                             ->required(),
                         Forms\Components\Toggle::make('show_exp')
-                            ->label(__('Tampilkan Exp Date di Label?'))
+                            ->label(__('Show the expiry date on the label?'))
                             ->default(false)
                             ->columnSpanFull(),
                         Forms\Components\Textarea::make('note')
-                            ->label(__('Catatan'))
+                            ->label(__('Note'))
                             ->rows(2)
                             ->columnSpanFull(),
                     ])
@@ -354,8 +354,8 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                 $this->dispatch('auto-print', url: $printUrl);
 
                 Notification::make()
-                    ->title(__('Temuan Barang Berhasil Disimpan'))
-                    ->body(__('Label baru (prefix 0) dibuat: ') . $finalBarcode)
+                    ->title(__('Found item saved'))
+                    ->body(__('New label (prefix 0) created: ') . $finalBarcode)
                     ->success()
                     ->send();
                     
@@ -371,29 +371,29 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                     ->whereIn('transaction_type', ['FOUND_ITEM', 'STOCK_TAKE_FOUND'])
             )
             ->defaultSort('created_at', 'desc')
-            ->heading(__('Histori Temuan'))
-            ->description(__('Riwayat barang yang tidak terdaftar dan ditemukan saat scan atau stock opname.'))
-            ->emptyStateHeading(__('Belum ada histori temuan'))
+            ->heading(__('Found Item History'))
+            ->description(__('Goods that were never recorded and turned up during a scan or a stock count.'))
+            ->emptyStateHeading(__('No found-item history yet'))
             ->emptyStateIcon('heroicon-o-viewfinder-circle')
             ->striped()
             ->paginated([5, 10, 25, 50])
             ->defaultPaginationPageOption(5)
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label(__('Waktu Temuan'))
+                    ->label(__('Found At'))
                     ->dateTime('d/m/Y H:i')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('product.name')
                     ->label(__('Produk'))
                     ->searchable(),
                 Tables\Columns\TextColumn::make('weight_in')
-                    ->label(__('Berat'))
+                    ->label(__('Weight'))
                     ->numeric(2)
                     ->suffix(' Kg'),
                 Tables\Columns\TextColumn::make('warehouse.name')
                     ->label(__('Gudang')),
                 Tables\Columns\TextColumn::make('note')
-                    ->label(__('Catatan'))
+                    ->label(__('Note'))
                     ->getStateUsing(fn ($record) => $record->transaction_type === 'STOCK_TAKE_FOUND' ? 'ST' : 'PF')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {

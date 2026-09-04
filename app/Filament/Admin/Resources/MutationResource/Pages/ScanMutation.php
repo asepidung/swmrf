@@ -57,7 +57,7 @@ class ScanMutation extends Page implements HasForms, HasTable
         return [
             Forms\Components\TextInput::make('barcode')
                 ->label(__('Scan Barcode'))
-                ->placeholder('Arahkan kursor ke sini dan mulai scan...')
+                ->placeholder(__('Put the cursor here and start scanning...'))
                 ->required()
                 ->autofocus()
                 ->extraInputAttributes([
@@ -79,7 +79,7 @@ class ScanMutation extends Page implements HasForms, HasTable
 
         // Fast-path agar pesannya ramah; penjagaan yang mengikat ada di dalam transaksi.
         if (MutationItem::where('mutation_id', $this->record->id)->where('barcode', $barcode)->exists()) {
-            Notification::make()->title('Barcode sudah di-scan di mutasi ini!')->warning()->send();
+            Notification::make()->title(__('This barcode has already been scanned on this mutation.'))->warning()->send();
             $this->dispatch('focus-barcode');
             return;
         }

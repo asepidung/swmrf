@@ -3041,6 +3041,36 @@ menyimpan hal berbeda.
 
 Alur pelunasan di `ViewPayable` sudah dibaca dan terlihat wajar (memperbarui `paid_amount`, `balance`, `status`, dan pembayarannya otomatis masuk buku kas lewat model event `SupplierPayment::created`) — **tetapi belum ditutup test**. Itu titik lanjut yang paling dekat.
 
+### "Cek" berarti MENYELURUH -- aturan kerja, 5 September 2026
+
+> "pas gw bilang cek tolong cek menyeluruh termasuk bahasa dan cek semua
+> bagian, jadi jangan sampe nanti bulak balik, kan kita lagi telusur modul,
+> masa nanti kita balik lagi padahal udah dinyatakan beres"
+
+Sebuah modul yang dinyatakan ✅ **tidak boleh dikunjungi ulang** untuk hal yang
+seharusnya terlihat pada penyisiran pertama. Karena itu sekali sebuah modul
+disisir, yang diperiksa BUKAN hanya temuan yang menarik:
+
+- logika dan penjagaannya;
+- **bahasa** -- teks yang ditulis langsung di kode tanpa `__()`, DAN kunci
+  terjemahan yang berbahasa Indonesia;
+- izin yang menjaganya;
+- policy-nya, termasuk izin yang disebut tetapi tidak pernah di-seed;
+- penomoran dokumennya bila ada;
+- aksi hapus dan akibat berantainya.
+
+Kesalahan yang memicu aturan ini: rumpun Gudang & Stok dinyatakan beres
+padahal baru `ScanMutation` yang disisir bahasanya. Tujuh belas teks masih
+ditulis langsung di kode dan sebelas kunci masih berbahasa Indonesia di
+modul yang sama.
+
+**Utang yang sudah ada tetap dicatat, bukan disembunyikan.** Modul yang
+disisir SEBELUM aturan ini ada -- Tally, Boning, GR Product, GR Material,
+Repack, Sales Return -- masih memuat kunci berbahasa Indonesia. Daftarnya di
+`tests/Fixtures/indonesian-translation-keys.json`, dijaga ratchet. Itu bukan
+alasan mengulang kunjungan; itu utang yang sudah terlihat dan akan dibereskan
+saat modulnya disentuh lagi karena alasan lain.
+
 ### Cara kerja yang disepakati Owner
 
 - Perbaiki langsung bila penyebabnya **sudah pasti dari membaca kode**; hemat token, jangan buat probe sekali pakai.

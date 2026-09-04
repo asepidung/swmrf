@@ -14,7 +14,7 @@ class EditMutation extends EditRecord
     {
         return [
             Actions\Action::make('scan')
-                ->label(__('Scan Barang'))
+                ->label(__('Scan Goods'))
                 ->icon('heroicon-o-qr-code')
                 ->color('info')
                 ->url(fn ($record) => MutationResource::getUrl('scan', ['record' => $record]))
