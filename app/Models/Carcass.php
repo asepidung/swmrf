@@ -126,23 +126,48 @@ class Carcass extends Model
     }
 
     /**
-     * Berat yang akan MASUK proses boning.
+     * Berat yang akan MASUK proses boning -- dan sekaligus berat OFFAL.
      *
-     * Karkas ditambah buntut. Kulit dan jeroan tidak ikut -- keduanya dijual
-     * langsung ke kontraktor dan tidak pernah masuk ruang boning. Keputusan
-     * Project Owner, 4 September 2026, dan rumus yang sama persis ada di kode
-     * aplikasi lama:
+     * Karkas ditambah buntut. Kulit tidak ikut; ia dijual langsung ke
+     * kontraktor.
+     *
+     * Rumus yang sama ada di aplikasi lama dengan nama `$offal`:
      *
      *     $offal = $totalCarcass + $totalTails;
      *
-     * Perhatikan namanya di sana: `offal`. Itu KELIRU -- jumlah karkas dan
-     * buntut bukan jeroan, melainkan bahan boning. Angka itu tercetak di
-     * Carcas Report dengan label "Offal", dan ikut muncul di ringkasan boning
-     * sebagai baris produk bernama OFFAL. Lihat catatan di `agents.md`.
+     * Nama itu sempat dikira SALAH di catatan proyek ini -- karkas ditambah
+     * buntut jelas bukan jeroan. Kekeliruannya ada pada yang menuduh, bukan
+     * pada kodenya. Project Owner, 4 September 2026:
+     *
+     *   "ketika sapi di potong, beberapa bagian seperti jeroan hati, usus,
+     *    kepala, kaki dan lain-lain itu dipisahkan menjadi 1 item offal nah
+     *    untuk beratnya TIDAK DITIMBANG ... total berat karkas a dan karkas b
+     *    ditambah buntut ITULAH yang jadi berat offal"
+     *
+     * Jadi jeroannya memang tidak pernah ditimbang, dan angka ini dipakai
+     * sebagai beratnya menurut kesepakatan -- cara yang berlaku di rumah
+     * potong modern. Ia BUKAN pengukuran, melainkan konvensi.
+     *
+     * Karena itu satu angka yang sama menjawab dua pertanyaan berbeda: berapa
+     * yang masuk boning, dan berapa berat offal yang dijual. Keduanya memang
+     * sama besar. Jangan "diperbaiki" menjadi dua rumus.
      */
     public function boningInputWeight(): float
     {
         return round($this->carcassWeight() + $this->tailWeight(), 2);
+    }
+
+    /**
+     * Berat offal, menurut kesepakatan.
+     *
+     * Sengaja diberi nama sendiri walaupun angkanya sama persis dengan
+     * `boningInputWeight()`. Yang membacanya sedang menanyakan hal yang
+     * berbeda, dan kalau kelak kesepakatannya berubah, hanya satu di antara
+     * keduanya yang ikut berubah.
+     */
+    public function offalWeight(): float
+    {
+        return $this->boningInputWeight();
     }
 
     /**

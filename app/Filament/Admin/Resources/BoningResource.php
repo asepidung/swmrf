@@ -194,8 +194,13 @@ class BoningResource extends Resource
                     ->state(function (Boning $record): string {
                         $persen = $record->shrinkPercent();
 
+                        // Boning tanpa karkas TIDAK BISA dinilai susutnya, dan
+                        // itu keadaan yang sah: kulit dan jeroan masuk stok
+                        // lewat dokumen boning tersendiri yang memang tidak
+                        // punya karkas. Yang ditulis alasannya, bukan tanda
+                        // hubung yang bisa berarti apa saja.
                         if ($persen === null) {
-                            return '-';
+                            return __('No carcass');
                         }
 
                         return number_format($record->shrinkWeight(), 2, ',', '.')

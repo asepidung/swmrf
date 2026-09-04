@@ -306,6 +306,60 @@ class BoningYieldTest extends TestCase
         $this->assertFalse($boning->isWithinShrinkLimit());
     }
 
+    /**
+     * Boning TANPA KARKAS tetap bisa dikunci.
+     *
+     * Kulit dan jeroan masuk stok lewat dokumen boning tersendiri yang memang
+     * tidak punya karkas -- Project Owner menyebutnya "bikin boning baru,
+     * bikin label kulit dan offal". Sempat ada syarat harus punya karkas, dan
+     * syarat itu akan membuat dokumen semacam itu tidak pernah bisa dikunci.
+     *
+     * Susutnya memang tidak bisa dinilai, dan itu terbaca sendiri: persennya
+     * `null`, dan daftarnya menuliskan "tanpa karkas" alih-alih angka.
+     * Menahannya bukan cara menyampaikan itu.
+     */
+    public function test_a_boning_without_a_carcass_can_still_be_locked(): void
+    {
+        $boning = Boning::create([
+            'boning_date' => now()->toDateString(),
+            'created_by' => $this->user->id,
+        ]);
+
+        BoningItem::create([
+            'boning_id' => $boning->id,
+            'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id,
+            'barcode' => 'KULIT-001',
+            'weight' => 449.81,
+            'qty_pcs' => 1,
+            'pack_date' => now()->toDateString(),
+            'created_by' => $this->user->id,
+        ]);
+
+        $boning->fresh()->lock();
+
+        $this->assertTrue($boning->fresh()->kunci);
+        $this->assertNull($boning->fresh()->shrinkPercent());
+    }
+
+    /**
+     * Berat offal SAMA PERSIS dengan berat bahan boning, dan itu disengaja.
+     *
+     * Jeroannya tidak pernah ditimbang; angka ini dipakai sebagai beratnya
+     * menurut kesepakatan yang berlaku di rumah potong modern. Contoh Project
+     * Owner: karkas A 100 + karkas B 110 + buntut 40 = offal 250.
+     */
+    public function test_the_offal_weight_is_the_carcass_plus_tail_by_agreement(): void
+    {
+        $karkas = $this->karkas([
+            ['hidup' => 500.00, 'a' => 100.00, 'b' => 110.00, 'kulit' => 30.00, 'buntut' => 40.00],
+        ]);
+
+        $this->assertSame(250.00, $karkas->offalWeight());
+        $this->assertSame(250.00, $karkas->boningInputWeight());
+    }
+
     public function test_a_boning_without_output_cannot_be_locked(): void
     {
         $karkas = $this->karkas([['hidup' => 500.00, 'a' => 150.00, 'b' => 150.00, 'kulit' => 30.00, 'buntut' => 0.00]]);
