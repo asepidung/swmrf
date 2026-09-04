@@ -146,7 +146,7 @@ class DeliveryOrder extends Model
 
         static::created(function (DeliveryOrder $do) {
             if ($do->tally) {
-                $do->tally->update(['status' => 'do']);
+                $do->tally->update(['status' => Tally::STATUS_DELIVERED]);
             }
             if ($do->salesOrder) {
                 $do->salesOrder->update(['status' => SalesOrder::STATUS_ON_DELIVERY]);

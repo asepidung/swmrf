@@ -685,7 +685,18 @@ class TallyTest extends TestCase
             'customer_id' => $this->customer->id,
             'delivery_date' => now()->addDays(2)->format('Y-m-d'),
             'created_by' => $this->user->id,
-            'status' => 'canceled',
+            // Dulu tertulis 'canceled' -- ejaan SATU L, yang tidak pernah bisa
+            // dihasilkan oleh satu pun jalur kode untuk Sales Order.
+            //
+            // Aplikasi ini memakai dua ejaan: 'cancelled' di Sales Order,
+            // Tally, dan Delivery Plan; 'canceled' di PO dan Goods Receipt.
+            // Selama kode Sales Order memeriksa KEDUANYA dengan in_array(),
+            // fixture ini lolos -- ia menguji penjagaan gandanya, bukan
+            // perilaku yang sungguh mungkin terjadi.
+            //
+            // Diperiksa di basis data hosting: completed=3 waiting=4. Tidak
+            // ada satu pun baris berejaan satu L.
+            'status' => SalesOrder::STATUS_CANCELLED,
         ]);
 
         $tally = Tally::create([

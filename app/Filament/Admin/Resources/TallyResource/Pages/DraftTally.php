@@ -80,10 +80,10 @@ class DraftTally extends Page implements HasTable
 
                             $tally = Tally::create([
                                 'sales_order_id' => $record->id,
-                                'status' => 'processing',
+                                'status' => Tally::STATUS_PROCESSING,
                             ]);
 
-                            $record->update(['status' => 'processing']);
+                            $record->update(['status' => Tally::STATUS_PROCESSING]);
 
                             activity('tally')
                                 ->performedOn($tally)
