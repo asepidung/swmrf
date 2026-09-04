@@ -2913,6 +2913,48 @@ lain. Ambang global di `settings`, gerbang mati selama ambangnya kosong,
 penembusan butuh izin sendiri dan alasan tertulis, tombol Lock MATI dengan
 keterangan alih-alih lenyap.
 
+### Gudang & Stok, bagian pertama -- 5 September 2026
+
+**Nomor mutasi bisa terpakai dua kali.** `Mutation` memakai hapus lunak tetapi
+penomorannya `static::query()`, bukan `static::withTrashed()`. Dokumen yang
+dihapus jadi tak terlihat oleh penomoran, dan mutasi berikutnya memakai nomor
+yang sama. Dari **enam belas** model yang memakai `DocumentNumber`, hanya yang
+ini tertinggal -- karena itu penjaganya ditulis sebagai PEMINDAI POLA
+(`StockGuardsTest`), bukan perbaikan satu berkas. Memperbaiki satu berkas tidak
+menahan yang keenam belas berikutnya.
+
+**Mutasi kosong bisa dikirim.** Tombol Complete Scan hanya menyetel status,
+tanpa memeriksa apakah ada barang yang dipindai. Sekarang tombolnya mati selama
+belum ada isinya, dan aksinya memeriksa ulang.
+
+**Product Tracking MENCETAK STOK.** `FoundItemScanner` bukan halaman baca: ia
+membuat baris `BeefStock` baru dari isian orang -- satu-satunya tempat di
+aplikasi ini yang menambah persediaan tanpa dokumen asal. Sebelumnya ia hanya
+dijaga gerbang clusternya, yang berisi izin MELIHAT. Sekarang punya izin
+sendiri: `record_found_items`.
+
+**Bug barcode Retur hidup juga di sini.** `strlen >= 26` sebagai penanda sah,
+`substr(-4)` yang putus di 10.000, dan `orderBy('barcode','desc')` yang
+mengurutkan sebagai teks. Bentuk yang sama sudah diberantas di
+`InputReturnItems` pada #230; menemukannya lagi di berkas lain adalah alasan
+penjaganya ditulis sebagai pemindai teks, bukan sekadar perbaikan.
+
+Catatan: `strlen($barcode) >= 26` yang LAIN di berkas itu -- saat mengurai
+barcode yang dipindai -- SENGAJA DIBIARKAN. Ia menjaga offset `substr()`, bukan
+menilai sah atau tidaknya sebuah barcode. Dua hal berbeda yang kebetulan
+berbentuk sama.
+
+**Stock Aging: policy menyebut izin yang tidak pernah ada.**
+`create_beef_stock_aging`, `edit_beef_stock_aging`, `delete_beef_stock_aging`
+tidak pernah di-seed, dan halamannya hanya punya rute `index`. Tidak berbahaya,
+tetapi terbaca seolah menjaga sesuatu. Sekarang resource-nya menolak tegas
+seperti `BeefStockMovementResource`.
+
+**TERBUKA:** mengirim dan menerima mutasi belum punya izinnya sendiri; keduanya
+menumpang akses halaman. Pola yang sama dengan Approve/Unlock retur sebelum
+#230 -- tetapi menambahkannya akan menyembunyikan tombolnya sampai Owner
+mencentang, dan mutasi kemungkinan dipakai harian. Menunggu jawaban Owner.
+
 ### Pengguna DINONAKTIFKAN, tidak dihapus -- 5 September 2026
 
 Keputusan Project Owner: *"user mah jangan ada hapus aktif non aktif aja"*.

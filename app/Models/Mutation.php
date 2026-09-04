@@ -47,8 +47,17 @@ class Mutation extends Model
             }
 
             if (empty($model->mutation_number)) {
+                // withTrashed(): mutasi yang DIHAPUS tetap memegang nomornya.
+                //
+                // Tanpa ini, dokumen yang dihapus lunak menjadi tak terlihat
+                // oleh penomoran, dan mutasi berikutnya memakai nomor yang
+                // sama. Dua dokumen bernomor sama, tanpa satu pun gejala
+                // sampai seseorang mencari MT#26001 dan menemukan dua.
+                //
+                // Dari enam belas model yang memakai `DocumentNumber`, hanya
+                // yang ini tertinggal. Dijaga `DocumentNumberingTest`.
                 $model->mutation_number = DocumentNumber::next(
-                    query: static::query(),
+                    query: static::withTrashed(),
                     column: 'mutation_number',
                     prefix: 'MT#'.date('y'),
                     padding: 3,

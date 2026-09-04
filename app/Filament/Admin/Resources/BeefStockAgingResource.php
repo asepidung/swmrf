@@ -24,6 +24,40 @@ class BeefStockAgingResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
+    /**
+     * Halaman ini LAPORAN, bukan tempat mengubah stok.
+     *
+     * Ditulis tegas di sini, seperti `BeefStockMovementResource`, dan tidak
+     * diserahkan kepada policy-nya. `BeefStockAgingPolicy` menyebut izin
+     * `create_beef_stock_aging`, `edit_beef_stock_aging`, dan
+     * `delete_beef_stock_aging` -- ketiganya TIDAK PERNAH di-seed, jadi ia
+     * terbaca seolah menjaga sesuatu padahal tidak menjaga apa pun.
+     *
+     * Yang dibaca halaman ini `BeefStock`: baris stok yang sungguhan. Membuka
+     * jalan menyuntingnya dari sebuah laporan umur simpan berarti satu tabel
+     * stok punya dua pintu masuk, dan yang kedua tidak mencatat pergerakan apa
+     * pun di `BeefStockMovement`.
+     */
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return false;
+    }
+
     public static function canViewAny(): bool
     {
         return auth()->user()->hasPermission('view_beef_stock_aging');

@@ -1004,5 +1004,12 @@
     "Leave it empty if you do not want to change your password.": "Biarkan kosong jika tidak ingin mengubah password.",
     "Profile updated successfully": "Profil berhasil diperbarui",
     ":label cannot be deleted": ":label tidak bisa dihapus",
-    "It is still used by existing documents. Deactivate it instead — it will stop appearing in new documents while the old ones stay readable.": "Masih dipakai dokumen yang sudah ada. Nonaktifkan saja — ia berhenti muncul di dokumen baru, sementara yang lama tetap bisa dibaca."
+    "It is still used by existing documents. Deactivate it instead — it will stop appearing in new documents while the old ones stay readable.": "Masih dipakai dokumen yang sudah ada. Nonaktifkan saja — ia berhenti muncul di dokumen baru, sementara yang lama tetap bisa dibaca.",
+    "Nothing has been scanned yet": "Belum ada yang dipindai",
+    "Scan at least one item before sending this mutation.": "Pindai setidaknya satu barang sebelum mengirim mutasi ini.",
+    "Mutation locked and sent": "Mutasi dikunci dan dikirim",
+    "This barcode has already been scanned on this mutation.": "Barcode ini sudah dipindai di mutasi ini.",
+    "This item is not in stock.": "Barang ini tidak ada di stok.",
+    "This item does not belong to the source warehouse of this mutation.": "Barang ini bukan dari gudang asal mutasi ini.",
+    "Item removed and returned to stock": "Barang dihapus dan dikembalikan ke stok"
 }
