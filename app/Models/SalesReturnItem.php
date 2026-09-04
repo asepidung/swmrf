@@ -15,6 +15,8 @@ class SalesReturnItem extends Model
         'barcode',
         'weight',
         'qty_pcs',
+        'unit_price',
+        'line_amount',
         'ph_level',
         'pack_date',
         'exp_date',
@@ -25,6 +27,8 @@ class SalesReturnItem extends Model
     protected $casts = [
         'weight' => 'float',
         'qty_pcs' => 'integer',
+        'unit_price' => 'decimal:2',
+        'line_amount' => 'decimal:2',
         'ph_level' => 'float',
         'pack_date' => 'date',
         'exp_date' => 'date',
