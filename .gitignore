@@ -58,3 +58,6 @@ audit_report.md
 # Berkas kerja Owner yang tidak boleh ikut ke repositori publik.
 contoh costing.xlsx
 *.xlsx
+
+# Berkas kerja Owner (dokumen contoh, referensi). Repositori ini publik.
+*.pdf

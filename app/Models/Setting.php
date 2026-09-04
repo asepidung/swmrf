@@ -21,6 +21,9 @@ class Setting extends Model
     /** Ambang susut wajar sebuah dokumen Repack, dalam persen. */
     public const REPACK_MAX_SHRINK_PERCENT = 'repack.max_shrink_percent';
 
+    /** Ambang susut wajar satu batch Boning, dalam persen. */
+    public const BONING_MAX_SHRINK_PERCENT = 'boning.max_shrink_percent';
+
     protected $fillable = ['key', 'value', 'updated_by'];
 
     public function updatedBy(): BelongsTo

@@ -987,5 +987,15 @@
     "This repack is not locked.": "This repack is not locked.",
     "This repack has no input goods yet.": "This repack has no input goods yet.",
     "This repack has no output goods yet.": "This repack has no output goods yet.",
-    "The shrinkage of this repack is outside the reasonable limit, so it needs an approval with a written reason.": "The shrinkage of this repack is outside the reasonable limit, so it needs an approval with a written reason."
+    "The shrinkage of this repack is outside the reasonable limit, so it needs an approval with a written reason.": "The shrinkage of this repack is outside the reasonable limit, so it needs an approval with a written reason.",
+    "Carcass In": "Carcass In",
+    "Products Out": "Products Out",
+    "Carcass Yield": "Carcass Yield",
+    "Live Weight": "Live Weight",
+    "This boning is already locked.": "This boning is already locked.",
+    "This boning is not locked.": "This boning is not locked.",
+    "This boning has no carcass yet.": "This boning has no carcass yet.",
+    "This boning has no output goods yet.": "This boning has no output goods yet.",
+    "The shrinkage of this boning is outside the reasonable limit, so it needs an approval with a written reason.": "The shrinkage of this boning is outside the reasonable limit, so it needs an approval with a written reason.",
+    "While this is empty, no boning is held back — the shrinkage is still recorded and shown.": "While this is empty, no boning is held back — the shrinkage is still recorded and shown."
 }

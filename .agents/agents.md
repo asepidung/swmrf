@@ -2777,6 +2777,65 @@ sekarang memakai `session()` -- sehingga angkanya milik satu peramban dan
 berbeda antar orang -- sebaiknya kelak pindah ke sini; tidak dikerjakan
 sekarang supaya perubahannya tetap satu urusan.
 
+### Boning: berat karkasnya sudah ada, tidak ada yang membacanya -- 4 September 2026
+
+**KOREKSI catatan sebelumnya.** Sempat tercatat bahwa `Carcass` tidak punya
+kolom berat. Itu SALAH, dan salahnya karena hanya melihat tabel induk.
+Beratnya ada satu tingkat di bawahnya, di `carcass_items`, per ekor:
+`carcass_1`, `carcass_2`, `hides`, `tail`.
+
+**Alur lengkapnya**, dari penjelasan Project Owner: PO Cattle -> sapi datang,
+dicatat di Cattle Receiving dengan berat surat jalan per eartag -> ditimbang
+ulang, selisihnya menjadi Financial Loss -> dipotong sesuai prosedur RPH,
+hasilnya dicatat sebagai Carcass per ekor (belahan A, belahan B, kulit,
+buntut) -> dilayukan SEMALAM -> besoknya di-boning.
+
+**Satu dokumen karkas PASTI satu kali boning**, dan satu batch boning WAJIB
+selesai dalam sehari (alasan mutu). Jadi tidak ada karkas yang terbelah antar
+batch, dan susut per batch selalu utuh.
+
+**Yang masuk boning: belahan A + belahan B + BUNTUT.** Kulit dan jeroan tidak
+ikut -- keduanya dijual langsung ke kontraktor dan tidak pernah masuk ruang
+boning. Buntut ikut karena ia menjadi oxtail, produk jual yang KELUAR dari
+boning; kalau buntutnya tidak dihitung sebagai bahan, oxtail yang keluar
+membuat hasil tampak lebih berat daripada bahannya.
+
+#### Rendemen karkas HILANG saat ditulis ulang
+
+Aplikasi lama menghitung `$totalCarcass / $totalLive * 100` dan mencetaknya
+sebagai **Carcase Yield**. Diperiksa terhadap laporan sungguhan 27 Agustus
+2026: 3.943,32 / 6.856,00 = 57,52%, cocok dengan yang tercetak. Aplikasi baru
+tidak menghitungnya sama sekali -- **regresi, bukan fitur yang belum dibuat.**
+
+#### Label "Offal" di aplikasi lama KELIRU
+
+    // Offal = total carcase + total tails
+    $offal = $totalCarcass + $totalTails;
+
+Jumlah karkas dan buntut BUKAN jeroan -- itu bahan yang masuk boning. Angkanya
+tercetak di Carcas Report dengan label "Offal 3.968,22 Kg", dan ikut muncul di
+ringkasan boning sebagai baris produk bernama OFFAL, padahal ia bahan masuk
+bukan hasil keluar. Ringkasan boning juga memuat KULIT 449,81 yang sama-sama
+bukan hasil boning.
+
+**TERBUKA:** jeroan yang sungguhan -- yang dijual ke kontraktor -- tidak pernah
+tercatat di mana pun. Itu pendapatan tanpa dokumen. Belum ditanyakan ke Owner.
+
+#### Angka susut boning yang pertama
+
+Dari dokumen sungguhan 28 Agustus 2026, sesudah OFFAL dan KULIT dikeluarkan
+dari daftar produk: bahan 3.968,22 kg, hasil 3.938,38 kg, **susut 0,75%**.
+Satu batch belum cukup untuk menetapkan ambang, tetapi ia menunjukkan
+besarannya -- jauh lebih berguna daripada tebakan.
+
+#### Bentuknya sama persis dengan Repack
+
+Disengaja: dua proses yang menjawab pertanyaan yang sama sebaiknya dijawab
+dengan cara yang sama, supaya yang membaca salah satunya sudah mengerti yang
+lain. Ambang global di `settings`, gerbang mati selama ambangnya kosong,
+penembusan butuh izin sendiri dan alasan tertulis, tombol Lock MATI dengan
+keterangan alih-alih lenyap.
+
 ### Kerugian menyimpan JUMLAH, bukan hanya rupiah -- 4 September 2026
 
 Susut kirim di halaman Approve DO sudah dicatat sejak lama, tetapi rupiahnya
