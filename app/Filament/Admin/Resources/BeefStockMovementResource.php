@@ -43,7 +43,7 @@ class BeefStockMovementResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()->isProgrammer() || auth()->user()->hasPermission('view_beef_stock_movements');
+        return auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('view_beef_stock_movements') ?? false);
     }
 
     public static function shouldRegisterNavigation(): bool
@@ -93,12 +93,12 @@ class BeefStockMovementResource extends Resource
                         \Filament\Infolists\Components\TextEntry::make('transaction_type')
                             ->label(__('Transaction Type'))
                             ->badge()
-                            ->color(fn ($state) => match ($state) {
-                                'IN_BONING', 'IN_REPACK', 'VOID_OUT_REPACK', 'VOID_STOCK', 'TALLY_REVERT' => 'success',
-                                'OUT_TO_REPACK', 'VOID_BONING', 'VOID_IN_REPACK', 'TALLY' => 'danger',
-                                'TALLY_RELABEL' => 'warning',
-                                default => 'gray',
-                            })
+                            // Warnanya ditentukan ARAH pergerakannya, di
+                            // `BeefStockMovement::TYPES`. Peta yang ditulis tangan di
+                            // sini dulu melewatkan sembilan jenis dan memberi warna
+                            // HIJAU pada `VOID_STOCK` -- penghapusan stok manual,
+                            // barang KELUAR, ditampilkan seperti barang masuk.
+                            ->color(fn ($state): string => BeefStockMovement::typeColor($state))
                             ->formatStateUsing(fn ($state) => __($state)),
                         \Filament\Infolists\Components\TextEntry::make('weight_in')
                             ->label(__('Weight In'))
@@ -158,12 +158,12 @@ class BeefStockMovementResource extends Resource
                 Tables\Columns\TextColumn::make('transaction_type')
                     ->label(__('Transaction Type'))
                     ->badge()
-                    ->color(fn ($state) => match ($state) {
-                        'IN_BONING', 'IN_REPACK', 'VOID_OUT_REPACK', 'VOID_STOCK', 'TALLY_REVERT' => 'success',
-                        'OUT_TO_REPACK', 'VOID_BONING', 'VOID_IN_REPACK', 'TALLY' => 'danger',
-                        'TALLY_RELABEL' => 'warning',
-                        default => 'gray',
-                    })
+                    // Warnanya ditentukan ARAH pergerakannya, di
+                    // `BeefStockMovement::TYPES`. Peta yang ditulis tangan di
+                    // sini dulu melewatkan sembilan jenis dan memberi warna
+                    // HIJAU pada `VOID_STOCK` -- penghapusan stok manual,
+                    // barang KELUAR, ditampilkan seperti barang masuk.
+                    ->color(fn ($state): string => BeefStockMovement::typeColor($state))
                     ->formatStateUsing(fn ($state) => __($state))
                     ->sortable(),
 
@@ -193,7 +193,9 @@ class BeefStockMovementResource extends Resource
                                 $writer = new \OpenSpout\Writer\XLSX\Writer();
                                 $writer->openToFile('php://output');
                                 $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                    'Timestamp', 'Reference Document', 'Barcode', 'Product', 'Warehouse', 'Grade', 'Transaction Type', 'Weight In', 'Weight Out', 'Pcs In', 'Pcs Out', 'Note', 'Operator'
+                                    __('Timestamp'), __('Reference Document'), __('Barcode'), __('Product'),
+                                    __('Warehouse'), __('Grade'), __('Transaction Type'), __('Weight In'),
+                                    __('Weight Out'), __('Pcs In'), __('Pcs Out'), __('Note'), __('Operator'),
                                 ]));
                                 foreach ($records as $record) {
                                     $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
@@ -234,19 +236,14 @@ class BeefStockMovementResource extends Resource
                 ->color('success'),
             ])
             ->filters([
+                // Pilihannya SELURUH jenis yang benar-benar ditulis aplikasi.
+                //
+                // Daftar yang ditulis tangan di sini dulu memuat sepuluh dari
+                // sembilan belas, dan salah satunya -- `TALLY_REVERT` -- tidak
+                // pernah ditulis kode mana pun, jadi memilihnya selalu
+                // menghasilkan daftar kosong.
                 Tables\Filters\SelectFilter::make('transaction_type')
-                    ->options([
-                        'IN_BONING' => 'IN_BONING',
-                        'VOID_BONING' => 'VOID_BONING',
-                        'OUT_TO_REPACK' => 'OUT_TO_REPACK',
-                        'VOID_OUT_REPACK' => 'VOID_OUT_REPACK',
-                        'IN_REPACK' => 'IN_REPACK',
-                        'VOID_IN_REPACK' => 'VOID_IN_REPACK',
-                        'VOID_STOCK' => 'VOID_STOCK',
-                        'TALLY' => 'TALLY',
-                        'TALLY_REVERT' => 'TALLY_REVERT',
-                        'TALLY_RELABEL' => 'TALLY_RELABEL',
-                    ])
+                    ->options(BeefStockMovement::typeOptions())
                     ->label(__('Transaction Type')),
                 Tables\Filters\SelectFilter::make('warehouse_id')
                     ->relationship('warehouse', 'name')

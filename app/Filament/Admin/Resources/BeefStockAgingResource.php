@@ -60,7 +60,7 @@ class BeefStockAgingResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasPermission('view_beef_stock_aging');
+        return auth()->user()?->hasPermission('view_beef_stock_aging') ?? false;
     }
 
     public static function shouldRegisterNavigation(): bool
@@ -171,7 +171,10 @@ class BeefStockAgingResource extends Resource
                             return response()->streamDownload(function () use ($records) {
                                 $writer = new \OpenSpout\Writer\XLSX\Writer();
                                 $writer->openToFile('php://output');
-                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Barcode', 'Product', 'Warehouse', 'Grade', 'Weight (Kg)', 'P.O.D', 'Age (Days)']));
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    __('Barcode'), __('Product'), __('Warehouse'), __('Grade'),
+                                    __('Weight (Kg)'), __('P.O.D'), __('Age (Days)'),
+                                ]));
                                 foreach ($records as $record) {
                                     $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
                                         $record->barcode ?? '',
