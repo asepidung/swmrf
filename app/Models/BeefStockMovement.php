@@ -56,6 +56,70 @@ class BeefStockMovement extends Model
         });
     }
 
+    /**
+     * Seluruh jenis pergerakan yang benar-benar ditulis aplikasi ini, beserta
+     * ARAHNYA.
+     *
+     * Sebelumnya daftarnya ditulis ulang di dua tempat -- penyaring dan peta
+     * warna -- dan keduanya tidak cocok dengan kenyataan:
+     *
+     *   - aplikasi menulis 19 jenis, penyaringnya menawarkan 10;
+     *   - `TALLY_REVERT` ada di kedua daftar itu tetapi TIDAK PERNAH ditulis
+     *     satu baris kode pun -- pilihan hantu yang selalu mengembalikan
+     *     daftar kosong;
+     *   - `VOID_STOCK` diberi warna HIJAU, padahal itu penghapusan stok
+     *     manual. Barang KELUAR ditampilkan dengan warna yang berarti masuk.
+     *
+     * Bentuk yang sama sudah ditambal tiga kali di modul lain (Invoice, Sales
+     * Order, Tally). Cara menemukannya selalu sama: tanyakan ke KODE nilai apa
+     * saja yang benar-benar ditulis, jangan membaca daftar yang ditulis
+     * tangan.
+     *
+     * Arahnya yang menentukan warna, bukan daftar warna tersendiri: sekali
+     * sebuah jenis didaftarkan di sini, ia otomatis punya warna dan otomatis
+     * bisa disaring.
+     *
+     * @return array<string, string> jenis => 'in' | 'out' | 'neutral'
+     */
+    public const TYPES = [
+        'IN_GR_BEEF' => 'in',
+        'VOID_GR_BEEF' => 'out',
+        'IN_BONING' => 'in',
+        'VOID_BONING' => 'out',
+        'IN_REPACK' => 'in',
+        'VOID_IN_REPACK' => 'out',
+        'OUT_TO_REPACK' => 'out',
+        'VOID_OUT_REPACK' => 'in',
+        'TALLY' => 'out',
+        'TALLY_RELABEL' => 'neutral',
+        'MUTATION_IN' => 'in',
+        'MUTATION_OUT' => 'out',
+        'MUTATION_CANCEL' => 'in',
+        'SALES_RETURN' => 'in',
+        'CANCEL_SALES_RETURN' => 'out',
+        'STOCK_TAKE_FOUND' => 'in',
+        'STOCK_TAKE_LOSS' => 'out',
+        'FOUND_ITEM' => 'in',
+        'VOID_STOCK' => 'out',
+    ];
+
+    /** Pilihan untuk penyaring: seluruhnya, tanpa kecuali. */
+    public static function typeOptions(): array
+    {
+        return array_combine(array_keys(self::TYPES), array_keys(self::TYPES));
+    }
+
+    /** Warna badge, ditentukan ARAH pergerakannya. */
+    public static function typeColor(?string $type): string
+    {
+        return match (self::TYPES[$type] ?? null) {
+            'in' => 'success',
+            'out' => 'danger',
+            'neutral' => 'warning',
+            default => 'gray',
+        };
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class, 'product_id');

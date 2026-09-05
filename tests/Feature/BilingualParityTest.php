@@ -302,22 +302,28 @@ class BilingualParityTest extends TestCase
     /**
      * Berkas yang teksnya SENGAJA berbahasa Indonesia.
      *
-     * Dokumen cetak dan ekspor PDF dibaca oleh pelanggan dan pemasok, bukan
-     * oleh operator. Bahasa sebuah dokumen ditentukan oleh siapa yang
-     * membacanya, bukan oleh setelan orang yang menekan tombol cetak --
-     * keputusan Owner, 5 September 2026.
+     * Dua kelompok, dua alasan yang berbeda, dan keduanya keputusan Owner
+     * 5 September 2026. Lihat keterangan per baris di bawah.
      *
      * @return array<int, string>
      */
-    protected function dokumenCetak(): array
+    protected function sengajaIndonesia(): array
     {
         return [
+            // Dokumen cetak dan ekspor PDF. Bahasa sebuah dokumen ditentukan
+            // oleh siapa yang MEMBACANYA, bukan oleh setelan operator yang
+            // menekan tombol cetak.
             'resources/views/print/',
             'resources/views/exports/',
-            '/vendor/',
-            // Dokumen cetak yang kebetulan tinggal di folder resource-nya,
-            // bukan di resources/views/print/. Isinya tetap dokumen.
+            // Dokumen cetak yang kebetulan tinggal di folder resource-nya.
             'pages/print-carcass.blade.php',
+
+            // Perintah artisan dan keluarannya. Pembacanya yang MERAWAT
+            // sistem, bukan pengguna aplikasi -- keputusan yang sama dengan
+            // baris log.
+            'app/Console/',
+
+            '/vendor/',
         ];
     }
 
@@ -432,6 +438,54 @@ class BilingualParityTest extends TestCase
         );
     }
 
+    /**
+     * Teks Indonesia di dalam string BERINTERPOLASI, di luar `__()`.
+     *
+     * Bentuk inilah yang meloloskan dua kalimat dari `FoundItemScanner`:
+     *
+     *     $historyMessage = "Histori Barang ditemukan. Posisi Terakhir di
+     *                        Gudang {$warehouseName} (Proses: {$type}).";
+     *
+     * Penjaga hardcode yang lain hanya memeriksa ARGUMEN pemanggilan seperti
+     * `->label('...')`. Teks yang ditugaskan ke variabel lalu dipakai
+     * belakangan tidak pernah dilihatnya, padahal ia sama-sama tampil di
+     * layar.
+     *
+     * Token `T_ENCAPSED_AND_WHITESPACE` hanya muncul di dalam kutip ganda yang
+     * memuat variabel, dan tidak pernah dihasilkan oleh komentar -- jadi
+     * penjaga ini tidak bisa menuduh keterangannya sendiri.
+     *
+     * @test
+     */
+    public function no_indonesian_text_hides_inside_an_interpolated_string()
+    {
+        $offenders = [];
+
+        foreach ($this->phpFiles(['app']) as $file) {
+            foreach (@token_get_all(file_get_contents($file)) as $token) {
+                if (! is_array($token) || $token[0] !== T_ENCAPSED_AND_WHITESPACE) {
+                    continue;
+                }
+
+                if ($this->looksIndonesian($token[1])) {
+                    $offenders[] = $this->relative($file).':'.$token[2].'  '.trim($token[1]);
+                }
+            }
+        }
+
+        sort($offenders);
+
+        $this->assertSame(
+            [],
+            $offenders,
+            "Teks berikut tampil di layar tetapi bersembunyi di dalam string "
+            . "berinterpolasi. Bungkus dengan __() dan pakai penampung:
+"
+            . implode("
+", $offenders),
+        );
+    }
+
     protected function looksIndonesian(string $text): bool
     {
         $words = $this->indonesianWords();
@@ -465,7 +519,7 @@ class BilingualParityTest extends TestCase
 
                 $path = str_replace('\\', '/', $file->getPathname());
 
-                foreach ($this->dokumenCetak() as $dikecualikan) {
+                foreach ($this->sengajaIndonesia() as $dikecualikan) {
                     if (str_contains($path, $dikecualikan)) {
                         continue 2;
                     }

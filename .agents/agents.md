@@ -3586,6 +3586,78 @@ Penjaga hardcode tidak menangkapnya karena ia hanya mencari teks berbahasa
 Indonesia. Angkanya dicatat di sini supaya tidak hilang; mengerjakannya satu
 pekerjaan tersendiri, bukan titipan.
 
+### Sisir ulang empat modul stok -- #289, 6 September 2026
+
+Owner meminta Stock Aging, Product Tracking, Opname Material, dan Stock
+Movements disisir ulang sekaligus. Tiga di antaranya sudah pernah dinyatakan
+✅, dan Stock Movements adalah satu-satunya modul yang dulu dinyatakan beres
+TANPA satu baris pun diubah. Ternyata di sanalah temuan terbesarnya.
+
+#### Peta jenis pergerakan tidak cocok dengan yang ditulis aplikasi
+
+Bentuk yang sudah tiga kali ditambal di modul lain (Invoice, Sales Order,
+Tally), muncul lagi -- di dua sisi sekaligus.
+
+**Daging:** aplikasi menulis **19** jenis, penyaringnya menawarkan **10**, dan
+salah satu dari sepuluh itu -- `TALLY_REVERT` -- tidak pernah ditulis satu
+baris kode pun. Sembilan jenis tidak bisa disaring sama sekali, termasuk
+seluruh penerimaan, mutasi, retur, dan opname.
+
+**Material:** aplikasi menulis **9**, penyaringnya menawarkan **4**, dan
+`ISSUE` tidak pernah ditulis. Enam tidak bisa disaring, termasuk seluruh
+pemakaian material.
+
+Yang hilang tidak pernah terlihat sebagai error -- penyaringnya hanya
+kekurangan pilihan. Yang berlebih lebih halus: pilihan hantu yang selalu
+mengembalikan daftar kosong, sehingga terbaca sebagai "memang tidak ada
+datanya".
+
+**Dan `VOID_STOCK` diberi warna HIJAU.** Itu penghapusan stok manual -- barang
+KELUAR, satu-satunya aksi manual yang menghancurkan baris stok -- ditampilkan
+dengan warna yang berarti masuk.
+
+Sekarang satu rumah: `BeefStockMovement::TYPES` dan
+`MaterialStockMovement::TYPES`, memetakan jenis ke ARAHNYA. Warnanya lahir
+dari arah itu, penyaringnya lahir dari daftar yang sama, dan
+`StockMovementTypesTest` memeriksa dua arah: setiap jenis yang ditulis kode
+harus terdaftar, dan setiap yang terdaftar harus benar-benar ditulis.
+
+#### `condition` diisi teks, bukan grade
+
+`BeefStockMovement::grade()` menyatakan kolom `condition` menyimpan `grade_id`.
+Delapan belas dari sembilan belas penulis memang begitu. Satu tidak:
+`FoundItemScanner` menulis `'GOOD'`.
+
+Akibatnya kolom Grade di daftar pergerakan KOSONG untuk setiap barang temuan --
+tidak ada grade ber-id "GOOD". Dijaga test yang menolak teks apa pun di kolom
+itu.
+
+#### Teks yang bersembunyi di dalam string berinterpolasi
+
+`FoundItemScanner` menyusun dua kalimat Indonesia yang tampil di layar lewat
+interpolasi:
+
+    $historyMessage = "Histori Barang ditemukan. Posisi Terakhir di
+                       Gudang {$warehouseName} (Proses: {$type}).";
+
+Penjaga hardcode yang ada hanya memeriksa ARGUMEN pemanggilan seperti
+`->label('...')`. Teks yang ditugaskan ke variabel lalu dipakai belakangan
+tidak pernah dilihatnya, padahal ia sama-sama tampil di layar.
+
+Penjaga baru memakai token `T_ENCAPSED_AND_WHITESPACE`, yang hanya muncul di
+dalam kutip ganda berisi variabel dan tidak pernah dihasilkan komentar -- jadi
+ia tidak bisa menuduh keterangannya sendiri, kesalahan yang sudah tiga kali
+terjadi pada penjaga bahasa yang lain.
+
+Saat dipasang, sisa pelanggarannya **nol** -- dua kalimat itu satu-satunya.
+Jadi penjaganya keras sejak awal, tanpa daftar toleransi.
+
+#### Pelajaran yang berulang
+
+Modul yang dinyatakan beres TANPA ada yang diubah patut dicurigai. Bukan karena
+kodenya pasti buruk, melainkan karena "tidak menemukan apa-apa" dan "tidak
+memeriksa cukup dalam" menghasilkan catatan yang persis sama.
+
 ### Cara kerja yang disepakati Owner
 
 - Perbaiki langsung bila penyebabnya **sudah pasti dari membaca kode**; hemat token, jangan buat probe sekali pakai.

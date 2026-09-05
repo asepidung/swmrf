@@ -124,13 +124,19 @@ class FoundItemScanner extends Page implements HasForms, HasTable
             $lastMovement = BeefStockMovement::where('barcode', $barcode)->orderBy('created_at', 'desc')->first();
             if ($lastMovement) {
                 $warehouseName = $lastMovement->warehouse ? $lastMovement->warehouse->name : '-';
-                $historyMessage = "Histori Barang ditemukan. Posisi Terakhir di Gudang {$warehouseName} (Proses: {$lastMovement->transaction_type}).";
+                $historyMessage = __('History found. Last seen in warehouse :warehouse (:process).', [
+                    'warehouse' => $warehouseName,
+                    'process' => $lastMovement->transaction_type,
+                ]);
             } else {
                 // Cek di TallyItem
                 $tally = TallyItem::where('barcode', $barcode)->first();
                 if ($tally) {
                     $warehouseName = $tally->warehouse ? $tally->warehouse->name : '-';
-                    $historyMessage = "Histori Barang ditemukan. Posisi Terakhir di Gudang {$warehouseName} (Proses: Penerimaan/Tally).";
+                    $historyMessage = __('History found. Last seen in warehouse :warehouse (:process).', [
+                        'warehouse' => $warehouseName,
+                        'process' => __('Receiving / Tally'),
+                    ]);
                     // Fallback pre-fill from tally if parse failed
                     if (empty($foundData['product_id'])) $foundData['product_id'] = $tally->product_id;
                     if (empty($foundData['weight'])) $foundData['weight'] = $tally->weight;
@@ -329,7 +335,13 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                 BeefStockMovement::create([
                     'product_id' => $stock->product_id,
                     'warehouse_id' => $stock->warehouse_id,
-                    'condition' => 'GOOD',
+                    // Kolom `condition` menyimpan GRADE_ID -- begitu yang
+                    // dinyatakan relasi `BeefStockMovement::grade()`, dan
+                    // begitu pula delapan belas penulis lainnya. Berkas ini
+                    // satu-satunya yang menulis teks 'GOOD', sehingga kolom
+                    // Grade di daftar pergerakan KOSONG untuk setiap barang
+                    // temuan: tidak ada grade ber-id "GOOD".
+                    'condition' => $stock->grade_id,
                     'barcode' => $stock->barcode,
                     'transaction_type' => 'FOUND_ITEM',
                     'reference_document' => '-',
@@ -349,7 +361,7 @@ class FoundItemScanner extends Page implements HasForms, HasTable
 
                 Notification::make()
                     ->title(__('Found item saved'))
-                    ->body(__('New label (prefix 0) created: ') . $finalBarcode)
+                    ->body(__('New label created: :barcode', ['barcode' => $finalBarcode]))
                     ->success()
                     ->send();
                     
