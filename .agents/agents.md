@@ -4035,3 +4035,47 @@ disalahbaca sebagai keseluruhan. Yang membuat Financial Loss berbeda adalah
 Diperiksa menyeluruh: hanya satu tabel di seluruh aplikasi yang punya baris
 total sekaligus saringan tanggal berbawaan. Jangan "rapikan" CashBook
 mengikuti Financial Loss -- bedanya disengaja.
+
+---
+
+## #305 -- Pembekuan gudang lewat `bypass()`, bukan properti statis telanjang
+
+Sisi material sudah memakai `MaterialStockFreezeService::bypass(callable)`
+sejak #285; sisi daging masih menyetel `$bypassed` sendiri dan menambalnya
+dengan `try/finally` di tempat.
+
+Tambalan di tempat menyelesaikan berkas itu, bukan bentuknya. Pemakai KEDUA
+tinggal menulis dua baris berurutan di berkas lain, dan tidak ada yang
+mengeluh -- persis bentuk kesalahan yang berulang di proyek ini.
+
+Sekarang keduanya sama, dan pemulihannya ada di DALAM pembantunya: satu kali,
+untuk semua.
+
+### Penjaganya juga diganti
+
+Penjaga lama menyebut SATU BERKAS dan mencocokkan satu bentuk `try/finally`
+yang persis. Ia membuktikan berkas itu benar hari itu dan tidak menahan apa
+pun. Penggantinya memindai seluruh `app/`: tidak ada yang boleh menyetel
+`$bypassed` sendiri di luar `app/Services/`. Uji perilakunya juga diganti --
+sekarang benar-benar melempar kegagalan dari dalam `bypass()` dan memeriksa
+keadaan sesudahnya, bukan mencocokkan teks.
+
+### Diperiksa dan ternyata bersih
+
+- **Tombol yang mengubah data tanpa bertanya**: enam belas kandidat dipindai,
+  semuanya ternyata sudah punya modal berisi form (yang sendirinya sudah
+  konfirmasi), cuma tautan kembali, atau penanda scan yang bisa diulang.
+  `cancel_receive` di penerimaan mutasi hanya membatalkan TANDA scan --
+  stoknya baru ditulis saat "Complete Receiving", jadi tidak ada yang rusak.
+- **`ReceiveMutation` menulis `BeefStock` langsung**, tidak lewat
+  `StockService`. Aman: pembekuan gudang dijaga di event model `BeefStock`,
+  bukan di service, jadi jalur mana pun tetap kena.
+
+### Dicatat, tidak dikerjakan
+
+`auth()->id() ?? 1` di tiga belas tempat mengaku-akukan tindakan kepada
+pengguna id 1 kalau tidak ada yang login. Hari ini tidak pernah terjadi --
+tidak ada perintah konsol atau job yang menulis stok, dan seluruh jalur itu
+ada di dalam halaman Filament yang selalu punya pengguna. Masuk `tertunda.md`
+bagian F, bukan diperbaiki: mengubah kolomnya jadi nullable menyentuh banyak
+layar yang menampilkan nama pembuatnya.
