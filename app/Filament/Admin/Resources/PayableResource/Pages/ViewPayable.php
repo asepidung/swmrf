@@ -169,6 +169,7 @@ class ViewPayable extends ViewRecord
                             $data['note'] ?? null,
                         );
                     } catch (\InvalidArgumentException $e) {
+                        report($e);
                         \Filament\Notifications\Notification::make()
                             ->title($e->getMessage())
                             ->danger()

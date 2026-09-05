@@ -137,6 +137,7 @@ class InputGoodsReceiptProduct extends Page implements HasForms
             $this->record->refresh();
             $this->dispatch('open-modal', id: 'next-step-modal');
         } catch (\Exception $e) {
+            report($e);
             DB::rollBack();
             Notification::make()->title('Error: ' . $e->getMessage())->danger()->send();
         }
@@ -160,6 +161,7 @@ class InputGoodsReceiptProduct extends Page implements HasForms
             Notification::make()->title(__('Goods Receipt locked'))->success()->send();
             $this->redirect(GoodsReceiptProductResource::getUrl('index'));
         } catch (\Exception $e) {
+            report($e);
             DB::rollBack();
             Notification::make()->title('Error: ' . $e->getMessage())->danger()->send();
         }
@@ -185,6 +187,7 @@ class InputGoodsReceiptProduct extends Page implements HasForms
             Notification::make()->title(__('Goods receipt deleted; its purchase order is pending again.'))->success()->send();
             $this->redirect(GoodsReceiptProductResource::getUrl('index'));
         } catch (\Exception $e) {
+            report($e);
             DB::rollBack();
             Notification::make()->title('Error: ' . $e->getMessage())->danger()->send();
         }

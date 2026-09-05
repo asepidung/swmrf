@@ -255,6 +255,7 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
             $this->redirect(GoodsReceiptMaterialResource::getUrl('index'));
 
         } catch (\Exception $e) {
+            report($e);
             DB::rollBack();
             Notification::make()->title('Error: ' . $e->getMessage())->danger()->send();
         }

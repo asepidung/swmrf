@@ -50,6 +50,7 @@ class EditSalesReturn extends EditRecord
                     try {
                         $this->record->approve();
                     } catch (\Throwable $e) {
+                        report($e);
                         Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
 
                         return;
@@ -76,6 +77,7 @@ class EditSalesReturn extends EditRecord
                     try {
                         $this->record->unlock();
                     } catch (\Throwable $e) {
+                        report($e);
                         Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
 
                         return;

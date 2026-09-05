@@ -120,6 +120,7 @@ class PaymentsRelationManager extends RelationManager
                         try {
                             $record->cancel($data['reason']);
                         } catch (\Throwable $e) {
+                            report($e);
                             \Filament\Notifications\Notification::make()
                                 ->title($e->getMessage())
                                 ->danger()

@@ -443,6 +443,7 @@ class ScanTally extends Page implements HasForms, HasTable
                 ->send();
 
         } catch (\Exception $e) {
+            report($e);
             Notification::make()
                 ->title(__('Error!'))
                 ->body($e->getMessage())

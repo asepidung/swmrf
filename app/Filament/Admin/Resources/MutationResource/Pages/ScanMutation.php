@@ -140,6 +140,7 @@ class ScanMutation extends Page implements HasForms, HasTable
 
             Notification::make()->title(__('Barcode scanned'))->success()->send();
         } catch (\Exception $e) {
+            report($e);
             Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
         }
         

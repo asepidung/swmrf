@@ -135,6 +135,7 @@ class InputBahanRepack extends Page implements HasForms, HasTable
             $this->dispatch('refreshTable');
             $this->dispatch('focus-scanner');
         } catch (\Exception $e) {
+            report($e);
             // Menampilkan notifikasi jika barcode tidak ditemukan atau gagal
             Notification::make()
                 ->title($e->getMessage())

@@ -355,6 +355,7 @@ class GoodsReceiptMaterialResource extends Resource
                             
                             \Illuminate\Support\Facades\DB::commit();
                         } catch (\Exception $e) {
+                            report($e);
                             \Illuminate\Support\Facades\DB::rollBack();
                             \Filament\Notifications\Notification::make()->title('Error: ' . $e->getMessage())->danger()->send();
                         }

@@ -210,6 +210,7 @@ class RepackResource extends Resource
                             try {
                                 $record->lock($data['yield_override_reason'] ?? null);
                             } catch (\Throwable $e) {
+                                report($e);
                                 Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
 
                                 return;
