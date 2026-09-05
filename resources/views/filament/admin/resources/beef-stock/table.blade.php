@@ -242,8 +242,22 @@
             @if ($header)
                 {{ $header }}
                         @elseif (($heading || $description) && ! $isReordering)
+                {{-- `actions-position` WAJIB ikut dikirim.
+
+                     Fork ini memindahkan header action ke baris toolbar, lalu
+                     mengosongkan `:actions` di sini dan ikut membuang
+                     `:actions-position`. Komponen headernya tetap membacanya,
+                     jadi begitu blok ini benar-benar dirender -- yang baru
+                     terjadi ketika tabelnya punya heading atau description --
+                     halamannya mati dengan "Undefined variable
+                     $actionsPosition".
+
+                     Bug ini sudah ada sejak fork-nya dibuat dan tidak pernah
+                     terlihat, karena sampai sekarang tabelnya tidak pernah
+                     punya description. --}}
                 <x-filament-tables::header
                     :actions="[]"
+                    :actions-position="$headerActionsPosition"
                     :description="$description"
                     :heading="$heading"
                 />

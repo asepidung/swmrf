@@ -162,6 +162,141 @@ class StockOverviewTest extends TestCase
     }
 
     // =====================================================================
+    // Posisi stok pada tanggal tertentu
+    // =====================================================================
+
+    private function gerak(float $in, float $out, string $kapan, ?Grade $grade = null): void
+    {
+        $gerakan = \App\Models\BeefStockMovement::create([
+            'product_id' => $this->produk->id,
+            'warehouse_id' => $this->jonggol->id,
+            'condition' => ($grade ?? $this->chill)->id,
+            'barcode' => 'BC-' . uniqid(),
+            'transaction_type' => $in > 0 ? 'IN_GR_BEEF' : 'TALLY',
+            'reference_document' => 'DOC',
+            'weight_in' => $in,
+            'weight_out' => $out,
+            'pcs_in' => $in > 0 ? 1 : 0,
+            'pcs_out' => $out > 0 ? 1 : 0,
+            'created_by' => User::factory()->create(['role' => 'programmer', 'is_active' => true])->id,
+        ]);
+
+        $gerakan->forceFill(['created_at' => $kapan])->saveQuietly();
+    }
+
+    /**
+     * Tanggal 1 September berarti posisi AKHIR HARI 1 September.
+     *
+     * Pertanyaan Owner: "misal gw filter ke tanggal 1 september itu lu
+     * tampilin 1 september jam berapa?" Jawabannya 23:59:59, dan tanggal itu
+     * ditulis di atas tabelnya supaya tidak jadi tebak-tebakan.
+     */
+    public function test_a_date_means_the_end_of_that_day(): void
+    {
+        $this->gerak(20.00, 0, '2026-09-01 08:00:00');
+        $this->gerak(5.00, 0, '2026-09-01 22:30:00');   // masih hari yang sama
+        $this->gerak(100.00, 0, '2026-09-02 00:30:00'); // sudah lewat
+
+        \Livewire\Livewire::actingAs($this->pegawai(['view_beef_stocks']))
+            ->test(\App\Filament\Admin\Resources\BeefStockResource\Pages\ListBeefStocks::class)
+            ->set('tableFilters.as_of.date', '2026-09-01')
+            ->assertSee('25.00')
+            ->assertDontSee('125.00');
+    }
+
+    /**
+     * Tanpa tanggal, yang dibaca tetap tabel stok.
+     *
+     * `beef_stocks` yang memegang kebenaran tentang stok hari ini, dan tidak
+     * diganti hanya karena buku besarnya juga bisa menjawab.
+     */
+    public function test_without_a_date_it_still_reads_the_stock_table(): void
+    {
+        $this->stok($this->jonggol, $this->chill, 7.00, 'BC-SEKARANG');
+
+        $this->assertNull(BeefStockResource::asOf());
+
+        \Livewire\Livewire::actingAs($this->pegawai(['view_beef_stocks']))
+            ->test(\App\Filament\Admin\Resources\BeefStockResource\Pages\ListBeefStocks::class)
+            ->assertSee('7.00');
+    }
+
+    /**
+     * Kolomnya ikut tanggalnya.
+     *
+     * Ini bagian yang paling gampang salah: tanggal tidak hanya menyaring
+     * baris, ia menentukan KOLOM apa saja yang muncul. Kalau kolomnya
+     * terlanjur dibentuk untuk tanggal lain, angkanya tampil di kolom yang
+     * keliru tanpa satu pun error.
+     */
+    public function test_the_columns_follow_the_date(): void
+    {
+        // Grade A pernah ada isinya, lalu habis sebelum tanggal yang dilihat.
+        $this->gerak(12.00, 0, '2026-08-01 08:00:00', $this->gradeA);
+        $this->gerak(0, 12.00, '2026-08-02 08:00:00', $this->gradeA);
+        $this->gerak(30.00, 0, '2026-08-03 08:00:00');
+
+        app()->instance(BeefStockResource::AS_OF, \Illuminate\Support\Carbon::parse('2026-08-31')->endOfDay());
+        BeefStockResource::forgetCachedPosition();
+
+        $kunci = array_column(BeefStockResource::stockBuckets(), 'key');
+
+        $this->assertSame(['w' . $this->jonggol->id . '_g' . $this->chill->id], $kunci);
+
+        // Dilihat pada 1 Agustus, grade A masih punya isi -- jadi punya kolom.
+        app()->instance(BeefStockResource::AS_OF, \Illuminate\Support\Carbon::parse('2026-08-01')->endOfDay());
+        BeefStockResource::forgetCachedPosition();
+
+        $this->assertSame(
+            ['w' . $this->jonggol->id . '_g' . $this->gradeA->id],
+            array_column(BeefStockResource::stockBuckets(), 'key'),
+        );
+    }
+
+    /** Total pada tanggal itu tetap sama dengan jumlah kolomnya. */
+    public function test_the_total_matches_the_columns_on_a_past_date_too(): void
+    {
+        $this->gerak(20.00, 0, '2026-08-10 09:00:00');
+        $this->gerak(6.00, 0, '2026-08-10 09:00:00', $this->gradeA);
+        $this->gerak(0, 5.00, '2026-09-05 09:00:00');
+
+        app()->instance(BeefStockResource::AS_OF, \Illuminate\Support\Carbon::parse('2026-08-31')->endOfDay());
+        BeefStockResource::forgetCachedPosition();
+
+        $baris = BeefStockResource::getEloquentQuery()->find($this->produk->id);
+
+        $jumlah = 0.0;
+
+        foreach (BeefStockResource::stockBuckets() as $bucket) {
+            $jumlah += (float) $baris->{$bucket['key']};
+        }
+
+        $this->assertSame(26.0, (float) $baris->total_qty);
+        $this->assertSame(26.0, $jumlah);
+    }
+
+    /**
+     * Peringatan "waktu input" muncul HANYA saat tanggal mundur dipilih.
+     *
+     * Angka yang benar tetapi disalahpahami sama merugikannya dengan angka
+     * yang salah -- tetapi memasang peringatan sepanjang hari untuk angka
+     * yang memang milik hari ini hanya melatih orang mengabaikannya.
+     */
+    public function test_the_entry_time_warning_appears_only_for_a_past_date(): void
+    {
+        $this->gerak(20.00, 0, '2026-09-01 08:00:00');
+
+        $halaman = \Livewire\Livewire::actingAs($this->pegawai(['view_beef_stocks']))
+            ->test(\App\Filament\Admin\Resources\BeefStockResource\Pages\ListBeefStocks::class);
+
+        $halaman->assertDontSee('23:59:59');
+
+        $halaman->set('tableFilters.as_of.date', '2026-09-01')
+            ->assertSee('23:59:59')
+            ->assertSee('01 Sep 2026');
+    }
+
+    // =====================================================================
     // Izin
     // =====================================================================
 
