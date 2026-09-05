@@ -4156,3 +4156,29 @@ dan tanpa itu `row_type` serta `charge_name` ikut tertuduh.
 Delapan belas nama dikecualikan dengan alasan tertulis: semuanya alias yang
 lahir di dalam query itu sendiri (`withCount`, `withSum`, `selectRaw`, kolom
 hasil `join`).
+
+---
+
+## Catatan susur malam 6 September 2026 -- yang diperiksa dan ternyata bersih
+
+Bagian ini sengaja ditulis. Pemeriksaan yang TIDAK menemukan apa-apa sama
+pentingnya dengan yang menemukan: tanpa catatan ini, susur berikutnya akan
+mengerjakan ulang semuanya.
+
+- **Kolom yang diisi lewat `create()` tetapi tidak ada di `$fillable`** --
+  Laravel membuangnya diam-diam. Seluruh `app/` dipindai: nihil. Lima yang
+  sempat tertuduh ternyata kunci array di dalam `__()` yang bersarang.
+- **Status hantu** -- tiap nilai status yang ditulis kode diperiksa apakah ada
+  yang membacanya (saringan, lencana, query). Tidak ada yang menggantung.
+  `unsubscribed` yang sempat tertuduh ternyata kunci JSON, bukan status baris.
+- **Mask uang tanpa `formatStateUsing`** -- tujuh tempat, semuanya sudah
+  benar. Yang ditambahkan cuma penjaganya.
+- **Ekspor yang mengabaikan saringan layar** -- dua puluh lima jalur ekspor
+  diperiksa, semuanya memakai `getFilteredTableQuery()`.
+- **Berat yang dipotong `(int)`** -- `sales_order_items.weight` dan
+  `cattle_receiving_items.initial_weight` memang bertipe `int` di basis data.
+  Pesanan dan penerimaan sapi dicatat dalam kilogram bulat; desimalnya hidup
+  di tally dan surat jalan. Konsisten, bukan cacat.
+- **Tombol yang mengubah data tanpa bertanya** -- enam belas kandidat,
+  semuanya sudah punya modal berisi form, cuma tautan kembali, atau penanda
+  scan yang bisa diulang.
