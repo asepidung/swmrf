@@ -156,13 +156,26 @@ class CattleWeighing extends Model
             }
         }
         
-        if ($totalLoss > 0) {
+        // Yang menentukan ADA-TIDAKNYA kerugian itu BERATNYA, bukan
+        // rupiahnya.
+        //
+        // Dulu syaratnya `$totalLoss > 0`. Ketika harga sapinya tidak
+        // ketemu -- kelas yang tidak ada di PO, tanpa histori dari pemasok
+        // yang sama, dan PO-nya sendiri tanpa harga -- pengalinya nol,
+        // sehingga `$totalLoss` nol meski beratnya nyata-nyata susut. Baris
+        // kerugiannya lalu masuk ke cabang `else` dan DIHAPUS: kilogram yang
+        // hilang lenyap dari laporan tanpa jejak apa pun.
+        //
+        // Susut kirim di Surat Jalan sudah lama menyimpan beratnya dengan
+        // `amount` nol dan menunggu HPP. Dua tempat yang menghitung hal yang
+        // sama harus menjawab sama.
+        if ($totalLossWeight > 0) {
             // Beratnya ikut disimpan, bukan dibuang sesudah dikalikan.
             // Rupiahnya saja tidak cukup untuk menjawab "berapa kilo yang
             // hilang bulan ini" -- dan kolomnya sudah ada, dipakai bersama
             // dengan susut kirim.
             $this->financialLoss()->updateOrCreate(
-                ['transaction_type' => 'Cattle Weighing', 'reference_number' => $this->weighing_number],
+                ['transaction_type' => FinancialLoss::SUMBER_TIMBANG_SAPI, 'reference_number' => $this->weighing_number],
                 [
                     'date' => $this->weighing_date,
                     'amount' => $totalLoss,

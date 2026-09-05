@@ -11,6 +11,27 @@ class FinancialLoss extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /**
+     * Modul yang bisa menerbitkan kerugian, sebagai SATU daftar.
+     *
+     * Saringan di layar dulu menuliskan pilihannya sendiri dan hanya memuat
+     * 'Cattle Weighing'. Susut kirim sudah ditulis sejak lama dengan sumber
+     * 'Delivery Order', tetapi tidak pernah muncul di saringan itu -- barisnya
+     * ada di tabel, hanya tidak bisa dipilih. Daftar yang ditulis tangan
+     * selalu ketinggalan dari yang benar-benar ditulis kode.
+     *
+     * Nilainya sudah tersimpan apa adanya di ribuan baris lama, jadi
+     * teksnya TIDAK boleh berubah -- yang berubah cuma tempat menyebutnya.
+     */
+    public const SUMBER_TIMBANG_SAPI = 'Cattle Weighing';
+
+    public const SUMBER_SURAT_JALAN = 'Delivery Order';
+
+    public const SEMUA_SUMBER = [
+        self::SUMBER_TIMBANG_SAPI,
+        self::SUMBER_SURAT_JALAN,
+    ];
+
     protected $fillable = [
         'lossable_type',
         'lossable_id',

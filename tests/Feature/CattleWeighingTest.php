@@ -130,8 +130,39 @@ class CattleWeighingTest extends TestCase
         $this->assertFalse($loss->isNotPricedYet());
     }
 
+    /**
+     * Berat yang susut tetap tercatat meski harganya belum ketemu.
+     *
+     * Syarat lamanya `$totalLoss > 0` -- RUPIAHNYA. Ketika harga sapinya nol
+     * di ketiga sumbernya (PO, histori pemasok, rata-rata PO), pengalinya nol
+     * dan rupiahnya nol, sehingga kerugiannya masuk ke cabang `else` dan
+     * DIHAPUS. Kilogram yang benar-benar hilang lenyap dari laporan tanpa
+     * galat apa pun.
+     *
+     * Susut kirim di Surat Jalan sudah lama menyimpan beratnya dengan
+     * `amount` nol sambil menunggu HPP. Dua tempat yang menghitung hal yang
+     * sama harus menjawab sama.
+     */
+    public function test_shrinkage_is_still_recorded_when_the_price_is_unknown(): void
+    {
+        $weighing = $this->weighing([
+            'ID-3001' => ['initial' => 400, 'actual' => 385],
+        ], pricePerKg: 0);
+
+        $weighing->calculateAndSaveFinancialLoss();
+
+        $loss = FinancialLoss::first();
+
+        $this->assertNotNull($loss, 'Susut 15 Kg hilang dari laporan hanya karena harganya belum ketemu.');
+        $this->assertEqualsWithDelta(15.0, (float) $loss->quantity, 0.001);
+        $this->assertEqualsWithDelta(0.0, (float) $loss->amount, 0.001);
+
+        // Nol yang berarti "belum dinilai", bukan nol yang berarti "tidak rugi".
+        $this->assertTrue($loss->isNotPricedYet());
+    }
+
     /** Sapi yang justru bertambah berat tidak menghasilkan kerugian. */
-    public function test_no_loss_when_nothing_shrank(): void
+public function test_no_loss_when_nothing_shrank(): void
     {
         $weighing = $this->weighing([
             'ID-2003' => ['initial' => 400, 'actual' => 405],

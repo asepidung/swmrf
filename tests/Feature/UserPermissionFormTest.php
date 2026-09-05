@@ -270,6 +270,75 @@ class UserPermissionFormTest extends TestCase
     }
 
     /**
+     * Setiap izin yang DISEBUT kode wajib benar-benar ada sesudah penyemaian.
+     *
+     * `hasPermission('sesuatu_yang_tidak_ada')` tidak melempar apa pun. Ia
+     * cuma menjawab false, selamanya, untuk semua orang -- dan karena
+     * izinnya juga tidak muncul di form Hak Akses, tidak ada centang yang
+     * bisa diberikan untuk memperbaikinya.
+     *
+     * Gejalanya bukan error, melainkan sebuah tombol yang tidak pernah
+     * muncul dan tidak ada yang tahu kenapa. `delete_beef_stocks` berada
+     * dalam keadaan itu sampai #29x, dan `pay_purchase_materials` sampai
+     * hari ini.
+     *
+     * @test
+     */
+    public function every_permission_the_code_asks_for_actually_exists()
+    {
+        $this->seed(\Database\Seeders\DatabaseSeeder::class);
+
+        $ada = Permission::pluck('name')->all();
+        $disebut = [];
+
+        $berkas = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(app_path())
+        );
+
+        foreach ($berkas as $satu) {
+            if (! $satu->isFile() || $satu->getExtension() !== 'php') {
+                continue;
+            }
+
+            $isi = file_get_contents($satu->getPathname());
+
+            // Komentar dibuang lebih dulu -- keterangan yang MENYEBUT izin
+            // lama sudah beberapa kali ikut tertuduh sebagai pemakainya.
+            $bersih = '';
+
+            foreach (@token_get_all($isi) as $token) {
+                if (is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
+                    continue;
+                }
+
+                $bersih .= is_array($token) ? $token[1] : $token;
+            }
+
+            if (preg_match_all("/hasPermission\(\s*'([a-z0-9_]+)'/", $bersih, $cocok)) {
+                foreach ($cocok[1] as $izin) {
+                    $disebut[$izin][] = basename($satu->getPathname());
+                }
+            }
+        }
+
+        $hilang = [];
+
+        foreach (array_diff(array_keys($disebut), $ada) as $izin) {
+            $hilang[] = $izin.'   <- '.implode(', ', array_unique($disebut[$izin]));
+        }
+
+        sort($hilang);
+
+        $this->assertSame(
+            [],
+            $hilang,
+            "Izin berikut disebut kode tetapi tidak pernah dibuat. Yang meminta izin ini akan "
+            ."selalu ditolak, dan izinnya tidak muncul di form Hak Akses sehingga tidak bisa "
+            ."dicentang siapa pun:\n".implode("\n", $hilang),
+        );
+    }
+
+    /**
      * Tidak boleh ada permission yang di-seed lebih dari sekali.
      *
      * `permissions.name` unique dan seeder memakai updateOrCreate, sehingga
