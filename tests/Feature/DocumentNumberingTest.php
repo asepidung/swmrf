@@ -219,4 +219,120 @@ class DocumentNumberingTest extends TestCase
                 ."App\\Support\\DocumentNumber::next():\n".implode("\n", $offenders),
         );
     }
+
+    /**
+     * Nomor dokumen tidak disusun dengan tangan.
+     *
+     * Penjagaan di atas hanya melihat berkas yang memuat `str_pad`. Nomor
+     * MR# dan BR# memakai `sprintf('%03s')`, jadi lolos -- dan keduanya
+     * memang salah. Yang ditolak di sini tiga bentuknya sekaligus:
+     *
+     *  - urutan disusun sendiri dengan `str_pad` atas variabel nomor;
+     *  - digit terakhir dipungut dari nomor sebelumnya;
+     *  - nomor terakhir dicari dengan `orderBy(..., 'desc')` biasa, yang
+     *    membandingkan sebagai TEKS: `...999` dianggap lebih besar daripada
+     *    `...1000`.
+     */
+    public function test_no_document_number_is_assembled_by_hand(): void
+    {
+        $pelanggar = [];
+
+        foreach ($this->berkasPhp() as $berkas) {
+            // Helper-nya sendiri memang menyusun nomornya; itu tugasnya.
+            if (str_ends_with($this->relatif($berkas), 'Support/DocumentNumber.php')) {
+                continue;
+            }
+
+            $isi = $this->tanpaKomentar(file_get_contents($berkas));
+
+            foreach ([
+                '/str_pad\(\s*\$\w*(?:number|nomor|counter|sequence|urut)/i' => 'menyusun nomor sendiri',
+                '/substr\(\s*\$\w+->\w*(?:number|nomor)\w*\s*,\s*-\d/i' => 'memungut digit terakhir nomor',
+                "/orderBy\(\s*'\w*(?:number|nomor)\w*'\s*,\s*'desc'\s*\)/i" => 'mengurutkan nomor sebagai teks',
+            ] as $pola => $sebab) {
+                if (preg_match($pola, $isi)) {
+                    $pelanggar[] = $this->relatif($berkas).'  -- '.$sebab;
+                }
+            }
+        }
+
+        sort($pelanggar);
+
+        $this->assertSame(
+            [],
+            $pelanggar,
+            "Penomoran berikut disusun sendiri, bukan lewat `App\\Support\\DocumentNumber::next()`. "
+            ."Yang hilang bukan cuma kerapian: penguncian barisnya, urutan menurut PANJANG, dan "
+            ."padding sebagai batas bawah, ketiganya sekaligus:\n".implode("\n", $pelanggar),
+        );
+    }
+
+    /**
+     * Nomor dokumen tidak diturunkan dari JUMLAH BARIS.
+     *
+     * Bentuk ini yang paling menipu: ia terlihat benar selama belum pernah
+     * ada baris yang benar-benar hilang. Penjagaan lama mencari pola dua
+     * baris `->count()` lalu `$sequence = $x + 1` di berkas yang memuat
+     * `str_pad`; MR# dan BR# memakai nama variabel lain dan tidak memuat
+     * `str_pad`, jadi tidak pernah tersentuh.
+     */
+    public function test_no_document_number_is_derived_from_a_row_count(): void
+    {
+        $pelanggar = [];
+
+        foreach ($this->berkasPhp() as $berkas) {
+            $isi = $this->tanpaKomentar(file_get_contents($berkas));
+
+            if (preg_match('/\$\w*(?:urut|number|nomor|counter|sequence)\w*\s*=\s*\$\w*count\w*\s*\+\s*1/i', $isi, $m)) {
+                $pelanggar[] = $this->relatif($berkas).'  ('.$m[0].')';
+            }
+        }
+
+        sort($pelanggar);
+
+        $this->assertSame(
+            [],
+            $pelanggar,
+            "Nomor dokumen berikut diturunkan dari jumlah baris. Menghitung baris bukan hal yang "
+            ."sama dengan mengambil nomor tertinggi -- dan `lockForUpdate()` pada sebuah `count()` "
+            ."tidak mengunci apa pun ketika hasilnya nol:\n".implode("\n", $pelanggar),
+        );
+    }
+
+    /** @return \Generator<string> */
+    private function berkasPhp(): \Generator
+    {
+        $berkas = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(app_path())
+        );
+
+        foreach ($berkas as $satu) {
+            if ($satu->isFile() && $satu->getExtension() === 'php') {
+                yield $satu->getPathname();
+            }
+        }
+    }
+
+    /** Komentar dibuang supaya keterangannya tidak ikut tertuduh. */
+    private function tanpaKomentar(string $isi): string
+    {
+        $hasil = '';
+
+        foreach (@token_get_all($isi) as $token) {
+            if (is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+
+            $hasil .= is_array($token) ? $token[1] : $token;
+        }
+
+        return $hasil;
+    }
+
+    private function relatif(string $jalur): string
+    {
+        $jalur = str_replace(chr(92), '/', $jalur);
+
+        return str_replace(str_replace(chr(92), '/', base_path()).'/', '', $jalur);
+    }
 }

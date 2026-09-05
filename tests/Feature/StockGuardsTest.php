@@ -100,7 +100,9 @@ class StockGuardsTest extends TestCase
                 continue;
             }
 
-            if (! str_contains($isi, 'static::withTrashed()')) {
+            // `self::` sama benarnya di sini; yang dijaga adalah ADANYA
+            // withTrashed, bukan kata mana yang dipakai menyebut kelasnya.
+            if (! preg_match('/(?:static|self)::withTrashed\(\)/', $isi)) {
                 $pelanggar[] = basename($berkas);
             }
         }
