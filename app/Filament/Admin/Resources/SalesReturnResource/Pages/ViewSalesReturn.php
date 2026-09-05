@@ -41,6 +41,7 @@ class ViewSalesReturn extends ViewRecord
                     try {
                         $this->record->unlock();
                     } catch (\Throwable $e) {
+                        report($e);
                         Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
 
                         return;

@@ -210,6 +210,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
                 ]);
 
             } catch (\Exception $e) {
+                report($e);
                 \Filament\Notifications\Notification::make()
                     ->title(__('Error Parsing Barcode'))
                     ->body($e->getMessage())

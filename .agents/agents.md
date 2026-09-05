@@ -3991,3 +3991,47 @@ keputusan Owner, bukan keputusan yang pantas diambil sendiri.
 
 Status hantu: setiap nilai status yang ditulis kode diperiksa apakah ada yang
 membacanya -- saringan, lencana, atau query. Tidak ada yang menggantung.
+
+---
+
+## #303 -- Kegagalan yang ditangkap tanpa jejak, dan mask uang
+
+### `catch` yang memberitahu layar tetapi tidak mencatat apa pun
+
+Laravel mencatat setiap pengecualian yang TIDAK ditangkap. Begitu sebuah
+`catch` memasangnya, tanggal, pengguna, dan jejak tumpukannya hilang --
+tersisa notifikasi merah yang lenyap begitu layarnya ditutup.
+
+Dua puluh lima `catch` di sembilan belas berkas berada dalam keadaan itu.
+Bentuknya selalu sama dan selalu TERLIHAT LENGKAP, dan itulah yang membuatnya
+bertahan lama: penggunanya diberi tahu, jadi tidak ada yang terasa salah.
+
+**Keputusan: `report($e)`, bukan `Log::error()` bikinan sendiri.** Ia memberi
+jejak tumpukan penuh, dan menghormati daftar jangan-catat Laravel -- sehingga
+`ValidationException` seperti penolakan stok minus tidak ikut membanjiri log.
+
+Empat `catch` yang isinya BENAR-BENAR kosong sengaja tidak disentuh.
+Semuanya sudah berkomentar dan memang pada tempatnya. Kekosongannya terlihat
+langsung oleh siapa pun yang membacanya; yang berbahaya justru yang terlihat
+sudah lengkap.
+
+### Mask uang di atas nilai berdesimal
+
+Nilai `decimal(15,2)` sampai ke form sebagai `"1200000.00"`; mask uang
+membuang karakter non-digit, jadi dua nol di belakang titik ikut terbaca --
+Rp 1,2 juta tampil Rp 120 juta, tanpa galat apa pun. Tujuh tempat sudah
+memakai `formatStateUsing`, jadi tidak ada yang perlu diperbaiki. Yang
+ditambahkan hanya penjaganya, supaya salinan berikutnya tidak lahir tanpa
+pemformat.
+
+### Saringan tanggal yang menyaring diam-diam: kenapa hanya satu layar
+
+`CashBookResource` memakai pola yang sama dengan Financial Loss sebelum #299
+-- bawaan bulan berjalan, penunjuk disembunyikan -- dan itu SENGAJA
+DIBIARKAN. Ia tidak punya baris total, jadi tidak ada angka yang bisa
+disalahbaca sebagai keseluruhan. Yang membuat Financial Loss berbeda adalah
+`Sum` di bawah kolomnya.
+
+Diperiksa menyeluruh: hanya satu tabel di seluruh aplikasi yang punya baris
+total sekaligus saringan tanggal berbawaan. Jangan "rapikan" CashBook
+mengikuti Financial Loss -- bedanya disengaja.

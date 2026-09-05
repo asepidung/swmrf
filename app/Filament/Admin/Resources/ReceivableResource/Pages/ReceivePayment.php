@@ -702,6 +702,7 @@ class ReceivePayment extends Page
             $this->redirect(ReceivableResource::getUrl('view', ['record' => $this->record->id]));
 
         } catch (\Exception $e) {
+            report($e);
             DB::rollBack();
             Notification::make()->danger()->title(__('Something went wrong.'))->body($e->getMessage())->send();
         }

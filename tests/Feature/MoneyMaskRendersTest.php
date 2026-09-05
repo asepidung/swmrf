@@ -177,4 +177,84 @@ class MoneyMaskRendersTest extends TestCase
             'Ekspresi mask terpotong di koma pertama.',
         );
     }
+
+    /**
+     * Setiap mask uang berpasangan dengan `formatStateUsing`.
+     *
+     * Ini kerusakan yang BERBEDA dari yang dijaga di atas, dan sama diamnya.
+     * Nilai dari kolom `decimal(15,2)` sampai ke form berbentuk
+     * `"1200000.00"`. Mask uang membuang seluruh karakter non-digit, jadi
+     * dua nol di belakang titik ikut terbaca sebagai digit dan angkanya
+     * tampil SERATUS KALI LIPAT -- Rp 1,2 juta menjadi Rp 120 juta.
+     *
+     * Tidak ada galat, tidak ada peringatan, dan angka yang tersimpan tetap
+     * benar. Yang salah hanya yang DIBACA orang, di layar yang dipakai untuk
+     * memutuskan pembayaran.
+     *
+     * `formatStateUsing` membuang desimalnya lebih dulu, sebelum mask
+     * bekerja. Tujuh tempat sudah memakainya, dua di antaranya lewat
+     * pembantu `money()` bersama. Yang kedelapan akan lahir dengan menyalin
+     * tetangganya, dan penjaga inilah yang menahannya kalau salinannya tidak
+     * lengkap.
+     */
+    public function test_every_money_mask_is_paired_with_a_formatter(): void
+    {
+        $pelanggar = [];
+
+        $berkas = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(app_path())
+        );
+
+        foreach ($berkas as $satu) {
+            if (! $satu->isFile() || $satu->getExtension() !== 'php') {
+                continue;
+            }
+
+            $isi = $this->tanpaKomentar(file_get_contents($satu->getPathname()));
+
+            if (! str_contains($isi, '$money(')) {
+                continue;
+            }
+
+            // Tiap potongan mulai dari sebuah TextInput sampai TextInput
+            // berikutnya. Mask dan pemformatnya harus berada di potongan yang
+            // SAMA -- keduanya milik komponen yang sama.
+            foreach (preg_split('/TextInput::make\(/', $isi) as $potongan) {
+                if (! str_contains($potongan, '$money(')) {
+                    continue;
+                }
+
+                if (! str_contains($potongan, 'formatStateUsing')) {
+                    $pelanggar[] = basename($satu->getPathname());
+                }
+            }
+        }
+
+        $pelanggar = array_values(array_unique($pelanggar));
+        sort($pelanggar);
+
+        $this->assertSame(
+            [],
+            $pelanggar,
+            "Mask uang berikut tidak berpasangan dengan `formatStateUsing`. Nilai "
+            ."decimal(15,2) akan tampil seratus kali lipat, tanpa galat apa pun:\n"
+            .implode("\n", $pelanggar),
+        );
+    }
+
+    /** Komentar dibuang supaya keterangannya tidak ikut tertuduh. */
+    private function tanpaKomentar(string $isi): string
+    {
+        $hasil = '';
+
+        foreach (@token_get_all($isi) as $token) {
+            if (is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+
+            $hasil .= is_array($token) ? $token[1] : $token;
+        }
+
+        return $hasil;
+    }
 }

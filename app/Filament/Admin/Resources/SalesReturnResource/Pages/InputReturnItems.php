@@ -55,6 +55,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
                     try {
                         $this->record->approve();
                     } catch (\Throwable $e) {
+                        report($e);
                         Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
 
                         return;
@@ -470,6 +471,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
             $this->dataScan['barcode'] = null;
             Notification::make()->title(__('Barcode scanned'))->success()->send();
         } catch (\Exception $e) {
+            report($e);
             Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
         }
     }
@@ -585,6 +587,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
             
             $this->dispatch('refreshTable');
         } catch (\Exception $e) {
+            report($e);
             Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
         }
     }

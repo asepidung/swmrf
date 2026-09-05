@@ -229,6 +229,7 @@ class BoningResource extends Resource
                         try {
                             $record->lock();
                         } catch (\Throwable $e) {
+                            report($e);
                             Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
 
                             return;

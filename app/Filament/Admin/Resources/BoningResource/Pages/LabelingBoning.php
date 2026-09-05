@@ -355,6 +355,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
                                 ->success()
                                 ->send();
                         } catch (\Exception $e) {
+                            report($e);
                             Notification::make()
                                 ->title(__('Failed'))
                                 ->body($e->getMessage())
@@ -476,6 +477,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
                 $this->dispatch('auto-print', url: $printUrl);
             }
         } catch (\Exception $e) {
+            report($e);
             Notification::make()->title(__('Error!'))->body($e->getMessage())->danger()->send();
         }
     }

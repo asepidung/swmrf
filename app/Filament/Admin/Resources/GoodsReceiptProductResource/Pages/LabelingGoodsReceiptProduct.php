@@ -445,6 +445,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                 $this->dispatch('auto-print', url: $printUrl);
             }
         } catch (\Exception $e) {
+            report($e);
             Notification::make()->title(__('Error!'))->body($e->getMessage())->danger()->send();
         }
     }
