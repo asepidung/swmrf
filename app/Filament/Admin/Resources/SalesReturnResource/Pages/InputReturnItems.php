@@ -527,14 +527,9 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 // barisnya yang formatnya lain.
                 $prefix = $origin . $dateStr;
 
-                $counter = SalesReturnItem::where('barcode', 'like', $prefix . '%')
-                    ->lockForUpdate()
-                    ->pluck('barcode')
-                    ->map(fn (string $lama): int => (int) substr($lama, -4))
-                    ->max();
-
-                $counter = ($counter ?? 0) + 1;
-                $counterStr = str_pad($counter, 4, '0', STR_PAD_LEFT);
+                $counterStr = \App\Support\BarcodeSequence::nextPadded($prefix, [
+                    SalesReturnItem::query()->lockForUpdate(),
+                ]);
 
                 $barcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
 

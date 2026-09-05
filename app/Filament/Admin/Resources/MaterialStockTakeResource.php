@@ -55,7 +55,7 @@ class MaterialStockTakeResource extends Resource
                             ->hiddenOn('create')
                             ->required(),
                         Forms\Components\TextInput::make('period')
-                            ->label(__('Periode (Bulan/Tahun)'))
+                            ->label(__('Period (month/year)'))
                             ->type('month')
                             ->required()
                             ->autofocus(),
@@ -80,7 +80,7 @@ class MaterialStockTakeResource extends Resource
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('period')
-                    ->label(__('Periode'))
+                    ->label(__('Period'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('date')

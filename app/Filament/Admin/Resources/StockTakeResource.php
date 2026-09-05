@@ -47,7 +47,7 @@ class StockTakeResource extends Resource
                             ->hiddenOn('create')
                             ->required(),
                         Forms\Components\TextInput::make('period')
-                            ->label(__('Periode (Bulan/Tahun)'))
+                            ->label(__('Period (month/year)'))
                             ->type('month')
                             ->required()
                             ->autofocus(),
@@ -72,7 +72,7 @@ class StockTakeResource extends Resource
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('period')
-                    ->label(__('Periode'))
+                    ->label(__('Period'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('date')
@@ -83,10 +83,10 @@ class StockTakeResource extends Resource
                     ->label(__('Status'))
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'DRAFT' => 'gray',
-                        'IN_PROGRESS' => 'warning',
-                        'COMPLETED' => 'success',
-                        'CANCELED' => 'danger',
+                        StockTake::STATUS_DRAFT => 'gray',
+                        StockTake::STATUS_IN_PROGRESS => 'warning',
+                        StockTake::STATUS_COMPLETED => 'success',
+                        StockTake::STATUS_CANCELED => 'danger',
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('created_at')
@@ -146,8 +146,26 @@ class StockTakeResource extends Resource
                     ->modalIcon('heroicon-o-exclamation-triangle')
                     ->modalHeading(__('Finish this stock count?'))
                     ->modalDescription(__('This has a BIG consequence for your stock master data. Items marked "MISSING" are DELETED PERMANENTLY, and items found ("UNEXPECTED") are ADDED as new stock. Lock this document?'))
-                    ->visible(fn (StockTake $record) => $record->status === 'IN_PROGRESS')
+                    // Tombol ini MENGHAPUS STOK secara permanen, jadi izinnya sendiri.
+                    //
+                    // Sebelumnya satu-satunya syarat menampilkannya adalah statusnya
+                    // IN_PROGRESS. Artinya siapa pun yang boleh MELIHAT daftar opname
+                    // boleh menghapus setiap baris berstatus MISSING dari `beef_stocks`
+                    // -- dan `BeefStock` tidak memakai hapus lunak, jadi barisnya
+                    // benar-benar hilang. Bentuk yang sama sudah ditambal di Approve
+                    // retur, Lock repack, dan hapus stok.
+                    ->visible(fn (StockTake $record): bool => $record->status === StockTake::STATUS_IN_PROGRESS
+                        && (auth()->user()?->isProgrammer()
+                            || (auth()->user()?->hasPermission('finish_stock_takes') ?? false)))
                     ->action(function (StockTake $record) {
+                        // try/finally, bukan sekadar dua baris berurutan.
+                        //
+                        // `$bypassed` dulu dikembalikan `false` di BARIS TERAKHIR
+                        // transaksinya. Kalau transaksinya gagal di tengah, nilainya
+                        // tidak pernah dikembalikan -- dan karena ia properti STATIS,
+                        // seluruh sisa permintaan itu berjalan tanpa pembekuan gudang
+                        // sama sekali, tepat pada saat opname sedang berlangsung.
+                        try {
                         \Illuminate\Support\Facades\DB::transaction(function () use ($record) {
                             // 1. Bypass Freeze Check
                             \App\Services\WarehouseFreezeService::$bypassed = true;
@@ -215,11 +233,11 @@ class StockTakeResource extends Resource
                             }
                             
                             // 4. Update Opname Status
-                            $record->update(['status' => 'COMPLETED']);
-                            
-                            // Re-enable freeze check
-                            \App\Services\WarehouseFreezeService::$bypassed = false;
+                            $record->update(['status' => StockTake::STATUS_COMPLETED]);
                         });
+                        } finally {
+                            \App\Services\WarehouseFreezeService::$bypassed = false;
+                        }
                         
                         \Filament\Notifications\Notification::make()
                             ->title(__('Stock Opname Completed'))
@@ -230,7 +248,29 @@ class StockTakeResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Hapus massal ikut dijaga aturan yang sama dengan hapus
+                    // satuan. Sebelumnya ia tidak menjaga apa pun, jadi opname
+                    // yang sudah dihitung -- bahkan yang sudah selesai -- bisa
+                    // dibuang berombongan.
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->before(function (\Illuminate\Support\Collection $records, Tables\Actions\DeleteBulkAction $action) {
+                            $tertahan = $records->reject(fn (StockTake $record): bool => $record->isDeletable());
+
+                            if ($tertahan->isEmpty()) {
+                                return;
+                            }
+
+                            \Filament\Notifications\Notification::make()
+                                ->title(__('Some documents cannot be deleted'))
+                                ->body(__('A stock count that already has counted items cannot be deleted: :documents', [
+                                    'documents' => $tertahan->pluck('document_number')->join(', '),
+                                ]))
+                                ->danger()
+                                ->persistent()
+                                ->send();
+
+                            $action->cancel();
+                        }),
                     Tables\Actions\ForceDeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
                 ]),
@@ -261,7 +301,7 @@ class StockTakeResource extends Resource
                                             default => 'primary',
                                         }),
                                     Infolists\Components\TextEntry::make('period')
-                                        ->label(__('Periode')),
+                                        ->label(__('Period')),
                                     Infolists\Components\TextEntry::make('date')
                                         ->label(__('Date'))
                                         ->date('d M Y'),

@@ -72,19 +72,19 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
         ]);
     }
 
+    /**
+     * Aturannya satu rumah: `ShelfLife`.
+     *
+     * Sebelumnya berkas ini memuat salinannya sendiri, dan keempat salinan di
+     * aplikasi ini tidak sama isinya -- satu karton grade A bisa mendapat
+     * tanggal kedaluwarsa berbeda semata karena pintu mana yang dilewatinya.
+     *
+     * Dipertahankan sebagai pembungkus tipis karena namanya sudah dipanggil
+     * dari beberapa berkas, termasuk lintas modul.
+     */
     public static function calculateExpiry($packDate, $gradeId, callable $set)
     {
-        if (!$packDate || !$gradeId) return;
-
-        $date = Carbon::parse($packDate);
-
-        if (in_array((int)$gradeId, [1, 3])) { // CHILL or A
-            $expiry = $date->addMonths(3)->format('Y-m-d');
-        } else {
-            $expiry = $date->addYear()->format('Y-m-d');
-        }
-
-        $set('exp_date', $expiry);
+        \App\Support\ShelfLife::fill($packDate, $gradeId, $set);
     }
 
     public function form(Form $form): Form
@@ -353,9 +353,12 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                 $phStr = isset($formData['ph_level']) ? str_pad(round($formData['ph_level'] * 10), 2, '0', STR_PAD_LEFT) : '00';
 
                 $prefix = $origin . $dateStr;
-                $latestItem = GoodsReceiptProductItem::withTrashed()->where('barcode', 'like', $prefix . '%')->lockForUpdate()->orderBy('id', 'desc')->first();
-                $counter = ($latestItem && strlen($latestItem->barcode) >= 26) ? ((int) substr($latestItem->barcode, -4) + 1) : 1;
-                $counterStr = str_pad($counter, 4, '0', STR_PAD_LEFT);
+                // Urutannya satu rumah di `BarcodeSequence`. Bentuk lamanya
+                // memakai panjang barcode sebagai penanda sah dan membaca
+                // baris TERAKHIR menurut id, bukan urutan TERBESAR.
+                $counterStr = \App\Support\BarcodeSequence::nextPadded($prefix, [
+                    GoodsReceiptProductItem::withTrashed()->lockForUpdate(),
+                ]);
 
                 $barcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
 

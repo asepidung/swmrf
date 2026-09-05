@@ -14,7 +14,12 @@ class EditStockTake extends EditRecord
     {
         return [
             Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+
+            // Penjagaan yang sama dengan halaman View. Di sini dulu tidak ada
+            // penjagaan sama sekali, jadi opname yang sudah dihitung bisa
+            // dihapus lewat pintu ini.
+            Actions\DeleteAction::make()
+                ->visible(fn (): bool => $this->record->isDeletable()),
         ];
     }
 }

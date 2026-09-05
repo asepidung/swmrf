@@ -39,7 +39,7 @@ class CreateStockTake extends CreateRecord
             padding: 3,
         );
         $data['created_by'] = auth()->id();
-        $data['status'] = 'IN_PROGRESS';
+        $data['status'] = StockTake::STATUS_IN_PROGRESS;
         
         return $data;
     }
@@ -72,12 +72,19 @@ class CreateStockTake extends CreateRecord
             ];
         }
         
-        // Batch insert for performance
+        // Satu transaksi untuk seluruh snapshot.
+        //
+        // Sebelumnya ribuan baris disisipkan tanpa transaksi. Kalau gagal di
+        // tengah, dokumennya tetap ada dengan snapshot SEPARUH -- dan snapshot
+        // separuh tidak terlihat sebagai kerusakan: ia terbaca sebagai opname
+        // yang barangnya memang cuma segitu, lalu selisihnya dihapus dari stok
+        // saat opnamenya diselesaikan.
         if (!empty($itemsToInsert)) {
-            $chunks = array_chunk($itemsToInsert, 500);
-            foreach ($chunks as $chunk) {
-                StockTakeItem::insert($chunk);
-            }
+            DB::transaction(function () use ($itemsToInsert) {
+                foreach (array_chunk($itemsToInsert, 500) as $chunk) {
+                    StockTakeItem::insert($chunk);
+                }
+            });
         }
     }
 }

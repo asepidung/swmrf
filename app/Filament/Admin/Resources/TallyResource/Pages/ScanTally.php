@@ -251,13 +251,10 @@ class ScanTally extends Page implements HasForms, HasTable
                                     $oldPackDate = $record->pack_date?->format('Y-m-d');
                                     $oldExpDate = $record->exp_date?->format('Y-m-d');
                                     
-                                    // Calculate expiry date based on product type
-                                    $date = \Carbon\Carbon::parse($newPackDate);
-                                    if (in_array((int)$record->grade_id, [1, 3])) { // CHILL or A
-                                        $newExpDate = $date->copy()->addMonths(3)->format('Y-m-d');
-                                    } else {
-                                        $newExpDate = $date->copy()->addYear()->format('Y-m-d');
-                                    }
+                                    // Umur simpannya satu rumah di `ShelfLife`.
+                                    // Salinan di sini memberi grade A tiga bulan,
+                                    // padahal aturannya setahun.
+                                    $newExpDate = \App\Support\ShelfLife::expiryDateFor($newPackDate, $record->grade_id);
                                     
                                     // Generate new barcode starting with prefix '6'
                                     $origin = '6';
@@ -276,16 +273,14 @@ class ScanTally extends Page implements HasForms, HasTable
                                     
                                     $prefix = $origin . $dateStr;
                                     
-                                    // Find maximum counter in tally_items
-                                    $latestTallyItem = \App\Models\TallyItem::where('barcode', 'like', $prefix . '%')->lockForUpdate()->orderBy('id', 'desc')->first();
-                                    $counterTally = ($latestTallyItem && strlen($latestTallyItem->barcode) >= 26) ? ((int) substr($latestTallyItem->barcode, -4)) : 0;
-
-                                    // Find maximum counter in beef_stocks
-                                    $latestBeefStock = \App\Models\BeefStock::where('barcode', 'like', $prefix . '%')->lockForUpdate()->orderBy('id', 'desc')->first();
-                                    $counterStock = ($latestBeefStock && strlen($latestBeefStock->barcode) >= 26) ? ((int) substr($latestBeefStock->barcode, -4)) : 0;
-
-                                    $counter = max($counterTally, $counterStock) + 1;
-                                    $counterStr = str_pad($counter, 4, '0', STR_PAD_LEFT);
+                                    // Dua tabel sekaligus -- barcode relabel lahir di
+                                    // `tally_items` dan hidup berdampingan dengan yang
+                                    // sudah ada di `beef_stocks`. Urutannya satu rumah
+                                    // di `BarcodeSequence`.
+                                    $counterStr = \App\Support\BarcodeSequence::nextPadded($prefix, [
+                                        \App\Models\TallyItem::query()->lockForUpdate(),
+                                        \App\Models\BeefStock::query()->lockForUpdate(),
+                                    ]);
                                     
                                     $newBarcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
                                     

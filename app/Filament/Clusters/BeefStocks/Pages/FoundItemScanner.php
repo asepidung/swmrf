@@ -210,7 +210,7 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                             ->dehydrated()
                             ->columnSpanFull(),
                         Forms\Components\Select::make('product_id')
-                            ->label(__('Produk'))
+                            ->label(__('Product'))
                             ->options(Product::pluck('name', 'id'))
                             ->searchable()
                             ->required(),
@@ -291,13 +291,9 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                 // yang diambil yang TERBESAR.
                 $prefix = $origin . $dateStr;
 
-                $counter = BeefStock::where('barcode', 'like', $prefix . '%')
-                    ->pluck('barcode')
-                    ->map(fn (string $lama): int => (int) substr($lama, -4))
-                    ->max();
-
-                $counter = ($counter ?? 0) + 1;
-                $counterStr = str_pad($counter, 4, '0', STR_PAD_LEFT);
+                $counterStr = \App\Support\BarcodeSequence::nextPadded($prefix, [
+                    BeefStock::query(),
+                ]);
 
                 $finalBarcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
                 
@@ -310,10 +306,8 @@ class FoundItemScanner extends Page implements HasForms, HasTable
 
                 $packDate = Carbon::parse($data['pack_date'] ?? now());
                 
-                // Grade 1 (Chill) = 3 months, others = 1 year
-                $expDate = ((int)$data['grade_id'] === 1) 
-                    ? $packDate->copy()->addMonths(3) 
-                    : $packDate->copy()->addYear();
+                // Umur simpannya satu rumah di `ShelfLife`.
+                $expDate = \App\Support\ShelfLife::expiryFor($packDate, $data['grade_id']);
 
                 // Insert into BeefStock
                 $stock = BeefStock::create([
@@ -384,7 +378,7 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                     ->dateTime('d/m/Y H:i')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('product.name')
-                    ->label(__('Produk'))
+                    ->label(__('Product'))
                     ->searchable(),
                 Tables\Columns\TextColumn::make('weight_in')
                     ->label(__('Weight'))
