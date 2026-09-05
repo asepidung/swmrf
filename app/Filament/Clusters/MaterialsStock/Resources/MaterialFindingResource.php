@@ -26,6 +26,51 @@ class MaterialFindingResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
+    /**
+     * Halaman ini MENCETAK STOK, jadi izinnya sendiri.
+     *
+     * Ia menambah `material_stocks` dari isian orang, tanpa dokumen asal --
+     * padanan `FoundItemScanner` di sisi bahan, yang sudah diberi izin
+     * `record_found_items` pada #269.
+     *
+     * Sebelum ini modul ini TIDAK PUNYA policy dan TIDAK PUNYA satu pun izin.
+     * Laravel mengizinkan apa saja ketika tidak ada policy, jadi siapa pun
+     * yang bisa membuka rumpun Materials Stock -- termasuk yang hanya diberi
+     * `view_material_stocks` -- bisa menambah stok bahan sebanyak apa pun,
+     * dan menghapusnya lagi.
+     */
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->isProgrammer()
+            || (auth()->user()?->hasPermission('record_material_findings') ?? false);
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function canCreate(): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function canDelete($record): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return static::canViewAny();
+    }
+
+    /** Temuan tidak boleh DISUNTING: stoknya sudah terlanjur bergerak. */
+    public static function canEdit($record): bool
+    {
+        return false;
+    }
+
     public static function getModelLabel(): string
     {
         return __('Material Finding');
@@ -51,12 +96,19 @@ class MaterialFindingResource extends Resource
                     ->preload()
                     ->required()
                     ->live(),
+                // Bilangan BULAT, sama dengan isian hitungan opname material.
+                //
+                // Keputusan Owner: "material itu gak ada qty koma-komaan".
+                // Layar ini dan layar opname sama-sama mengubah stok bahan;
+                // membiarkan yang satu menerima pecahan sementara yang lain
+                // menolaknya membuat dua angka yang seharusnya sama menjadi
+                // berbeda.
                 Forms\Components\TextInput::make('qty')
                     ->label(__('Qty (counted)'))
-                    ->numeric()
+                    ->integer()
                     ->required()
-                    ->minValue(0.01)
-                    ->step(0.01)
+                    ->minValue(1)
+                    ->step(1)
                     ->suffix(function (Forms\Get $get) {
                         if ($get('material_id')) {
                             return \App\Models\Material::find($get('material_id'))?->unit?->name;

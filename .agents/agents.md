@@ -3658,6 +3658,68 @@ Modul yang dinyatakan beres TANPA ada yang diubah patut dicurigai. Bukan karena
 kodenya pasti buruk, melainkan karena "tidak menemukan apa-apa" dan "tidak
 memeriksa cukup dalam" menghasilkan catatan yang persis sama.
 
+### Temuan Material -- #291, 6 September 2026
+
+Modul ini menambah stok bahan dari isian orang, tanpa dokumen asal apa pun --
+padanan `FoundItemScanner` di sisi daging.
+
+#### Tidak ada policy, tidak ada satu pun izin
+
+Laravel mengizinkan apa saja ketika sebuah model TIDAK PUNYA policy. Modul ini
+tidak punya policy dan tidak punya satu pun izin, jadi siapa pun yang bisa
+membuka rumpun Materials Stock -- termasuk yang hanya diberi
+`view_material_stocks` -- bisa menambah stok bahan sebanyak apa pun, lalu
+menghapusnya lagi dan menariknya kembali.
+
+Bentuk yang sama sudah ditambal di `FoundItemScanner` pada #269. Sekarang
+dijaga `record_material_findings`, dibuat lewat migrasi.
+
+#### Kerusakan yang dibawa perbaikan kemarin
+
+Penyesuaian stok temuan dilakukan di event `created`, SESUDAH barisnya
+tersimpan. Sejak stok material ikut dibekukan selama opname (#285),
+penyesuaian itu bisa ditolak -- dan barisnya sudah terlanjur ada.
+
+Sudah dibuktikan dengan probe, bukan dibaca dari kode: baris temuan tersimpan
+(1), catatan pergerakan kosong (0). Dokumen yang mengaku menambah stok padahal
+tidak ada satu pun pergerakan yang tercatat.
+
+Sekarang pembekuannya diperiksa di `creating` dan `deleting` -- sebelum
+barisnya ada, dan sebelum barisnya hilang. Ditolak utuh, bukan setengah jalan.
+
+**Pelajarannya: perbaikan yang memasang penolakan baru harus ditelusuri ke
+setiap penulis yang lewat jalur itu.** Pembekuan dipasang di satu tempat, dan
+yang patah justru modul lain yang tidak ikut disentuh.
+
+#### Nomor dokumen yang dipakai ulang
+
+Penomorannya ditulis sendiri, tidak lewat `DocumentNumber`: membaca dokumen
+TERAKHIR MENURUT ID pada tanggal yang sama, lalu memungut empat digit
+terakhirnya dengan regex. Tanpa penguncian, jadi dua orang yang menyimpan
+bersamaan mendapat nomor yang sama.
+
+Lebih buruk: modelnya tidak memakai hapus lunak. Menghapus satu temuan
+MEMBEBASKAN nomornya -- dan penghapusan itu sendiri menulis catatan pergerakan
+yang MENYEBUT nomor itu sebagai acuan. Nomor yang sama lalu dipakai temuan
+berikutnya, sehingga dua dokumen berbeda dirujuk satu nomor di buku besar.
+
+Sekarang `DocumentNumber::next()` dengan `withTrashed()`, dan modelnya memakai
+hapus lunak.
+
+#### Sisanya
+
+- Jumlahnya menerima pecahan (`step(0.01)`), padahal keputusan Owner
+  "material itu gak ada qty koma-komaan" sudah diterapkan di isian opname.
+  Dua layar yang sama-sama mengubah stok bahan, dua aturan berbeda.
+- Temuan tidak boleh disunting: stoknya sudah terlanjur bergerak.
+
+#### Yang dicatat, tidak dikerjakan
+
+Menghapus temuan lama yang materialnya sudah terpakai akan mendorong stok
+menjadi NEGATIF -- `StockService::adjustStock()` tidak pernah menjaga batas
+bawah. Itu berlaku untuk seluruh pergerakan material, bukan khusus modul ini,
+jadi bukan titipan untuk penyisiran ini.
+
 ### Cara kerja yang disepakati Owner
 
 - Perbaiki langsung bila penyebabnya **sudah pasti dari membaca kode**; hemat token, jangan buat probe sekali pakai.
