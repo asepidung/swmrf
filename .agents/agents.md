@@ -3243,6 +3243,56 @@ ditulis sebagai kelas Tailwind (panel admin tidak memuat hasil build CSS
 aplikasi), sisanya memindahkan header action ke baris toolbar dan baris jumlah
 per kategori. Upgrade Filament tidak akan menyentuh berkas ini.
 
+### Stok hanya tahu SEKARANG; riwayatnya di buku besar -- #273, 5 September 2026
+
+> Keputusan Owner: "stock itu memang hanya mencatat stock sekarang jika ada
+> yang keluar dihapus, tujuannya biar itu enteng aja, tapi riwayatnya ada di
+> stock movement"
+
+`beef_stocks` bukan tabel riwayat dan memang tidak dirancang begitu. Barang
+yang keluar DIHAPUS barisnya -- Tally, Repack, dan Mutasi semuanya begitu --
+supaya tabel yang dibaca sepanjang hari tetap ringan.
+
+Konsekuensinya satu: seluruh riwayat bergantung pada `beef_stock_movements`.
+Dua hal yang membuatnya sanggup memikul itu, dan keduanya sudah diperiksa:
+
+- **29 titik** yang mengubah stok, seluruhnya menulis catatan pergerakan;
+- baris stok **tidak pernah disunting**. Tidak ada satu pun perubahan
+  `weight`, `qty_pcs`, `warehouse_id`, atau `grade_id` pada baris yang sudah
+  ada. Sekali lahir, angkanya tetap sampai barisnya dihapus.
+
+Sifat kedua itu yang paling berharga: tidak ada perubahan diam-diam yang bisa
+lolos dari buku besar.
+
+#### Yang TIDAK bisa dijawab kode
+
+Apakah buku besarnya utuh di data yang sudah berjalan. Untuk itu ada
+`php artisan stock:reconcile` -- hanya membaca, aman dijalankan di server.
+
+Ujinya satu kalimat: **menghitung ulang sampai sekarang harus sama persis
+dengan isi `beef_stocks`.** Kalau cocok, posisi tanggal mundur bisa dipercaya.
+
+Perintahnya juga menghitung tersendiri **barang di stok yang barcodenya tidak
+pernah punya catatan masuk** -- stok yang sudah ada sebelum buku besarnya mulai
+mencatat. Tanpa dipisahkan, ia terbaca seolah bukunya bolong, padahal yang
+kurang justru titik awalnya, dan salah membaca sebabnya membuat orang mencari
+kesalahan di tempat yang keliru.
+
+#### Batas yang harus ikut setiap kali angka tanggal mundur dicetak
+
+`beef_stock_movements` hanya punya `created_at`. **Tidak ada kolom tanggal
+dokumen.** Barang yang datang Senin tetapi baru diinput Selasa terhitung di
+hari Selasa. Untuk posisi akhir bulan biasanya cukup; untuk rekonsiliasi
+harian yang ketat, tidak.
+
+Peringatan itu dicetak setiap kali `--date` dipakai, dan ada test yang
+memastikan ia tidak bisa hilang. Angka yang benar tetapi disalahpahami sama
+merugikannya dengan angka yang salah.
+
+Halaman "Posisi Stok per Tanggal" menunggu hasil `stock:reconcile` bersih
+lebih dulu. Membuat laporan tanggal mundur sebelum ada buktinya berarti
+menerbitkan angka yang belum tentu benar dengan tampilan yang meyakinkan.
+
 ### Cara kerja yang disepakati Owner
 
 - Perbaiki langsung bila penyebabnya **sudah pasti dari membaca kode**; hemat token, jangan buat probe sekali pakai.
