@@ -3293,6 +3293,52 @@ Halaman "Posisi Stok per Tanggal" menunggu hasil `stock:reconcile` bersih
 lebih dulu. Membuat laporan tanggal mundur sebelum ada buktinya berarti
 menerbitkan angka yang belum tentu benar dengan tampilan yang meyakinkan.
 
+### Halaman Posisi Stok per Tanggal -- #277, 5 September 2026
+
+Dibuat SESUDAH `stock:reconcile` menyatakan bersih, bukan sebelumnya.
+Menerbitkan laporan tanggal mundur sebelum ada buktinya berarti memberi angka
+yang belum tentu benar dengan tampilan yang meyakinkan.
+
+Halaman ini **tidak membaca `beef_stocks` sama sekali** -- tabel itu hanya tahu
+keadaan sekarang. Seluruh angkanya dihitung ulang dari `beef_stock_movements`.
+Ada test yang memastikan berkasnya tidak menyebut tabel stok maupun modelnya.
+
+Bentuk tabelnya sengaja SAMA dengan Stock Overview: baris produk, kolom gudang
+x grade, dikelompokkan per kategori, dan kolom yang tidak ada isinya pada
+tanggal itu tidak ditampilkan. "Posisi tanggal lalu" jadi bisa langsung
+dibandingkan dengan "posisi sekarang" tanpa membaca dua bentuk tabel berbeda.
+
+#### Tanggal berarti AKHIR HARI
+
+Pertanyaan Owner: *"misal gw filter ke tanggal 1 september itu lu tampilin 1
+september jam berapa?"*
+
+Jawabannya **23:59:59**, dan halamannya menulis jam itu terang-terangan --
+bukan disimpulkan sendiri oleh pembacanya. "Posisi tanggal 1 September" bisa
+berarti pagi, siang, atau tengah malam; yang dipakai akhir hari, sehingga
+semua yang diinput hari itu ikut terhitung.
+
+#### Peringatan yang tidak boleh hilang
+
+Tanggalnya WAKTU INPUT, bukan tanggal dokumen: `beef_stock_movements` hanya
+punya `created_at`. Peringatan itu tampil di halamannya sendiri, bukan hanya
+di dokumentasi, dan dijaga test. Angka yang benar tetapi disalahpahami sama
+merugikannya dengan angka yang salah.
+
+Kalau suatu saat posisi stok perlu mengikuti TANGGAL DOKUMEN, itu menuntut
+kolom tanggal transaksi baru di `beef_stock_movements` -- dan hanya berlaku
+maju, karena baris lama tidak menyimpan tanggal itu.
+
+#### Ditutup saat opname daging berjalan
+
+Halaman ini menjawab persis pertanyaan yang seharusnya dijawab oleh hitungan
+fisik, jadi angkanya disembunyikan selama opname berlangsung. Alasan yang sama
+membuat enam digit terakhir barcode disamarkan di daftar stok.
+
+Pertanyaan "opname daging sedang berjalan?" kini satu rumah:
+`StockTake::isCounting()` -- DRAFT atau IN_PROGRESS. Tidak ada REVIEW di sana,
+dan itu bukan kelalaian: hanya opname material yang punya tahap REVIEW.
+
 ### Cara kerja yang disepakati Owner
 
 - Perbaiki langsung bila penyebabnya **sudah pasti dari membaca kode**; hemat token, jangan buat probe sekali pakai.
