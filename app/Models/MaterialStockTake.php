@@ -39,7 +39,99 @@ class MaterialStockTake extends Model
      * opname material yang punya tahap REVIEW. Perbedaannya bukan
      * ketidakkonsistenan, melainkan dua kosakata status yang memang berbeda.
      */
-    public const STATUS_SEDANG_MENGHITUNG = ['DRAFT', 'IN_PROGRESS', 'REVIEW'];
+    public const STATUS_DRAFT = 'DRAFT';
+
+    public const STATUS_IN_PROGRESS = 'IN_PROGRESS';
+
+    /** Tahap yang TIDAK dimiliki opname daging. */
+    public const STATUS_REVIEW = 'REVIEW';
+
+    public const STATUS_COMPLETED = 'COMPLETED';
+
+    public const STATUS_CANCELED = 'CANCELED';
+
+    /** @return array<string, string> */
+    public static function statuses(): array
+    {
+        return [
+            self::STATUS_DRAFT => self::STATUS_DRAFT,
+            self::STATUS_IN_PROGRESS => self::STATUS_IN_PROGRESS,
+            self::STATUS_REVIEW => self::STATUS_REVIEW,
+            self::STATUS_COMPLETED => self::STATUS_COMPLETED,
+            self::STATUS_CANCELED => self::STATUS_CANCELED,
+        ];
+    }
+
+    public const STATUS_SEDANG_MENGHITUNG = [self::STATUS_DRAFT, self::STATUS_IN_PROGRESS, self::STATUS_REVIEW];
+
+    /** Hitungannya masih boleh diisi dan diubah? */
+    public function isCountable(): bool
+    {
+        return in_array($this->status, [self::STATUS_DRAFT, self::STATUS_IN_PROGRESS], true);
+    }
+
+    /**
+     * Boleh dihapus?
+     *
+     * Hanya selama belum ada satu pun hitungan yang diisi. Menghapus opname
+     * yang sudah dihitung membuang pekerjaan orang gudang, dan -- sejak stok
+     * material ikut dibekukan -- penghapusannya juga MENCAIRKAN pembekuan
+     * tanpa memberi tahu siapa pun, karena baris terhapus lunak tidak lagi
+     * terlihat oleh penjaganya.
+     */
+    public function isDeletable(): bool
+    {
+        return in_array($this->status, [self::STATUS_DRAFT, self::STATUS_IN_PROGRESS], true)
+            && $this->items()->whereNotNull('physical_qty')->doesntExist();
+    }
+
+    /**
+     * Menerapkan hasil hitungan ke stok. SATU jalur, dipakai semua tombol.
+     *
+     * Sebelum ini ada DUA tombol "selesaikan opname" dengan arti yang berbeda:
+     *
+     *   ManageMaterialStockTakeItems  -> StockService::adjustStock(selisih)
+     *                                    menambahkan SELISIH, lewat service
+     *                                    yang mengunci baris
+     *   EditMaterialStockTake         -> $stock->qty = physical_qty
+     *                                    MENIMPA, menulis stok dan buku besar
+     *                                    dengan tangan, tanpa penguncian
+     *
+     * Dua arti untuk satu tindakan. Kalau stok bergerak sejak hitungan
+     * dimulai, keduanya menghasilkan angka akhir yang berlainan -- dan hanya
+     * yang kedua yang mencatat siapa yang menyelesaikannya.
+     *
+     * Sekarang satu jalur, lewat `StockService` supaya penguncian dan
+     * pencatatan buku besarnya sama dengan seluruh pergerakan material lain.
+     * Pembekuan dilewati HANYA selama penerapan ini, dan dipulihkan lewat
+     * `finally`.
+     */
+    public function applyToStock(): void
+    {
+        \App\Services\MaterialStockFreezeService::bypass(function (): void {
+            \Illuminate\Support\Facades\DB::transaction(function (): void {
+                foreach ($this->items()->whereNotNull('physical_qty')->get() as $item) {
+                    if ((float) $item->difference_qty === 0.0) {
+                        continue;
+                    }
+
+                    \App\Services\StockService::adjustStock(
+                        $item->material_id,
+                        (float) $item->difference_qty,
+                        'STOCK_TAKE_ADJUSTMENT',
+                        $this->document_number,
+                        'Stock Take Adjustment '.$this->document_number,
+                    );
+                }
+
+                $this->update([
+                    'status' => self::STATUS_COMPLETED,
+                    'completed_by' => auth()->id(),
+                    'completed_at' => now(),
+                ]);
+            });
+        });
+    }
 
     /**
      * Apakah ada opname material yang sedang berlangsung?

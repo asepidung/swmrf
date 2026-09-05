@@ -91,11 +91,11 @@ class MaterialStockTakeResource extends Resource
                     ->label(__('Status'))
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'DRAFT' => 'gray',
-                        'IN_PROGRESS' => 'warning',
-                        'REVIEW' => 'info',
-                        'COMPLETED' => 'success',
-                        'CANCELED' => 'danger',
+                        MaterialStockTake::STATUS_DRAFT => 'gray',
+                        MaterialStockTake::STATUS_IN_PROGRESS => 'warning',
+                        MaterialStockTake::STATUS_REVIEW => 'info',
+                        MaterialStockTake::STATUS_COMPLETED => 'success',
+                        MaterialStockTake::STATUS_CANCELED => 'danger',
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('creator.name')
@@ -140,14 +140,37 @@ class MaterialStockTakeResource extends Resource
             ->color('warning')
             ->button()
             ->url(fn (MaterialStockTake $record): string => static::getUrl('items', ['record' => $record]))
-            ->visible(fn (MaterialStockTake $record) => in_array($record->status, ['DRAFT', 'IN_PROGRESS'])),
+            ->visible(fn (MaterialStockTake $record): bool => $record->isCountable()),
 
+        // Hanya selama belum ada satu pun hitungan yang diisi. Sebelumnya
+        // yang diperiksa cuma statusnya, jadi opname yang sudah dihitung
+        // separuh bisa dibuang begitu saja.
         Tables\Actions\DeleteAction::make()
-            ->visible(fn (MaterialStockTake $record) => in_array($record->status, ['DRAFT', 'IN_PROGRESS'])),
+            ->visible(fn (MaterialStockTake $record): bool => $record->isDeletable()),
     ])
     ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Hapus massal ikut dijaga aturan yang sama dengan hapus
+                    // satuan. Sebelumnya ia tidak menjaga apa pun.
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->before(function (\Illuminate\Support\Collection $records, Tables\Actions\DeleteBulkAction $action) {
+                            $tertahan = $records->reject(fn (MaterialStockTake $record): bool => $record->isDeletable());
+
+                            if ($tertahan->isEmpty()) {
+                                return;
+                            }
+
+                            \Filament\Notifications\Notification::make()
+                                ->title(__('Some documents cannot be deleted'))
+                                ->body(__('A stock count that already has counted items cannot be deleted: :documents', [
+                                    'documents' => $tertahan->pluck('document_number')->join(', '),
+                                ]))
+                                ->danger()
+                                ->persistent()
+                                ->send();
+
+                            $action->cancel();
+                        }),
                     Tables\Actions\ForceDeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
                 ]),

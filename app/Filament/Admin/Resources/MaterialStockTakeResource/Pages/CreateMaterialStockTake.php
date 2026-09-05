@@ -18,6 +18,36 @@ class CreateMaterialStockTake extends CreateRecord
         return $this->getResource()::getUrl('index');
     }
 
+    /**
+     * Tidak boleh ada DUA opname berjalan sekaligus.
+     *
+     * Dua dokumen berarti dua snapshot dan dua penerapan selisih ke stok yang
+     * sama -- angka yang sama dipotong atau ditambah dua kali. Pembekuan tidak
+     * menahannya, karena yang dibekukan penulisan STOK, bukan pembuatan
+     * dokumen opnamenya.
+     *
+     * Ditolak di sini, dengan menyebut dokumen mana yang sedang berjalan --
+     * bukan dengan menyembunyikan tombolnya, yang hanya membuat orang bertanya
+     * ke mana perginya.
+     */
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        $berjalan = \App\Models\MaterialStockTake::whereIn(
+            'status',
+            \App\Models\MaterialStockTake::STATUS_SEDANG_MENGHITUNG,
+        )->first();
+
+        if ($berjalan) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'data.period' => __('A stock count is already running (:doc). Finish it first.', [
+                    'doc' => $berjalan->document_number,
+                ]),
+            ]);
+        }
+
+        return $data;
+    }
+
     protected function afterCreate(): void
     {
         $record = $this->record;
@@ -41,9 +71,17 @@ class CreateMaterialStockTake extends CreateRecord
             ];
         }
 
-        // Insert all items
+        // Satu transaksi untuk seluruh snapshot, dipecah per bagian.
+        //
+        // Sebelumnya seluruh barisnya disisipkan sekaligus tanpa transaksi.
+        // Snapshot separuh tidak terlihat sebagai kerusakan: ia terbaca
+        // sebagai opname yang materialnya memang cuma segitu.
         if (!empty($items)) {
-            MaterialStockTakeItem::insert($items);
+            DB::transaction(function () use ($items) {
+                foreach (array_chunk($items, 500) as $bagian) {
+                    MaterialStockTakeItem::insert($bagian);
+                }
+            });
         }
     }
 }

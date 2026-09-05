@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\MaterialStockTakeResource\Pages;
 
 use App\Filament\Admin\Resources\MaterialStockTakeResource;
+use App\Models\MaterialStockTake;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Notifications\Notification;
@@ -27,7 +28,7 @@ class EditMaterialStockTake extends EditRecord
     protected function getFormActions(): array
     {
         // Hide save button if not in progress/draft
-        if (!in_array($this->record->status, ['DRAFT', 'IN_PROGRESS', 'REVIEW'])) {
+        if (!in_array($this->record->status, MaterialStockTake::STATUS_SEDANG_MENGHITUNG, true)) {
             return [];
         }
 
@@ -48,73 +49,56 @@ class EditMaterialStockTake extends EditRecord
             ->color('gray')
             ->url($this->getResource()::getUrl('index'));
 
-        if (in_array($this->record->status, ['DRAFT', 'IN_PROGRESS'])) {
+        if ($this->record->isCountable()) {
             $actions[] = Actions\Action::make('submit_for_review')
                 ->label(__('Submit for Review'))
                 ->color('info')
                 ->icon('heroicon-o-paper-airplane')
                 ->requiresConfirmation()
-                ->modalHeading('Submit Opname for Review?')
-                ->modalDescription('Once submitted, the physical counts cannot be edited by standard users and the variance will be shown for review.')
+                ->modalHeading(__('Submit this stock count for review?'))
+                ->modalDescription(__('Once submitted, the counts can no longer be edited and the variance is shown for review.'))
                 ->action(function () {
-                    $this->record->update(['status' => 'REVIEW']);
-                    Notification::make()->title('Opname submitted for review.')->success()->send();
+                    $this->record->update(['status' => MaterialStockTake::STATUS_REVIEW]);
+                    Notification::make()->title(__('Sent for review.'))->success()->send();
                     $this->redirect($this->getResource()::getUrl('edit', ['record' => $this->record]));
                 });
         }
 
-        if ($this->record->status === 'REVIEW') {
+        if ($this->record->status === MaterialStockTake::STATUS_REVIEW) {
             $actions[] = Actions\Action::make('complete_opname')
                 ->label(__('Complete Opname'))
                 ->color('success')
                 ->icon('heroicon-o-check-circle')
                 ->requiresConfirmation()
-                ->modalHeading('Complete Material Opname?')
-                ->modalDescription('This will finalize the stock take and adjust the material stocks permanently.')
+                ->modalHeading(__('Finish this stock count?'))
+                ->modalDescription(__('Is everything counted carefully? Once you press this, nothing can be changed. Every difference cuts or adds stock permanently, and anything left uncounted is treated as missing.'))
+                // Tombol ini MENGUBAH STOK secara permanen, jadi izinnya
+                // sendiri -- sama seperti padanannya di opname daging.
+                ->visible(fn (): bool => auth()->user()?->isProgrammer()
+                    || (auth()->user()?->hasPermission('finish_material_stock_takes') ?? false))
                 ->action(function () {
-                    DB::transaction(function () {
-                        $record = $this->record;
-                        $items = $record->items;
+                    // Satu jalur, di modelnya.
+                    //
+                    // Yang ada di sini sebelumnya MENIMPA stok dengan angka
+                    // hitungan -- menimpa qty dengan physical_qty -- lalu menulis
+                    // stok dan buku besar dengan tangan, tanpa penguncian, dan
+                    // melewati `StockService` sepenuhnya -- sementara tombol
+                    // yang satu lagi menambahkan SELISIH lewat service itu.
+                    // Dua arti untuk satu tindakan yang sama.
+                    $this->record->applyToStock();
 
-                        foreach ($items as $item) {
-                            if ($item->difference_qty != 0 && $item->physical_qty !== null) {
-                                // Adjust stock
-                                $stock = MaterialStock::firstOrCreate(
-                                    ['material_id' => $item->material_id],
-                                    ['qty' => 0]
-                                );
-
-                                $stock->qty = $item->physical_qty;
-                                $stock->save();
-
-                                // Log movement
-                                MaterialStockMovement::create([
-                                    'material_id' => $item->material_id,
-                                    'transaction_type' => 'STOCK_TAKE_ADJUSTMENT',
-                                    'reference_document' => $record->document_number,
-                                    'qty_in' => $item->difference_qty > 0 ? $item->difference_qty : 0,
-                                    'qty_out' => $item->difference_qty < 0 ? abs($item->difference_qty) : 0,
-                                    'balance' => $item->physical_qty,
-                                    'note' => 'Stock Take Adjustment',
-                                    'created_by' => auth()->id(),
-                                ]);
-                            }
-                        }
-
-                        $record->update([
-                            'status' => 'COMPLETED',
-                            'completed_by' => auth()->id(),
-                            'completed_at' => now(),
-                        ]);
-                    });
-
-                    Notification::make()->title('Stock Opname Completed and Stock Adjusted.')->success()->send();
+                    Notification::make()->title(__('The stock count is finished and the stock has been updated.'))->success()->send();
                     $this->redirect($this->getResource()::getUrl('index'));
                 });
         }
 
-        $actions[] = Actions\DeleteAction::make();
-        $actions[] = Actions\ForceDeleteAction::make();
+        // Penjaga hapus yang sama dengan halaman lain. Di sini dulu ketiganya
+        // tanpa penjagaan apa pun, jadi opname yang sudah dihitung -- bahkan
+        // yang sudah selesai -- bisa dibuang lewat pintu ini.
+        $actions[] = Actions\DeleteAction::make()
+            ->visible(fn (): bool => $this->record->isDeletable());
+        $actions[] = Actions\ForceDeleteAction::make()
+            ->visible(fn (): bool => auth()->user()?->isProgrammer() ?? false);
         $actions[] = Actions\RestoreAction::make();
 
         return $actions;
