@@ -23,7 +23,11 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
 
     public function getTitle(): string
     {
-        return __('Input Material Counts - ') . $this->getOwnerRecord()->document_number;
+        // Kuncinya utuh, dokumennya lewat penampung -- bukan kunci yang
+        // berakhir " - " lalu disambung teks.
+        return __('Input Material Counts for :document', [
+            'document' => $this->getOwnerRecord()->document_number,
+        ]);
     }
 
     protected function getHeaderActions(): array
@@ -35,7 +39,7 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
             ->color('gray')
             ->url($this->getResource()::getUrl('index'));
 
-        if (in_array($this->getOwnerRecord()->status, ['DRAFT', 'IN_PROGRESS'])) {
+        if ($this->getOwnerRecord()->isCountable()) {
             $actions[] = Actions\Action::make('complete_opname')
                 ->label(__('Finish Stock Opname'))
                 ->color('danger')
@@ -44,24 +48,17 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                 ->modalHeading(__('Finish this stock count?'))
                 ->modalDescription(__('Is everything counted carefully? Once you press this, nothing can be changed. Every difference cuts or adds stock permanently, and anything left uncounted is treated as missing.'))
                 ->modalSubmitActionLabel(__('Yes, I am sure'))
+                // Tombol ini MENGUBAH STOK secara permanen, jadi izinnya
+                // sendiri -- sama seperti padanannya di opname daging.
+                ->visible(fn (): bool => auth()->user()?->isProgrammer()
+                        || (auth()->user()?->hasPermission('finish_material_stock_takes') ?? false))
                 ->action(function () {
-                    $record = $this->getOwnerRecord();
-                    
-                    \Illuminate\Support\Facades\DB::transaction(function() use ($record) {
-                        foreach ($record->items as $item) {
-                            if ($item->difference_qty != 0) {
-                                \App\Services\StockService::adjustStock(
-                                    $item->material_id,
-                                    $item->difference_qty,
-                                    'STOCK_OPNAME',
-                                    $record->document_number,
-                                    'Adjustment from Stock Opname ' . $record->document_number
-                                );
-                            }
-                        }
-                        $record->update(['status' => 'COMPLETED']);
-                    });
-                    
+                    // Satu jalur, di modelnya. Sebelumnya halaman ini dan
+                    // halaman Edit punya penerapan sendiri-sendiri dengan
+                    // ARTI YANG BERBEDA: yang satu menambahkan selisih, yang
+                    // satu menimpa dengan angka hitungan.
+                    $this->getOwnerRecord()->applyToStock();
+
                     Notification::make()->title(__('The stock count is finished and the stock has been updated.'))->success()->send();
                     $this->redirect($this->getResource()::getUrl('items', ['record' => $this->getOwnerRecord()]));
                 });
@@ -85,9 +82,8 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
 
     public function table(Table $table): Table
     {
-        $opnameStatus = $this->getOwnerRecord()->status;
-        $isCompleted = $opnameStatus === 'COMPLETED';
-        $isInProgress = in_array($opnameStatus, ['DRAFT', 'IN_PROGRESS']);
+        $isCompleted = $this->getOwnerRecord()->status === \App\Models\MaterialStockTake::STATUS_COMPLETED;
+        $isInProgress = $this->getOwnerRecord()->isCountable();
 
         return $table
             ->recordTitleAttribute('id')
@@ -114,17 +110,47 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                     ->type('text')
                     ->numeric()
                     ->visible($isInProgress)
+                    // Hitungan material selalu BILANGAN BULAT.
+                    //
+                    // Keputusan Owner: "material itu gak ada qty koma-komaan".
+                    //
+                    // Penguraian lamanya membuang setiap titik sebagai
+                    // pemisah ribuan, sehingga mengetik "12.5" diam-diam
+                    // menjadi 125 -- sepuluh kali lipat, tanpa satu pun
+                    // gejala, di isian yang langsung memotong atau menambah
+                    // stok. Dan di layar pindai daging titik justru pemisah
+                    // desimal, jadi dua layar opname di aplikasi yang sama
+                    // membaca angka dengan cara yang berlawanan.
+                    //
+                    // Sekarang yang memuat pemisah desimal DITOLAK, bukan
+                    // ditebak.
+                    ->rules(['nullable', 'integer', 'min:0'])
                     ->updateStateUsing(function ($record, $state) {
-                        if ($state === '' || $state === null) {
+                        $bersih = trim((string) $state);
+
+                        if ($bersih === '') {
                             $record->physical_qty = null;
                             $record->difference_qty = null;
-                        } else {
-                            // Parse string like "1.234,56" into float 1234.56
-                            $cleanState = str_replace('.', '', $state);
-                            $cleanState = str_replace(',', '.', $cleanState);
-                            $record->physical_qty = (float) $cleanState;
-                            $record->difference_qty = $record->physical_qty - $record->system_qty;
+                            $record->save();
+
+                            return;
                         }
+
+                        // Pemisah ribuan boleh diketik, desimal tidak.
+                        $angka = str_replace('.', '', $bersih);
+
+                        if (! preg_match('/^\d+$/', $angka)) {
+                            Notification::make()
+                                ->title(__('Enter a whole number'))
+                                ->body(__('Material is counted in whole units, so :value cannot be read.', ['value' => $bersih]))
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        $record->physical_qty = (int) $angka;
+                        $record->difference_qty = $record->physical_qty - $record->system_qty;
                         $record->save();
                     }),
                 
@@ -142,13 +168,13 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                         if ($record->physical_qty === null) return '-';
                         if ($record->difference_qty > 0) return __('Over');
                         if ($record->difference_qty < 0) return __('Short');
-                        return __('Sesuai');
+                        return __('Matches');
                     })
                     ->badge()
                     ->color(fn ($state) => match($state) {
                         __('Over') => 'info',
                         __('Short') => 'danger',
-                        __('Sesuai') => 'success',
+                        __('Matches') => 'success',
                         default => 'gray',
                     }),
                 

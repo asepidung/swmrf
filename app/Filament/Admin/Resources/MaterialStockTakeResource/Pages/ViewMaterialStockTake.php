@@ -13,8 +13,9 @@ class ViewMaterialStockTake extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            // Aturan hapusnya satu rumah di `MaterialStockTake::isDeletable()`.
             Actions\DeleteAction::make()
-                ->visible(fn ($record) => in_array($record->status, ['DRAFT', 'IN_PROGRESS'])),
+                ->visible(fn ($record): bool => $record->isDeletable()),
 
             Actions\Action::make('back')
                 ->label(__('Back to List'))

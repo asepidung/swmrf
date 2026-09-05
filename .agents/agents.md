@@ -3466,6 +3466,86 @@ bug barcode ditambal dengan penjaga semacam itu, dan dua kali ia lolos ke
 berkas berikutnya. Penjaga baru harus memindai, bukan menyebut nama -- dan
 begitu dipindai, jumlah sebenarnya empat kali lipat dari yang dikira.
 
+### Opname Material -- #285, 5 September 2026
+
+> Keputusan Owner: "harusnya punya konsep sama dengan stock daging"
+
+#### DUA tombol "selesaikan opname", dan hasilnya berbeda
+
+Ini temuan utamanya.
+
+    ManageMaterialStockTakeItems   StockService::adjustStock(selisih)
+      (DRAFT/IN_PROGRESS)          menambahkan SELISIH, lewat service yang
+                                   mengunci baris dan menulis buku besar
+
+    EditMaterialStockTake          $stock->qty = $item->physical_qty
+      (REVIEW)                     MENIMPA dengan angka hitungan, menulis stok
+                                   dan buku besar dengan tangan, tanpa
+                                   penguncian, melewati service sepenuhnya
+
+Dua jalur untuk satu tindakan, dengan ARTI yang berbeda. Kalau stok bergerak
+sejak hitungan dimulai, keduanya menghasilkan angka akhir yang berlainan. Dan
+hanya yang kedua yang mencatat `completed_by` dan `completed_at`, jadi separuh
+opname di sistem tidak punya nama penyelesainya.
+
+Sekarang satu jalur: `MaterialStockTake::applyToStock()`, lewat `StockService`
+supaya penguncian dan pencatatan buku besarnya sama dengan seluruh pergerakan
+material lain. Ada penjaga yang menolak berkas mana pun di modul ini menulis
+stok sendiri lagi.
+
+#### Tidak ada pembekuan sama sekali
+
+Opname daging membekukan seluruh penulisan stok lewat `WarehouseFreezeService`.
+Sisi material tidak punya padanannya.
+
+Itu bukan soal kerapian melainkan aritmetika: `system_qty` diambil sebagai
+SNAPSHOT saat dokumennya dibuat, dan `difference_qty` dihitung terhadap angka
+itu. Kalau material masuk atau keluar di tengah hitungan, selisih yang
+tersimpan mengukur jarak ke angka yang sudah tidak ada lagi -- dan tidak ada
+satu pun gejala yang memberitahu.
+
+Keputusan Owner: bekukan juga. Sekarang ada `MaterialStockFreezeService`,
+dikaitkan ke event `MaterialStock` persis seperti `BeefStock`, dengan
+`bypass()` yang memakai `finally` sejak awal.
+
+#### Tidak boleh ada dua opname berjalan sekaligus
+
+Berlaku untuk KEDUA sisi, daging dan material. Dua dokumen berarti dua snapshot
+dan dua penerapan selisih ke stok yang sama -- angka yang sama dipotong dua
+kali. Pembekuan tidak menahannya: yang dibekukan penulisan STOK, bukan
+pembuatan dokumen opnamenya.
+
+Ditolak saat dibuat, dengan menyebut dokumen mana yang sedang berjalan --
+bukan dengan menyembunyikan tombolnya, yang hanya membuat orang bertanya ke
+mana perginya.
+
+#### Material dihitung dalam BILANGAN BULAT
+
+> Keputusan Owner: "material itu gak ada qty koma-komaan"
+
+Penguraian lamanya membuang setiap titik sebagai pemisah ribuan, sehingga
+mengetik `12.5` diam-diam menjadi `125` -- sepuluh kali lipat, tanpa satu pun
+gejala, di isian yang langsung memotong atau menambah stok. Dan di layar
+pindai daging titik justru pemisah DESIMAL: dua layar opname di aplikasi yang
+sama membaca angka dengan cara yang berlawanan.
+
+Sekarang yang memuat pemisah desimal DITOLAK dengan pesan, bukan ditebak.
+Kolom basis datanya tetap `decimal(12,2)` dan tidak disentuh.
+
+#### Sisanya
+
+- Kedua tombol selesai tidak dijaga izin apa pun; sekarang
+  `finish_material_stock_takes`, dibuat lewat migrasi.
+- Penjaga hapus tidak seragam: aksi tabel hanya memeriksa status, halaman Edit
+  punya Delete/ForceDelete/Restore tanpa penjagaan apa pun, dan hapus massal
+  juga tidak. Sekarang satu rumah, `MaterialStockTake::isDeletable()`.
+- Snapshot dibuat di luar transaksi dan tanpa dipecah per bagian.
+- `__('Sesuai')` kunci berbahasa Indonesia; enam kalimat di halaman Edit
+  ditulis langsung tanpa `__()`; judul halaman memakai kunci berakhiran " - "
+  lalu disambung teks.
+- Statusnya kini punya konstanta. Berbeda dari opname daging, material memang
+  punya tahap REVIEW -- itu bukan ketidakkonsistenan.
+
 ### Cara kerja yang disepakati Owner
 
 - Perbaiki langsung bila penyebabnya **sudah pasti dari membaca kode**; hemat token, jangan buat probe sekali pakai.

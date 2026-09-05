@@ -25,8 +25,30 @@ class CreateStockTake extends CreateRecord
         return false;
     }
 
+    /**
+     * Tidak boleh ada DUA opname berjalan sekaligus.
+     *
+     * Dua dokumen berarti dua snapshot dan dua penerapan selisih ke stok yang
+     * sama -- angka yang sama dipotong atau ditambah dua kali. Pembekuan tidak
+     * menahannya, karena yang dibekukan penulisan STOK, bukan pembuatan
+     * dokumen opnamenya.
+     *
+     * Ditolak di sini, dengan menyebut dokumen mana yang sedang berjalan --
+     * bukan dengan menyembunyikan tombolnya, yang hanya membuat orang bertanya
+     * ke mana perginya.
+     */
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        $berjalan = StockTake::whereIn('status', StockTake::STATUS_SEDANG_MENGHITUNG)->first();
+
+        if ($berjalan) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'data.period' => __('A stock count is already running (:doc). Finish it first.', [
+                    'doc' => $berjalan->document_number,
+                ]),
+            ]);
+        }
+
         $date = \Carbon\Carbon::parse($data['date']);
         $yymm = $date->format('ym');
         
