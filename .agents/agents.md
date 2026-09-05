@@ -3806,6 +3806,39 @@ berarti ada yang salah dicatat -- dan begitu tersimpan, yang salah itu ikut
 mengalir ke laporan, ke opname, dan ke penilaian persediaan, tanpa satu pun
 gejala. Ditolak dengan menyebut sisa yang sebenarnya.
 
+### 161 kunci yang tidak pernah bisa diterjemahkan -- #295, 6 September 2026
+
+Keputusan Owner: kerjakan sekalian.
+
+Dari 1.141 kunci `__()` yang dipakai kode, **161 tidak pernah terdaftar** di
+`lang/en.json` maupun `lang/id.json`. Untuk pengguna berbahasa Inggris tidak
+ada yang rusak -- Laravel menampilkan kuncinya sendiri, dan kuncinya memang
+Bahasa Inggris. Yang tidak kebagian justru pengguna INDONESIA: teks itu tidak
+pernah bisa diterjemahkan, dan tidak ada satu pun gejala yang memberitahu.
+
+Seluruh penjaga bahasa yang sudah ada tidak menangkapnya karena semuanya
+mencari teks berbahasa INDONESIA. Teks Inggris yang tidak diterjemahkan lolos
+seluruhnya -- lubang yang bentuknya berlawanan dengan yang selama ini dijaga.
+
+Sesudah 161 kunci itu didaftarkan, sisanya NOL. Penjaga barunya karena itu
+keras sejak awal, tanpa daftar toleransi: setiap kunci yang dipakai kode wajib
+terdaftar di kedua berkas bahasa.
+
+**Istilah yang memang dipakai apa adanya di lingkungan kerja ini tidak
+dipaksakan diterjemahkan:** PO, GR, DO, Tally, Opname, Repack, Grade, Barcode,
+Draft, Kg, Pcs. Menerjemahkan istilah yang sehari-hari diucapkan dalam bentuk
+aslinya justru membuat layarnya lebih sulit dibaca, bukan lebih mudah.
+
+#### Komentar sendiri, keempat kalinya
+
+Pemindai yang membaca berkas sebagai teks biasa kembali menuduh komentar yang
+MENERANGKAN kunci lama. Kali ini `__('Sesuai')` di dalam komentar #287 muncul
+sebagai kunci yang katanya masih dipakai.
+
+Pola ini sudah berulang empat kali. Setiap pemindai kunci di proyek ini
+sekarang membuang komentar lebih dulu -- lewat token PHP untuk berkas biasa,
+lewat pola untuk Blade.
+
 ### Cara kerja yang disepakati Owner
 
 - Perbaiki langsung bila penyebabnya **sudah pasti dari membaca kode**; hemat token, jangan buat probe sekali pakai.
