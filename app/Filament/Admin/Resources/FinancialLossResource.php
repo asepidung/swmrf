@@ -151,12 +151,14 @@ class FinancialLossResource extends Resource
                 fn (Model $record): string => Pages\ViewFinancialLoss::getUrl([$record->getKey()]),
             )
             ->filters([
+                // Pilihannya dibaca dari daftar di model, bukan ditulis
+                // ulang di sini. Daftar yang ditulis tangan sudah sekali
+                // ketinggalan: susut kirim tidak pernah bisa dipilih.
                 Tables\Filters\SelectFilter::make('transaction_type')
                     ->label(__('Filter Source'))
-                    ->options([
-                        'Cattle Weighing' => 'Cattle Weighing',
-                        // More can be added here later
-                    ]),
+                    ->options(collect(FinancialLoss::SEMUA_SUMBER)
+                        ->mapWithKeys(fn (string $sumber): array => [$sumber => __($sumber)])
+                        ->all()),
 
                 Tables\Filters\Filter::make('date')
                     ->form([
@@ -175,21 +177,24 @@ class FinancialLossResource extends Resource
                             ->whereDate('date', '>=', $from)
                             ->whereDate('date', '<=', $until);
                     })
+                    // Rentang tanggalnya SELALU ditampilkan.
+                    //
+                    // Dulu penunjuknya disembunyikan selama nilainya masih
+                    // sama dengan bawaan -- bulan berjalan. Layarnya jadi
+                    // terlihat seperti menampilkan seluruh kerugian padahal
+                    // sedang menyaring, dan totalnya di bawah ikut tersaring.
+                    // Untuk laporan kerugian, angka yang dikira total tetapi
+                    // sebenarnya sebulan itu salah baca yang mahal.
                     ->indicateUsing(function (array $data): array {
-                        $indicators = [];
-                        $defaultFrom = now()->startOfMonth()->format('Y-m-d');
-                        $defaultUntil = now()->format('Y-m-d');
+                        $dari = $data['from'] ?? now()->startOfMonth()->format('Y-m-d');
+                        $sampai = $data['until'] ?? now()->format('Y-m-d');
 
-                        if (($data['from'] ?? null) && $data['from'] !== $defaultFrom) {
-                            $indicators[] = Tables\Filters\Indicator::make('From: ' . Carbon::parse($data['from'])->format('d M Y'))
-                                ->removeField('from');
-                        }
-                        if (($data['until'] ?? null) && $data['until'] !== $defaultUntil) {
-                            $indicators[] = Tables\Filters\Indicator::make('Until: ' . Carbon::parse($data['until'])->format('d M Y'))
-                                ->removeField('until');
-                        }
-
-                        return $indicators;
+                        return [
+                            Tables\Filters\Indicator::make(__('From').': '.Carbon::parse($dari)->format('d M Y'))
+                                ->removeField('from'),
+                            Tables\Filters\Indicator::make(__('Until').': '.Carbon::parse($sampai)->format('d M Y'))
+                                ->removeField('until'),
+                        ];
                     }),
             ])
             ->actions([])

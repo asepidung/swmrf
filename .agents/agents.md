@@ -3845,3 +3845,100 @@ lewat pola untuk Blade.
 - Tetap **buktikan dengan menjalankan** bila dugaannya menyangkut perilaku runtime yang bisa meleset — dua bug pekan ini hanya ketahuan karena dijalankan, dan salah satunya (`UNIQUE constraint` saat GR dikunci ulang) tidak terlihat sama sekali dari membaca kode. Bedanya: tulis pembuktiannya langsung sebagai test permanen, bukan probe yang dibuang.
 - Deploy dikerjakan sendiri lewat SSH (`-tt`, lihat bagian akses server), lalu laporkan hasilnya.
 
+
+---
+
+## #297 -- Lima nomor dokumen diterbitkan di luar `DocumentNumber::next()`
+
+Penjagaan pola yang dipasang di #29x hanya memeriksa berkas yang memuat
+`str_pad`. Dua nomor -- `MR#` dan `BR#` -- memakai `sprintf('%03s')`, jadi
+tidak pernah tersentuh sama sekali. Ini bentuk kesalahan yang sudah berulang
+di proyek ini: penjaganya menjaga SATU EJAAN dari sebuah pola, bukan polanya.
+
+Lima tempat yang ditemukan:
+
+| Nomor | Cara lamanya |
+|---|---|
+| `SWM-GRB#` | baca baris TERAKHIR MENURUT ID, terima nomornya kalau panjangnya > 2, tanpa mengunci apa pun |
+| `SWM-MPO#` | `count() + 1` atas PO tahun berjalan |
+| `SWM-BPO#` | sama |
+| `MR#` | `count() + 1`, lalu `sprintf('%03s')` |
+| `BR#` | sama |
+
+**Kenapa `count()` salah.** Menghitung baris bukan hal yang sama dengan
+mengambil nomor TERTINGGI. Sekali ada satu baris yang benar-benar hilang,
+hitungannya turun dan nomor yang sudah terpakai diterbitkan lagi -- ditolak
+unique index dengan galat SQL mentah di tengah hari kerja.
+
+**Dan `lockForUpdate()` pada sebuah `count()` tidak mengunci apa pun ketika
+hasilnya nol** -- tidak ada baris yang bisa dikunci. Dokumen PERTAMA setiap
+tahun karena itu justru yang paling rawan kembar, persis pada saat tidak ada
+yang mengawasi.
+
+Format nomornya tidak berubah sedikit pun.
+
+### Penjaga `withTrashed` terlalu sempit
+
+`StockGuardsTest` mencari teks harfiah `static::withTrashed()`. `self::` sama
+benarnya, tetapi dibaca sebagai pelanggaran. Penjaganya diperbaiki supaya
+menjaga ADANYA `withTrashed`, bukan kata mana yang menyebut kelasnya.
+
+### Berkas uji tertimpa
+
+`tests/Feature/DocumentNumberingTest.php` sempat TERTIMPA seluruhnya waktu
+dua penjagaan baru ditulis -- enam uji lama ikut hilang. Dipulihkan dari
+`git show HEAD:` sebelum di-commit, dan dua penjagaan baru DITAMBAHKAN ke
+bawahnya, bukan menggantikannya. Berkas uji lama diperiksa dulu isinya
+sebelum ditulis.
+
+---
+
+## #299 -- Susur modul Financial Loss (Weight Loss)
+
+Modul terakhir yang belum disisir. Empat temuan.
+
+### Saringan sumber menuliskan daftarnya sendiri
+
+Kode menulis DUA sumber kerugian -- `Cattle Weighing` dan `Delivery Order` --
+tetapi saringan di layar hanya memuat satu, dengan komentar *"More can be
+added here later"* yang tidak pernah ditepati. Susut kirim ada barisnya di
+tabel, hanya tidak pernah bisa dipilih.
+
+Bentuk kesalahan yang sama persis dengan tipe pergerakan stok (10 dari 19,
+lalu 4 dari 9) dan umur simpan (enam salinan, tiga jawaban berbeda): daftar
+yang ditulis tangan selalu ketinggalan dari yang benar-benar ditulis kode,
+dan ketinggalannya tidak menimbulkan galat apa pun.
+
+Sumbernya kini satu tetapan di `FinancialLoss`, dengan penjaga pola yang
+menolak sumber yang ditulis sebagai teks lepas.
+
+### Susut sapi hilang ketika harganya belum ketemu
+
+`calculateAndSaveFinancialLoss()` menyimpan kerugian hanya bila RUPIAHNYA
+lebih dari nol. Harga dicari di tiga tempat; bila ketiganya nol, pengalinya
+nol, rupiahnya nol, dan barisnya masuk ke cabang `else` lalu DIHAPUS.
+Kilogram yang benar-benar susut lenyap tanpa galat.
+
+Susut kirim di Surat Jalan sudah lama menyimpan beratnya dengan `amount` nol
+sambil menunggu HPP. **Keputusan: yang menentukan ada-tidaknya kerugian
+adalah BERATNYA, bukan rupiahnya** -- dua tempat yang menghitung hal yang
+sama harus menjawab sama. Rupiahnya menyusul begitu HPP ada, tinggal
+`quantity x HPP` dari kolom yang sudah terisi.
+
+### Rentang tanggal menyaring diam-diam
+
+Penunjuk saringan disembunyikan selama nilainya masih bawaan (bulan
+berjalan), sehingga layarnya terlihat menampilkan seluruh kerugian padahal
+sedang menyaring -- dan TOTAL di bawah tabel ikut tersaring. Rentangnya
+sekarang selalu terlihat.
+
+### `pay_purchase_materials` tidak pernah dibuat
+
+Hanya hidup di seeder. Saudaranya `pay_purchase_products` sudah dibuatkan
+migrasi 5 September; yang material tertinggal -- persis karena daftarnya
+disalin sebagian.
+
+Penjaga baru di `UserPermissionFormTest`: setiap izin yang disebut
+`hasPermission()` di seluruh `app/` wajib benar-benar ada sesudah
+penyemaian. Basis data server diperiksa langsung: 206 izin, lengkap. Yang
+kurang cuma basis data lokal.

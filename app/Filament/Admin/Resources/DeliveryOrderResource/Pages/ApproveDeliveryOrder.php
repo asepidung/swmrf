@@ -439,7 +439,7 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                 // ulang ratusan catatan lama.
                 $this->record->financialLoss()->updateOrCreate(
                     [
-                        'transaction_type' => 'Delivery Order',
+                        'transaction_type' => \App\Models\FinancialLoss::SUMBER_SURAT_JALAN,
                         'reference_number' => $this->record->delivery_order_number,
                     ],
                     [
