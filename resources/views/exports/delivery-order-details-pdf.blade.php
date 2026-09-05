@@ -56,8 +56,12 @@
                 <td>{{ $record->product->name ?? '' }}</td>
                 <td class="text-center">{{ $record->box }}</td>
                 <td class="text-right">{{ number_format($record->weight, 2, ',', '.') }}</td>
-                <td class="text-center">{{ $receiptItem ? $receiptItem->received_box : '-' }}</td>
-                <td class="text-right">{{ $receiptItem ? number_format($receiptItem->received_weight, 2, ',', '.') : '-' }}</td>
+                {{-- Kolomnya bernama `box` dan `weight`. Yang lama membaca
+                     `received_box`/`received_weight` -- properti yang tidak
+                     pernah ada, sehingga kotaknya kosong dan beratnya selalu
+                     tercetak 0,00. --}}
+                <td class="text-center">{{ $receiptItem ? $receiptItem->box : '-' }}</td>
+                <td class="text-right">{{ $receiptItem ? number_format($receiptItem->weight, 2, ',', '.') : '-' }}</td>
             </tr>
             @empty
             <tr>

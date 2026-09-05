@@ -22,7 +22,7 @@ class InvoiceItemExporter extends Exporter
             ExportColumn::make('invoice.invoice_number')->label('Invoice Number'),
             ExportColumn::make('invoice.customer.name')->label('Customer'),
             ExportColumn::make('invoice.invoice_date')->label('Invoice Date'),
-            ExportColumn::make('item_name')->label('Product / Charge')->state(fn ($record) => $record->row_type === 'product' ? ($record->product?->name ?? '-') : $record->charge_name),
+            ExportColumn::make('item_name')->label('Product / Charge'),
             ExportColumn::make('weight')->label('Weight / Qty'),
             ExportColumn::make('price')->label('Price (Rp)'),
             ExportColumn::make('discount_percent')->label('Disc %'),

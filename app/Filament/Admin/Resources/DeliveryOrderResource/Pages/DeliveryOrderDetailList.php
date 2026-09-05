@@ -155,8 +155,8 @@ class DeliveryOrderDetailList extends Page implements HasTable
                                         $record->product->name ?? '',
                                         (string) $record->box,
                                         (string) $record->weight,
-                                        $receiptItem ? (string) $receiptItem->received_box : '-',
-                                        $receiptItem ? (string) $receiptItem->received_weight : '-',
+                                        $receiptItem ? (string) $receiptItem->box : '-',
+                                        $receiptItem ? (string) $receiptItem->weight : '-',
                                     ]));
                                 }
                                 $writer->close();

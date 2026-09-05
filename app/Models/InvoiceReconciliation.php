@@ -36,4 +36,28 @@ class InvoiceReconciliation extends Model
     {
         return $this->belongsTo(Product::class, 'product_id');
     }
+
+    /**
+     * Apa yang tertulis di baris ini: produknya, atau nama biayanya.
+     *
+     * Aturannya dulu ditulis ulang di tiga tempat -- kolom di layar, berkas
+     * ekspor, dan baris Excel di halaman daftar. Yang ketiga menuliskannya
+     * dengan cara yang berbeda: ia membaca `item_name` sebagai KOLOM.
+     *
+     * `item_name` bukan kolom. Tampilan `invoice_reconciliation_view` punya
+     * `row_type` dan `charge_name`, tidak punya `item_name`. Eloquent
+     * menjawab null untuk properti yang tidak ada, jadi kolom "Product /
+     * Charge" di berkas Excel-nya SELALU KOSONG -- tanpa galat, dan tanpa
+     * ada yang aneh di layar, karena layar memakai jalur yang berbeda.
+     *
+     * Sekarang ia benar-benar ada, dan ketiganya membacanya dari sini.
+     */
+    public function getItemNameAttribute(): string
+    {
+        if ($this->row_type === 'product') {
+            return $this->product?->name ?? '-';
+        }
+
+        return $this->charge_name ?: '-';
+    }
 }

@@ -50,7 +50,7 @@ class InvoiceDetailList extends Page implements HasTable
 
                 Tables\Columns\TextColumn::make('item_name')
                     ->label(__('Product / Charge'))
-                    ->state(fn ($record) => $record->row_type === 'product' ? ($record->product?->name ?? '-') : $record->charge_name)
+                    ->state(fn ($record) => $record->item_name)
                     ->searchable(query: function (Builder $query, string $search) {
                         $query->whereHas('product', fn ($q) => $q->where('name', 'like', "%{$search}%"))
                               ->orWhere('charge_name', 'like', "%{$search}%");
