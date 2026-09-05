@@ -3546,6 +3546,46 @@ Kolom basis datanya tetap `decimal(12,2)` dan tidak disentuh.
 - Statusnya kini punya konstanta. Berbeda dari opname daging, material memang
   punya tahap REVIEW -- itu bukan ketidakkonsistenan.
 
+### Perapian setengah jalan lebih berbahaya daripada sebelum dirapikan -- #287, 6 September 2026
+
+Pada #285 kunci `__('Sesuai')` diganti menjadi `__('Matches')` di
+`ManageMaterialStockTakeItems`, DAN entrinya dihapus dari `lang/en.json` serta
+`lang/id.json`. Satu berkas terlewat: `ItemsRelationManager` masih
+memakainya.
+
+Hasilnya lebih buruk daripada sebelum dirapikan. Sebelumnya kuncinya berbahasa
+Indonesia tetapi punya terjemahan; sesudahnya ia tidak punya apa-apa, jadi
+Laravel menampilkan kuncinya sendiri dan pengguna berbahasa Inggris membaca
+"Sesuai".
+
+**Kalau sebuah kunci dibuang dari berkas bahasa, pemakaiannya di kode harus
+dicari SEMUA lebih dulu.** Penjaga bahasa tidak menangkapnya karena kata
+"sesuai" memang tidak pernah ada di daftar katanya.
+
+#### Penjaganya sudah tiga kali menuduh komentar sendiri
+
+`keysWrittenInCode()` membaca berkas sebagai teks biasa, sehingga contoh kunci
+lama yang ditulis DI DALAM KOMENTAR -- justru komentar yang menerangkan apa
+yang sedang diperbaiki -- ikut terbaca sebagai pelanggaran.
+
+Jalan keluar yang gampang adalah mengaburkan komentarnya, dan itu membuang
+keterangan yang paling berguna. Yang benar: komentar dibuang lebih dulu, lewat
+token PHP untuk berkas biasa dan lewat pola untuk Blade (isi `{{ }}` tidak
+terbaca sebagai token PHP).
+
+Sudah dibuktikan masih menggigit sesudah diubah, dengan pelanggaran sengaja.
+
+#### 178 kunci Inggris belum terdaftar -- diukur, belum dikerjakan
+
+Dari 1.171 kunci `__()` di kode, **178 tidak ada di `lang/en.json`**. Untuk
+pengguna berbahasa Inggris tidak ada yang rusak -- Laravel menampilkan
+kuncinya sendiri, dan kuncinya memang Bahasa Inggris. Yang tidak kebagian
+justru pengguna berbahasa INDONESIA: teks itu tidak pernah bisa diterjemahkan.
+
+Penjaga hardcode tidak menangkapnya karena ia hanya mencari teks berbahasa
+Indonesia. Angkanya dicatat di sini supaya tidak hilang; mengerjakannya satu
+pekerjaan tersendiri, bukan titipan.
+
 ### Cara kerja yang disepakati Owner
 
 - Perbaiki langsung bila penyebabnya **sudah pasti dari membaca kode**; hemat token, jangan buat probe sekali pakai.

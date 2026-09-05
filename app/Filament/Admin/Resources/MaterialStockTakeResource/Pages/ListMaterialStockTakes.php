@@ -13,7 +13,10 @@ class ListMaterialStockTakes extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make()->label('Create'),
+            // Lewat __(). Penjaga hardcode hanya mencari teks berbahasa
+            // INDONESIA, jadi teks Inggris yang tidak diterjemahkan lolos --
+            // dan pengguna berbahasa Indonesia membacanya apa adanya.
+            Actions\CreateAction::make()->label(__('Create')),
         ];
     }
 }

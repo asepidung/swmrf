@@ -1,4 +1,13 @@
 <script>
+    // Dipasang SEKALI saja.
+    //
+    // Dengan navigasi Livewire, berkas ini ikut dirender setiap kali
+    // halamannya dibuka. Tanpa penjagaan ini pendengarnya bertambah satu
+    // setiap kunjungan -- sesudah lima kali membuka halaman, satu tekan Enter
+    // dijalankan lima kali, dan kursornya melompat lima kolom.
+    if (! window.__stockTakeEnterBound) {
+        window.__stockTakeEnterBound = true;
+
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             const activeElement = document.activeElement;
@@ -18,4 +27,6 @@
             }
         }
     });
+
+    }
 </script>

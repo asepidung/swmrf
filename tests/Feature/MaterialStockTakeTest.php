@@ -247,6 +247,64 @@ class MaterialStockTakeTest extends TestCase
         );
     }
 
+    /**
+     * Aturan Over / Short / Sesuai hanya boleh ada di SATU tempat.
+     *
+     * Sebelumnya ia ditulis dua kali, di relation manager dan di halaman
+     * hitungan. Salah satu salinannya masih memakai kunci `__('Sesuai')` yang
+     * sudah dihapus dari kedua berkas bahasa -- kunci yatim yang tampil apa
+     * adanya kepada pengguna berbahasa Inggris.
+     */
+    public function test_the_variance_rule_lives_in_one_place(): void
+    {
+        $opname = $this->opname();
+
+        $this->assertSame('-', $this->hitungan($opname, 10, null)->varianceLabel());
+        $this->assertSame(__('Over'), $this->hitungan($opname, 10, 12)->varianceLabel());
+        $this->assertSame(__('Short'), $this->hitungan($opname, 10, 8)->varianceLabel());
+        $this->assertSame(__('Matches'), $this->hitungan($opname, 10, 10)->varianceLabel());
+
+        $this->assertSame('gray', $this->hitungan($opname, 10, null)->varianceColor());
+        $this->assertSame('success', $this->hitungan($opname, 10, 10)->varianceColor());
+
+        $pelanggar = [];
+
+        foreach ([
+            'app/Filament/Admin/Resources/MaterialStockTakeResource/RelationManagers/ItemsRelationManager.php',
+            'app/Filament/Admin/Resources/MaterialStockTakeResource/Pages/ManageMaterialStockTakeItems.php',
+        ] as $berkas) {
+            $isi = $this->tanpaKomentarPhp(file_get_contents(base_path($berkas)));
+
+            if (str_contains($isi, "__('Over')") || str_contains($isi, "__('Short')")) {
+                $pelanggar[] = $berkas;
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $pelanggar,
+            "Aturan selisih ditulis ulang di luar `MaterialStockTakeItem`:
+".implode("
+", $pelanggar),
+        );
+    }
+
+    /** Komentar dibuang supaya penjelasan tidak ikut tertuduh. */
+    private function tanpaKomentarPhp(string $isi): string
+    {
+        $hasil = '';
+
+        foreach (@token_get_all($isi) as $token) {
+            if (is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+
+            $hasil .= is_array($token) ? $token[1] : $token;
+        }
+
+        return $hasil;
+    }
+
     // =====================================================================
     // Izin dan penjagaan dokumen
     // =====================================================================
