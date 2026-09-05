@@ -39,19 +39,23 @@ class ProductRequisition extends Model
     protected static function booted()
     {
         static::creating(function ($model) {
-            DB::transaction(function () use ($model) {
-                $currentYear = date('Y');
-
-                $count = DB::table('product_requisitions')
-                    ->whereYear('created_at', $currentYear)
-                    ->lockForUpdate()
-                    ->count();
-
-                $nextNumber = $count + 1;
-                $requestNumber = sprintf("%03s", $nextNumber);
-
-                $model->document_number = "BR#" . substr($currentYear, 2) . $requestNumber;
-            });
+            // Nomor lewat `DocumentNumber`, bukan MENGHITUNG BARIS.
+            //
+            // Bentuk lamanya `count() + 1` atas seluruh permintaan tahun
+            // berjalan. Menghitung baris bukan hal yang sama dengan mengambil
+            // nomor TERTINGGI: sekali ada satu baris yang benar-benar hilang,
+            // hitungannya turun dan nomor yang sudah terpakai diterbitkan
+            // lagi -- ditolak unique index dengan galat SQL mentah.
+            //
+            // `lockForUpdate()` pada sebuah `count()` juga tidak mengunci apa
+            // pun ketika hasilnya nol, jadi permintaan PERTAMA setiap tahun
+            // justru yang paling rawan kembar.
+            $model->document_number = \App\Support\DocumentNumber::next(
+                query: static::withTrashed(),
+                column: 'document_number',
+                prefix: 'BR#' . date('y'),
+                padding: 3,
+            );
         });
     }
 
@@ -119,16 +123,24 @@ class ProductRequisition extends Model
         }
 
         DB::transaction(function () {
-            $currentYear2Digit = date('y');
-            $currentYear4Digit = date('Y');
-
-            $countThisYear = PurchaseProduct::withTrashed()
-                ->whereYear('created_at', $currentYear4Digit)
-                ->lockForUpdate()
-                ->count();
-            
-            $urut = $countThisYear + 1;
-            $poNumber = 'SWM-BPO#' . $currentYear2Digit . str_pad($urut, 3, '0', STR_PAD_LEFT);
+            // Nomor PO lewat `DocumentNumber`, bukan MENGHITUNG BARIS.
+            //
+            // Bentuk lamanya `count() + 1` atas seluruh PO tahun berjalan.
+            // Menghitung baris bukan hal yang sama dengan mengambil nomor
+            // TERTINGGI: sekali ada satu baris yang benar-benar hilang,
+            // hitungannya turun dan nomor yang sudah terpakai diterbitkan
+            // lagi.
+            //
+            // Dan `lockForUpdate()` pada sebuah `count()` tidak mengunci apa
+            // pun ketika hasilnya nol -- tidak ada baris yang bisa dikunci.
+            // PO PERTAMA setiap tahun karena itu justru yang paling rawan
+            // kembar.
+            $poNumber = \App\Support\DocumentNumber::next(
+                query: PurchaseProduct::withTrashed(),
+                column: 'po_number',
+                prefix: 'SWM-BPO#' . date('y'),
+                padding: 3,
+            );
 
             $po = PurchaseProduct::create([
                 'po_number' => $poNumber,

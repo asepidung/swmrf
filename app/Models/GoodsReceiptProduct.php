@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\DocumentNumber;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -58,21 +60,22 @@ class GoodsReceiptProduct extends Model
         $year = date('y');
         $prefix = 'SWM-GRB#' . $year;
         
-        $lastRecord = self::withTrashed()
-            ->where('gr_number', 'like', $prefix . '%')
-            ->orderBy('id', 'desc')
-            ->first();
-
-        $number = 1;
-        if ($lastRecord) {
-            $parts = explode('#', $lastRecord->gr_number);
-            if (isset($parts[1]) && strlen($parts[1]) > 2) {
-                $lastNum = (int) substr($parts[1], 2);
-                $number = $lastNum + 1;
-            }
-        }
-
-        return $prefix . str_pad($number, 3, '0', STR_PAD_LEFT);
+        // Lewat `DocumentNumber`, bukan penomoran sendiri.
+        //
+        // Bentuk lamanya membaca baris TERAKHIR MENURUT ID lalu memungut
+        // nomornya, dan menerima nomornya hanya kalau panjangnya lebih dari
+        // dua karakter -- panjang dipakai lagi sebagai penanda sah.
+        //
+        // Yang lebih penting: ia tidak MENGUNCI apa pun. Dua orang yang
+        // menyimpan GR pada saat yang sama membaca baris terakhir yang sama
+        // dan mendapat nomor yang sama; yang kedua ditolak unique index
+        // dengan galat SQL mentah di tengah hari kerja.
+        return DocumentNumber::next(
+            query: static::withTrashed(),
+            column: 'gr_number',
+            prefix: $prefix,
+            padding: 3,
+        );
     }
 
     public function getActivitylogOptions(): LogOptions
