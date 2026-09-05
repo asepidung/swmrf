@@ -276,6 +276,14 @@ class RepackResource extends Resource
                 ]),
             ])
             ->filters([
+                // Repack memakai hapus lunak dan `RepackPolicy` punya
+                // `restore()`, tetapi tidak ada satu pun layar yang
+                // menampilkan baris terhapusnya -- jadi izin memulihkan itu
+                // tidak pernah bisa dipakai, dan repack yang telanjur
+                // terhapus hilang untuk selamanya dari pandangan.
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()?->hasPermission('view_deleted_repacks') ?? false),
+
                 Tables\Filters\Filter::make('repack_date')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')
@@ -340,6 +348,22 @@ class RepackResource extends Resource
                         }, 'Repack.xlsx');
                     }),
             ]);
+    }
+
+    /**
+     * Baris terhapus hanya ikut terbawa untuk yang memang berhak melihatnya.
+     *
+     * Bukan `withoutGlobalScopes` telanjang lalu diandalkan disaring kembali
+     * oleh `TrashedFilter`: filter yang tidak terlihat TIDAK menyaring apa
+     * pun -- Filament membuangnya sebelum query dijalankan. Batasnya harus
+     * izin itu sendiri. Alasan lengkapnya di `App\Support\TrashedRecords`.
+     */
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return \App\Support\TrashedRecords::visibleTo(
+            parent::getEloquentQuery(),
+            'view_deleted_repacks',
+        );
     }
 
     public static function getPages(): array

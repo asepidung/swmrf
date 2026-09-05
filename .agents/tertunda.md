@@ -54,6 +54,7 @@ dinilai" dari nol yang berarti "memang tidak rugi".
 | **Tanggal dokumen vs waktu input** | Owner: "kita bahas nanti deh". `beef_stock_movements` hanya punya `created_at`, jadi posisi stok tanggal mundur mengikuti WAKTU INPUT. Untuk mengikuti tanggal dokumen dibutuhkan kolom tanggal transaksi baru, dan itu hanya berlaku maju -- baris lama tidak menyimpannya |
 | **Penjaga barcode di DO receipt** | Owner: "biarin gitu dulu nanti mau gw uji sendiri, karena aturan itu sebenarnya belum diperlukan untuk ada". Barcode dari surat jalan yang belum ada bukti terimanya ditolak. Hasil ujinya menentukan apakah aturannya dibuang atau justru diperluas ke tab Relabel |
 | **Repack: penataan halaman** | Halaman Input Bahan dan Input Hasil belum ditata ulang. Logikanya sudah selesai |
+| **Dua belas centang Hak Akses yang tidak berakibat apa-apa** | Ada di form, bisa diberikan, tidak dibaca satu baris kode pun. Empat karena stok dan pergerakannya memang tidak memakai hapus lunak (`view_deleted_beef_stocks`, `view_deleted_beef_stock_movements`, `view_deleted_material_stocks`, `view_deleted_material_stock_movements`); dua karena layarnya berdiri di atas CustomerGroup, bukan di atas dokumen yang namanya disebut (`view_deleted_price_lists`, `view_deleted_receivables`); lima karena layar Material Adjustment tidak pernah dibuat meski tabel dan modelnya ada (`view_material_adjustments`, `create_material_adjustments`, `edit_material_adjustments`, `delete_material_adjustments`, `view_deleted_material_adjustments`); satu sengaja dipertahankan dengan alasan tertulis (`delete_users`). **Pertanyaannya: dibuang dari form, atau dibiarkan?** Membuang baris izin ikut memutus lekatannya ke pengguna yang telanjur dicentang, jadi ini keputusan Owner. Sementara ini dijaga oleh daftar beralasan di `DeletedRecordVisibilityTest` supaya tidak bertambah diam-diam |
 
 ---
 
@@ -82,7 +83,6 @@ Bukan menunggu apa pun -- hanya belum dikerjakan, dan besarnya diketahui.
 | **View tabel Stock Overview adalah fork Filament** | `beef-stock/table.blade.php`, 1449 baris, meleset 163 baris dari aslinya. Upgrade Filament tidak akan menyentuhnya. Sudah sekali meledak: `x-filament-tables::header` dipanggil tanpa `:actions-position`, dan bug itu tidur sejak fork dibuat sampai tabelnya diberi description (#279) |
 | **`stock:reconcile` belum diuji di data tebal** | Saat dijalankan 5 Sep hasilnya bersih, tetapi hanya 32 baris pergerakan dari 5 hari dan 2 kombinasi. Buku besar dengan 32 baris memang selalu cocok. Jalankan lagi setelah dipakai beberapa minggu |
 | **Tidak ada `stock:reconcile` untuk material** | Perintahnya hanya memeriksa daging. Bahan penolong punya buku besarnya sendiri (`material_stock_movements`) |
-| **Filter Financial Loss hanya mengenal satu jenis** | `FinancialLoss` ditulis dari dua tempat -- `CattleWeighing` dan `ApproveDeliveryOrder` -- tetapi filternya hanya punya opsi `Cattle Weighing`, sehingga kerugian susut kirim tidak akan pernah muncul lewat filter itu |
 | **Laporan yang belum ada** | Fast Moving Products, Sales Report, Laporan Stock Gudang |
 
 ---
@@ -96,4 +96,5 @@ siapa pun. Selama belum dicentang, hanya akun programmer yang bisa memakainya.
 `override_repack_yield` · `record_found_items` · `cancel_receivable_payments` ·
 `record_payable_compensations` · `delete_beef_stocks` · `finish_stock_takes` ·
 `finish_material_stock_takes` · `record_material_findings` ·
-`view_deleted_sales_returns` · `view_deleted_material_stock_takes`
+`view_deleted_sales_returns` · `view_deleted_material_stock_takes` ·
+`pay_purchase_materials` · `view_deleted_repacks`
