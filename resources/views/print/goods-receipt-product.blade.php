@@ -291,8 +291,8 @@
             </tbody>
             <tfoot>
                 @php
-                    $isTax11 = $record->supplier->is_tax_11 ?? false;
-                    $tax = $isTax11 ? ($subtotalSum * 0.11) : 0;
+                    $isTax11 = (bool) $record->supplier?->isPkp();
+                    $tax = $record->supplier?->ppnAtas($subtotalSum) ?? 0;
                     $grandTotal = $subtotalSum + $tax;
                 @endphp
                 <tr>

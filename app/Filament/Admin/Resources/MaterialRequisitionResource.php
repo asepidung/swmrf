@@ -241,17 +241,15 @@ class MaterialRequisitionResource extends Resource
                                     ->content(function ($get) {
                                         $supplierId = $get('supplier_id');
                                         $supplier = \App\Models\Supplier::find($supplierId);
-                                        $hasTax = $supplier ? $supplier->is_tax_11 : false;
-
-                                        if (!$hasTax) return 'Rp 0 (Non-PKP)';
+                                        if (! $supplier?->isPkp()) return 'Rp 0 (Non-PKP)';
 
                                         $items = $get('items') ?? [];
                                         $total = 0;
                                         foreach ($items as $item) {
                                             $total += self::parseNumber($item['qty'] ?? 0) * self::parseNumber($item['price'] ?? 0);
                                         }
-                                        $tax = $total * 0.11;
-                                        return 'Rp ' . number_format($tax, 0, ',', '.');
+
+                                        return 'Rp ' . number_format($supplier->ppnAtas($total), 0, ',', '.');
                                     }),
 
                                 Forms\Components\Placeholder::make('grand_total_display')
@@ -259,16 +257,13 @@ class MaterialRequisitionResource extends Resource
                                     ->content(function ($get) {
                                         $supplierId = $get('supplier_id');
                                         $supplier = \App\Models\Supplier::find($supplierId);
-                                        $hasTax = $supplier ? $supplier->is_tax_11 : false;
-
                                         $items = $get('items') ?? [];
                                         $total = 0;
                                         foreach ($items as $item) {
                                             $total += self::parseNumber($item['qty'] ?? 0) * self::parseNumber($item['price'] ?? 0);
                                         }
 
-                                        $tax = $hasTax ? ($total * 0.11) : 0;
-                                        $grandTotal = $total + $tax;
+                                        $grandTotal = $total + ($supplier?->ppnAtas($total) ?? 0);
 
                                         return 'Rp ' . number_format($grandTotal, 0, ',', '.');
                                     })
