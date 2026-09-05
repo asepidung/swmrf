@@ -157,6 +157,77 @@ class MaterialFindingTest extends TestCase
     }
 
     // =====================================================================
+    // Stok tidak boleh minus
+    // =====================================================================
+
+    /**
+     * Membatalkan temuan yang barangnya sudah terpakai DITOLAK.
+     *
+     * Keputusan Owner, 6 September 2026. Sebelum ini `adjustStock()` tidak
+     * punya batas bawah sama sekali: menghapus temuan lama langsung mendorong
+     * saldonya menjadi minus.
+     *
+     * Stok minus tidak pernah berarti "gudangnya berhutang barang". Ia selalu
+     * berarti ada yang salah dicatat -- dan begitu tersimpan, yang salah itu
+     * ikut mengalir ke laporan, ke opname, dan ke penilaian persediaan.
+     */
+    public function test_stock_can_never_be_pushed_below_zero(): void
+    {
+        $temuan = $this->temuan(5);
+
+        // Materialnya terpakai habis sesudah temuannya dicatat.
+        \App\Services\StockService::adjustStock(
+            $this->material->id, -5, 'MATERIAL_USAGE', 'USG-1', 'dipakai produksi',
+        );
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+        $temuan->delete();
+    }
+
+    /** Yang ditolak tidak boleh meninggalkan separuh pekerjaan. */
+    public function test_a_refused_movement_changes_nothing(): void
+    {
+        $this->temuan(5);
+        \App\Services\StockService::adjustStock(
+            $this->material->id, -5, 'MATERIAL_USAGE', 'USG-1', 'dipakai produksi',
+        );
+
+        $sebelum = MaterialStockMovement::count();
+
+        try {
+            \App\Services\StockService::adjustStock(
+                $this->material->id, -1, 'MATERIAL_USAGE', 'USG-2', 'melebihi sisa',
+            );
+        } catch (\Illuminate\Validation\ValidationException) {
+            // memang disengaja
+        }
+
+        $this->assertSame($sebelum, MaterialStockMovement::count(), 'Pergerakan yang ditolak tetap tercatat.');
+        $this->assertEqualsWithDelta(
+            0,
+            (float) MaterialStock::where('material_id', $this->material->id)->first()->qty,
+            0.001,
+        );
+    }
+
+    /** Turun sampai TEPAT nol masih boleh. */
+    public function test_going_down_to_exactly_zero_is_allowed(): void
+    {
+        $this->temuan(5);
+
+        \App\Services\StockService::adjustStock(
+            $this->material->id, -5, 'MATERIAL_USAGE', 'USG-1', 'dipakai produksi',
+        );
+
+        $this->assertEqualsWithDelta(
+            0,
+            (float) MaterialStock::where('material_id', $this->material->id)->first()->qty,
+            0.001,
+        );
+    }
+
+    // =====================================================================
     // Penomoran dokumen
     // =====================================================================
 

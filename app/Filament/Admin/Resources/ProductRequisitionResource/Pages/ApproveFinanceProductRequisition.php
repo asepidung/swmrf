@@ -12,6 +12,24 @@ use App\Models\User;
 
 class ApproveFinanceProductRequisition extends EditRecord
 {
+    /**
+     * Halaman ini TIDAK boleh terbuka lewat alamatnya saja.
+     *
+     * Izinnya sudah ada dan sudah diperiksa -- tetapi hanya untuk menentukan
+     * apakah TAUTANNYA ditampilkan. Halamannya sendiri tidak memeriksa apa
+     * pun, jadi siapa pun yang boleh melihat daftar permintaan bisa
+     * membukanya langsung dan menekan tombolnya.
+     *
+     * Sudah dibuktikan sebelum diperbaiki: pengguna dengan hanya
+     * `view_product_requisitions` -- tanpa izin persetujuan apa pun --
+     * mengembalikan `true` untuk kedua halaman ini.
+     */
+    public static function canAccess(array $parameters = []): bool
+    {
+        return auth()->user()?->isProgrammer()
+            || (auth()->user()?->hasPermission('approve_product_requisitions') ?? false);
+    }
+
     protected static string $resource = ProductRequisitionResource::class;
     
     public function getTitle(): string

@@ -888,6 +888,7 @@
     "Stock Opnames": "Stock Opnames",
     "Stock position on": "Stock position on",
     "Stock reconciliation completed successfully.": "Stock reconciliation completed successfully.",
+    "Stock would go below zero: :material has :available left, this movement asks for :requested.": "Stock would go below zero: :material has :available left, this movement asks for :requested.",
     "Sub Beef / Variant": "Sub Beef / Variant",
     "Sub Product / Variant": "Sub Product / Variant",
     "Subject": "Subject",

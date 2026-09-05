@@ -51,6 +51,9 @@ class ListPendingPoMaterials extends Page implements HasTable
                     ->requiresConfirmation()
                     ->modalHeading(__('Cancel Purchase Order'))
                     ->modalDescription(__('Cancel this purchase order?'))
+                    // Membatalkan PO menutup pesanan yang sudah terbit.
+                    ->visible(fn (): bool => auth()->user()?->isProgrammer()
+                        || (auth()->user()?->hasPermission('cancel_purchase_materials') ?? false))
                     ->action(function (PurchaseMaterial $record) {
                         $record->update(['status' => 'canceled']);
                         \Filament\Notifications\Notification::make()->title(__('Purchase order cancelled'))->success()->send();

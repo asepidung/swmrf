@@ -17,6 +17,20 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
 {
     use Forms\Concerns\InteractsWithForms;
 
+    /**
+     * Halaman ini MENYETUJUI pengiriman: tanda terimanya terbit dan stoknya
+     * bergerak. Tidak boleh terbuka lewat alamatnya saja.
+     *
+     * Bentuk yang sama ditemukan pada empat halaman persetujuan permintaan --
+     * izinnya ada dan diperiksa untuk menampilkan TAUTANNYA, tetapi halamannya
+     * sendiri tidak memeriksa apa pun.
+     */
+    public static function canAccess(array $parameters = []): bool
+    {
+        return auth()->user()?->isProgrammer()
+            || (auth()->user()?->hasPermission('approve_delivery_orders') ?? false);
+    }
+
     protected static string $resource = DeliveryOrderResource::class;
 
     protected static string $view = 'filament.admin.resources.delivery-order-resource.pages.approve-delivery-order';

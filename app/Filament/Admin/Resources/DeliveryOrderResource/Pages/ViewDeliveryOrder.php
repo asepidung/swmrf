@@ -43,7 +43,14 @@ class ViewDeliveryOrder extends ViewRecord
                 ->color('danger')
                 ->icon('heroicon-o-x-circle')
                 ->iconButton()
-                ->visible(fn () => $this->record->status === 'Approved' && !$this->record->receipt?->invoice)
+                // Membatalkan persetujuan MENGHAPUS tanda terimanya dan
+                // mengembalikan barang tolakan ke Tally -- memutar balik
+                // sebuah pengiriman. Sebelum ini syaratnya hanya status
+                // dokumennya.
+                ->visible(fn (): bool => $this->record->status === 'Approved'
+                    && ! $this->record->receipt?->invoice
+                    && (auth()->user()?->isProgrammer()
+                        || (auth()->user()?->hasPermission('approve_delivery_orders') ?? false)))
                 ->requiresConfirmation()
                 ->modalHeading(__('Confirm Unapprove'))
                 ->modalDescription(__('Undo the approval of this delivery order? Its receipt will be deleted and the rejected goods go back to the tally.'))

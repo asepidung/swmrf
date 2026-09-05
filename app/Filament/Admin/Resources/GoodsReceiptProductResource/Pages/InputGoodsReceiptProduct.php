@@ -98,6 +98,12 @@ class InputGoodsReceiptProduct extends Page implements HasForms
                 ->modalHeading(__('Delete Goods Receipt'))
                 ->modalDescription(__('Delete this goods receipt?'))
                 ->hidden(fn () => $this->record->items()->exists())
+                // Izinnya SUDAH ADA dan sudah di-seed sejak awal --
+                // `delete_goods_receipt_products` -- hanya tidak pernah
+                // diperiksa di sini. Yang tercentang di form Hak Akses karena
+                // itu tidak berpengaruh apa-apa pada tombol ini.
+                ->visible(fn (): bool => auth()->user()?->isProgrammer()
+                    || (auth()->user()?->hasPermission('delete_goods_receipt_products') ?? false))
                 ->action(fn () => $this->deleteGr()),
         ];
     }
