@@ -127,7 +127,7 @@ class DeliveryPlanDetailList extends Page implements HasTable
 
                             $callback = function() use ($records) {
                                 $file = fopen('php://output', 'w');
-                                fputcsv($file, ['No', 'Delivery Date', 'Customer', 'SO Number', 'Qty (Kg)', 'Driver', 'Armada', 'Jam Loading', 'Note']);
+                                fputcsv($file, [__('No'), __('Delivery Date'), __('Customer'), __('SO Number'), __('Qty (Kg)'), __('Driver'), __('Fleet'), __('Loading Time'), __('Note')]);
 
                                 foreach ($records as $index => $row) {
                                     fputcsv($file, [

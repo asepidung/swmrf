@@ -29,7 +29,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
     {
         return [
             Action::make('back')
-                ->label(__('Kembali'))
+                ->label(__('Back'))
                 ->icon('heroicon-o-arrow-left')
                 ->url(StockTakeResource::getUrl('index'))
                 ->color('gray'),
@@ -115,8 +115,8 @@ class ScanStockTake extends Page implements HasForms, HasTable
                     
                 if ($alreadyConverted) {
                     \Filament\Notifications\Notification::make()
-                        ->title(__('Sudah Discan'))
-                        ->body(__('Barcode lama ini sudah dikonversi dan dicetak label barunya!'))
+                        ->title(__('Scanned'))
+                        ->body(__('This old barcode has already been converted and its new label printed.'))
                         ->warning()
                         ->send();
                     
@@ -221,7 +221,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
                 Forms\Components\Grid::make(2)
                     ->schema([
                         Forms\Components\Select::make('warehouse_id')
-                            ->label(__('Lokasi Gudang Temuan'))
+                            ->label(__('Warehouse where it was found'))
                             ->options(\App\Models\Warehouse::pluck('name', 'id'))
                             ->searchable()
                             ->required()
@@ -241,7 +241,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
                             ->searchable()
                             ->required(),
                         Forms\Components\TextInput::make('qty_pcs_combined')
-                            ->label(__('Berat/Pcs (Contoh: 10.15/5)'))
+                            ->label(__('Weight/Pcs (e.g. 10.15/5)'))
                             ->placeholder(__('10.15/5'))
                             ->required()
                             ->extraInputAttributes([
@@ -257,11 +257,11 @@ class ScanStockTake extends Page implements HasForms, HasTable
                             ->label(__('Pack Date'))
                             ->default(now()),
                         Forms\Components\Toggle::make('show_exp')
-                            ->label(__('Tampilkan Exp Date di Label?'))
+                            ->label(__('Show the expiry date on the label?'))
                             ->default(false),
                         Forms\Components\Toggle::make('print_label')
-                            ->label(__('Cetak Label Baru?'))
-                            ->helperText(__('Cetak label barcode baru untuk item ini.'))
+                            ->label(__('Print a new label?'))
+                            ->helperText(__('Print a new barcode label for this item.'))
                             ->default(function (\Filament\Forms\Get $get) {
                                 $barcode = $get('barcode') ?? '';
                                 return strlen($barcode) !== 26;
@@ -273,7 +273,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
                             ->dehydrated()
                             ->columnSpanFull(),
                         Forms\Components\Textarea::make('note')
-                            ->label(__('Catatan'))
+                            ->label(__('Note'))
                             ->rows(2)
                             ->default('Temuan Saat Stock Opname')
                             ->columnSpanFull(),
@@ -426,7 +426,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
             ])
             ->actions([
                 Tables\Actions\Action::make('cancel_scan')
-                    ->label(__('Batal Scan'))
+                    ->label(__('Undo scan'))
                     ->icon('heroicon-o-x-mark')
                     ->iconButton()
                     ->color('danger')
@@ -434,7 +434,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
                     ->visible(fn (StockTakeItem $record) => $record->status === 'MATCHED')
                     ->action(fn (StockTakeItem $record) => $record->update(['status' => 'MISSING'])),
                 Tables\Actions\DeleteAction::make()
-                    ->label(__('Hapus'))
+                    ->label(__('Delete'))
                     ->icon('heroicon-o-x-mark')
                     ->color('danger')
                     ->visible(fn (StockTakeItem $record) => $record->status === 'UNEXPECTED')

@@ -51,7 +51,7 @@ class GoodsReceiptProductResource extends Resource
                             ->label(__('Receive Date'))
                             ->disabled(),
                         Forms\Components\TextInput::make('sj_number')
-                            ->label(__('Surat Jalan Number'))
+                            ->label(__('Delivery Note Number'))
                             ->disabled(),
                         Forms\Components\Textarea::make('note')
                             ->label(__('Note'))
@@ -189,8 +189,8 @@ class GoodsReceiptProductResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading(fn (GoodsReceiptProduct $record) => $record->is_locked ? __('Unlock Goods Receipt') : __('Lock Goods Receipt'))
                     ->modalDescription(fn (GoodsReceiptProduct $record) => $record->is_locked 
-                        ? __('Apakah Anda yakin ingin membuka kunci GR ini? Perhatian: Data hutang (Payable) terkait akan dihapus (jika belum ada pembayaran).') 
-                        : __('Apakah Anda yakin ingin mengunci GR ini? Data tidak akan bisa diubah setelah dikunci (GR Selesai).'))
+                        ? __('Unlock this goods receipt? The payable it created will be deleted, as long as nothing has been paid yet.') 
+                        : __('Lock this goods receipt? Nothing can be changed once it is locked.'))
                     ->hidden(fn (GoodsReceiptProduct $record) => ! $record->items()->exists())
                     ->action(function (GoodsReceiptProduct $record) {
                         \Illuminate\Support\Facades\DB::beginTransaction();

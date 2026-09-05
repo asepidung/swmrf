@@ -26,7 +26,7 @@ class WarehouseFreezeService
 
         if ($activeOpname) {
             throw ValidationException::withMessages([
-                'warehouse_id' => __('Transaksi ditolak: Sedang berlangsung Stock Opname Global (:doc). Harap selesaikan Opname terlebih dahulu.', [
+                'warehouse_id' => __('Rejected: a global stock count (:doc) is in progress. Finish it first.', [
                     'doc' => $activeOpname->document_number
                 ])
             ]);

@@ -45,15 +45,41 @@ class Invoice extends Model
 
     public const STATUS_EXCHANGED = 'Sudah TF';
 
-    /** Seluruh status yang sah, untuk penyaring dan pilihan di form. */
+    /**
+     * Seluruh status yang sah, untuk penyaring dan pilihan di form.
+     *
+     * Kuncinya NILAI YANG TERSIMPAN di basis data, isinya label yang sudah
+     * diterjemahkan. Keduanya sengaja dipisah: nilainya tidak boleh berubah
+     * (lihat catatan di atas), tetapi yang dibaca orang di layar tidak harus
+     * ikut terkunci dalam Bahasa Indonesia.
+     */
     public static function statuses(): array
     {
         return [
-            static::STATUS_UNPAID => static::STATUS_UNPAID,
-            static::STATUS_EXCHANGE_PENDING => static::STATUS_EXCHANGE_PENDING,
-            static::STATUS_EXCHANGED => static::STATUS_EXCHANGED,
-            static::STATUS_PAID => static::STATUS_PAID,
+            static::STATUS_UNPAID => static::statusLabel(static::STATUS_UNPAID),
+            static::STATUS_EXCHANGE_PENDING => static::statusLabel(static::STATUS_EXCHANGE_PENDING),
+            static::STATUS_EXCHANGED => static::statusLabel(static::STATUS_EXCHANGED),
+            static::STATUS_PAID => static::statusLabel(static::STATUS_PAID),
         ];
+    }
+
+    /**
+     * Label yang dibaca orang untuk sebuah status.
+     *
+     * Sebelumnya layar menampilkan `__($state)` -- nilai basis datanya
+     * dipakai langsung sebagai kunci terjemahan. Artinya kunci terjemahannya
+     * ikut berbahasa Indonesia, dan pengguna yang memilih Bahasa Inggris tetap
+     * membaca "Belum TF" di kolom Status.
+     */
+    public static function statusLabel(?string $status): string
+    {
+        return match ($status) {
+            static::STATUS_UNPAID => __('Unpaid'),
+            static::STATUS_EXCHANGE_PENDING => __('Invoice not exchanged yet'),
+            static::STATUS_EXCHANGED => __('Invoice exchanged'),
+            static::STATUS_PAID => __('Paid'),
+            default => (string) ($status ?? '-'),
+        };
     }
 
     protected $table = 'invoices';

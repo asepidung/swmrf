@@ -140,7 +140,7 @@ class FoundItemScanner extends Page implements HasForms, HasTable
         }
 
         if (!$historyMessage) {
-            $historyMessage = "Histori Barang tidak ditemukan.";
+            $historyMessage = __('No history found for this item.');
         }
 
         // 3. Tampilkan modal konfirmasi
@@ -192,7 +192,7 @@ class FoundItemScanner extends Page implements HasForms, HasTable
             ->form([
                 Forms\Components\Placeholder::make('historyMessage')
                     ->label('')
-                    ->content(fn ($get) => $get('historyMessage') ? new \Illuminate\Support\HtmlString('<div class="p-4 mb-4 text-sm text-blue-800 rounded-lg bg-blue-50 dark:bg-gray-800 dark:text-blue-400" role="alert"><span class="font-medium">Info Riwayat:</span> ' . $get('historyMessage') . '</div>') : '')
+                    ->content(fn ($get) => $get('historyMessage') ? new \Illuminate\Support\HtmlString('<div class="p-4 mb-4 text-sm text-blue-800 rounded-lg bg-blue-50 dark:bg-gray-800 dark:text-blue-400" role="alert"><span class="font-medium">' . __('History') . ':</span> ' . $get('historyMessage') . '</div>') : '')
                     ->hidden(fn ($get) => empty($get('historyMessage'))),
 
                 Forms\Components\Grid::make(2)
@@ -391,7 +391,7 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                     ->numeric(2)
                     ->suffix(' Kg'),
                 Tables\Columns\TextColumn::make('warehouse.name')
-                    ->label(__('Gudang')),
+                    ->label(__('Warehouse')),
                 Tables\Columns\TextColumn::make('note')
                     ->label(__('Note'))
                     ->getStateUsing(fn ($record) => $record->transaction_type === 'STOCK_TAKE_FOUND' ? 'ST' : 'PF')

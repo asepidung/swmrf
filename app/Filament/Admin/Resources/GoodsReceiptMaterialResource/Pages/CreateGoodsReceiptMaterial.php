@@ -108,7 +108,7 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
                             ->label(__('Receive Date'))
                             ->required(),
                         Forms\Components\TextInput::make('sj_number')
-                            ->label(__('Surat Jalan Number'))
+                            ->label(__('Delivery Note Number'))
                             ->nullable(),
                         Forms\Components\Textarea::make('note')
                             ->label(__('Note'))

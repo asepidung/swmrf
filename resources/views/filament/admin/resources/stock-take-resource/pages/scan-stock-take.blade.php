@@ -60,7 +60,7 @@
                 <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
                     <button wire:click.prevent="mountAction('manualInput', { barcode: '' })" type="button" class="w-full flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-500 text-white font-bold py-2 px-4 rounded-lg shadow-sm transition-all active:scale-95 group">
                         <x-heroicon-o-plus-circle class="w-5 h-5 group-hover:rotate-90 transition-transform" />
-                        {{ __('Input Barang Tanpa Label') }}
+                        {{ __('Enter goods without a label') }}
                     </button>
                 </div>
                 @endif

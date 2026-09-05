@@ -97,7 +97,7 @@ class ScanTally extends Page implements HasForms, HasTable
                 ->iconButton()
                 ->requiresConfirmation()
                 ->modalHeading(__('Approve Tally'))
-                ->modalDescription(__('Apakah Anda yakin ingin menyetujui Tally ini? Setelah disetujui, data tidak dapat diubah lagi.'))
+                ->modalDescription(__('Approve this tally? Nothing can be changed once it is approved.'))
                 ->form([
                     Forms\Components\TextInput::make('seal_number')
                         ->label(__('Seal Number (If Any)'))
@@ -134,8 +134,8 @@ class ScanTally extends Page implements HasForms, HasTable
                 ->color('danger')
                 ->iconButton()
                 ->requiresConfirmation()
-                ->modalHeading(__('Hapus Tally'))
-                ->modalDescription(__('Jika Anda menghapus Tally ini, maka semua data barang di dalam Tally akan dikembalikan ke stock.'))
+                ->modalHeading(__('Delete tally'))
+                ->modalDescription(__('Deleting this tally returns every item on it to stock.'))
                 ->action(function () {
                     DB::transaction(function () {
                         $this->record->delete();
@@ -385,7 +385,7 @@ class ScanTally extends Page implements HasForms, HasTable
         if ($exists) {
             Notification::make()
                 ->title(__('Scan Failed'))
-                ->body(__('Barang Sudah Terscan di Tally Ini (Duplikat)'))
+                ->body(__('This item has already been scanned on this tally'))
                 ->warning()
                 ->send();
             $this->barcode = '';

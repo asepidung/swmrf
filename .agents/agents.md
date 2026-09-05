@@ -3064,12 +3064,71 @@ padahal baru `ScanMutation` yang disisir bahasanya. Tujuh belas teks masih
 ditulis langsung di kode dan sebelas kunci masih berbahasa Indonesia di
 modul yang sama.
 
-**Utang yang sudah ada tetap dicatat, bukan disembunyikan.** Modul yang
-disisir SEBELUM aturan ini ada -- Tally, Boning, GR Product, GR Material,
-Repack, Sales Return -- masih memuat kunci berbahasa Indonesia. Daftarnya di
-`tests/Fixtures/indonesian-translation-keys.json`, dijaga ratchet. Itu bukan
-alasan mengulang kunjungan; itu utang yang sudah terlihat dan akan dibereskan
-saat modulnya disentuh lagi karena alasan lain.
+**Utang bahasa itu SUDAH HABIS, 5 September 2026.** Lihat bagian di bawah.
+
+### Sekali sisir, tuntas -- penegasan Owner, 5 September 2026
+
+> "gw tegaskan ya kemungkinan kita gak akan balik ke modul yang udah di sisir,
+> jadi ketika sisir modul beresin semua, kecuali gw minta sesuatu ditunda"
+
+Tidak ada lagi kategori "utang yang akan dibereskan saat modulnya disentuh
+lagi". Yang tersisa setelah sebuah modul dinyatakan ✅ hanyalah dua hal:
+keputusan yang memang sudah diambil, dan pekerjaan yang **Owner sendiri** minta
+ditunda. Selain itu, tidak ada.
+
+### Utang bahasa dihabiskan -- #267, 5 September 2026
+
+Registernya mencatat 64 kunci. Yang sebenarnya ada **127**.
+
+Selisihnya bukan kelalaian mencatat, melainkan cacat pada penjaganya.
+`BilingualParityTest::indonesianKeys()` menemukan kunci Indonesia dengan
+**daftar kata**, dan daftarnya hanya berisi 34 kata. Kunci yang kebetulan tidak
+memuat satu pun dari 34 kata itu lolos tanpa gejala: `Tampilkan Exp Date di
+Label?`, `Kunci Repack (Final)`, `Stok Aktual`, `Periode Awal`, dan enam puluh
+lainnya.
+
+**Angka yang salah lebih berbahaya daripada tidak ada angka sama sekali.** 64
+terbaca sebagai utang terukur yang hampir habis, sementara 63 sisanya tidak
+terlihat oleh siapa pun -- termasuk oleh penjaga yang seharusnya melihatnya.
+
+Yang dikerjakan: 127 kunci diganti menjadi Bahasa Inggris, 7 kunci mati
+dibuang, 21 teks yang ditulis langsung tanpa `__()` dilewatkan `__()`,
+registernya **dikosongkan menjadi `[]`**, dan daftar katanya dilebarkan dari 34
+menjadi 190 kata.
+
+#### Yang SENGAJA tetap berbahasa Indonesia
+
+Tiga hal di bawah ini bukan utang. Ini keputusan, dan tidak perlu ditinjau
+ulang kecuali Owner memintanya.
+
+**1. Dokumen cetak dan ekspor PDF** (`resources/views/print/`,
+`resources/views/exports/`) -- 122 baris di 63 berkas. Keputusan Owner: biarkan
+Indonesia. Invoice dan surat jalan pergi ke pelanggan Indonesia. Kalau isinya
+mengikuti bahasa antarmuka operator, operator yang memilih Bahasa Inggris akan
+mencetak invoice berbahasa Inggris untuk pelanggan Indonesia. Bahasa sebuah
+dokumen ditentukan oleh siapa yang membacanya, bukan oleh setelan orang yang
+menekan tombol cetak.
+
+**2. Teks yang DITULIS KE BASIS DATA** -- catatan pergerakan stok, jejak audit,
+alasan pembatalan: `'Mutasi Masuk ' . $nomor`, `'Tolakan dari DO#'`, `'Temuan
+Saat Stock Opname'`, dan sejenisnya. Menerjemahkannya saat ditulis berarti isi
+basis data mengikuti bahasa orang yang kebetulan menekan tombolnya, sehingga
+satu kolom memuat dua bahasa bercampur selamanya. Itu catatan, bukan
+antarmuka.
+
+**3. Perintah artisan dan baris log** -- `NotifyDuePayables`, `TaskNotifier`,
+dan kawan-kawan. Pembacanya yang merawat sistem, bukan pengguna aplikasi.
+
+#### Penjaga barunya
+
+Ratchet lama hanya mengawasi KUNCI `__('...')`. Teks Indonesia yang ditulis
+langsung -- `->label('Alasan Pengembalian')` -- bukan kunci, jadi ia lolos
+sepenuhnya. Itulah bentuk yang paling sering muncul.
+
+Sekarang ada dua penjaga tambahan di `BilingualParityTest`: satu memindai
+pemanggilan yang menghasilkan teks layar di `app/`, satu lagi memindai teks
+mentah di Blade halaman aplikasi. Keduanya mengecualikan `print/` dan
+`exports/` sesuai keputusan di atas.
 
 ### Cara kerja yang disepakati Owner
 

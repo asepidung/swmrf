@@ -133,7 +133,7 @@ class ReviewMaterialRequisition extends EditRecord
             ->requiresConfirmation()
             ->form([
                 Textarea::make('reject_note')
-                    ->label('Alasan Penolakan/Revisi')
+                    ->label(__('Reason for rejection or revision'))
                     ->required(),
             ])
             ->action(function (array $data) {

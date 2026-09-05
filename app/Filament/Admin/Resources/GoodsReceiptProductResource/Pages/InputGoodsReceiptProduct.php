@@ -53,15 +53,15 @@ class InputGoodsReceiptProduct extends Page implements HasForms
                             ->dehydrated(false),
                         Forms\Components\TextInput::make('sj_number')
                             ->label(__('Delivery Number'))
-                            ->placeholder(__('Biarkan Kosong Jika Tidak Ada'))
+                            ->placeholder(__('Leave it empty if there is none'))
                             ->disabled(fn () => $this->record->is_locked),
                         Forms\Components\TextInput::make('po_number')
                             ->label(__('PO Number'))
                             ->disabled()
                             ->dehydrated(false),
                         Forms\Components\TextInput::make('note')
-                            ->label(__('Catatan Untuk GR'))
-                            ->placeholder(__('Catatan Untuk GR'))
+                            ->label(__('Note for this goods receipt'))
+                            ->placeholder(__('Note for this goods receipt'))
                             ->columnSpanFull()
                             ->disabled(fn () => $this->record->is_locked),
                     ])
@@ -96,7 +96,7 @@ class InputGoodsReceiptProduct extends Page implements HasForms
                 ->hiddenLabel()
                 ->requiresConfirmation()
                 ->modalHeading(__('Delete Goods Receipt'))
-                ->modalDescription(__('Apakah Anda yakin ingin menghapus GR ini?'))
+                ->modalDescription(__('Delete this goods receipt?'))
                 ->hidden(fn () => $this->record->items()->exists())
                 ->action(fn () => $this->deleteGr()),
         ];
@@ -105,7 +105,7 @@ class InputGoodsReceiptProduct extends Page implements HasForms
     public function saveGr(): void
     {
         if ($this->record->is_locked) {
-            Notification::make()->title('Tidak dapat menyimpan karena GR sudah dikunci.')->warning()->send();
+            Notification::make()->title(__('This goods receipt is locked, so it cannot be saved.'))->warning()->send();
             return;
         }
 
@@ -127,7 +127,7 @@ class InputGoodsReceiptProduct extends Page implements HasForms
 
             DB::commit();
 
-            Notification::make()->title(__('Goods Receipt header berhasil disimpan!'))->success()->send();
+            Notification::make()->title(__('Goods receipt header saved'))->success()->send();
             $this->record->refresh();
             $this->dispatch('open-modal', id: 'next-step-modal');
         } catch (\Exception $e) {
@@ -162,7 +162,7 @@ class InputGoodsReceiptProduct extends Page implements HasForms
     public function deleteGr(): void
     {
         if ($this->record->items()->exists()) {
-            Notification::make()->title('Tidak dapat menghapus GR karena sudah ada barang di detail.')->warning()->send();
+            Notification::make()->title(__('This goods receipt already has items, so it cannot be deleted.'))->warning()->send();
             return;
         }
 
@@ -176,7 +176,7 @@ class InputGoodsReceiptProduct extends Page implements HasForms
 
             DB::commit();
 
-            Notification::make()->title('Goods Receipt berhasil dihapus dan Purchase Order dikembalikan ke status pending.')->success()->send();
+            Notification::make()->title(__('Goods receipt deleted; its purchase order is pending again.'))->success()->send();
             $this->redirect(GoodsReceiptProductResource::getUrl('index'));
         } catch (\Exception $e) {
             DB::rollBack();

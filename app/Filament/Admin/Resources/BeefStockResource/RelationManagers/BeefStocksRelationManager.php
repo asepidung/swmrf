@@ -74,7 +74,7 @@ class BeefStocksRelationManager extends RelationManager
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('age')
-                    ->label(__('Umur'))
+                    ->label(__('Age'))
                     ->getStateUsing(fn (BeefStock $record) => $record->pack_date ? sprintf('%03d days', abs((int) now()->diffInDays($record->pack_date))) : '')
                     ->alignCenter(),
 
@@ -109,7 +109,7 @@ class BeefStocksRelationManager extends RelationManager
             ->actions([
                 Tables\Actions\Action::make('delete')
                     ->label('')
-                    ->tooltip(__('Hapus Stock'))
+                    ->tooltip(__('Delete stock'))
                     ->icon('heroicon-m-trash')
                     ->color('danger')
                     ->requiresConfirmation()

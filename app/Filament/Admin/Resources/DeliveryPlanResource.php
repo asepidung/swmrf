@@ -45,7 +45,7 @@ class DeliveryPlanResource extends Resource
                             ->label(__('Customer'))
                             ->content(fn ($record) => $record?->customer?->name),
                         Forms\Components\Placeholder::make('delivery_date_formatted')
-                            ->label(__('Tanggal Kirim'))
+                            ->label(__('Delivery date'))
                             ->content(fn ($record) => $record?->delivery_date ? \Carbon\Carbon::parse($record->delivery_date)->format('d-m-Y') : '-'),
                     ])->columns(2),
 

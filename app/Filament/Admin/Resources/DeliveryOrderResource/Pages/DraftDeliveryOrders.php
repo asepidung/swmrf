@@ -57,7 +57,7 @@ class DraftDeliveryOrders extends Page implements HasTable
             ])
             ->actions([
                 Tables\Actions\Action::make('proses_do')
-                    ->label(__('Proses DO'))
+                    ->label(__('Process the delivery order'))
                     ->icon('heroicon-o-truck')
                     ->color('primary')
                     ->button()

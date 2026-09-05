@@ -145,7 +145,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
 
                 Forms\Components\TextInput::make('barcode')
                     ->hiddenLabel()
-                    ->placeholder(__('Scan Barcode Lama (Karton Utuh)'))
+                    ->placeholder(__('Scan the old barcode (carton still intact)'))
                     ->required()
                     ->autofocus()
                     ->extraInputAttributes([
@@ -224,7 +224,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
                     Forms\Components\Hidden::make('exp_date'),
 
                     Forms\Components\Checkbox::make('show_exp')
-                        ->label(__('Tampilkan Tanggal Expired Pada Label'))
+                        ->label(__('Show the expiry date on the label?'))
                         ->default(false)
                         ->extraAttributes(['tabindex' => '-1']),
 
@@ -486,7 +486,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
             $pcs = isset($parts[1]) ? (int) trim($parts[1]) : 1;
 
             if ($weight <= 0) {
-                throw new \Exception('Berat tidak valid.');
+                throw new \Exception(__('That weight is not valid.'));
             }
 
             DB::transaction(function () use ($formData, $weight, $pcs) {

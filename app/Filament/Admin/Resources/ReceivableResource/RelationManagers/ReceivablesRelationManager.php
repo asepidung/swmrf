@@ -61,7 +61,7 @@ class ReceivablesRelationManager extends RelationManager
                         $tgltf = $invoice->invoice_exchange_date;
 
                         if ($tukarfaktur && empty($tgltf) && $status === Invoice::STATUS_EXCHANGE_PENDING) {
-                            return Invoice::STATUS_EXCHANGE_PENDING;
+                            return Invoice::statusLabel(Invoice::STATUS_EXCHANGE_PENDING);
                         }
                         
                         return $invoice->due_date ? $invoice->due_date->format('d M Y') : '-';
@@ -128,7 +128,7 @@ class ReceivablesRelationManager extends RelationManager
                         'primary' => Invoice::STATUS_PAID,
                         'gray' => '-',
                     ])
-                    ->formatStateUsing(fn ($state) => __($state)),
+                    ->formatStateUsing(fn ($state) => Invoice::statusLabel($state)),
             ])
             ->filters([
                 // Simple filters can be added here if needed

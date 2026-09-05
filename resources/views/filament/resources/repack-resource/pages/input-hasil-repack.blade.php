@@ -136,10 +136,10 @@
         <div class="repack-header">
             <div class="repack-header-actions">
                 <x-filament::button href="{{ \App\Filament\Admin\Resources\RepackResource::getUrl('index') }}" tag="a" color="gray" variant="outlined" icon="heroicon-m-arrow-left">
-                    {{ __('Kembali') }}
+                    {{ __('Back') }}
                 </x-filament::button>
                 <x-filament::button href="{{ \App\Filament\Admin\Resources\RepackResource::getUrl('input-bahan', ['record' => $record->id]) }}" tag="a" color="success" variant="outlined" icon="heroicon-m-arrow-right">
-                    {{ __('Tambah Bahan') }}
+                    {{ __('Add material') }}
                 </x-filament::button>
             </div>
             <div class="repack-header-actions">
@@ -147,7 +147,7 @@
                     BATCH: <span class="text-warning-600 dark:text-warning-500">{{ $record->doc_no }}</span>
                 </div>
                 <h4 class="text-info-600 dark:text-info-500 font-bold text-xl m-0 uppercase tracking-wide">
-                    {{ __('INPUT HASIL & LABELING') }}
+                    {{ __('OUTPUT & LABELLING') }}
                 </h4>
             </div>
         </div>
@@ -171,7 +171,7 @@
             <!-- Middle Column: History table (Col 6) -->
             <div class="repack-col-6 bg-white dark:bg-gray-900 shadow-sm ring-1 ring-gray-950/5 dark:ring-white/10 rounded-xl overflow-hidden">
                 <div class="bg-gray-50/80 dark:bg-gray-800 p-3 border-b dark:border-gray-800 text-xs font-bold uppercase tracking-tight text-gray-500 flex items-center gap-2">
-                    <x-heroicon-o-table-cells class="w-4 h-4 text-info-500" /> {{ __('Histori Hasil Scan') }}
+                    <x-heroicon-o-table-cells class="w-4 h-4 text-info-500" /> {{ __('Output scanned so far') }}
                 </div>
                 {{ $this->table }}
             </div>
@@ -180,16 +180,16 @@
             <div class="repack-col-3 bg-white dark:bg-gray-900 shadow-sm ring-1 ring-gray-950/5 dark:ring-white/10 rounded-xl p-4">
                 <div class="flex items-center gap-2 mb-4 pb-2 border-b dark:border-gray-800">
                     <x-heroicon-o-chart-bar-square class="w-5 h-5 text-warning-500" />
-                    <span class="font-bold text-sm text-gray-800 dark:text-gray-200">{{ __('RINGKASAN PROSES') }}</span>
+                    <span class="font-bold text-sm text-gray-800 dark:text-gray-200">{{ __('PROCESS SUMMARY') }}</span>
                 </div>
 
                 <!-- Bahan Masuk Summary Table -->
                 <div class="mb-4">
-                    <div class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{{ __('BAHAN MASUK (INPUT)') }}</div>
+                    <div class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{{ __('MATERIALS IN') }}</div>
                     <table class="table-mini">
                         <thead>
                             <tr>
-                                <th class="text-left">{{ __('NAMA BARANG') }}</th>
+                                <th class="text-left">{{ __('ITEM NAME') }}</th>
                                 <th class="w-12 text-center">{{ __('BOX') }}</th>
                                 <th class="w-20 text-right">{{ __('QTY') }}</th>
                             </tr>
@@ -215,7 +215,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="3" class="text-center italic text-gray-500 py-3">{{ __('Belum ada bahan') }}</td>
+                                    <td colspan="3" class="text-center italic text-gray-500 py-3">{{ __('No materials yet') }}</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -231,11 +231,11 @@
 
                 <!-- Hasil Keluar Summary Table -->
                 <div class="mb-4">
-                    <div class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{{ __('HASIL KELUAR (OUTPUT)') }}</div>
+                    <div class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{{ __('OUTPUT') }}</div>
                     <table class="table-mini">
                         <thead>
                             <tr>
-                                <th class="text-left">{{ __('NAMA BARANG') }}</th>
+                                <th class="text-left">{{ __('ITEM NAME') }}</th>
                                 <th class="w-12 text-center">{{ __('BOX') }}</th>
                                 <th class="w-20 text-right">{{ __('QTY') }}</th>
                             </tr>
@@ -261,7 +261,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="3" class="text-center italic text-gray-500 py-3">{{ __('Belum ada hasil') }}</td>
+                                    <td colspan="3" class="text-center italic text-gray-500 py-3">{{ __('No output yet') }}</td>
                                 </tr>
                             @endforelse
                         </tbody>

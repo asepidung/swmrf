@@ -14,12 +14,12 @@ class EditRepack extends EditRecord
     {
         return [
             Actions\Action::make('back')
-                ->label(__('Kembali'))
+                ->label(__('Back'))
                 ->color('gray')
                 ->icon('heroicon-m-arrow-left')
                 ->url($this->getResource()::getUrl('index')),
             Actions\Action::make('print')
-                ->label(__('Cetak Summary'))
+                ->label(__('Print Summary'))
                 ->color('success')
                 ->icon('heroicon-o-printer')
                 ->url(fn () => route('repack.summary', ['id' => $this->getRecord()->id]))

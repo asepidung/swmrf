@@ -47,10 +47,10 @@ class DraftCarcass extends Page implements HasTable
                 TextColumn::make('supplier_name')
                     ->label(__('Supplier')),
                 TextColumn::make('items_count')
-                    ->label(__('Total Sapi'))
+                    ->label(__('Total cattle'))
                     ->counts('items'),
                 TextColumn::make('unprocessed_count')
-                    ->label(__('Belum Dipotong'))
+                    ->label(__('Not slaughtered yet'))
                     ->getStateUsing(function (CattleWeighing $record) {
                         return $record->items()->whereDoesntHave('carcassItems')->count();
                     })

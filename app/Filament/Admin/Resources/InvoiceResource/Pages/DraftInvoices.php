@@ -56,7 +56,7 @@ class DraftInvoices extends Page implements HasTable
             ])
             ->actions([
                 Tables\Actions\Action::make('create_invoice')
-                    ->label(__('Proses Invoice'))
+                    ->label(__('Process the invoice'))
                     ->icon('heroicon-o-document-plus')
                     ->color('primary')
                     ->url(fn (DeliveryOrderReceipt $record) => InvoiceResource::getUrl('create', ['delivery_order_receipt_id' => $record->id]))

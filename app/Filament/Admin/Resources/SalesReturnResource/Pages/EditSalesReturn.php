@@ -16,7 +16,7 @@ class EditSalesReturn extends EditRecord
             Actions\Action::make('Input Return Items')
                 ->label('')
                 ->extraAttributes(['style' => 'gap: 0 !important;'])
-                ->tooltip(__('Input / Scan Barang'))
+                ->tooltip(__('Enter / scan goods'))
                 ->icon('heroicon-o-bars-3-bottom-left')
                 ->color('warning')
                 ->url(fn () => SalesReturnResource::getUrl('input-items', ['record' => $this->record]))

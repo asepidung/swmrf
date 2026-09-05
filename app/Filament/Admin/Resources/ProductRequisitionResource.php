@@ -159,7 +159,7 @@ class ProductRequisitionResource extends Resource
                                     ->searchable()
                                     ->required()
                                     ->hiddenLabel()
-                                    ->placeholder(fn() => __('Pilih Product...'))
+                                    ->placeholder(fn() => __('Pick a product...'))
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                                     ->columnSpan(['default' => 12, 'md' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 4 : 3]),
 
@@ -199,7 +199,7 @@ class ProductRequisitionResource extends Resource
                                             },
                                         ];
                                     })
-                                    ->placeholder(fn() => __('Harga'))
+                                    ->placeholder(fn() => __('Price'))
                                     ->prefix('Rp')
                                     ->default(0)
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'price-input text-right', 'inputmode' => 'numeric', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll(".price-input")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
@@ -286,11 +286,11 @@ class ProductRequisitionResource extends Resource
                     ])->columns(12),
 
                 Forms\Components\Section::make(fn() => __('Rejection Info'))
-                    ->description('Informasi alasan penolakan atau revisi request ini.')
+                    ->description(__('Why this request was rejected or sent back for revision.'))
                     ->aside()
                     ->schema([
                         Forms\Components\Placeholder::make('reject_note')
-                            ->label(fn() => __('Alasan'))
+                            ->label(fn() => __('Reason'))
                             ->content(fn($record) => $record ? $record->reject_note : '-')
                             ->extraAttributes(['class' => 'text-danger-600 font-bold px-4 py-3 bg-danger-50 border border-danger-300 rounded-lg']),
                     ])

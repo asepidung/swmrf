@@ -7,7 +7,7 @@
 
         <!-- 2. Detail Items Table Card -->
         <div class="bg-white dark:bg-gray-900 shadow-sm ring-1 ring-gray-950/5 dark:ring-white/10 rounded-xl p-6 flex flex-col gap-4">
-            <h3 class="text-base font-bold text-gray-950 dark:text-white">Detail Barang</h3>
+            <h3 class="text-base font-bold text-gray-950 dark:text-white">{{ __('Item details') }}</h3>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse text-sm text-gray-700 dark:text-gray-300">
                     <thead>
@@ -28,7 +28,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="py-4 text-center italic text-gray-400">Tidak ada barang dalam Purchase Order.</td>
+                                <td colspan="4" class="py-4 text-center italic text-gray-400">{{ __('There are no items on this purchase order.') }}</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -58,24 +58,24 @@
     <!-- Modal Pilihan Tindakan Lanjutan -->
     <x-filament::modal id="next-step-modal" width="md">
         <x-slot name="heading">
-            {{ __('Berhasil Disimpan') }}
+            {{ __('Saved') }}
         </x-slot>
         
         <x-slot name="description">
-            {{ __('Goods Receipt header berhasil disimpan! Bagaimana Anda ingin melanjutkan penerimaan barang?') }}
+            {{ __('Goods receipt header saved. How do you want to carry on receiving the goods?') }}
         </x-slot>
 
         <div class="flex flex-col gap-3 mt-4">
             <x-filament::button tag="a" href="{{ \App\Filament\Admin\Resources\GoodsReceiptProductResource::getUrl('scan', ['record' => $record->id]) }}" icon="heroicon-m-qr-code" size="lg">
-                {{ __('Mulai Scan (Barcode)') }}
+                {{ __('Start scanning (barcode)') }}
             </x-filament::button>
             
             <x-filament::button tag="a" href="{{ \App\Filament\Admin\Resources\GoodsReceiptProductResource::getUrl('labeling', ['record' => $record->id]) }}" color="gray" icon="heroicon-m-tag" size="lg">
-                {{ __('Mulai Labeling (Manual)') }}
+                {{ __('Start labelling (manual)') }}
             </x-filament::button>
             
             <x-filament::button tag="a" href="{{ \App\Filament\Admin\Resources\GoodsReceiptProductResource::getUrl('index') }}" color="gray" variant="outlined" size="lg">
-                {{ __('Nanti Saja (Kembali ke Daftar)') }}
+                {{ __('Later (back to the list)') }}
             </x-filament::button>
         </div>
     </x-filament::modal>

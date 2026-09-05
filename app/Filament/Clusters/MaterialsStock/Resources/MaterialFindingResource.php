@@ -28,12 +28,12 @@ class MaterialFindingResource extends Resource
 
     public static function getModelLabel(): string
     {
-        return __('Temuan Material');
+        return __('Material Finding');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('Temuan Material');
+        return __('Material Finding');
     }
 
     public static function form(Form $form): Form
@@ -52,7 +52,7 @@ class MaterialFindingResource extends Resource
                     ->required()
                     ->live(),
                 Forms\Components\TextInput::make('qty')
-                    ->label(__('Qty (Fisik)'))
+                    ->label(__('Qty (counted)'))
                     ->numeric()
                     ->required()
                     ->minValue(0.01)
@@ -121,9 +121,9 @@ class MaterialFindingResource extends Resource
             ])
             ->actions([
                 Tables\Actions\DeleteAction::make()
-                    ->modalHeading(__('Hapus Temuan Material?'))
-                    ->modalDescription(__('Menghapus dokumen temuan ini akan otomatis mengurangi (mengembalikan) stok ke posisi semula.'))
-                    ->modalSubmitActionLabel(__('Ya, Hapus dan Kembalikan Stok')),
+                    ->modalHeading(__('Delete this material finding?'))
+                    ->modalDescription(__('Deleting this finding takes the stock back to what it was.'))
+                    ->modalSubmitActionLabel(__('Yes, delete it and take the stock back')),
             ])
             ->bulkActions([
             ]);

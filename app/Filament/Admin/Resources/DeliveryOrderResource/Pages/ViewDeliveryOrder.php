@@ -46,7 +46,7 @@ class ViewDeliveryOrder extends ViewRecord
                 ->visible(fn () => $this->record->status === 'Approved' && !$this->record->receipt?->invoice)
                 ->requiresConfirmation()
                 ->modalHeading(__('Confirm Unapprove'))
-                ->modalDescription(__('Apakah Anda yakin ingin membatalkan persetujuan Surat Jalan ini? Tanda terima terkait akan dihapus dan barang tolakan akan dikembalikan ke Tally.'))
+                ->modalDescription(__('Undo the approval of this delivery order? Its receipt will be deleted and the rejected goods go back to the tally.'))
                 ->action(function () {
                     $receipt = DeliveryOrderReceipt::where('delivery_order_id', $this->record->id)->first();
 

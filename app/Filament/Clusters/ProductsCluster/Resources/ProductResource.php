@@ -120,7 +120,7 @@ class ProductResource extends Resource
                             ->required()
                             ->unique(ignorable: fn ($record) => $record)
                             ->validationMessages([
-                                'unique' => 'Nama barang ini sudah terdaftar di sistem, pakai nama lain!',
+                                'unique' => __('This name is already registered. Use another one.'),
                             ])
                             ->maxLength(255)
                             ->extraInputAttributes(['style' => 'text-transform:uppercase']),

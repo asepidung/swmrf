@@ -292,7 +292,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
                 Tables\Actions\Action::make('repack_status')
                     ->label('R')
                     ->color('warning')
-                    ->tooltip(__('Barang sudah masuk bahan repack'))
+                    ->tooltip(__('This item is already a repack input'))
                     ->visible(fn (BoningItem $record) => DB::table('repack_materials')->where('barcode', $record->barcode)->exists())
                     ->extraAttributes([
                         'onclick' => 'event.preventDefault(); event.stopPropagation();',
@@ -301,7 +301,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
                 Tables\Actions\Action::make('tally_status')
                     ->label('D')
                     ->color('info')
-                    ->tooltip(__('Barang sudah masuk tally'))
+                    ->tooltip(__('This item is already on a tally'))
                     ->visible(fn (BoningItem $record) => DB::table('tally_items')->where('barcode', $record->barcode)->exists())
                     ->extraAttributes([
                         'onclick' => 'event.preventDefault(); event.stopPropagation();',
@@ -323,11 +323,11 @@ class LabelingBoning extends Page implements HasForms, HasTable
                             DB::transaction(function () use ($record) {
                                 // Cek pengaman ganda sebelum menghapus (TOCTOU Fixed)
                                 if (DB::table('repack_materials')->where('barcode', $record->barcode)->lockForUpdate()->exists()) {
-                                    throw new \Exception(__('Barang sudah digunakan di modul Repack.'));
+                                    throw new \Exception(__('This item has already been used in Repack.'));
                                 }
 
                                 if (DB::table('tally_items')->where('barcode', $record->barcode)->lockForUpdate()->exists()) {
-                                    throw new \Exception(__('Barang sudah digunakan di modul Tally.'));
+                                    throw new \Exception(__('This item has already been used in Tally.'));
                                 }
 
                                 $stock = BeefStock::where('barcode', $record->barcode)->lockForUpdate()->first();
@@ -356,7 +356,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
                                 ->send();
                         } catch (\Exception $e) {
                             Notification::make()
-                                ->title(__('Gagal!'))
+                                ->title(__('Failed'))
                                 ->body($e->getMessage())
                                 ->danger()
                                 ->send();

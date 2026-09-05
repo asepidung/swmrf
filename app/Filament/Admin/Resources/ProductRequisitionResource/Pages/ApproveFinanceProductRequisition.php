@@ -214,8 +214,8 @@ class ApproveFinanceProductRequisition extends EditRecord
 
                 if ($missing !== []) {
                     \Filament\Notifications\Notification::make()
-                        ->title(__('Harga belum lengkap, PO belum bisa diterbitkan'))
-                        ->body(__('PO bernilai nol akan menciptakan utang palsu dan mengacaukan perhitungan TOP. Barang yang harganya masih kosong') . ': ' . implode(', ', $missing) . '.')
+                        ->title(__('Some prices are still empty, so the purchase order cannot be issued'))
+                        ->body(__('A purchase order worth zero creates a fake payable and wrecks the payment-term calculation. These items still have no price') . ': ' . implode(', ', $missing) . '.')
                         ->danger()
                         ->persistent()
                         ->send();
@@ -259,7 +259,7 @@ class ApproveFinanceProductRequisition extends EditRecord
             ->requiresConfirmation()
             ->form([
                 Textarea::make('reject_note')
-                    ->label('Alasan Pengembalian')
+                    ->label(__('Reason for sending it back'))
                     ->required(),
             ])
             ->action(function (array $data) {

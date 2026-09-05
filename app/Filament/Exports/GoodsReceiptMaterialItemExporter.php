@@ -16,7 +16,7 @@ class GoodsReceiptMaterialItemExporter extends Exporter
         return [
             ExportColumn::make('goodsReceiptMaterial.gr_number')->label('GR Number'),
             ExportColumn::make('goodsReceiptMaterial.receive_date')->label('Receive Date'),
-            ExportColumn::make('goodsReceiptMaterial.sj_number')->label('Surat Jalan'),
+            ExportColumn::make('goodsReceiptMaterial.sj_number')->label(__('Delivery Note')),
             ExportColumn::make('goodsReceiptMaterial.purchaseMaterial.po_number')->label('PO Number'),
             ExportColumn::make('goodsReceiptMaterial.supplier.name')->label('Supplier'),
             ExportColumn::make('material.name')->label('Material'),

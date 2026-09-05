@@ -114,7 +114,7 @@ class ProductRequisition extends Model
 
         if ($this->purchaseProduct()->exists()) {
             throw new \RuntimeException(
-                'PO untuk ' . $this->document_number . ' sudah pernah diterbitkan.'
+                __('A purchase order for :document has already been issued.', ['document' => $this->document_number])
             );
         }
 

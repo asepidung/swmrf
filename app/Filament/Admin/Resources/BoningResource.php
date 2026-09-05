@@ -277,7 +277,7 @@ class BoningResource extends Resource
                     ->icon('heroicon-o-qr-code')
                     ->color('warning')
                     ->iconButton()
-                    ->tooltip(fn(Boning $record) => $record->kunci ? __('Detail Label') : __('Buat Label'))
+                    ->tooltip(fn(Boning $record) => $record->kunci ? __('Detail Label') : __('Create Label'))
                     ->url(fn(Boning $record): string => static::getUrl('labeling', ['record' => $record])),
 
                 /* 5. Tombol Hapus */

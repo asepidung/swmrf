@@ -44,14 +44,14 @@ class CreateManualUsage extends CreateRecord
                             }),
 
                         Forms\Components\DatePicker::make('adjustment_date')
-                            ->label(__('Tanggal'))
+                            ->label(__('Date'))
                             ->required()
                             ->default(now())
                             ->autofocus()
                             ->columnSpan(1),
 
                         Forms\Components\Textarea::make('note')
-                            ->label(__('Catatan / Keterangan'))
+                            ->label(__('Note / description'))
                             ->columnSpanFull(),
 
                         Forms\Components\Hidden::make('status')
