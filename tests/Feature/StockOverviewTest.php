@@ -327,6 +327,56 @@ class StockOverviewTest extends TestCase
         $this->assertTrue(MaterialStockResource::canView(new Material()));
     }
 
+    /**
+     * Daftar bahan penolong TIDAK dipecah per kategori.
+     *
+     * Keputusan Owner: daftarnya pendek dan kategorinya sudah punya kolom
+     * sendiri. Dan yang tampil hanya material ber-`show_in_stock`.
+     */
+    public function test_the_material_list_is_not_split_into_category_rows(): void
+    {
+        $tabel = MaterialStockResource::table(
+            \Filament\Tables\Table::make(new \App\Filament\Admin\Resources\MaterialStockResource\Pages\ListMaterialStocks())
+        );
+
+        $this->assertNull($tabel->getDefaultGroup(), 'Daftar material dipecah per kategori lagi.');
+    }
+
+    /** Material yang tidak ditandai tampil di stok tidak boleh muncul. */
+    public function test_only_materials_marked_for_stock_are_listed(): void
+    {
+        $tampil = $this->material(4.0);
+
+        $sembunyi = Material::create([
+            'code' => 'MTR-02',
+            'name' => 'LAKBAN',
+            'material_category_id' => MaterialCategory::create(['name' => 'PEREKAT'])->id,
+            'material_unit_id' => MaterialUnit::create(['name' => 'ROLL'])->id,
+            'min_stock' => 1,
+            'show_in_stock' => false,
+        ]);
+
+        $terdaftar = MaterialStockResource::getEloquentQuery()->pluck('id')->all();
+
+        $this->assertContains($tampil->id, $terdaftar);
+        $this->assertNotContains($sembunyi->id, $terdaftar);
+    }
+
+    /**
+     * Stock Overview tidak lagi punya filter kategori.
+     *
+     * Kategorinya sudah menjadi baris pengelompokan; menyaringnya dari atas
+     * hanya mengulang hal yang sama dengan cara kedua.
+     */
+    public function test_the_beef_stock_list_has_no_category_filter(): void
+    {
+        $tabel = BeefStockResource::table(
+            \Filament\Tables\Table::make(new \App\Filament\Admin\Resources\BeefStockResource\Pages\ListBeefStocks())
+        );
+
+        $this->assertSame(['as_of'], array_keys($tabel->getFilters()));
+    }
+
     /** Laporan tetap laporan: tidak ada yang boleh membuat atau menyunting. */
     public function test_neither_stock_list_can_ever_be_written_to(): void
     {

@@ -133,10 +133,12 @@ class MaterialStockResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->defaultGroup(
-                \Filament\Tables\Grouping\Group::make('category.name')
-                    ->titlePrefixedWithLabel(false)
-            )
+            // Tidak dikelompokkan per kategori, atas keputusan Owner.
+            // Daftarnya pendek dan kategorinya sudah punya kolom sendiri;
+            // baris pemisah hanya memecah tabel tanpa menambah apa pun.
+            //
+            // Yang tampil tetap hanya material ber-`show_in_stock` -- lihat
+            // `getEloquentQuery()`.
             ->columns([
                 Tables\Columns\TextColumn::make('code')
                     ->label(__('Item Code'))
