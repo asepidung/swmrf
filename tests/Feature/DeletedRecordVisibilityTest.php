@@ -44,7 +44,11 @@ class DeletedRecordVisibilityTest extends TestCase
         $sources = [];
 
         foreach (glob(app_path('Filament/Admin/Resources/*Resource.php')) as $file) {
-            $sources[basename($file)] = file_get_contents($file);
+            // Komentar dibuang lebih dulu. Sudah lima kali di proyek ini
+            // pemindai menuduh keterangan yang MENERANGKAN pola lama sebagai
+            // pemakainya -- termasuk komentar yang menjelaskan kenapa
+            // `withoutGlobalScopes` telanjang tidak boleh dipakai.
+            $sources[basename($file)] = $this->tanpaKomentar(file_get_contents($file));
         }
 
         return $sources;
@@ -135,5 +139,111 @@ class DeletedRecordVisibilityTest extends TestCase
             'Izin berikut dipakai kode tetapi tidak pernah dibuat, jadi tidak bisa '
             .'diberikan kepada siapa pun.',
         );
+    }
+
+    /**
+     * Arah sebaliknya: izin `view_deleted_*` yang dibuat tetapi tidak pernah
+     * DIBACA satu baris kode pun.
+     *
+     * Penjaga di atas menangkap izin yang dipakai tetapi tidak pernah dibuat.
+     * Lubang yang bentuknya berlawanan sama merugikannya, dan lebih sulit
+     * disadari: centangnya ADA di form Hak Akses, bisa diberikan, dan tidak
+     * berakibat apa-apa. Orang yang memberikannya percaya sudah memberi hak
+     * yang sebenarnya tidak pernah sampai.
+     *
+     * `view_deleted_repacks` berada dalam keadaan itu sampai hari ini --
+     * lengkap dengan `RepackPolicy::restore()` yang karena itu tidak pernah
+     * bisa terpakai: tidak ada satu pun layar yang menampilkan repack
+     * terhapus, jadi tidak ada yang bisa dipulihkan.
+     */
+    public function test_every_deleted_record_permission_is_actually_read(): void
+    {
+        $seeder = file_get_contents(database_path('seeders/DatabaseSeeder.php'));
+
+        preg_match_all("/'(view_deleted_[a-z_]+)'/", $seeder, $cocok);
+
+        $dibaca = [];
+
+        $berkas = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(app_path())
+        );
+
+        foreach ($berkas as $satu) {
+            if (! $satu->isFile() || $satu->getExtension() !== 'php') {
+                continue;
+            }
+
+            preg_match_all(
+                "/'(view_deleted_[a-z_]+)'/",
+                $this->tanpaKomentar(file_get_contents($satu->getPathname())),
+                $ketemu,
+            );
+
+            $dibaca = array_merge($dibaca, $ketemu[1]);
+        }
+
+        $mati = array_values(array_diff(
+            array_unique($cocok[1]),
+            array_unique($dibaca),
+            $this->sengajaTidakDipakai(),
+        ));
+
+        sort($mati);
+
+        $this->assertSame(
+            [],
+            $mati,
+            "Izin berikut ada di form Hak Akses tetapi tidak dibaca satu baris kode pun. "
+            ."Centangnya bisa diberikan dan tidak berakibat apa-apa:\n".implode("\n", $mati),
+        );
+    }
+
+    /**
+     * Izin `view_deleted_*` yang memang tidak bisa dipakai, dengan alasannya.
+     *
+     * Bukan daftar toleransi untuk yang belum sempat dikerjakan -- setiap
+     * baris di sini menyebut kenapa layarnya memang tidak punya dokumen
+     * terhapus untuk ditampilkan.
+     *
+     * @return list<string>
+     */
+    private function sengajaTidakDipakai(): array
+    {
+        return [
+            // Stok dan pergerakannya TIDAK memakai hapus lunak sama sekali.
+            // Stok hanya mencatat posisi sekarang -- keputusan Owner, supaya
+            // tabelnya tetap ringan -- dan riwayatnya ada di pergerakan
+            // stok, yang justru tidak boleh dihapus karena ia jejak
+            // auditnya. Tidak ada baris terhapus untuk ditampilkan.
+            'view_deleted_beef_stocks',
+            'view_deleted_beef_stock_movements',
+            'view_deleted_material_stocks',
+            'view_deleted_material_stock_movements',
+
+            // Tabel dan modelnya ada, layarnya tidak pernah dibuat.
+            'view_deleted_material_adjustments',
+
+            // Kedua layar ini berdiri di atas CustomerGroup, bukan di atas
+            // dokumen yang namanya disebut izin ini -- dan CustomerGroup
+            // tidak memakai hapus lunak.
+            'view_deleted_price_lists',
+            'view_deleted_receivables',
+        ];
+    }
+
+    /** Komentar dibuang supaya keterangannya tidak ikut terhitung dibaca. */
+    private function tanpaKomentar(string $isi): string
+    {
+        $hasil = '';
+
+        foreach (@token_get_all($isi) as $token) {
+            if (is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+
+            $hasil .= is_array($token) ? $token[1] : $token;
+        }
+
+        return $hasil;
     }
 }

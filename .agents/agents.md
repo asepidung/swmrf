@@ -3942,3 +3942,52 @@ Penjaga baru di `UserPermissionFormTest`: setiap izin yang disebut
 `hasPermission()` di seluruh `app/` wajib benar-benar ada sesudah
 penyemaian. Basis data server diperiksa langsung: 206 izin, lengkap. Yang
 kurang cuma basis data lokal.
+
+---
+
+## #301 -- Centang Hak Akses yang tidak berakibat apa-apa
+
+Sisiran menyeluruh: setiap izin yang ADA di form Hak Akses diperiksa apakah
+benar-benar dibaca kode.
+
+### Repack terhapus tidak bisa dilihat siapa pun
+
+`Repack` memakai hapus lunak dan `RepackPolicy` punya `restore()`, tetapi
+tidak ada satu pun layar yang menampilkan baris terhapusnya. Akibatnya izin
+memulihkan tidak pernah bisa dipakai, dan repack yang telanjur terhapus
+hilang untuk selamanya dari pandangan. Dipasang pola yang sudah dipakai
+tujuh belas Resource lain sejak susur Invoice.
+
+### Penjaga arah sebaliknya
+
+`DeletedRecordVisibilityTest` sudah menjaga izin yang DIPAKAI tetapi tidak
+pernah dibuat. Lubang yang bentuknya berlawanan -- izin yang DIBUAT tetapi
+tidak pernah dibaca -- tidak dijaga sama sekali, dan lebih sulit disadari:
+centangnya ada, bisa diberikan, dan pemberinya percaya sudah memberi hak
+yang sebenarnya tidak pernah sampai.
+
+Daftar pengecualiannya BERALASAN, bukan daftar toleransi: empat izin stok
+(stok tidak memakai hapus lunak, pergerakan stok tidak boleh dihapus karena
+ia jejak audit), dua izin yang layarnya berdiri di atas `CustomerGroup`, dan
+satu untuk layar Material Adjustment yang tidak pernah dibuat.
+
+### Komentar sendiri, KELIMA kalinya
+
+`test_no_resource_drops_the_soft_delete_scope_for_everyone` menuduh komentar
+yang MENERANGKAN kenapa `withoutGlobalScopes` telanjang tidak boleh dipakai.
+`resourceSources()` sekarang membuang komentar lewat token PHP, sama seperti
+pemindai lain di proyek ini.
+
+**Aturannya sudah jelas: setiap pemindai baru membuang komentar lebih dulu,
+tanpa kecuali.**
+
+### Yang tidak diputuskan sendiri
+
+Dua belas centang tanpa akibat masuk `tertunda.md` bagian D. Membuang baris
+izin ikut memutus lekatannya ke pengguna yang telanjur dicentang -- itu
+keputusan Owner, bukan keputusan yang pantas diambil sendiri.
+
+### Diperiksa dan ternyata bersih
+
+Status hantu: setiap nilai status yang ditulis kode diperiksa apakah ada yang
+membacanya -- saringan, lencana, atau query. Tidak ada yang menggantung.
