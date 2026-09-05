@@ -125,6 +125,11 @@ class BilingualParityTest extends TestCase
             // (Bulan/Tahun)`, dan `Produk` lolos daftar sebelumnya
             // karena tidak memuat satu pun kata di dalamnya.
             'periode', 'bulan', 'tahun', 'produk', 'terduga', 'cocok',
+            // Ditambahkan 6 September 2026: `Sesuai` lolos daftar
+            // sebelumnya, dan lolosnya baru ketahuan setelah kunci itu
+            // dihapus dari berkas bahasa sementara kodenya masih
+            // memakainya -- kunci yatim yang tampil apa adanya.
+            'sesuai', 'terhitung', 'hitung', 'satuan', 'utuh',
             'hitungan', 'menghitung', 'dipindai', 'pindai',
         ];
     }
@@ -158,11 +163,27 @@ class BilingualParityTest extends TestCase
                     continue;
                 }
 
-                preg_match_all(
-                    "/__\('([^']+)'/",
-                    file_get_contents($file->getPathname()),
-                    $matches,
-                );
+                $isi = file_get_contents($file->getPathname());
+
+                // KOMENTAR DIBUANG LEBIH DULU.
+                //
+                // Penjaga ini sudah tiga kali menuduh komentar yang justru
+                // MENJELASKAN kunci lama yang sedang dibuang. Menulis
+                // `__('Sesuai')` di dalam komentar untuk menerangkan apa yang
+                // diperbaiki membuat penjaganya berteriak, dan jalan keluar
+                // yang gampang -- mengaburkan komentarnya -- justru membuang
+                // keterangan yang paling berguna.
+                //
+                // Berkas Blade tidak bisa dibaca sebagai token PHP (isi
+                // `{{ }}` terbaca sebagai HTML biasa), jadi komentarnya
+                // dibuang dengan pola.
+                if (str_ends_with($file->getFilename(), '.blade.php')) {
+                    $isi = preg_replace(['/\{\{--.*?--\}\}/s', '/<!--.*?-->/s'], ' ', $isi);
+                } else {
+                    $isi = $this->tanpaKomentar($isi);
+                }
+
+                preg_match_all("/__\('([^']+)'/", $isi, $matches);
 
                 foreach ($matches[1] as $key) {
                     $keys[$key] = true;
@@ -171,6 +192,22 @@ class BilingualParityTest extends TestCase
         }
 
         return array_keys($keys);
+    }
+
+    /** Isi berkas PHP tanpa komentarnya, disusun ulang dari tokennya. */
+    protected function tanpaKomentar(string $isi): string
+    {
+        $hasil = '';
+
+        foreach (@token_get_all($isi) as $token) {
+            if (is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+
+            $hasil .= is_array($token) ? $token[1] : $token;
+        }
+
+        return $hasil;
     }
 
     /** @return array<int, string> */

@@ -53,21 +53,19 @@ class ItemsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('physical_qty')
                     ->label(__('Physical Qty'))
                     ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.'),
+                // Aturannya satu rumah di `MaterialStockTakeItem`.
+                //
+                // Berkas ini memakai kunci `__('Sesuai')` yang pada #285
+                // sudah diganti di berkas sebelah DAN dihapus dari kedua
+                // berkas bahasa -- sehingga kuncinya tidak punya terjemahan
+                // sama sekali dan pengguna berbahasa Inggris membaca
+                // "Sesuai". Perapian yang setengah jalan meninggalkan
+                // kerusakan yang lebih senyap daripada sebelum dirapikan.
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('Variance Status'))
-                    ->getStateUsing(function ($record) {
-                        if ($record->physical_qty === null) return '-';
-                        if ($record->difference_qty > 0) return __('Over');
-                        if ($record->difference_qty < 0) return __('Short');
-                        return __('Sesuai');
-                    })
+                    ->getStateUsing(fn (\App\Models\MaterialStockTakeItem $record): string => $record->varianceLabel())
                     ->badge()
-                    ->color(fn ($state) => match($state) {
-                        __('Over') => 'info',
-                        __('Short') => 'danger',
-                        __('Sesuai') => 'success',
-                        default => 'gray',
-                    }),
+                    ->color(fn ($state, \App\Models\MaterialStockTakeItem $record): string => $record->varianceColor()),
                 Tables\Columns\TextColumn::make('difference_qty')
                     ->label(__('Difference Qty'))
                     ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')

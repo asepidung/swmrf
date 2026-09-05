@@ -161,22 +161,13 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                     ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')
                     ->visible($isCompleted),
 
+                // Aturannya satu rumah di `MaterialStockTakeItem`.
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('Variance Status'))
                     ->visible($isCompleted)
-                    ->getStateUsing(function ($record) {
-                        if ($record->physical_qty === null) return '-';
-                        if ($record->difference_qty > 0) return __('Over');
-                        if ($record->difference_qty < 0) return __('Short');
-                        return __('Matches');
-                    })
+                    ->getStateUsing(fn (\App\Models\MaterialStockTakeItem $record): string => $record->varianceLabel())
                     ->badge()
-                    ->color(fn ($state) => match($state) {
-                        __('Over') => 'info',
-                        __('Short') => 'danger',
-                        __('Matches') => 'success',
-                        default => 'gray',
-                    }),
+                    ->color(fn ($state, \App\Models\MaterialStockTakeItem $record): string => $record->varianceColor()),
                 
                 Tables\Columns\TextColumn::make('difference_qty')
                     ->label(__('Difference Qty'))
