@@ -27,6 +27,28 @@ class StockTake extends Model
         'date' => 'date',
     ];
 
+    /**
+     * Status yang berarti "hitungannya sedang berlangsung".
+     *
+     * Perhatikan tidak ada REVIEW di sini, dan itu BUKAN kelalaian: hanya
+     * opname material yang punya tahap REVIEW. Dua kosakata status yang
+     * memang berbeda, bukan dua salinan aturan yang tidak sinkron.
+     */
+    public const STATUS_SEDANG_MENGHITUNG = ['DRAFT', 'IN_PROGRESS'];
+
+    /**
+     * Apakah ada opname daging yang sedang berlangsung?
+     *
+     * Selama berlangsung, angka yang bisa dipakai menyalin jawaban
+     * disembunyikan: enam digit terakhir barcode di daftar stok, dan seluruh
+     * angka di halaman Posisi Stok per Tanggal. Hitungan fisik yang bisa
+     * menyalin jawabannya tidak memeriksa apa pun.
+     */
+    public static function isCounting(): bool
+    {
+        return static::whereIn('status', static::STATUS_SEDANG_MENGHITUNG)->exists();
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

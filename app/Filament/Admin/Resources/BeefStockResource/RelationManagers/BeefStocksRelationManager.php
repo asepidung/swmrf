@@ -33,11 +33,10 @@ class BeefStocksRelationManager extends RelationManager
                     ->formatStateUsing(function ($state) {
                         if (!is_string($state)) return $state;
                         
-                        // Cek apakah ada Stock Opname yang sedang berjalan
-                        $isStockOpnameActive = \App\Models\StockTake::whereIn('status', ['DRAFT', 'IN_PROGRESS'])->exists();
-                        
-                        // Mask 6 digit terakhir (pH & Counter) jika ada SO aktif dan panjang barcode >= 6
-                        if ($isStockOpnameActive && strlen($state) >= 10) {
+                        // Mask 6 digit terakhir (pH & Counter) selama opname
+                        // berjalan. Pertanyaannya satu rumah di
+                        // `StockTake::isCounting()`.
+                        if (\App\Models\StockTake::isCounting() && strlen($state) >= 10) {
                             return substr($state, 0, -6) . '******';
                         }
                         
