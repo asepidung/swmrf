@@ -182,29 +182,72 @@ class StockGuardsTest extends TestCase
     }
 
     /**
-     * Urutan barcode barang temuan tidak memakai panjang sebagai penanda sah.
+     * Penomoran barcode tidak memakai panjang sebagai penanda sah, dan tidak
+     * mengurutkan barcode sebagai teks -- di SELURUH aplikasi.
      *
-     * Bentuk lamanya sama persis dengan yang sudah diberantas di Retur:
-     * `strlen >= 26` sebagai syarat, `substr(-4)` yang putus di 10.000, dan
-     * pengurutan sebagai teks.
+     * Ini penjaga yang datang terlambat. Bentuk yang sama sudah ditambal tiga
+     * kali di tiga berkas yang berbeda:
+     *
+     *   #230  InputReturnItems   (Retur)
+     *   #269  FoundItemScanner   (Temuan)
+     *   #283  ScanStockTake      (Opname)
+     *
+     * Dua kali pertama yang ditambal hanya berkasnya, dan penjaganya pun
+     * hanya menyebut nama berkas itu. Penjaga yang menyebut satu nama tidak
+     * pernah menahan berkas keempat.
+     *
+     * Ketiganya salah dengan cara yang sama: `strlen >= 26` sebagai syarat sah
+     * padahal Project Owner sudah menegaskan tidak semua barcode 26 karakter,
+     * `substr(-4)` yang membaca `0000` pada urutan ke-10.000, dan
+     * `orderBy('barcode', 'desc')` yang mengurutkan sebagai TEKS sehingga "9"
+     * dianggap lebih besar daripada "10".
      */
-    public function test_the_found_item_barcode_counter_does_not_judge_by_length(): void
+    public function test_no_barcode_numbering_judges_by_length_or_sorts_as_text(): void
     {
-        $berkas = file_get_contents(base_path(
-            'app/Filament/Clusters/BeefStocks/Pages/FoundItemScanner.php'
-        ));
+        $pelanggar = [];
 
-        $this->assertStringNotContainsString(
-            "strlen(\$latestItem->barcode) >= 26",
-            $berkas,
-            'Panjang barcode dipakai lagi sebagai penanda sah.',
+        $bentukTerlarang = [
+            '/strlen\(\$\w+->barcode\)\s*>=\s*26/' => 'panjang barcode dipakai sebagai penanda sah',
+            "/->orderBy\(\s*'barcode'\s*,\s*'desc'\s*\)/" => 'barcode diurutkan sebagai teks',
+        ];
+
+        foreach ($this->berkasPhp() as $berkas) {
+            $isi = file_get_contents($berkas);
+
+            foreach ($bentukTerlarang as $pola => $keterangan) {
+                if (preg_match($pola, $isi)) {
+                    $pelanggar[] = $this->relatif($berkas).'  -- '.$keterangan;
+                }
+            }
+        }
+
+        sort($pelanggar);
+
+        $this->assertSame(
+            [],
+            $pelanggar,
+            "Penomoran barcode berikut memakai bentuk yang sudah diberantas tiga kali:\n"
+            .implode("\n", $pelanggar),
+        );
+    }
+
+    /** @return \Generator<string> */
+    private function berkasPhp(): \Generator
+    {
+        $berkas = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(base_path('app'))
         );
 
-        $this->assertStringNotContainsString(
-            "->orderBy('barcode', 'desc')",
-            $berkas,
-            'Urutan barcode diambil dengan pengurutan teks, bukan angka.',
-        );
+        foreach ($berkas as $satu) {
+            if ($satu->isFile() && $satu->getExtension() === 'php') {
+                yield $satu->getPathname();
+            }
+        }
+    }
+
+    private function relatif(string $jalur): string
+    {
+        return str_replace(['\\', base_path().'/'], ['/', ''], $jalur);
     }
 
     // =====================================================================

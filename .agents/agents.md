@@ -3357,6 +3357,115 @@ tetap seperti semula.
 `StockTake::isCounting()` tetap dipertahankan -- ia dipakai penyamaran enam
 digit terakhir barcode di daftar stok, dan itu memang perlu satu rumah.
 
+### Stock Take -- #283, 5 September 2026
+
+Modul ini satu-satunya yang boleh menghapus stok tanpa dokumen penjualan apa
+pun. Penjagaannya diperiksa lebih keras daripada modul lain, dan yang
+ditemukan sepadan dengan itu.
+
+#### Tombol yang menghapus stok tidak dijaga izin apa pun
+
+"Finish Opname" menghapus PERMANEN setiap baris berstatus MISSING dari
+`beef_stocks` -- dan `BeefStock` tidak memakai hapus lunak -- lalu
+menambahkan yang UNEXPECTED sebagai stok baru. Satu-satunya syarat
+menampilkannya: statusnya `IN_PROGRESS`. Siapa pun yang boleh MELIHAT daftar
+opname bisa menjalankannya.
+
+Sekarang dijaga `finish_stock_takes`, dibuat lewat migrasi.
+
+#### Pembekuan gudang bisa nyangkut mati
+
+`WarehouseFreezeService::$bypassed = true` dipasang di awal transaksi dan
+dikembalikan `false` di BARIS TERAKHIR transaksi itu. Kalau transaksinya gagal
+di tengah, nilainya tidak pernah dikembalikan -- dan karena ia properti
+STATIS, seluruh sisa permintaan itu berjalan tanpa pembekuan sama sekali,
+tepat pada saat opname sedang berlangsung. Sekarang `try`/`finally`.
+
+#### Penomoran barcode: bukan tiga tempat, TUJUH
+
+Bentuk yang sama sudah ditambal dua kali sebelumnya (#230 Retur, #269 Temuan),
+dan kali ini ditemukan lagi di Opname. Penjaganya waktu itu hanya menyebut
+NAMA BERKAS yang ditambal -- penjaga semacam itu tidak pernah menahan berkas
+berikutnya.
+
+Begitu penjaganya diubah memindai seluruh `app/`, ia langsung menemukan
+**empat berkas lagi**: `LabelingBoning`, `LabelingGoodsReceiptProduct`,
+`InputHasilRepack`, dan `ScanTally`. Jadi tujuh tempat, bukan tiga.
+
+Ketiga bentuk salahnya sama:
+
+- `strlen($barcode) >= 26` sebagai syarat sah. Owner sudah menegaskan tidak
+  semua barcode 26 karakter; begitu baris terakhirnya kebetulan barcode lama
+  yang lebih pendek, urutannya kembali ke 1 dan melahirkan barcode kembar.
+- `substr(-4)` pada baris TERAKHIR MENURUT ID, bukan urutan TERBESAR.
+- `orderBy('barcode', 'desc')` yang mengurutkan sebagai TEKS.
+
+Khusus di Opname ada satu lagi yang lebih buruk: penomorannya hanya melihat
+`beef_stocks`, padahal barcode temuan ditulis ke `stock_take_items` dan baru
+pindah ke stok saat opnamenya diselesaikan. Dua temuan dengan produk, tanggal,
+berat, dan pcs yang sama dalam satu opname karena itu mendapat barcode YANG
+SAMA PERSIS.
+
+Sekarang satu rumah: `App\Support\BarcodeSequence`.
+
+#### Umur simpan: satu aturan, ENAM salinan yang tidak sama
+
+**Keputusan Owner: "chill 3 bulan, frozen, a, b dan r setahun".**
+
+Sebelum ini aturannya ditulis enam kali, dan salinannya berbeda isi:
+
+    Boning            in_array($gradeId, [1, 3])   grade A -> 3 bulan
+    GR Product        in_array($gradeId, [1, 3])   grade A -> 3 bulan
+    Tally (relabel)   in_array($gradeId, [1, 3])   grade A -> 3 bulan
+    Repack            $gradeId === 1               grade A -> 1 tahun
+    Stock Take        $gradeId === 1               grade A -> 1 tahun
+    Temuan            $gradeId === 1               grade A -> 1 tahun
+
+Satu karton grade A mendapat tanggal kedaluwarsa berbeda semata karena pintu
+mana yang dilewatinya. Tidak ada error; yang berbeda hanya tanggal yang
+tercetak di stiker, dan itu baru ketahuan setelah barangnya ada di tangan
+pelanggan. Menurut keputusan Owner, tiga salinan yang memasukkan grade 3 yang
+keliru.
+
+Sekarang satu rumah: `App\Support\ShelfLife`, dengan penjaga yang menolak
+salinan ketujuh.
+
+#### Laporan "lebih dari 60 hari" hanya untuk chill
+
+Owner menegaskan umur simpan hanya jadi soal untuk produk berpendingin.
+Kodenya memang sudah begitu, tetapi caranya rapuh: ia mencocokkan NAMA grade
+dengan `like '%CHILL%'`. Sekali saja namanya diubah dari layar Master Data,
+laporannya kosong tanpa satu pun error -- dan tidak ada yang bisa membedakan
+"tidak ada barang tua" dari "penyaringnya sudah tidak cocok". Sekarang ia
+memakai daftar grade yang sama dengan aturan umur simpan.
+
+#### Sisanya
+
+- Pemindaian masih jalan setelah opname SELESAI. Yang ditolak hanya status
+  `DRAFT` -- status yang tidak pernah ditulis kode mana pun, jadi penjagaannya
+  tidak pernah menahan apa pun. Sekarang `StockTake::isCountable()`.
+- Penjaga hapus hanya ada di halaman View; halaman Edit dan hapus massal tidak
+  menjaga apa pun. Sekarang satu rumah, `StockTake::isDeletable()`. Perlu
+  dicatat: menghapus opname yang sedang berjalan juga MENCAIRKAN pembekuan
+  gudang, karena baris terhapus lunak tidak lagi terlihat oleh penjaganya.
+- Snapshot ribuan baris disisipkan tanpa transaksi. Snapshot separuh tidak
+  terlihat sebagai kerusakan -- ia terbaca sebagai opname yang barangnya
+  memang cuma segitu, lalu selisihnya dihapus dari stok saat diselesaikan.
+- `__('Could not find product code ' . $productCode)` -- kunci terjemahan
+  disusun dengan penyambungan teks, sehingga setiap kode produk melahirkan
+  kunci sendiri dan tidak satu pun bisa diterjemahkan.
+- Statusnya kini punya konstanta. `DRAFT` dan `CANCELED` tidak pernah ditulis
+  kode mana pun, tetapi tetap didaftarkan: basis data yang berjalan tidak bisa
+  diperiksa dari sini, dan membuang nilai yang ternyata masih ada barisnya
+  akan membuat dokumen lama kehilangan warnanya tanpa gejala.
+
+#### Pelajarannya
+
+**Penjaga yang menyebut satu nama berkas hanya menjaga berkas itu.** Dua kali
+bug barcode ditambal dengan penjaga semacam itu, dan dua kali ia lolos ke
+berkas berikutnya. Penjaga baru harus memindai, bukan menyebut nama -- dan
+begitu dipindai, jumlah sebenarnya empat kali lipat dari yang dikira.
+
 ### Cara kerja yang disepakati Owner
 
 - Perbaiki langsung bila penyebabnya **sudah pasti dari membaca kode**; hemat token, jangan buat probe sekali pakai.

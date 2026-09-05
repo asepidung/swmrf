@@ -27,10 +27,13 @@ class ViewStockTake extends ViewRecord
                 ->openUrlInNewTab(),
                 
             Actions\EditAction::make()
-                ->visible(fn () => $this->record->status === 'DRAFT' || $this->record->status === 'IN_PROGRESS'),
-                
+                ->visible(fn (): bool => $this->record->isCountable()),
+
+            // Aturan hapusnya satu rumah di `StockTake::isDeletable()`.
+            // Sebelumnya penjagaannya hanya ada di halaman ini; halaman Edit
+            // dan aksi hapus massal tidak menjaga apa pun.
             Actions\DeleteAction::make()
-                ->visible(fn () => in_array($this->record->status, ['DRAFT', 'IN_PROGRESS']) && $this->record->items()->whereIn('status', ['MATCHED', 'UNEXPECTED'])->count() === 0),
+                ->visible(fn (): bool => $this->record->isDeletable()),
         ];
     }
 }

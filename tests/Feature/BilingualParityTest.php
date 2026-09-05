@@ -121,6 +121,11 @@ class BilingualParityTest extends TestCase
             'lainnya', 'sendiri', 'punya', 'milik', 'kembalikan', 'ditolak',
             'tolakan', 'setujui', 'persetujuan', 'disetujui', 'menghapus',
             'membuat', 'mengubah', 'menyimpan', 'mengunci', 'yakin',
+            // Ditambahkan 5 September 2026: `Periode`, `Periode
+            // (Bulan/Tahun)`, dan `Produk` lolos daftar sebelumnya
+            // karena tidak memuat satu pun kata di dalamnya.
+            'periode', 'bulan', 'tahun', 'produk', 'terduga', 'cocok',
+            'hitungan', 'menghitung', 'dipindai', 'pindai',
         ];
     }
 

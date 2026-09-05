@@ -94,11 +94,18 @@ class BeefStockAgingResource extends Resource
     {
         return $table
             ->modifyQueryUsing(function (Builder $query) {
+                // Enam puluh hari hanya berlaku untuk barang BERPENDINGIN.
+                // Keputusan Owner, 5 September 2026.
+                //
+                // Gradenya dipilih lewat `ShelfLife`, bukan dengan mencocokkan
+                // NAMA grade seperti sebelumnya. Nama bisa
+                // diubah dari layar Master Data kapan saja, dan begitu diubah
+                // laporan ini kosong tanpa satu pun error -- tidak ada yang
+                // bisa membedakan "tidak ada barang tua" dari "penyaringnya
+                // sudah tidak cocok".
                 return $query->where('status', 'IN_STOCK')
                     ->where('pack_date', '<=', Carbon::now()->subDays(60))
-                    ->whereHas('grade', function ($q) {
-                        $q->where('name', 'like', '%CHILL%');
-                    })
+                    ->whereIn('grade_id', \App\Support\ShelfLife::shortLivedGradeIds())
                     ->orderBy('pack_date', 'asc');
             })
             ->columns([

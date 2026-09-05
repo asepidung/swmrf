@@ -65,20 +65,19 @@ class InputHasilRepack extends Page implements HasForms, HasTable
     }
 
     /* Menghitung tanggal kedaluwarsa berdasarkan grade_id */
+    /**
+     * Aturannya satu rumah: `ShelfLife`.
+     *
+     * Sebelumnya berkas ini memuat salinannya sendiri, dan keempat salinan di
+     * aplikasi ini tidak sama isinya -- satu karton grade A bisa mendapat
+     * tanggal kedaluwarsa berbeda semata karena pintu mana yang dilewatinya.
+     *
+     * Dipertahankan sebagai pembungkus tipis karena namanya sudah dipanggil
+     * dari beberapa berkas, termasuk lintas modul.
+     */
     public static function calculateExpiry($packDate, $gradeId, callable $set)
     {
-        if (!$packDate || !$gradeId) return;
-
-        $date = Carbon::parse($packDate);
-
-        // Jika grade ID = 1 (CHILL), exp 3 bulan, selain itu 1 tahun
-        if ((int)$gradeId === 1) {
-            $expiry = $date->addMonths(3)->format('Y-m-d');
-        } else {
-            $expiry = $date->addYear()->format('Y-m-d');
-        }
-
-        $set('exp_date', $expiry);
+        \App\Support\ShelfLife::fill($packDate, $gradeId, $set);
     }
 
     public function form(Form $form): Form
@@ -321,9 +320,12 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                 $phStr = isset($formData['ph_level']) ? str_pad(round($formData['ph_level'] * 10), 2, '0', STR_PAD_LEFT) : '00';
 
                 $prefix = $origin . $dateStr;
-                $latestItem = RepackResult::withTrashed()->where('barcode', 'like', $prefix . '%')->lockForUpdate()->orderBy('id', 'desc')->first();
-                $counter = ($latestItem && strlen($latestItem->barcode) >= 26) ? ((int) substr($latestItem->barcode, -4) + 1) : 1;
-                $counterStr = str_pad($counter, 4, '0', STR_PAD_LEFT);
+                // Urutannya satu rumah di `BarcodeSequence`. Bentuk lamanya
+                // memakai panjang barcode sebagai penanda sah dan membaca
+                // baris TERAKHIR menurut id, bukan urutan TERBESAR.
+                $counterStr = \App\Support\BarcodeSequence::nextPadded($prefix, [
+                    RepackResult::withTrashed()->lockForUpdate(),
+                ]);
 
                 $barcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
 

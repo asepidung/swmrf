@@ -68,22 +68,55 @@ class ScanStockTake extends Page implements HasForms, HasTable
 
     public ?string $barcode = '';
 
+    /**
+     * Halaman ini hanya untuk opname yang MASIH BERJALAN.
+     *
+     * Dulu yang ditolak hanya status `DRAFT` -- status yang tidak pernah
+     * ditulis oleh satu baris kode pun, sehingga penjagaannya tidak pernah
+     * menahan apa pun. Yang lolos justru yang berbahaya: opname yang sudah
+     * COMPLETED tetap bisa dibuka, dan barangnya yang MISSING bisa diubah
+     * menjadi MATCHED. Dokumen yang sudah dipakai memotong stok berubah
+     * isinya sesudah keputusannya diambil.
+     */
     public function mount(StockTake $record): void
     {
         $this->record = $record;
-        
-        // Block scanning if DRAFT (not started yet)
-        if ($this->record->status === 'DRAFT') {
+
+        if (! $this->record->isCountable()) {
+            \Filament\Notifications\Notification::make()
+                ->title(__('This stock count is finished, so it can no longer be scanned.'))
+                ->warning()
+                ->send();
+
             redirect()->to(StockTakeResource::getUrl('view', ['record' => $this->record]));
         }
+    }
+
+    /** Penjagaan yang sama untuk setiap perubahan, bukan hanya saat membuka. */
+    protected function masihBolehDiubah(): bool
+    {
+        if ($this->record->fresh()?->isCountable()) {
+            return true;
+        }
+
+        \Filament\Notifications\Notification::make()
+            ->title(__('This stock count is finished, so it can no longer be scanned.'))
+            ->danger()
+            ->send();
+
+        return false;
     }
     
     public function scan()
     {
         $barcode = trim($this->barcode);
         $this->barcode = '';
-        
+
         if (empty($barcode)) {
+            return;
+        }
+
+        if (! $this->masihBolehDiubah()) {
             return;
         }
 
@@ -157,7 +190,10 @@ class ScanStockTake extends Page implements HasForms, HasTable
                 if (!$productId) {
                     \Filament\Notifications\Notification::make()
                         ->title(__('Product not found'))
-                        ->body(__('Could not find product code ' . $productCode))
+                        // Kuncinya TIDAK boleh disusun dengan penyambungan
+                        // teks: setiap kode produk akan melahirkan kunci
+                        // sendiri, dan tidak satu pun bisa diterjemahkan.
+                        ->body(__('Could not find product code :code', ['code' => $productCode]))
                         ->warning()
                         ->send();
                 }
@@ -231,7 +267,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
                             ->helperText(__('Leave blank to generate automatically.'))
                             ->columnSpanFull(),
                         Forms\Components\Select::make('product_id')
-                            ->label(__('Produk'))
+                            ->label(__('Product'))
                             ->options(\App\Models\Product::pluck('name', 'id'))
                             ->searchable()
                             ->required(),
@@ -326,14 +362,30 @@ class ScanStockTake extends Page implements HasForms, HasTable
                     $pcsStr = str_pad($data['qty_pcs'], 2, '0', STR_PAD_LEFT);
                     $phStr = isset($data['ph_level']) ? str_pad(round($data['ph_level'] * 10), 2, '0', STR_PAD_LEFT) : '00';
 
+                    // Urutan barcode temuan opname.
+                    //
+                    // Bentuk lamanya memuat tiga hal yang sudah diberantas dua
+                    // kali -- di `InputReturnItems` (#230) dan
+                    // `FoundItemScanner` (#269) -- dan ternyata hidup juga di
+                    // sini: `strlen >= 26` sebagai penanda sah, `substr(-4)`
+                    // yang putus di 10.000, dan pengurutan sebagai TEKS.
+                    //
+                    // Dan di sini ada satu lagi yang lebih buruk: ia hanya
+                    // melihat `beef_stocks`, padahal barcode barunya ditulis ke
+                    // `stock_take_items` dan baru pindah ke stok saat opnamenya
+                    // diselesaikan. Dua temuan dengan produk, tanggal, berat,
+                    // dan pcs yang sama dalam satu opname karena itu mendapat
+                    // barcode YANG SAMA PERSIS -- lalu keduanya lahir sebagai
+                    // dua baris stok bernomor kembar.
+                    //
+                    // Sekarang urutannya diambil dari yang TERBESAR di kedua
+                    // tempat sekaligus.
                     $prefix = $origin . $dateStr;
-                    // Find latest barcode with this prefix in BeefStock to avoid collision
-                    $latestItem = \App\Models\BeefStock::where('barcode', 'like', $prefix . '%')
-                        ->orderBy('barcode', 'desc')
-                        ->first();
-                    
-                    $counter = ($latestItem && strlen($latestItem->barcode) >= 26) ? ((int) substr($latestItem->barcode, -4) + 1) : 1;
-                    $counterStr = str_pad($counter, 4, '0', STR_PAD_LEFT);
+
+                    $counterStr = \App\Support\BarcodeSequence::nextPadded($prefix, [
+                        \App\Models\BeefStock::query(),
+                        \App\Models\StockTakeItem::query(),
+                    ]);
 
                     $barcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
                     
@@ -346,10 +398,10 @@ class ScanStockTake extends Page implements HasForms, HasTable
 
                 $packDate = \Carbon\Carbon::parse($data['pack_date'] ?? now());
                 
-                // Grade 1 (Chill) = 3 months, others = 1 year
-                $expDate = ((int)$data['grade_id'] === 1) 
-                    ? $packDate->copy()->addMonths(3)
-                    : $packDate->copy()->addYear();
+                // Umur simpannya satu rumah, sama dengan seluruh jalur
+                // label lain. Sebelumnya aturannya ditulis ulang di
+                // sini, dan salinannya tidak sama dengan yang lain.
+                $expDate = \App\Support\ShelfLife::expiryFor($packDate, $data['grade_id']);
 
                 $insertedItem = StockTakeItem::create([
                     'stock_take_id' => $this->record->id,
@@ -361,7 +413,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
                     'qty_pcs' => $data['qty_pcs'],
                     'ph_level' => $data['ph_level'] ?? null,
                     'pack_date' => $packDate->format('Y-m-d'),
-                    'exp_date' => $expDate->format('Y-m-d'),
+                    'exp_date' => $expDate?->format('Y-m-d'),
                     'note' => $data['note'] ?? null,
                     'status' => 'UNEXPECTED',
                     'is_manual' => true,
@@ -420,8 +472,8 @@ class ScanStockTake extends Page implements HasForms, HasTable
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        'MATCHED' => 'Matched (Scanned)',
-                        'UNEXPECTED' => 'Unexpected (Found)',
+                        'MATCHED' => __('Matched (scanned)'),
+                        'UNEXPECTED' => __('Unexpected (found)'),
                     ])
             ])
             ->actions([
@@ -431,13 +483,15 @@ class ScanStockTake extends Page implements HasForms, HasTable
                     ->iconButton()
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->visible(fn (StockTakeItem $record) => $record->status === 'MATCHED')
+                    ->visible(fn (StockTakeItem $record): bool => $record->status === 'MATCHED'
+                        && $this->record->isCountable())
                     ->action(fn (StockTakeItem $record) => $record->update(['status' => 'MISSING'])),
                 Tables\Actions\DeleteAction::make()
                     ->label(__('Delete'))
                     ->icon('heroicon-o-x-mark')
                     ->color('danger')
-                    ->visible(fn (StockTakeItem $record) => $record->status === 'UNEXPECTED')
+                    ->visible(fn (StockTakeItem $record): bool => $record->status === 'UNEXPECTED'
+                        && $this->record->isCountable())
                     ->iconButton(),
             ]);
     }
