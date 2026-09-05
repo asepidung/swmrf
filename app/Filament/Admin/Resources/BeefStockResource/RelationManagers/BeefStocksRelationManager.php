@@ -75,7 +75,7 @@ class BeefStocksRelationManager extends RelationManager
 
                 Tables\Columns\TextColumn::make('age')
                     ->label(__('Age'))
-                    ->getStateUsing(fn (BeefStock $record) => $record->pack_date ? sprintf('%03d days', abs((int) now()->diffInDays($record->pack_date))) : '')
+                    ->getStateUsing(fn (BeefStock $record) => $record->pack_date ? sprintf('%03d ', abs((int) now()->diffInDays($record->pack_date))) . __('days') : '')
                     ->alignCenter(),
 
                 Tables\Columns\TextColumn::make('origin')
@@ -107,14 +107,51 @@ class BeefStocksRelationManager extends RelationManager
             ->filters([])
             ->headerActions([])
             ->actions([
+                // Hapus satu baris stok.
+                //
+                // Gunanya satu: barang yang tercatat di sistem tetapi fisiknya
+                // tidak ada. Keputusan Owner, 5 September 2026 -- fiturnya
+                // memang dibutuhkan, dengan hak akses tersendiri, dan wajib
+                // benar-benar tercatat di `beef_stock_movements`.
+                //
+                // Tiga hal yang dibetulkan di sini:
+                //
+                //  - IZINNYA SEKARANG ADA. `delete_beef_stocks` disebut di
+                //    sini dan di `BeefStockPolicy`, tetapi tidak pernah dibuat
+                //    -- tidak di seeder, tidak di migrasi mana pun. Jadi
+                //    `hasPermission()` selalu `false` dan yang lolos hanya
+                //    akun programmer; tidak ada cara memberikan hak ini kepada
+                //    orang gudang, dan tidak ada gejala yang memberitahu.
+                //
+                //  - PELAKUNYA DICATAT. Dari dua puluh empat pemanggilan
+                //    `BeefStockMovement::create` di seluruh aplikasi, dua
+                //    puluh tiga menulis `created_by`. Yang satu tidak: justru
+                //    yang ini -- satu-satunya aksi manual yang menghancurkan
+                //    baris stok. `BeefStock` tidak memakai hapus lunak, jadi
+                //    barisnya benar-benar hilang dan catatan pergerakan inilah
+                //    satu-satunya yang tersisa.
+                //
+                //  - ALASANNYA WAJIB DIISI. Stok yang hilang tanpa dokumen
+                //    selalu punya cerita; kalau ceritanya tidak ikut ditulis
+                //    saat itu juga, ia tidak akan pernah bisa ditulis lagi.
                 Tables\Actions\Action::make('delete')
                     ->label('')
                     ->tooltip(__('Delete stock'))
                     ->icon('heroicon-m-trash')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->visible(fn () => auth()->user()->isProgrammer() || auth()->user()->hasPermission('delete_beef_stocks'))
-                    ->action(function (BeefStock $record) {
+                    ->modalHeading(__('Delete this stock item?'))
+                    ->modalDescription(__('The item disappears from stock and cannot be brought back. Only do this for goods that are recorded here but are not physically there.'))
+                    ->form([
+                        Forms\Components\Textarea::make('reason')
+                            ->label(__('Why is it being deleted?'))
+                            ->required()
+                            ->maxLength(500)
+                            ->rows(2),
+                    ])
+                    ->visible(fn (): bool => auth()->user()?->isProgrammer()
+                        || (auth()->user()?->hasPermission('delete_beef_stocks') ?? false))
+                    ->action(function (BeefStock $record, array $data) {
                         BeefStockMovement::create([
                             'product_id' => $record->product_id,
                             'warehouse_id' => $record->warehouse_id,
@@ -124,6 +161,8 @@ class BeefStocksRelationManager extends RelationManager
                             'reference_document' => 'MANUAL_DELETE',
                             'weight_out' => $record->weight,
                             'pcs_out' => $record->qty_pcs,
+                            'note' => $data['reason'],
+                            'created_by' => auth()->id(),
                         ]);
                         $record->delete();
                     }),

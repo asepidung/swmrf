@@ -43,10 +43,13 @@
                 <th style="width: 5%">No</th>
                 <th>Kode</th>
                 <th>Nama Produk</th>
-                <th class="text-right">CHILL (J)</th>
-                <th class="text-right">FROZEN (J)</th>
-                <th class="text-right">CHILL (P)</th>
-                <th class="text-right">FROZEN (P)</th>
+                {{-- Judul kolom mengikuti gudang x grade yang ada isinya.
+                     Dulu keempatnya ditulis mati di sini, sama seperti di
+                     resource-nya, jadi stok ber-grade lain tidak pernah punya
+                     kolom sementara Total tetap menghitungnya. --}}
+                @foreach($buckets ?? [] as $bucket)
+                    <th class="text-right">{{ $bucket['warehouse'] }} {{ $bucket['grade'] }}</th>
+                @endforeach
                 <th class="text-right">Total</th>
             </tr>
         </thead>
@@ -56,18 +59,11 @@
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td>{{ $record->code ?? '-' }}</td>
                     <td>{{ $record->name ?? '-' }}</td>
-                    <td class="text-right">
-                        {{ $record->chill_jonggol > 0 ? number_format($record->chill_jonggol, 2, ',', '.') : '' }}
-                    </td>
-                    <td class="text-right">
-                        {{ $record->frozen_jonggol > 0 ? number_format($record->frozen_jonggol, 2, ',', '.') : '' }}
-                    </td>
-                    <td class="text-right">
-                        {{ $record->chill_perum > 0 ? number_format($record->chill_perum, 2, ',', '.') : '' }}
-                    </td>
-                    <td class="text-right">
-                        {{ $record->frozen_perum > 0 ? number_format($record->frozen_perum, 2, ',', '.') : '' }}
-                    </td>
+                    @foreach($buckets ?? [] as $bucket)
+                        <td class="text-right">
+                            {{ ($record->{$bucket['key']} ?? 0) > 0 ? number_format($record->{$bucket['key']}, 2, ',', '.') : '' }}
+                        </td>
+                    @endforeach
                     <td class="text-right" style="font-weight: bold;">
                         {{ $record->total_qty > 0 ? number_format($record->total_qty, 2, ',', '.') : '' }}
                     </td>

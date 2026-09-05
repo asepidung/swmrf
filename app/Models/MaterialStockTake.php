@@ -32,6 +32,36 @@ class MaterialStockTake extends Model
         'completed_at' => 'datetime',
     ];
 
+    /**
+     * Status yang berarti "hitungannya sedang berlangsung".
+     *
+     * REVIEW ikut masuk, dan itu memang berbeda dari opname daging: hanya
+     * opname material yang punya tahap REVIEW. Perbedaannya bukan
+     * ketidakkonsistenan, melainkan dua kosakata status yang memang berbeda.
+     */
+    public const STATUS_SEDANG_MENGHITUNG = ['DRAFT', 'IN_PROGRESS', 'REVIEW'];
+
+    /**
+     * Apakah ada opname material yang sedang berlangsung?
+     *
+     * Selama berlangsung, angka stok di layar disamarkan menjadi `***`.
+     * Gunanya supaya orang yang menghitung tidak bisa membaca jawabannya dari
+     * sistem lebih dulu -- hitungan yang menyalin angka sistem tidak
+     * menemukan apa pun.
+     *
+     * Pertanyaan ini dulu ditulis ULANG EMPAT KALI di `MaterialStockResource`
+     * -- di form, dan di tiga penutup kolom. Empat salinan aturan yang sama
+     * berarti empat tempat yang harus ingat, dan yang lupa tidak akan pernah
+     * terlihat sebagai error: angkanya hanya muncul, di tempat yang seharusnya
+     * tidak.
+     *
+     * Dan memang ada yang lupa: kedua tombol ekspor mencetak angka aslinya.
+     */
+    public static function isCounting(): bool
+    {
+        return static::whereIn('status', static::STATUS_SEDANG_MENGHITUNG)->exists();
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

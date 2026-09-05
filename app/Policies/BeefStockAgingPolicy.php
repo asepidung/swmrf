@@ -25,19 +25,23 @@ class BeefStockAgingPolicy
     }
 
     /**
-     * Determine whether the user can create models.
+     * Laporan ini TIDAK BISA diubah oleh siapa pun, dan itu memang disengaja.
+     *
+     * Sebelumnya di sini disebut izin `create_beef_stock_aging`. Izin itu tidak pernah
+     * ada -- tidak di seeder, tidak di migrasi mana pun -- sehingga
+     * `hasPermission()` atasnya selalu `false`. Hasilnya sama, tetapi
+     * kodenya terbaca seolah ada hak yang bisa diberikan, padahal tidak ada
+     * yang bisa mencentangnya.
      */
     public function create($user): bool
     {
-        return $user->hasPermission('create_beef_stock_aging');
+        return false;
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
+    /** Lihat catatan di `create()`. Dulu menyebut `edit_beef_stock_aging`. */
     public function update($user, $model): bool
     {
-        return $user->hasPermission('edit_beef_stock_aging');
+        return false;
     }
 
     /**
@@ -45,7 +49,7 @@ class BeefStockAgingPolicy
      */
     public function delete($user, $model): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('delete_beef_stock_aging');
+        return $user->isProgrammer();
     }
 
     /**
@@ -53,7 +57,7 @@ class BeefStockAgingPolicy
      */
     public function restore($user, $model): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('delete_beef_stock_aging');
+        return $user->isProgrammer();
     }
 
     /**

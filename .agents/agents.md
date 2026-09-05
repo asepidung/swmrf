@@ -3130,6 +3130,119 @@ pemanggilan yang menghasilkan teks layar di `app/`, satu lagi memindai teks
 mentah di Blade halaman aplikasi. Keduanya mengecualikan `print/` dan
 `exports/` sesuai keputusan di atas.
 
+### Stock Overview -- #269, 5 September 2026
+
+Dua resource: `BeefStockResource` (daging) dan `MaterialStockResource` (bahan
+penolong). Keduanya laporan; justru itu yang membuat kesalahannya sulit
+terlihat -- tidak ada yang gagal, angkanya saja yang salah.
+
+#### Total tidak sama dengan jumlah kolomnya
+
+Keempat kolomnya dipatok mati pada `warehouse_id` 1 dan 2 serta `grade_id` 1
+dan 2, di LIMA tempat: query, kolom tabel, baris jumlah per kategori di Blade,
+ekspor Excel, dan ekspor PDF. Kolom **Total tidak ikut dipatok** -- ia
+menjumlah seluruh baris `IN_STOCK`.
+
+Grade yang aktif ada lima (CHILL, FROZEN, A, B, R) dan setiap form yang membuat
+stok menawarkan seluruh grade aktif. Satu karton ber-grade A masuk ke Total
+tetapi tidak punya kolom, sehingga Total lebih besar daripada jumlah kolom yang
+terlihat dan tidak ada yang bisa menunjuk selisihnya ada di mana.
+
+**Keputusan Owner:** kolomnya tetap per gudang, gradenya lima di tiap gudang
+(Jonggol dan Perum sama-sama punya CHILL, FROZEN, A, B, R), dan kolom yang
+tidak ada datanya jangan ditampilkan. Owner juga menegaskan gudangnya
+kemungkinan besar tetap dua.
+
+Sekarang kolomnya lahir dari `BeefStockResource::stockBuckets()` -- kombinasi
+gudang x grade yang benar-benar punya baris `IN_STOCK`. Total selalu sama
+dengan jumlah kolom yang terlihat, bukan karena dijaga melainkan karena tidak
+ada kombinasi berisi yang bisa kehilangan kolomnya.
+
+#### Halaman read-only yang punya tombol hapus stok
+
+`canCreate/canEdit/canDelete` semuanya `false`, tetapi relation manager-nya
+punya aksi hapus baris stok. Tiga hal sekaligus:
+
+- izinnya `delete_beef_stocks`, dan izin itu **tidak pernah dibuat**, sehingga
+  hanya akun programmer yang lolos dan tidak ada cara memberikannya kepada
+  orang gudang;
+- dari 24 pemanggilan `BeefStockMovement::create`, 23 menulis `created_by`.
+  Yang satu tidak: justru aksi ini;
+- `BeefStock` tidak memakai hapus lunak, jadi barisnya benar-benar hilang dan
+  catatan pergerakan itulah satu-satunya yang tersisa.
+
+**Keputusan Owner:** fiturnya memang dibutuhkan -- untuk barang yang tercatat
+di sistem tetapi fisiknya tidak ada -- dengan hak akses tersendiri, dan wajib
+benar-benar tercatat di `beef_stock_movements`. Izinnya kini dibuat lewat
+migrasi, `created_by` ditulis, dan alasannya wajib diisi.
+
+#### Izin yang hanya hidup di seeder tidak pernah sampai ke server
+
+`DatabaseSeeder` mengatur ulang kata sandi superuser, jadi ia TIDAK BOLEH
+dijalankan di server. Akibatnya setiap izin yang ditambahkan ke seeder sesudah
+penyemaian pertama tidak pernah ada di sana: barisnya tertulis rapi di kode,
+tetapi tidak muncul di form Hak Akses dan tidak bisa dicentang siapa pun.
+
+Dua belas izin berada dalam keadaan itu, termasuk `record_payable_compensations`
+yang sudah pernah diminta untuk dicentang. Semuanya dibuat lewat migrasi.
+
+**Aturannya sejak sekarang: izin baru dibuat lewat MIGRASI.** Seeder hanya
+untuk pemasangan pertama. Dijaga
+`StockOverviewTest::test_every_permission_the_code_asks_for_actually_exists`.
+
+Tiga belas izin lain disebut policy tetapi tidak pernah ada -- `create_beef_stocks`,
+`edit_beef_stock_movements`, `delete_receivables`, dan seterusnya. Semuanya
+diganti `false` apa adanya. Perilakunya tidak berubah sedikit pun (izin yang
+tidak ada selalu menjawab `false`); yang berubah hanya kejujurannya, karena
+sebelumnya terbaca seolah ada hak yang bisa diberikan.
+
+#### Penyamaran yang punya pintu belakang
+
+Saat opname material berjalan, kolom stok di layar menjadi `***`. Tetapi kedua
+tombol ekspor mencetak angka aslinya, dan filter "Below Min. Stock" tetap
+menyaring memakai angka asli -- daftar yang tersisa sudah menjawab pertanyaan
+yang seharusnya dijawab oleh hitungan fisik.
+
+Aturannya juga ditulis empat kali di satu berkas. Sekarang satu rumah:
+`MaterialStockTake::isCounting()`.
+
+Yang TIDAK diubah: `WarehouseFreezeService` menganggap opname berjalan hanya
+saat `IN_PROGRESS`, sementara penyamaran memakai DRAFT/IN_PROGRESS/REVIEW. Itu
+dua pertanyaan yang berbeda -- membekukan transaksi lain daripada menyembunyikan
+angka -- dan kapan transaksi dibekukan adalah keputusan modul Stock Take yang
+belum disisir.
+
+Perlu dicatat juga: opname DAGING memakai DRAFT/IN_PROGRESS tanpa REVIEW, dan
+itu bukan ketidakkonsistenan. Hanya opname material yang punya tahap REVIEW.
+
+#### PDF Stok Material mencetak strip semua
+
+Seluruh kolomnya membaca `$record->material->...`, padahal resource-nya
+mengirim model `Material` yang tidak punya relasi bernama `material` --
+template itu ditulis untuk baris `MaterialStock`, lalu model resource-nya
+berubah dan templatenya tertinggal.
+
+Karena setiap pembacaannya berakhir `?? '-'`, tidak ada satu pun error: PDF-nya
+terbit rapi, isinya strip semua, min stock selalu 0,00, dan penanda merah "di
+bawah minimum" tidak pernah menyala karena membandingkan `qty < 0`.
+
+#### Klik baris ditolak
+
+Model kedua resource ini `Product` dan `Material`, bukan `BeefStock` dan
+`MaterialStock`. `canViewAny()` ditulis sendiri memakai `view_beef_stocks`,
+tetapi `canView()` yang tidak ditulis jatuh ke `ProductPolicy` dan meminta
+`view_products`. Orang gudang melihat daftarnya, mengeklik barisnya -- yang
+memang dibuat bisa diklik -- lalu menemukan 403.
+
+#### Utang yang dicatat, tidak dikerjakan
+
+`resources/views/filament/admin/resources/beef-stock/table.blade.php` adalah
+salinan view bawaan Filament sepanjang 1449 baris yang sudah meleset 163 baris
+dari aslinya. Sebagian besar selisihnya `<style>` yang memang tidak bisa
+ditulis sebagai kelas Tailwind (panel admin tidak memuat hasil build CSS
+aplikasi), sisanya memindahkan header action ke baris toolbar dan baris jumlah
+per kategori. Upgrade Filament tidak akan menyentuh berkas ini.
+
 ### Cara kerja yang disepakati Owner
 
 - Perbaiki langsung bila penyebabnya **sudah pasti dari membaca kode**; hemat token, jangan buat probe sekali pakai.

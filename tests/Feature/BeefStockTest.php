@@ -191,16 +191,48 @@ class BeefStockTest extends TestCase
             ])
             ->assertSee('BC_DELETE_TEST')
             ->assertSee('005 days') // age display
-            ->callTableAction('delete', $stock);
+            ->callTableAction('delete', $stock, ['reason' => 'Fisiknya tidak ada di rak']);
 
         // Verify stock is removed from DB
         $this->assertDatabaseMissing('beef_stocks', ['barcode' => 'BC_DELETE_TEST']);
 
         // Verify a VOID_STOCK movement log is created
+        //
+        // Termasuk SIAPA yang menghapus dan KENAPA. `BeefStock` tidak memakai
+        // hapus lunak, jadi baris pergerakan ini satu-satunya yang tersisa;
+        // sebelumnya ia ditulis tanpa `created_by` -- satu-satunya pergerakan
+        // stok di seluruh aplikasi yang tidak punya nama pelakunya.
         $this->assertDatabaseHas('beef_stock_movements', [
             'barcode' => 'BC_DELETE_TEST',
             'transaction_type' => 'VOID_STOCK',
             'weight_out' => 10.50,
+            'created_by' => $this->user->getKey(),
+            'note' => 'Fisiknya tidak ada di rak',
         ]);
+    }
+
+    /** Alasannya wajib: tanpa itu, penghapusannya tidak boleh jadi. */
+    public function test_deleting_stock_without_a_reason_is_refused(): void
+    {
+        $stock = BeefStock::create([
+            'barcode' => 'BC_NO_REASON',
+            'product_id' => $this->product1->id,
+            'warehouse_id' => $this->jonggol->id,
+            'grade_id' => $this->chill->id,
+            'weight' => 7.25,
+            'qty_pcs' => 1,
+            'pack_date' => now()->subDays(2),
+            'status' => 'IN_STOCK',
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(BeefStocksRelationManager::class, [
+                'ownerRecord' => $this->product1,
+                'pageClass' => ViewBeefStock::class,
+            ])
+            ->callTableAction('delete', $stock, ['reason' => ''])
+            ->assertHasTableActionErrors(['reason']);
+
+        $this->assertDatabaseHas('beef_stocks', ['barcode' => 'BC_NO_REASON']);
     }
 }
