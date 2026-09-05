@@ -156,10 +156,24 @@ class BeefStockTest extends TestCase
             ->assertSee('SIRLOIN')
             ->assertDontSee('RIBEYE');
 
-        // If we turn off hide_empty filter, we should see both
+        // Tombol "Show Empty Stock" memunculkan yang bersaldo nol.
+        //
+        // Dulu ini sebuah filter yang menyala sendiri, sehingga daftar
+        // sehari-hari terbaca seperti hasil penyaringan yang harus dilepas
+        // dulu. Sekarang query-nya yang menyembunyikan, dan tombolnya
+        // menyatakan apa yang akan terjadi kalau ditekan.
         Livewire::actingAs($this->user)
             ->test(ListBeefStocks::class)
-            ->set('tableFilters.hide_empty.isActive', false)
+            ->callAction('toggleEmptyStock')
+            ->assertSee('SIRLOIN')
+            ->assertSee('RIBEYE');
+    }
+
+    /** Pilihannya ikut di alamat halaman, jadi tautannya bisa disalin. */
+    public function test_showing_empty_stock_survives_in_the_url(): void
+    {
+        Livewire::actingAs($this->user)
+            ->test(ListBeefStocks::class, ['showEmpty' => true])
             ->assertSee('SIRLOIN')
             ->assertSee('RIBEYE');
     }
