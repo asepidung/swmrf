@@ -78,6 +78,7 @@ class Permission extends Model
                 'Beef Stock Aging',
                 'Material Stocks',
                 'Material Stock Movements',
+                'Material Findings',
             ],
             'DISTRIBUTION' => [
                 'Delivery Plans',
