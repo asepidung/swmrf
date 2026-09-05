@@ -158,17 +158,22 @@ class StockTakeResource extends Resource
                         && (auth()->user()?->isProgrammer()
                             || (auth()->user()?->hasPermission('finish_stock_takes') ?? false)))
                     ->action(function (StockTake $record) {
-                        // try/finally, bukan sekadar dua baris berurutan.
+                        // Pembekuan dilewati lewat `bypass()`, bukan dengan
+                        // menyentuh properti statisnya sendiri.
                         //
                         // `$bypassed` dulu dikembalikan `false` di BARIS TERAKHIR
                         // transaksinya. Kalau transaksinya gagal di tengah, nilainya
                         // tidak pernah dikembalikan -- dan karena ia properti STATIS,
                         // seluruh sisa permintaan itu berjalan tanpa pembekuan gudang
                         // sama sekali, tepat pada saat opname sedang berlangsung.
-                        try {
+                        //
+                        // `try/finally` di tempat ini sudah menambalnya, tetapi
+                        // tambalan itu harus ditulis ulang dengan benar oleh
+                        // setiap pemakai berikutnya. Pembantunya menutup
+                        // kemungkinan itu: pemulihannya ada di dalam, satu kali,
+                        // untuk semua.
+                        \App\Services\WarehouseFreezeService::bypass(function () use ($record) {
                         \Illuminate\Support\Facades\DB::transaction(function () use ($record) {
-                            // 1. Bypass Freeze Check
-                            \App\Services\WarehouseFreezeService::$bypassed = true;
                             
                             // 2. Handle MISSING items (Delete from BeefStock)
                             $missingItems = $record->items()->where('status', 'MISSING')->get();
@@ -235,9 +240,7 @@ class StockTakeResource extends Resource
                             // 4. Update Opname Status
                             $record->update(['status' => StockTake::STATUS_COMPLETED]);
                         });
-                        } finally {
-                            \App\Services\WarehouseFreezeService::$bypassed = false;
-                        }
+                        });
                         
                         \Filament\Notifications\Notification::make()
                             ->title(__('Stock Opname Completed'))

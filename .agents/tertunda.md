@@ -83,6 +83,7 @@ Bukan menunggu apa pun -- hanya belum dikerjakan, dan besarnya diketahui.
 | **View tabel Stock Overview adalah fork Filament** | `beef-stock/table.blade.php`, 1449 baris, meleset 163 baris dari aslinya. Upgrade Filament tidak akan menyentuhnya. Sudah sekali meledak: `x-filament-tables::header` dipanggil tanpa `:actions-position`, dan bug itu tidur sejak fork dibuat sampai tabelnya diberi description (#279) |
 | **`stock:reconcile` belum diuji di data tebal** | Saat dijalankan 5 Sep hasilnya bersih, tetapi hanya 32 baris pergerakan dari 5 hari dan 2 kombinasi. Buku besar dengan 32 baris memang selalu cocok. Jalankan lagi setelah dipakai beberapa minggu |
 | **Tidak ada `stock:reconcile` untuk material** | Perintahnya hanya memeriksa daging. Bahan penolong punya buku besarnya sendiri (`material_stock_movements`) |
+| **`auth()->id() ?? 1` di tiga belas tempat** | Kalau tidak ada yang login, tindakannya dicatat atas nama pengguna id 1 -- jejak audit yang berbohong. Hari ini tidak pernah terjadi: tidak ada perintah konsol atau job yang menulis stok, dan seluruh jalur itu ada di dalam halaman Filament yang selalu punya pengguna. Memperbaikinya berarti membuat kolomnya nullable, dan itu menyentuh setiap layar yang menampilkan nama pembuatnya |
 | **Laporan yang belum ada** | Fast Moving Products, Sales Report, Laporan Stock Gudang |
 
 ---

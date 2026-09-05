@@ -7,6 +7,16 @@ use Illuminate\Validation\ValidationException;
 
 class WarehouseFreezeService
 {
+    /**
+     * Dilewati saat opnamenya sendiri yang sedang menerapkan hasil hitungan.
+     *
+     * WAJIB dikembalikan lewat `finally` -- dan cara paling aman untuk itu
+     * adalah TIDAK MENYENTUHNYA LANGSUNG, melainkan lewat `bypass()` di
+     * bawah. Kalau dikembalikan di baris terakhir sebuah blok yang bisa
+     * gagal, sekali transaksinya gagal nilainya tidak pernah pulih -- dan
+     * karena ini properti STATIS, seluruh sisa permintaan itu berjalan tanpa
+     * pembekuan, tepat pada saat opname sedang berlangsung.
+     */
     public static bool $bypassed = false;
 
     /**
@@ -30,6 +40,25 @@ class WarehouseFreezeService
                     'doc' => $activeOpname->document_number
                 ])
             ]);
+        }
+    }
+
+    /**
+     * Menjalankan sesuatu dengan pembekuan dilewati, lalu memulihkannya.
+     *
+     * Bentuknya sama persis dengan `MaterialStockFreezeService::bypass()`.
+     * Dua sisi yang menyelesaikan persoalan yang sama harus terlihat sama,
+     * supaya yang menyalin salah satunya tidak menyalin bentuk yang lebih
+     * rapuh.
+     */
+    public static function bypass(callable $kerja): mixed
+    {
+        self::$bypassed = true;
+
+        try {
+            return $kerja();
+        } finally {
+            self::$bypassed = false;
         }
     }
 }

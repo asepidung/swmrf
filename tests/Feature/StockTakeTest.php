@@ -341,18 +341,91 @@ class StockTakeTest extends TestCase
      */
     public function test_the_freeze_is_restored_even_when_finishing_fails(): void
     {
-        $berkas = file_get_contents(base_path('app/Filament/Admin/Resources/StockTakeResource.php'));
+        $terlewat = false;
 
-        $this->assertMatchesRegularExpression(
-            '/\}\s*finally\s*\{\s*\\\\App\\\\Services\\\\WarehouseFreezeService::\$bypassed = false;/',
-            $berkas,
-            'Pembekuan gudang dikembalikan tanpa `finally`, jadi ia nyangkut kalau transaksinya gagal.',
-        );
+        try {
+            WarehouseFreezeService::bypass(function () use (&$terlewat): void {
+                $terlewat = WarehouseFreezeService::$bypassed;
+
+                throw new \RuntimeException('transaksinya gagal di tengah');
+            });
+        } catch (\RuntimeException) {
+            // Kegagalannya memang disengaja; yang diperiksa keadaan SESUDAHNYA.
+        }
+
+        $this->assertTrue($terlewat, 'Pembekuan tidak benar-benar dilewati di dalam bypass().');
 
         $this->assertFalse(
             WarehouseFreezeService::$bypassed,
-            'Pembekuan gudang tertinggal dalam keadaan dilewati.',
+            'Pembekuan gudang nyangkut dalam keadaan dilewati sesudah kegagalan.',
         );
+    }
+
+    /**
+     * Tidak ada yang menyentuh `$bypassed` sendiri, di seluruh aplikasi.
+     *
+     * Penjaga sebelumnya menyebut SATU BERKAS dan mencocokkan satu bentuk
+     * `try/finally` yang persis. Ia membuktikan berkas itu benar hari itu,
+     * dan tidak menahan apa pun: pemakai kedua tinggal menulis dua baris
+     * berurutan di berkas lain, dan tidak ada yang mengeluh.
+     *
+     * Sisi material sudah lebih dulu memakai `bypass()`. Sekarang keduanya
+     * sama, dan pemulihannya ada di dalam pembantunya -- satu kali, untuk
+     * semua.
+     */
+    public function test_nobody_flips_the_freeze_flag_by_hand(): void
+    {
+        $pelanggar = [];
+
+        $berkas = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(app_path())
+        );
+
+        foreach ($berkas as $satu) {
+            if (! $satu->isFile() || $satu->getExtension() !== 'php') {
+                continue;
+            }
+
+            $jalur = str_replace('\\', '/', $satu->getPathname());
+
+            // Pembantunya sendiri memang menyetelnya; itu seluruh tugasnya.
+            if (str_contains($jalur, '/app/Services/')) {
+                continue;
+            }
+
+            $isi = $this->tanpaKomentar(file_get_contents($satu->getPathname()));
+
+            if (preg_match('/FreezeService::\$bypassed\s*=/', $isi)) {
+                $pelanggar[] = basename($jalur);
+            }
+        }
+
+        sort($pelanggar);
+
+        $this->assertSame(
+            [],
+            $pelanggar,
+            "Berkas berikut menyetel `\$bypassed` sendiri. Sekali blok yang dijalankannya gagal, "
+            ."nilainya tidak pernah pulih -- dan karena ia STATIS, seluruh sisa permintaan itu "
+            ."berjalan tanpa pembekuan sama sekali. Pakai `bypass(fn () => ...)`:\n"
+            .implode("\n", $pelanggar),
+        );
+    }
+
+    /** Komentar dibuang supaya keterangannya tidak ikut tertuduh. */
+    private function tanpaKomentar(string $isi): string
+    {
+        $hasil = '';
+
+        foreach (@token_get_all($isi) as $token) {
+            if (is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+
+            $hasil .= is_array($token) ? $token[1] : $token;
+        }
+
+        return $hasil;
     }
 
     /** Opname yang berjalan membekukan penulisan stok. */
