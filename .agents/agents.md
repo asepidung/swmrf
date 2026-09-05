@@ -4117,3 +4117,42 @@ supaya penjelasannya ditinjau ulang kalau suatu saat kolom itu dibuat.
 Kolom yang diisi lewat `create()` tetapi tidak ada di `$fillable` -- Laravel
 membuangnya diam-diam. Seluruh `app/` dipindai: nihil. Lima yang sempat
 tertuduh ternyata kunci array di dalam `__()` yang bersarang, bukan kolom.
+
+---
+
+## #309 -- Properti yang dibaca tetapi tidak pernah ada
+
+Lanjutan #307. Kalau `has_tax` bisa hidup bertahun-tahun tanpa ketahuan,
+saudaranya pasti ada. Seluruh `app/` dan `resources/views` dipindai.
+
+Dua lagi ditemukan, dan keduanya di BERKAS YANG DIKIRIM KE LUAR:
+
+- `received_box` / `received_weight` -- kolomnya `box` dan `weight`. Layar
+  Detail Surat Jalan BENAR (punya `getStateUsing` sendiri); ekspor Excel
+  mengosongkan kedua kolomnya dan PDF-nya mencetak 0,00.
+- `item_name` -- bukan kolom sama sekali. Layar dan berkas ekspor Filament
+  benar karena masing-masing punya `->state()`; ekspor Excel di halaman
+  daftar selalu kosong.
+
+**Bentuk yang sama pada ketiganya: layarnya benar, berkas yang dikirim ke
+luar salah.** Tidak ada yang mengeluh karena tidak ada yang memeriksa berkas
+ekspor sebaris demi sebaris -- dan orang yang menerimanya bukan orang yang
+bisa membandingkannya dengan layar.
+
+Aturan nama barang invoice ditulis ulang di TIGA tempat, dan yang ketiga
+menuliskannya dengan cara yang berbeda. Sekarang jadi accessor, dan ketiganya
+membaca dari sana.
+
+### Penjaganya sengaja kasar
+
+Ia tidak tahu variabelnya model yang mana, jadi menerima properti apa pun
+yang merupakan kolom di tabel -- atau VIEW -- mana pun. Ia melewatkan
+salah-tabel, tetapi menangkap yang tidak ada di mana pun, dan justru bentuk
+itulah yang selama ini lolos.
+
+`Schema::getViews()` WAJIB ikut: `invoice_reconciliation_view` sebuah view,
+dan tanpa itu `row_type` serta `charge_name` ikut tertuduh.
+
+Delapan belas nama dikecualikan dengan alasan tertulis: semuanya alias yang
+lahir di dalam query itu sendiri (`withCount`, `withSum`, `selectRaw`, kolom
+hasil `join`).
