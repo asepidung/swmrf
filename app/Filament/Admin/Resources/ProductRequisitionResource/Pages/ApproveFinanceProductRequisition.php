@@ -171,7 +171,7 @@ class ApproveFinanceProductRequisition extends EditRecord
 
         $supplier = \App\Models\Supplier::find($this->data['supplier_id'] ?? $this->record->supplier_id);
 
-        return ($supplier && $supplier->has_tax) ? $subtotal * 1.11 : $subtotal;
+        return $subtotal + ($supplier?->ppnAtas($subtotal) ?? 0);
     }
 
 

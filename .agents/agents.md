@@ -4079,3 +4079,41 @@ tidak ada perintah konsol atau job yang menulis stok, dan seluruh jalur itu
 ada di dalam halaman Filament yang selalu punya pengguna. Masuk `tertunda.md`
 bagian F, bukan diperbaiki: mengubah kolomnya jadi nullable menyentuh banyak
 layar yang menampilkan nama pembuatnya.
+
+---
+
+## #307 -- PPN pembelian daging selalu nol
+
+Kolom penentunya bernama `is_tax_11`. Sisi pembelian DAGING menanyakan
+`has_tax` -- kolom yang tidak pernah ada: tidak ada kolomnya, tidak ada
+accessor-nya, tidak ada migrasinya.
+
+Eloquent menjawab `null` untuk kolom yang tidak ada. Tidak ada galat, tidak
+ada peringatan; jawabannya cuma SELALU "tidak memungut". Empat tempat
+menanyakannya dengan nama yang salah, dan keempatnya salinan dari sisi
+material yang menanyakannya dengan benar.
+
+**Yang membuatnya berbahaya:** `Payable::generateForGoodsReceiptProduct()`
+menghitung PPN-nya DENGAN BENAR dari kolom yang sungguhan. Jadi PO daging ke
+pemasok PKP mengatakan satu angka dan hutangnya mengatakan angka lain --
+selisihnya persis sebelas persen, tanpa satu pun gejala.
+
+Basis data lokal dan server diperiksa langsung: belum ada satu pun permintaan
+atau PO daging ke pemasok PKP. Perbaikannya karena itu berlaku maju saja,
+tanpa migrasi data.
+
+### Tarifnya jadi satu tempat
+
+`0.11` ditulis di sepuluh tempat. Selama tarifnya tidak berubah semuanya
+kebetulan sama; begitu berubah, yang terlewat tidak mengeluh -- ia cuma
+menghasilkan angka lain. Semuanya kini lewat `Supplier::ppnAtas()` dan
+`Supplier::isPkp()`.
+
+Penjaga `has_tax` juga memeriksa bahwa kolomnya memang benar-benar TIDAK ADA,
+supaya penjelasannya ditinjau ulang kalau suatu saat kolom itu dibuat.
+
+### Diperiksa dan ternyata bersih
+
+Kolom yang diisi lewat `create()` tetapi tidak ada di `$fillable` -- Laravel
+membuangnya diam-diam. Seluruh `app/` dipindai: nihil. Lima yang sempat
+tertuduh ternyata kunci array di dalam `__()` yang bersarang, bukan kolom.

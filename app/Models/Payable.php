@@ -228,7 +228,7 @@ class Payable extends Model
         $gr->loadMissing(['items', 'supplier']);
         
         $subtotalSum = $gr->items->sum('subtotal');
-        $tax = $gr->supplier && $gr->supplier->is_tax_11 ? ($subtotalSum * 0.11) : 0;
+        $tax = $gr->supplier?->ppnAtas($subtotalSum) ?? 0;
         $amount = $subtotalSum + $tax;
         
         $topDays = $gr->supplier->top_days ?? 0;
@@ -271,7 +271,7 @@ class Payable extends Model
         $gr->loadMissing(['items', 'supplier']);
         
         $subtotalSum = $gr->items->sum('subtotal');
-        $tax = $gr->supplier && $gr->supplier->is_tax_11 ? ($subtotalSum * 0.11) : 0;
+        $tax = $gr->supplier?->ppnAtas($subtotalSum) ?? 0;
         $amount = $subtotalSum + $tax;
         
         $topDays = $gr->supplier->top_days ?? 0;
@@ -349,7 +349,7 @@ class Payable extends Model
         );
 
         // Pajak mengikuti flag supplier, sama seperti GR Beef dan GR Material.
-        $tax = $receiving->supplier && $receiving->supplier->is_tax_11 ? $subtotal * 0.11 : 0;
+        $tax = $receiving->supplier?->ppnAtas($subtotal) ?? 0;
         $amount = $subtotal + $tax;
 
         $topDays = $receiving->supplier->top_days ?? 0;

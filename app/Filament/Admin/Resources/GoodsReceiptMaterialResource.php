@@ -151,21 +151,15 @@ class GoodsReceiptMaterialResource extends Resource
                                     $subtotal += $qty * $price;
                                 }
 
-                                // Check tax setting of the supplier
-                                $isTax11 = false;
-                                if ($record && $record->supplier) {
-                                    $isTax11 = (bool) $record->supplier->is_tax_11;
-                                } else {
-                                    $poId = $record?->purchase_material_id;
-                                    if ($poId) {
-                                        $po = \App\Models\PurchaseMaterial::find($poId);
-                                        if ($po && $po->supplier) {
-                                            $isTax11 = (bool) $po->supplier->is_tax_11;
-                                        }
-                                    }
-                                }
+                                // Pemasoknya bisa datang dari GR-nya sendiri
+                                // atau dari PO yang menurunkannya.
+                                $pemasok = $record?->supplier
+                                    ?? ($record?->purchase_material_id
+                                        ? \App\Models\PurchaseMaterial::find($record->purchase_material_id)?->supplier
+                                        : null);
 
-                                $tax = $isTax11 ? ($subtotal * 0.11) : 0;
+                                $isTax11 = (bool) $pemasok?->isPkp();
+                                $tax = $pemasok?->ppnAtas($subtotal) ?? 0;
                                 $netTotal = $subtotal + $tax;
 
                                 $taxLabel = $isTax11 ? 'PPN (11%)' : 'PPN (0% - Non Tax)';

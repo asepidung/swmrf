@@ -62,10 +62,7 @@ class MaterialRequisition extends Model
     public function updateTotalAmount()
     {
         $total = $this->items()->sum('subtotal');
-        $tax = 0;
-        if ($this->supplier && $this->supplier->is_tax_11) {
-            $tax = $total * 0.11;
-        }
+        $tax = $this->supplier?->ppnAtas($total) ?? 0;
         $this->update([
             'total_amount' => $total + $tax,
             'tax_amount' => $tax
