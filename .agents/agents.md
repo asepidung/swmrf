@@ -3720,6 +3720,92 @@ menjadi NEGATIF -- `StockService::adjustStock()` tidak pernah menjaga batas
 bawah. Itu berlaku untuk seluruh pergerakan material, bukan khusus modul ini,
 jadi bukan titipan untuk penyisiran ini.
 
+### Keputusan Owner sebelum sesi malam -- 6 September 2026
+
+Owner meninggalkan pekerjaan semalaman dengan empat keputusan berikut. Semua
+dijawab SEBELUM pekerjaannya dimulai, tepat supaya tidak ada yang ditebak.
+
+**1. Stok material TIDAK BOLEH minus.** `StockService::adjustStock()` tidak
+pernah menjaga batas bawah, sehingga menghapus temuan lama yang materialnya
+sudah terpakai mendorong stok ke bawah nol. Keputusan: **tolak**. Stok minus
+selalu tanda ada yang salah dicatat, bukan keadaan yang sah.
+
+**2. Seluruh 178 teks Inggris yang belum terdaftar dikerjakan.** Untuk
+pengguna berbahasa Inggris tidak ada yang rusak -- kuncinya memang Inggris.
+Yang tidak kebagian pengguna INDONESIA: teks itu tidak pernah bisa
+diterjemahkan.
+
+**3. Wewenang semalaman: merge dan deploy seperti biasa.** Setiap perbaikan
+masuk hosting setelah test hijau, sama seperti sepanjang sesi.
+
+**4. Migrasi DATA diizinkan.** Owner: "boleh, gw percaya". Wewenang itu tidak
+menghapus kewajiban berhati-hati: migrasi tetap dibuat idempoten, punya
+`down()` yang jujur, dan hanya dijalankan bila memang ada gunanya -- bukan
+untuk kerapian semata.
+
+**Daftar pekerjaan yang ditunda dipindahkan ke berkas tersendiri:**
+[`.agents/tertunda.md`](tertunda.md). Berkas itu memuat yang menunggu HPP,
+menunggu BOM, menunggu QC, menunggu keputusan Owner, yang sudah diputuskan
+TIDAK dikerjakan, utang teknis yang terlihat, dan izin yang menunggu
+dicentang.
+
+### Halaman persetujuan terbuka lewat alamatnya -- #293, 6 September 2026
+
+Pemindaian seluruh `app/` mencari aksi yang mengubah keadaan tanpa satu pun
+pemeriksaan izin menemukan enam belas. Yang paling tajam bukan tombolnya,
+melainkan HALAMANNYA.
+
+**Lima halaman tidak punya `canAccess()` sama sekali:** empat halaman
+persetujuan permintaan (Review dan Approve Finance, untuk beef maupun
+material) dan halaman persetujuan Surat Jalan.
+
+Izinnya ADA. Sudah di-seed, muncul di form Hak Akses, dan diperiksa ketika
+memutuskan apakah TAUTANNYA ditampilkan di daftar. Tetapi halamannya sendiri
+tidak memeriksa apa pun.
+
+Sudah dibuktikan sebelum diperbaiki, dengan probe:
+
+    punya approve_product_requisitions?   false
+    boleh buka halaman Approve Finance?   true
+    boleh buka halaman Review?            true
+
+Pengguna dengan hanya `view_product_requisitions` bisa membuka halaman
+"Approve & Generate PO" dan menerbitkan Purchase Order.
+
+**Izin yang terlihat menjaga sesuatu padahal tidak menjaga apa pun lebih
+berbahaya daripada tidak ada izin sama sekali** -- ia membuat orang yang
+mencentangnya percaya pintunya sudah terkunci.
+
+#### Tombol yang berakibat uang atau stok, tanpa izin
+
+- **Kunci/buka kunci GR** (beef dan material). Mengunci MENERBITKAN hutang ke
+  pemasok; membukanya MENGHAPUS hutang itu. Syaratnya dulu hanya "dokumennya
+  punya barang". Izin baru: `lock_goods_receipt_products`, `lock_gr_materials`.
+- **Batalkan persetujuan Surat Jalan.** Menghapus tanda terimanya dan
+  mengembalikan barang tolakan ke Tally. Izin baru: `approve_delivery_orders`,
+  dipakai juga oleh halaman persetujuannya.
+- **Batalkan Purchase Order** (beef dan material). Izin baru:
+  `cancel_purchase_products`, `cancel_purchase_materials`.
+- **Hapus GR.** Izinnya SUDAH ADA sejak awal -- `delete_goods_receipt_products`
+  -- hanya tidak pernah diperiksa di tombolnya.
+
+#### Yang SENGAJA dibiarkan tanpa izin
+
+Dicatat di dalam penjaganya sendiri, sebagai daftar yang harus dibaca sebelum
+ditambah: kirim/terima mutasi (keputusan Owner), batal pindai di dalam opname
+yang sedang berjalan, dan batal Sales Order dari layar draft tally.
+
+#### Stok material tidak boleh minus
+
+Keputusan Owner malam ini. `StockService::adjustStock()` tidak punya batas
+bawah sama sekali, sehingga menghapus temuan yang materialnya sudah terpakai
+mendorong saldonya menjadi minus.
+
+Stok minus tidak pernah berarti "gudangnya berhutang barang". Ia selalu
+berarti ada yang salah dicatat -- dan begitu tersimpan, yang salah itu ikut
+mengalir ke laporan, ke opname, dan ke penilaian persediaan, tanpa satu pun
+gejala. Ditolak dengan menyebut sisa yang sebenarnya.
+
 ### Cara kerja yang disepakati Owner
 
 - Perbaiki langsung bila penyebabnya **sudah pasti dari membaca kode**; hemat token, jangan buat probe sekali pakai.

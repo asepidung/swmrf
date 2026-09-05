@@ -307,6 +307,10 @@ class GoodsReceiptMaterialResource extends Resource
                         ? __('Unlock this goods receipt? The payable it created will be deleted, as long as nothing has been paid yet.') 
                         : __('Lock this goods receipt? Nothing can be changed once it is locked.'))
                     ->hidden(fn (GoodsReceiptMaterial $record) => ! $record->items()->exists())
+                    // Mengunci GR MENERBITKAN hutang ke pemasok; membukanya
+                    // kembali MENGHAPUS hutang itu.
+                    ->visible(fn (): bool => auth()->user()?->isProgrammer()
+                        || (auth()->user()?->hasPermission('lock_gr_materials') ?? false))
                     ->action(function (GoodsReceiptMaterial $record) {
                         \Illuminate\Support\Facades\DB::beginTransaction();
                         try {

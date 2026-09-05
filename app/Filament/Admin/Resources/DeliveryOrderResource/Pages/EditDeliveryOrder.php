@@ -50,7 +50,9 @@ class EditDeliveryOrder extends EditRecord
                 ->color('success')
                 ->icon('heroicon-o-check-circle')
                 ->iconButton()
-                ->visible(fn () => $this->record->status === 'Ready')
+                ->visible(fn (): bool => $this->record->status === 'Ready'
+                    && (auth()->user()?->isProgrammer()
+                        || (auth()->user()?->hasPermission('approve_delivery_orders') ?? false)))
                 ->url(fn () => DeliveryOrderResource::getUrl('approve', ['record' => $this->record->id])),
 
 

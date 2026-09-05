@@ -888,6 +888,7 @@
     "Stock Opnames": "Stock Opname",
     "Stock position on": "Posisi stok per tanggal",
     "Stock reconciliation completed successfully.": "Rekonsiliasi stok berhasil dilakukan.",
+    "Stock would go below zero: :material has :available left, this movement asks for :requested.": "Stok akan minus: :material tinggal :available, sementara pergerakan ini meminta :requested.",
     "Sub Beef / Variant": "Sub Produk / Varian",
     "Sub Product / Variant": "Produk Turunan / Varian",
     "Subject": "Subjek",

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\MaterialStock;
 use App\Models\MaterialStockMovement;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 
 class StockService
@@ -37,6 +38,30 @@ class StockService
             $stock = MaterialStock::where('material_id', $materialId)->lockForUpdate()->first();
             $currentQty = $stock ? (float) $stock->qty : 0.0;
             $newQty = $currentQty + $qtyDelta;
+
+            // Stok TIDAK BOLEH turun di bawah nol.
+            //
+            // Keputusan Owner, 6 September 2026. Sebelum ini tidak ada batas
+            // bawah sama sekali: menghapus dokumen temuan yang materialnya
+            // sudah terpakai, atau membatalkan pemakaian yang barangnya sudah
+            // habis, langsung mendorong saldonya menjadi minus.
+            //
+            // Stok minus tidak pernah berarti "gudangnya berhutang barang".
+            // Ia selalu berarti ADA YANG SALAH DICATAT -- dan begitu tersimpan,
+            // yang salah itu ikut mengalir ke laporan, ke opname, dan ke
+            // penilaian persediaan, tanpa satu pun gejala yang memberitahu.
+            //
+            // Ditolak dengan menyebut sisa yang sebenarnya, supaya yang
+            // membacanya tahu berapa yang masih ada.
+            if ($newQty < 0) {
+                throw ValidationException::withMessages([
+                    'qty' => __('Stock would go below zero: :material has :available left, this movement asks for :requested.', [
+                        'material' => $stock?->material?->name ?? ('#'.$materialId),
+                        'available' => number_format($currentQty, 2, ',', '.'),
+                        'requested' => number_format(abs($qtyDelta), 2, ',', '.'),
+                    ]),
+                ]);
+            }
 
             // Determine Qty In / Qty Out
             $qtyIn = $qtyDelta > 0 ? $qtyDelta : 0.0;
