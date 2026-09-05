@@ -45,6 +45,8 @@ class ReconcileBeefStock extends Command
         $this->info('Menghitung ulang posisi stok dari buku besar pergerakan...');
         $this->newLine();
 
+        $this->laporkanBahan();
+
         $bukuBesar = $this->hitungUlang();
         $sekarang = $this->stokSekarang();
 
@@ -115,6 +117,45 @@ class ReconcileBeefStock extends Command
         }
 
         return self::FAILURE;
+    }
+
+    /**
+     * Berapa banyak bahan yang dibaca perintah ini.
+     *
+     * "Bersih" tanpa menyebut ukurannya adalah kalimat yang terdengar
+     * meyakinkan padahal belum tentu berarti apa-apa: buku besar dengan dua
+     * baris memang selalu cocok, dan itu tidak membuktikan buku besar dengan
+     * dua puluh ribu baris juga cocok.
+     *
+     * Angka ini yang membuat pembacanya tahu seberapa jauh hasilnya boleh
+     * dipercaya.
+     */
+    private function laporkanBahan(): void
+    {
+        $gerakan = DB::table('beef_stock_movements')->count();
+        $stok = DB::table('beef_stocks')->where('status', 'IN_STOCK')->count();
+
+        $rentang = DB::table('beef_stock_movements')
+            ->selectRaw('MIN(created_at) as awal, MAX(created_at) as akhir')
+            ->first();
+
+        $this->line('Baris pergerakan dibaca : ' . number_format($gerakan));
+
+        if ($gerakan > 0 && $rentang?->awal) {
+            $this->line('Rentang catatannya      : '
+                . Carbon::parse($rentang->awal)->format('d M Y')
+                . '  s/d  ' . Carbon::parse($rentang->akhir)->format('d M Y'));
+        }
+
+        $this->line('Baris stok sekarang     : ' . number_format($stok));
+        $this->newLine();
+
+        if ($gerakan < 100) {
+            $this->warn('Bahannya masih sedikit. Hasil "bersih" di bawah ini benar untuk data');
+            $this->warn('yang ada, tetapi belum cukup untuk menyimpulkan buku besarnya sehat');
+            $this->warn('pada pemakaian yang sesungguhnya. Jalankan lagi setelah datanya banyak.');
+            $this->newLine();
+        }
     }
 
     /** Posisi stok pada satu tanggal, tanpa membandingkan apa pun. */
