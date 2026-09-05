@@ -1195,18 +1195,16 @@
                                                 <span>{{ $recordGroupTitle }}</span>
                                             </div>
                                         </td>
-                                        <td class="bg-gray-500 dark:bg-gray-600 px-3 py-2 text-right align-middle font-bold border-b border-gray-500 dark:border-gray-600" style="color: #fde047 !important; font-size: 0.875rem !important;" >
-                                            {{ $sums['chill_jonggol'] > 0 ? number_format($sums['chill_jonggol'], 2, '.', ',') : '' }}
-                                        </td>
-                                        <td class="bg-gray-500 dark:bg-gray-600 px-3 py-2 text-right align-middle font-bold border-b border-gray-500 dark:border-gray-600" style="color: #fde047 !important; font-size: 0.875rem !important;" >
-                                            {{ $sums['frozen_jonggol'] > 0 ? number_format($sums['frozen_jonggol'], 2, '.', ',') : '' }}
-                                        </td>
-                                        <td class="bg-gray-500 dark:bg-gray-600 px-3 py-2 text-right align-middle font-bold border-b border-gray-500 dark:border-gray-600" style="color: #fde047 !important; font-size: 0.875rem !important;" >
-                                            {{ $sums['chill_perum'] > 0 ? number_format($sums['chill_perum'], 2, '.', ',') : '' }}
-                                        </td>
-                                        <td class="bg-gray-500 dark:bg-gray-600 px-3 py-2 text-right align-middle font-bold border-b border-gray-500 dark:border-gray-600" style="color: #fde047 !important; font-size: 0.875rem !important;" >
-                                            {{ $sums['frozen_perum'] > 0 ? number_format($sums['frozen_perum'], 2, '.', ',') : '' }}
-                                        </td>
+                                        {{-- Satu sel per kombinasi gudang x grade yang ada isinya.
+                                             Dulu keempatnya ditulis satu per satu di sini, jadi
+                                             kolom yang dipatok mati di resource harus diubah di
+                                             berkas ini juga -- dan kalau terlewat, angkanya bergeser
+                                             satu kolom tanpa satu pun error. --}}
+                                        @foreach (\App\Filament\Admin\Resources\BeefStockResource::stockBuckets() as $bucket)
+                                            <td class="bg-gray-500 dark:bg-gray-600 px-3 py-2 text-right align-middle font-bold border-b border-gray-500 dark:border-gray-600" style="color: #fde047 !important; font-size: 0.875rem !important;" >
+                                                {{ ($sums[$bucket['key']] ?? 0) > 0 ? number_format($sums[$bucket['key']], 2, '.', ',') : '' }}
+                                            </td>
+                                        @endforeach
                                         <td class="bg-gray-500 dark:bg-gray-600 px-3 py-2 text-right align-middle font-bold border-b border-gray-500 dark:border-gray-600" style="color: #fde047 !important; font-size: 0.875rem !important;" >
                                             {{ $sums['total_qty'] > 0 ? number_format($sums['total_qty'], 2, '.', ',') : '' }}
                                         </td>

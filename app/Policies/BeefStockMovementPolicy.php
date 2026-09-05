@@ -17,18 +17,27 @@ class BeefStockMovementPolicy
         return $user->hasPermission('view_beef_stock_movements');
     }
 
+    /**
+     * Laporan ini TIDAK BISA diubah oleh siapa pun, dan itu memang disengaja.
+     *
+     * Sebelumnya di sini disebut izin `create/edit/delete_beef_stock_movements`. Izin itu tidak pernah
+     * ada -- tidak di seeder, tidak di migrasi mana pun -- sehingga
+     * `hasPermission()` atasnya selalu `false`. Hasilnya sama, tetapi
+     * kodenya terbaca seolah ada hak yang bisa diberikan, padahal tidak ada
+     * yang bisa mencentangnya.
+     */
     public function create(User $user): bool
     {
-        return $user->hasPermission('create_beef_stock_movements');
+        return false;
     }
 
     public function update(User $user, BeefStockMovement $model): bool
     {
-        return $user->hasPermission('edit_beef_stock_movements');
+        return false;
     }
 
     public function delete(User $user, BeefStockMovement $model): bool
     {
-        return $user->hasPermission('delete_beef_stock_movements');
+        return false;
     }
 }

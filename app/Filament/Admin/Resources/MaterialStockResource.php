@@ -24,7 +24,42 @@ class MaterialStockResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasPermission('view_material_stocks');
+        return auth()->user()?->hasPermission('view_material_stocks') ?? false;
+    }
+
+    /**
+     * Membuka satu material dijaga izin YANG SAMA dengan daftarnya.
+     *
+     * Model resource ini `Material`, bukan `MaterialStock`, sehingga
+     * `canView()` yang tidak ditulis akan jatuh ke `MaterialPolicy::view()`
+     * dan meminta `view_materials` -- izin yang berbeda dari yang menjaga
+     * daftarnya. Barisnya memang tidak bisa diklik, tetapi rute `view`-nya
+     * terdaftar, jadi alamatnya tetap bisa dibuka langsung.
+     */
+    public static function canView($record): bool
+    {
+        return static::canViewAny();
+    }
+
+    /** Daftar ini LAPORAN. Stok material berubah lewat dokumen, bukan di sini. */
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return false;
     }
 
     public static function shouldRegisterNavigation(): bool
@@ -84,10 +119,9 @@ class MaterialStockResource extends Resource
                         Forms\Components\TextInput::make('qty')
                             ->label(__('Actual stock'))
                             ->disabled()
-                            ->formatStateUsing(function ($state) {
-                                $isOpnameRunning = \App\Models\MaterialStockTake::whereIn('status', ['DRAFT', 'IN_PROGRESS', 'REVIEW'])->exists();
-                                return $isOpnameRunning ? '***' : number_format((float) $state, 2, ',', '.');
-                            }),
+                            ->formatStateUsing(fn ($state): string => \App\Models\MaterialStockTake::isCounting()
+                                ? '***'
+                                : number_format((float) $state, 2, ',', '.')),
                         Forms\Components\TextInput::make('min_stock')
                             ->label(__('Min. Stock'))
                             ->disabled()
@@ -120,28 +154,16 @@ class MaterialStockResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('qty')
                     ->label(__('Actual stock'))
-                    ->getStateUsing(function (\App\Models\Material $record) {
-                        static $isOpnameRunning = null;
-                        if ($isOpnameRunning === null) {
-                            $isOpnameRunning = \App\Models\MaterialStockTake::whereIn('status', ['DRAFT', 'IN_PROGRESS', 'REVIEW'])->exists();
-                        }
-                        return $isOpnameRunning ? '***' : number_format((float) $record->qty, 2, ',', '.');
-                    })
+                    ->getStateUsing(fn (\App\Models\Material $record): string => \App\Models\MaterialStockTake::isCounting()
+                        ? '***'
+                        : number_format((float) $record->qty, 2, ',', '.'))
                     ->sortable()
-                    ->color(function (\App\Models\Material $record) {
-                        static $isOpnameRunning = null;
-                        if ($isOpnameRunning === null) {
-                            $isOpnameRunning = \App\Models\MaterialStockTake::whereIn('status', ['DRAFT', 'IN_PROGRESS', 'REVIEW'])->exists();
-                        }
-                        return $isOpnameRunning ? 'gray' : ($record->qty < ($record->min_stock ?? 0) ? 'danger' : 'success');
-                    })
-                    ->weight(function (\App\Models\Material $record) {
-                        static $isOpnameRunning = null;
-                        if ($isOpnameRunning === null) {
-                            $isOpnameRunning = \App\Models\MaterialStockTake::whereIn('status', ['DRAFT', 'IN_PROGRESS', 'REVIEW'])->exists();
-                        }
-                        return $isOpnameRunning ? null : ($record->qty < ($record->min_stock ?? 0) ? 'bold' : null);
-                    }),
+                    ->color(fn (\App\Models\Material $record): string => \App\Models\MaterialStockTake::isCounting()
+                        ? 'gray'
+                        : ($record->qty < ($record->min_stock ?? 0) ? 'danger' : 'success'))
+                    ->weight(fn (\App\Models\Material $record): ?string => \App\Models\MaterialStockTake::isCounting()
+                        ? null
+                        : ($record->qty < ($record->min_stock ?? 0) ? 'bold' : null)),
                 Tables\Columns\TextColumn::make('min_stock')
                     ->label(__('Min. Stock'))
                     ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')
@@ -153,13 +175,23 @@ class MaterialStockResource extends Resource
                         ->label(__('Excel'))
                         ->icon('heroicon-o-document-text')
                         ->color('success')
+                        // Ekspor ikut disamarkan saat opname berjalan.
+                        //
+                        // Sebelumnya layar menampilkan `***` tetapi kedua
+                        // tombol ekspor mencetak angka aslinya, jadi
+                        // penyamarannya bisa dilewati dengan satu klik.
+                        // Penyamaran yang punya pintu belakang bukan
+                        // penyamaran.
                         ->action(function ($livewire) {
                             $records = $livewire->getFilteredTableQuery()->get();
-                            return response()->streamDownload(function () use ($records) {
+                            $disamarkan = \App\Models\MaterialStockTake::isCounting();
+
+                            return response()->streamDownload(function () use ($records, $disamarkan) {
                                 $writer = new \OpenSpout\Writer\XLSX\Writer();
                                 $writer->openToFile('php://output');
                                 $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                    'Item Code', 'Item Name', 'Category', 'Unit', 'Current Stock', 'Min Stock'
+                                    __('Item Code'), __('Item Name'), __('Category'),
+                                    __('Unit'), __('Actual stock'), __('Min. Stock'),
                                 ]));
                                 foreach ($records as $record) {
                                     $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
@@ -167,7 +199,7 @@ class MaterialStockResource extends Resource
                                         $record->name ?? '',
                                         $record->category?->name ?? '',
                                         $record->unit?->name ?? '',
-                                        $record->qty ?? '',
+                                        $disamarkan ? '***' : ($record->qty ?? ''),
                                         $record->min_stock ?? ''
                                     ]));
                                 }
@@ -175,19 +207,20 @@ class MaterialStockResource extends Resource
                             }, 'excel.xlsx');
                         }),
                     \Filament\Tables\Actions\Action::make('pdf')
-                        ->label('PDF')
+                        ->label(__('PDF'))
                         ->icon('heroicon-o-document-arrow-down')
                         ->color('danger')
                         ->action(function ($livewire) {
                             $records = $livewire->getFilteredTableQuery()->get();
                             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.material-stocks-pdf', [
                                 'records' => $records,
+                                'masked' => \App\Models\MaterialStockTake::isCounting(),
                                 'title' => __('Material Stocks')
                             ]);
                             return response()->streamDownload(fn () => print($pdf->output()), 'export_material_stocks.pdf');
                         }),
                 ])
-                ->label('Export Data')
+                ->label(__('Export Data'))
                 ->icon('heroicon-m-arrow-down-tray')
                 ->button()
                 ->color('success'),
@@ -196,8 +229,15 @@ class MaterialStockResource extends Resource
                 Tables\Filters\SelectFilter::make('material_category_id')
                     ->relationship('category', 'name')
                     ->label(__('Category')),
+                // Ikut ditutup saat opname berjalan.
+                //
+                // Menyaring "di bawah minimum" memakai angka yang sedang
+                // disamarkan sama saja membocorkannya: daftar yang tersisa
+                // sudah menjawab pertanyaan yang seharusnya dijawab oleh
+                // hitungan fisik.
                 Tables\Filters\Filter::make('below_min_stock')
                     ->label(__('Below Min. Stock'))
+                    ->visible(fn (): bool => ! \App\Models\MaterialStockTake::isCounting())
                     ->query(fn (Builder $query) => $query->whereRaw('(SELECT COALESCE(SUM(qty), 0) FROM material_stocks WHERE material_id = materials.id) < materials.min_stock')),
             ])
             ->actions([

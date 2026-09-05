@@ -25,11 +25,16 @@ class ReceivablePolicy
     }
 
     /**
-     * Determine whether the user can create models.
+     * Piutang lahir dari dokumen penjualan, bukan diketik langsung.
+     *
+     * Dulu di sini disebut `create_receivables`, `edit_receivables`, dan
+     * `delete_receivables`. Ketiganya tidak pernah ada -- tidak di seeder,
+     * tidak di migrasi mana pun -- jadi jawabannya memang selalu `false`.
+     * Yang berubah hanya kejujurannya.
      */
     public function create($user): bool
     {
-        return $user->hasPermission('create_receivables');
+        return false;
     }
 
     /**
@@ -37,7 +42,7 @@ class ReceivablePolicy
      */
     public function update($user, $model): bool
     {
-        return $user->hasPermission('edit_receivables');
+        return false;
     }
 
     /**
@@ -45,7 +50,7 @@ class ReceivablePolicy
      */
     public function delete($user, $model): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('delete_receivables');
+        return $user->isProgrammer();
     }
 
     /**
@@ -53,7 +58,7 @@ class ReceivablePolicy
      */
     public function restore($user, $model): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('delete_receivables');
+        return $user->isProgrammer();
     }
 
     /**

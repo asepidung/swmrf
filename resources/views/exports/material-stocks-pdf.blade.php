@@ -55,20 +55,31 @@
         </thead>
         <tbody>
             @foreach($records as $index => $record)
+                {{-- Barisnya MATERIAL, bukan MaterialStock.
+
+                     Seluruh kolom di sini dulu membaca `$record->material->...`,
+                     padahal yang dikirim resource-nya model `Material` yang
+                     tidak punya relasi bernama `material`. Karena setiap
+                     pembacaannya berakhir `?? '-'`, tidak ada satu pun error:
+                     PDF-nya terbit rapi, isinya strip semua, dan min stock-nya
+                     selalu 0,00.
+
+                     Penanda merah "di bawah minimum" pun tidak pernah menyala,
+                     karena yang dibandingkan `qty < 0`. --}}
                 @php
-                    $isBelowMin = $record->qty < ($record->material->min_stock ?? 0);
+                    $isBelowMin = ! ($masked ?? false) && $record->qty < ($record->min_stock ?? 0);
                 @endphp
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
-                    <td>{{ $record->material->code ?? '-' }}</td>
-                    <td>{{ $record->material->name ?? '-' }}</td>
-                    <td>{{ $record->material->category->name ?? '-' }}</td>
-                    <td>{{ $record->material->unit->name ?? '-' }}</td>
+                    <td>{{ $record->code ?? '-' }}</td>
+                    <td>{{ $record->name ?? '-' }}</td>
+                    <td>{{ $record->category->name ?? '-' }}</td>
+                    <td>{{ $record->unit->name ?? '-' }}</td>
                     <td class="text-right @if($isBelowMin) warning-text @endif">
-                        {{ number_format($record->qty, 2, ',', '.') }}
+                        {{ ($masked ?? false) ? '***' : number_format($record->qty, 2, ',', '.') }}
                     </td>
                     <td class="text-right">
-                        {{ number_format($record->material->min_stock ?? 0, 2, ',', '.') }}
+                        {{ number_format($record->min_stock ?? 0, 2, ',', '.') }}
                     </td>
                 </tr>
             @endforeach
