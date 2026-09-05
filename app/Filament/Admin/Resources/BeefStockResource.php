@@ -16,7 +16,10 @@ use Filament\Pages\SubNavigationPosition;
 use Filament\Tables\Columns\Summarizers\Sum;
 
 use Filament\Tables\Columns\ColumnGroup;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Grouping\Group;
+use Illuminate\Support\Carbon;
+use App\Models\BeefStockMovement;
 
 class BeefStockResource extends Resource
 {
@@ -106,6 +109,40 @@ class BeefStockResource extends Resource
 
     private const CACHE_SUMS = 'beef-stock.category-sums';
 
+    /** Tanggal yang sedang dilihat; kosong berarti sekarang. */
+    public const AS_OF = 'beef-stock.as-of';
+
+    /**
+     * Batas waktu yang sedang dilihat, atau `null` kalau yang diminta posisi
+     * sekarang.
+     *
+     * Halaman daftarnyalah yang menaruh nilainya di container, karena kolom
+     * dan query di kelas ini statis dan tidak bisa membaca keadaan Livewire.
+     */
+    public static function asOf(): ?Carbon
+    {
+        return app()->bound(self::AS_OF) ? app()->make(self::AS_OF) : null;
+    }
+
+    /**
+     * Membuang hitungan yang tersimpan, karena tanggalnya berganti.
+     *
+     * Kolom dan jumlah per kategori disimpan di container supaya tidak
+     * dihitung berkali-kali dalam satu permintaan. Begitu tanggalnya berganti,
+     * simpanan itu menjadi jawaban untuk pertanyaan yang lain: kolom milik
+     * tanggal lama dipakai untuk angka tanggal baru, dan angkanya tampil di
+     * kolom yang keliru tanpa satu pun error.
+     *
+     * Di web setiap permintaan membawa container baru sehingga tidak terasa;
+     * yang tidak punya pengaman ini adalah rangkaian test dan proses yang
+     * berumur panjang.
+     */
+    public static function forgetCachedPosition(): void
+    {
+        app()->forgetInstance(self::CACHE_BUCKETS);
+        app()->forgetInstance(self::CACHE_SUMS);
+    }
+
     /**
      * Kolom stok dibangun dari GUDANG x GRADE yang benar-benar punya isi.
      *
@@ -134,20 +171,7 @@ class BeefStockResource extends Resource
             return app()->make(self::CACHE_BUCKETS);
         }
 
-        $buckets = BeefStock::query()
-            ->join('warehouses', 'warehouses.id', '=', 'beef_stocks.warehouse_id')
-            ->join('grades', 'grades.id', '=', 'beef_stocks.grade_id')
-            ->where('beef_stocks.status', 'IN_STOCK')
-            ->select(
-                'beef_stocks.warehouse_id',
-                'beef_stocks.grade_id',
-                'warehouses.name as warehouse_name',
-                'grades.name as grade_name',
-            )
-            ->distinct()
-            ->orderBy('beef_stocks.warehouse_id')
-            ->orderBy('beef_stocks.grade_id')
-            ->get()
+        $buckets = (static::asOf() ? static::bucketsPadaTanggal() : static::bucketsSekarang())
             ->map(fn ($row): array => [
                 'key' => 'w' . $row->warehouse_id . '_g' . $row->grade_id,
                 'warehouse_id' => (int) $row->warehouse_id,
@@ -162,6 +186,47 @@ class BeefStockResource extends Resource
         return $buckets;
     }
 
+    /** Kombinasi yang ada isinya SEKARANG, dibaca dari tabel stok. */
+    protected static function bucketsSekarang(): \Illuminate\Support\Collection
+    {
+        return BeefStock::query()
+            ->join('warehouses', 'warehouses.id', '=', 'beef_stocks.warehouse_id')
+            ->join('grades', 'grades.id', '=', 'beef_stocks.grade_id')
+            ->where('beef_stocks.status', 'IN_STOCK')
+            ->select(
+                'beef_stocks.warehouse_id',
+                'beef_stocks.grade_id',
+                'warehouses.name as warehouse_name',
+                'grades.name as grade_name',
+            )
+            ->distinct()
+            ->orderBy('beef_stocks.warehouse_id')
+            ->orderBy('beef_stocks.grade_id')
+            ->get();
+    }
+
+    /**
+     * Kombinasi yang ada isinya PADA TANGGAL yang dipilih.
+     *
+     * Dihitung ulang dari buku besar, dan yang saldonya nol dibuang -- kolom
+     * yang tidak ada datanya tidak ditampilkan, aturan yang sama dengan
+     * posisi sekarang.
+     */
+    protected static function bucketsPadaTanggal(): \Illuminate\Support\Collection
+    {
+        return BeefStockMovement::query()
+            ->join('warehouses', 'warehouses.id', '=', 'beef_stock_movements.warehouse_id')
+            ->join('grades', 'grades.id', '=', 'beef_stock_movements.condition')
+            ->where('beef_stock_movements.created_at', '<=', static::asOf())
+            ->groupBy('beef_stock_movements.warehouse_id', 'beef_stock_movements.condition')
+            ->havingRaw('ROUND(COALESCE(SUM(weight_in), 0) - COALESCE(SUM(weight_out), 0), 2) <> 0')
+            ->selectRaw('beef_stock_movements.warehouse_id, beef_stock_movements.condition as grade_id')
+            ->selectRaw('MAX(warehouses.name) as warehouse_name, MAX(grades.name) as grade_name')
+            ->orderBy('beef_stock_movements.warehouse_id')
+            ->orderBy('beef_stock_movements.condition')
+            ->get();
+    }
+
     /** Judul kolom di berkas ekspor: "JONGGOL CHILL". */
     protected static function bucketLabel(array $bucket): string
     {
@@ -173,20 +238,54 @@ class BeefStockResource extends Resource
         $query = parent::getEloquentQuery()->select('products.*');
 
         foreach (static::stockBuckets() as $bucket) {
-            $query->addSelect([
-                $bucket['key'] => BeefStock::selectRaw('COALESCE(SUM(weight), 0)')
-                    ->whereColumn('product_id', 'products.id')
-                    ->where('warehouse_id', $bucket['warehouse_id'])
-                    ->where('grade_id', $bucket['grade_id'])
-                    ->where('status', 'IN_STOCK'),
-            ]);
+            $query->addSelect([$bucket['key'] => static::saldo($bucket)]);
         }
 
-        return $query->addSelect([
-            'total_qty' => BeefStock::selectRaw('COALESCE(SUM(weight), 0)')
+        return $query->addSelect(['total_qty' => static::saldo()]);
+    }
+
+    /**
+     * Berat satu produk: sekarang dari tabel stok, tanggal mundur dari buku
+     * besar.
+     *
+     * Tanpa tanggal, yang dibaca `beef_stocks` -- tabel itulah yang memegang
+     * kebenaran tentang stok hari ini, dan tidak diganti hanya karena buku
+     * besarnya juga bisa menjawab.
+     *
+     * Dengan tanggal, `beef_stocks` sama sekali tidak bisa menjawab: barang
+     * yang keluar DIHAPUS barisnya, sesuai keputusan Owner supaya tabel yang
+     * dibaca sepanjang hari tetap ringan. Riwayatnya hanya ada di
+     * `beef_stock_movements`, dan keutuhannya diuji `php artisan stock:reconcile`.
+     *
+     * @param  array<string, mixed>|null  $bucket  null berarti seluruh gudang & grade
+     */
+    protected static function saldo(?array $bucket = null): Builder
+    {
+        if ($batas = static::asOf()) {
+            $query = BeefStockMovement::selectRaw(
+                'COALESCE(SUM(weight_in), 0) - COALESCE(SUM(weight_out), 0)'
+            )
                 ->whereColumn('product_id', 'products.id')
-                ->where('status', 'IN_STOCK'),
-        ]);
+                ->where('created_at', '<=', $batas);
+
+            if ($bucket) {
+                $query->where('warehouse_id', $bucket['warehouse_id'])
+                    ->where('condition', $bucket['grade_id']);
+            }
+
+            return $query;
+        }
+
+        $query = BeefStock::selectRaw('COALESCE(SUM(weight), 0)')
+            ->whereColumn('product_id', 'products.id')
+            ->where('status', 'IN_STOCK');
+
+        if ($bucket) {
+            $query->where('warehouse_id', $bucket['warehouse_id'])
+                ->where('grade_id', $bucket['grade_id']);
+        }
+
+        return $query;
     }
 
     public static function form(Form $form): Form
@@ -274,8 +373,41 @@ class BeefStockResource extends Resource
             ->summarize(Sum::make()->label(''));
     }
 
+    /**
+     * Memasang tanggal yang sedang dipilih, dibaca dari komponen hidupnya.
+     *
+     * Percobaan pertama memasangnya di `booted()` halaman daftarnya, dan itu
+     * SALAH dengan cara yang halus: `booted()` berjalan di awal permintaan,
+     * sebelum nilai filter yang baru dipasang ke propertinya. Akibatnya
+     * tanggal yang baru dipilih baru berlaku pada interaksi BERIKUTNYA --
+     * layar menampilkan angka tanggal lama sementara filternya sudah
+     * menunjukkan tanggal baru, dan tidak ada error apa pun.
+     *
+     * `table()` dipanggil saat render, sesudah seluruh properti mutakhir, dan
+     * ia menerima komponennya lewat `$table->getLivewire()`. Di sinilah satu-
+     * satunya tempat yang pasti melihat keadaan yang sebenarnya.
+     */
+    protected static function pasangTanggal(Table $table): void
+    {
+        $livewire = $table->getLivewire();
+        $tanggal = data_get($livewire->tableFilters ?? [], 'as_of.date');
+        $batas = filled($tanggal) ? Carbon::parse($tanggal)->endOfDay() : null;
+
+        if (static::asOf()?->toDateTimeString() === $batas?->toDateTimeString()) {
+            return;
+        }
+
+        app()->instance(self::AS_OF, $batas);
+
+        // Kolom dan jumlah per kategori milik tanggal lama tidak boleh dipakai
+        // untuk angka tanggal baru.
+        static::forgetCachedPosition();
+    }
+
     public static function table(Table $table): Table
     {
+        static::pasangTanggal($table);
+
         $columns = [
             Tables\Columns\TextColumn::make('code')
                 ->label(__('Code'))
@@ -377,9 +509,48 @@ class BeefStockResource extends Resource
                 ->button()
                 ->color('success'),
             ])
+            // Filternya di ATAS tabel, bukan di balik tombol.
+            //
+            // Tanggal yang sedang dilihat harus terbaca sekilas: angka stok
+            // yang ternyata milik tanggal lain adalah kesalahan yang tidak
+            // menimbulkan gejala apa pun.
+            ->filtersLayout(FiltersLayout::AboveContent)
+            ->description(fn (): ?string => static::asOf()
+                ? __('Position as at :date at 23:59:59. The date is the time of ENTRY, not the document date.', [
+                    'date' => static::asOf()->format('d M Y'),
+                ])
+                : null)
             ->filters([
-                // Produk bersaldo nol disembunyikan oleh QUERY halaman daftarnya,
-                // bukan oleh filter yang menyala sendiri. Lihat `ListBeefStocks`.
+                // Posisi stok pada tanggal tertentu.
+                //
+                // Kosong berarti sekarang. Diisi berarti akhir hari itu,
+                // dihitung ulang dari `beef_stock_movements` -- `beef_stocks`
+                // tidak bisa menjawabnya karena barang yang keluar dihapus
+                // barisnya.
+                //
+                // Penyaringannya TIDAK dikerjakan di sini. Tanggalnya ikut
+                // menentukan KOLOM apa saja yang muncul, dan kolom dibangun
+                // sebelum filter dijalankan; jadi `ListBeefStocks` yang
+                // memasangnya lebih dulu, dan bagian ini hanya isian layarnya.
+                Tables\Filters\Filter::make('as_of')
+                    ->form([
+                        Forms\Components\DatePicker::make('date')
+                            ->label(__('Stock position on'))
+                            ->placeholder(__('Now'))
+                            ->native(false)
+                            ->displayFormat('d M Y')
+                            ->maxDate(now()),
+                    ])
+                    ->query(fn (Builder $query): Builder => $query)
+                    ->indicateUsing(function (array $data): ?string {
+                        if (blank($data['date'] ?? null)) {
+                            return null;
+                        }
+
+                        return __('Position as at :date', [
+                            'date' => Carbon::parse($data['date'])->format('d M Y'),
+                        ]);
+                    }),
                 Tables\Filters\SelectFilter::make('category_id')
                     ->label(__('Category'))
                     ->relationship('category', 'name')

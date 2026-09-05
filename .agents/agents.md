@@ -3293,51 +3293,69 @@ Halaman "Posisi Stok per Tanggal" menunggu hasil `stock:reconcile` bersih
 lebih dulu. Membuat laporan tanggal mundur sebelum ada buktinya berarti
 menerbitkan angka yang belum tentu benar dengan tampilan yang meyakinkan.
 
-### Halaman Posisi Stok per Tanggal -- #277, 5 September 2026
+### Posisi stok per tanggal: filter di ATAS tabel yang sama -- #279, 5 September 2026
 
-Dibuat SESUDAH `stock:reconcile` menyatakan bersih, bukan sebelumnya.
-Menerbitkan laporan tanggal mundur sebelum ada buktinya berarti memberi angka
-yang belum tentu benar dengan tampilan yang meyakinkan.
+Percobaan pertama (#277) membuatnya sebagai halaman tersendiri. Itu salah
+bentuk, dan Owner membetulkannya:
 
-Halaman ini **tidak membaca `beef_stocks` sama sekali** -- tabel itu hanya tahu
-keadaan sekarang. Seluruh angkanya dihitung ulang dari `beef_stock_movements`.
-Ada test yang memastikan berkasnya tidak menyebut tabel stok maupun modelnya.
+> "posisi stock pertanggal lu bikin cluster baru ya? maksud gw sih bukan
+> seperti itu / diatas tabel stock nya ada filter tanggal jadi datanya akan
+> berubah sesuai tanggal"
 
-Bentuk tabelnya sengaja SAMA dengan Stock Overview: baris produk, kolom gudang
-x grade, dikelompokkan per kategori, dan kolom yang tidak ada isinya pada
-tanggal itu tidak ditampilkan. "Posisi tanggal lalu" jadi bisa langsung
-dibandingkan dengan "posisi sekarang" tanpa membaca dua bentuk tabel berbeda.
+Satu tabel, satu tempat. Halamannya beserta view dan test-nya dihapus.
 
-#### Tanggal berarti AKHIR HARI
+- **Kosong (bawaan)** = posisi sekarang, dibaca dari `beef_stocks`. Tabel itu
+  yang memegang kebenaran tentang stok hari ini, dan tidak diganti hanya
+  karena buku besarnya juga bisa menjawab.
+- **Diisi tanggal** = posisi AKHIR HARI itu (23:59:59), dihitung ulang dari
+  `beef_stock_movements`. `beef_stocks` tidak bisa menjawabnya sama sekali:
+  barang yang keluar dihapus barisnya.
 
-Pertanyaan Owner: *"misal gw filter ke tanggal 1 september itu lu tampilin 1
-september jam berapa?"*
+Peringatan "tanggalnya waktu input, bukan tanggal dokumen" muncul di atas
+tabel HANYA saat tanggal mundur dipilih. Memasangnya sepanjang hari untuk
+angka yang memang milik hari ini hanya melatih orang mengabaikannya.
 
-Jawabannya **23:59:59**, dan halamannya menulis jam itu terang-terangan --
-bukan disimpulkan sendiri oleh pembacanya. "Posisi tanggal 1 September" bisa
-berarti pagi, siang, atau tengah malam; yang dipakai akhir hari, sehingga
-semua yang diinput hari itu ikut terhitung.
+#### Dua jebakan yang harus diingat kalau bagian ini disentuh lagi
 
-#### Peringatan yang tidak boleh hilang
+**1. Tanggalnya menentukan KOLOM, bukan hanya baris.** Kombinasi gudang x
+grade yang ditampilkan adalah yang ada isinya pada tanggal itu. Ini yang
+membuat filter tanggal di sini berbeda dari filter biasa.
 
-Tanggalnya WAKTU INPUT, bukan tanggal dokumen: `beef_stock_movements` hanya
-punya `created_at`. Peringatan itu tampil di halamannya sendiri, bukan hanya
-di dokumentasi, dan dijaga test. Angka yang benar tetapi disalahpahami sama
-merugikannya dengan angka yang salah.
+**2. Filament membangun tabelnya SEKALI, di `bootedInteractsWithTable()`, dan
+boot berjalan sebelum nilai properti yang baru dipasang.** Untuk filter biasa
+itu tidak masalah -- nilainya dibaca saat query dijalankan, jadi selalu
+mutakhir. Untuk kolom, tidak: kolomnya sudah terbentuk sejak boot.
 
-Kalau suatu saat posisi stok perlu mengikuti TANGGAL DOKUMEN, itu menuntut
-kolom tanggal transaksi baru di `beef_stock_movements` -- dan hanya berlaku
-maju, karena baris lama tidak menyimpan tanggal itu.
+Percobaan memasang tanggalnya di `booted()` halaman daftar GAGAL persis karena
+itu, dan gagalnya halus -- tanggal yang baru dipilih baru berlaku pada
+interaksi berikutnya, sementara layar menampilkan angka tanggal lama dengan
+filter yang sudah menunjuk tanggal baru. Tidak ada error apa pun.
 
-#### Ditutup saat opname daging berjalan
+Yang benar: `BeefStockResource::table()` membaca tanggalnya dari
+`$table->getLivewire()`, dan `ListBeefStocks::updatedTableFilters()`
+membangun ulang tabelnya begitu tanggalnya berganti.
 
-Halaman ini menjawab persis pertanyaan yang seharusnya dijawab oleh hitungan
-fisik, jadi angkanya disembunyikan selama opname berlangsung. Alasan yang sama
-membuat enam digit terakhir barcode disamarkan di daftar stok.
+#### Bug laten di view fork yang baru meledak sekarang
 
-Pertanyaan "opname daging sedang berjalan?" kini satu rumah:
-`StockTake::isCounting()` -- DRAFT atau IN_PROGRESS. Tidak ada REVIEW di sana,
-dan itu bukan kelalaian: hanya opname material yang punya tahap REVIEW.
+`beef-stock/table.blade.php` memanggil `x-filament-tables::header` tanpa
+`:actions-position`, padahal komponennya membacanya. Blok itu hanya dirender
+kalau tabelnya punya heading atau description -- dan sampai sekarang tabelnya
+tidak pernah punya keduanya, jadi bug itu tidur sejak fork-nya dibuat.
+Begitu description dipasang, halamannya mati dengan "Undefined variable
+$actionsPosition". Sudah ditambal.
+
+Ini persis jenis biaya yang dimaksud catatan tentang fork 1449 baris itu.
+
+#### Yang TIDAK dibawa dari percobaan pertama
+
+Halaman #277 menutup angkanya selama opname daging berjalan. Aturan itu masuk
+akal untuk halaman tersendiri, tetapi di tabel utama artinya layar yang
+dipakai sepanjang hari ikut gelap selama opname. Stock Overview memang sudah
+menampilkan berat stok saat ini selama opname sejak dulu, jadi yang berlaku
+tetap seperti semula.
+
+`StockTake::isCounting()` tetap dipertahankan -- ia dipakai penyamaran enam
+digit terakhir barcode di daftar stok, dan itu memang perlu satu rumah.
 
 ### Cara kerja yang disepakati Owner
 
