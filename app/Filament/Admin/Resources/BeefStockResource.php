@@ -551,11 +551,10 @@ class BeefStockResource extends Resource
                             'date' => Carbon::parse($data['date'])->format('d M Y'),
                         ]);
                     }),
-                Tables\Filters\SelectFilter::make('category_id')
-                    ->label(__('Category'))
-                    ->relationship('category', 'name')
-                    ->searchable()
-                    ->preload(),
+                // Filter kategori dilepas atas keputusan Owner: kategorinya
+                // sudah menjadi baris pengelompokan di tabel ini, jadi
+                // menyaringnya dari atas hanya mengulang hal yang sama dengan
+                // cara kedua.
             ])
             ->actions([
                 // Clickable rows are enabled, no explicit view action button is needed
