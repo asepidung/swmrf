@@ -486,6 +486,53 @@ class BilingualParityTest extends TestCase
         );
     }
 
+    /**
+     * Setiap kunci yang dipakai kode HARUS terdaftar di kedua berkas bahasa.
+     *
+     * Sampai 6 September 2026 ada 161 kunci yang tidak pernah terdaftar. Untuk
+     * pengguna berbahasa Inggris tidak ada yang rusak -- Laravel menampilkan
+     * kuncinya sendiri, dan kuncinya memang Bahasa Inggris. Yang tidak
+     * kebagian justru pengguna INDONESIA: teks itu tidak pernah bisa
+     * diterjemahkan, dan tidak ada satu pun gejala yang memberitahu.
+     *
+     * Penjaga bahasa yang lain tidak menangkapnya karena semuanya mencari
+     * teks berbahasa INDONESIA. Teks Inggris yang tidak diterjemahkan lolos
+     * seluruhnya.
+     *
+     * Sesudah 161 kunci itu didaftarkan, sisanya nol -- jadi penjaga ini
+     * keras sejak awal, tanpa daftar toleransi.
+     *
+     * @test
+     */
+    public function every_key_used_in_code_is_registered()
+    {
+        $en = $this->strings('en');
+        $hilang = [];
+
+        foreach ($this->keysWrittenInCode() as $kunci) {
+            // Kunci milik paket lain (`filament-tables::...`) diterjemahkan
+            // oleh paketnya sendiri, bukan oleh berkas bahasa aplikasi ini.
+            if (str_contains($kunci, '::')) {
+                continue;
+            }
+
+            if (! array_key_exists($kunci, $en)) {
+                $hilang[] = $kunci;
+            }
+        }
+
+        sort($hilang);
+
+        $this->assertSame(
+            [],
+            $hilang,
+            "Kunci berikut dipakai kode tetapi tidak terdaftar di lang/en.json, "
+            . "sehingga tidak akan pernah bisa diterjemahkan:
+" . implode("
+", $hilang),
+        );
+    }
+
     protected function looksIndonesian(string $text): bool
     {
         $words = $this->indonesianWords();
