@@ -205,6 +205,25 @@ class StockReconcileTest extends TestCase
             ->assertExitCode(2);
     }
 
+    /**
+     * Hasil "bersih" harus disertai ukuran bahan yang diperiksanya.
+     *
+     * Buku besar dengan dua baris memang selalu cocok. Menyebut "bersih"
+     * tanpa menyebut ukurannya membuat pembacanya menyimpulkan lebih jauh
+     * daripada yang sebenarnya dibuktikan.
+     */
+    public function test_it_says_how_much_it_actually_checked(): void
+    {
+        $this->masuk('BC-1', 20.00);
+        $this->stok('BC-1', 20.00);
+
+        $this->artisan('stock:reconcile')
+            ->expectsOutputToContain('Baris pergerakan dibaca')
+            ->expectsOutputToContain('Baris stok sekarang')
+            ->expectsOutputToContain('Bahannya masih sedikit')
+            ->assertExitCode(0);
+    }
+
     /** Perintah ini HANYA MEMBACA: tidak boleh ada satu pun penulisan. */
     public function test_it_never_writes_anything(): void
     {
