@@ -378,12 +378,8 @@ class BeefStockResource extends Resource
                 ->color('success'),
             ])
             ->filters([
-                Tables\Filters\Filter::make('hide_empty')
-                    ->label(__('Hide Empty Stock'))
-                    // Aktif secara default: daftar stok yang menampilkan produk
-                    // bersaldo nol hanya jadi derau bagi operator gudang.
-                    ->default()
-                    ->query(fn (Builder $query) => $query->whereHas('beefStocks', fn ($q) => $q->where('status', 'IN_STOCK'))),
+                // Produk bersaldo nol disembunyikan oleh QUERY halaman daftarnya,
+                // bukan oleh filter yang menyala sendiri. Lihat `ListBeefStocks`.
                 Tables\Filters\SelectFilter::make('category_id')
                     ->label(__('Category'))
                     ->relationship('category', 'name')
