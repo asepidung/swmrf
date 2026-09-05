@@ -57,14 +57,14 @@ class ItemsRelationManager extends RelationManager
                     ->label(__('Variance Status'))
                     ->getStateUsing(function ($record) {
                         if ($record->physical_qty === null) return '-';
-                        if ($record->difference_qty > 0) return __('Lebih');
-                        if ($record->difference_qty < 0) return __('Kurang');
+                        if ($record->difference_qty > 0) return __('Over');
+                        if ($record->difference_qty < 0) return __('Short');
                         return __('Sesuai');
                     })
                     ->badge()
                     ->color(fn ($state) => match($state) {
-                        __('Lebih') => 'info',
-                        __('Kurang') => 'danger',
+                        __('Over') => 'info',
+                        __('Short') => 'danger',
                         __('Sesuai') => 'success',
                         default => 'gray',
                     }),

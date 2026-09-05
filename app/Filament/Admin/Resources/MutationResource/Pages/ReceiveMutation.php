@@ -37,7 +37,7 @@ class ReceiveMutation extends Page implements HasForms, HasTable
 
     public function getHeading(): string
     {
-        return 'Penerimaan Mutasi: ' . $this->record->mutation_number;
+        return __('Receiving mutation :number', ['number' => $this->record->mutation_number]);
     }
 
     public function mount(Mutation $record): void
@@ -149,8 +149,8 @@ class ReceiveMutation extends Page implements HasForms, HasTable
                 ->color('success')
                 ->icon('heroicon-o-inbox-arrow-down')
                 ->requiresConfirmation()
-                ->modalHeading('Konfirmasi Selesai Penerimaan')
-                ->modalDescription('Apakah Anda yakin ingin menyelesaikan penerimaan? Barang yang sudah di-scan akan masuk ke stok gudang tujuan. Barang yang belum di-scan tidak akan dimasukkan (akan dicatat sebagai selisih/hilang).')
+                ->modalHeading(__('Finish receiving?'))
+                ->modalDescription(__('Everything scanned goes into the destination warehouse. Anything not scanned is left out and recorded as a shortage.'))
                 ->action(function () {
                     $receivedItems = MutationItem::where('mutation_id', $this->record->id)
                         ->where('is_received', true)

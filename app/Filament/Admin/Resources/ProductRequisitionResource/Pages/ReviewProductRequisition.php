@@ -182,8 +182,8 @@ class ReviewProductRequisition extends EditRecord
 
                 if ($missing !== []) {
                     \Filament\Notifications\Notification::make()
-                        ->title(__('Harga belum lengkap, belum bisa diteruskan ke Finance'))
-                        ->body(__('Isi dulu harga untuk barang berikut') . ': ' . implode(', ', $missing) . '.')
+                        ->title(__('Some prices are still empty, so this cannot go to Finance yet'))
+                        ->body(__('Fill in the price for these items first') . ': ' . implode(', ', $missing) . '.')
                         ->danger()
                         ->persistent()
                         ->send();
@@ -234,7 +234,7 @@ class ReviewProductRequisition extends EditRecord
             ->requiresConfirmation()
             ->form([
                 Textarea::make('reject_note')
-                    ->label('Alasan Penolakan/Revisi')
+                    ->label(__('Reason for rejection or revision'))
                     ->required(),
             ])
             ->action(function (array $data) {

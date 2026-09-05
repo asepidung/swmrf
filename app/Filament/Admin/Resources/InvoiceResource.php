@@ -647,19 +647,19 @@ class InvoiceResource extends Resource
                     ])
                     ->action(
                         Tables\Actions\Action::make('tukar_faktur')
-                            ->modalHeading(__('Tukar Faktur'))
+                            ->modalHeading(__('Invoice exchange'))
                             ->visible(fn () => auth()->user()->hasPermission('tukar_faktur'))
                             ->form([
                                 Forms\Components\DatePicker::make('invoice_exchange_date')
-                                    ->label(__('Tanggal Tukar Faktur'))
+                                    ->label(__('Invoice exchange date'))
                                     ->required()
                                     ->default(now()),
                                 Forms\Components\TextInput::make('exchange_by')
-                                    ->label(__('Diserahkan Oleh (PIC)'))
+                                    ->label(__('Handed over by (PIC)'))
                                     ->required()
                                     ->maxLength(255),
                                 Forms\Components\Textarea::make('exchange_note')
-                                    ->label(__('Keterangan (No Resi, Ekspedisi, dll)'))
+                                    ->label(__('Description (waybill number, courier, and so on)'))
                                     ->required()
                                     ->maxLength(255),
                             ])
@@ -694,7 +694,7 @@ class InvoiceResource extends Resource
                     ->preload(),
 
                 Tables\Filters\Filter::make('belum_tukar_faktur')
-                    ->label(__('Belum Tukar Faktur'))
+                    ->label(__('Invoice not exchanged yet'))
                     ->toggle()
                     ->query(fn (\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder => $query->whereNull('invoice_exchange_date')->whereHas('customer', fn($q) => $q->where('invoice_exchange', true))),
 

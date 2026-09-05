@@ -70,11 +70,11 @@
 <div class="repack-grid mt-4">
     <!-- Left Column: Bahan Masuk Summary Table -->
     <div class="repack-col-6 bg-white dark:bg-gray-900 shadow-sm ring-1 ring-gray-950/5 dark:ring-white/10 rounded-xl p-4 border dark:border-gray-800">
-        <div class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{{ __('BAHAN MASUK (INPUT)') }}</div>
+        <div class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{{ __('MATERIALS IN') }}</div>
         <table class="table-mini">
             <thead>
                 <tr>
-                    <th class="text-left">{{ __('NAMA BARANG') }}</th>
+                    <th class="text-left">{{ __('ITEM NAME') }}</th>
                     <th class="w-12 text-center">{{ __('BOX') }}</th>
                     <th class="w-20 text-right">{{ __('QTY') }}</th>
                 </tr>
@@ -100,7 +100,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="3" class="text-center italic text-gray-500 py-3">{{ __('Belum ada bahan') }}</td>
+                        <td colspan="3" class="text-center italic text-gray-500 py-3">{{ __('No materials yet') }}</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -116,11 +116,11 @@
 
     <!-- Right Column: Hasil Keluar Summary Table -->
     <div class="repack-col-6 bg-white dark:bg-gray-900 shadow-sm ring-1 ring-gray-950/5 dark:ring-white/10 rounded-xl p-4 border dark:border-gray-800">
-        <div class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{{ __('HASIL KELUAR (OUTPUT)') }}</div>
+        <div class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{{ __('OUTPUT') }}</div>
         <table class="table-mini">
             <thead>
                 <tr>
-                    <th class="text-left">{{ __('NAMA BARANG') }}</th>
+                    <th class="text-left">{{ __('ITEM NAME') }}</th>
                     <th class="w-12 text-center">{{ __('BOX') }}</th>
                     <th class="w-20 text-right">{{ __('QTY') }}</th>
                 </tr>
@@ -146,7 +146,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="3" class="text-center italic text-gray-500 py-3">{{ __('Belum ada hasil') }}</td>
+                        <td colspan="3" class="text-center italic text-gray-500 py-3">{{ __('No output yet') }}</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -168,7 +168,7 @@
     $shrinkPercent = $totalBahanQty > 0 ? abs($balance) / $totalBahanQty * 100 : 0;
 @endphp
 <div class="repack-balance-card">
-    <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #6b7280;">{{ __('SELISIH (BALANCE)') }}</span>
+    <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #6b7280;">{{ __('DIFFERENCE') }}</span>
     {{--
         Warna sebelumnya terbalik maknanya: hasil yang lebih berat daripada
         bahan diwarnai hijau, sementara susut biasa diwarnai merah. Susut kecil

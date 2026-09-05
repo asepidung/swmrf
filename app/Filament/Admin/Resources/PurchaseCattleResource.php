@@ -169,7 +169,7 @@ class PurchaseCattleResource extends Resource
                     ->numeric()
                     ->badge()
                     ->color(fn (Model $record) => $record->trashed() ? 'danger' : 'info')
-                    ->suffix(' Ekor')
+                    ->suffix(' ' . __('head'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('summary_note')
                     ->label(__('Note'))

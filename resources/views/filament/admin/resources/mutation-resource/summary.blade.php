@@ -51,7 +51,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="4" class="px-3 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Belum ada barang</td>
+                    <td colspan="4" class="px-3 py-4 text-center text-sm text-gray-500 dark:text-gray-400">{{ __('No items yet') }}</td>
                 </tr>
             @endforelse
         </tbody>

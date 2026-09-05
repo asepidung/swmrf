@@ -52,7 +52,7 @@ class SalesReturnResource extends Resource
                             })
                             ->searchable()
                             ->preload()
-                            ->placeholder(__('Pilih DO atau kosongkan untuk Unidentified')),
+                            ->placeholder(__('Pick a delivery order, or leave it empty for an unidentified return')),
 
                         Forms\Components\DatePicker::make('return_date')
                             ->label(__('Return Date'))

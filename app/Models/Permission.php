@@ -15,7 +15,7 @@ class Permission extends Model
      * menyadarinya -- persis jenis kegagalan senyap yang paling mahal.
      * Ada test yang memastikan tab ini selalu kosong.
      */
-    public const UNGROUPED = 'LAINNYA';
+    public const UNGROUPED = 'OTHERS';
 
     protected $fillable = ['name', 'module_name', 'description'];
 

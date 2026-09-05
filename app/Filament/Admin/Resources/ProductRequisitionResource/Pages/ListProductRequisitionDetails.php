@@ -88,8 +88,8 @@ class ListProductRequisitionDetails extends Page implements HasTable
             ->filters([
                 Filter::make('created_at')
                     ->form([
-                        DatePicker::make('created_from')->label(__('Periode Awal')),
-                        DatePicker::make('created_until')->label(__('Periode Akhir')),
+                        DatePicker::make('created_from')->label(__('Period start')),
+                        DatePicker::make('created_until')->label(__('Period end')),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         $from = $data['created_from'] ?? now()->startOfMonth()->toDateString();

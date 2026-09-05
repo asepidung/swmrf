@@ -131,7 +131,7 @@ class ApproveFinanceMaterialRequisition extends EditRecord
             ->requiresConfirmation()
             ->form([
                 Textarea::make('reject_note')
-                    ->label('Alasan Pengembalian')
+                    ->label(__('Reason for sending it back'))
                     ->required(),
             ])
             ->action(function (array $data) {

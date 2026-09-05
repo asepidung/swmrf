@@ -54,7 +54,7 @@ class InputBahanRepack extends Page implements HasForms, HasTable
             ->schema([
                 Forms\Components\TextInput::make('barcode')
                     ->hiddenLabel()
-                    ->placeholder(__('SCAN BARCODE BAHAN DI SINI...'))
+                    ->placeholder(__('SCAN THE MATERIAL BARCODE HERE...'))
                     ->autofocus()
                     ->extraInputAttributes([
                         'id' => 'scanner_input',
@@ -70,8 +70,8 @@ class InputBahanRepack extends Page implements HasForms, HasTable
     {
         if ($this->record->kunci == 1) {
             Notification::make()
-                ->title(__('Gagal!'))
-                ->body(__('Dokumen Repack sudah dikunci.'))
+                ->title(__('Failed'))
+                ->body(__('This repack is locked.'))
                 ->danger()
                 ->send();
             return;
@@ -87,7 +87,7 @@ class InputBahanRepack extends Page implements HasForms, HasTable
                 $stock = BeefStock::where('barcode', $scannedBarcode)->lockForUpdate()->first();
 
                 if (!$stock) {
-                    throw new \Exception(__('Barcode tidak ditemukan di stok!'));
+                    throw new \Exception(__('This barcode is not in stock.'));
                 }
 
                 // Memasukkan data ke material repack
@@ -127,7 +127,7 @@ class InputBahanRepack extends Page implements HasForms, HasTable
             $this->form->fill();
 
             Notification::make()
-                ->title(__('Bahan berhasil ditambahkan'))
+                ->title(__('Material added'))
                 ->success()
                 ->send();
 
@@ -176,7 +176,7 @@ class InputBahanRepack extends Page implements HasForms, HasTable
             ->actions([
                 Tables\Actions\DeleteAction::make()
                     ->label('')
-                    ->tooltip(__('Batalkan / Hapus'))
+                    ->tooltip(__('Cancel / Delete'))
                     ->hidden(fn () => $this->record->kunci == 1)
                     ->action(function ($record, $livewire) {
                         DB::transaction(function () use ($record) {
@@ -213,7 +213,7 @@ class InputBahanRepack extends Page implements HasForms, HasTable
                         });
 
                         Notification::make()
-                            ->title(__('Bahan dikembalikan ke stok!'))
+                            ->title(__('The material has been returned to stock'))
                             ->warning()
                             ->send();
 

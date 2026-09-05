@@ -199,7 +199,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
         if (!$tallyItem) {
             Notification::make()
                 ->title(__('Scan Failed'))
-                ->body(__('Barang tidak ditemukan di history Tally (Bukan barang produksi internal)'))
+                ->body(__('This item is not on any tally, so it did not come from our own production'))
                 ->danger()
                 ->send();
             $this->barcode = '';
@@ -234,7 +234,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
         if (!$grade) {
             Notification::make()
                 ->title(__('Scan Failed'))
-                ->body(__('Grade tidak valid dari Tally'))
+                ->body(__('The grade coming from the tally is not valid'))
                 ->danger()
                 ->send();
             $this->barcode = '';
@@ -251,7 +251,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
                 }
 
                 if (BeefStock::where('barcode', $barcode)->lockForUpdate()->exists()) {
-                    throw new \Exception(__('Barcode sudah terdaftar di stock (Duplikat)'));
+                    throw new \Exception(__('This barcode is already registered in stock'));
                 }
 
                 $price = $poItem ? $poItem->price : 0;

@@ -49,7 +49,7 @@ class RepackResource extends Resource
                 Forms\Components\Section::make(__('Repack Document'))
                     ->schema([
                         Forms\Components\TextInput::make('doc_no')
-                            ->label(__('No. Proses (Batch)'))
+                            ->label(__('Process No. (batch)'))
                             ->required()
                             ->unique(ignoreRecord: true)
                             ->default(function () {
@@ -68,19 +68,19 @@ class RepackResource extends Resource
                             ->columnSpan(1),
 
                         Forms\Components\DatePicker::make('repack_date')
-                            ->label(__('Tgl. Proses'))
+                            ->label(__('Process date'))
                             ->required()
                             ->default(now())
                             ->disabled(fn (?Repack $record) => $record?->kunci == 1)
                             ->columnSpan(1),
 
                         Forms\Components\Textarea::make('note')
-                            ->label(__('Catatan / Keterangan'))
+                            ->label(__('Note / description'))
                             ->disabled(fn (?Repack $record) => $record?->kunci == 1)
                             ->columnSpanFull(),
 
                         Forms\Components\Placeholder::make('summary_data')
-                            ->label(__('Data Bahan & Hasil (View Only)'))
+                            ->label(__('Materials & output (read only)'))
                             ->visible(fn (?Repack $record) => $record !== null)
                             ->columnSpanFull()
                             ->content(fn (?Repack $record) => $record ? view('filament.resources.repack-resource.pages.edit-summary', ['record' => $record]) : null),
@@ -104,13 +104,13 @@ class RepackResource extends Resource
             ->recordUrl(fn (Repack $record): string => static::getUrl('edit', ['record' => $record->id]))
             ->columns([
                 Tables\Columns\TextColumn::make('doc_no')
-                    ->label(__('No. Proses'))
+                    ->label(__('Process No.'))
                     ->searchable()
                     ->weight('bold')
                     ->color('primary'),
 
                 Tables\Columns\TextColumn::make('repack_date')
-                    ->label(__('Tgl. Proses'))
+                    ->label(__('Process date'))
                     ->date('d-M-Y')
                     ->sortable(),
 
@@ -123,14 +123,14 @@ class RepackResource extends Resource
                 // Sekarang semuanya lewat model, dan penyaringnya datang
                 // sendiri dari relasinya.
                 Tables\Columns\TextColumn::make('total_bahan')
-                    ->label(__('Total Bahan'))
+                    ->label(__('Total materials'))
                     ->state(fn (Repack $record): float => $record->inputWeight())
                     ->numeric(2)
                     ->alignRight()
                     ->suffix(' Kg'),
 
                 Tables\Columns\TextColumn::make('total_hasil')
-                    ->label(__('Total Hasil'))
+                    ->label(__('Total output'))
                     ->state(fn (Repack $record): float => $record->outputWeight())
                     ->numeric(2)
                     ->alignRight()
@@ -146,7 +146,7 @@ class RepackResource extends Resource
                 // warnanya mengikuti arti: wajar abu-abu, di luar batas merah,
                 // hasil lebih berat daripada bahan juga merah.
                 Tables\Columns\TextColumn::make('susut')
-                    ->label(__('Susut'))
+                    ->label(__('Shrink'))
                     ->state(function (Repack $record): string {
                         $persen = $record->shrinkPercent();
 
@@ -165,7 +165,7 @@ class RepackResource extends Resource
                         : null),
 
                 Tables\Columns\TextColumn::make('note')
-                    ->label(__('Catatan'))
+                    ->label(__('Note'))
                     ->limit(30),
             ])
             ->actions([
@@ -178,7 +178,7 @@ class RepackResource extends Resource
                         ->icon('heroicon-o-lock-open')
                         ->color('success')
                         ->tooltip(fn (Repack $record): string => $record->isWithinShrinkLimit()
-                            ? __('Kunci Repack (Final)')
+                            ? __('Lock repack (final)')
                             : __('Shrinkage is outside the reasonable limit; QC approval is needed.'))
                         ->requiresConfirmation()
                         ->modalHeading(__('Lock Repack Data'))
@@ -249,7 +249,7 @@ class RepackResource extends Resource
 
                     /* Tombol Input Bahan */
                     Tables\Actions\Action::make('input_bahan')
-                        ->label(__('Input Bahan (Scan)'))
+                        ->label(__('Enter materials (scan)'))
                         ->icon('heroicon-o-archive-box')
                         ->color('warning')
                         ->hidden(fn(Repack $record) => $record->kunci == 1)
@@ -257,7 +257,7 @@ class RepackResource extends Resource
 
                     /* Tombol Input Hasil */
                     Tables\Actions\Action::make('input_hasil')
-                        ->label(__('Input Hasil & Labeling'))
+                        ->label(__('Output & labelling'))
                         ->icon('heroicon-o-qr-code')
                         ->color('info')
                         // Hasil tidak bisa diinput sebelum bahannya ada.
@@ -321,7 +321,7 @@ class RepackResource extends Resource
                         return response()->streamDownload(function () use ($records) {
                             $writer = new \OpenSpout\Writer\XLSX\Writer();
                             $writer->openToFile('php://output');
-                            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['No. Proses', 'Tgl. Proses', 'Total Bahan', 'Total Hasil', 'Lost', 'Catatan', 'Status']));
+                            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([__('Process No.'), __('Process date'), __('Total materials'), __('Total output'), __('Lost'), __('Note'), __('Status')]));
                             foreach ($records as $record) {
                                 $bahan = \Illuminate\Support\Facades\DB::table('repack_materials')->where('repack_id', $record->id)->sum('weight');
                                 $hasil = \Illuminate\Support\Facades\DB::table('repack_results')->where('repack_id', $record->id)->whereNull('deleted_at')->sum('weight');

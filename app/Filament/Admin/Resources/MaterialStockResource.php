@@ -82,7 +82,7 @@ class MaterialStockResource extends Resource
                             ->dehydrated(false)
                             ->formatStateUsing(fn ($record) => data_get($record, 'unit.name')),
                         Forms\Components\TextInput::make('qty')
-                            ->label(__('Stok Aktual'))
+                            ->label(__('Actual stock'))
                             ->disabled()
                             ->formatStateUsing(function ($state) {
                                 $isOpnameRunning = \App\Models\MaterialStockTake::whereIn('status', ['DRAFT', 'IN_PROGRESS', 'REVIEW'])->exists();
@@ -119,7 +119,7 @@ class MaterialStockResource extends Resource
                     ->label(__('Unit'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('qty')
-                    ->label(__('Stok Aktual'))
+                    ->label(__('Actual stock'))
                     ->getStateUsing(function (\App\Models\Material $record) {
                         static $isOpnameRunning = null;
                         if ($isOpnameRunning === null) {

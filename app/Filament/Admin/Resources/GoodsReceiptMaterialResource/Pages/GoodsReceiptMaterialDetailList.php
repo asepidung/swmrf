@@ -36,7 +36,7 @@ class GoodsReceiptMaterialDetailList extends Page implements HasTable
                     ->date('d M Y')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('goodsReceiptMaterial.sj_number')
-                    ->label(__('Surat Jalan'))
+                    ->label(__('Delivery Note'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('goodsReceiptMaterial.purchaseMaterial.po_number')
@@ -120,7 +120,7 @@ class GoodsReceiptMaterialDetailList extends Page implements HasTable
                                 $writer = new \OpenSpout\Writer\XLSX\Writer();
                                 $writer->openToFile('php://output');
                                 $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                    'GR Number', 'Receive Date', 'Surat Jalan', 'PO Number', 'Supplier', 'Material', 'Qty Received', 'Price', 'Subtotal', 'Created By'
+                                    __('GR Number'), __('Receive Date'), __('Delivery Note'), __('PO Number'), __('Supplier'), __('Material'), __('Qty Received'), __('Price'), __('Subtotal'), __('Created By')
                                 ]));
                                 foreach ($records as $record) {
                                     $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([

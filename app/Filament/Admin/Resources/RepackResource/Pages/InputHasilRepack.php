@@ -97,7 +97,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
 
                         Forms\Components\Select::make('origin')
                             ->hiddenLabel()
-                            ->placeholder(__('Pilih Origin Repack'))
+                            ->placeholder(__('Pick the repack it came from'))
                             ->options([
                                 '2' => 'Repack Stock',
                                 '3' => 'Repack Import',
@@ -141,7 +141,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                         Forms\Components\Hidden::make('exp_date'),
 
                         Forms\Components\Checkbox::make('show_exp')
-                            ->label(__('Tampilkan Tanggal Expired Pada Label'))
+                            ->label(__('Show the expiry date on the label?'))
                             ->default(false)
                             ->dehydrated(false)
                             ->extraAttributes(['tabindex' => '-1']),
@@ -236,7 +236,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
             ->actions([
                 Tables\Actions\DeleteAction::make()
                     ->label('')
-                    ->tooltip(__('Hapus Data'))
+                    ->tooltip(__('Delete data'))
                     ->requiresConfirmation()
                     ->hidden(fn () => $this->record->kunci == 1)
                     ->action(function ($record, $livewire) {
@@ -260,7 +260,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                         });
 
                         Notification::make()
-                            ->title(__('Data hasil dihapus!'))
+                            ->title(__('The output has been deleted'))
                             ->success()
                             ->send();
 
@@ -274,8 +274,8 @@ class InputHasilRepack extends Page implements HasForms, HasTable
     {
         if ($this->record->kunci == 1) {
             Notification::make()
-                ->title(__('Gagal!'))
-                ->body(__('Dokumen Repack sudah dikunci.'))
+                ->title(__('Failed'))
+                ->body(__('This repack is locked.'))
                 ->danger()
                 ->send();
             return;

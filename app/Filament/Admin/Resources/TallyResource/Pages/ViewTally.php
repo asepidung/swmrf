@@ -55,7 +55,7 @@ class ViewTally extends ViewRecord
                 ->iconButton()
                 ->requiresConfirmation()
                 ->modalHeading(__('Approve Tally'))
-                ->modalDescription(__('Apakah Anda yakin ingin menyetujui Tally ini? Setelah disetujui, data tidak dapat diubah lagi.'))
+                ->modalDescription(__('Approve this tally? Nothing can be changed once it is approved.'))
                 ->form([
                     Forms\Components\TextInput::make('seal_number')
                         ->label(__('Seal Number (If Any)'))
@@ -101,8 +101,8 @@ class ViewTally extends ViewRecord
                 ->color('warning')
                 ->iconButton()
                 ->requiresConfirmation()
-                ->modalHeading(__('Batal Setujui Tally'))
-                ->modalDescription(__('Apakah Anda yakin ingin membatalkan persetujuan Tally ini? Status Tally akan kembali ke processing dan Sales Order akan kembali ke processing.'))
+                ->modalHeading(__('Undo tally approval'))
+                ->modalDescription(__('Undo the approval of this tally? Both the tally and its sales order go back to processing.'))
                 ->action(function () {
                     DB::transaction(function () {
                         $this->record->update([
@@ -133,8 +133,8 @@ class ViewTally extends ViewRecord
                 ->color('danger')
                 ->iconButton()
                 ->requiresConfirmation()
-                ->modalHeading(__('Hapus Tally'))
-                ->modalDescription(__('Jika Anda menghapus Tally ini, maka semua data barang di dalam Tally akan dikembalikan ke stock.'))
+                ->modalHeading(__('Delete tally'))
+                ->modalDescription(__('Deleting this tally returns every item on it to stock.'))
                 ->action(function () {
                     DB::transaction(function () {
                         $this->record->delete();

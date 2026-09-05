@@ -41,9 +41,9 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                 ->color('danger')
                 ->icon('heroicon-o-exclamation-triangle')
                 ->requiresConfirmation()
-                ->modalHeading('PERINGATAN KERAS: Finalisasi Opname!')
-                ->modalDescription('Apakah kamu yakin sudah menghitung dengan teliti dan benar? Setelah tombol ini ditekan, data TIDAK BISA diubah lagi. Semua selisih (kurang/lebih) akan langsung memotong atau menambah stok di sistem secara permanen, dan barang yang tidak terhitung akan dianggap hilang/selisih. Pikirkan baik-baik sebelum melanjutkan!')
-                ->modalSubmitActionLabel('Ya, Saya Yakin & Selesai')
+                ->modalHeading(__('Finish this stock count?'))
+                ->modalDescription(__('Is everything counted carefully? Once you press this, nothing can be changed. Every difference cuts or adds stock permanently, and anything left uncounted is treated as missing.'))
+                ->modalSubmitActionLabel(__('Yes, I am sure'))
                 ->action(function () {
                     $record = $this->getOwnerRecord();
                     
@@ -62,7 +62,7 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                         $record->update(['status' => 'COMPLETED']);
                     });
                     
-                    Notification::make()->title('Stock Opname berhasil diselesaikan dan stok telah diperbarui.')->success()->send();
+                    Notification::make()->title(__('The stock count is finished and the stock has been updated.'))->success()->send();
                     $this->redirect($this->getResource()::getUrl('items', ['record' => $this->getOwnerRecord()]));
                 });
         }
@@ -140,14 +140,14 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                     ->visible($isCompleted)
                     ->getStateUsing(function ($record) {
                         if ($record->physical_qty === null) return '-';
-                        if ($record->difference_qty > 0) return __('Lebih');
-                        if ($record->difference_qty < 0) return __('Kurang');
+                        if ($record->difference_qty > 0) return __('Over');
+                        if ($record->difference_qty < 0) return __('Short');
                         return __('Sesuai');
                     })
                     ->badge()
                     ->color(fn ($state) => match($state) {
-                        __('Lebih') => 'info',
-                        __('Kurang') => 'danger',
+                        __('Over') => 'info',
+                        __('Short') => 'danger',
                         __('Sesuai') => 'success',
                         default => 'gray',
                     }),

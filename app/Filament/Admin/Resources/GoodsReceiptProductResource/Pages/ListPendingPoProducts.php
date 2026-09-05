@@ -62,10 +62,10 @@ class ListPendingPoProducts extends Page implements HasTable
                     ->button()
                     ->requiresConfirmation()
                     ->modalHeading(__('Cancel Purchase Order'))
-                    ->modalDescription(__('Apakah Anda yakin ingin membatalkan Purchase Order ini?'))
+                    ->modalDescription(__('Cancel this purchase order?'))
                     ->action(function (PurchaseProduct $record) {
                         $record->update(['status' => 'canceled']);
-                        \Filament\Notifications\Notification::make()->title('PO berhasil dibatalkan!')->success()->send();
+                        \Filament\Notifications\Notification::make()->title(__('Purchase order cancelled'))->success()->send();
                     }),
             ]);
     }

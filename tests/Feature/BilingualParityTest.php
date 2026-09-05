@@ -70,7 +70,19 @@ class BilingualParityTest extends TestCase
      * istilah teknis di aplikasi ini.
      *
      * "Opname" SENGAJA tidak masuk daftar -- itu istilah baku yang dipakai
-     * dalam kedua bahasa di lingkungan kerja ini.
+     * dalam kedua bahasa di lingkungan kerja ini. Begitu juga "total", "data",
+     * "label", "detail", dan "final": bentuknya sama di kedua bahasa, jadi
+     * memasukkannya hanya menghasilkan tuduhan palsu.
+     *
+     * **Daftarnya dilebarkan dari 34 menjadi 190 kata pada 5 September 2026.**
+     * Sebelumnya penjaga ini melewatkan kunci Indonesia yang kebetulan tidak
+     * memuat satu pun dari 34 kata itu -- `Tampilkan Exp Date di Label?`,
+     * `Kunci Repack (Final)`, `Stok Aktual`, `Periode Awal`, dan puluhan
+     * lainnya. Registernya mencatat 64 kunci, padahal yang sebenarnya ada 127.
+     *
+     * Angka yang salah lebih berbahaya daripada tidak ada angka sama sekali:
+     * 64 terbaca sebagai utang yang terukur dan hampir habis, sementara 63
+     * sisanya tidak terlihat oleh siapa pun.
      *
      * @return array<int, string>
      */
@@ -82,6 +94,33 @@ class BilingualParityTest extends TestCase
             'berhasil', 'gagal', 'silakan', 'mohon', 'semua', 'catatan',
             'temuan', 'opsional', 'berat', 'fisik', 'selisih', 'selesaikan',
             'biaya', 'harga', 'satuan', 'karton', 'ongkir', 'umur', 'armada',
+            'adalah', 'ini', 'itu', 'ada', 'tambah', 'tambahkan', 'hapus',
+            'ubah', 'simpan', 'batal', 'batalkan', 'kirim', 'terima', 'barang',
+            'gudang', 'stok', 'jumlah', 'tanggal', 'tgl', 'pilih', 'masukkan',
+            'isi', 'wajib', 'sedang', 'pada', 'oleh', 'anda', 'kembali',
+            'lagi', 'bisa', 'boleh', 'harus', 'juga', 'saat', 'agar', 'supaya',
+            'sisa', 'nilai', 'cetak', 'lihat', 'buka', 'kunci', 'bahan',
+            'hasil', 'kosong', 'penuh', 'masuk', 'keluar', 'dipakai',
+            'terpakai', 'dibuat', 'dihapus', 'diubah', 'disimpan', 'dikirim',
+            'diterima', 'dikunci', 'ditemukan', 'tersedia', 'habis', 'banyak',
+            'sedikit', 'lebih', 'kurang', 'setiap', 'tiap', 'antara',
+            'sebelum', 'sesudah', 'setelah', 'selama', 'hingga', 'sampai',
+            'sejak', 'karena', 'sehingga', 'tolong', 'perhatian', 'peringatan',
+            'aturan', 'pengguna', 'pelanggan', 'pemasok', 'penjualan',
+            'pembelian', 'penerimaan', 'pengiriman', 'pengembalian',
+            'potongan', 'pembayaran', 'piutang', 'utang', 'hutang', 'tagihan',
+            'faktur', 'kwitansi', 'surat', 'jalan', 'jalur', 'baris', 'kolom',
+            'proses', 'diproses', 'selesai', 'dipotong', 'ekor', 'sapi',
+            'daging', 'tulang', 'kulit', 'buntut', 'jeroan', 'susut',
+            'penyusutan', 'timbang', 'timbangan', 'ditimbang', 'awal', 'akhir',
+            'mulai', 'berakhir', 'tutup', 'ditutup', 'dibuka', 'aktif',
+            'nonaktif', 'lokasi', 'tujuan', 'asal', 'sumber', 'keterangan',
+            'alasan', 'tampilkan', 'sembunyikan', 'discan', 'terscan',
+            'histori', 'riwayat', 'ringkasan', 'nama', 'daftar', 'urutan',
+            'satu', 'dua', 'tiga', 'atas', 'bawah', 'dalam', 'luar', 'lain',
+            'lainnya', 'sendiri', 'punya', 'milik', 'kembalikan', 'ditolak',
+            'tolakan', 'setujui', 'persetujuan', 'disetujui', 'menghapus',
+            'membuat', 'mengubah', 'menyimpan', 'mengunci', 'yakin',
         ];
     }
 
@@ -179,10 +218,11 @@ class BilingualParityTest extends TestCase
      * Sejak sekarang kodenya ikut dipindai, dan 34 kunci yang selama ini tidak
      * terlihat masuk ke register.
      *
-     * Test ini bersifat ratchet: kunci baru berbahasa Indonesia langsung
-     * gagal, sementara yang lama dibiarkan sampai gilirannya disisir. Saat
-     * ada yang dibereskan, hapus juga barisnya dari berkas baseline supaya
-     * utangnya tidak bisa diam-diam kembali.
+     * **Registernya KOSONG sejak 5 September 2026 (#267).** Ke-127 kunci
+     * Indonesia sudah diganti menjadi Bahasa Inggris, jadi berkas baseline-nya
+     * kini `[]` dan test ini tidak lagi mentoleransi apa pun. Kalau nanti ada
+     * baris yang muncul lagi di sana, itu tanda utangnya kembali -- bukan
+     * daftar tugas yang boleh didiamkan.
      *
      * @test
      */
@@ -215,5 +255,187 @@ class BilingualParityTest extends TestCase
             . "tests/Fixtures/indonesian-translation-keys.json supaya utangnya tidak bisa kembali:\n"
             . implode("\n", $fixed),
         );
+    }
+
+    /**
+     * Berkas yang teksnya SENGAJA berbahasa Indonesia.
+     *
+     * Dokumen cetak dan ekspor PDF dibaca oleh pelanggan dan pemasok, bukan
+     * oleh operator. Bahasa sebuah dokumen ditentukan oleh siapa yang
+     * membacanya, bukan oleh setelan orang yang menekan tombol cetak --
+     * keputusan Owner, 5 September 2026.
+     *
+     * @return array<int, string>
+     */
+    protected function dokumenCetak(): array
+    {
+        return [
+            'resources/views/print/',
+            'resources/views/exports/',
+            '/vendor/',
+            // Dokumen cetak yang kebetulan tinggal di folder resource-nya,
+            // bukan di resources/views/print/. Isinya tetap dokumen.
+            'pages/print-carcass.blade.php',
+        ];
+    }
+
+    /**
+     * Teks Indonesia yang ditulis LANGSUNG di kode, tanpa `__()`.
+     *
+     * Ratchet di atas hanya mengawasi KUNCI `__('...')`. Bentuk yang jauh
+     * lebih sering muncul justru tidak berbentuk kunci sama sekali:
+     *
+     *     ->label('Alasan Pengembalian')
+     *     ->modalHeading('PERINGATAN KERAS: Finalisasi Opname!')
+     *
+     * Itu bukan kunci terjemahan, jadi ia lolos dari penjaga mana pun dan
+     * teksnya tidak akan pernah berubah bahasa. Ada 21 yang seperti ini saat
+     * #267 dikerjakan, tersebar sampai ke modul yang sudah dinyatakan beres.
+     *
+     * @test
+     */
+    public function no_indonesian_text_is_written_straight_into_the_code()
+    {
+        $methods = [
+            'label', 'title', 'placeholder', 'helperText', 'description',
+            'tooltip', 'modalHeading', 'modalDescription',
+            'modalSubmitActionLabel', 'modalCancelActionLabel',
+            'successNotificationTitle', 'failureNotificationTitle', 'body',
+            'heading', 'subheading', 'emptyStateHeading',
+            'emptyStateDescription', 'navigationLabel', 'hint', 'trueLabel',
+            'falseLabel', 'badge',
+        ];
+
+        $pattern = "/->(" . implode('|', $methods) . ")\(\s*'((?:[^'\\\\]|\\\\.)+)'\s*\)/";
+
+        $offenders = [];
+
+        foreach ($this->phpFiles(['app']) as $file) {
+            preg_match_all($pattern, file_get_contents($file), $matches, PREG_SET_ORDER);
+
+            foreach ($matches as $match) {
+                if ($this->looksIndonesian($match[2])) {
+                    $offenders[] = $this->relative($file) . " -> {$match[1]}('{$match[2]}')";
+                }
+            }
+        }
+
+        sort($offenders);
+
+        $this->assertSame(
+            [],
+            $offenders,
+            "Teks berikut ditulis langsung di kode, jadi bahasanya tidak akan pernah "
+            . "berubah. Bungkus dengan __() dan daftarkan terjemahannya di id.json:\n"
+            . implode("\n", $offenders),
+        );
+    }
+
+    /**
+     * Teks Indonesia mentah di Blade halaman aplikasi.
+     *
+     * Komentar dibuang lebih dulu: komentar di proyek ini memang sengaja
+     * berbahasa Indonesia, dan tanpa membuangnya penjaga ini hanya
+     * menghasilkan tuduhan palsu. Begitu juga `@php`, `<style>`, dan
+     * `<script>`.
+     *
+     * @test
+     */
+    public function no_indonesian_text_is_written_straight_into_the_screens()
+    {
+        $offenders = [];
+
+        foreach ($this->phpFiles(['resources/views/filament']) as $file) {
+            $content = file_get_contents($file);
+
+            // Barisnya diganti baris kosong sebanyak isinya, bukan dihapus,
+            // supaya nomor baris yang dilaporkan tetap menunjuk tempat yang
+            // benar di berkas aslinya.
+            foreach ([
+                '/\{\{--.*?--\}\}/s', '/<!--.*?-->/s', '/@php.*?@endphp/s',
+                '/<style\b.*?<\/style>/si', '/<script\b.*?<\/script>/si',
+            ] as $buang) {
+                $content = preg_replace_callback(
+                    $buang,
+                    fn (array $m): string => str_repeat("\n", substr_count($m[0], "\n")),
+                    $content,
+                );
+            }
+
+            foreach (explode("\n", $content) as $number => $line) {
+                // `$record->kunci` nama KOLOM, bukan teks layar -- rantai
+                // properti ikut dibuang, bukan hanya nama variabelnya.
+                $bare = preg_replace(
+                    [
+                        '/\{\{.*?\}\}/', '/\{!!.*?!!\}/', '/<[^>]*>/',
+                        '/@\w+/', '/\$\w+(\s*(->|\?->)\s*\w+)*/', '~//.*$~',
+                    ],
+                    ' ',
+                    $line,
+                );
+
+                if ($this->looksIndonesian($bare)) {
+                    $offenders[] = $this->relative($file) . ':' . ($number + 1) . '  ' . trim($line);
+                }
+            }
+        }
+
+        sort($offenders);
+
+        $this->assertSame(
+            [],
+            $offenders,
+            "Teks berikut tampil di layar tetapi ditulis langsung di Blade. "
+            . "Bungkus dengan {{ __('...') }}:\n" . implode("\n", $offenders),
+        );
+    }
+
+    protected function looksIndonesian(string $text): bool
+    {
+        $words = $this->indonesianWords();
+
+        preg_match_all('/[A-Za-z]+/', mb_strtolower($text), $matches);
+
+        foreach ($matches[0] as $word) {
+            if (in_array($word, $words, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<int, string>  $roots
+     * @return \Generator<string>
+     */
+    protected function phpFiles(array $roots): \Generator
+    {
+        foreach ($roots as $root) {
+            $files = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator(base_path($root))
+            );
+
+            foreach ($files as $file) {
+                if (! $file->isFile() || $file->getExtension() !== 'php') {
+                    continue;
+                }
+
+                $path = str_replace('\\', '/', $file->getPathname());
+
+                foreach ($this->dokumenCetak() as $dikecualikan) {
+                    if (str_contains($path, $dikecualikan)) {
+                        continue 2;
+                    }
+                }
+
+                yield $file->getPathname();
+            }
+        }
+    }
+
+    protected function relative(string $path): string
+    {
+        return str_replace(['\\', base_path() . '/'], ['/', ''], $path);
     }
 }

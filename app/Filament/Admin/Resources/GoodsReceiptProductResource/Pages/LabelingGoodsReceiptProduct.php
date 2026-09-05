@@ -322,7 +322,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
     public function create(): void
     {
         if ($this->record->is_locked) {
-            Notification::make()->title(__('Gagal!'))->body(__('Dokumen GR sudah dikunci.'))->danger()->send();
+            Notification::make()->title(__('Failed'))->body(__('This goods receipt is locked.'))->danger()->send();
             return;
         }
 

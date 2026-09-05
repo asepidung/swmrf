@@ -14,13 +14,13 @@ class ViewStockTake extends ViewRecord
     {
         return [
             Actions\Action::make('back')
-                ->label(__('Kembali'))
+                ->label(__('Back'))
                 ->icon('heroicon-m-arrow-left')
                 ->color('gray')
                 ->url(fn () => StockTakeResource::getUrl('index')),
                 
             Actions\Action::make('print')
-                ->label('Cetak Laporan')
+                ->label(__('Print Report'))
                 ->icon('heroicon-o-printer')
                 ->color('gray')
                 ->url(fn() => route('stock-take.print', ['id' => $this->record->id]))

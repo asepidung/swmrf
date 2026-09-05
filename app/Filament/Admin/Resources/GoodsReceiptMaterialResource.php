@@ -57,7 +57,7 @@ class GoodsReceiptMaterialResource extends Resource
                             ->label(__('Receive Date'))
                             ->required(),
                         Forms\Components\TextInput::make('sj_number')
-                            ->label(__('Surat Jalan Number'))
+                            ->label(__('Delivery Note Number'))
                             ->required(),
                         Forms\Components\Textarea::make('note')
                             ->label(__('Note'))
@@ -189,10 +189,10 @@ class GoodsReceiptMaterialResource extends Resource
                             }),
 
                         Forms\Components\Radio::make('po_status_action')
-                            ->label(__('Tindakan untuk Sisa PO'))
+                            ->label(__('What to do with the rest of the purchase order'))
                             ->options([
-                                'partial' => 'Tetap Partial (Sisa barang akan ditunggu di penerimaan berikutnya)',
-                                'completed' => 'Tutup PO (Sisa barang dianggap hangus / selesai)',
+                                'partial' => __('Keep it partial; the rest is expected on a later receipt'),
+                                'completed' => __('Close the purchase order; the rest is written off'),
                             ])
                             ->default('partial')
                             ->required()
@@ -240,7 +240,7 @@ class GoodsReceiptMaterialResource extends Resource
                     ->sortable()
                     ->color(fn (GoodsReceiptMaterial $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('sj_number')
-                    ->label(__('Surat Jalan'))
+                    ->label(__('Delivery Note'))
                     ->searchable()
                     ->color(fn (GoodsReceiptMaterial $record) => $record->trashed() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('purchaseMaterial.po_number')
@@ -304,8 +304,8 @@ class GoodsReceiptMaterialResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading(fn (GoodsReceiptMaterial $record) => $record->is_locked ? __('Unlock Goods Receipt') : __('Lock Goods Receipt'))
                     ->modalDescription(fn (GoodsReceiptMaterial $record) => $record->is_locked 
-                        ? __('Apakah Anda yakin ingin membuka kunci GR ini? Perhatian: Data hutang (Payable) terkait akan dihapus (jika belum ada pembayaran).') 
-                        : __('Apakah Anda yakin ingin mengunci GR ini? Data tidak akan bisa diubah setelah dikunci (GR Selesai).'))
+                        ? __('Unlock this goods receipt? The payable it created will be deleted, as long as nothing has been paid yet.') 
+                        : __('Lock this goods receipt? Nothing can be changed once it is locked.'))
                     ->hidden(fn (GoodsReceiptMaterial $record) => ! $record->items()->exists())
                     ->action(function (GoodsReceiptMaterial $record) {
                         \Illuminate\Support\Facades\DB::beginTransaction();

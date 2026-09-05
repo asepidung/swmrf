@@ -29,7 +29,7 @@
 <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
     <div class="flex justify-between items-center">
         <span class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-            {{ __('SELISIH (BALANCE)') }}
+            {{ __('DIFFERENCE') }}
         </span>
 
         <span @class([

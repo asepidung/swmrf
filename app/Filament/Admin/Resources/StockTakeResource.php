@@ -144,8 +144,8 @@ class StockTakeResource extends Resource
                     ->tooltip(__('Finish Stock Opname'))
                     ->requiresConfirmation()
                     ->modalIcon('heroicon-o-exclamation-triangle')
-                    ->modalHeading(__('PERINGATAN: Selesaikan Stock Opname?'))
-                    ->modalDescription(__('Tindakan ini memiliki KONSEKUENSI BESAR pada Master Data Stock Anda! Barang yang berstatus "MISSING" akan DIHAPUS PERMANEN dari sistem, dan barang temuan ("UNEXPECTED") akan DITAMBAHKAN sebagai stok baru. Apakah Anda yakin ingin mengunci transaksi ini?'))
+                    ->modalHeading(__('Finish this stock count?'))
+                    ->modalDescription(__('This has a BIG consequence for your stock master data. Items marked "MISSING" are DELETED PERMANENTLY, and items found ("UNEXPECTED") are ADDED as new stock. Lock this document?'))
                     ->visible(fn (StockTake $record) => $record->status === 'IN_PROGRESS')
                     ->action(function (StockTake $record) {
                         \Illuminate\Support\Facades\DB::transaction(function () use ($record) {
@@ -242,7 +242,7 @@ class StockTakeResource extends Resource
         return $infolist
             ->schema([
                 Infolists\Components\Section::make(__('Stock Opname Details'))
-                    ->description(__('Informasi dokumen dan status saat ini.'))
+                    ->description(__('The document and its current status.'))
                     ->icon('heroicon-o-information-circle')
                     ->schema([
                         Infolists\Components\Split::make([

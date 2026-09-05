@@ -133,7 +133,7 @@ class UserResource extends Resource
                     }
                 }
                 if (str_starts_with($desc, 'Perform invoice exchange')) {
-                    $label = __('Tukar Faktur');
+                    $label = __('Invoice exchange');
                 }
 
                 return [$p->id => $label];

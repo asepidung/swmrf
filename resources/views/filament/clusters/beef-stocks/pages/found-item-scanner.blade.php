@@ -15,8 +15,8 @@
                         <div class="inline-flex items-center justify-center p-3 mb-4 rounded-full bg-primary-100 text-primary-600 dark:bg-primary-500/20 dark:text-primary-400">
                             <x-heroicon-o-viewfinder-circle class="w-8 h-8" />
                         </div>
-                        <h2 class="text-xl font-bold">{{ __('Scan Barcode Temuan') }}</h2>
-                        <p class="text-sm text-gray-500 mt-2">{{ __('Gunakan scanner untuk memindai barcode fisik pada barang yang tidak ada di stok.') }}</p>
+                        <h2 class="text-xl font-bold">{{ __('Scan the barcode of the goods found') }}</h2>
+                        <p class="text-sm text-gray-500 mt-2">{{ __('Use the scanner to read the barcode on goods that are not in stock.') }}</p>
                     </div>
 
                 <form wire:submit.prevent="scan" x-data="{
