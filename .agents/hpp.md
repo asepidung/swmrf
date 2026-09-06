@@ -167,8 +167,11 @@ terima** (kolom `Receive Wt`, yang jumlahnya 10.888 dan dipakai costing sebagai
 `Load Weight`). Dua pembagi berbeda menghasilkan dua rendemen berbeda untuk
 sapi yang sama.
 
-Perlu diputuskan mana yang benar sebelum HPP dibangun di atasnya, karena
-`J91` -- biaya beli, dasar seluruh alokasi -- dihitung dari berat itu.
+Owner sudah memastikan berat mana yang dipakai membayar pemasok -- berat surat
+jalan, lihat bagian 6. Yang belum: apakah rendemen yang KITA tampilkan juga
+harus memakai berat itu, atau memang sengaja berbeda karena menjawab
+pertanyaan yang lain (seberapa banyak karkas yang keluar dari sapi yang
+benar-benar ada, bukan dari yang tertulis di surat jalan).
 
 ---
 
@@ -189,60 +192,122 @@ carcass 15 Juni, sampai ke desimalnya. Pertanyaannya diturunkan menjadi
 
 ---
 
-## 6. Pertanyaan untuk accounting
+## 6. Yang sudah dijawab Owner
 
-Disusun supaya bisa ditanyakan apa adanya.
+Jawaban Owner, 6 September 2026, sebelum bertanya ke accounting.
 
-**Tentang angka yang tidak dijelaskan**
+### Load Weight = berat surat jalan, bukan timbang ulang
 
-1. Potongan **6%** pada `harga net = harga gross - 6%` itu apa? Bukan PPN
-   (11%), dan tidak muncul di tempat lain mana pun.
-2. **Overhead 3.000/kg** datang dari mana, dan apakah tetap tiap bulan?
-   Kenapa ia tidak menambah HPP, hanya memotong profit?
-3. **Harga/kg 62.500** itu angka kontrak, atau dihitung dari nilai PO? Lot ini
-   berisi 13 STEER dan 7 HEIFER; PO di aplikasi kita menyimpan harga
-   **per kelas sapi**, sementara costing memakai satu harga untuk semuanya.
-   Apakah kedua kelas memang satu harga?
-4. Angka **60.501,24** di baris 98 (`J97/F91`) untuk apa? Ia tidak dipakai
-   sel mana pun.
-5. Blok **1.100 kg @51.000 + 6.072 kg @50.000 = 359.700.000** di baris 98-100
-   itu apa? Totalnya (7.172 kg) tidak sama dengan Load Weight (10.888 kg) dan
-   tidak dirujuk sel mana pun.
+> "itu berat surat jalan bro qty receive, karena kami bayar sesuai qty kirim
+> dari supplier atau qty yang kita receive bukan hasil timbang ulang"
 
-**Tentang berat yang jadi dasar biaya**
+Jadi `J91` -- biaya beli, dasar seluruh alokasi -- berdiri di atas
+`cattle_receiving_items.initial_weight`, BUKAN `cattle_weighing_items.actual_weight`.
+Masuk akal: yang dibayar ke pemasok memang apa yang dikirim, dan susutnya
+sudah dicatat sendiri sebagai kerugian.
 
-6. **Load Weight 10.888 kg** itu berat surat jalan, atau berat saat sapi
-   ditimbang di kandang? Di aplikasi kita keduanya tersimpan terpisah
-   (`initial_weight` dan `actual_weight`), dan selisihnya sudah dicatat
-   sebagai kerugian susut. Yang dipakai menghitung biaya beli harus yang mana?
+**Akibatnya bagi kode kita:** `Carcass::yieldPercent()` membagi karkas dengan
+berat TIMBANG ULANG, sedangkan laporan carcass legacy membaginya dengan berat
+TERIMA. Dua rendemen berbeda untuk sapi yang sama, dan yang dipakai costing
+adalah yang kedua. Harus diputuskan sebelum HPP dibangun di atasnya.
 
-**Tentang cakupan dan penamaan**
+### Harga DIKUNCI saat costing dibuat
 
-7. Apakah satu dokumen boning **selalu** berisi tepat satu lot? Kalau suatu
-   saat dua lot di-boning bersamaan, dari mana accounting tahu potongan mana
-   milik lot yang mana?
-8. Siapa yang mengganti nama `PAHA DEPAN` menjadi `Chuck` dan `RUMP` menjadi
-   `Rump/Paha` -- dan kenapa penamaannya berbeda antara boning dan costing?
-9. `FQ 85 CL CUT` digabung ke `FQ 85 CL` di costing. Selalu begitu, atau
-   keputusan sekali itu saja?
+> "sepertinya di kunci bro, karena harusnya tiap boning dapat harga yang
+> berbeda tergantung kualitas hasil boning"
 
-**Tentang harga**
+Ini menentukan bentuk modulnya: dokumen costing menyimpan **salinan harga**
+yang dipakainya, bukan menunjuk price list. Price list yang berubah bulan
+depan tidak boleh mengubah HPP boning yang sudah jadi -- sama seperti invoice
+yang menyimpan harganya sendiri.
 
-10. Harga di kolom `GROSS PRICE` itu price list tanggal berapa? Kalau price
-    list berubah bulan depan, **HPP boning yang lama ikut berubah, atau
-    dikunci saat costing dibuat?**
+### Penamaan produk mengikuti permintaan pelanggan
 
-**Tentang yang belum masuk**
+> "chuck itu bagian paha depan dan rump itu paha ... karena spesialnya
+> customer LION kita kirim rump dia minta namanya jadi paha"
 
-11. Bahan penolong (plastik, karton, drylog, karung) **memang tidak dihitung
-    ke HPP**, atau dihitung di tempat lain yang belum kita lihat?
-12. Upah produksi masuk ke mana?
-13. Offal dan kulit ikut menyerap biaya beli, tetapi beratnya tidak ikut dalam
-    pembagi `Gross Profit /kg` (`J92/F87`, yang hanya berat daging). Disengaja?
+Jadi `PAHA DEPAN` = Chuck dan `RUMP` = Rump/Paha bukan dua produk berbeda,
+melainkan satu produk dengan nama yang berbeda menurut siapa yang membacanya.
+Accounting akan menyesuaikan ke nama item.
+
+### Penggabungan FQ 85 CL CUT selalu terjadi
+
+> "selalu begitu dan mungkin nanti ada yang lain"
+
+Jadi peta penggabungan harus bisa bertambah, bukan ditulis mati sebagai satu
+kasus.
+
+### Bahan penolong SEHARUSNYA masuk
+
+> "nah harusnya dihitung tapi disini enggak, itu yang mau coba gw dongkrak"
+
+Inilah alasan BOM (#344) dikerjakan lebih dulu. Form accounting sekarang tidak
+menghitungnya sama sekali.
+
+### Upah dihiraukan dulu, dan pengecualian offal disengaja
+
+Upah: "hiraukan dulu". Offal dan kulit yang menyerap biaya tetapi tidak ikut
+dalam pembagi `Gross Profit /kg`: "sepertinya itu disengaja".
 
 ---
 
-## 7. Ganjalan lain di berkasnya
+## 7. Potongan gross -> net BUKAN satu angka
+
+Sempat dicatat sebagai "potongan 6%". Setelah seluruh kolomnya diperiksa,
+ternyata ada empat cara berbeda menurunkan `H` (NET) dari `I` (GROSS):
+
+| Potongan | Produk |
+|---|---|
+| **6%** | Topside, Silverside, Knuckle, Tenderloin, Striploin cut, Rump, Chuck, Blade, Chuck Tender, Shank, Brisket, FQ 85 CL, Short Rib, Marrow Bone, Oxtail |
+| **16,45%** | Striploin Whole, Striploin GOLD, Striploin Less fat, Cuberoll, Cuberoll TS |
+| **5%** | Brisket PEDO, RIBS, Fat Brisket |
+| **diketik tangan** | sisanya. Sebagian sama persis dengan gross (potongan 0%), sebagian tidak beraturan: Back Rib 34,29%, Operib Frenched 39,06%, Osso Bucco 20,51% |
+
+Dan **enam belas baris tidak punya harga gross sama sekali** -- hanya net yang
+diketik: Spare Rib, Scapular, Brisket Bone, Back Bone, Tendon, Tendon SP,
+Bone, Tail Top, Tail Tip, Neck Bone, Conro, Bone SP, Fat Ginjal, Fat boning,
+Offal, dan Kulit. Semuanya tulang, lemak, dan jeroan.
+
+Yang terpakai di lot 15 Juni ini: 6% untuk hampir semuanya, 16,45% untuk
+Cuberoll, 34,29% (diketik) untuk Back Rib, dan 16 item tanpa gross.
+
+Karena `HPP = harga net x rasio`, angka potongan ini **ikut menentukan HPP
+setiap produk**.
+
+---
+
+## 8. Pertanyaan untuk accounting
+
+Disusun supaya bisa ditanyakan apa adanya.
+
+1. **Potongan gross -> net itu artinya apa, dan kenapa berbeda-beda per
+   produk?** (6%, 16,45%, 5%, dan sejumlah baris yang diketik langsung.)
+   Kalau ini diskon pelanggan, ia akan berubah tiap periode -- dan ikut
+   menggeser HPP.
+2. Kenapa tulang, lemak, dan jeroan **tidak punya harga gross sama sekali**?
+   Apakah keduanya memang tidak pernah dijual dengan daftar harga?
+3. **Overhead 3.000/kg** datang dari mana, dan apakah tetap tiap bulan?
+   Kenapa ia tidak menambah HPP, hanya memotong profit?
+4. **Harga/kg 62.500** itu angka kontrak, atau dihitung dari nilai PO? Lot ini
+   berisi 13 STEER dan 7 HEIFER; PO di aplikasi kita menyimpan harga
+   **per kelas sapi**, sementara costing memakai satu harga untuk semuanya.
+   Apakah kedua kelas memang satu harga?
+5. Angka **60.501,24** di baris 98 (`J97/F91`) untuk apa? Ia tidak dipakai
+   sel mana pun.
+6. Blok **1.100 kg @51.000 + 6.072 kg @50.000 = 359.700.000** di baris 98-100
+   itu apa? Totalnya (7.172 kg) tidak sama dengan Load Weight (10.888 kg) dan
+   tidak dirujuk sel mana pun.
+7. Apakah satu dokumen boning **selalu** berisi tepat satu lot? Kalau suatu
+   saat dua lot di-boning bersamaan, dari mana accounting tahu potongan mana
+   milik lot yang mana?
+8. Daftar produk di form costing selalu sama tiap kali (puluhan baris ber-qty
+   0 tetap ada), atau boleh mengikuti hasil boning hari itu?
+9. Kalau bahan penolong nanti ikut dihitung, ia **menambah HPP** atau
+   diperlakukan seperti overhead sekarang -- hanya memotong profit?
+
+---
+
+## 9. Ganjalan lain di berkasnya
 
 - **Pembaginya tidak konsisten.** `G87 = F87/F91` (daging dibanding load
   weight -- rendemen). Tetapi `G88 = F88/F87` (offal dibanding **daging**,
