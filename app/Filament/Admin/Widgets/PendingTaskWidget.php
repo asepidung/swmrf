@@ -320,12 +320,16 @@ class PendingTaskWidget extends Widget
      * menyusul nanti. Menambah titik berarti menambah satu baris di daftar
      * di atas, bukan menyalin metode ini.
      *
-     * Dibatasi pada dokumen yang lahir SEJAK modul QC ada. Yang lebih tua
-     * tidak pernah menunggu apa pun: tidak ada yang pernah diminta menulis
-     * laporannya, dan tidak ada yang bisa mengingatnya sekarang. Tanpa batas
-     * itu daftar tugas ini langsung berisi seluruh riwayat, dan daftar tugas
-     * yang isinya pekerjaan yang tidak akan pernah dikerjakan berhenti dibaca
-     * orang sama sekali.
+     * Yang dihitung LAPORAN yang belum diisi, bukan dokumen yang belum punya
+     * laporan. Bedanya penting: laporannya lahir sendiri begitu dokumennya
+     * dibuat, jadi dokumen yang ada SEBELUM modul ini memang tidak punya
+     * tugas -- dan itu benar. Tidak ada yang pernah diminta menulis
+     * laporannya, dan tidak ada yang bisa mengingatnya sekarang.
+     *
+     * Bentuk sebelumnya menghitung dokumen tanpa laporan dan karena itu
+     * butuh batas tanggal supaya seluruh riwayat tidak ikut masuk. Batas itu
+     * tidak diperlukan lagi: yang membatasi sekarang keberadaan tugasnya
+     * sendiri.
      *
      * @param class-string<\Illuminate\Database\Eloquent\Model> $kelas
      */
@@ -335,9 +339,9 @@ class PendingTaskWidget extends Widget
             return 0;
         }
 
-        return $kelas::query()
-            ->whereDate('created_at', '>=', \App\Models\QcReport::MENUNGGU_SEJAK)
-            ->whereDoesntHave('qcReports')
+        return \App\Models\QcReport::query()
+            ->where('reportable_type', $kelas)
+            ->belumDiisi()
             ->count();
     }
 

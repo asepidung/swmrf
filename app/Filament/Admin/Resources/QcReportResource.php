@@ -150,9 +150,24 @@ class QcReportResource extends Resource
                     ->label(__('Document number'))
                     ->formatStateUsing(fn (QcReport $record): string => $record->nomorDokumen()),
 
+                /*
+                 * Keadaannya, dan ini kolom yang paling dibaca.
+                 *
+                 * Laporan yang belum diisi bukan laporan kosong -- ia TUGAS
+                 * yang belum dikerjakan, dan bedanya harus terbaca sekilas
+                 * tanpa membuka satu per satu.
+                 */
+                Tables\Columns\TextColumn::make('submitted_at')
+                    ->label(__('Status'))
+                    ->badge()
+                    ->formatStateUsing(fn ($state): string => $state ? __('Submitted') : __('Waiting'))
+                    ->color(fn ($state): string => $state ? 'success' : 'warning')
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('occurred_at')
                     ->label(__('When it happened'))
                     ->dateTime('d M Y H:i')
+                    ->placeholder('-')
                     ->sortable(),
 
                 /*
@@ -179,6 +194,13 @@ class QcReportResource extends Resource
                         ->mapWithKeys(fn (string $kelas): array => [$kelas => __(class_basename($kelas))])
                         ->all()),
 
+                Tables\Filters\TernaryFilter::make('submitted_at')
+                    ->label(__('Submitted'))
+                    ->nullable()
+                    ->placeholder(__('All'))
+                    ->trueLabel(__('Submitted'))
+                    ->falseLabel(__('Waiting')),
+
                 Tables\Filters\TernaryFilter::make('findings')
                     ->label(__('Has findings'))
                     ->queries(
@@ -193,8 +215,37 @@ class QcReportResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+
+                /*
+                 * Cetak per laporan.
+                 *
+                 * Permintaan Owner, 7 September 2026. Yang diminta auditor
+                 * biasanya justru berkas, bukan layar.
+                 *
+                 * Hanya untuk laporan yang SUDAH diisi: mencetak tugas yang
+                 * belum dikerjakan menghasilkan kertas berisi tanda strip,
+                 * dan kertas itu terlihat seperti pemeriksaan yang hasilnya
+                 * kosong -- bukan pemeriksaan yang belum dilakukan.
+                 */
+                Tables\Actions\Action::make('print')
+                    ->label(__('Print'))
+                    ->icon('heroicon-o-printer')
+                    ->color('gray')
+                    ->url(fn (QcReport $record): string => route('qc-reports.print', $record))
+                    ->openUrlInNewTab()
+                    ->visible(fn (QcReport $record): bool => $record->sudahDiisi()),
             ])
-            ->defaultSort('occurred_at', 'desc');
+            /*
+             * Yang belum diisi naik ke atas.
+             *
+             * Daftar ini dibuka orang QC untuk MENCARI PEKERJAAN, bukan untuk
+             * membaca arsip. Mengurutkannya menurut waktu kejadian membuat
+             * tugas yang belum dikerjakan -- yang justru belum punya waktu
+             * kejadian -- terdampar di paling bawah.
+             */
+            ->defaultSort(fn ($query) => $query
+                ->orderByRaw('submitted_at is null desc')
+                ->orderByDesc('created_at'));
     }
 
     /** Alasannya di `App\Support\TrashedRecords`. */
@@ -206,12 +257,23 @@ class QcReportResource extends Resource
         );
     }
 
+    /**
+     * Laporan QC tidak pernah dibuat manual.
+     *
+     * Barisnya lahir sendiri sebagai tugas begitu dokumen pasangannya dibuat
+     * -- keputusan Owner, 7 September 2026. Tombol buat yang berdiri sendiri
+     * akan menghasilkan laporan yang tidak mendampingi apa pun.
+     */
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListQcReports::route('/'),
-            'create' => Pages\CreateQcReport::route('/create'),
-            'view' => Pages\ViewQcReport::route('/{record}'),
+'view' => Pages\ViewQcReport::route('/{record}'),
             'edit' => Pages\EditQcReport::route('/{record}/edit'),
         ];
     }

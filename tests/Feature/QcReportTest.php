@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Filament\Admin\Resources\QcReportResource\Pages\CreateQcReport;
 use App\Models\Carcass;
 use App\Models\CattleReceiving;
 use App\Models\CattleWeighing;
@@ -80,20 +79,68 @@ class QcReportTest extends TestCase
         ]);
     }
 
+    /**
+     * Laporan tugas yang dibukakan sendiri untuk sebuah carcass.
+     *
+     * Tidak dibuat di sini -- ia sudah ada begitu carcassnya lahir.
+     */
+    private function tugas(Carcass $carcass): QcReport
+    {
+        return $carcass->qcReports()->latest('id')->firstOrFail();
+    }
+
+    /** Mengisi tugasnya, seperti yang dikerjakan QC di layar. */
     private function laporan(Carcass $carcass, array $ubah = []): QcReport
     {
-        return QcReport::create(array_merge([
-            'reportable_type' => Carcass::class,
-            'reportable_id' => $carcass->id,
+        $laporan = $this->tugas($carcass);
+
+        $laporan->update(array_merge([
             'occurred_at' => now()->subHours(3),
             'note' => 'Proses killing berjalan dengan baik tanpa ada masalah.',
+            'submitted_at' => now(),
             'created_by' => $this->qc->id,
         ], $ubah));
+
+        return $laporan->fresh();
     }
 
     // =====================================================================
     // Bentuk dokumennya
     // =====================================================================
+
+    /**
+     * Laporan LAHIR SENDIRI begitu dokumen pasangannya dibuat.
+     *
+     * Keputusan Owner, 7 September 2026: "harusnya enggak ada create, kan dia
+     * sifatnya seperti draft atau tugas yang muncul otomatis ketika modul
+     * pasangannya dibuat". Yang menulis laporan tidak sedang memilih dokumen,
+     * ia sedang mengerjakan tugas yang sudah menunggu.
+     */
+    public function test_a_report_is_opened_by_itself_when_the_document_is_created(): void
+    {
+        $carcass = $this->carcass();
+
+        $laporan = $this->tugas($carcass);
+
+        $this->assertTrue($laporan->reportable->is($carcass));
+        $this->assertFalse($laporan->sudahDiisi());
+
+        // Belum ada yang menulis apa pun, jadi belum ada yang bertanggung
+        // jawab atasnya. Mencatat nama pembuat dokumen pasangannya berarti
+        // laporan mutu tercatat atas nama orang yang diperiksa.
+        $this->assertNull($laporan->created_by);
+        $this->assertNull($laporan->note);
+        $this->assertNull($laporan->occurred_at);
+    }
+
+    /** Mengisinya menyelesaikan tugasnya. */
+    public function test_filling_it_in_finishes_the_task(): void
+    {
+        $laporan = $this->laporan($this->carcass());
+
+        $this->assertTrue($laporan->sudahDiisi());
+        $this->assertSame($this->qc->id, $laporan->created_by);
+    }
 
     /**
      * Laporan tanpa satu pun temuan adalah laporan yang SAH.
@@ -172,8 +219,8 @@ class QcReportTest extends TestCase
     /** Nomornya terbit sendiri lewat `DocumentNumber`. */
     public function test_the_number_is_issued_by_the_shared_helper(): void
     {
-        $satu = $this->laporan($this->carcass());
-        $dua = $this->laporan($this->carcass());
+        $satu = $this->tugas($this->carcass());
+        $dua = $this->tugas($this->carcass());
 
         $this->assertSame('QC#'.date('y').'0001', $satu->document_number);
         $this->assertSame('QC#'.date('y').'0002', $dua->document_number);
@@ -209,25 +256,26 @@ class QcReportTest extends TestCase
         $this->assertSame(Carcass::class, QcReport::kelasUntuk('carcass'));
     }
 
-    /** Halaman buat menolak alamat tanpa dokumen yang sah. */
-    public function test_the_create_page_refuses_an_address_without_a_document(): void
+    /**
+     * Tidak ada lagi halaman BUAT.
+     *
+     * Laporan yang dibuat manual tidak mendampingi apa pun. Sejak barisnya
+     * lahir sendiri sebagai tugas, jalan itu ditutup seluruhnya -- bukan
+     * hanya tombolnya disembunyikan.
+     */
+    public function test_there_is_no_create_page_any_more(): void
     {
-        Livewire::actingAs($this->qc)
-            ->test(CreateQcReport::class)
-            ->assertRedirect(\App\Filament\Admin\Resources\QcReportResource::getUrl('index'));
-    }
+        $this->assertFalse(\App\Filament\Admin\Resources\QcReportResource::canCreate());
 
-    /** Dan menerima alamat yang menyebut dokumen yang didukung. */
-    public function test_the_create_page_accepts_a_supported_document(): void
-    {
-        $carcass = $this->carcass();
+        $this->assertArrayNotHasKey(
+            'create',
+            \App\Filament\Admin\Resources\QcReportResource::getPages(),
+        );
 
-        $this->withoutExceptionHandling();
-
-        $this->actingAs($this->qc)
-            ->get(\App\Filament\Admin\Resources\QcReportResource::getUrl('create')
-                .'?dokumen=carcass&id='.$carcass->id)
-            ->assertOk();
+        $this->assertFalse(
+            class_exists(\App\Filament\Admin\Resources\QcReportResource\Pages\CreateQcReport::class),
+            'Halaman buat masih ada; laporan QC bisa dibuat tanpa mendampingi apa pun.',
+        );
     }
 
     // =====================================================================
@@ -241,12 +289,15 @@ class QcReportTest extends TestCase
      * belum sempat mengetik akan membuat orang mencari jalan memutar, dan
      * jalan memutar itu yang menghilangkan datanya sama sekali.
      */
-    public function test_a_carcass_needs_no_qc_report_to_exist(): void
+    public function test_a_carcass_is_created_even_though_its_report_is_still_waiting(): void
     {
         $carcass = $this->carcass();
 
-        $this->assertSame(0, $carcass->qcReports()->count());
         $this->assertNotNull($carcass->carcass_number);
+
+        // Laporannya ADA, tetapi belum diisi -- dan itu tidak menghalangi
+        // apa pun. Tugas yang menunggu bukan gerbang.
+        $this->assertFalse($this->tugas($carcass)->sudahDiisi());
     }
 
     // =====================================================================
@@ -275,7 +326,7 @@ class QcReportTest extends TestCase
 
         $this->laporan($carcass);
 
-        $this->assertSame(0, $this->tugasQc());
+        $this->assertSame(0, $this->tugasQc(), 'Tugasnya masih terhitung padahal laporannya sudah diisi.');
     }
 
     /** Yang tidak boleh menulis laporan tidak diberi tugasnya. */

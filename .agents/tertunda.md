@@ -115,4 +115,6 @@ siapa pun. Selama belum dicentang, hanya akun programmer yang bisa memakainya.
 `record_payable_compensations` · `delete_beef_stocks` · `finish_stock_takes` ·
 `finish_material_stock_takes` · `record_material_findings` ·
 `view_deleted_sales_returns` · `view_deleted_material_stock_takes` ·
-`pay_purchase_materials` · `view_deleted_repacks`
+`pay_purchase_materials` · `view_deleted_repacks` ·
+`view_qc_reports` · `create_qc_reports` · `edit_qc_reports` ·
+`delete_qc_reports` · `view_deleted_qc_reports`

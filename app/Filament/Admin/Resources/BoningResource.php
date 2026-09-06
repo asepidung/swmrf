@@ -210,7 +210,8 @@ class BoningResource extends Resource
                 fn (Boning $record): ?string => static::getUrl('view', ['record' => $record->id])
             )
             ->actions([
-                /* 1. Tombol Lock */
+                \App\Filament\Admin\Resources\QcReportResource\Actions\LihatLaporanQc::make(),
+/* 1. Tombol Lock */
                 Tables\Actions\Action::make('lock')
                     // Ikon dan warna menggambarkan KEADAAN, bukan aksinya:
                     // hijau-terbuka berarti dokumen ini masih bisa diubah,
