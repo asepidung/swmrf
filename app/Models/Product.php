@@ -45,4 +45,10 @@ class Product extends Model
     {
         return $this->hasMany(BeefStock::class, 'product_id');
     }
+
+    /** Bahan penolong yang dipakai produk ini -- Bill of Material-nya. */
+    public function billOfMaterials(): HasMany
+    {
+        return $this->hasMany(ProductMaterial::class);
+    }
 }

@@ -62,5 +62,10 @@ contoh costing.xlsx
 # Berkas kerja Owner (dokumen contoh, referensi). Repositori ini publik.
 *.pdf
 
+# Seluruh folder referensi, bukan hanya jenis berkas yang kebetulan sudah
+# terdaftar di atas. Isinya bahan bahasan Owner -- SOP, contoh dokumen,
+# rekap -- dan yang berikutnya belum tentu .pdf atau .xlsx.
+REFERENSI/
+
 # Konfigurasi server lokal untuk pemeriksaan halaman, bukan bagian aplikasi.
 .claude/
