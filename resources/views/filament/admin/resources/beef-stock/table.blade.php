@@ -11,30 +11,33 @@
     `resources/views/filament/admin/stock-overview-table-style.blade.php`
     -- 105 baris yang tidak ada urusannya dengan versi Filament.
 
-    Yang tersisa di sini EMPAT penyimpangan, dan cuma ini yang perlu
-    diterapkan ulang saat menyamakan dengan versi baru:
+    Yang tersisa di sini DUA penyimpangan, dan cuma ini yang perlu diterapkan
+    ulang saat menyamakan dengan versi baru:
 
-    1.  Header action pindah ke baris toolbar, sebaris dengan pencarian dan
-        saringan, supaya tidak menghabiskan satu baris sendiri.
-        (`$hasHeaderToolbar`, blok `@elseif`, dan blok toolbar.)
+    1.  Baris ringkasan per grup bawaan Filament dimatikan -- totalnya sudah
+        dicetak SEBARIS dengan nama kategorinya, di butir 2.
 
-    2.  Kolom yang TIDAK punya grup ikut menjadi sel header ber-`rowspan=2`,
-        supaya sejajar dengan header dua tingkat (nama gudang di atas, grade
-        di bawahnya). Bawaannya menulis `<th></th>` kosong.
-
-    3.  Baris ringkasan per grup bawaan Filament dimatikan -- totalnya sudah
-        dicetak SEBARIS dengan nama kategorinya, di butir 4.
-
-    4.  Baris kategori ditulis sendiri: latar abu, tulisan kuning, tombol
+    2.  Baris kategori ditulis sendiri: latar abu, tulisan kuning, tombol
         collapse, dan satu sel angka per kombinasi gudang x grade. Selnya
         dibuat dengan mengulang `BeefStockResource::stockBuckets()`, BUKAN
         ditulis satu per satu -- kalau ditulis satu per satu, menambah gudang
         atau grade akan menggeser angkanya satu kolom tanpa satu pun galat.
 
-Satu bug pernah lahir dari salinan ini dan tidur berbulan-bulan:
-    `:actions-position` ikut terbuang bersama `:actions` di butir 1, dan
-    halamannya baru mati waktu tabelnya diberi description. Penjelasannya
-    ada di tempatnya, di bawah.
+    Keduanya adalah SATU hal: menampilkan angka ringkasan DI DALAM baris
+    kategori. Filament merender header grup sebagai satu sel yang membentang
+    seluruh kolom, jadi tidak ada tempat menaruh angka per kolom di dalamnya
+    -- dan yang disediakannya adalah baris ringkasan TERSENDIRI, satu baris
+    lagi di bawahnya.
+
+    Keputusan Owner, 6 September 2026, setelah pertukarannya dijelaskan:
+    baris kategori TETAP satu baris. "Kategori disitu bermanfaat buat user
+    ngeliat kategori daging di stock dan itu UI peninggalan orde lama jadi
+    udah nyaman aja ngeliatnya."
+
+    Tiga penyimpangan lain sudah dicabut: gayanya ke CSS, perataan label grup
+    ke CSS, sel header ber-`rowspan` dan header action kembali ke bentuk
+    bawaan. Selisihnya turun dari 327 menjadi seratusan baris, dan yang
+    tersisa benar-benar tidak bisa dinyatakan lewat API Filament v3.
 --}}
 @php
     use Filament\Support\Enums\Alignment;
@@ -99,7 +102,7 @@ Satu bug pernah lahir dari salinan ini dan tidur berbulan-bulan:
     $hasFiltersBelowContent = $hasFilters && ($filtersLayout === FiltersLayout::BelowContent);
     $hasColumnToggleDropdown = $hasToggleableColumns();
     $hasHeader = $header || $heading || $description || ($headerActions && (! $isReordering)) || $isReorderable || $areGroupingSettingsVisible || $isGlobalSearchVisible || $hasFilters || count($filterIndicators) || $hasColumnToggleDropdown;
-    $hasHeaderToolbar = $isReorderable || $areGroupingSettingsVisible || $isGlobalSearchVisible || $hasFiltersDialog || $hasColumnToggleDropdown || ($headerActions && ! $isReordering);
+    $hasHeaderToolbar = $isReorderable || $areGroupingSettingsVisible || $isGlobalSearchVisible || $hasFiltersDialog || $hasColumnToggleDropdown;
     $pluralModelLabel = $getPluralModelLabel();
     $records = $isLoaded ? $getRecords() : null;
     $searchDebounce = $getSearchDebounce();
@@ -174,22 +177,9 @@ Satu bug pernah lahir dari salinan ini dan tidur berbulan-bulan:
 
             @if ($header)
                 {{ $header }}
-                        @elseif (($heading || $description) && ! $isReordering)
-                {{-- `actions-position` WAJIB ikut dikirim.
-
-                     Fork ini memindahkan header action ke baris toolbar, lalu
-                     mengosongkan `:actions` di sini dan ikut membuang
-                     `:actions-position`. Komponen headernya tetap membacanya,
-                     jadi begitu blok ini benar-benar dirender -- yang baru
-                     terjadi ketika tabelnya punya heading atau description --
-                     halamannya mati dengan "Undefined variable
-                     $actionsPosition".
-
-                     Bug ini sudah ada sejak fork-nya dibuat dan tidak pernah
-                     terlihat, karena sampai sekarang tabelnya tidak pernah
-                     punya description. --}}
+            @elseif (($heading || $description || $headerActions) && ! $isReordering)
                 <x-filament-tables::header
-                    :actions="[]"
+                    :actions="$isReordering ? [] : $headerActions"
                     :actions-position="$headerActionsPosition"
                     :description="$description"
                     :heading="$heading"
@@ -266,15 +256,8 @@ Satu bug pernah lahir dari salinan ini dan tidur berbulan-bulan:
                     {{ \Filament\Support\Facades\FilamentView::renderHook(\Filament\Tables\View\TablesRenderHook::TOOLBAR_GROUPING_SELECTOR_AFTER, scopes: static::class) }}
                 </div>
 
-                @if ($isGlobalSearchVisible || $hasFiltersDialog || $hasColumnToggleDropdown || ($headerActions && ! $isReordering))
+                @if ($isGlobalSearchVisible || $hasFiltersDialog || $hasColumnToggleDropdown)
                     <div class="ms-auto flex items-center gap-x-4">
-                        @if ($headerActions && ! $isReordering)
-                            <x-filament-tables::actions
-                                :actions="$headerActions"
-                                class="shrink-0"
-                            />
-                        @endif
-
                         {{ \Filament\Support\Facades\FilamentView::renderHook(\Filament\Tables\View\TablesRenderHook::TOOLBAR_SEARCH_BEFORE, scopes: static::class) }}
 
                         @if ($isGlobalSearchVisible)
@@ -783,31 +766,7 @@ Satu bug pernah lahir dari salinan ini dan tidur berbulan-bulan:
                             @foreach ($columnsLayout as $columnGroup)
                                 @if ($columnGroup instanceof Column)
                                     @if ($columnGroup->isVisible() && (! $columnGroup->isToggledHidden()))
-                                        @php
-                                            $columnWidth = $columnGroup->getWidth();
-                                        @endphp
-                                        <x-filament-tables::header-cell
-                                            :actively-sorted="$getSortColumn() === $columnGroup->getName()"
-                                            :alignment="$columnGroup->getAlignment()"
-                                            :name="$columnGroup->getName()"
-                                            :sortable="$columnGroup->isSortable() && (! $isReordering)"
-                                            :sort-direction="$getSortDirection()"
-                                            :wrap="$columnGroup->isHeaderWrapped()"
-                                            :attributes="
-                                                \Filament\Support\prepare_inherited_attributes($columnGroup->getExtraHeaderAttributeBag())
-                                                    ->class([
-                                                        'fi-table-header-cell-' . str($columnGroup->getName())->camel()->kebab(),
-                                                        'w-full' => blank($columnWidth) && $columnGroup->canGrow(default: false),
-                                                        $getHiddenClasses($columnGroup),
-                                                    ])
-                                                    ->style([
-                                                        ('width: ' . $columnWidth) => filled($columnWidth),
-                                                    ])
-                                            "
-                                            rowspan="2"
-                                        >
-                                            {{ $columnGroup->getLabel() }}
-                                        </x-filament-tables::header-cell>
+                                        <th></th>
                                     @endif
                                 @elseif ($columnGroup instanceof ColumnGroup)
                                     @php
@@ -922,33 +881,31 @@ Satu bug pernah lahir dari salinan ini dan tidur berbulan-bulan:
                         @endif
 
                         @foreach ($columns as $column)
-                            @if ($column->getGroup() !== null)
-                                @php
-                                    $columnWidth = $column->getWidth();
-                                @endphp
+                            @php
+                                $columnWidth = $column->getWidth();
+                            @endphp
 
-                                <x-filament-tables::header-cell
-                                    :actively-sorted="$getSortColumn() === $column->getName()"
-                                    :alignment="$column->getAlignment()"
-                                    :name="$column->getName()"
-                                    :sortable="$column->isSortable() && (! $isReordering)"
-                                    :sort-direction="$getSortDirection()"
-                                    :wrap="$column->isHeaderWrapped()"
-                                    :attributes="
-                                        \Filament\Support\prepare_inherited_attributes($column->getExtraHeaderAttributeBag())
-                                            ->class([
-                                                'fi-table-header-cell-' . str($column->getName())->camel()->kebab(),
-                                                'w-full' => blank($columnWidth) && $column->canGrow(default: false),
-                                                $getHiddenClasses($column),
-                                            ])
-                                            ->style([
-                                                ('width: ' . $columnWidth) => filled($columnWidth),
-                                            ])
-                                    "
-                                >
-                                    {{ $column->getLabel() }}
-                                </x-filament-tables::header-cell>
-                            @endif
+                            <x-filament-tables::header-cell
+                                :actively-sorted="$getSortColumn() === $column->getName()"
+                                :alignment="$column->getAlignment()"
+                                :name="$column->getName()"
+                                :sortable="$column->isSortable() && (! $isReordering)"
+                                :sort-direction="$getSortDirection()"
+                                :wrap="$column->isHeaderWrapped()"
+                                :attributes="
+                                    \Filament\Support\prepare_inherited_attributes($column->getExtraHeaderAttributeBag())
+                                        ->class([
+                                            'fi-table-header-cell-' . str($column->getName())->camel()->kebab(),
+                                            'w-full' => blank($columnWidth) && $column->canGrow(default: false),
+                                            $getHiddenClasses($column),
+                                        ])
+                                        ->style([
+                                            ('width: ' . e($columnWidth)) => filled($columnWidth),
+                                        ])
+                                "
+                            >
+                                {{ $column->getLabel() }}
+                            </x-filament-tables::header-cell>
                         @endforeach
 
                         @if (! $isReordering)

@@ -83,7 +83,7 @@ Bukan menunggu apa pun -- hanya belum dikerjakan, dan besarnya diketahui.
 
 | Utang | Ukurannya |
 |---|---|
-| **View tabel Stock Overview masih fork Filament** | **Sisa pekerjaannya:** empat penyimpangan struktur, 209 baris, didaftar di kepala berkasnya. Belum bisa hilang selama Filament v3 tidak punya cara mencetak angka ringkasan DI DALAM baris grup, dan itu inti tampilannya. Ketertinggalannya sudah dijaga `ForkedTableViewTest` (#312), jadi ini bukan lagi risiko senyap — hanya pekerjaan yang belum selesai |
+| **View tabel Stock Overview masih fork Filament** | **Sisa pekerjaannya: tidak ada yang bisa dikerjakan lagi.** Tinggal 105 baris, dan seluruhnya satu hal: baris kategori yang mencetak angka ringkasan DI DALAM dirinya. Filament v3 merender header grup sebagai satu sel membentang, jadi tidak ada tempat menaruh angka per kolom -- yang disediakannya baris ringkasan TERSENDIRI. Owner memutuskan baris kategori tetap SATU baris (#330). Ketertinggalannya dijaga `ForkedTableViewTest` |
 | **Kedua `stock:reconcile` belum diuji di data tebal** | **Sisa pekerjaannya:** jalankan lagi setelah dipakai beberapa minggu. Sisi daging 5 Sep dan sisi material 6 Sep dua-duanya bersih, tetapi bahannya masih puluhan baris — buku besar sekecil itu memang selalu cocok. Sisi material menemukan 3 baris saldo minus lama (KERTAS HVS, 31 Agu & 1 Sep), semuanya sebelum penolakan stok minus dipasang |
 
 ---

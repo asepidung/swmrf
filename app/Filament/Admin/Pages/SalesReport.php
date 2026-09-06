@@ -84,6 +84,35 @@ class SalesReport extends Page implements HasForms
             ]);
     }
 
+    /**
+     * Grafiknya dipasang lewat jalur widget bawaan Filament.
+     *
+     * Bukan `@livewire` di dalam view. Dua alasan, dan yang kedua yang
+     * menentukan:
+     *
+     *  - `<x-filament-panels::page>` sudah merender widget header sendiri
+     *    dan mengirimkan `getWidgetData()` ke dalamnya, jadi memanggilnya
+     *    manual berarti menulis ulang sesuatu yang sudah ada;
+     *  - memanggilnya manual berarti menaruh KODE PHP di dalam Blade --
+     *    array asosiatif berkunci Bahasa Indonesia -- dan penjaga bahasa
+     *    membaca berkas Blade baris demi baris untuk mencari teks Indonesia
+     *    yang tidak dibungkus `__()`. Kunci array itu tertuduh sebagai teks
+     *    layar. Penjaganya tidak salah: yang salah menaruh kode di tempat
+     *    yang seharusnya berisi tampilan.
+     */
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            \App\Filament\Admin\Widgets\SalesYearlyChart::class,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function getWidgetData(): array
+    {
+        return ['tahun' => $this->tahun ?? (int) now()->format('Y')];
+    }
+
     /** @return array<string, mixed> */
     protected function getViewData(): array
     {

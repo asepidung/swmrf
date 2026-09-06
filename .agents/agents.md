@@ -4612,3 +4612,63 @@ kategori di setiap layar adalah pertukaran yang salah arah.
 **Keputusan: ditawarkan ke Owner, tidak diputuskan sendiri.** Ketiganya
 menukar baris salinan dengan perubahan yang DILIHAT pengguna setiap hari, dan
 itu bukan keputusan teknis.
+
+---
+
+## #331 -- Fork tinggal 105 baris, dan grafik untuk kedua laporan
+
+### Fork: 327 -> 105 baris
+
+Owner memutuskan ketiga pertukaran setelah masing-masing dijelaskan berikut
+harganya:
+
+- **Sel header ber-`rowspan`** (~51 baris) DICABUT. "Kalo memang itu yang
+  terbaik tidak apa-apa korbanin estetika dikit." Judul CODE dan PRODUCT NAME
+  sekarang duduk di baris bawah, sejajar nama grade.
+- **Header action di toolbar** (~24 baris) DICABUT. "Ikut aja." Tombol
+  ekspor kembali ke tempat bawaannya di atas tabel.
+- **Baris kategori** (~95 baris) TETAP. "Kategori disitu bermanfaat buat user
+  ngeliat kategori daging di stock dan itu UI peninggalan orde lama jadi udah
+  nyaman aja ngeliatnya."
+
+**Sisa 105 baris itu seluruhnya satu hal**, dan tidak ada lagi yang bisa
+dikerjakan tanpa mengubah keputusan Owner. Barisnya dicabut dari daftar
+"belum dikerjakan" menjadi "tidak ada yang bisa dikerjakan lagi" -- dua hal
+yang berbeda, dan menuliskannya sama akan membuat orang berikutnya mencoba
+lagi dari nol.
+
+### Grafik
+
+Owner: "untuk report hanya data ya tidak ada graphic apa karena belum ada
+datanya?" Jawabannya: itu pilihan, bukan batasan data -- dan aplikasi lama
+memang punya grafiknya. Diperbaiki.
+
+- **Sales**: garis, dua tahun bersanding, mengikuti aplikasi lama. Bulan yang
+  belum terjadi dikirim `null`, bukan nol, dan `spanGaps` dimatikan: Chart.js
+  MEMUTUS garisnya pada null, sedangkan nol membuatnya terjun ke dasar sampai
+  Desember -- terbaca seolah penjualannya berhenti. Sumbu Y dimulai dari nol
+  supaya selisih kecil tidak tergambar seperti selisih besar.
+- **Fast Moving**: batang MENDATAR. Nama produk di sini panjang-panjang, dan
+  pada batang tegak nama sepanjang itu dimiringkan atau dipotong.
+
+Batang proporsional yang sempat ada di dalam tabel dicabut -- ia menjawab
+pertanyaan yang sama dengan grafiknya, dan mengatakan hal yang sama dua kali
+di satu layar hanya menambah yang harus dibaca.
+
+### `@livewire` di dalam Blade, dan penjaga bahasa yang benar
+
+Percobaan pertama memasang grafiknya dengan `@livewire(...)` di dalam view,
+lengkap dengan array asosiatif berkunci Bahasa Indonesia. Penjaga bahasa
+langsung menuduhnya sebagai teks layar yang tidak dibungkus `__()`.
+
+**Penjaganya tidak salah.** Yang salah menaruh KODE di berkas yang seharusnya
+berisi tampilan. Filament sudah merender widget header sendiri lewat
+`getHeaderWidgets()` dan mengirimkan `getWidgetData()` ke dalamnya; jalur itu
+yang dipakai sekarang, dan Blade-nya kembali bersih.
+
+### Uji yang tidak cukup
+
+`Livewire::test()` HANYA merender komponen halamannya -- widget di dalamnya
+tidak ikut. Kesalahan di dalam grafiknya tidak akan pernah terlihat dari uji
+itu: halamannya tetap hijau sementara grafiknya mati di layar. Ditambahkan
+uji yang memuat kedua halaman UTUH lewat HTTP.

@@ -48,7 +48,7 @@
         </x-filament::section>
     </div>
 
-    <x-filament::section>
+<x-filament::section>
         <x-slot name="heading">{{ __('Monthly sales') }}</x-slot>
 
         <div class="overflow-x-auto">
