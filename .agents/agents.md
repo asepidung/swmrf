@@ -4182,3 +4182,46 @@ mengerjakan ulang semuanya.
 - **Tombol yang mengubah data tanpa bertanya** -- enam belas kandidat,
   semuanya sudah punya modal berisi form, cuma tautan kembali, atau penanda
   scan yang bisa diulang.
+
+---
+
+## #312 -- Fork view tabel Filament di Stock Overview
+
+Salinan `vendor/filament/tables/resources/views/index.blade.php`, dipakai satu
+halaman. Salinan tidak ikut berubah waktu paketnya naik versi, dan tidak ada
+apa pun yang menandai ketertinggalannya.
+
+### CSS keluar: 327 -> 220 baris selisih
+
+Seratus lima baris dari selisihnya cuma `<style>`, dan tidak satu pun ada
+urusannya dengan versi Filament. Sekarang di berkas sendiri, dimuat lewat
+render hook `HEAD_END` -- idiom yang sudah dipakai `missing-color-utilities`.
+
+**Setiap aturannya WAJIB dibatasi pada `.fi-resource-beef-stocks`.** Selama
+CSS-nya tinggal di dalam view, ia terbatas dengan sendirinya karena view-nya
+cuma dipakai satu halaman. Begitu dimuat di setiap halaman, aturan seperti
+`.fi-ta-table td { padding: 0.25rem }` akan mengubah SETIAP tabel di
+aplikasi. Ada penjaganya, memeriksa pemilih satu per satu.
+
+### Fork-nya tidak dihapus, dan itu disengaja
+
+Lima penyimpangan yang tersisa memang tidak bisa dinyatakan lewat API
+Filament v3 -- terutama baris kategori yang mencetak angka ringkasan DI DALAM
+baris grup. Filament tidak punya caranya.
+
+**Keputusan: risikonya diubah dari sepi menjadi berisik, bukan dihapus.**
+`ForkedTableViewTest` menyimpan sidik jari SHA-256 berkas aslinya (v3.3.54)
+dan gagal begitu berkas itu berubah, dengan langkah yang harus dikerjakan --
+termasuk peringatan supaya JANGAN cuma memperbarui angkanya, karena itu
+membungkam penjaganya tanpa menyelesaikan apa pun.
+
+Lima penyimpangannya didaftar di kepala salinannya supaya menyamakannya jadi
+pekerjaan mekanis, bukan penyelidikan ulang.
+
+### Yang diperiksa di halaman sungguhan, bukan di kode
+
+Membatasi CSS pada sebuah kelas cuma benar selama kelasnya ada -- dan kelas
+itu dirakit Filament dari SLUG resource-nya, bukan milik aplikasi ini. Kalau
+hilang, seluruh gaya tabel berhenti berlaku sekaligus tanpa galat apa pun.
+Dua uji baru memuat halamannya lewat HTTP dan memeriksa kelas itu benar-benar
+ada, dan berkas gayanya ikut termuat.

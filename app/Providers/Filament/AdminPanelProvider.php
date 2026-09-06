@@ -172,6 +172,15 @@ class AdminPanelProvider extends PanelProvider
                 fn (): \Illuminate\Contracts\View\View => view('filament.admin.missing-color-utilities'),
             )
 
+            // Tampilan tabel Stock Overview. Dulu tinggal di dalam salinan
+            // view tabel Filament; seratus lima baris CSS yang tidak ada
+            // urusannya dengan versi Filament. Penjelasan lengkapnya di
+            // dalam view-nya.
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::HEAD_END,
+                fn (): \Illuminate\Contracts\View\View => view('filament.admin.stock-overview-table-style'),
+            )
+
             ->renderHook(
                 \Filament\View\PanelsRenderHook::FOOTER,
                 fn (): \Illuminate\Contracts\View\View => view('filament.admin.footer'),

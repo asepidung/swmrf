@@ -61,3 +61,6 @@ contoh costing.xlsx
 
 # Berkas kerja Owner (dokumen contoh, referensi). Repositori ini publik.
 *.pdf
+
+# Konfigurasi server lokal untuk pemeriksaan halaman, bukan bagian aplikasi.
+.claude/
