@@ -4573,3 +4573,42 @@ query.
 dari kesalahan yang sama pada grup ACCOUNTING.
 
 Izinnya lewat MIGRASI, bukan hanya seeder.
+
+---
+
+## #330 -- Fork Filament: penyimpangan kelima dicabut, dan batas sesungguhnya
+
+Perataan label grup kolom (`justify-center` ditulis mati menggantikan
+`match ($columnGroupAlignment)` bawaan) pindah ke CSS. Sepuluh baris salinan
+untuk sesuatu yang seluruhnya soal tampilan -- dan tampilan tidak perlu
+salinan. **220 -> 209 baris**, tanpa satu pun perubahan yang terlihat.
+
+### Empat yang tersisa, dan berapa harganya masing-masing
+
+Diukur dari selisih terhadap berkas asli, bukan ditaksir:
+
+| Penyimpangan | Baris | Bisa dicabut? |
+|---|---|---|
+| Baris kategori buatan sendiri + baris ringkasan grup bawaan dimatikan | ~95 | Hanya dengan menukar SATU baris kategori menjadi DUA |
+| Kolom tanpa grup jadi sel header ber-`rowspan=2` | ~51 | Hanya dengan menerima judul kolom turun ke baris bawah |
+| Header action pindah ke baris toolbar | ~24 | Hanya dengan memindahkan tombol ekspor ke header halaman |
+
+### Kenapa yang ~95 baris itu tembok, bukan kemalasan
+
+Filament merender header grup sebagai SATU sel yang membentang seluruh kolom
+(`<td colspan={{ $groupHeaderColspan }}>`). Tidak ada tempat untuk menaruh
+angka per kolom di dalamnya, dan tidak ada hook untuk menyisipkannya.
+
+Yang disediakan Filament adalah baris RINGKASAN grup tersendiri -- satu baris
+lagi di bawah baris kategori, dengan angka per kolom. Jadi bentuk bawaannya
+DUA baris per kategori; fork ini menggabungkannya menjadi satu.
+
+**Menukarnya berarti menggandakan jumlah baris kategori di tabel yang seluruh
+rancangannya tentang kerapatan** -- seratus lima baris CSS yang baru
+dikeluarkan itu isinya merapatkan baris, memadatkan padding, dan membuang
+garis. Menghemat 95 baris salinan dengan menambah satu baris untuk setiap
+kategori di setiap layar adalah pertukaran yang salah arah.
+
+**Keputusan: ditawarkan ke Owner, tidak diputuskan sendiri.** Ketiganya
+menukar baris salinan dengan perubahan yang DILIHAT pengguna setiap hari, dan
+itu bukan keputusan teknis.

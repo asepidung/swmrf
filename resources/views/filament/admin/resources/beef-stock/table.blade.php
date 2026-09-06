@@ -11,7 +11,7 @@
     `resources/views/filament/admin/stock-overview-table-style.blade.php`
     -- 105 baris yang tidak ada urusannya dengan versi Filament.
 
-    Yang tersisa di sini LIMA penyimpangan, dan cuma ini yang perlu
+    Yang tersisa di sini EMPAT penyimpangan, dan cuma ini yang perlu
     diterapkan ulang saat menyamakan dengan versi baru:
 
     1.  Header action pindah ke baris toolbar, sebaris dengan pencarian dan
@@ -31,10 +31,7 @@
         ditulis satu per satu -- kalau ditulis satu per satu, menambah gudang
         atau grade akan menggeser angkanya satu kolom tanpa satu pun galat.
 
-    5.  Label grup kolom selalu di tengah (`justify-center`), tidak mengikuti
-        `Alignment` masing-masing.
-
-    Satu bug pernah lahir dari salinan ini dan tidur berbulan-bulan:
+Satu bug pernah lahir dari salinan ini dan tidur berbulan-bulan:
     `:actions-position` ikut terbuang bersama `:actions` di butir 1, dan
     halamannya baru mati waktu tabelnya diberi description. Penjelasannya
     ada di tempatnya, di bawah.
@@ -830,9 +827,18 @@
                                         >
                                             <div
                                                 @class([
-                                                    'flex w-full items-center justify-center',
+                                                    'flex w-full items-center',
                                                     'whitespace-nowrap' => ! $isColumnGroupHeaderWrapped,
                                                     'whitespace-normal' => $isColumnGroupHeaderWrapped,
+                                                    match ($columnGroupAlignment) {
+                                                        Alignment::Start => 'justify-start',
+                                                        Alignment::Center => 'justify-center',
+                                                        Alignment::End => 'justify-end',
+                                                        Alignment::Left => 'justify-start rtl:flex-row-reverse',
+                                                        Alignment::Right => 'justify-end rtl:flex-row-reverse',
+                                                        Alignment::Justify, Alignment::Between => 'justify-between',
+                                                        default => $columnGroupAlignment,
+                                                    },
                                                     $getHiddenClasses($columnGroup),
                                                 ])
                                             >
