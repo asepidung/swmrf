@@ -4388,3 +4388,53 @@ Penjaganya dua arah, dan keduanya sudah dibuktikan menggigit:
   berikutnya. Kalau gagal, ada dua jawaban yang benar dan keduanya bukan
   "tambahkan saja namanya": pasang izinnya di kode yang seharusnya
   memakainya, ATAU sembunyikan sambil menulis alasannya.
+
+---
+
+## #323 -- Angka stok itu posisi kapan, ikut ke berkas ekspornya
+
+Layar Stock Overview sudah lama menyebut peringatannya waktu saringan tanggal
+mundur aktif. **Berkas ekspornya tidak.** Excel dan PDF sama-sama keluar
+tanpa satu kata pun tentang tanggal posisinya.
+
+Bentuk kesalahan yang sudah berulang di proyek ini: layarnya benar, berkas
+yang dikirim ke luar salah. Dan di sini akibatnya paling langsung -- berkas
+posisi tiga hari lalu tidak bisa dibedakan sama sekali dari berkas posisi
+hari ini oleh siapa pun yang membukanya besok.
+
+Kalimatnya sekarang satu tempat (`keteranganPosisi()` dan
+`keteranganPosisiBerkas()`), dipakai layar dan kedua jalur ekspor. Untuk
+berkas ia TIDAK PERNAH kosong: berkas tidak punya konteks layarnya, jadi
+"posisi sekarang" pun harus dikatakan.
+
+Penjaganya memeriksa PER JALUR ekspor, bukan menghitung berapa kali
+metodenya disebut -- hitungan ikut menghitung definisinya sendiri, dan tetap
+lolos kalau satu jalur memakainya dua kali sementara jalur lain tidak sama
+sekali.
+
+### Diskusi tanggal dokumen vs waktu input
+
+Owner: "memangnya kalau menggunakan beef stock movement sekarang itu
+berpotensi memberikan data yang tidak sebenarnya ya? ... kalau dia menunda
+menginputnya sudah bukan masalah di data lagi tapi user nya yang salah,
+system is a tool not a leader replacement".
+
+**Itu benar, dan tidak dibantah.** Untuk pemakaian harian bedanya tidak
+terasa. Satu kasus yang berbeda: batas bulan -- selisihnya persis sebesar
+keterlambatan input, dan di situlah angkanya dibandingkan dengan hitungan
+fisik dan dengan akunting.
+
+**Ide Owner untuk soft delete `beef_stocks` dipertimbangkan dan ditolak,
+dengan alasannya:** `deleted_at` juga waktu input, jadi ia tidak
+menyelesaikan apa pun yang tidak diselesaikan kolom tanggal transaksi --
+sementara ongkosnya nyata dan merusak rancangan yang membuat tabel stok
+tetap ringan.
+
+**Yang menentukan ruang lingkup kalau nanti dikerjakan:** tabel `tallies`
+tidak punya kolom tanggal sendiri, padahal tally pintu masuk utama daging ke
+stok. Untuk sumber terbesarnya, tanggal dokumen memang SAMA dengan waktu
+input -- bukan kebetulan, melainkan karena dokumennya tidak punya tanggal
+lain.
+
+**Keputusan: ditunda sampai seluruh modul settle, sebelum live.** Owner minta
+diingatkan. Catatannya ada di `tertunda.md` bagian D dengan huruf besar.

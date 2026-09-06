@@ -37,6 +37,11 @@
 </head>
 <body>
     <h2>{{ $title ?? 'Data Stok Beef' }}</h2>
+    {{-- Angka ini posisi kapan. Berkas yang dibuka besok tidak punya
+         konteks layarnya. --}}
+    @isset($keterangan)
+        <p style="margin: 0 0 8px; font-size: 11px;">{{ $keterangan }}</p>
+    @endisset
     <table>
         <thead>
             <tr>

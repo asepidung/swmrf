@@ -125,6 +125,44 @@ class BeefStockResource extends Resource
     }
 
     /**
+     * Kalimat yang menerangkan angka ini posisi kapan.
+     *
+     * `null` berarti posisi sekarang -- di layar itu tidak perlu dikatakan,
+     * karena tanpa saringan tanggal memang itu yang diharapkan orang.
+     *
+     * Peringatan WAKTU INPUT ikut di dalamnya dan tidak boleh dipisah. Angka
+     * posisi tanggal mundur dihitung ulang dari `beef_stock_movements`, yang
+     * hanya punya `created_at`: barang yang datang Senin tetapi baru diinput
+     * Selasa terhitung di hari Selasa. Untuk pemakaian harian bedanya tidak
+     * terasa; pada batas bulan bedanya persis sebesar keterlambatan input,
+     * dan di situlah angkanya dibandingkan dengan hitungan fisik.
+     */
+    public static function keteranganPosisi(): ?string
+    {
+        if (! $batas = static::asOf()) {
+            return null;
+        }
+
+        return __('Position as at :date at 23:59:59. The date is the time of ENTRY, not the document date.', [
+            'date' => $batas->format('d M Y'),
+        ]);
+    }
+
+    /**
+     * Kalimat yang sama untuk BERKAS, dan di sini ia tidak boleh kosong.
+     *
+     * Di layar, "posisi sekarang" cukup dimengerti dari tidak adanya
+     * saringan tanggal. Berkas tidak punya konteks itu: ia dibuka besok, atau
+     * dikirim ke orang yang tidak melihat layarnya sama sekali, dan tidak ada
+     * apa pun di dalamnya yang memberi tahu angka itu milik kapan.
+     */
+    public static function keteranganPosisiBerkas(): string
+    {
+        return static::keteranganPosisi()
+            ?? __('Current position, exported :date.', ['date' => now()->format('d M Y H:i')]);
+    }
+
+    /**
      * Membuang hitungan yang tersimpan, karena tanggalnya berganti.
      *
      * Kolom dan jumlah per kategori disimpan di container supaya tidak
@@ -465,6 +503,17 @@ class BeefStockResource extends Resource
                                 $writer = new \OpenSpout\Writer\XLSX\Writer();
                                 $writer->openToFile('php://output');
 
+                                // Baris pertama menyebut angka ini posisi
+                                // kapan. Tanpa itu, berkas posisi tanggal
+                                // mundur tidak bisa dibedakan dari berkas
+                                // posisi hari ini oleh siapa pun yang
+                                // membukanya besok.
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    static::keteranganPosisiBerkas(),
+                                ]));
+
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['']));
+
                                 $judul = [__('Code'), __('Product Name')];
 
                                 foreach ($buckets as $bucket) {
@@ -499,7 +548,8 @@ class BeefStockResource extends Resource
                             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.beef-stocks-pdf', [
                                 'records' => $records,
                                 'buckets' => static::stockBuckets(),
-                                'title' => __('Beef Stock')
+                                'title' => __('Beef Stock'),
+                                'keterangan' => static::keteranganPosisiBerkas()
                             ]);
                             return response()->streamDownload(fn () => print($pdf->output()), 'export_beef_stocks.pdf');
                         }),
@@ -515,11 +565,7 @@ class BeefStockResource extends Resource
             // yang ternyata milik tanggal lain adalah kesalahan yang tidak
             // menimbulkan gejala apa pun.
             ->filtersLayout(FiltersLayout::AboveContent)
-            ->description(fn (): ?string => static::asOf()
-                ? __('Position as at :date at 23:59:59. The date is the time of ENTRY, not the document date.', [
-                    'date' => static::asOf()->format('d M Y'),
-                ])
-                : null)
+            ->description(fn (): ?string => static::keteranganPosisi())
             ->filters([
                 // Posisi stok pada tanggal tertentu.
                 //

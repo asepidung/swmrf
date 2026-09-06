@@ -11,6 +11,7 @@ use App\Models\Grade;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Livewire\Livewire;
+use App\Filament\Admin\Resources\BeefStockResource;
 use App\Filament\Admin\Resources\BeefStockResource\Pages\ListBeefStocks;
 use App\Filament\Admin\Resources\BeefStockResource\Pages\ViewBeefStock;
 use App\Filament\Admin\Resources\BeefStockResource\RelationManagers\BeefStocksRelationManager;
@@ -279,5 +280,102 @@ class BeefStockTest extends TestCase
             ->get(\App\Filament\Admin\Resources\BeefStockResource::getUrl('index'))
             ->assertOk()
             ->assertSee('.fi-resource-beef-stocks .fi-ta-table tbody tr', escape: false);
+    }
+
+    // =====================================================================
+    // Angka ini posisi kapan
+    // =====================================================================
+
+    /**
+     * Tanpa saringan tanggal, layarnya tidak perlu berkata apa-apa.
+     *
+     * Itu yang diharapkan orang begitu membuka halamannya; menuliskannya
+     * cuma menambah kalimat yang selalu benar dan karena itu tidak pernah
+     * dibaca.
+     */
+    public function test_the_screen_says_nothing_when_the_position_is_now(): void
+    {
+        $this->assertNull(BeefStockResource::keteranganPosisi());
+    }
+
+    /** Dengan tanggal mundur, peringatan waktu input ikut disebut. */
+    public function test_a_backdated_position_carries_the_entry_time_warning(): void
+    {
+        app()->instance(BeefStockResource::AS_OF, now()->subDays(3)->endOfDay());
+        BeefStockResource::forgetCachedPosition();
+
+        $keterangan = BeefStockResource::keteranganPosisi();
+
+        $this->assertNotNull($keterangan);
+        $this->assertStringContainsString(now()->subDays(3)->format('d M Y'), $keterangan);
+
+        // Peringatannya tidak boleh terpisah dari tanggalnya. Angka posisi
+        // tanggal mundur dihitung dari `created_at`, dan yang membaca angkanya
+        // harus tahu itu.
+        $this->assertStringContainsString(__('ENTRY'), $keterangan);
+    }
+
+    /**
+     * Berkas ekspor SELALU menyebutnya, termasuk untuk posisi sekarang.
+     *
+     * Berkas tidak punya konteks layarnya. Ia dibuka besok, atau dikirim ke
+     * orang yang tidak pernah melihat saringannya -- dan tanpa satu kalimat
+     * di dalamnya, berkas posisi tanggal mundur tidak bisa dibedakan sama
+     * sekali dari berkas posisi hari ini.
+     */
+    public function test_an_exported_file_always_says_which_position_it_holds(): void
+    {
+        $sekarang = BeefStockResource::keteranganPosisiBerkas();
+
+        $this->assertNotSame('', trim($sekarang));
+        $this->assertStringContainsString(now()->format('d M Y'), $sekarang);
+
+        app()->instance(BeefStockResource::AS_OF, now()->subDays(3)->endOfDay());
+        BeefStockResource::forgetCachedPosition();
+
+        $this->assertSame(
+            BeefStockResource::keteranganPosisi(),
+            BeefStockResource::keteranganPosisiBerkas(),
+            'Berkas dan layar mengatakan hal yang berbeda tentang posisi yang sama.',
+        );
+    }
+
+    /**
+     * Kedua jalur ekspor benar-benar membawanya.
+     *
+     * Ini bentuk kesalahan yang sudah berulang di proyek ini dan selalu
+     * lolos: layarnya benar, berkas yang dikirim ke luar yang salah. Tidak
+     * ada yang mengeluh karena tidak ada yang memeriksa berkas ekspor baris
+     * demi baris.
+     */
+    public function test_both_export_paths_carry_the_position_line(): void
+    {
+        $sumber = file_get_contents(app_path('Filament/Admin/Resources/BeefStockResource.php'));
+
+        // Diperiksa PER JALUR, bukan dihitung jumlahnya: hitungan ikut
+        // menghitung definisi metodenya sendiri, dan tetap lolos kalau satu
+        // jalur memakainya dua kali sementara jalur lain tidak sama sekali.
+        foreach (['excel', 'pdf'] as $jalur) {
+            $awal = strpos($sumber, "Action::make('".$jalur."')");
+
+            $this->assertNotFalse($awal, "Jalur ekspor $jalur tidak ada lagi.");
+
+            $blok = substr($sumber, $awal, 1800);
+
+            $this->assertStringContainsString(
+                'keteranganPosisiBerkas()',
+                $blok,
+                "Jalur ekspor $jalur tidak menyebut posisi kapan angkanya. Berkasnya akan "
+                .'terbaca seperti stok hari ini padahal bukan.',
+            );
+        }
+
+        $pdf = file_get_contents(base_path('resources/views/exports/beef-stocks-pdf.blade.php'));
+
+        $this->assertStringContainsString(
+            '$keterangan',
+            $pdf,
+            'Berkas cetak stok tidak lagi mencetak keterangan posisinya.',
+        );
     }
 }
