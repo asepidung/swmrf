@@ -27,7 +27,7 @@ Sedang dimigrasikan dari sistem PHP prosedural ke Laravel 12 + Filament v3 denga
 | Lingkungan | Keterangan |
 |---|---|
 | Lokal | MySQL `swmv2`, dipakai untuk pengembangan |
-| Uji coba | `coba.wijayameat.co.id` (shared hosting Hostinger), **auto-deploy Hostinger dari `main` -- kode saja, tanpa migrate dan tanpa clear cache**, isinya **data dummy** |
+| Uji coba | `coba.wijayameat.co.id` (shared hosting Hostinger), **deploy dikerjakan sendiri lewat SSH**, isinya **data dummy** |
 | Produksi | **VPS terpisah**, di luar jangkauan pekerjaan sehari-hari |
 
 **Sejak 24 Agustus 2026, deploy otomatis DIMATIKAN.** Koneksi SSH dari GitHub Actions ke Hostinger berulang kali gagal dengan `dial tcp: i/o timeout` (setidaknya dua kali), sehingga merge ke `main` kadang tidak benar-benar sampai ke server tanpa ada yang menyadarinya. Auto-deploy bawaan Hostinger juga dimatikan Owner.
@@ -55,8 +55,11 @@ Jadi setiap kali sebuah PR di-merge, KEDUA sisi diselesaikan sendiri:
 git checkout main && git pull origin main
 php artisan migrate            # bila PR-nya membawa migrasi
 
-# hosting
-tunggu klon otomatis sampai, lalu migrate --force + hangatkan cache
+# hosting -- TIDAK menunggu klon otomatis
+ssh -tt -p 65002 u525862761@153.92.9.218
+cd ~/domains/coba.wijayameat.co.id/public_html
+git pull && php artisan migrate --force && php artisan optimize:clear
+php artisan config:cache && php artisan route:cache && php artisan view:cache
 ```
 
 Lalu laporkan keduanya sudah sama -- commit yang sama, migrasi yang sama.
@@ -867,10 +870,23 @@ sendiri, tetapi migrasi dan cache tetap tanggung jawab implementor. Merge yang
 tidak diikuti langkah itu menghasilkan server yang kodenya baru tetapi
 perilakunya lama -- persis jenis kegagalan senyap yang berulang di proyek ini.
 
-**Jangan `git pull` manual.** Percobaan pertama gagal dengan `fatal: not a git
-repository` karena menabrak clone ulang yang sedang berjalan: `.git` sedang
-diganti saat itu juga. Urutan yang benar: push ke `main`, beri jeda, lalu masuk
-untuk `migrate --force` dan cache warming saja.
+**Dulu ada aturan "jangan `git pull` manual" di sini. Aturan itu DICABUT
+6 September 2026 atas keputusan Owner: "gak usah auto clone lu aja manual pake
+ssh".**
+
+Alasan aturan lamanya nyata dan tetap perlu diketahui: percobaan pertama gagal
+dengan `fatal: not a git repository` karena menabrak clone ulang yang sedang
+berjalan -- `.git` sedang diganti saat itu juga. Tetapi menunggu klon otomatis
+punya biayanya sendiri, dan biayanya justru muncul di saat yang paling buruk:
+deploy berhenti setengah jalan sambil menunggu sesuatu yang tidak bisa
+dipastikan kapan datangnya, dan yang menunggu mudah mengira pekerjaannya sudah
+selesai. Itu sudah terjadi pada #344 -- `migrate` dijalankan di commit lama dan
+menjawab "Nothing to migrate", jawaban yang terlihat persis seperti berhasil.
+
+Sekarang: `git pull` sendiri, langsung setelah merge. Kalau ia menabrak clone
+ulang yang kebetulan sedang berjalan, gejalanya jelas (`fatal: not a git
+repository`) dan jalan keluarnya cuma mengulang -- kegagalan yang berteriak,
+bukan yang menyamar.
 
 ### Test lambat itu I/O, bukan test-nya
 
