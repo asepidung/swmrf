@@ -81,6 +81,17 @@ class Carcass extends Model
         return $this->belongsTo(CattleWeighing::class, 'cattle_weighing_id');
     }
 
+    /**
+     * Laporan QC yang mendampingi dokumen ini.
+     *
+     * Boleh lebih dari satu: satu pemotongan bisa berlangsung dua giliran,
+     * dan pemeriksa yang berbeda menulis laporannya sendiri-sendiri.
+     */
+    public function qcReports(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(QcReport::class, 'reportable');
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(CarcassItem::class, 'carcass_id');

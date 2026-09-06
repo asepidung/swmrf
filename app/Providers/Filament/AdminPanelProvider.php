@@ -67,6 +67,7 @@ class AdminPanelProvider extends PanelProvider
                 // tanpa posisi urutan -- dan tidak ada yang menyadarinya
                 // karena Filament tidak mengeluh. Ada test yang menjaganya.
                 \Filament\Navigation\NavigationGroup::make('ACCOUNTING')->label(fn() => __('ACCOUNTING')),
+                \Filament\Navigation\NavigationGroup::make('QC')->label(fn() => __('QC')),
                 \Filament\Navigation\NavigationGroup::make('REPORTS')->label(fn() => __('REPORTS')),
                 \Filament\Navigation\NavigationGroup::make('MASTER DATA')->label(fn() => __('MASTER DATA')),
                 \Filament\Navigation\NavigationGroup::make('SYSTEM')->label(fn() => __('SYSTEM')),
