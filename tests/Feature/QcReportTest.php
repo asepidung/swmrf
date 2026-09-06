@@ -290,17 +290,21 @@ class QcReportTest extends TestCase
         $this->assertSame(0, $this->tugasQc());
     }
 
-    /** Hitungan tugasnya terlindung, jadi dipanggil lewat pantulan. */
-    private function tugasQc(): int
+    /**
+     * Hitungan tugasnya terlindung, jadi dipanggil lewat pantulan.
+     *
+     * Satu jalur untuk semua titik QC; yang diuji di sini titik carcass.
+     */
+    private function tugasQc(string $kelas = Carcass::class): int
     {
         $metode = new \ReflectionMethod(
             \App\Filament\Admin\Widgets\PendingTaskWidget::class,
-            'getCarcassWithoutQcReportCount',
+            'getDocumentsWithoutQcReportCount',
         );
 
         $metode->setAccessible(true);
 
-        return $metode->invoke(new \App\Filament\Admin\Widgets\PendingTaskWidget);
+        return $metode->invoke(new \App\Filament\Admin\Widgets\PendingTaskWidget, $kelas);
     }
 
     // =====================================================================
