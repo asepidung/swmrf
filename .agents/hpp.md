@@ -253,8 +253,26 @@ Dari `CPO-260106` (PO 14 Jun, tiba 13 Jun, PT. Lembu Jantan Perkasa):
 | HEIFER | 18 | 62.500 |
 | STEER | 32 | 62.500 |
 
-**Satu harga untuk kedua kelas** -- jadi `62.500` di costing memang berlaku
-untuk seluruh lot, dan tidak perlu dipecah per kelas.
+Kebetulan **kedua kelas satu harga**, sehingga `62.500` di costing berlaku
+untuk seluruh lot. Tetapi Owner menegaskan itu kebetulan, bukan aturan:
+"walaupun 2 class sapi itu harganya sama tidak menutup kemungkinan ada harga
+beda".
+
+**Jadi biaya beli TIDAK boleh dihitung sebagai satu harga dikali berat
+total.** Yang benar:
+
+```
+J91  =  SUM( berat terima kelas itu  x  harga kelas itu )
+```
+
+Bentuk ini menghasilkan angka yang sama persis ketika harganya kebetulan sama
+(`10.888 x 62.500 = 680.500.000`), dan tetap benar ketika suatu saat berbeda.
+Datanya sudah ada: `cattle_receiving_items` menyimpan `initial_weight` beserta
+`cattle_class_id`, dan `purchase_cattle_items` menyimpan harga per kelas.
+
+Form accounting sekarang memakai satu harga untuk semuanya. Itu benar hari ini
+dan akan diam-diam salah pada lot pertama yang harganya berbeda -- persis
+jenis kekeliruan yang tidak menimbulkan gejala apa pun.
 
 Tetapi PO-nya **50 ekor, sedangkan yang dipotong 20**. Jadi satu PO menaungi
 lebih dari satu batch potong, dan **batas lot untuk costing adalah dokumen
