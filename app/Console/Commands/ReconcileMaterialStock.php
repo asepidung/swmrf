@@ -62,19 +62,21 @@ class ReconcileMaterialStock extends Command
         $selisihTotal = 0.0;
 
         foreach ($kunci as $satu) {
-            $dariBuku = round($bukuBesar[$satu]['qty'] ?? 0.0, 2);
-            $dariStok = round($sekarang[$satu]['qty'] ?? 0.0, 2);
-            $selisih = round($dariBuku - $dariStok, 2);
+            // Qty material bilangan bulat sejak #325, jadi tidak ada lagi
+            // selisih pembulatan yang perlu ditoleransi: nol berarti nol.
+            $dariBuku = (int) ($bukuBesar[$satu]['qty'] ?? 0);
+            $dariStok = (int) ($sekarang[$satu]['qty'] ?? 0);
+            $selisih = $dariBuku - $dariStok;
 
-            if (abs($selisih) < 0.005) {
+            if ($selisih === 0) {
                 continue;
             }
 
             $meleset[] = [
                 'nama' => $sekarang[$satu]['nama'] ?? $bukuBesar[$satu]['nama'] ?? $satu,
-                'buku' => number_format($dariBuku, 2),
-                'stok' => number_format($dariStok, 2),
-                'selisih' => number_format($selisih, 2),
+                'buku' => number_format($dariBuku),
+                'stok' => number_format($dariStok),
+                'selisih' => number_format($selisih),
             ];
 
             $selisihTotal += abs($selisih);
@@ -82,7 +84,7 @@ class ReconcileMaterialStock extends Command
 
         $this->line('Material diperiksa      : ' . count($kunci));
         $this->line('Yang meleset            : ' . count($meleset));
-        $this->line('Jumlah selisih mutlak   : ' . number_format($selisihTotal, 2));
+        $this->line('Jumlah selisih mutlak   : ' . number_format($selisihTotal));
         $this->newLine();
 
         if ($meleset !== []) {
@@ -180,11 +182,11 @@ class ReconcileMaterialStock extends Command
         $total = 0.0;
 
         foreach ($baris as $satu) {
-            if (abs($satu['qty']) < 0.005) {
+            if ((int) $satu['qty'] === 0) {
                 continue;
             }
 
-            $isi[] = [$satu['nama'], number_format($satu['qty'], 2)];
+            $isi[] = [$satu['nama'], number_format($satu['qty'])];
             $total += $satu['qty'];
         }
 
@@ -199,7 +201,7 @@ class ReconcileMaterialStock extends Command
         }
 
         $this->newLine();
-        $this->line('Total: ' . number_format($total, 2) . ' dalam ' . count($isi) . ' material.');
+        $this->line('Total: ' . number_format($total) . ' dalam ' . count($isi) . ' material.');
 
         return self::SUCCESS;
     }
@@ -295,7 +297,7 @@ class ReconcileMaterialStock extends Command
             ['Material', 'Balance', 'Tanggal'],
             $negatif->take(10)->map(fn ($satu): array => [
                 trim(($satu->kode ?? '?') . ' ' . ($satu->material ?? '?')),
-                number_format((float) $satu->balance, 2),
+                number_format((int) $satu->balance),
                 Carbon::parse($satu->created_at)->format('d M Y'),
             ])->all(),
         );
