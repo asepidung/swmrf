@@ -68,7 +68,7 @@ class ApproveFinanceProductRequisition extends EditRecord
         $data['items'] = $this->record->items->mapWithKeys(function ($item) {
             return [(string) \Illuminate\Support\Str::uuid() => [
                 'product_id' => $item->product_id,
-                'qty' => number_format((float) $item->qty, 2, ',', '.'),
+                'qty' => number_format((int) $item->qty, 0, ',', '.'),
                 'price' => number_format((float) $item->price, 0, ',', '.'),
                 'item_total' => (float) ($item->qty * $item->price),
                 'note' => $item->note,
@@ -181,7 +181,7 @@ class ApproveFinanceProductRequisition extends EditRecord
         $this->record->items()->delete();
         foreach ($this->itemsData as $item) {
             if (!empty($item['product_id'])) {
-                $qty = ProductRequisitionResource::parseNumber($item['qty'] ?? 0);
+                $qty = (int) round(ProductRequisitionResource::parseNumber($item['qty'] ?? 0));
                 $price = ProductRequisitionResource::parseNumber($item['price'] ?? 0);
 
                 $this->record->items()->create([

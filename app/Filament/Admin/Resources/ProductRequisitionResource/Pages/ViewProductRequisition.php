@@ -23,7 +23,7 @@ class ViewProductRequisition extends ViewRecord
                 // Boleh diformat karena qty dan price BUKAN lagi ->numeric().
                 // Selama masih <input type="number">, string ber-pemisah ribuan
                 // ditolak browser dan fieldnya tampil kosong.
-                'qty' => number_format((float) $item->qty, 2, ',', '.'),
+                'qty' => number_format((int) $item->qty, 0, ',', '.'),
                 'price' => number_format((float) $item->price, 0, ',', '.'),
                 'item_total' => number_format((float) $item->qty * (float) $item->price, 0, ',', '.'),
                 'note' => $item->note,

@@ -43,7 +43,7 @@ class CreateProductRequisition extends CreateRecord
             if (!empty($item['product_id'])) {
                 // WAJIB di-parse. Input qty dan price kini menampilkan pemisah
                 // ribuan ("250.000"), dan bila disimpan mentah akan terbaca 250.
-                $qty = ProductRequisitionResource::parseNumber($item['qty'] ?? 0);
+                $qty = (int) round(ProductRequisitionResource::parseNumber($item['qty'] ?? 0));
                 $price = ProductRequisitionResource::parseNumber($item['price'] ?? 0);
 
                 $this->record->items()->create([

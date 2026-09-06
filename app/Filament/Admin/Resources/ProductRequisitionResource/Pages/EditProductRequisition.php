@@ -22,7 +22,7 @@ class EditProductRequisition extends EditRecord
         $data['items'] = $this->record->items->mapWithKeys(function ($item) {
             return [(string) \Illuminate\Support\Str::uuid() => [
                 'product_id' => $item->product_id,
-                'qty' => (float) $item->qty,
+                'qty' => (int) $item->qty,
                 'price' => (float) $item->price,
                 'item_total' => (float) ($item->qty * $item->price),
                 'note' => $item->note,
@@ -56,7 +56,7 @@ class EditProductRequisition extends EditRecord
             if (!empty($item['product_id'])) {
                 // WAJIB di-parse. Input qty dan price kini menampilkan pemisah
                 // ribuan ("250.000"), dan bila disimpan mentah akan terbaca 250.
-                $qty = ProductRequisitionResource::parseNumber($item['qty'] ?? 0);
+                $qty = (int) round(ProductRequisitionResource::parseNumber($item['qty'] ?? 0));
                 $price = ProductRequisitionResource::parseNumber($item['price'] ?? 0);
 
                 $this->record->items()->create([

@@ -4311,3 +4311,38 @@ selisihnya.
 
 Ada juga uji bahwa perintahnya tidak memuat satu pun pemanggilan penulisan.
 Ia dijalankan di server yang sedang dipakai orang.
+
+---
+
+## #318 -- Qty pembelian daging bulat
+
+**Keputusan Owner, 6 September 2026:** daging dibeli dalam kilogram BULAT,
+sama seperti material ("material itu gak ada qty koma-komaan", 5 September).
+Yang salah tipe kolomnya, bukan tampilannya.
+
+Kolomnya `decimal(15,2)` dan kotak isiannya menerima koma, tetapi layar
+daftar rinci maupun berkas cetaknya sama-sama membulatkan. Jadi 12,50 bisa
+tersimpan 12,50 dan terbaca 13 di dua tempat sekaligus, tanpa satu pun cara
+melihat angka yang sebenarnya selain membuka basis datanya.
+
+**Yang berkoma DITOLAK, bukan dibulatkan diam-diam.** Kalau koma dibiarkan
+lewat lalu basis data yang membulatkan, yang mengetik tidak pernah tahu
+angkanya berubah -- bentuk kesalahan yang sama persis, cuma pindah tempat.
+
+Aturannya jadi metode tersendiri (`aturanQtyBulat()`) supaya bisa DIJALANKAN
+di uji, bukan ditulis ulang di sana. Aturan yang disalin ke tempat kedua
+selalu berakhir berbeda dari yang pertama.
+
+Angka berkomanya diperiksa lebih dulu di basis data lokal MAUPUN server:
+empat baris permintaan dan empat baris PO, tidak satu pun berkoma. Tidak ada
+angka yang dibulatkan diam-diam oleh migrasinya.
+
+**Berat yang sesungguhnya tetap berkoma di tempat yang benar:**
+`goods_receipt_product_items.weight`, saat barangnya diterima dan ditimbang.
+Yang bulat PESANANNYA, bukan timbangannya.
+
+### Sisi material belum disentuh
+
+`material_requisition_items.qty` dan `purchase_material_items.qty` masih
+`decimal(10,2)` dengan tampilan yang membulatkan -- keadaan yang sama persis.
+Datanya juga tidak ada yang berkoma. Menunggu satu kata Owner.
