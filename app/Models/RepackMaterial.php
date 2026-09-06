@@ -10,6 +10,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RepackMaterial extends Model
 {
+
+    protected static function booted(): void
+    {
+        // Izin QC menyertai ANGKA yang dilihat QC saat memberikannya. Begitu
+        // bahan atau hasilnya berubah, angkanya berubah, dan izinnya tidak
+        // lagi menjelaskan apa pun.
+        $cabut = function ($baris): void {
+            $baris->repack?->withdrawShrinkOverride();
+        };
+
+        static::created($cabut);
+        static::updated($cabut);
+        static::deleted($cabut);
+    }
     use HasFactory, LogsActivity;
 
     protected $table = 'repack_materials';

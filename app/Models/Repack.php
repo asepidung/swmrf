@@ -187,6 +187,67 @@ class Repack extends Model
     }
 
     /**
+     * QC mengizinkan dokumen ini dikunci walaupun susutnya di luar batas.
+     *
+     * Keputusan Owner, 7 September 2026: yang mengerjakan repack TIDAK bisa
+     * mengunci dokumen yang susutnya di luar batas. Ia harus mendapat izin
+     * dari QC lebih dulu, dan QC wajib menuliskan alasannya. Sesudah itu,
+     * barulah dokumennya bisa dikunci.
+     *
+     * **Izinnya diberikan LEBIH DULU, bukan diketik saat mengunci.** Bentuk
+     * sebelumnya meminta alasan di dalam kotak Lock, sehingga siapa pun yang
+     * memegang izinnya bisa menembus batas itu sendirian -- termasuk orang
+     * yang membuat repacknya. Pemeriksaan yang ditandatangani sendiri oleh
+     * yang diperiksa bukan pemeriksaan.
+     *
+     * @throws \RuntimeException
+     */
+    public function grantShrinkOverride(string $reason, ?int $userId = null): void
+    {
+        if ($this->kunci) {
+            throw new \RuntimeException(__('This repack is already locked.'));
+        }
+
+        if ($this->isWithinShrinkLimit()) {
+            throw new \RuntimeException(__('The shrinkage of this repack is still within the limit, so it needs no approval.'));
+        }
+
+        if (trim($reason) === '') {
+            throw new \RuntimeException(__('An approval must say why.'));
+        }
+
+        $this->forceFill([
+            'yield_override_reason' => trim($reason),
+            'yield_override_by' => $userId ?? Auth::id(),
+            'yield_override_at' => now(),
+        ])->save();
+    }
+
+    /**
+     * Mencabut izin yang pernah diberikan.
+     *
+     * Dipanggil setiap kali bahan atau hasilnya berubah. Izin QC menyertai
+     * ANGKA yang dilihat QC saat memberikannya; begitu angkanya berubah,
+     * izinnya tidak lagi menjelaskan apa pun.
+     *
+     * Tanpa ini, QC bisa mengizinkan susut 12% lalu ada yang menyunting
+     * dokumennya menjadi 40% dan menguncinya dengan izin yang sama -- tanpa
+     * satu pun gejala.
+     */
+    public function withdrawShrinkOverride(): void
+    {
+        if ($this->yield_override_at === null) {
+            return;
+        }
+
+        $this->forceFill([
+            'yield_override_reason' => null,
+            'yield_override_by' => null,
+            'yield_override_at' => null,
+        ])->save();
+    }
+
+    /**
      * Kunci dokumen ini.
      *
      * SATU RUMAH untuk seluruh syaratnya, supaya tidak terulang pola yang
@@ -195,12 +256,15 @@ class Repack extends Model
      * lainnya terbuka.
      *
      * Izin TIDAK diperiksa di sini. Model memegang aturannya, halaman
-     * memegang kewenangannya -- pemanggil yang berhak menembus menyerahkan
-     * alasannya, dan halamanlah yang memastikan ia memang berhak.
+     * memegang kewenangannya.
+     *
+     * Susut di luar batas menuntut izin QC yang SUDAH diberikan lebih dulu
+     * lewat `grantShrinkOverride()`. Alasannya tidak lagi diketik di sini:
+     * yang mengunci adalah yang mengerjakan, dan yang mengizinkan adalah QC.
      *
      * @throws \RuntimeException
      */
-    public function lock(?string $overrideReason = null, ?int $userId = null): void
+    public function lock(): void
     {
         if ($this->kunci) {
             throw new \RuntimeException(__('This repack is already locked.'));
@@ -216,17 +280,20 @@ class Repack extends Model
 
         $menembus = ! $this->isWithinShrinkLimit();
 
-        if ($menembus && ($overrideReason === null || trim($overrideReason) === '')) {
-            throw new \RuntimeException(__('The shrinkage of this repack is outside the reasonable limit, so it needs an approval with a written reason.'));
+        if ($menembus && ! $this->shrinkLimitWasOverridden()) {
+            throw new \RuntimeException(__('The shrinkage of this repack is outside the reasonable limit. QC has to approve it before it can be locked.'));
         }
 
-        DB::transaction(function () use ($menembus, $overrideReason, $userId): void {
+        DB::transaction(function () use ($menembus): void {
             $this->forceFill([
                 'kunci' => true,
                 'status' => 'LOCKED',
-                'yield_override_reason' => $menembus ? trim((string) $overrideReason) : null,
-                'yield_override_by' => $menembus ? ($userId ?? Auth::id()) : null,
-                'yield_override_at' => $menembus ? now() : null,
+                // Yang tidak menembus tidak menyimpan jejak izin apa pun --
+                // termasuk kalau sebelumnya sempat ada lalu angkanya
+                // diperbaiki sehingga kembali wajar.
+                'yield_override_reason' => $menembus ? $this->yield_override_reason : null,
+                'yield_override_by' => $menembus ? $this->yield_override_by : null,
+                'yield_override_at' => $menembus ? $this->yield_override_at : null,
             ])->save();
         });
     }

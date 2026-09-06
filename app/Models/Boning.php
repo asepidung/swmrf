@@ -82,6 +82,12 @@ class Boning extends Model
         return $this->morphMany(MaterialUsage::class, 'usageable');
     }
 
+    /** Laporan QC yang mendampingi dokumen ini. */
+    public function qcReports(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(\App\Models\QcReport::class, 'reportable');
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(BoningItem::class, 'boning_id');

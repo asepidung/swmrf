@@ -35,7 +35,23 @@ class QcReport extends Model
      */
     public const DOKUMEN = [
         'carcass' => Carcass::class,
+        'boning' => Boning::class,
+        'gr-beef' => GoodsReceiptProduct::class,
     ];
+
+    /**
+     * Sejak kapan sebuah dokumen dianggap MENUNGGU laporan QC.
+     *
+     * Dokumen yang lahir sebelum modul ini ada tidak pernah menunggu apa pun
+     * -- tidak ada yang pernah diminta menulis laporannya, dan tidak ada yang
+     * bisa mengingatnya sekarang. Tanpa batas ini, daftar tugas di Dashboard
+     * langsung berisi setiap carcass, boning, dan GR yang pernah dibuat --
+     * dan daftar tugas yang isinya ratusan pekerjaan yang tidak akan pernah
+     * dikerjakan berhenti dibaca orang sama sekali.
+     *
+     * Tanggalnya hari modul ini terpasang, 6 September 2026.
+     */
+    public const MENUNGGU_SEJAK = '2026-09-06';
 
     protected $fillable = [
         'document_number',
@@ -116,7 +132,7 @@ class QcReport extends Model
             return '-';
         }
 
-        foreach (['document_number', 'carcass_number', 'number'] as $kolom) {
+        foreach (['document_number', 'carcass_number', 'doc_no', 'gr_number', 'number'] as $kolom) {
             if (filled($dokumen->{$kolom} ?? null)) {
                 return (string) $dokumen->{$kolom};
             }

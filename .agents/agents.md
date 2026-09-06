@@ -4793,3 +4793,63 @@ belum dikerjakan -- mekanismenya sudah ada (`Setting::REPACK_MAX_SHRINK_PERCENT`
 `isWithinShrinkLimit()`, `lock()` yang menolak tanpa alasan tertulis, jejak
 `yield_override_*`); yang perlu berubah cuma SIAPA yang boleh memberi
 alasannya.
+
+---
+
+## #338 -- QC: izin repack, plus boning dan GR beef
+
+### Repack: izin diberikan LEBIH DULU oleh QC
+
+Keputusan Owner, 7 September 2026: yang di dalam batas dikunci langsung; yang
+di luar batas, **tombol Lock-nya tetap bisa diklik** lalu memberi peringatan
+bahwa perlu izin QC. QC membuka repack terkait, mengklik Izinkan sambil
+menuliskan alasannya, baru dokumennya bisa dikunci.
+
+**Yang berubah dari bentuk lama:** alasannya dulu diketik DI DALAM kotak
+Lock, sehingga siapa pun yang memegang izinnya bisa menembus batas itu
+sendirian -- termasuk orang yang membuat repacknya. Pemeriksaan yang
+ditandatangani sendiri oleh yang diperiksa bukan pemeriksaan.
+
+Mekanismenya sendiri sudah ada sejak sebelum ini dan tidak dibongkar:
+ambang di `Setting`, `isWithinShrinkLimit()`, jejak `yield_override_*`, izin
+`override_repack_yield`. Yang ditambahkan cuma `grantShrinkOverride()`, dan
+`lock()` berubah dari MENERIMA alasan menjadi MEMERIKSA izin.
+
+**Tombolnya sengaja tidak dimatikan.** Tombol mati memberi tahu bahwa sesuatu
+tidak bisa dikerjakan; peringatan memberi tahu APA yang harus dikerjakan
+berikutnya, dan menunggu siapa.
+
+### Izin GUGUR begitu angkanya berubah
+
+Jebakan yang paling mungkin terjadi dan paling sulit terlihat: QC mengizinkan
+susut 20%, lalu ada yang menyunting hasilnya menjadi 60%, dan dokumennya
+dikunci dengan izin yang sama -- tanpa satu pun gejala.
+
+Izin QC menyertai ANGKA yang dilihat QC saat memberikannya. Setiap perubahan
+bahan atau hasil mencabutnya. Ada ujinya, dan sudah dibuktikan menggigit.
+
+### Boning dan GR beef -- diserahkan Owner, dan alasannya
+
+Keduanya dipicu saat DOKUMENNYA DIBUAT.
+
+Untuk GR beef sempat ada pilihan lain: memicunya saat PO terbit. Ditolak
+karena PO itu RENCANA -- barangnya bisa datang lusa, bisa dicicil menjadi
+beberapa GR dari satu PO, bisa juga tidak jadi datang. Tugas yang lahir di PO
+menunjuk sesuatu yang belum ada wujudnya, keburu basi, dan saat barangnya
+benar-benar datang tidak ada lagi yang mengingatkan. GR dibuat justru pada
+saat barangnya ada di depan mata.
+
+### `MENUNGGU_SEJAK`: daftar tugas bukan arsip
+
+Dokumen yang lahir SEBELUM modul QC ada tidak pernah menunggu apa pun --
+tidak ada yang pernah diminta menulis laporannya, dan tidak ada yang bisa
+mengingatnya sekarang.
+
+Tanpa batas itu, daftar tugas di Dashboard langsung berisi setiap carcass,
+boning, dan GR yang pernah dibuat. **Daftar tugas yang isinya ratusan
+pekerjaan yang tidak akan pernah dikerjakan berhenti dibaca orang sama
+sekali** -- dan yang hilang bukan cuma baris QC-nya, melainkan seluruh
+peringatan lain di halaman yang sama.
+
+Ketiga titiknya memakai SATU jalur hitung. Menambah titik berikutnya berarti
+menambah satu baris, bukan menyalin metodenya.

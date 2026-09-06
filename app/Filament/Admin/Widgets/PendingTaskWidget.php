@@ -293,27 +293,50 @@ class PendingTaskWidget extends Widget
              * menambah kebisingan di halaman yang justru dibaca sekilas.
              */
             [
-                $this->getCarcassWithoutQcReportCount(),
+                $this->getDocumentsWithoutQcReportCount(\App\Models\Carcass::class),
                 ':count carcass is waiting for its QC report|:count carcasses are waiting for their QC report',
                 \App\Filament\Admin\Resources\CarcassResource::getUrl('index'),
+                'warning',
+            ],
+            [
+                $this->getDocumentsWithoutQcReportCount(\App\Models\Boning::class),
+                ':count boning is waiting for its QC report|:count bonings are waiting for their QC report',
+                BoningResource::getUrl('index'),
+                'warning',
+            ],
+            [
+                $this->getDocumentsWithoutQcReportCount(\App\Models\GoodsReceiptProduct::class),
+                ':count beef receipt is waiting for its QC report|:count beef receipts are waiting for their QC report',
+                GoodsReceiptProductResource::getUrl('index'),
                 'warning',
             ],
         ];
     }
 
     /**
-     * Carcass yang belum didampingi laporan QC.
+     * Dokumen yang belum didampingi laporan QC.
      *
-     * Nol berarti tidak ada yang perlu dikerjakan, dan barisnya tidak muncul
-     * sama sekali -- itu perilaku bawaan daftar ini.
+     * Satu jalur untuk semua titik QC -- carcass, boning, GR beef, dan yang
+     * menyusul nanti. Menambah titik berarti menambah satu baris di daftar
+     * di atas, bukan menyalin metode ini.
+     *
+     * Dibatasi pada dokumen yang lahir SEJAK modul QC ada. Yang lebih tua
+     * tidak pernah menunggu apa pun: tidak ada yang pernah diminta menulis
+     * laporannya, dan tidak ada yang bisa mengingatnya sekarang. Tanpa batas
+     * itu daftar tugas ini langsung berisi seluruh riwayat, dan daftar tugas
+     * yang isinya pekerjaan yang tidak akan pernah dikerjakan berhenti dibaca
+     * orang sama sekali.
+     *
+     * @param class-string<\Illuminate\Database\Eloquent\Model> $kelas
      */
-    protected function getCarcassWithoutQcReportCount(): int
+    protected function getDocumentsWithoutQcReportCount(string $kelas): int
     {
         if (! (auth()->user()?->hasPermission('create_qc_reports') ?? false)) {
             return 0;
         }
 
-        return \App\Models\Carcass::query()
+        return $kelas::query()
+            ->whereDate('created_at', '>=', \App\Models\QcReport::MENUNGGU_SEJAK)
             ->whereDoesntHave('qcReports')
             ->count();
     }

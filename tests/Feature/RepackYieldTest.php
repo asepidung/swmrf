@@ -61,6 +61,23 @@ class RepackYieldTest extends TestCase
      * @param  array<int, float>  $bahan
      * @param  array<int, float>  $hasil
      */
+    /** Menambah satu bahan ke repack yang sudah ada. */
+    private function tambahBahan(Repack $repack, float $berat): RepackMaterial
+    {
+        return RepackMaterial::create([
+            'repack_id' => $repack->id,
+            'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id,
+            'barcode' => 'BAHAN-TAMBAH-'.$repack->id.'-'.uniqid(),
+            'weight' => $berat,
+            'qty_pcs' => 1,
+            'pack_date' => now()->toDateString(),
+            'origin' => '1',
+            'status' => 'IN_STOCK',
+        ]);
+    }
+
     private function repack(array $bahan, array $hasil): Repack
     {
         $repack = Repack::create([
@@ -218,7 +235,12 @@ class RepackYieldTest extends TestCase
 
         $repack = $this->repack([100], [80]);
 
-        $repack->lock('Karkasnya memang berlemak tebal, dibuang banyak.', $this->user->id);
+        // Izinnya diberikan LEBIH DULU oleh QC, bukan diketik saat mengunci.
+        // Keputusan Owner 7 September 2026 -- lihat catatan di
+        // `Repack::grantShrinkOverride()`.
+        $repack->grantShrinkOverride('Karkasnya memang berlemak tebal, dibuang banyak.', $this->user->id);
+
+        $repack->fresh()->lock();
 
         $tersimpan = $repack->fresh();
 
@@ -302,7 +324,8 @@ class RepackYieldTest extends TestCase
         Setting::write(Setting::REPACK_MAX_SHRINK_PERCENT, 10, $this->user->id);
 
         $repack = $this->repack([100], [80]);
-        $repack->lock('Alasan lama', $this->user->id);
+        $repack->grantShrinkOverride('Alasan lama', $this->user->id);
+        $repack->fresh()->lock();
 
         $repack->fresh()->unlock();
 
@@ -332,5 +355,148 @@ class RepackYieldTest extends TestCase
 
         $this->assertNull(Repack::shrinkLimitPercent());
         $this->assertTrue($repack->fresh()->isWithinShrinkLimit());
+    }
+
+    // =====================================================================
+    // Izin QC
+    // =====================================================================
+
+    /**
+     * Yang di dalam batas dikunci LANGSUNG, tanpa siapa pun mengizinkan.
+     *
+     * Keputusan Owner: "jika susutnya diambang batas user bisa langsung
+     * lock". Gerbangnya cuma menyala untuk yang di luar batas -- kalau tidak,
+     * setiap dokumen menunggu tanda tangan dan pekerjaan berhenti.
+     */
+    public function test_within_the_limit_it_locks_without_any_approval(): void
+    {
+        Setting::write(Setting::REPACK_MAX_SHRINK_PERCENT, 10, $this->user->id);
+
+        $repack = $this->repack([100], [95]);
+
+        $repack->lock();
+
+        $this->assertTrue($repack->fresh()->kunci);
+        $this->assertFalse($repack->fresh()->shrinkLimitWasOverridden());
+    }
+
+    /**
+     * Yang di luar batas DITOLAK, dan penolakannya menyebut apa yang kurang.
+     *
+     * Keputusan Owner: yang mengerjakan mengklik Lock lalu mendapat
+     * peringatan bahwa ia perlu izin QC -- bukan menghadapi tombol mati.
+     * Tombol mati memberi tahu bahwa sesuatu tidak bisa dikerjakan;
+     * peringatan memberi tahu APA yang harus dikerjakan berikutnya.
+     */
+    public function test_beyond_the_limit_the_lock_is_refused_until_qc_approves(): void
+    {
+        Setting::write(Setting::REPACK_MAX_SHRINK_PERCENT, 10, $this->user->id);
+
+        $repack = $this->repack([100], [80]);
+
+        try {
+            $repack->lock();
+
+            $this->fail('Repack di luar batas terkunci tanpa izin QC.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('QC', $e->getMessage());
+        }
+
+        $this->assertFalse($repack->fresh()->kunci);
+
+        // Sesudah QC mengizinkan, barulah bisa.
+        $repack->grantShrinkOverride('Lemaknya tebal, banyak yang dibuang.', $this->user->id);
+
+        $repack->fresh()->lock();
+
+        $this->assertTrue($repack->fresh()->kunci);
+    }
+
+    /** Izin tanpa alasan bukan izin. */
+    public function test_an_approval_without_a_reason_is_refused(): void
+    {
+        Setting::write(Setting::REPACK_MAX_SHRINK_PERCENT, 10, $this->user->id);
+
+        $repack = $this->repack([100], [80]);
+
+        $this->expectException(\RuntimeException::class);
+
+        $repack->grantShrinkOverride('   ', $this->user->id);
+    }
+
+    /** Yang masih di dalam batas tidak bisa "diizinkan" -- tidak ada yang perlu. */
+    public function test_nothing_within_the_limit_can_be_approved(): void
+    {
+        Setting::write(Setting::REPACK_MAX_SHRINK_PERCENT, 10, $this->user->id);
+
+        $repack = $this->repack([100], [95]);
+
+        $this->expectException(\RuntimeException::class);
+
+        $repack->grantShrinkOverride('Tidak perlu sebenarnya.', $this->user->id);
+    }
+
+    /**
+     * Izin QC GUGUR begitu angkanya berubah.
+     *
+     * Ini jebakan yang paling mungkin terjadi dan paling sulit terlihat: QC
+     * mengizinkan susut 12%, lalu ada yang menyunting hasilnya sehingga
+     * susutnya menjadi 40%, dan dokumennya dikunci dengan izin yang sama --
+     * tanpa satu pun gejala.
+     *
+     * Izin QC menyertai ANGKA yang dilihat QC saat memberikannya.
+     */
+    public function test_the_approval_lapses_when_the_numbers_change(): void
+    {
+        Setting::write(Setting::REPACK_MAX_SHRINK_PERCENT, 10, $this->user->id);
+
+        $repack = $this->repack([100], [80]);
+
+        $repack->grantShrinkOverride('Susut 20% masih bisa dijelaskan.', $this->user->id);
+
+        $this->assertTrue($repack->fresh()->shrinkLimitWasOverridden());
+
+        // Hasilnya disunting: susutnya melonjak.
+        $repack->results()->first()->update(['weight' => 40]);
+
+        $this->assertFalse(
+            $repack->fresh()->shrinkLimitWasOverridden(),
+            'Izin QC masih berlaku untuk angka yang sudah berubah.',
+        );
+
+        $this->expectException(\RuntimeException::class);
+
+        $repack->fresh()->lock();
+    }
+
+    /** Menambah bahan pun menggugurkan izinnya. */
+    public function test_adding_material_also_lapses_the_approval(): void
+    {
+        Setting::write(Setting::REPACK_MAX_SHRINK_PERCENT, 10, $this->user->id);
+
+        $repack = $this->repack([100], [80]);
+
+        $repack->grantShrinkOverride('Sudah diperiksa.', $this->user->id);
+
+        $this->assertTrue($repack->fresh()->shrinkLimitWasOverridden());
+
+        $this->tambahBahan($repack, 50);
+
+        $this->assertFalse($repack->fresh()->shrinkLimitWasOverridden());
+    }
+
+    /** Repack yang sudah terkunci tidak bisa diizinkan lagi. */
+    public function test_a_locked_repack_cannot_be_approved_again(): void
+    {
+        Setting::write(Setting::REPACK_MAX_SHRINK_PERCENT, 10, $this->user->id);
+
+        $repack = $this->repack([100], [80]);
+
+        $repack->grantShrinkOverride('Alasan pertama.', $this->user->id);
+        $repack->fresh()->lock();
+
+        $this->expectException(\RuntimeException::class);
+
+        $repack->fresh()->grantShrinkOverride('Alasan kedua.', $this->user->id);
     }
 }

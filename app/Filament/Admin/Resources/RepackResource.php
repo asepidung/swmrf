@@ -183,32 +183,21 @@ class RepackResource extends Resource
                         ->requiresConfirmation()
                         ->modalHeading(__('Lock Repack Data'))
                         ->modalDescription(__('Are you sure you want to lock this data? Once locked, you cannot modify it.'))
-                        // Susut di luar batas TIDAK membuang dokumennya dan
-                        // tidak menyembunyikan tombolnya. Tombolnya mati dengan
-                        // keterangan, supaya yang mengerjakan tahu ia sedang
-                        // menunggu siapa -- bukan menghadapi tombol yang lenyap
-                        // tanpa penjelasan.
-                        ->disabled(fn (Repack $record): bool => ! $record->isWithinShrinkLimit()
-                            && ! (auth()->user()?->hasPermission('override_repack_yield') ?? false))
-                        // Alasannya hanya diminta ketika memang menembus.
-                        ->form(fn (Repack $record): array => $record->isWithinShrinkLimit() ? [] : [
-                            Forms\Components\Placeholder::make('ringkasan')
-                                ->label(__('Shrinkage'))
-                                ->content(fn (): string => number_format($record->shrinkWeight(), 2, ',', '.')
-                                    .' Kg ('.number_format((float) $record->shrinkPercent(), 2, ',', '.').'%) '
-                                    .__('of the :limit% limit', [
-                                        'limit' => number_format((float) Repack::shrinkLimitPercent(), 2, ',', '.'),
-                                    ])),
-
-                            Forms\Components\Textarea::make('yield_override_reason')
-                                ->label(__('Reason for approving beyond the limit'))
-                                ->required()
-                                ->maxLength(500)
-                                ->rows(3),
-                        ])
-                        ->action(function (Repack $record, array $data) {
+                        /*
+                         * Tombolnya TETAP bisa diklik walaupun susutnya di
+                         * luar batas.
+                         *
+                         * Keputusan Owner, 7 September 2026: yang mengerjakan
+                         * repack mengklik Lock, lalu MENDAPAT PERINGATAN bahwa
+                         * ia perlu izin QC. Bukan menghadapi tombol mati.
+                         *
+                         * Tombol mati hanya memberi tahu bahwa sesuatu tidak
+                         * bisa dikerjakan; peringatan memberi tahu APA yang
+                         * harus dikerjakan berikutnya, dan menunggu siapa.
+                         */
+                        ->action(function (Repack $record) {
                             try {
-                                $record->lock($data['yield_override_reason'] ?? null);
+                                $record->lock();
                             } catch (\Throwable $e) {
                                 report($e);
                                 Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
@@ -221,6 +210,62 @@ class RepackResource extends Resource
                             return redirect(static::getUrl('index'));
                         })
                         ->hidden(fn (Repack $record) => ! auth()->user()->hasPermission('lock_repacks') || $record->kunci || ! $record->materialUsages()->exists()),
+
+                    /*
+                     * Tombol Izinkan -- milik QC.
+                     *
+                     * Muncul hanya ketika memang ada yang perlu diizinkan:
+                     * susutnya di luar batas, dokumennya belum dikunci, dan
+                     * belum ada izin yang berlaku. Sesudah diklik, tombolnya
+                     * hilang dengan sendirinya karena syaratnya tidak lagi
+                     * terpenuhi.
+                     *
+                     * Catatannya WAJIB. Izin tanpa alasan tidak menjelaskan
+                     * apa pun kepada siapa pun yang membacanya nanti, dan
+                     * justru angka di luar batas itu yang paling mungkin
+                     * ditanyakan.
+                     */
+                    Tables\Actions\Action::make('approve_shrink')
+                        ->label(__('Approve the shrinkage'))
+                        ->icon('heroicon-o-shield-check')
+                        ->color('warning')
+                        ->modalHeading(__('Approve shrinkage beyond the limit'))
+                        ->modalDescription(__('The person who made this repack cannot lock it until QC approves.'))
+                        ->form(fn (Repack $record): array => [
+                            Forms\Components\Placeholder::make('ringkasan')
+                                ->label(__('Shrinkage'))
+                                ->content(fn (): string => number_format($record->shrinkWeight(), 2, ',', '.')
+                                    .' Kg ('.number_format((float) $record->shrinkPercent(), 2, ',', '.').'%) '
+                                    .__('of the :limit% limit', [
+                                        'limit' => number_format((float) Repack::shrinkLimitPercent(), 2, ',', '.'),
+                                    ])),
+
+                            Forms\Components\Textarea::make('yield_override_reason')
+                                ->label(__('Why this is being approved'))
+                                ->required()
+                                ->maxLength(500)
+                                ->rows(3),
+                        ])
+                        ->action(function (Repack $record, array $data) {
+                            try {
+                                $record->grantShrinkOverride($data['yield_override_reason']);
+                            } catch (\Throwable $e) {
+                                report($e);
+                                Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
+
+                                return;
+                            }
+
+                            Notification::make()
+                                ->title(__('Shrinkage approved'))
+                                ->body(__('The repack can be locked now.'))
+                                ->success()
+                                ->send();
+                        })
+                        ->visible(fn (Repack $record): bool => (auth()->user()?->hasPermission('override_repack_yield') ?? false)
+                            && ! $record->kunci
+                            && ! $record->isWithinShrinkLimit()
+                            && ! $record->shrinkLimitWasOverridden()),
 
                     /* Tombol Unlock */
                     Tables\Actions\Action::make('unlock')
