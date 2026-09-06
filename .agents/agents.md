@@ -4225,3 +4225,50 @@ itu dirakit Filament dari SLUG resource-nya, bukan milik aplikasi ini. Kalau
 hilang, seluruh gaya tabel berhenti berlaku sekaligus tanpa galat apa pun.
 Dua uji baru memuat halamannya lewat HTTP dan memeriksa kelas itu benar-benar
 ada, dan berkas gayanya ikut termuat.
+
+---
+
+## #314 -- Jejak audit tidak lagi mengarang pengguna id 1
+
+Tiga belas tempat menulis `auth()->id() ?? 1`. Angka itu bukan pilihan yang
+dipikirkan; ia sekadar angka pertama.
+
+**Keterangan Owner, 6 September 2026, yang mengubah seluruh penilaiannya:**
+akun paling awal sengaja diberi id 100 atas permintaannya sendiri, supaya id
+1 dan seterusnya bisa dipakai pengguna WARISAN waktu data aplikasi lama
+dipindahkan nanti.
+
+Jadi keadaannya berubah dua kali:
+
+- **Sekarang** id 1 tidak ada. Kolom ber-foreign-key menolaknya dengan galat
+  SQL; yang tanpa foreign key menyimpan angka nyangkut. Keras, ketahuan.
+- **Sesudah data lama masuk** id 1 menjadi ORANG SUNGGUHAN. Tindakan
+  tercatat rapi atas nama orang yang tidak mengerjakannya, tanpa satu pun
+  gejala.
+
+Kegagalan yang tadinya keras berubah menjadi diam. **Karena itu ini harus
+beres SEBELUM pemindahan data, bukan sesudahnya.**
+
+### Membuang fallback saja tidak cukup
+
+Kalau kolomnya `NOT NULL`, yang dulu mengarang sekarang GAGAL menyimpan.
+Empat kolom karena itu dibuat boleh kosong lewat migrasi:
+`material_findings.created_by`, `purchase_materials.approved_by`,
+`beef_stock_movements.created_by`, `material_stock_movements.created_by`.
+Lima kolom lain yang ditulis tiga belas tempat itu sudah boleh kosong sejak
+awal.
+
+**Keputusan: kosong, bukan menolak menyimpan.** Perintah konsol atau job yang
+suatu saat menulis stok harus tetap bisa jalan; yang tidak boleh adalah
+menyebut nama orang yang tidak mengerjakannya.
+
+`down()` sengaja tidak mengembalikannya menjadi NOT NULL -- itu akan gagal
+begitu ada satu baris yang memang tidak diketahui pembuatnya, dan baris
+seperti itulah yang membuat migrasi ini ada.
+
+### Satu fallback yang JUSTRU benar dan tidak disentuh
+
+`MaterialFinding::deleted()` memakai `auth()->id() ?? $finding->created_by`.
+Itu bukan mengarang: kalau penghapusnya tidak diketahui, yang dicatat
+pembuat dokumennya sendiri -- orang yang memang ada hubungannya dengan baris
+itu.

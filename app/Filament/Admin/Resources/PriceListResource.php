@@ -91,7 +91,7 @@ class PriceListResource extends Resource
                     ->relationship('priceList')
                     ->schema([
                         Forms\Components\Hidden::make('created_by')
-                            ->default(fn () => auth()->id() ?: 1),
+                            ->default(fn () => auth()->id()),
 
                         // Clean Repeater Header UI
                         Forms\Components\Grid::make(12)

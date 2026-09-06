@@ -97,7 +97,7 @@ class TallyItem extends Model
                 'pcs_in' => $item->qty_pcs,
                 'pcs_out' => 0,
                 'note' => $note,
-                'created_by' => Auth::id() ?? 1, // Fallback if no user is authenticated (e.g. CLI/testing)
+                'created_by' => Auth::id(),
             ]);
         });
     }

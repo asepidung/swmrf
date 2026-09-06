@@ -143,7 +143,7 @@ class ProductRequisition extends Model
                 'po_number' => $poNumber,
                 'product_requisition_id' => $this->id,
                 'supplier_id' => $this->supplier_id,
-                'approved_by' => auth()->id() ?? 1,
+                'approved_by' => auth()->id(),
                 'po_date' => $this->due_date ?? now(),
                 'total_amount' => $this->total_amount,
                 'note' => $this->note,

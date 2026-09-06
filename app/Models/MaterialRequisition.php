@@ -122,7 +122,7 @@ class MaterialRequisition extends Model
                 'po_number' => $poNumber,
                 'material_requisition_id' => $this->id,
                 'supplier_id' => $this->supplier_id,
-                'approved_by' => auth()->id() ?? 1, // fallback to 1 if console
+                'approved_by' => auth()->id(),
                 'po_date' => $this->due_date ?? now(),
                 'total_amount' => $this->total_amount,
                 'note' => $this->note,

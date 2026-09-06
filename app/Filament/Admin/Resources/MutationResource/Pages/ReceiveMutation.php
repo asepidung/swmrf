@@ -190,13 +190,13 @@ class ReceiveMutation extends Page implements HasForms, HasTable
                                 'pcs_in' => $item->qty_pcs,
                                 'pcs_out' => 0,
                                 'note' => 'Penerimaan Mutasi',
-                                'created_by' => auth()->id() ?? 1,
+                                'created_by' => auth()->id(),
                             ]);
                         }
                         
                         $this->record->update([
                             'status' => 'COMPLETED',
-                            'received_by' => auth()->id() ?? 1
+                            'received_by' => auth()->id()
                         ]);
                     });
 

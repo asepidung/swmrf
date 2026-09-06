@@ -86,7 +86,7 @@ class StockService
                 'qty_out' => $qtyOut,
                 'balance' => $newQty,
                 'note' => $note,
-                'created_by' => $createdBy ?? Auth::id() ?? 1,
+                'created_by' => $createdBy ?? Auth::id(),
             ]);
 
             return $stock;

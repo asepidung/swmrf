@@ -311,7 +311,7 @@ class ScanTally extends Page implements HasForms, HasTable
                                         'pcs_in' => 0,
                                         'pcs_out' => 0,
                                         'note' => "Relabel: {$oldBarcode} -> {$newBarcode} (POD: {$oldPackDate} -> {$newPackDate})",
-                                        'created_by' => auth()->id() ?? 1,
+                                        'created_by' => auth()->id(),
                                     ]);
                                 });
                                 
@@ -433,7 +433,7 @@ class ScanTally extends Page implements HasForms, HasTable
                     'pcs_in' => 0,
                     'pcs_out' => $stock->qty_pcs,
                     'note' => 'Scan Tally',
-                    'created_by' => auth()->id() ?? 1,
+                    'created_by' => auth()->id(),
                 ]);
             });
 

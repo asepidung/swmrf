@@ -79,7 +79,7 @@ class DeliveryOrderReceipt extends Model
     {
         static::creating(function (DeliveryOrderReceipt $receipt) {
             if (empty($receipt->created_by)) {
-                $receipt->created_by = Auth::id() ?? 1;
+                $receipt->created_by = Auth::id();
             }
         });
     }
