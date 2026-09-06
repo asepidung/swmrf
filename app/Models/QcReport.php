@@ -37,6 +37,10 @@ class QcReport extends Model
         'carcass' => Carcass::class,
         'boning' => Boning::class,
         'gr-beef' => GoodsReceiptProduct::class,
+        'tally' => Tally::class,
+        'repack' => Repack::class,
+        'sales-return' => SalesReturn::class,
+        'stock-take' => StockTake::class,
     ];
 
 protected $fillable = [
@@ -141,7 +145,7 @@ protected $fillable = [
             return '-';
         }
 
-        foreach (['document_number', 'carcass_number', 'doc_no', 'gr_number', 'number'] as $kolom) {
+        foreach (['document_number', 'carcass_number', 'doc_no', 'gr_number', 'tally_number', 'return_number', 'number'] as $kolom) {
             if (filled($dokumen->{$kolom} ?? null)) {
                 return (string) $dokumen->{$kolom};
             }

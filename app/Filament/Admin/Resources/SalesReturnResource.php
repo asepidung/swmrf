@@ -169,7 +169,8 @@ class SalesReturnResource extends Resource
                     ->preload(),
             ])
             ->actions([
-                //
+                \App\Filament\Admin\Resources\QcReportResource\Actions\LihatLaporanQc::make(),
+//
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

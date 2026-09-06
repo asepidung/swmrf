@@ -36,6 +36,8 @@ use App\Models\PurchaseProduct;
 use App\Models\ProductRequisition as BeefRequisition;
 use App\Models\Repack;
 use App\Models\SalesOrder;
+use App\Models\SalesReturn;
+use App\Models\Tally;
 use App\Models\StockTake;
 use Filament\Widgets\Widget;
 
@@ -308,6 +310,30 @@ class PendingTaskWidget extends Widget
                 $this->getDocumentsWithoutQcReportCount(\App\Models\GoodsReceiptProduct::class),
                 ':count beef receipt is waiting for its QC report|:count beef receipts are waiting for their QC report',
                 GoodsReceiptProductResource::getUrl('index'),
+                'warning',
+            ],
+            [
+                $this->getDocumentsWithoutQcReportCount(\App\Models\Tally::class),
+                ':count tally is waiting for its QC report|:count tallies are waiting for their QC report',
+                TallyResource::getUrl('index'),
+                'warning',
+            ],
+            [
+                $this->getDocumentsWithoutQcReportCount(\App\Models\Repack::class),
+                ':count repack is waiting for its QC report|:count repacks are waiting for their QC report',
+                RepackResource::getUrl('index'),
+                'warning',
+            ],
+            [
+                $this->getDocumentsWithoutQcReportCount(\App\Models\SalesReturn::class),
+                ':count sales return is waiting for its QC report|:count sales returns are waiting for their QC report',
+                \App\Filament\Admin\Resources\SalesReturnResource::getUrl('index'),
+                'warning',
+            ],
+            [
+                $this->getDocumentsWithoutQcReportCount(\App\Models\StockTake::class),
+                ':count stock take is waiting for its QC report|:count stock takes are waiting for their QC report',
+                \App\Filament\Admin\Resources\StockTakeResource::getUrl('index'),
                 'warning',
             ],
         ];

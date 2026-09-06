@@ -122,7 +122,8 @@ class StockTakeResource extends Resource
                     ->visible(fn () => auth()->user()?->hasPermission('view_deleted_stock_takes') ?? false),
             ])
             ->actions([
-                Tables\Actions\Action::make('scan')
+                \App\Filament\Admin\Resources\QcReportResource\Actions\LihatLaporanQc::make(),
+Tables\Actions\Action::make('scan')
                     ->label(__('Scan'))
                     ->icon('heroicon-o-qr-code')
                     ->iconButton()

@@ -378,6 +378,47 @@ class QcReportTest extends TestCase
         $this->assertFalse($lain->fresh()->can('create', QcReport::class));
     }
 
+    /**
+     * Ketujuh titik QC punya relasi `qcReports`, pengamat, dan tugasnya.
+     *
+     * Menambah titik berarti menambah SATU baris di `DOKUMEN`. Uji ini yang
+     * memastikan satu baris itu memang cukup -- kalau relasinya lupa dipasang
+     * di modelnya, pengamatnya akan gagal justru saat dokumennya dibuat, dan
+     * yang menanggung akibatnya orang produksi di tengah kerja.
+     *
+     * @dataProvider titikQc
+     */
+    public function test_every_touchpoint_is_wired_end_to_end(string $kunci, string $kelas): void
+    {
+        $this->assertSame($kelas, QcReport::kelasUntuk($kunci));
+
+        $this->assertTrue(
+            method_exists($kelas, 'qcReports'),
+            "$kelas tidak punya relasi qcReports, jadi pengamatnya akan gagal saat dokumennya dibuat.",
+        );
+
+        // Pengamatnya benar-benar terpasang untuk kelas ini. Tanpa itu,
+        // tugasnya tidak pernah lahir dan tidak ada satu pun galat yang
+        // memberitahu -- yang terjadi cuma QC tidak pernah tahu ada
+        // pekerjaan.
+        $this->assertTrue(
+            \Illuminate\Support\Facades\Event::hasListeners('eloquent.created: '.$kelas),
+            "Pengamat QC tidak terpasang untuk $kelas.",
+        );
+    }
+
+    /** @return array<string, array{string, string}> */
+    public static function titikQc(): array
+    {
+        $hasil = [];
+
+        foreach (QcReport::DOKUMEN as $kunci => $kelas) {
+            $hasil[$kunci] = [$kunci, $kelas];
+        }
+
+        return $hasil;
+    }
+
     /** Kelima izinnya benar-benar ada, bukan hanya disebut kode. */
     public function test_all_five_permissions_exist(): void
     {
