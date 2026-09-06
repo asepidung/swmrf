@@ -4272,3 +4272,42 @@ seperti itulah yang membuat migrasi ini ada.
 Itu bukan mengarang: kalau penghapusnya tidak diketahui, yang dicatat
 pembuat dokumennya sendiri -- orang yang memang ada hubungannya dengan baris
 itu.
+
+---
+
+## #316 -- `stock:reconcile-material`
+
+Pasangan `stock:reconcile` untuk bahan penolong. Perintah yang lama hanya
+memeriksa daging, padahal material punya buku besarnya sendiri -- dan kalau
+buku besar itu bolong, tidak ada yang memberitahu: layarnya tetap
+menampilkan angka, hanya angkanya tidak lagi bisa dipertanggungjawabkan.
+
+### Bentuk datanya berbeda, dan bedanya menentukan rancangannya
+
+Stok daging dicatat per BARCODE dan barisnya dihapus begitu barangnya keluar.
+Stok material dicatat per JENIS: satu baris satu material, satu angka `qty`
+yang disunting naik-turun, barisnya tidak pernah dihapus.
+
+Akibatnya: tidak ada dimensi gudang maupun grade, jadi perbandingannya cukup
+per material. Dan "barang tanpa jejak masuk" tidak bisa dicari lewat barcode
+-- yang setara di sini adalah selisih NEGATIF (stok lebih besar daripada buku
+besar), yang berarti stok awal sebelum buku besarnya mulai mencatat.
+
+### Saldo dihitung ulang, bukan dibaca dari kolom `balance`
+
+`balance` adalah saldo yang dicatat pada saat baris itu ditulis. Kalau ada
+satu baris yang tidak tercatat, `balance` baris sesudahnya ikut salah tanpa
+menunjukkan gejala apa pun. Menjumlah `qty_in` dikurangi `qty_out` sendiri
+membuat perintah ini benar-benar MEMERIKSA, bukan mengulang jawaban yang
+sudah tersimpan.
+
+### Yang diuji bukan bahwa perintahnya jalan
+
+Perintah pemeriksa yang selalu menjawab "bersih" lebih berbahaya daripada
+tidak ada pemeriksa sama sekali -- ia memberi rasa aman tanpa dasar. Ujinya
+karena itu menyunting `material_stocks.qty` LANGSUNG, melewati
+`StockService`, lalu memeriksa bahwa perintahnya menangkapnya beserta angka
+selisihnya.
+
+Ada juga uji bahwa perintahnya tidak memuat satu pun pemanggilan penulisan.
+Ia dijalankan di server yang sedang dipakai orang.
