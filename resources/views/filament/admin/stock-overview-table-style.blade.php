@@ -44,6 +44,18 @@
         text-transform: uppercase !important;
     }
 
+    /*
+     * Label grup kolom (nama gudang) di tengah.
+     *
+     * Dulu ini penyimpangan KELIMA di dalam salinan view: `justify-center`
+     * ditulis mati menggantikan `match ($columnGroupAlignment)` bawaan
+     * Filament. Sepuluh baris salinan untuk sesuatu yang seluruhnya soal
+     * tampilan -- dan tampilan tidak perlu salinan.
+     */
+    .fi-resource-beef-stocks .fi-table-header-group-cell > div {
+        justify-content: center !important;
+    }
+
     .fi-resource-beef-stocks .fi-table-header-group-cell span {
         text-align: center !important;
         text-transform: uppercase !important;
