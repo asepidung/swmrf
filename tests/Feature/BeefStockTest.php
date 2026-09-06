@@ -249,4 +249,35 @@ class BeefStockTest extends TestCase
 
         $this->assertDatabaseHas('beef_stocks', ['barcode' => 'BC_NO_REASON']);
     }
+
+    /**
+     * Kelas pembatasnya benar-benar ADA di halamannya.
+     *
+     * Ini pasangan wajib dari uji di atas. Membatasi setiap aturan pada
+     * `.fi-resource-beef-stocks` cuma benar selama kelas itu memang dipasang
+     * -- dan kelas itu bukan milik aplikasi ini, melainkan dirakit Filament
+     * dari SLUG resource-nya. Ganti slug-nya, atau Filament ganti cara
+     * merakitnya, dan seluruh gaya tabel ini berhenti berlaku sekaligus:
+     * tabelnya kembali renggang, headernya kembali kiri dan huruf kecil,
+     * garis-garisnya hilang. Tidak ada galat. Cuma tampilannya yang balik
+     * seperti sebelum semua ini dikerjakan.
+     *
+     * Karena itu yang diperiksa di sini HALAMAN SUNGGUHAN, bukan kodenya.
+     */
+    public function test_the_style_scope_class_is_really_on_the_page(): void
+    {
+        $this->actingAs($this->user)
+            ->get(\App\Filament\Admin\Resources\BeefStockResource::getUrl('index'))
+            ->assertOk()
+            ->assertSee('fi-resource-beef-stocks', escape: false);
+    }
+
+    /** Dan berkas gayanya ikut termuat di halaman itu. */
+    public function test_the_style_sheet_reaches_the_page(): void
+    {
+        $this->actingAs($this->user)
+            ->get(\App\Filament\Admin\Resources\BeefStockResource::getUrl('index'))
+            ->assertOk()
+            ->assertSee('.fi-resource-beef-stocks .fi-ta-table tbody tr', escape: false);
+    }
 }

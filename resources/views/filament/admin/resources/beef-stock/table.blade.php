@@ -1,3 +1,44 @@
+{{--
+    SALINAN dari `vendor/filament/tables/resources/views/index.blade.php`.
+
+    Ini fork, dan fork tidak ikut berubah waktu Filament naik versi. Yang
+    menjaga supaya itu tidak lewat begitu saja adalah `ForkedTableViewTest`:
+    ia menyimpan sidik jari berkas aslinya dan gagal begitu berkas itu
+    berubah, supaya salinan ini disamakan dengan SENGAJA, bukan ketahuan
+    berbulan-bulan kemudian lewat halaman yang mati.
+
+    Semua CSS-nya sudah dikeluarkan ke
+    `resources/views/filament/admin/stock-overview-table-style.blade.php`
+    -- 105 baris yang tidak ada urusannya dengan versi Filament.
+
+    Yang tersisa di sini LIMA penyimpangan, dan cuma ini yang perlu
+    diterapkan ulang saat menyamakan dengan versi baru:
+
+    1.  Header action pindah ke baris toolbar, sebaris dengan pencarian dan
+        saringan, supaya tidak menghabiskan satu baris sendiri.
+        (`$hasHeaderToolbar`, blok `@elseif`, dan blok toolbar.)
+
+    2.  Kolom yang TIDAK punya grup ikut menjadi sel header ber-`rowspan=2`,
+        supaya sejajar dengan header dua tingkat (nama gudang di atas, grade
+        di bawahnya). Bawaannya menulis `<th></th>` kosong.
+
+    3.  Baris ringkasan per grup bawaan Filament dimatikan -- totalnya sudah
+        dicetak SEBARIS dengan nama kategorinya, di butir 4.
+
+    4.  Baris kategori ditulis sendiri: latar abu, tulisan kuning, tombol
+        collapse, dan satu sel angka per kombinasi gudang x grade. Selnya
+        dibuat dengan mengulang `BeefStockResource::stockBuckets()`, BUKAN
+        ditulis satu per satu -- kalau ditulis satu per satu, menambah gudang
+        atau grade akan menggeser angkanya satu kolom tanpa satu pun galat.
+
+    5.  Label grup kolom selalu di tengah (`justify-center`), tidak mengikuti
+        `Alignment` masing-masing.
+
+    Satu bug pernah lahir dari salinan ini dan tidur berbulan-bulan:
+    `:actions-position` ikut terbuang bersama `:actions` di butir 1, dan
+    halamannya baru mati waktu tabelnya diberi description. Penjelasannya
+    ada di tempatnya, di bawah.
+--}}
 @php
     use Filament\Support\Enums\Alignment;
     use Filament\Support\Enums\VerticalAlignment;
@@ -108,111 +149,6 @@
         return null;
     };
 @endphp
-
-<style>
-    /* Table Compactness */
-    .fi-ta-table {
-         /* text-xs */
-        line-height: 1rem !important;
-    }
-    
-    .fi-ta-table tbody tr {
-        height: 32px !important;
-    }
-
-    .fi-ta-cell>div,
-    .fi-ta-text,
-    .fi-ta-text-item {
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-    
-    .fi-ta-header-cell-label {
-        
-        justify-content: center !important;
-        text-align: center !important;
-        text-transform: uppercase !important;
-    }
-
-    .fi-table-header-group-cell span {
-        
-        text-align: center !important;
-        text-transform: uppercase !important;
-        display: block !important;
-    }
-    
-    /* Center align column headers and uppercase */
-    .fi-ta-table thead th {
-        text-align: center !important;
-        text-transform: uppercase !important;
-    }
-
-    /* Table cells vertical padding & borders */
-    .fi-ta-table th,
-    .fi-ta-table td {
-        padding-top: 0.25rem !important;
-        padding-bottom: 0.25rem !important;
-        padding-left: 0.5rem !important;
-        padding-right: 0.5rem !important;
-        border-left: 1px solid rgb(229 231 235) !important;
-        border-right: 1px solid rgb(229 231 235) !important;
-    }
-    
-    /* Category header rows font size */
-    .fi-ta-table tr td {
-        
-    }
-
-    .dark .fi-ta-table th,
-    .dark .fi-ta-table td {
-        border-color: rgb(63 63 70) !important;
-    }
-
-    /* Remove divide-y lines that cut through rowspanned header cells */
-    .fi-ta-table thead,
-    .fi-ta-table thead > tr {
-        border-top: none !important;
-        border-bottom: none !important;
-        background-color: transparent !important;
-    }
-    .fi-ta-table thead > tr:not(:first-child) {
-        border-top: none !important;
-    }
-    .fi-ta-table thead tr:not(:first-child) th {
-        border-top: none !important;
-    }
-    .fi-ta-table thead th {
-        border-bottom: none !important;
-    }
-
-    /* Add border bottom specifically to the group headers */
-    .fi-table-header-group-cell {
-        border-bottom: 1px solid rgb(229 231 235) !important;
-    }
-    .dark .fi-table-header-group-cell {
-        border-bottom: 1px solid rgb(63 63 70) !important;
-    }    /* Force center alignment for all header cells */
-    .fi-ta-table th .fi-ta-header-cell-label,
-    .fi-ta-table th > button,
-    .fi-ta-table th > div {
-        justify-content: center !important;
-        text-align: center !important;
-    }
-    /* Force center alignment for ALL header cells inside this table */
-    .fi-ta-table th > button,
-    .fi-ta-table th > div,
-    .fi-ta-table .fi-ta-header-cell > button,
-    .fi-ta-table .fi-ta-header-cell > div {
-        justify-content: center !important;
-        align-items: center !important;
-    }
-    .fi-ta-table .fi-ta-header-cell-label {
-        text-align: center !important;
-        justify-content: center !important;
-        width: 100% !important;
-        display: flex !important;
-    }
-</style>
 
 <div
     @if (! $isLoaded)
@@ -901,7 +837,7 @@
                                                 ])
                                             >
                                                 <span
-                                                    class="text-xs font-semibold text-gray-950 dark:text-white"
+                                                    class="text-sm font-semibold text-gray-950 dark:text-white"
                                                 >
                                                     {{ $columnGroup->getLabel() }}
                                                 </span>
