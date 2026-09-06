@@ -59,8 +59,8 @@
                     <td>{{ $record->reference_document ?? '-' }}</td>
                     <td>{{ $record->material->name ?? '-' }}</td>
                     <td class="text-center">{{ __($record->transaction_type) }}</td>
-                    <td class="text-right">{{ number_format($record->qty_in, 2, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($record->qty_out, 2, ',', '.') }}</td>
+                    <td class="text-right">{{ number_format((int) $record->qty_in, 0, ',', '.') }}</td>
+                    <td class="text-right">{{ number_format((int) $record->qty_out, 0, ',', '.') }}</td>
                     <td class="text-right">{{ number_format($record->balance, 2, ',', '.') }}</td>
                     <td>{{ $record->creator->name ?? '-' }}</td>
                 </tr>

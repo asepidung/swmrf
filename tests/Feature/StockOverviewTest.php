@@ -524,7 +524,9 @@ class StockOverviewTest extends TestCase
      */
     public function test_the_material_export_is_masked_while_a_count_runs(): void
     {
-        $material = $this->material(12.5);
+        // Qty material bilangan bulat sejak keputusan Owner 6 September
+        // 2026 -- 12,5 tidak lagi bisa tersimpan.
+        $material = $this->material(12);
 
         MaterialStockTake::create([
             'document_number' => 'MSO-2',
@@ -563,8 +565,11 @@ class StockOverviewTest extends TestCase
         $this->assertStringContainsString('PLASTIK', $html);
         $this->assertStringContainsString('KEMASAN', $html);
         $this->assertStringContainsString('PCS', $html);
-        $this->assertStringContainsString('12,50', $html);
-        $this->assertStringContainsString('5,00', $html);
+        $this->assertStringContainsString('12', $html);
+        $this->assertStringContainsString('5', $html);
+
+        // Dan TIDAK memasang nol palsu di belakang koma.
+        $this->assertStringNotContainsString('12,00', $html);
     }
 
     private function material(float $qty): Material

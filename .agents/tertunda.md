@@ -9,6 +9,10 @@ sengaja diputuskan tidak dikerjakan.
 
 Dibuat 6 September 2026, atas permintaan Owner.
 
+**Tiap baris hanya memuat SISA pekerjaannya.** Yang sudah dikerjakan dicabut
+dari sini dan riwayatnya tinggal di `agents.md` -- daftar tunggu yang memuat
+catatan kemajuan berhenti bisa dibaca sekilas, dan itu satu-satunya gunanya.
+
 ---
 
 ## A. Menunggu HPP
@@ -51,7 +55,7 @@ dinilai" dari nol yang berarti "memang tidak rugi".
 
 | Yang tertunda | Keadaannya sekarang |
 |---|---|
-| **Tanggal dokumen vs waktu input** — **INGATKAN OWNER BEGITU SELURUH MODUL SETTLE, SEBELUM LIVE** | Permintaan Owner, 6 September 2026: "kerjain tapi ingetin pas modul settle ya". Posisi stok tanggal mundur mengikuti WAKTU INPUT; bedanya baru terasa di BATAS BULAN, sebesar keterlambatan input, dan di situlah angkanya dibandingkan dengan hitungan fisik. **Yang sudah dikerjakan sekarang:** keterangan posisi muncul di layar dan ikut ke berkas Excel maupun PDF (#323), jadi yang membacanya tahu persis angka itu milik kapan. **Yang ditunda:** kolom `transaction_date` di kedua tabel pergerakan — 25 titik tulis untuk daging, 1 untuk material. Ditunda supaya tidak dibayar dua kali selagi modul lain masih berubah. **Catatan yang menentukan ruang lingkupnya:** tabel `tallies` TIDAK punya kolom tanggal sendiri, padahal tally pintu masuk utama daging ke stok — jadi untuk sumber terbesarnya tanggal dokumen memang sama dengan waktu input, dan kolom baru itu hanya memperbaiki sebagian. **Ide soft delete `beef_stocks` sudah dipertimbangkan dan DITOLAK:** `deleted_at` juga waktu input, jadi ia tidak menyelesaikan apa pun, sementara ongkosnya nyata (~300 ribu baris setahun pada puncak 1000 label/hari) dan merusak rancangan yang membuat tabel stok tetap ringan |
+| **Tanggal dokumen vs waktu input** — **INGATKAN BEGITU SELURUH MODUL SETTLE, SEBELUM LIVE** | Permintaan Owner 6 Sep: "kerjain tapi ingetin pas modul settle ya". **Sisa pekerjaannya:** kolom `transaction_date` di kedua tabel pergerakan — 25 titik tulis untuk daging, 1 untuk material. Ditunda supaya tidak dibayar dua kali selagi modul lain masih berubah. Ruang lingkupnya dibatasi satu hal: tabel `tallies` tidak punya kolom tanggal sendiri, padahal tally pintu masuk utama daging ke stok — jadi untuk sumber terbesarnya tanggal dokumen memang sama dengan waktu input. Ide soft delete `beef_stocks` sudah dipertimbangkan dan ditolak; alasannya di `agents.md` #323 |
 | **Penjaga barcode di DO receipt** | Owner: "biarin gitu dulu nanti mau gw uji sendiri, karena aturan itu sebenarnya belum diperlukan untuk ada". Barcode dari surat jalan yang belum ada bukti terimanya ditolak. Hasil ujinya menentukan apakah aturannya dibuang atau justru diperluas ke tab Relabel |
 | **Repack: penataan halaman** | Halaman Input Bahan dan Input Hasil belum ditata ulang. Logikanya sudah selesai |
 
@@ -79,8 +83,8 @@ Bukan menunggu apa pun -- hanya belum dikerjakan, dan besarnya diketahui.
 
 | Utang | Ukurannya |
 |---|---|
-| **View tabel Stock Overview masih fork Filament** | Selisihnya sudah turun dari 327 ke **220 baris** (#312): seluruh CSS-nya keluar, dan lima penyimpangan yang tersisa didaftar di kepala berkasnya. Fork-nya sendiri belum bisa hilang -- Filament v3 tidak punya cara mencetak angka ringkasan DI DALAM baris grup, dan itu inti tampilannya. Yang berubah: ketertinggalannya sekarang BERISIK, bukan sepi. `ForkedTableViewTest` menyimpan sidik jari berkas asli dan gagal begitu Filament naik versi |
-| **Kedua `stock:reconcile` belum diuji di data tebal** | Sisi daging dijalankan 5 Sep: bersih, tetapi cuma 32 baris pergerakan dari 5 hari. Sisi material (#316) dijalankan 6 Sep di server: bersih juga, 1 material -- tetapi menemukan **3 baris saldo tercatat minus** (KERTAS HVS, 31 Agu dan 1 Sep), semuanya SEBELUM penolakan stok minus dipasang. Buku besar dengan puluhan baris memang selalu cocok; jalankan lagi setelah dipakai beberapa minggu |
+| **View tabel Stock Overview masih fork Filament** | **Sisa pekerjaannya:** lima penyimpangan struktur, 220 baris, didaftar di kepala berkasnya. Belum bisa hilang selama Filament v3 tidak punya cara mencetak angka ringkasan DI DALAM baris grup, dan itu inti tampilannya. Ketertinggalannya sudah dijaga `ForkedTableViewTest` (#312), jadi ini bukan lagi risiko senyap — hanya pekerjaan yang belum selesai |
+| **Kedua `stock:reconcile` belum diuji di data tebal** | **Sisa pekerjaannya:** jalankan lagi setelah dipakai beberapa minggu. Sisi daging 5 Sep dan sisi material 6 Sep dua-duanya bersih, tetapi bahannya masih puluhan baris — buku besar sekecil itu memang selalu cocok. Sisi material menemukan 3 baris saldo minus lama (KERTAS HVS, 31 Agu & 1 Sep), semuanya sebelum penolakan stok minus dipasang |
 | **Laporan yang belum ada** | Fast Moving Products, Sales Report, Laporan Stock Gudang |
 
 ---

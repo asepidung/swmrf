@@ -145,8 +145,12 @@ class MaterialRequisitionThousandSeparatorTest extends TestCase
         $codeOnly = preg_replace('/^\s*\/\/.*$/m', '', $repeaterBlock);
 
         $this->assertStringNotContainsString('->numeric()', $codeOnly);
-        $this->assertStringContainsString("'inputmode' => 'decimal'", $repeaterBlock);
+
+        // Keduanya `numeric`, bukan `decimal`. Qty material bilangan bulat
+        // sejak keputusan Owner 6 September 2026, jadi papan ketik yang
+        // menawarkan koma cuma mengajak mengetik sesuatu yang akan ditolak.
         $this->assertStringContainsString("'inputmode' => 'numeric'", $repeaterBlock);
+        $this->assertStringNotContainsString("'inputmode' => 'decimal'", $repeaterBlock);
     }
 
     /**

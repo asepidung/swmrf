@@ -36,7 +36,7 @@
                 <td>{{ optional(optional($record->purchaseMaterial)->supplier)->name ?? '-' }}</td>
                 <td>{{ optional($record->purchaseMaterial)->po_date ? \Carbon\Carbon::parse($record->purchaseMaterial->po_date)->format('d M Y') : '-' }}</td>
                 <td>{{ optional($record->material)->name ?? '-' }}</td>
-                <td class="text-right">{{ number_format($record->qty, 2, ',', '.') }}</td>
+                <td class="text-right">{{ number_format((int) $record->qty, 0, ',', '.') }}</td>
                 <td class="text-right">Rp {{ number_format($record->price, 0, ',', '.') }}</td>
                 <td class="text-right">Rp {{ number_format($record->subtotal, 0, ',', '.') }}</td>
             </tr>

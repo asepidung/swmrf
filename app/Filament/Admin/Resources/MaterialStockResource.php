@@ -158,7 +158,7 @@ class MaterialStockResource extends Resource
                     ->label(__('Actual stock'))
                     ->getStateUsing(fn (\App\Models\Material $record): string => \App\Models\MaterialStockTake::isCounting()
                         ? '***'
-                        : number_format((float) $record->qty, 2, ',', '.'))
+                        : number_format((float) $record->qty, 0, ',', '.'))
                     ->sortable()
                     ->color(fn (\App\Models\Material $record): string => \App\Models\MaterialStockTake::isCounting()
                         ? 'gray'

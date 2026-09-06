@@ -76,7 +76,7 @@
                     <td>{{ $record->category->name ?? '-' }}</td>
                     <td>{{ $record->unit->name ?? '-' }}</td>
                     <td class="text-right @if($isBelowMin) warning-text @endif">
-                        {{ ($masked ?? false) ? '***' : number_format($record->qty, 2, ',', '.') }}
+                        {{ ($masked ?? false) ? '***' : number_format((int) $record->qty, 0, ',', '.')}}
                     </td>
                     <td class="text-right">
                         {{ number_format($record->min_stock ?? 0, 2, ',', '.') }}

@@ -44,7 +44,7 @@ class ReviewMaterialRequisition extends EditRecord
         $data['items'] = $this->record->items->mapWithKeys(function ($item) {
             return [(string) \Illuminate\Support\Str::uuid() => [
                 'material_id' => $item->material_id,
-                'qty' => number_format((float) $item->qty, 2, ',', '.'),
+                'qty' => number_format((int) $item->qty, 0, ',', '.'),
                 'price' => number_format((float) $item->price, 0, ',', '.'),
                 'item_total' => (float) ($item->qty * $item->price),
                 'note' => $item->note,
