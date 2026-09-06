@@ -49,6 +49,23 @@ dinilai" dari nol yang berarti "memang tidak rugi".
 | Mutu barang retur | Owner: "nanti kita ada modul qc kok". Barang retur sekarang langsung siap dijual lagi; di lapangan sudah ada penanganannya sendiri (biasanya lewat repack) |
 | **QC / QA Monitoring Produksi** | Belum ada modulnya. pH dan Grade menempel di dokumen lain, tanpa tempat yang menyatakan lulus atau tidaknya suatu batch. Kompensasi pemasok di Payable dicatat tanpa dokumen pemeriksaan yang mendasarinya |
 
+### Bahan yang sudah ditelusuri untuk QC
+
+Owner, 6 September 2026, saat modulnya mulai dibicarakan: "nanti aja nunggu
+instruksi dari gw bro, soalnya modulnya ada banyak nih" dan "ini nanti kita
+tentukan di saat pembuatan". **Rancangannya ditentukan Owner, bukan ditebak
+di sini.**
+
+Yang sudah dipetakan supaya tidak digali ulang saat modulnya mulai:
+
+| Yang sudah ada | Keadaannya |
+|---|---|
+| **`ph_level`** | Ada di DELAPAN tabel: `boning_items`, `tally_items`, `beef_stocks`, `mutation_items`, `repack_materials`, `repack_results`, `stock_take_items`, `sales_return_items`, `goods_receipt_product_items`. **Tidak divalidasi sama sekali** -- angka apa pun diterima, dan tidak ada satu pun yang menyimpulkan lulus atau tidak. Nilainya ikut masuk ke barcode 26 karakter (dua digit, pH x 10) |
+| **`grade_id`** | CHILL, FROZEN, A, B, R. Ini KONDISI SIMPAN, bukan hasil pemeriksaan -- dan umur simpannya diatur `App\Support\ShelfLife` |
+| **Kompensasi pemasok** | `Payable::applyCompensation()`. Alasannya SELALU mutu ("lemaknya terlalu banyak, hasil dagingnya sedikit" -- Owner), tetapi tidak ada dokumen pemeriksaan yang mendasarinya. Catatan penting di sana: kompensasi TIDAK PERNAH menyentuh kerugian susut, dan pembedaan berat-vs-mutu sudah pernah dipasang lalu dibatalkan |
+| **Suhu** | Tidak ada kolomnya di mana pun |
+| **Foto / lampiran** | Tidak ada penyimpanan berkas untuk dokumen mana pun |
+
 ---
 
 ## D. Menunggu keputusan Owner
@@ -56,7 +73,7 @@ dinilai" dari nol yang berarti "memang tidak rugi".
 | Yang tertunda | Keadaannya sekarang |
 |---|---|
 | **Tanggal dokumen vs waktu input** — **INGATKAN BEGITU SELURUH MODUL SETTLE, SEBELUM LIVE** | Permintaan Owner 6 Sep: "kerjain tapi ingetin pas modul settle ya". **Sisa pekerjaannya:** kolom `transaction_date` di kedua tabel pergerakan — 25 titik tulis untuk daging, 1 untuk material. Ditunda supaya tidak dibayar dua kali selagi modul lain masih berubah. Ruang lingkupnya dibatasi satu hal: tabel `tallies` tidak punya kolom tanggal sendiri, padahal tally pintu masuk utama daging ke stok — jadi untuk sumber terbesarnya tanggal dokumen memang sama dengan waktu input. Ide soft delete `beef_stocks` sudah dipertimbangkan dan ditolak; alasannya di `agents.md` #323 |
-| **Penjaga barcode di DO receipt** | Owner: "biarin gitu dulu nanti mau gw uji sendiri, karena aturan itu sebenarnya belum diperlukan untuk ada". Barcode dari surat jalan yang belum ada bukti terimanya ditolak. Hasil ujinya menentukan apakah aturannya dibuang atau justru diperluas ke tab Relabel |
+| **Penjaga barcode di DO receipt** | Owner, 6 Sep: "pass deh sementara gak bisa dikerjain sekarang". **Sisa pekerjaannya:** memutuskan aturannya dibuang atau dipertahankan, sesudah Owner mengujinya sendiri. **Yang sudah ditelusuri, supaya tidak diulang:** penjaganya pertanyaan KEDUA dari empat di `InputReturnItems.php` -- barang yang surat jalannya belum punya bukti terima ditolak diretur, dengan alasan itu TOLAKAN dan pintunya di halaman Approve DO (di sana tally item dihapus, stok kembali, bukti terima lahir sudah berkurang, invoice ikut berkurang). **Catatan lama menyebut "diperluas ke tab Relabel" dan itu KELIRU:** Relabel bukan tab di halaman retur, melainkan action di Scan Tally untuk mengganti POD barang yang kelewat umur dan mencetak label baru berprefiks `6`. Luruskan dulu maksudnya sebelum aturannya disentuh, kalau tidak yang dikerjakan penjagaan untuk layar yang tidak ada hubungannya |
 | **Repack: penataan halaman** | Halaman Input Bahan dan Input Hasil belum ditata ulang. Logikanya sudah selesai |
 
 ---
