@@ -4944,3 +4944,73 @@ memberitahu, dan yang menanggung akibatnya orang produksi di tengah kerja.
 mudah tertukar -- laporan QC pendamping (tugas biasa) dan izin susut di luar
 batas (#338). Keduanya sengaja terpisah: yang pertama pemeriksaan rutin, yang
 kedua kewenangan.
+
+---
+
+## #344 -- Bill of Material
+
+Legacy `barang/managebom.php` sudah punya BOM, tetapi bentuknya mengunci
+dirinya sendiri: tujuh slot bahan ditulis di kode satu per satu, nomor
+kategorinya dipatok angka (`2`, `3`, `21`, `22`), Drylog dipatok
+`idrawmate = 5`, dan Top dibedakan dari Bottom lewat **nama** bahannya
+(`LIKE '%TOP%'`). Karton Bottom bahkan tidak punya cabang penonaktifan sama
+sekali -- sekali dipilih, ia tidak bisa dilepas.
+
+Bukti bahwa patokan angka itu sudah menyimpang ada di datanya sendiri:
+`get_material_id($conn, 21)` mencari KARUNG di kategori 21, sementara baris
+BOM produksi yang benar-benar memakai karung menunjuk bahan berkategori
+PLASTIK.
+
+### Bentuk barunya
+
+Baris bebas, bahan dipilih dari master Material. Menambah jenis bahan tidak
+lagi berarti mengubah kode.
+
+**Tiga keputusan yang ditahan penjaga:**
+
+1. `quantity` boleh KOSONG, dan kosong bukan nol. Keputusan Owner,
+   6 September 2026: Drylog dipakai di hampir semua produk tetapi jumlahnya
+   berbeda-beda walau produknya sama. Nol berarti "tidak dipakai", dan baris
+   yang tidak dipakai memang dihapus -- jadi nol tidak akan pernah berarti
+   apa pun di sini.
+
+2. `basis` DISIMPAN, tidak ditulis sebagai teks di sebelah kolom. Data
+   produksi legacy memperlihatkan kenapa: plastik cryovac dan karton
+   sama-sama `qty 1`, padahal yang satu per potong daging dan yang lain per
+   box. Angkanya sama, artinya berbeda.
+
+3. Satu bahan hanya muncul sekali per produk, ditahan kunci unik di basis
+   data -- bukan pemeriksaan di halamannya, yang hanya berlaku bagi yang
+   lewat halaman itu.
+
+`quantity` bilangan bulat, mengikuti aturan yang sudah berlaku untuk kuantitas
+material (#320).
+
+### "Cluster barang" dijawab dengan penyalinan
+
+Owner menyebut kemungkinan mengelompokkan produk supaya satu BOM dipakai
+bersama. Yang ingin dihindarinya adalah mengetik ulang daftar yang sama, dan
+tombol "Salin dari Produk Lain" menyelesaikan itu tanpa menambah satu konsep
+baru pun.
+
+Kelompok yang dipakai BERSAMA justru membuat perubahan pada satu produk
+diam-diam mengubah produk lain, dan itu tidak bisa ditarik kembali begitu
+daftarnya berbeda sedikit saja -- padahal datanya menunjukkan daftar itu
+memang sering berbeda sedikit: BACKRIB memakai karton top, BACKRIB CUT tidak.
+Karena itu salinannya PUTUS dari asalnya, dan baris yang sudah ada di tujuan
+tidak ditimpa.
+
+### Batas yang disengaja
+
+BOM ini **tidak menggerakkan stok**. Stok material tetap dikurangi manual
+dalam satuan kasarnya setelah produksi -- keputusan Owner setelah perdebatan
+panjang dengan pemilik usaha, karena menghitung plastik satu per satu di
+lapangan tidak mungkin: satu dus bisa 5.000 lembar, dan margin errornya jauh
+lebih besar daripada yang diperbaiki. Yang dicatat di sini KOMPOSISI, supaya
+cost-nya bisa dihitung saat dibutuhkan.
+
+### Belum dikerjakan
+
+417 baris BOM aktif di aplikasi legacy belum dipindahkan. Pemindahannya
+menuntut pemetaan produk dan bahan antara dua master yang berbeda, dan
+`basis` tiap barisnya harus ditentukan -- legacy tidak menyimpannya.

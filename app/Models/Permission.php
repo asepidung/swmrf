@@ -164,6 +164,7 @@ class Permission extends Model
             ],
             'MASTER DATA' => [
                 'Products',
+                'Bill of Materials',
                 'Product Categories',
                 'Grades',
                 'Warehouses',

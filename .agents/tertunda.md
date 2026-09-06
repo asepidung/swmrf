@@ -38,7 +38,7 @@ dinilai" dari nol yang berarti "memang tidak rugi".
 | Yang tertunda | Kenapa |
 |---|---|
 | **Material Usage** (Pemakaian Bahan Penolong) | Owner: "material usage nanti aja kaitannya sama BOM". Belum disisir |
-| **B.O.M** sendiri | Belum ada modulnya. Tidak ada yang menyatakan satu produk butuh bahan apa dan berapa; pemakaian bahan dicatat manual tanpa pembanding, HPP tidak bisa utuh, dan kebutuhan bahan tidak bisa diperkirakan di muka. Menyentuh Boning, Repack, Material Usage, dan HPP sekaligus |
+| **Pemindahan 417 baris BOM legacy** | Modulnya sudah ada (#344), isinya belum. Menuntut pemetaan produk dan bahan antara dua master yang berbeda, dan `basis` tiap baris harus ditentukan -- legacy tidak menyimpannya, jadi tidak bisa disalin begitu saja |
 
 ---
 
@@ -117,4 +117,6 @@ siapa pun. Selama belum dicentang, hanya akun programmer yang bisa memakainya.
 `view_deleted_sales_returns` · `view_deleted_material_stock_takes` ·
 `pay_purchase_materials` · `view_deleted_repacks` ·
 `view_qc_reports` · `create_qc_reports` · `edit_qc_reports` ·
-`delete_qc_reports` · `view_deleted_qc_reports`
+`delete_qc_reports` · `view_deleted_qc_reports` ·
+`view_product_materials` · `create_product_materials` ·
+`edit_product_materials` · `delete_product_materials`
