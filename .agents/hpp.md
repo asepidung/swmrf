@@ -270,6 +270,11 @@ Bentuk ini menghasilkan angka yang sama persis ketika harganya kebetulan sama
 Datanya sudah ada: `cattle_receiving_items` menyimpan `initial_weight` beserta
 `cattle_class_id`, dan `purchase_cattle_items` menyimpan harga per kelas.
 
+Dan harganya **tergantung supplier** -- keterangan Owner. Itu sudah ikut
+tertangani dengan sendirinya: harga dibaca dari PO milik lot itu, dan satu lot
+selalu satu supplier. Yang harus dijaga adalah tidak pernah mengambil harga
+dari tempat lain, misalnya harga terakhir yang dipakai atau rata-rata.
+
 Form accounting sekarang memakai satu harga untuk semuanya. Itu benar hari ini
 dan akan diam-diam salah pada lot pertama yang harganya berbeda -- persis
 jenis kekeliruan yang tidak menimbulkan gejala apa pun.
