@@ -85,7 +85,7 @@ class ReconcileMaterialStockTest extends TestCase
         // 10 di buku besar lawan 99 di stok: selisihnya 89.
         $this->artisan('stock:reconcile-material')
             ->expectsOutputToContain('Yang meleset            : 1')
-            ->expectsOutputToContain('Jumlah selisih mutlak   : 89.00')
+            ->expectsOutputToContain('Jumlah selisih mutlak   : 89')
             ->expectsOutputToContain('MELESET')
             ->assertExitCode(1);
     }
@@ -99,8 +99,10 @@ class ReconcileMaterialStockTest extends TestCase
 
         StockService::adjustStock($this->material->id, 5, 'MASUK', 'DOC-2', 'terima lagi');
 
+        // Bulat, tanpa nol palsu di belakang koma -- qty material bilangan
+        // bulat sejak #325.
         $this->artisan('stock:reconcile-material', ['--date' => now()->subDays(2)->toDateString()])
-            ->expectsOutputToContain('10.00')
+            ->expectsOutputToContain('Total: 10 dalam 1 material')
             ->assertExitCode(0);
     }
 
