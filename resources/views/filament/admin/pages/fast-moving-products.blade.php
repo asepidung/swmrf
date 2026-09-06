@@ -1,7 +1,7 @@
 <x-filament-panels::page>
     {{ $this->form }}
 
-    <x-filament::section>
+<x-filament::section>
         <x-slot name="heading">{{ __('Most frequently ordered') }}</x-slot>
 
         <x-slot name="description">
@@ -29,7 +29,6 @@
                             <th class="py-2 text-left font-semibold">{{ __('Product Name') }}</th>
                             <th class="py-2 text-right font-semibold">{{ __('Times ordered') }}</th>
                             <th class="py-2 text-right font-semibold">{{ __('Weight (Kg)') }}</th>
-                            <th class="w-1/3 py-2 text-left font-semibold"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -43,22 +42,7 @@
                                     {{ number_format((float) $satu->berat, 2, ',', '.') }}
                                 </td>
 
-                                {{--
-                                    Batang sebanding, bukan grafik tersendiri.
-                                    Yang perlu terbaca cuma satu hal: seberapa
-                                    jauh yang teratas meninggalkan sisanya --
-                                    dan itu tidak butuh sumbu, legenda, maupun
-                                    pustaka grafik.
-                                --}}
-                                <td class="py-1.5 ps-4">
-                                    <div class="h-2 w-full rounded bg-gray-100 dark:bg-white/10">
-                                        <div
-                                            class="h-2 rounded bg-primary-500"
-                                            style="width: {{ max(2, round((int) $satu->frekuensi / $frekuensiTertinggi * 100)) }}%"
-                                        ></div>
-                                    </div>
-                                </td>
-                            </tr>
+</tr>
                         @endforeach
                     </tbody>
                 </table>

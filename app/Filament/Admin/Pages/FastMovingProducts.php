@@ -137,6 +137,25 @@ class FastMovingProducts extends Page implements HasForms
             ->columns(4);
     }
 
+    /** Alasan memakai jalur widget bawaan ada di `SalesReport`. */
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            \App\Filament\Admin\Widgets\FastMovingChart::class,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function getWidgetData(): array
+    {
+        return [
+            'dari' => $this->dari ?: now()->startOfMonth()->toDateString(),
+            'sampai' => $this->sampai ?: LaporanPenjualan::tanggalPesananTerakhir(),
+            'kategori' => $this->kategori,
+            'berapa' => (int) $this->berapa,
+        ];
+    }
+
     /** @return array<string, mixed> */
     protected function getViewData(): array
     {
@@ -149,10 +168,9 @@ class FastMovingProducts extends Page implements HasForms
             'baris' => $baris,
             'dari' => $dari,
             'sampai' => $sampai,
+            'kategori' => $this->kategori,
+            'berapa' => (int) $this->berapa,
             'adaKategori' => ProductCategory::exists(),
-            // Dipakai untuk panjang batang: yang paling sering menjadi
-            // seratus persen, sisanya sebanding terhadapnya.
-            'frekuensiTertinggi' => (int) ($baris->max('frekuensi') ?: 1),
         ];
     }
 }

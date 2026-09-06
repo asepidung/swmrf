@@ -318,6 +318,134 @@ class SalesReportTest extends TestCase
             ->assertOk();
     }
 
+
+    // =====================================================================
+    // Grafik
+    // =====================================================================
+
+    /** Isi grafik, diambil lewat pantulan karena `getData()` terlindung. */
+    private function isiGrafik(\Filament\Widgets\ChartWidget $widget): array
+    {
+        $metode = new \ReflectionMethod($widget, 'getData');
+        $metode->setAccessible(true);
+
+        return $metode->invoke($widget);
+    }
+
+    /**
+     * Bulan yang belum terjadi dikirim `null`, bukan nol.
+     *
+     * Chart.js MEMUTUS garisnya pada nilai null. Kalau dikirim nol, garisnya
+     * terjun ke dasar sampai Desember -- terbaca seolah penjualannya
+     * berhenti, padahal bulannya cuma belum datang. Ini kesalahan yang tidak
+     * menimbulkan galat apa pun dan justru paling meyakinkan bentuknya.
+     */
+    public function test_the_chart_breaks_its_line_instead_of_dropping_to_zero(): void
+    {
+        $widget = new \App\Filament\Admin\Widgets\SalesYearlyChart;
+        $widget->tahun = (int) now()->format('Y');
+
+        $isi = $this->isiGrafik($widget);
+
+        $bulanIni = (int) now()->format('n');
+
+        $this->assertCount(12, $isi['datasets'][0]['data']);
+        $this->assertCount(12, $isi['labels']);
+
+        if ($bulanIni < 12) {
+            $this->assertNull(
+                $isi['datasets'][0]['data'][11],
+                'Bulan Desember yang belum terjadi dikirim nol, jadi garisnya terjun ke dasar.',
+            );
+        }
+
+        // Dan `spanGaps` harus mati, kalau tidak Chart.js menyambungnya lagi.
+        $this->assertFalse($isi['datasets'][0]['spanGaps']);
+    }
+
+    /** Tahun sebelumnya digambar utuh sebagai pembanding. */
+    public function test_the_chart_draws_the_previous_year_whole(): void
+    {
+        $widget = new \App\Filament\Admin\Widgets\SalesYearlyChart;
+        $widget->tahun = 2026;
+
+        $isi = $this->isiGrafik($widget);
+
+        $this->assertSame('2026', $isi['datasets'][0]['label']);
+        $this->assertSame('2025', $isi['datasets'][1]['label']);
+        $this->assertCount(12, $isi['datasets'][1]['data']);
+        $this->assertNotContains(null, $isi['datasets'][1]['data']);
+    }
+
+    /** Angka di grafik sama dengan angka di tabelnya. */
+    public function test_the_chart_and_the_table_show_the_same_numbers(): void
+    {
+        $this->invoice('2026-03-05', 10_000_000, charge: 250_000, dp: 1_000_000);
+
+        $widget = new \App\Filament\Admin\Widgets\SalesYearlyChart;
+        $widget->tahun = 2026;
+
+        $dariGrafik = $this->isiGrafik($widget)['datasets'][0]['data'][2];
+        $dariTabel = LaporanPenjualan::totalPerBulan(2026)[3];
+
+        $this->assertEqualsWithDelta($dariTabel, $dariGrafik, 0.01);
+    }
+
+    /**
+     * Grafik fast moving mengurut sama dengan tabelnya.
+     *
+     * Grafik dan tabel di halaman yang sama menjawab pertanyaan yang sama;
+     * kalau urutannya berbeda, salah satunya berbohong dan tidak ada cara
+     * mengetahui yang mana.
+     */
+    public function test_the_fast_moving_chart_follows_the_same_ranking(): void
+    {
+        $kategori = ProductCategory::create(['name' => 'PRIME CUTS', 'prefix' => '1', 'is_active' => true]);
+
+        $sering = $this->produk('SRG', $kategori);
+        $jarang = $this->produk('JRG', $kategori);
+
+        foreach (['2026-09-01', '2026-09-02', '2026-09-03'] as $tanggal) {
+            $this->pesan($tanggal, $sering, 5);
+        }
+
+        $this->pesan('2026-09-04', $jarang, 500);
+
+        $widget = new \App\Filament\Admin\Widgets\FastMovingChart;
+        $widget->dari = '2026-09-01';
+        $widget->sampai = '2026-09-30';
+        $widget->kategori = $kategori->id;
+        $widget->berapa = 10;
+
+        $isi = $this->isiGrafik($widget);
+
+        $this->assertSame(['PRODUK SRG', 'PRODUK JRG'], $isi['labels']);
+        $this->assertSame([3, 1], $isi['datasets'][0]['data']);
+    }
+
+    /**
+     * Kedua halaman terbuka UTUH lewat HTTP, grafiknya ikut.
+     *
+     * `Livewire::test()` hanya merender komponen halamannya; widget yang
+     * dipasang lewat `@livewire` di dalam view TIDAK ikut dirender di sana.
+     * Jadi kesalahan di dalam widget-nya tidak akan pernah terlihat dari uji
+     * itu -- halamannya tetap hijau sementara grafiknya mati di layar.
+     *
+     * @dataProvider halamanLaporan
+     */
+    public function test_the_whole_page_renders_over_http(string $halaman, string $izin): void
+    {
+        ProductCategory::create(['name' => 'PRIME CUTS', 'prefix' => '1', 'is_active' => true]);
+
+        // Izinnya ikut disebut penyedia data; di sini yang diuji hanya bahwa
+        // halamannya terbuka utuh untuk yang berhak.
+        $this->assertNotSame('', $izin);
+
+        $this->actingAs($this->user)
+            ->get($halaman::getUrl())
+            ->assertOk();
+    }
+
     // =====================================================================
     // Hak akses
     // =====================================================================
