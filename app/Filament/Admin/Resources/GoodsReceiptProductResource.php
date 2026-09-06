@@ -181,7 +181,8 @@ class GoodsReceiptProductResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\Action::make('lock')
+                \App\Filament\Admin\Resources\QcReportResource\Actions\LihatLaporanQc::make(),
+Tables\Actions\Action::make('lock')
                     ->tooltip(fn (GoodsReceiptProduct $record) => $record->is_locked ? __('Unlock') : __('Lock'))
                     ->icon(fn (GoodsReceiptProduct $record) => $record->is_locked ? 'heroicon-o-lock-closed' : 'heroicon-o-lock-open')
                     ->color(fn (GoodsReceiptProduct $record) => $record->is_locked ? 'danger' : 'success')

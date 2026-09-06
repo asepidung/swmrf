@@ -39,31 +39,19 @@ class QcReport extends Model
         'gr-beef' => GoodsReceiptProduct::class,
     ];
 
-    /**
-     * Sejak kapan sebuah dokumen dianggap MENUNGGU laporan QC.
-     *
-     * Dokumen yang lahir sebelum modul ini ada tidak pernah menunggu apa pun
-     * -- tidak ada yang pernah diminta menulis laporannya, dan tidak ada yang
-     * bisa mengingatnya sekarang. Tanpa batas ini, daftar tugas di Dashboard
-     * langsung berisi setiap carcass, boning, dan GR yang pernah dibuat --
-     * dan daftar tugas yang isinya ratusan pekerjaan yang tidak akan pernah
-     * dikerjakan berhenti dibaca orang sama sekali.
-     *
-     * Tanggalnya hari modul ini terpasang, 6 September 2026.
-     */
-    public const MENUNGGU_SEJAK = '2026-09-06';
-
-    protected $fillable = [
+protected $fillable = [
         'document_number',
         'reportable_type',
         'reportable_id',
         'occurred_at',
         'note',
+        'submitted_at',
         'created_by',
     ];
 
     protected $casts = [
         'occurred_at' => 'datetime',
+        'submitted_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -78,10 +66,31 @@ class QcReport extends Model
                 );
             }
 
-            if (! $laporan->created_by) {
-                $laporan->created_by = auth()->id();
-            }
+            /*
+             * `created_by` TIDAK diisi saat barisnya lahir.
+             *
+             * Barisnya dibukakan sistem sebagai tugas, bukan ditulis
+             * seseorang. Mengisinya dengan siapa pun yang kebetulan sedang
+             * membuat dokumen pasangannya berarti laporan mutu itu tercatat
+             * atas nama orang yang belum menulis satu kata pun -- dan yang
+             * paling mungkin justru orang yang diperiksa.
+             *
+             * Diisi saat laporannya benar-benar dikerjakan; lihat
+             * `EditQcReport`.
+             */
         });
+    }
+
+    /** Laporannya sudah dikerjakan, bukan sekadar dibukakan. */
+    public function sudahDiisi(): bool
+    {
+        return $this->submitted_at !== null;
+    }
+
+    /** Yang masih menunggu dikerjakan. */
+    public function scopeBelumDiisi(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->whereNull('submitted_at');
     }
 
     public function reportable(): MorphTo

@@ -11,6 +11,21 @@ use App\Http\Controllers\CattleReceivingPrintController;
 use App\Http\Controllers\CattleWeighingPrintController;
 
 Route::middleware(['web', 'auth'])->group(function () {
+    /*
+     * Laporan QC, satu berkas per laporan.
+     *
+     * Izinnya diperiksa di sini, bukan diserahkan kepada tombolnya.
+     * Menyembunyikan tombol tidak menutup alamatnya -- dan laporan mutu
+     * memuat temuan yang tidak semua orang berhak membacanya.
+     */
+    Route::get('/qc-reports/{qcReport}/print', function (\App\Models\QcReport $qcReport) {
+        abort_unless(auth()->user()?->hasPermission('view_qc_reports') ?? false, 403);
+
+        $qcReport->load(['findings', 'creator', 'reportable']);
+
+        return view('print.qc-report', ['record' => $qcReport]);
+    })->name('qc-reports.print');
+
     // ------------------------------------------
     // 1. MODUL REQUEST MATERIAL
     // ------------------------------------------

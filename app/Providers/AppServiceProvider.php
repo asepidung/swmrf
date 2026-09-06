@@ -20,6 +20,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        /*
+         * Tugas QC dibukakan sendiri untuk setiap dokumen pendampingnya.
+         *
+         * Pengamatnya dipasang lewat perulangan atas `QcReport::DOKUMEN`,
+         * bukan disebutkan satu per satu. Daftar itu sudah menjadi
+         * satu-satunya tempat titik QC ditulis; kalau pendaftarannya ditulis
+         * terpisah, menambah titik berarti mengubah DUA tempat -- dan yang
+         * kedua akan terlupa persis pada titik yang paling jarang disentuh.
+         */
+        foreach (\App\Models\QcReport::DOKUMEN as $kelas) {
+            $kelas::observe(\App\Observers\QcCompanionObserver::class);
+        }
+
         // ------------------------------------------------------------------
         // Semua isian tanggal: pemilih milik Filament, format hari/bulan/tahun
         // ------------------------------------------------------------------

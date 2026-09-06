@@ -462,7 +462,9 @@ class CarcassResource extends Resource
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()?->hasPermission('view_deleted_carcasses') ?? false),
             ])
-            ->actions([])
+            ->actions([
+                \App\Filament\Admin\Resources\QcReportResource\Actions\LihatLaporanQc::make(),
+            ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),

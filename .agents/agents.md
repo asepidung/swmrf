@@ -4853,3 +4853,72 @@ peringatan lain di halaman yang sama.
 
 Ketiga titiknya memakai SATU jalur hitung. Menambah titik berikutnya berarti
 menambah satu baris, bukan menyalin metodenya.
+
+---
+
+## #340 -- Laporan QC lahir sendiri sebagai tugas
+
+Koreksi Owner, 7 September 2026, atas bentuk yang sudah dibuat: "emang
+harusnya enggak ada create, kan dia sifatnya seperti draft atau tugas yang
+muncul otomatis ketika modul pasangannya dibuat".
+
+**Koreksinya benar, dan membuat rancangannya lebih sederhana.** Bentuk
+sebelumnya menuntut QC membuka halaman buat sambil menyebutkan dokumen mana
+yang didampingi lewat alamat -- benar secara teknis, salah secara pekerjaan.
+Yang menulis laporan tidak sedang MEMILIH dokumen; ia sedang MENGERJAKAN
+TUGAS yang sudah menunggu.
+
+Yang ikut hilang karenanya:
+
+- halaman buat, beserta seluruh urusan membaca jenis dokumen dari URL;
+- `MENUNGGU_SEJAK`. Batas tanggal itu ada untuk menahan seluruh riwayat
+  membanjiri daftar tugas. Sekarang yang membatasi keberadaan TUGASNYA
+  sendiri: dokumen lama tidak punya, jadi tidak pernah muncul. Struktur
+  mengalahkan tanggal.
+
+`submitted_at` sengaja kolom tersendiri, bukan disimpulkan dari `note` yang
+terisi: aturan tentang bagian mana yang wajib bisa berubah kapan saja,
+sedangkan "sudah dikerjakan atau belum" adalah kenyataan yang maknanya tidak
+boleh ikut berubah.
+
+**`created_by` tidak diisi saat barisnya lahir.** Barisnya dibukakan sistem,
+bukan ditulis seseorang. Mengisinya dengan siapa pun yang kebetulan membuat
+dokumen pasangannya berarti laporan mutu tercatat atas nama orang yang belum
+menulis satu kata pun -- dan yang paling mungkin justru orang yang diperiksa.
+
+### Pengamatnya dipasang dari daftar yang sama
+
+`AppServiceProvider` memasang `QcCompanionObserver` lewat perulangan atas
+`QcReport::DOKUMEN`. Kalau pendaftarannya ditulis terpisah, menambah titik QC
+berarti mengubah DUA tempat -- dan yang kedua akan terlupa persis pada titik
+yang paling jarang disentuh.
+
+### Notifikasi ke perangkat
+
+Permintaan Owner: "ia yang gw maksud notifikasi itu notif ke hp".
+`TaskNotifier::notifyPermissionHolders()` sudah ada dan sudah membungkus
+kegagalannya sendiri -- push yang bermasalah tidak boleh menggagalkan
+penyimpanan dokumen yang memicunya. Daftar tugas di Dashboard TETAP ada:
+push memberi tahu ADA pekerjaan, daftar tugas yang menahannya sampai
+dikerjakan.
+
+### Tombol "Laporan QC" ditulis sekali
+
+Permintaan Owner: satu tombol di tiap modul pendamping. Dibuat sebagai
+`LihatLaporanQc::make()` dan dipanggil dari tiap Resource. Enam salinan
+tombol yang sama akan berbeda: satu memakai ikon lain, satu lupa menyembunyi
+saat laporannya belum ada, satu memeriksa izin yang berbeda.
+
+Warnanya menggambarkan KEADAAN, dan tujuannya mengikuti: yang sudah diisi
+dibuka untuk DIBACA, yang masih menunggu dibuka untuk DIKERJAKAN.
+
+### Cetak per laporan
+
+Izinnya diperiksa DI RUTENYA, bukan diserahkan kepada tombolnya.
+Menyembunyikan tombol tidak menutup alamatnya, dan laporan mutu memuat temuan
+yang tidak semua orang berhak membacanya.
+
+Hanya laporan yang sudah diisi yang bisa dicetak: mencetak tugas yang belum
+dikerjakan menghasilkan kertas berisi tanda strip, dan kertas itu terlihat
+seperti pemeriksaan yang HASILNYA kosong -- bukan pemeriksaan yang belum
+dilakukan.
