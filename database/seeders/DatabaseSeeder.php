@@ -138,6 +138,11 @@ class DatabaseSeeder extends Seeder
             ['name' => 'view_financial_losses', 'module_name' => 'Financial Loss', 'description' => 'View financial losses'],
             ['name' => 'view_sales_report', 'module_name' => 'Reports', 'description' => 'View sales report'],
             ['name' => 'view_fast_moving_products', 'module_name' => 'Reports', 'description' => 'View fast moving products'],
+            ['name' => 'view_qc_reports', 'module_name' => 'QC Reports', 'description' => 'View QC reports'],
+            ['name' => 'create_qc_reports', 'module_name' => 'QC Reports', 'description' => 'Create QC reports'],
+            ['name' => 'edit_qc_reports', 'module_name' => 'QC Reports', 'description' => 'Edit QC reports'],
+            ['name' => 'delete_qc_reports', 'module_name' => 'QC Reports', 'description' => 'Delete QC reports'],
+            ['name' => 'view_deleted_qc_reports', 'module_name' => 'QC Reports', 'description' => 'View deleted QC reports'],
 
             // Carcass Module
             ['name' => 'view_carcasses', 'module_name' => 'Carcass', 'description' => 'View carcasses'],

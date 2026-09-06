@@ -4722,3 +4722,74 @@ membedakannya lagi sesudah dokumennya tersimpan.
 **Penjaga lama tidak dilonggarkan:** nol yang benar-benar diketik tetap
 tercatat sebagai kerugian penuh seekor sapi. Ada ujinya, dan pembedaan itu
 yang membuat seluruh rancangan ini masuk akal.
+
+---
+
+## #336 -- Modul QC, titik pertama: laporan pemotongan
+
+**Keputusan Owner, 6 September 2026:** "qc/qa ini sebagai pendamping harusnya
+bukan proses bisnis tersendiri, secara umum akan sama". Titik yang disebutnya:
+pemotongan, boning, penyiapan barang, retur, repack, opname daging. Yang
+dikerjakan sekarang titik pertamanya saja; sisanya menunggu arahannya.
+
+### Satu tabel polimorfik, bukan enam modul
+
+`qc_reports` menempel ke dokumen mana pun lewat `morphs('reportable')`, dan
+daftar dokumen yang boleh didampingi ada di `QcReport::DOKUMEN` -- **daftar
+itu SEKALIGUS daftar titik QC-nya**, satu-satunya tempat ia ditulis. Menambah
+titik berarti menambah satu baris, bukan satu modul.
+
+Enam tabel berbentuk sama berarti enam salinan aturan yang akan diam-diam
+berbeda. Itu pola yang berulang sepanjang pekan ini: umur simpan enam salinan
+tiga jawaban, counter barcode tujuh berkas, PPN yang satu sisinya menanyakan
+kolom yang tidak pernah ada.
+
+### `occurred_at` terpisah dari `created_at` -- ini intinya
+
+Owner menyebut satu persoalan mendasar: laporan yang terbit saat carcass
+dibuat sudah TELAT, yang terbit saat timbang ulang terlalu DINI.
+
+**Persoalan itu bubar begitu waktu KEJADIAN dipisah dari waktu INPUT.** Kapan
+formnya muncul cuma menentukan kapan QC diingatkan; yang tercatat tetap kapan
+hal itu benar-benar terjadi. Persoalan yang sama dengan "tanggal dokumen vs
+waktu input" pada stok -- di sana mahal karena harus menambal 25 titik yang
+sudah berjalan, di sini satu kolom sejak hari pertama.
+
+### Catatan umum wajib, temuan tidak
+
+Keputusan Owner: tiga kolom, tetapi tidak semuanya wajib. Metodenya
+diserahkan kepada saya, dan yang dipilih:
+
+- **Catatan umum WAJIB**, satu per laporan. Proses yang berjalan baik tetap
+  punya laporan.
+- **Temuan nol atau lebih baris.** Tidak ada masalah = tidak menambah baris
+  sama sekali, bukan menambah baris kosong.
+- **Di dalam satu baris: keterangan WAJIB**, jumlah terkena dan tindakan
+  opsional. Temuan tanpa keterangan bukan temuan, itu derau yang setahun lagi
+  tidak bisa disaring. Dua yang lain memang kadang belum diketahui saat
+  menulis.
+
+### Jenis dokumen tidak pernah dipercaya dari URL
+
+Alamat halaman buat menyebut `?dokumen=carcass&id=123`, dan slug itu
+diterjemahkan lewat `DOKUMEN`. Kalau nama kelas boleh datang mentah dari URL,
+laporan mutu bisa ditempelkan ke model mana pun -- pengguna, pembayaran, apa
+saja -- tanpa satu pun gejala. Jenis dan id juga ditetapkan ulang saat
+menyimpan, tidak dibaca dari state form yang bisa diganti dari peramban.
+
+### Tugas, bukan notifikasi
+
+Owner meminta notifikasi ke QC. Yang dipakai `PendingTaskWidget`, bukan
+notifikasi sekali kirim: **notifikasi hilang begitu dibaca atau terlewat;
+baris tugas bertahan sampai laporannya benar-benar ditulis.** Barisnya hanya
+muncul untuk yang memegang `create_qc_reports` -- menampilkan tugas kepada
+yang tidak bisa mengerjakannya cuma menambah kebisingan.
+
+### QC tidak menahan apa pun
+
+Keputusan Owner: "qc gak nahan apapun". Carcass tetap bisa dibuat tanpa
+laporan. Satu-satunya pengecualian yang disebutnya ada di Repack, dan itu
+belum dikerjakan -- mekanismenya sudah ada (`Setting::REPACK_MAX_SHRINK_PERCENT`,
+`isWithinShrinkLimit()`, `lock()` yang menolak tanpa alasan tertulis, jejak
+`yield_override_*`); yang perlu berubah cuma SIAPA yang boleh memberi
+alasannya.

@@ -280,7 +280,42 @@ class PendingTaskWidget extends Widget
                 \App\Filament\Admin\Resources\BeefStockAgingResource::getUrl('index'),
                 'warning',
             ],
+            /*
+             * Tugas QC.
+             *
+             * Sengaja lewat daftar ini, bukan notifikasi sekali kirim.
+             * Notifikasi hilang begitu dibaca atau terlewat; baris di sini
+             * BERTAHAN sampai laporannya benar-benar ditulis -- dan itulah
+             * bedanya pengingat dengan pekerjaan.
+             *
+             * Hanya terlihat oleh yang boleh menulis laporannya. Menampilkan
+             * tugas kepada orang yang tidak bisa mengerjakannya cuma
+             * menambah kebisingan di halaman yang justru dibaca sekilas.
+             */
+            [
+                $this->getCarcassWithoutQcReportCount(),
+                ':count carcass is waiting for its QC report|:count carcasses are waiting for their QC report',
+                \App\Filament\Admin\Resources\CarcassResource::getUrl('index'),
+                'warning',
+            ],
         ];
+    }
+
+    /**
+     * Carcass yang belum didampingi laporan QC.
+     *
+     * Nol berarti tidak ada yang perlu dikerjakan, dan barisnya tidak muncul
+     * sama sekali -- itu perilaku bawaan daftar ini.
+     */
+    protected function getCarcassWithoutQcReportCount(): int
+    {
+        if (! (auth()->user()?->hasPermission('create_qc_reports') ?? false)) {
+            return 0;
+        }
+
+        return \App\Models\Carcass::query()
+            ->whereDoesntHave('qcReports')
+            ->count();
     }
 
     /**

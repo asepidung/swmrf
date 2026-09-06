@@ -156,6 +156,9 @@ class Permission extends Model
                 'Cash Book',
                 'Financial Loss',
             ],
+            'QC' => [
+                'QC Reports',
+            ],
             'REPORTS' => [
                 'Reports',
             ],
