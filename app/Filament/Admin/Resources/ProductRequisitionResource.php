@@ -32,6 +32,36 @@ class ProductRequisitionResource extends Resource
         return (float) $val;
     }
 
+    /**
+     * Qty pembelian daging wajib kilogram BULAT.
+     *
+     * Ditolak, bukan dibulatkan diam-diam. Kolomnya bilangan bulat sejak
+     * keputusan Owner 6 September 2026; kalau koma dibiarkan lewat, basis
+     * datanya yang membulatkan -- dan yang mengetik tidak pernah tahu
+     * angkanya berubah. Itu bentuk kesalahan yang sama dengan yang baru saja
+     * dibereskan, cuma pindah tempat.
+     *
+     * Aturannya berupa metode tersendiri supaya bisa DIJALANKAN di uji, bukan
+     * ditulis ulang di sana. Aturan yang disalin ke tempat kedua selalu
+     * berakhir berbeda dari yang pertama.
+     */
+    public static function aturanQtyBulat(): \Closure
+    {
+        return function (string $attribute, $value, \Closure $fail): void {
+            $qty = self::parseNumber($value);
+
+            if ($qty <= 0) {
+                $fail(__('Qty is required and cannot be zero.'));
+
+                return;
+            }
+
+            if (fmod($qty, 1.0) !== 0.0) {
+                $fail(__('Qty must be a whole number of kilograms.'));
+            }
+        };
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -165,17 +195,11 @@ class ProductRequisitionResource extends Resource
 
                                 Forms\Components\TextInput::make('qty')
                                     ->required()
-                                    ->rules([
-                                        fn (): \Closure => function (string $attribute, $value, \Closure $fail) {
-                                            if (self::parseNumber($value) <= 0) {
-                                                $fail(__('Qty is required and cannot be zero.'));
-                                            }
-                                        },
-                                    ])
+                                    ->rules([fn (): \Closure => self::aturanQtyBulat()])
                                     ->hiddenLabel()
                                     ->placeholder(fn() => __('Qty'))
                                     ->default(0)
-                                    ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'qty-input text-right', 'inputmode' => 'decimal', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll(".qty-input")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
+                                    ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'qty-input text-right', 'inputmode' => 'numeric', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll(".qty-input")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
                                     ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('price')

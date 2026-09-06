@@ -49,7 +49,7 @@ class PurchaseProductDetailList extends Page implements HasTable
                     ->sortable(),
                 Tables\Columns\TextColumn::make('qty')
                     ->label(__('Qty'))
-                    ->numeric(2, ',', '.')
+                    ->numeric(0, ',', '.')
                     ->alignRight()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('price')
