@@ -100,7 +100,7 @@ class GoodsReceiptMaterialResource extends Resource
                                             $poItem = \App\Models\PurchaseMaterialItem::where('purchase_material_id', $record->goodsReceiptMaterial->purchase_material_id)
                                                 ->where('material_id', $record->material_id)
                                                 ->first();
-                                            $component->state($poItem ? number_format($poItem->qty, 2, ',', '.') : '0,00');
+                                            $component->state($poItem ? number_format((int) $poItem->qty, 0, ',', '.') : '0');
                                         }
                                     }),
                                 Forms\Components\TextInput::make('price')

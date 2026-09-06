@@ -73,15 +73,15 @@ class MaterialStockMovementResource extends Resource
                         Forms\Components\TextInput::make('qty_in')
                             ->label(__('Qty In'))
                             ->disabled()
-                            ->formatStateUsing(fn ($state) => number_format((float) $state, 2, ',', '.')),
+                            ->formatStateUsing(fn ($state) => number_format((float) $state, 0, ',', '.')),
                         Forms\Components\TextInput::make('qty_out')
                             ->label(__('Qty Out'))
                             ->disabled()
-                            ->formatStateUsing(fn ($state) => number_format((float) $state, 2, ',', '.')),
+                            ->formatStateUsing(fn ($state) => number_format((float) $state, 0, ',', '.')),
                         Forms\Components\TextInput::make('balance')
                             ->label(__('Balance'))
                             ->disabled()
-                            ->formatStateUsing(fn ($state) => number_format((float) $state, 2, ',', '.')),
+                            ->formatStateUsing(fn ($state) => number_format((float) $state, 0, ',', '.')),
                         Forms\Components\TextInput::make('creator_name')
                             ->label(__('Operator'))
                             ->disabled()
@@ -129,17 +129,17 @@ class MaterialStockMovementResource extends Resource
                     ->tooltip(fn (MaterialStockMovement $record): ?string => $record->note),
                 Tables\Columns\TextColumn::make('qty_in')
                     ->label(__('Qty In'))
-                    ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')
+                    ->numeric(decimalPlaces: 0, decimalSeparator: ',', thousandsSeparator: '.')
                     ->sortable()
                     ->tooltip(fn (MaterialStockMovement $record): ?string => $record->note),
                 Tables\Columns\TextColumn::make('qty_out')
                     ->label(__('Qty Out'))
-                    ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')
+                    ->numeric(decimalPlaces: 0, decimalSeparator: ',', thousandsSeparator: '.')
                     ->sortable()
                     ->tooltip(fn (MaterialStockMovement $record): ?string => $record->note),
                 Tables\Columns\TextColumn::make('balance')
                     ->label(__('Balance'))
-                    ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')
+                    ->numeric(decimalPlaces: 0, decimalSeparator: ',', thousandsSeparator: '.')
                     ->sortable()
                     ->tooltip(fn (MaterialStockMovement $record): ?string => $record->note),
                 Tables\Columns\TextColumn::make('creator.name')

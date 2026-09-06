@@ -267,7 +267,7 @@
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td>{{ $item->material->name ?? '-' }}</td>
-                    <td class="text-right" style="color: #d9534f;">{{ number_format(abs($item->qty), 2, ',', '.') }}</td>
+                    <td class="text-right" style="color: #d9534f;">{{ number_format((int) abs($item->qty), 0, ',', '.') }}</td>
                     <td>{{ $item->note ?? '-' }}</td>
                 </tr>
                 @endforeach

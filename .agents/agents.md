@@ -4438,3 +4438,65 @@ lain.
 
 **Keputusan: ditunda sampai seluruh modul settle, sebelum live.** Owner minta
 diingatkan. Catatannya ada di `tertunda.md` bagian D dengan huruf besar.
+
+---
+
+## #325 -- Qty material bulat, dan satu pelajaran soal migrasi
+
+Owner, 6 September 2026: "samain material juga, material mah gak ada
+koma-komaan harusnya, karena barang pasti seperti plastik karton dan
+lain-lain". Barangnya memang dihitung per lembar, per pcs, per roll.
+
+Sebelas kolom `decimal` diubah jadi bilangan bulat, dan tujuh belas tempat
+yang menampilkannya dengan dua angka di belakang koma dijadikan nol desimal.
+Kotak isian permintaan material menolak koma lewat aturan yang sama bentuknya
+dengan sisi daging, dan aturannya metode tersendiri supaya bisa DIJALANKAN di
+uji.
+
+`goods_receipt_material_items.qty_received` ternyata SUDAH `int` sejak awal --
+tetapi tiga tempat menampilkannya dua desimal. Nol palsu yang mengajak orang
+mengetik koma yang tidak akan pernah tersimpan.
+
+### Dua kesalahan yang dibuat dan diperbaiki di jalan
+
+**SATU -- menyeragamkan bentuk kolom.** Percobaan pertama menulis
+`default(0)` dan bukan-null untuk kesebelas kolom sekaligus. Itu menghapus
+perbedaan yang justru penting: `physical_qty` dan `difference_qty` BOLEH
+kosong, dan kosong di sana berarti "belum dihitung" -- bukan "sudah dihitung,
+hasilnya nol". Dua keadaan yang sangat berbeda di tengah opname berjalan.
+Ketahuan karena 645 test langsung merah.
+
+**Pelajarannya: `->change()` menulis ULANG seluruh definisi kolom, bukan
+hanya bagian yang disebut.** Nullability dan default yang tidak ditulis
+akan HILANG. Bentuk lamanya harus dibaca dulu satu per satu -- dan karena
+basis data lokal sudah terlanjur diubah, yang dibaca adalah skema SERVER yang
+belum dimigrasi.
+
+**DUA -- view yang bergantung.** SQLite tidak bisa mengubah tipe kolom di
+tempat: ia membangun ulang tabelnya lewat tabel sementara, dan penamaan
+kembalinya ditolak selama masih ada VIEW yang menyebut tabel itu
+(`material_usage_headers` menyebut `material_usages`). MySQL tidak punya
+persoalan ini.
+
+Definisi view-nya TIDAK disalin ke migrasinya. Ia dibaca dari basis data apa
+adanya sesaat sebelum dibuang, lalu dipasang kembali persis seperti semula --
+salinan kedua akan diam-diam berbeda begitu view-nya diubah.
+
+### Dua uji lama diperbarui, bukan dibungkam
+
+`MaterialRequisitionThousandSeparatorTest` dulu mengharuskan qty berpapan
+ketik `decimal`; sekarang justru MELARANGNYA. `StockOverviewTest` dulu
+mengharuskan PDF stok material mencetak "12,50"; sekarang mengharuskan "12"
+dan melarang "12,00".
+
+### `tertunda.md` -- keluhan Owner yang benar
+
+Owner: "kok masih ada tugas yang udah beres muncul". Berkasnya memang tidak
+memuat tugas selesai, tetapi beberapa BARISNYA memuat catatan kemajuan di
+tengah-tengah sisa pekerjaan -- sehingga terbaca seperti tugas selesai yang
+masih nongkrong.
+
+**Aturan barunya ditulis di kepala berkas: tiap baris hanya memuat SISA
+pekerjaannya.** Riwayat kemajuan tinggal di `agents.md`. Daftar tunggu yang
+memuat catatan kemajuan berhenti bisa dibaca sekilas, dan itu satu-satunya
+gunanya.

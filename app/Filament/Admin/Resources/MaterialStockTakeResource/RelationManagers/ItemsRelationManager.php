@@ -49,10 +49,10 @@ class ItemsRelationManager extends RelationManager
                     ->sortable(),
                 Tables\Columns\TextColumn::make('system_qty')
                     ->label(__('System Qty'))
-                    ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.'),
+                    ->numeric(decimalPlaces: 0, decimalSeparator: ',', thousandsSeparator: '.'),
                 Tables\Columns\TextColumn::make('physical_qty')
                     ->label(__('Physical Qty'))
-                    ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.'),
+                    ->numeric(decimalPlaces: 0, decimalSeparator: ',', thousandsSeparator: '.'),
                 // Aturannya satu rumah di `MaterialStockTakeItem`.
                 //
                 // Berkas ini memakai kunci `__('Sesuai')` yang pada #285
@@ -68,7 +68,7 @@ class ItemsRelationManager extends RelationManager
                     ->color(fn ($state, \App\Models\MaterialStockTakeItem $record): string => $record->varianceColor()),
                 Tables\Columns\TextColumn::make('difference_qty')
                     ->label(__('Difference Qty'))
-                    ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')
+                    ->numeric(decimalPlaces: 0, decimalSeparator: ',', thousandsSeparator: '.')
                     ->color(fn ($state) => $state > 0 ? 'info' : ($state < 0 ? 'danger' : 'success')),
             ])
             ->filters([

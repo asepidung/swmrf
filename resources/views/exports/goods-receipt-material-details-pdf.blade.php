@@ -41,7 +41,7 @@
                 <td>{{ optional(optional($record->goodsReceiptMaterial)->purchaseMaterial)->po_number ?? '-' }}</td>
                 <td>{{ optional(optional($record->goodsReceiptMaterial)->supplier)->name ?? '-' }}</td>
                 <td>{{ optional($record->material)->name ?? '-' }}</td>
-                <td class="text-right">{{ number_format($record->qty_received, 2, ',', '.') }}</td>
+                <td class="text-right">{{ number_format((int) $record->qty_received, 0, ',', '.') }}</td>
                 <td class="text-right">Rp {{ number_format($record->price, 0, ',', '.') }}</td>
                 <td class="text-right">Rp {{ number_format($record->subtotal, 0, ',', '.') }}</td>
                 <td>{{ optional(optional($record->goodsReceiptMaterial)->createdBy)->name ?? '-' }}</td>

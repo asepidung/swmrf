@@ -32,6 +32,39 @@ class MaterialRequisitionResource extends Resource
         return (float) $val;
     }
 
+    /**
+     * Qty permintaan material wajib BILANGAN BULAT.
+     *
+     * Keputusan Owner, 5 September 2026: "material itu gak ada qty
+     * koma-komaan", dipertegas 6 September: "barang pasti seperti plastik
+     * karton dan lain-lain". Barangnya memang dihitung per lembar, per pcs,
+     * per roll -- tidak ada setengah karton.
+     *
+     * Ditolak, bukan dibulatkan diam-diam. Kalau koma dibiarkan lewat lalu
+     * basis datanya yang membulatkan, yang mengetik tidak pernah tahu
+     * angkanya berubah.
+     *
+     * Bentuknya metode tersendiri supaya bisa DIJALANKAN di uji, bukan
+     * ditulis ulang di sana. Aturan yang disalin ke tempat kedua selalu
+     * berakhir berbeda dari yang pertama.
+     */
+    public static function aturanQtyBulat(): \Closure
+    {
+        return function (string $attribute, $value, \Closure $fail): void {
+            $qty = self::parseNumber($value);
+
+            if ($qty <= 0) {
+                $fail(__('Qty is required and cannot be zero.'));
+
+                return;
+            }
+
+            if (fmod($qty, 1.0) !== 0.0) {
+                $fail(__('Qty must be a whole number.'));
+            }
+        };
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -167,13 +200,7 @@ class MaterialRequisitionResource extends Resource
 
                                 Forms\Components\TextInput::make('qty')
                                     ->required()
-                                    ->rules([
-                                        fn (): \Closure => function (string $attribute, $value, \Closure $fail) {
-                                            if (self::parseNumber($value) <= 0) {
-                                                $fail(__('Qty is required and cannot be zero.'));
-                                            }
-                                        },
-                                    ])
+                                    ->rules([fn (): \Closure => self::aturanQtyBulat()])
                                     ->hiddenLabel()
                                     ->placeholder(fn() => __('Qty'))
                                     ->default(0)
@@ -186,7 +213,7 @@ class MaterialRequisitionResource extends Resource
                                     // Masking numerik bawaan Filament SENGAJA dilepas dari field ini.
                                     // Field itu jadi <input type="number">, yang menolak pemisah
                                     // ribuan sehingga tampil kosong.
-                                    ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'qty-input text-right', 'inputmode' => 'decimal', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll(".qty-input")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
+                                    ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'qty-input text-right', 'inputmode' => 'numeric', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll(".qty-input")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
                                     ->columnSpan(['default' => 6, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('price')

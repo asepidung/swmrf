@@ -101,7 +101,7 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                     ->label(__('Unit')),
                 Tables\Columns\TextColumn::make('system_qty')
                     ->label(__('System Qty'))
-                    ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')
+                    ->numeric(decimalPlaces: 0, decimalSeparator: ',', thousandsSeparator: '.')
                     ->visible($isCompleted),
                 
                 // Only show text input if in progress
@@ -158,7 +158,7 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                 Tables\Columns\TextColumn::make('physical_qty_text')
                     ->label(__('Physical Qty'))
                     ->getStateUsing(fn ($record) => $record->physical_qty)
-                    ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')
+                    ->numeric(decimalPlaces: 0, decimalSeparator: ',', thousandsSeparator: '.')
                     ->visible($isCompleted),
 
                 // Aturannya satu rumah di `MaterialStockTakeItem`.
@@ -171,7 +171,7 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                 
                 Tables\Columns\TextColumn::make('difference_qty')
                     ->label(__('Difference Qty'))
-                    ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')
+                    ->numeric(decimalPlaces: 0, decimalSeparator: ',', thousandsSeparator: '.')
                     ->visible($isCompleted)
                     ->color(fn ($state) => $state > 0 ? 'info' : ($state < 0 ? 'danger' : 'success')),
             ])
