@@ -6,9 +6,31 @@
 >
 > **Repositori ini sengaja tidak punya `CLAUDE.md`.** Konsekuensinya dokumen ini tidak termuat otomatis di sesi baru, jadi Project Owner yang akan mengarahkan agen membacanya. Kalau suatu saat itu terasa merepotkan, cukup buat `CLAUDE.md` berisi beberapa baris penunjuk ke sini.
 > - Penjelasan rinci tiap modul ada di [`docs/modules/`](../docs/modules/).
+> - Pekerjaan yang **sengaja ditunda** ada di [`tertunda.md`](tertunda.md), termasuk izin yang menunggu dicentang Owner.
+> - Bacaan dokumen HPP -- costing, carcass, boning, PO -- beserta pertanyaan yang **masih menunggu jawaban accounting** ada di [`hpp.md`](hpp.md). Jangan menurunkan ulang rumusnya dari nol; sudah diuji ke berkas aslinya.
 > - Dokumen ini adalah **konteks**: alasan, riwayat, dan jebakan yang sudah pernah kami tabrak.
 >
 > **Perbarui dokumen ini setiap kali sebuah keputusan diambil.** Tujuannya supaya sesi berikutnya tidak perlu menggali ulang dari nol atau mengulang perdebatan yang sudah selesai.
+
+---
+
+## 0. Tenggat, dan siapa mengerjakan apa
+
+**15 September 2026 aplikasi mulai diperkenalkan ke pengguna. 20 September
+batas mutlak.** Keputusan Owner, 6 September 2026.
+
+Sejak 7 September Owner **menyusur modul satu per satu sendiri** dan
+mengumpulkan daftar bug dari pemakaian sungguhan. Konsekuensinya bagi
+implementor:
+
+- Perubahan bisa datang dari beberapa sesi sekaligus, dan bisa dari model yang
+  berbeda. **Setiap perubahan wajib ditulis di sini** -- itu satu-satunya
+  tempat yang dibaca semua sesi.
+- Hal yang rumit (HPP, BOM, waste) dibahas Owner di sesi tersendiri. Kalau
+  sebuah keputusan terasa besar dan belum ada catatannya, ia memang belum
+  diputuskan -- jangan ditebak.
+- Sebelum tenggat, dahulukan yang menghalangi pengguna memakai aplikasi
+  (izin yang belum dicentang, alur yang buntu) di atas kerapian.
 
 ---
 
