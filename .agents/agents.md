@@ -4922,3 +4922,25 @@ Hanya laporan yang sudah diisi yang bisa dicetak: mencetak tugas yang belum
 dikerjakan menghasilkan kertas berisi tanda strip, dan kertas itu terlihat
 seperti pemeriksaan yang HASILNYA kosong -- bukan pemeriksaan yang belum
 dilakukan.
+
+---
+
+## #342 -- Empat titik QC terakhir
+
+Tally (penyiapan), Repack, Retur Jual, Opname Daging. Ketujuh titik yang
+disebut Owner kini terpasang.
+
+Masing-masing benar-benar cuma SATU baris di `QcReport::DOKUMEN` plus relasi
+`qcReports()` di modelnya; pengamat, tugas dashboard, notifikasi ke perangkat,
+tombol, dan cetaknya ikut dengan sendirinya. Itu yang dijanjikan rancangan
+polimorfiknya, dan sekarang terbukti.
+
+Ditambahkan penjaga per titik: relasi `qcReports` ada, dan pengamatnya
+BENAR-BENAR terpasang (`Event::hasListeners`). Kalau relasinya lupa dipasang,
+pengamatnya gagal justru saat dokumennya dibuat -- tanpa galat yang
+memberitahu, dan yang menanggung akibatnya orang produksi di tengah kerja.
+
+**Catatan untuk repack:** titik ini SEKARANG punya dua hal berbeda yang
+mudah tertukar -- laporan QC pendamping (tugas biasa) dan izin susut di luar
+batas (#338). Keduanya sengaja terpisah: yang pertama pemeriksaan rutin, yang
+kedua kewenangan.

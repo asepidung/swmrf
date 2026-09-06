@@ -69,6 +69,12 @@ class Tally extends Model
         return $this->belongsTo(SalesOrder::class, 'sales_order_id');
     }
 
+    /** Laporan QC yang mendampingi dokumen ini. */
+    public function qcReports(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(\App\Models\QcReport::class, 'reportable');
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(TallyItem::class, 'tally_id');

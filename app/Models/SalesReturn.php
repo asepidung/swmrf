@@ -384,6 +384,12 @@ class SalesReturn extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /** Laporan QC yang mendampingi dokumen ini. */
+    public function qcReports(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(\App\Models\QcReport::class, 'reportable');
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(SalesReturnItem::class);

@@ -184,7 +184,8 @@ class TallyResource extends Resource
                 ->color('success'),
             ])
             ->actions([
-                Tables\Actions\Action::make('scan')
+                \App\Filament\Admin\Resources\QcReportResource\Actions\LihatLaporanQc::make(),
+Tables\Actions\Action::make('scan')
                     ->label('')
                     ->iconButton()
                     ->icon('heroicon-m-qr-code')
