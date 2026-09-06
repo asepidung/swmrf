@@ -270,14 +270,24 @@ Bentuk ini menghasilkan angka yang sama persis ketika harganya kebetulan sama
 Datanya sudah ada: `cattle_receiving_items` menyimpan `initial_weight` beserta
 `cattle_class_id`, dan `purchase_cattle_items` menyimpan harga per kelas.
 
-Dan harganya **tergantung supplier** -- keterangan Owner. Itu sudah ikut
-tertangani dengan sendirinya: harga dibaca dari PO milik lot itu, dan satu lot
-selalu satu supplier. Yang harus dijaga adalah tidak pernah mengambil harga
-dari tempat lain, misalnya harga terakhir yang dipakai atau rata-rata.
+Dan bukan sekadar kemungkinan. `CPO-260112`, **supplier yang sama**:
 
-Form accounting sekarang memakai satu harga untuk semuanya. Itu benar hari ini
-dan akan diam-diam salah pada lot pertama yang harganya berbeda -- persis
-jenis kekeliruan yang tidak menimbulkan gejala apa pun.
+| PO | Tanggal | HEIFER | STEER |
+|---|---|---|---|
+| `CPO-260106` | 14 Jun 2026 | 62.500 | 62.500 |
+| `CPO-260112` | 20 Agu 2026 | **61.700** | **62.000** |
+
+Jadi harganya berbeda **antar kelas di dalam satu PO yang sama**, bukan hanya
+antar supplier. Rumus "satu harga dikali berat total" sudah pasti salah untuk
+lot yang kedua.
+
+Harga karena itu harus selalu dibaca dari **PO milik lot itu sendiri**, per
+kelas. Tidak pernah dari harga terakhir yang dipakai, dan tidak pernah dari
+rata-rata -- keduanya akan tetap menghasilkan angka yang kelihatan wajar.
+
+Form accounting sekarang memakai satu harga untuk semuanya. Itu benar untuk
+lot 15 Juni dan diam-diam salah untuk lot 20 Agustus -- persis jenis
+kekeliruan yang tidak menimbulkan gejala apa pun.
 
 Tetapi PO-nya **50 ekor, sedangkan yang dipotong 20**. Jadi satu PO menaungi
 lebih dari satu batch potong, dan **batas lot untuk costing adalah dokumen
