@@ -244,6 +244,39 @@ kasus.
 Inilah alasan BOM (#344) dikerjakan lebih dulu. Form accounting sekarang tidak
 menghitungnya sama sekali.
 
+### Kedua kelas sapi satu harga, dan PO bukan batas lot
+
+Dari `CPO-260106` (PO 14 Jun, tiba 13 Jun, PT. Lembu Jantan Perkasa):
+
+| Kelas | Ekor | Harga/kg |
+|---|---|---|
+| HEIFER | 18 | 62.500 |
+| STEER | 32 | 62.500 |
+
+**Satu harga untuk kedua kelas** -- jadi `62.500` di costing memang berlaku
+untuk seluruh lot, dan tidak perlu dipecah per kelas.
+
+Tetapi PO-nya **50 ekor, sedangkan yang dipotong 20**. Jadi satu PO menaungi
+lebih dari satu batch potong, dan **batas lot untuk costing adalah dokumen
+CARCASS, bukan PO**. Biaya belinya pun dihitung dari berat terima ekor yang
+benar-benar dipotong (`10.888 x 62.500 = 680.500.000`), bukan dari nilai PO --
+yang memang tidak bisa diketahui sebelum sapinya ditimbang.
+
+Karena itu PO sapi memang tidak punya nilai rupiah. Cetakan PO di aplikasi
+kita sudah benar: hanya kelas, jumlah ekor, dan harga per kg -- tanpa subtotal
+maupun total. Yang memuat subtotal adalah aplikasi legacy (`cattle/view.php`),
+dan angkanya memang tidak bermakna: 18 ekor x 62.500 per KG.
+
+### Satu boning selalu satu lot supplier
+
+> "biasanya kalo sapi beda supplier semua dipisah mulai dari carcass sama
+> boning"
+
+Jadi pertanyaan tentang boning yang memuat lebih dari satu lot terjawab:
+tidak terjadi. Pemisahannya sudah dilakukan sejak carcass. Skema kita tetap
+mengizinkan sebaliknya (`boning_carcasses` banyak-ke-banyak), dan itu tidak
+apa-apa selama tidak ada yang menganggapnya mustahil.
+
 ### Upah dihiraukan dulu, dan pengecualian offal disengaja
 
 Upah: "hiraukan dulu". Offal dan kulit yang menyerap biaya tetapi tidak ikut
@@ -288,21 +321,18 @@ Disusun supaya bisa ditanyakan apa adanya.
    Apakah keduanya memang tidak pernah dijual dengan daftar harga?
 3. **Overhead 3.000/kg** datang dari mana, dan apakah tetap tiap bulan?
    Kenapa ia tidak menambah HPP, hanya memotong profit?
-4. **Harga/kg 62.500** itu angka kontrak, atau dihitung dari nilai PO? Lot ini
-   berisi 13 STEER dan 7 HEIFER; PO di aplikasi kita menyimpan harga
-   **per kelas sapi**, sementara costing memakai satu harga untuk semuanya.
-   Apakah kedua kelas memang satu harga?
-5. Angka **60.501,24** di baris 98 (`J97/F91`) untuk apa? Ia tidak dipakai
+4. Angka **60.501,24** di baris 98 (`J97/F91`) untuk apa? Ia tidak dipakai
    sel mana pun.
-6. Blok **1.100 kg @51.000 + 6.072 kg @50.000 = 359.700.000** di baris 98-100
+5. Blok **1.100 kg @51.000 + 6.072 kg @50.000 = 359.700.000** di baris 98-100
    itu apa? Totalnya (7.172 kg) tidak sama dengan Load Weight (10.888 kg) dan
    tidak dirujuk sel mana pun.
-7. Apakah satu dokumen boning **selalu** berisi tepat satu lot? Kalau suatu
-   saat dua lot di-boning bersamaan, dari mana accounting tahu potongan mana
-   milik lot yang mana?
-8. Daftar produk di form costing selalu sama tiap kali (puluhan baris ber-qty
+6. **Apakah ada daftar harga kedua?** Kolom `GROSS PRICE` di costing belum
+   dipastikan menyalin price list yang berlaku. Kalau ternyata daftar yang
+   berbeda, ia harus ikut disimpan -- kalau tidak, harga yang dipakai
+   menghitung HPP tidak akan pernah bisa dihasilkan ulang.
+7. Daftar produk di form costing selalu sama tiap kali (puluhan baris ber-qty
    0 tetap ada), atau boleh mengikuti hasil boning hari itu?
-9. Kalau bahan penolong nanti ikut dihitung, ia **menambah HPP** atau
+8. Kalau bahan penolong nanti ikut dihitung, ia **menambah HPP** atau
    diperlakukan seperti overhead sekarang -- hanya memotong profit?
 
 ---
