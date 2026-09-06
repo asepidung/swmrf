@@ -199,36 +199,18 @@ class DeletedRecordVisibilityTest extends TestCase
     }
 
     /**
-     * Izin `view_deleted_*` yang memang tidak bisa dipakai, dengan alasannya.
+     * Izin `view_deleted_*` yang memang tidak bisa dipakai.
      *
-     * Bukan daftar toleransi untuk yang belum sempat dikerjakan -- setiap
-     * baris di sini menyebut kenapa layarnya memang tidak punya dokumen
-     * terhapus untuk ditampilkan.
+     * Dibaca dari `Permission::TIDAK_DITAMPILKAN`, bukan ditulis ulang di
+     * sini. Daftar yang sama di dua tempat selalu berakhir berbeda -- dan
+     * daftar inilah yang juga menentukan apa yang disembunyikan dari form
+     * Hak Akses, jadi keduanya wajib bicara tentang hal yang sama persis.
      *
      * @return list<string>
      */
     private function sengajaTidakDipakai(): array
     {
-        return [
-            // Stok dan pergerakannya TIDAK memakai hapus lunak sama sekali.
-            // Stok hanya mencatat posisi sekarang -- keputusan Owner, supaya
-            // tabelnya tetap ringan -- dan riwayatnya ada di pergerakan
-            // stok, yang justru tidak boleh dihapus karena ia jejak
-            // auditnya. Tidak ada baris terhapus untuk ditampilkan.
-            'view_deleted_beef_stocks',
-            'view_deleted_beef_stock_movements',
-            'view_deleted_material_stocks',
-            'view_deleted_material_stock_movements',
-
-            // Tabel dan modelnya ada, layarnya tidak pernah dibuat.
-            'view_deleted_material_adjustments',
-
-            // Kedua layar ini berdiri di atas CustomerGroup, bukan di atas
-            // dokumen yang namanya disebut izin ini -- dan CustomerGroup
-            // tidak memakai hapus lunak.
-            'view_deleted_price_lists',
-            'view_deleted_receivables',
-        ];
+        return array_keys(\App\Models\Permission::TIDAK_DITAMPILKAN);
     }
 
     /** Komentar dibuang supaya keterangannya tidak ikut terhitung dibaca. */

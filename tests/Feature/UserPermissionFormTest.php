@@ -475,4 +475,131 @@ class UserPermissionFormTest extends TestCase
             ->assertOk()
             ->assertSee('log-viewer', false);
     }
+
+    /**
+     * Setiap izin yang DISEMBUNYIKAN memang tidak dibaca kode.
+     *
+     * Arah pertama. Menyembunyikan izin yang sebenarnya dipakai jauh lebih
+     * buruk daripada membiarkan centang mati: haknya tidak bisa diberikan
+     * lagi kepada siapa pun, dan tombolnya menghilang untuk semua orang
+     * kecuali programmer -- tanpa satu pun gejala yang menjelaskan kenapa.
+     *
+     * @test
+     */
+    public function every_hidden_permission_is_really_unread_by_the_code()
+    {
+        $dibaca = $this->izinYangDibacaKode();
+
+        $salah = [];
+
+        foreach (array_keys(Permission::TIDAK_DITAMPILKAN) as $izin) {
+            if (isset($dibaca[$izin])) {
+                $salah[] = $izin.'   <- '.implode(', ', array_keys($dibaca[$izin]));
+            }
+        }
+
+        sort($salah);
+
+        $this->assertSame(
+            [],
+            $salah,
+            "Izin berikut DISEMBUNYIKAN dari form padahal kodenya membacanya. Haknya tidak bisa "
+            ."diberikan kepada siapa pun lagi, dan tombolnya hilang untuk semua orang kecuali "
+            ."programmer:\n".implode("\n", $salah),
+        );
+    }
+
+    /**
+     * Dan setiap izin yang tidak dibaca kode memang disembunyikan.
+     *
+     * Arah kedua, dan inilah yang menahan yang berikutnya. Izin mati yang
+     * masih tampil membuat orang yang mencentangnya percaya sudah memberi
+     * hak yang sebenarnya tidak pernah sampai.
+     *
+     * Kalau uji ini gagal, ada dua jawaban yang benar dan keduanya bukan
+     * "tambahkan saja namanya ke daftar": pasang izinnya di kode yang
+     * seharusnya memakainya, ATAU sembunyikan sambil menulis alasannya --
+     * alasan yang menyebut kenapa layarnya memang tidak punya apa-apa untuk
+     * dijaga, bukan sekadar "belum sempat".
+     *
+     * @test
+     */
+    public function every_permission_the_code_ignores_is_hidden()
+    {
+        $this->seed(\Database\Seeders\DatabaseSeeder::class);
+
+        $dibaca = $this->izinYangDibacaKode();
+        $disembunyikan = Permission::TIDAK_DITAMPILKAN;
+
+        $mati = [];
+
+        foreach (Permission::pluck('name') as $izin) {
+            if (isset($dibaca[$izin]) || isset($disembunyikan[$izin])) {
+                continue;
+            }
+
+            $mati[] = $izin;
+        }
+
+        sort($mati);
+
+        $this->assertSame(
+            [],
+            $mati,
+            "Izin berikut ada di form Hak Akses tetapi tidak dibaca satu baris kode pun. "
+            ."Centangnya bisa diberikan dan tidak berakibat apa-apa:\n".implode("\n", $mati),
+        );
+    }
+
+    /**
+     * Izin yang benar-benar dibaca kode, beserta berkasnya.
+     *
+     * @return array<string, array<string, true>>
+     */
+    private function izinYangDibacaKode(): array
+    {
+        $dibaca = [];
+
+        $berkas = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(app_path())
+        );
+
+        foreach ($berkas as $satu) {
+            if (! $satu->isFile() || $satu->getExtension() !== 'php') {
+                continue;
+            }
+
+            // Model Permission memuat daftar yang disembunyikan; menghitungnya
+            // sebagai "dibaca" akan membuat kedua uji di atas saling meniadakan.
+            if (basename($satu->getPathname()) === 'Permission.php') {
+                continue;
+            }
+
+            $isi = $this->tanpaKomentarPhp(file_get_contents($satu->getPathname()));
+
+            if (preg_match_all("/'([a-z0-9_]+)'/", $isi, $cocok)) {
+                foreach ($cocok[1] as $mungkin) {
+                    $dibaca[$mungkin][basename($satu->getPathname())] = true;
+                }
+            }
+        }
+
+        return $dibaca;
+    }
+
+    /** Komentar dibuang supaya keterangannya tidak ikut terhitung dibaca. */
+    private function tanpaKomentarPhp(string $isi): string
+    {
+        $hasil = '';
+
+        foreach (@token_get_all($isi) as $token) {
+            if (is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+
+            $hasil .= is_array($token) ? $token[1] : $token;
+        }
+
+        return $hasil;
+    }
 }
