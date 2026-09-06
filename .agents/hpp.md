@@ -9,6 +9,7 @@ Dibaca dari berkas rujukan Owner (tidak ikut ke repositori):
 | `boning LJP 16 Juni.pdf` | 33 baris hasil boning: box, pcs, kg |
 | `contoh costing.xlsx`, sheet `LJP 20 - 15 JUN` | form HPP accounting, lot LJP |
 | `costing baqara.xlsx`, sheet `BQR 11 - 11 JUN` | form HPP accounting, lot BQR -- pembanding |
+| `Costing Juni.xlsx` | **tujuh lot** sepanjang Juni, tiga supplier -- dua di antaranya sama dengan berkas di atas |
 
 Empat yang pertama **satu rangkaian yang sama**: satu lot, 20 ekor, dari
 PT. Lembu Jantan Perkasa. Dipesan lewat `CPO-260106`, diterima dan ditimbang
@@ -348,61 +349,83 @@ setiap produk**.
 
 ---
 
-## 8. Costing kedua: BQR 11 ekor, 11 Juni
+## 8. Tujuh costing sepanjang Juni
 
-Dibandingkan sel per sel dengan costing LJP.
+`Costing Juni.xlsx` berisi tujuh lot dari tiga supplier. Dibandingkan sel per
+sel, dan inilah yang paling menjelaskan.
 
-| | LJP 20 - 15 JUN | BQR 11 - 11 JUN |
+| Lot | Ekor | Load kg | Rendemen | Harga/kg | Rasio | HPP Topside | Net/kg |
+|---|---|---|---|---|---|---|---|
+| LJP 30 - 2 JUN | 30 | 15.332 | 55,96% | 62.500 | 0,956167 | 133.920,74 | 2.120,27 |
+| LJP 19 - 3 JUN | 19 | 9.693 | 55,65% | 62.500 | 0,940151 | 131.677,51 | 4.149,72 |
+| HDS 10 - 6 JUN | 10 | 5.498 | 55,36% | **63.000** | 0,952043 | 133.343,17 | 2.732,22 |
+| BQR 24 - 10 JUN | 24 | 11.764 | 55,77% | **62.000** | 0,953932 | 133.607,76 | 2.368,56 |
+| BQR 11 - 11 JUN | 11 | 5.315 | 56,36% | **62.000** | 0,977225 | 136.870,07 | **-436,15** |
+| LJP 30 - 14 JUN | 30 | 16.568 | 56,87% | 62.500 | 0,935749 | 131.060,96 | 4.545,40 |
+| LJP 20 - 15 JUN | 20 | 10.888 | 56,16% | 62.500 | 0,948085 | 132.788,76 | 3.093,59 |
+
+**HPP satu produk yang sama bergerak 5.809 rupiah per kg dalam satu bulan**
+(131.060,96 sampai 136.870,07 -- rentang 4,43%). Jadi benar bahwa tiap boning
+menghasilkan HPP berbeda, dan besarnya bukan angka sepele.
+
+Harga beli tetap per supplier sepanjang Juni: LJP 62.500, HDS 63.000,
+BQR 62.000.
+
+### Seluruh isian sebuah costing cuma EMPAT hal
+
+Dicari dengan membandingkan ketujuh sheet: sel mana yang diketik tangan DAN
+berbeda antar lot. Hasilnya, di seluruh kolom A sampai L:
+
+| Sel | Isinya | Bisa kita hasilkan sendiri? |
 |---|---|---|
-| Load Weight | 10.888,00 kg | 5.315,00 kg |
-| Harga beli /kg | 62.500 | **62.000** |
-| Biaya beli | 680.500.000 | 329.530.000 |
-| Daging hasil boning | 6.115,08 kg | 2.995,54 kg |
-| Rendemen | 56,16% | 56,36% |
-| Total nilai jual | 717.762.805,70 | 337.210.112,00 |
-| **Rasio J91/J90** | **0,948085** | **0,977225** |
-| Gross Profit /kg | 6.093,59 | 2.563,85 |
-| Overhead /kg | 3.000 | 3.000 |
-| **Net Profit /kg** | 3.093,59 | **-436,15** |
+| `D2` | judul lot, misalnya `SUPPLIER : LJP ( 20 EKOR )` | ya -- dari carcass |
+| `L3` | tanggal potong (`L4` = `L3 + 1` otomatis) | ya -- dari carcass |
+| `F91` | Load Weight | ya -- berat terima |
+| `F93` | harga beli per kg | ya -- dari PO |
+| `F6:F89` | kuantitas tiap produk | ya -- dari boning |
 
-Metodenya persis sama, dan rasionya benar-benar berbeda per lot:
-`140.060 x 0,977225 = 136.870,07` -- sama persis dengan `K6` di berkasnya.
-Jadi benar bahwa **tiap boning menghasilkan HPP yang berbeda**, dan bedanya
-datang dari dua hal saja: harga beli sapinya, dan komposisi hasil boningnya.
+**Tidak ada yang lain.** Sisanya rumus, atau tetapan template.
 
-### Daftar harganya SAMA PERSIS
+Artinya seluruh isian costing sudah ada di basis data kita. Yang benar-benar
+datang dari luar hanya dua, dan keduanya tetapan template: **daftar harga
+jual** dan **overhead**.
 
-Seluruh kolom `NET PRICE` dan `GROSS PRICE` dibandingkan sel per sel di kedua
-berkas: **nol perbedaan**, untuk seluruh 80 baris produk.
+### Daftar harganya sama persis di KETUJUH sheet
 
-Artinya harga jual tidak diisi per batch -- ia hidup di dalam **templatenya**.
-Jadi "harga dikunci saat costing dibuat" ternyata lebih tepat disebut harga
-dikunci saat TEMPLATE dibuat, dan seluruh costing memakai harga yang sama
-sampai ada yang menyunting templatenya.
+Seluruh kolom `NET PRICE` dan `GROSS PRICE` dibandingkan sel per sel:
+**nol perbedaan**, 80 baris produk, tujuh lot, sepanjang Juni.
 
-Itu memperbesar taruhannya: kalau harga jual sebenarnya sudah berubah
-sementara templatenya belum, HPP seluruh lot ikut meleset -- dan tidak ada
-gejala apa pun yang menandainya.
+Jadi harga jual tidak diisi per batch -- ia hidup di dalam templatenya. "Harga
+dikunci saat costing dibuat" lebih tepat disebut dikunci saat TEMPLATE dibuat.
 
-### Blok baris 97-100 ternyata sisa template
+Itu memperbesar taruhannya: kalau harga jual sebenarnya berubah di tengah
+bulan sementara templatenya belum, HPP seluruh lot ikut meleset -- dan tidak
+ada gejala apa pun yang menandainya.
 
-Kedua berkas memuat angka yang sama persis: `J97 = 658.737.500`, `1.100 kg
-@51.000`, `6.072 kg @50.000`, `H100 = 359.700.000`. Hanya `J98` yang berbeda,
-dan itu karena ia `= J97/F91` -- pembaginya saja yang lain.
+### Overhead 3.000/kg juga tetapan, bukan isian
 
-Jadi blok itu bukan data lot, melainkan **sisa yang ikut tersalin setiap kali
-templatenya dipakai**. Pertanyaan tentangnya diturunkan menjadi sekadar
-konfirmasi.
+Sama di ketujuh lot. Dan justru karena rata itulah **BQR 11 ekor tercatat
+merugi**: gross profit-nya 2.563,85 per kg, di bawah overhead 3.000. Padahal
+rendemennya (56,36%) lebih baik daripada lima lot lain yang untung.
 
-### Lot Baqara merugi
+Untung-rugi sebuah lot karena itu lebih ditentukan harga beli dan harga jual
+daripada oleh performa boningnya.
 
-`Net Profit /kg = -436,15`. Gross profit-nya 2.563,85 per kg, dipotong
-overhead 3.000 per kg yang **rata untuk semua lot**. Lot yang rendemennya
-serupa (56,36% vs 56,16%) bisa berakhir untung atau rugi hanya karena harga
-belinya berbeda 500 rupiah per kg.
+### Boning #0439 ternyata lot 14 Juni
 
-Itu bukan kekeliruan hitungan -- tetapi menjadi alasan tambahan untuk
-menanyakan dari mana angka overhead 3.000 berasal.
+Berkas boning yang pertama dibaca (`Detail Boning #0439 15 juni.pdf`, sempat
+disangka salah pasangan) ternyata milik lot **LJP 30 - 14 JUN**: daging
+9.423,03 kg, offal 9.489,65 kg, kulit 1.139,10 kg -- ketiganya persis.
+
+Polanya konsisten: **boning dikerjakan sehari setelah potong**. Lot 14 Juni
+di-boning 15 Juni, lot 15 Juni di-boning 16 Juni. Rumus `L4 = L3 + 1` di form
+costing memang menuliskan aturan itu.
+
+### Catatan tentang berkasnya
+
+Tiap sheet menyimpan salinan lot lain di kolom tersembunyi `O` sampai `AS`.
+Bukan data baru, hanya sisa penyalinan antar sheet -- tetapi perlu diketahui
+supaya tidak dikira ada kolom tambahan yang bermakna.
 
 ---
 
@@ -411,13 +434,30 @@ menanyakan dari mana angka overhead 3.000 berasal.
 Disusun supaya bisa ditanyakan apa adanya.
 
 1. **Potongan gross -> net itu artinya apa, dan kenapa berbeda-beda per
-   produk?** (6%, 16,45%, 5%, dan sejumlah baris yang diketik langsung.)
-   Kalau ini diskon pelanggan, ia akan berubah tiap periode -- dan ikut
-   menggeser HPP.
+   produk?** Terlihat di rumus kolom `H` (NET PRICE) -- bukan di catatan mana
+   pun:
+
+   ```
+   H6  = I6 - (I6*6%)          Topside dan sebagian besar potongan utama
+   H18 = I18 - (I18*16.45%)    Striploin Whole, GOLD, Less fat, Cuberoll
+   H36 = I36 - (I36*5%)        Brisket PEDO, RIBS, Fat Brisket
+   ```
+
+   Sisanya diketik langsung tanpa rumus -- sebagian kebetulan sama dengan
+   gross, sebagian tidak (Back Rib 69.000 sementara gross-nya 105.000).
+
+   Kalau ini diskon pelanggan, ia akan berubah tiap periode dan ikut menggeser
+   HPP.
 2. Kenapa tulang, lemak, dan jeroan **tidak punya harga gross sama sekali**?
    Apakah keduanya memang tidak pernah dijual dengan daftar harga?
-3. **Overhead 3.000/kg** datang dari mana, dan apakah tetap tiap bulan?
-   Kenapa ia tidak menambah HPP, hanya memotong profit?
+3. **Overhead 3.000/kg** datang dari mana? Angkanya sama di ketujuh lot
+   sepanjang Juni, jadi ia tetapan -- bukan sesuatu yang dihitung per lot.
+   Ditinjau berapa lama sekali? Dan kenapa ia tidak menambah HPP, hanya
+   memotong profit?
+
+   Ini bukan pertanyaan kecil: BQR 11 ekor tercatat **merugi** semata-mata
+   karena overhead rata ini, padahal rendemennya lebih baik daripada lima lot
+   yang untung.
 4. Blok baris 98-100 (**1.100 kg @51.000 + 6.072 kg @50.000**) muncul sama
    persis di kedua costing, jadi tampaknya sisa template. **Boleh dibuang?**
 5. **Kolom `GROSS PRICE` itu menyalin price list yang mana, dan kapan
