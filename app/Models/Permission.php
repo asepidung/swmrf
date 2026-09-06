@@ -17,6 +17,59 @@ class Permission extends Model
      */
     public const UNGROUPED = 'OTHERS';
 
+    /**
+     * Izin yang ADA di basis data tetapi TIDAK ditampilkan di form.
+     *
+     * Semuanya izin yang tidak dibaca satu baris kode pun. Selama ia tampil,
+     * centangnya bisa diberikan dan tidak berakibat apa-apa -- dan orang yang
+     * memberikannya percaya sudah memberi hak yang sebenarnya tidak pernah
+     * sampai. Itu lebih buruk daripada tidak ada centangnya sama sekali.
+     *
+     * **Barisnya TIDAK dihapus dari basis data.** Menghapusnya ikut memutus
+     * lekatannya ke pengguna yang telanjur dicentang, dan lekatan itu tidak
+     * bisa dikembalikan tanpa mencentang ulang satu per satu. Yang
+     * disembunyikan cuma tampilannya, dan mengembalikannya nanti cukup
+     * dengan mencabut namanya dari daftar ini.
+     *
+     * Keputusan Owner, 6 September 2026, menyerahkan pilihannya: "lu kasih
+     * keputusan terbaik lah".
+     *
+     * Alasannya ditulis bersama namanya. Daftar tanpa alasan akan berubah
+     * menjadi tempat pembuangan bagi izin yang sekadar belum sempat
+     * dikerjakan -- dan itu persis kebalikan dari gunanya.
+     *
+     * @var array<string, string>
+     */
+    public const TIDAK_DITAMPILKAN = [
+        // Stok dan pergerakannya tidak memakai hapus lunak sama sekali. Stok
+        // hanya mencatat posisi sekarang -- keputusan Owner, supaya tabelnya
+        // tetap ringan -- dan pergerakan stok justru tidak boleh dihapus
+        // karena ia jejak auditnya. Tidak ada baris terhapus untuk dilihat.
+        'view_deleted_beef_stocks' => 'stok daging tidak memakai hapus lunak',
+        'view_deleted_beef_stock_movements' => 'pergerakan stok daging tidak pernah dihapus',
+        'view_deleted_material_stocks' => 'stok material tidak memakai hapus lunak',
+        'view_deleted_material_stock_movements' => 'pergerakan stok material tidak pernah dihapus',
+
+        // Kedua layar ini berdiri di atas CustomerGroup, bukan di atas dokumen
+        // yang namanya disebut izin ini -- dan CustomerGroup tidak memakai
+        // hapus lunak.
+        'view_deleted_price_lists' => 'layarnya berdiri di atas CustomerGroup',
+        'view_deleted_receivables' => 'layarnya berdiri di atas CustomerGroup',
+
+        // Tabel dan modelnya ada, layarnya tidak pernah dibuat.
+        'view_material_adjustments' => 'layar Material Adjustment belum dibuat',
+        'create_material_adjustments' => 'layar Material Adjustment belum dibuat',
+        'edit_material_adjustments' => 'layar Material Adjustment belum dibuat',
+        'delete_material_adjustments' => 'layar Material Adjustment belum dibuat',
+        'view_deleted_material_adjustments' => 'layar Material Adjustment belum dibuat',
+
+        // Keputusan Owner: "user mah jangan ada hapus aktif non aktif aja".
+        // `UserPolicy::delete()` karena itu selalu menjawab tidak, siapa pun
+        // yang bertanya. Barisnya dipertahankan sebagai contoh penamaan bagi
+        // modul lain; alasan lengkapnya ada di policy-nya.
+        'delete_users' => 'pengguna dinonaktifkan, tidak dihapus',
+    ];
+
     protected $fillable = ['name', 'module_name', 'description'];
 
     /**
@@ -145,7 +198,12 @@ class Permission extends Model
      */
     public static function groupedByModuleGroup(): array
     {
-        $byModule = static::query()->get()->groupBy('module_name');
+        // Yang tidak berakibat apa-apa tidak ikut tampil. Alasan tiap
+        // namanya ada di `TIDAK_DITAMPILKAN`.
+        $byModule = static::query()
+            ->whereNotIn('name', array_keys(static::TIDAK_DITAMPILKAN))
+            ->get()
+            ->groupBy('module_name');
 
         $result = [];
 

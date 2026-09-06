@@ -4346,3 +4346,45 @@ Yang bulat PESANANNYA, bukan timbangannya.
 `material_requisition_items.qty` dan `purchase_material_items.qty` masih
 `decimal(10,2)` dengan tampilan yang membulatkan -- keadaan yang sama persis.
 Datanya juga tidak ada yang berkoma. Menunggu satu kata Owner.
+
+---
+
+## #320 -- Dua belas centang Hak Akses yang tidak berakibat apa-apa
+
+Owner menyerahkan pilihannya: "lu kasih keputusan terbaik lah".
+
+**Keputusan: disembunyikan dari form, barisnya TIDAK dihapus.**
+
+Membiarkannya tampil adalah bahayanya sendiri -- orang yang mencentangnya
+percaya sudah memberi hak yang sebenarnya tidak pernah sampai. Menghapus
+barisnya memutus lekatannya ke pengguna yang telanjur dicentang, dan lekatan
+itu tidak bisa dikembalikan tanpa mencentang ulang satu per satu.
+Menyembunyikan mendapat seluruh manfaatnya tanpa satu pun kerugiannya, dan
+mengembalikannya nanti cukup dengan mencabut namanya dari daftar.
+
+Daftarnya menyimpan ALASAN bersama namanya. Daftar tanpa alasan akan berubah
+menjadi tempat pembuangan bagi izin yang sekadar belum sempat dikerjakan --
+persis kebalikan dari gunanya.
+
+`delete_users` ikut disembunyikan. Ia dipertahankan di basis data dengan
+alasan tertulis di `UserPolicy`, tetapi policy-nya selalu menjawab tidak
+siapa pun yang bertanya -- jadi centangnya sama matinya dengan sebelas yang
+lain.
+
+### Satu rumah, dua arah
+
+Daftarnya di `Permission::TIDAK_DITAMPILKAN`, dan
+`DeletedRecordVisibilityTest` sekarang MEMBACANYA dari sana alih-alih
+menuliskan daftarnya sendiri. Dua daftar yang sama di dua tempat selalu
+berakhir berbeda.
+
+Penjaganya dua arah, dan keduanya sudah dibuktikan menggigit:
+
+- **Yang disembunyikan wajib benar-benar tidak dibaca kode.** Menyembunyikan
+  izin yang sungguh dipakai jauh lebih buruk daripada centang mati: haknya
+  tidak bisa diberikan lagi kepada siapa pun, dan tombolnya hilang untuk
+  semua orang kecuali programmer.
+- **Yang tidak dibaca kode wajib disembunyikan.** Inilah yang menahan yang
+  berikutnya. Kalau gagal, ada dua jawaban yang benar dan keduanya bukan
+  "tambahkan saja namanya": pasang izinnya di kode yang seharusnya
+  memakainya, ATAU sembunyikan sambil menulis alasannya.
