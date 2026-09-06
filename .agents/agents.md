@@ -4672,3 +4672,53 @@ yang dipakai sekarang, dan Blade-nya kembali bersih.
 tidak ikut. Kesalahan di dalam grafiknya tidak akan pernah terlihat dari uji
 itu: halamannya tetap hijau sementara grafiknya mati di layar. Ditambahkan
 uji yang memuat kedua halaman UTUH lewat HTTP.
+
+---
+
+## #334 -- Sapi yang belum ditimbang: kosong, bukan nol
+
+Prasyarat sebelum QC menempel ke Carcass. Ditemukan saat menelusuri jalur
+timbang ulang untuk menentukan pemicu notifikasi QC.
+
+**Keputusan Owner, 6 September 2026:** timbang ulang WAJIB -- tanpa itu tidak
+ada draft carcass (`carcasses.cattle_weighing_id` memang `NOT NULL`) --
+tetapi di lapangan kadang diberi kelonggaran ketika sedang sangat repot.
+"Dokumen timbang ulang boleh di-create tapi data timbangnya dikosongkan
+semua; jika itu dilakukan tidak ada perhitungan ke financial lost atau weight
+lost, dan ini risiko jalan tengah." Dipertegas: berlaku "kalo SEMUA sapi gak
+ada actual weight".
+
+### Kelonggaran itu justru menghasilkan kebalikannya
+
+Form mengisi setiap baris dengan `actual_weight = 0`, dan hitungan susut
+membaca `0 < berat terima` untuk SETIAP ekor. Dokumen yang "dikosongkan"
+karena itu tercatat sebagai **kerugian sebesar seluruh bobot satu batch** --
+tanpa galat, tanpa gejala.
+
+Dan #299 memperburuknya: sebelum itu, kalau harga sapinya tidak ketemu
+barisnya dihapus; sesudahnya beratnya SELALU dicatat.
+
+Kolomnya juga `NOT NULL`, jadi sistem tidak punya cara membedakan "belum
+ditimbang" dari "ditimbang, hasilnya nol". Pola yang sama persis dengan
+`physical_qty` di opname material.
+
+### Rancangan yang dipilih, dan yang ditolak
+
+**Ditolak: kolom penanda `weighing_skipped` di dokumennya.** Sempat dibuat
+lalu dicabut sebelum di-commit. Penanda tersendiri berarti DUA sumber untuk
+satu kebenaran -- penanda dan isi barisnya -- dan dua sumber selalu berakhir
+berbeda: salah satunya diperbarui, satunya tidak, dan tidak ada yang tahu
+mana yang benar.
+
+**Dipakai: keadaannya DIBACA dari datanya sendiri.** `weighingWasSkipped()`
+= ada barisnya DAN seluruhnya kosong.
+
+**Yang menahan kelupaan:** form menolak dokumen yang HANYA SEBAGIAN terisi.
+Ini pasangan wajibnya -- keputusan melewatkan penimbangan diambil sekali
+untuk satu batch, sementara KELUPAAN terjadi satu ekor. Tanpa aturan
+semua-atau-tidak-sama-sekali, keduanya berbaur dan tidak ada cara
+membedakannya lagi sesudah dokumennya tersimpan.
+
+**Penjaga lama tidak dilonggarkan:** nol yang benar-benar diketik tetap
+tercatat sebagai kerugian penuh seekor sapi. Ada ujinya, dan pembedaan itu
+yang membuat seluruh rancangan ini masuk akal.

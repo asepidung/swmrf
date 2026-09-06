@@ -100,7 +100,11 @@ class CattleWeighingResource extends Resource
                                                 'cattle_receiving_item_id' => $item->id,
                                                 'eartag' => $item->eartag,
                                                 'initial_weight' => $item->initial_weight,
-                                                'actual_weight' => 0,
+                                                // Kosong, BUKAN nol. Nol berarti
+                                                // "ditimbang, hasilnya nol" -- dan
+                                                // itu tercatat sebagai kerugian
+                                                // penuh seekor sapi.
+                                                'actual_weight' => null,
                                                 'notes' => null,
                                                 'cattle_class_id' => $item->cattle_class_id,
                                             ];
@@ -144,14 +148,45 @@ class CattleWeighingResource extends Resource
                                      * sebesar SELURUH bobot sapi itu dikali
                                      * harga, tanpa error dan tanpa gejala.
                                      */
-                                    ->rules(['numeric', 'min:1', 'max:800'])
+                                    /*
+                                     * Boleh kosong, tetapi HANYA kalau semua
+                                     * baris kosong.
+                                     *
+                                     * Kelonggaran Owner berlaku untuk satu
+                                     * dokumen utuh -- "kalo semua sapi gak ada
+                                     * actual weight" -- karena keputusan
+                                     * melewatkan penimbangan diambil sekali
+                                     * untuk satu batch. KELUPAAN terjadi satu
+                                     * ekor, dan itu yang ditahan di sini:
+                                     * sebagian terisi berarti sisanya wajib
+                                     * terisi juga.
+                                     *
+                                     * Tanpa aturan ini, satu ekor yang
+                                     * terlewat berbaur dengan kelonggaran yang
+                                     * disengaja, dan tidak ada yang bisa
+                                     * membedakannya lagi.
+                                     */
+                                    ->rules([
+                                        'nullable', 'numeric', 'min:1', 'max:800',
+                                        fn (Forms\Get $get): \Closure => function (string $atribut, $nilai, \Closure $gagal) use ($get): void {
+                                            if (filled($nilai)) {
+                                                return;
+                                            }
+
+                                            $adaYangTerisi = collect($get('../../items') ?? [])
+                                                ->contains(fn ($baris): bool => filled($baris['actual_weight'] ?? null));
+
+                                            if ($adaYangTerisi) {
+                                                $gagal(__('Fill in every weight, or leave all of them empty. A single blank row cannot be told apart from one that was forgotten.'));
+                                            }
+                                        },
+                                    ])
                                     ->validationMessages([
                                         'min' => __('Actual weight must be filled in; a cattle left at zero is recorded as a total loss.'),
                                         'max' => __('Weight is above the :max kg limit. Please check the number again.', ['max' => 800]),
                                     ])
                                     ->suffix('Kg')
-                                    ->required()
-                                    ->default(0)
+                                    ->default(null)
                                     ->live(onBlur: true)
                                     ->extraInputAttributes([
                                         'inputmode' => 'decimal',

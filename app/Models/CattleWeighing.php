@@ -104,6 +104,30 @@ class CattleWeighing extends Model
         return $this->morphOne(FinancialLoss::class, 'lossable');
     }
 
+    /**
+     * Dokumen ini dibuat TANPA penimbangan ulang.
+     *
+     * Kelonggaran yang diberikan Owner untuk hari-hari yang sangat repot:
+     * dokumennya dibuat supaya carcass bisa jalan, penimbangannya tidak.
+     * Syaratnya SELURUH barisnya kosong -- "kalo semua sapi gak ada actual
+     * weight". Sebagian kosong bukan kelonggaran, itu kelupaan.
+     *
+     * Dibaca dari datanya sendiri, bukan disimpan sebagai penanda tersendiri.
+     * Penanda yang berdiri sendiri berarti dua sumber untuk satu kebenaran,
+     * dan dua sumber selalu berakhir berbeda -- salah satunya diperbarui,
+     * satunya tidak, dan tidak ada yang tahu mana yang benar.
+     */
+    public function weighingWasSkipped(): bool
+    {
+        $items = $this->relationLoaded('items') ? $this->items : $this->items()->get();
+
+        if ($items->isEmpty()) {
+            return false;
+        }
+
+        return $items->every(fn ($item): bool => $item->actual_weight === null);
+    }
+
     public function calculateAndSaveFinancialLoss(): void
     {
         $this->refresh();
@@ -111,6 +135,18 @@ class CattleWeighing extends Model
         
         $totalLoss = 0;
         $totalLossWeight = 0.0;
+
+        // Penimbangan yang DILEWATI tidak menghasilkan angka susut apa pun,
+        // dan kalau sebelumnya sempat ada, angkanya dicabut.
+        //
+        // Bukan karena susutnya tidak ada -- melainkan karena tidak ada yang
+        // pernah mengukurnya. Menuliskan nol di sini berarti mengaku tahu
+        // sesuatu yang tidak diketahui siapa pun.
+        if ($this->weighingWasSkipped()) {
+            $this->financialLoss()->delete();
+
+            return;
+        }
         
         if ($receiving && $receiving->purchaseCattle) {
             $po = $receiving->purchaseCattle;
@@ -119,8 +155,17 @@ class CattleWeighing extends Model
             
             foreach ($this->items as $itemData) {
                 $initial = floatval($itemData->initial_weight ?? 0);
-                $actual = floatval($itemData->actual_weight ?? 0);
-                
+
+                // Baris yang belum ditimbang dilewati, dan itu BERBEDA dari
+                // baris yang ditimbang lalu hasilnya nol. Yang kedua tetap
+                // dihitung sebagai kerugian penuh -- itu penjaga "satu ekor
+                // terlewat" yang sudah ada, dan sengaja tidak dilonggarkan.
+                if ($itemData->actual_weight === null) {
+                    continue;
+                }
+
+                $actual = floatval($itemData->actual_weight);
+
                 if ($actual < $initial) {
                     $lossWeight = $initial - $actual;
                     $classId = $itemData->cattle_class_id ?? null;
