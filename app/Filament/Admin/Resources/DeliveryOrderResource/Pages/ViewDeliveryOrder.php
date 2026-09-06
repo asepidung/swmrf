@@ -97,7 +97,7 @@ class ViewDeliveryOrder extends ViewRecord
                                 'pcs_in' => 0,
                                 'pcs_out' => $stock->qty_pcs,
                                 'note' => 'Revert rejection of DO#' . $doNumber,
-                                'created_by' => auth()->id() ?? 1,
+                                'created_by' => auth()->id(),
                             ]);
 
                             // Delete the stock record

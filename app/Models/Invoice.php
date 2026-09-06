@@ -485,7 +485,7 @@ class Invoice extends Model
                 );
             }
             if (empty($model->created_by)) {
-                $model->created_by = auth()->id() ?? 1;
+                $model->created_by = auth()->id();
             }
         });
 

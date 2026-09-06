@@ -83,7 +83,7 @@ class MaterialFinding extends Model
             }
 
             if (! $finding->created_by) {
-                $finding->created_by = auth()->id() ?? 1;
+                $finding->created_by = auth()->id();
             }
         });
 

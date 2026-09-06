@@ -81,7 +81,7 @@ class MutationItem extends Model
                 'pcs_in' => $stock->qty_pcs,
                 'pcs_out' => 0,
                 'note' => 'Barang dihapus dari draft mutasi dan dikembalikan ke stok',
-                'created_by' => \Illuminate\Support\Facades\Auth::id() ?? 1,
+                'created_by' => \Illuminate\Support\Facades\Auth::id(),
             ]);
         });
     }
