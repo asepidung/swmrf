@@ -4500,3 +4500,76 @@ masih nongkrong.
 pekerjaannya.** Riwayat kemajuan tinggal di `agents.md`. Daftar tunggu yang
 memuat catatan kemajuan berhenti bisa dibaca sekilas, dan itu satu-satunya
 gunanya.
+
+---
+
+## #328 -- Dua laporan penjualan
+
+Owner meminta Fast Moving Products dan Sales Report dikerjakan, dan menunjuk
+bentuk yang sudah dipakai bertahun-tahun di aplikasi lama:
+`reports/sales.php` dan `reports/fast_moving.php`. Keduanya dibaca langsung
+dari salinan legacy di dalam repo -- HANYA DIBACA, tidak satu pun perintah
+tulis ke sana.
+
+### Sales Report
+
+Aplikasi lama menjumlah satu kolom, `invoice.xamount`. Aplikasi ini TIDAK
+menyimpan grand total -- ia menghitungnya lewat `Invoice::billedAmount()`,
+dan retur yang sudah disetujui mengurangi.
+
+**Laporannya menjumlah lewat SQL, bukan memanggil `billedAmount()` per
+invoice**, karena `returnedAmount()` menembak basis data setiap kali
+dipanggil dan satu tahun bisa ribuan invoice. Dua jalan menuju angka yang
+sama adalah dua tempat yang bisa berbeda -- dan kalau berbeda, tidak ada
+layar yang bisa menunjukkannya: keduanya menampilkan angka yang tampak masuk
+akal. **Ada uji yang membandingkan keduanya invoice per invoice**, dan uji
+itulah yang menahan keduanya tetap satu jawaban.
+
+Bulan yang belum terjadi ditulis KOSONG, bukan nol. Nol berarti "tidak ada
+penjualan"; bulan yang belum datang bukan itu. Persen perubahan juga strip,
+bukan angka, kalau tahun lalu nol -- naik dari nol bukan "naik seratus
+persen".
+
+**Laba tidak ditampilkan.** Itu butuh HPP, dan HPP menunggu B.O.M. Yang ada
+omzet; menuliskannya sebagai laba hanya karena kolomnya kosong akan lebih
+buruk daripada tidak menampilkannya.
+
+### Fast Moving Products
+
+**Keputusan Owner: yang mengurutkan FREKUENSI, bukan berat.** "Paling sering
+di pesan ... walaupun qty nya ditampilkan tapi itu bukan jadi acuan." Dua
+ukuran itu menjawab pertanyaan berbeda: berat menjawab apa yang paling
+banyak keluar, frekuensi menjawab apa yang paling sering diminta -- dan yang
+kedua yang menentukan apa yang harus selalu ada di gudang. Satu pesanan besar
+tahunan tidak membuat sebuah produk perlu selalu tersedia.
+
+Ujinya sengaja dibuat supaya kedua ukuran itu BERTENTANGAN: satu produk
+dipesan tiga kali dengan berat kecil, satunya sekali dengan berat besar.
+
+**Sumbernya SALES ORDER, bukan surat jalan** -- permintaan Owner, dan
+sekaligus lebih tepat untuk kata "dipesan". Aplikasi lama memakai surat
+jalan, jadi angkanya memang TIDAK akan sama persis: satu sales order bisa
+dikirim beberapa kali, dan pesanan yang batal sebelum dikirim tidak pernah
+muncul di sana sama sekali. Perbedaan ini ditulis di kepala berkasnya supaya
+tidak terbaca sebagai selisih yang salah.
+
+Dibandingkan PER KATEGORI, mengikuti aplikasi lama yang memisahkannya per
+cut. Alasannya sama: tulang dan prime cut tidak pernah bersaing memperebutkan
+tempat yang sama di gudang.
+
+### `MONTH()` dan `YEAR()` dibuang
+
+Percobaan pertama memakai `GROUP BY MONTH(invoice_date)`. Itu MySQL; SQLite
+-- yang dipakai SELURUH rangkaian uji -- tidak mengenalnya. Query yang hanya
+bisa dijalankan di satu mesin berarti angkanya tidak pernah benar-benar diuji
+sebelum sampai ke pengguna. Pengelompokannya sekarang di PHP, tetap satu
+query.
+
+### Grup sidebar baru
+
+`REPORTS` harus didaftarkan di DUA tempat: `Permission::moduleGroups()` dan
+`AdminPanelProvider::navigationGroups()`. Yang kedua sempat terlewat, dan
+`NavigationGroupConsistencyTest` langsung menangkapnya -- penjaga yang lahir
+dari kesalahan yang sama pada grup ACCOUNTING.
+
+Izinnya lewat MIGRASI, bukan hanya seeder.

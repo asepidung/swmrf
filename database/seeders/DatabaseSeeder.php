@@ -136,6 +136,8 @@ class DatabaseSeeder extends Seeder
 
             // Financial Loss Module
             ['name' => 'view_financial_losses', 'module_name' => 'Financial Loss', 'description' => 'View financial losses'],
+            ['name' => 'view_sales_report', 'module_name' => 'Reports', 'description' => 'View sales report'],
+            ['name' => 'view_fast_moving_products', 'module_name' => 'Reports', 'description' => 'View fast moving products'],
 
             // Carcass Module
             ['name' => 'view_carcasses', 'module_name' => 'Carcass', 'description' => 'View carcasses'],

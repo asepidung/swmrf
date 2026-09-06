@@ -85,7 +85,7 @@ Bukan menunggu apa pun -- hanya belum dikerjakan, dan besarnya diketahui.
 |---|---|
 | **View tabel Stock Overview masih fork Filament** | **Sisa pekerjaannya:** lima penyimpangan struktur, 220 baris, didaftar di kepala berkasnya. Belum bisa hilang selama Filament v3 tidak punya cara mencetak angka ringkasan DI DALAM baris grup, dan itu inti tampilannya. Ketertinggalannya sudah dijaga `ForkedTableViewTest` (#312), jadi ini bukan lagi risiko senyap — hanya pekerjaan yang belum selesai |
 | **Kedua `stock:reconcile` belum diuji di data tebal** | **Sisa pekerjaannya:** jalankan lagi setelah dipakai beberapa minggu. Sisi daging 5 Sep dan sisi material 6 Sep dua-duanya bersih, tetapi bahannya masih puluhan baris — buku besar sekecil itu memang selalu cocok. Sisi material menemukan 3 baris saldo minus lama (KERTAS HVS, 31 Agu & 1 Sep), semuanya sebelum penolakan stok minus dipasang |
-| **Laporan yang belum ada** | Fast Moving Products, Sales Report, Laporan Stock Gudang |
+| **Laporan Stock Gudang** | **Sisa pekerjaannya:** belum bisa dimulai -- Owner belum ingat maksudnya laporan apa: "jujur gw masih belum inget cuma lu bisa liat di legacy". Fast Moving Products dan Sales Report sudah dikerjakan (#328) |
 
 ---
 
