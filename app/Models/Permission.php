@@ -156,6 +156,9 @@ class Permission extends Model
                 'Cash Book',
                 'Financial Loss',
             ],
+            'REPORTS' => [
+                'Reports',
+            ],
             'MASTER DATA' => [
                 'Products',
                 'Product Categories',
