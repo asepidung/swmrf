@@ -13,6 +13,11 @@
         display: block !important;
     }
 </style>
+
+    @include('filament.admin.partials.mobile-not-supported-warning', [
+        'backUrl' => \App\Filament\Admin\Resources\SalesReturnResource::getUrl('index'),
+    ])
+
     <div x-data="{ activeTab: 'scan' }">
         <x-filament::tabs label="Content tabs" class="mb-8">
             <x-filament::tabs.item

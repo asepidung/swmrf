@@ -65,7 +65,6 @@ class InvoiceResource extends Resource
                         Forms\Components\DatePicker::make('invoice_date')
                             ->label(__('Invoice Date'))
                             ->required()
-                            ->autofocus()
                             ->default(now()),
 
                         Forms\Components\TextInput::make('po_number')
@@ -78,8 +77,13 @@ class InvoiceResource extends Resource
                             ->maxLength(255)
                             ->default(fn () => \App\Models\DeliveryOrderReceipt::find(request()->query('delivery_order_receipt_id'))?->deliveryOrder?->delivery_order_number),
 
+                        // Keputusan Owner, 7 September 2026: autofocus dipindah
+                        // dari invoice_date (sudah terisi default(now()), dan
+                        // tanggal bukan yang paling sering diketik ulang) ke
+                        // sini -- pola yang sama dengan BoningResource.
                         Forms\Components\Textarea::make('note')
                             ->label(__('Note'))
+                            ->autofocus()
                             ->columnSpanFull(),
                     ])->columns(4),
 
@@ -404,7 +408,7 @@ class InvoiceResource extends Resource
         $totalDiscount = 0.0;
 
         foreach ($items as $key => $item) {
-            $weight = InvoiceTotals::number($item['weight'] ?? 0);
+            $weight = InvoiceTotals::quantity($item['weight'] ?? 0);
             $price = InvoiceTotals::number($item['price'] ?? 0);
             $discount = InvoiceTotals::percent($item['discount_percent'] ?? 0);
 
@@ -421,7 +425,7 @@ class InvoiceResource extends Resource
         $charge = 0.0;
 
         foreach ($rootGet('additionalCharges') ?? [] as $key => $item) {
-            $qty = InvoiceTotals::number($item['qty'] ?? 1);
+            $qty = InvoiceTotals::quantity($item['qty'] ?? 1);
             $price = InvoiceTotals::number($item['price'] ?? 0);
             $discount = InvoiceTotals::percent($item['discount_percent'] ?? 0);
 

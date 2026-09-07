@@ -98,9 +98,12 @@ class InvoiceDetailList extends Page implements HasTable
                         Forms\Components\DatePicker::make('date_until')
                             ->label(__('Until Date')),
                     ])
+                    // Keputusan Owner, 7 September 2026: kosong berarti tanpa
+                    // batasan tanggal -- dulu diam-diam dibatasi bulan
+                    // berjalan meski form terlihat kosong.
                     ->query(function (Builder $query, array $data): Builder {
-                        $from = $data['date_from'] ?? now()->startOfMonth()->toDateString();
-                        $until = $data['date_until'] ?? now()->toDateString();
+                        $from = $data['date_from'] ?? null;
+                        $until = $data['date_until'] ?? null;
 
                         return $query->whereHas('invoice', function ($q) use ($from, $until) {
                             $q->when($from, fn ($q, $date) => $q->whereDate('invoice_date', '>=', $date))

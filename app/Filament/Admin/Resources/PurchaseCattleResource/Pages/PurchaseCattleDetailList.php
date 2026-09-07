@@ -75,9 +75,12 @@ class PurchaseCattleDetailList extends Page implements HasTable
                         Forms\Components\DatePicker::make('po_until')
                             ->label(__('Until Date')),
                     ])
+                    // Keputusan Owner, 7 September 2026: kosong berarti tanpa
+                    // batasan tanggal -- dulu diam-diam dibatasi bulan
+                    // berjalan meski form terlihat kosong.
                     ->query(function (Builder $query, array $data): Builder {
-                        $from = $data['po_from'] ?? now()->startOfMonth()->toDateString();
-                        $until = $data['po_until'] ?? now()->toDateString();
+                        $from = $data['po_from'] ?? null;
+                        $until = $data['po_until'] ?? null;
 
                         return $query->whereHas('purchaseCattle', function ($q) use ($from, $until) {
                             $q->when(

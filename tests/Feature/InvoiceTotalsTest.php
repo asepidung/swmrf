@@ -80,6 +80,47 @@ class InvoiceTotalsTest extends TestCase
     }
 
     /**
+     * Berat pecahan (kg) bukan uang -- titiknya titik desimal sungguhan,
+     * bukan pemisah ribuan.
+     *
+     * Field `weight` `->disabled()` dan `->numeric()` polos, tidak dimask
+     * uang. Sebelum ada `InvoiceTotals::quantity()`, baris ini lewat
+     * `InvoiceTotals::number()` yang membuang SEMUA titik sebagai "pemisah
+     * ribuan" -- `22.22` kg terbaca `2222` kg, dan `Products`/`Total Billed`
+     * ikut meleset seratus kali lipat. Laporan Owner, 7 September 2026.
+     */
+    public function test_a_fractional_weight_is_not_multiplied_by_a_hundred(): void
+    {
+        $hasil = $this->hitung([
+            'items' => [
+                ['weight' => 22.22, 'price' => 215000, 'discount_percent' => 0],
+            ],
+            'additionalCharges' => [],
+            'down_payment' => 0,
+        ]);
+
+        $this->assertSame(22.22, (float) $hasil['total_weight']);
+        $this->assertSame(4777300.0, (float) $hasil['items'][0]['amount']);
+    }
+
+    /**
+     * Qty biaya tambahan pecahan sama rentannya dengan berat -- field yang
+     * sama persis (`->numeric()` polos, tanpa mask uang).
+     */
+    public function test_a_fractional_additional_charge_qty_is_not_multiplied_by_a_hundred(): void
+    {
+        $hasil = $this->hitung([
+            'items' => [],
+            'additionalCharges' => [
+                ['qty' => 2.5, 'price' => 100000, 'discount_percent' => 0],
+            ],
+            'down_payment' => 0,
+        ]);
+
+        $this->assertSame(250000.0, (float) $hasil['additionalCharges'][0]['amount']);
+    }
+
+    /**
      * Barang dan biaya tambahan membaca ketikan yang sama dengan cara yang
      * sama.
      *

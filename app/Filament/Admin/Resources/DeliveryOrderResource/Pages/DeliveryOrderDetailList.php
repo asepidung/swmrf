@@ -88,9 +88,15 @@ class DeliveryOrderDetailList extends Page implements HasTable
                         \Filament\Forms\Components\DatePicker::make('delivery_until')
                             ->label(__('Until Date')),
                     ])
+                    // Keputusan Owner, 7 September 2026: dulu kosongnya field
+                    // ini diam-diam diganti "bulan berjalan" di sini, padahal
+                    // form filter dan indicateUsing terlihat kosong/netral --
+                    // hasilnya seluruh data bulan lain hilang tanpa indikator
+                    // apa pun yang memberi tahu user sedang tersaring. Sekarang
+                    // kosong berarti benar-benar tidak ada batasan tanggal.
                     ->query(function (Builder $query, array $data): Builder {
-                        $from = $data['delivery_from'] ?? now()->startOfMonth()->toDateString();
-                        $until = $data['delivery_until'] ?? now()->toDateString();
+                        $from = $data['delivery_from'] ?? null;
+                        $until = $data['delivery_until'] ?? null;
 
                         return $query->whereHas('deliveryOrder', function ($q) use ($from, $until) {
                             $q->when(

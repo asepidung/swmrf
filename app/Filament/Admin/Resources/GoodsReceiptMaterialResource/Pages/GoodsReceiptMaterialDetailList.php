@@ -78,9 +78,12 @@ class GoodsReceiptMaterialDetailList extends Page implements HasTable
                         Forms\Components\DatePicker::make('gr_until')
                             ->label(__('Until Date')),
                     ])
+                    // Keputusan Owner, 7 September 2026: kosong berarti tanpa
+                    // batasan tanggal -- dulu diam-diam dibatasi bulan
+                    // berjalan meski form terlihat kosong.
                     ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
-                        $from = $data['gr_from'] ?? now()->startOfMonth()->toDateString();
-                        $until = $data['gr_until'] ?? now()->toDateString();
+                        $from = $data['gr_from'] ?? null;
+                        $until = $data['gr_until'] ?? null;
 
                         return $query->whereHas('goodsReceiptMaterial', function ($q) use ($from, $until) {
                             $q->when(

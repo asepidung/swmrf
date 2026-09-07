@@ -47,11 +47,14 @@ class CreateManualUsage extends CreateRecord
                             ->label(__('Date'))
                             ->required()
                             ->default(now())
-                            ->autofocus()
                             ->columnSpan(1),
 
+                        // Keputusan Owner, 7 September 2026: autofocus jangan
+                        // di tanggal yang sudah terisi default(now()) -- pola
+                        // sama dengan BoningResource/InvoiceResource.
                         Forms\Components\Textarea::make('note')
                             ->label(__('Note / description'))
+                            ->autofocus()
                             ->columnSpanFull(),
 
                         Forms\Components\Hidden::make('status')

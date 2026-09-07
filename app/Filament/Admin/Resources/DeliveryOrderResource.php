@@ -300,6 +300,16 @@ class DeliveryOrderResource extends Resource
                     ->url(fn (\App\Models\DeliveryOrder $record): ?string => route('print.delivery-order', ['record' => $record->id]))
                     ->openUrlInNewTab(),
 
+                // Keputusan Owner, 7 September 2026: tanggal kirim dipindah
+                // ke posisi kedua (persis sesudah nomor DO) -- sebelumnya
+                // berada di urutan keempat, tersembunyi di belakang Tally
+                // Number dan Customer padahal ini tanggal yang paling sering
+                // dicari saat menyisir daftar DO.
+                Tables\Columns\TextColumn::make('delivery_date')
+                    ->label(__('Delivery Date'))
+                    ->date('d M Y')
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('tally.tally_number')
                     ->label(__('Tally Number'))
                     ->searchable()
@@ -312,11 +322,6 @@ class DeliveryOrderResource extends Resource
                 Tables\Columns\TextColumn::make('customer.name')
                     ->label(__('Customer'))
                     ->searchable()
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('delivery_date')
-                    ->label(__('Delivery Date'))
-                    ->date('d M Y')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('po_number')
