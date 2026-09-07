@@ -181,7 +181,7 @@ class ReceivePayment extends Page
                                     ->options(\App\Models\PaymentDeduction::typeOptions())
                                     ->default(\App\Models\PaymentDeduction::TYPE_BANK_FEE)
                                     ->required()
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 1, 'lg' => 2]),
 
                                 // Boleh dikosongkan, dan kosong itu BUKAN
                                 // kelalaian melainkan pernyataan: potongan ini
@@ -204,7 +204,7 @@ class ReceivePayment extends Page
                                         ->all())
                                     ->live()
                                     ->afterStateUpdated(fn () => $this->autoAllocate())
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 1, 'lg' => 2]),
 
                                 TextInput::make('description')
                                     ->label(__('Description'))
@@ -212,14 +212,14 @@ class ReceivePayment extends Page
                                     ->required()
                                     ->maxLength(255)
                                     ->live(onBlur: true)
-                                    ->columnSpan(3),
+                                    ->columnSpan(['default' => 1, 'lg' => 3]),
                                 $this->money('amount')
                                     ->label(__('Amount (Rp)'))
                                     ->required()
                                     ->rules(['numeric', 'gt:0'])
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(fn () => $this->autoAllocate())
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 1, 'lg' => 2]),
                             ])
                             ->columns(['default' => 1, 'lg' => 9])
                             ->addActionLabel(__('Add Deduction'))

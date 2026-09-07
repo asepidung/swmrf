@@ -192,7 +192,7 @@ class ActivityLogResource extends Resource
                                 $component->state(static::formatProperties($state ?? []));
                             })
                             ->visible(fn ($record) => !empty($record?->properties['old']))
-                            ->columnSpan(fn ($record) => empty($record?->properties['attributes']) ? 2 : 1),
+                            ->columnSpan(['default' => 1, 'lg' => fn ($record) => empty($record?->properties['attributes']) ? 2 : 1]),
                         Forms\Components\KeyValue::make('properties.attributes')
                             ->label(__('New Data'))
                             ->keyLabel(__('Field'))
@@ -202,7 +202,7 @@ class ActivityLogResource extends Resource
                                 $component->state(static::formatProperties($state ?? []));
                             })
                             ->visible(fn ($record) => !empty($record?->properties['attributes']))
-                            ->columnSpan(fn ($record) => empty($record?->properties['old']) ? 2 : 1),
+                            ->columnSpan(['default' => 1, 'lg' => fn ($record) => empty($record?->properties['old']) ? 2 : 1]),
                     ])
                     ->visible(fn ($record) => !empty($record?->properties['old']) || !empty($record?->properties['attributes'])),
             ]);
