@@ -574,20 +574,20 @@ Kunci bahasa Inggris sengaja didaftarkan meski nilainya sama dengan kuncinya sen
 
 Pola ini layak ditiru saat menyisir modul lain: lebih murah daripada mengaudit manual, dan tidak bisa lupa.
 
-### Istilah "Produk Sapi", bukan "Beef" atau "Products"
+### Istilah menu: "Beef Product" (dulu "Cattle Products"), Indonesia tetap "Produk Sapi"
 
-Produk di sistem ini adalah hasil pemotongan sapi: **daging, tulang, offal, dan kulit**. Dua istilah lama sama-sama meleset:
+Produk di sistem ini adalah hasil pemotongan sapi: **daging, tulang, offal, dan kulit**. Menu ini dulu sengaja disebut "Cattle Products" karena dua istilah lain sama-sama meleset:
 
-- **"Beef"** terlalu sempit — tulang, offal, dan kulit bukan daging. Tapi kata ini memang familiar di lingkungan kerja.
+- **"Beef"** terlalu sempit — tulang, offal, dan kulit bukan daging.
 - **"Products"** terlalu luas — tidak membedakannya dari `Material` (bahan penolong).
 
-Istilah yang dipakai: **"Cattle Products"** (EN) / **"Produk Sapi"** (ID). Kata "Sapi" mengunci maknanya, "Produk" cukup lapang untuk menampung non-daging.
+**Keputusan Owner, 7 September 2026: label menunya (cluster `ProductsCluster`) diganti ke "Beef Product"**, dikonfirmasi ulang setelah alasan "Cattle Products" di atas disampaikan kembali — jadi ini keputusan sadar, bukan lupa. Cakupan datanya TIDAK berubah (tulang, offal, kulit tetap masuk modul yang sama); yang berubah cuma istilah menu bahasa Inggrisnya. Istilah Indonesia tetap **"Produk Sapi"**, tidak ikut berubah.
 
 **Jebakan yang wajib dihindari: jangan pernah memakai "Stok Sapi".** Sistem ini juga menangani sapi hidup (PO Cattle, Cattle Receiving), sehingga "Stok Sapi" ambigu antara sapi hidup dan barang hasil potong. Bentuk yang benar **"Stok Produk Sapi"**. Ada test yang menjaga ini (`NavigationTerminologyTest`).
 
 Nama kelas PHP tetap `Product*` dan tidak ikut diubah — itu lapisan kode, dan justru berguna sebagai lawan dari `Material`. Yang diseragamkan hanya yang dilihat pengguna.
 
-**Masih berjalan:** label bahasa Inggris di resource bagian dalam sebagian masih "Beef". Penyeragaman penuhnya menunggu Project Owner menelusuri aplikasi dan mencatat di layar mana kata itu terasa janggal.
+**Masih berjalan:** label bahasa Inggris di resource bagian dalam sebagian masih "Beef" (untuk item individual, bukan menu payungnya). Penyeragaman penuhnya menunggu Project Owner menelusuri aplikasi dan mencatat di layar mana kata itu terasa janggal.
 
 ### nonPKP: invoice tanpa PPN
 
@@ -5127,3 +5127,101 @@ untuk widget berikutnya, karena defaultnya "tampil" kecuali dikecualikan.
 Ditambahkan `tests/Feature/DashboardTest.php` yang menjaga dua arah
 sekaligus: `FastMovingChart`/`SalesYearlyChart` TIDAK ada di
 `Dashboard::getWidgets()`, dan ketiga widget Dashboard tetap ada.
+
+---
+
+## #348 -- Uppercase disisir ke seluruh Master Data, layout Create Customer dibenahi untuk HP, menu "Beef Product"
+
+Owner, 7 September 2026: minta disisir uppercase di form Customer (nama,
+group, segment, alamat), lalu diperluas ke seluruh menu Master Data
+(Material, Beef Product, Cattle Classes, Supplier, Warehouse) -- "hajar
+uppercase aja semua deh, kecuali yang menurut lu harus ada inputan
+lowercase". Sekalian ditemukan halaman Create Customer belum nyaman di HP.
+
+### Yang sudah benar sebelum disentuh
+
+Product/ProductCategory, Grade, CattleClass, Warehouse, CustomerGroup
+(field `name`), CustomerSegment sudah punya mutator `setNameAttribute` di
+model -- sumber kebenaran yang sebenarnya, bukan cuma tampilan. Material dan
+MaterialCategory tidak punya mutator, tapi Resource-nya menambal dengan
+`dehydrateStateUsing(strtoupper)` -- pola cadangan yang tetap berfungsi,
+tidak diubah.
+
+**Poin penting yang mudah terlewat:** `extraInputAttributes(['style' =>
+'text-transform:uppercase'])` HANYA VISUAL. CSS itu mengubah tampilan
+sementara mengetik, tetapi nilai yang benar-benar terkirim ke server tetap
+apa yang diketik pengguna. Tanpa mutator model atau `dehydrateStateUsing`,
+field yang "kelihatan" uppercase di layar bisa saja tersimpan huruf kecil di
+database. Beberapa field di project ini sebelumnya cuma dapat CSS tanpa
+penegasan nilai -- baru terlihat setelah ditelusuri satu per satu.
+
+### Yang ditambal
+
+**Model (mutator baru, mengikuti pola yang sudah baku):**
+- `Customer`: `name`, `address`, `pic`. Nama sebelumnya HANYA diuppercase di
+  trait `KeepsCustomerInAGroup::ensureCustomerGroup()` saat submit form --
+  jalan untuk Create/Edit lewat Filament, tapi tidak untuk jalur lain
+  (import, tinker, seeder). Trait itu TIDAK dihapus -- ia tetap perlu
+  meng-uppercase SEBELUM `CustomerGroup::firstOrCreate()` dipanggil supaya
+  pencocokan nama grup tepat, mutator model cuma jaring pengaman kedua.
+- `CustomerGroup`: `head_office_address`, `head_office_pic` (nama sudah ada).
+- `Supplier`: `name`, `address`, `pic`, `supplied_goods`, `bank_name`,
+  `account_name`. Sebelumnya SupplierResource sama sekali tidak menerapkan
+  uppercase di mana pun -- satu-satunya resource yang benar-benar kosong.
+- `MaterialUnit`: `name`. Dulu tidak ada mutator maupun CSS sama sekali,
+  padahal dropdown-nya dibuat inline dari form Material.
+
+**Sengaja TIDAK disentuh:** `phone`, `account_number`, `top`,
+`default_discount`, `top_days` -- semuanya field numerik/kode. `strtoupper()`
+pada digit tidak melakukan apa-apa; menambahkan mutator di sana cuma
+menambah kode yang tidak pernah berpengaruh.
+
+**Form:** CSS `text-transform:uppercase` ditambahkan di setiap field yang
+baru dapat mutator, termasuk salinan field yang muncul dua kali lewat
+`createOptionForm` (mis. `head_office_pic`/`head_office_address` muncul di
+`CustomerGroupResource` DAN di dalam form Customer saat membuat grup baru
+inline -- keduanya harus konsisten, kalau tidak salah satu jalurnya kelihatan
+uppercase sementara yang lain tidak).
+
+### Layout Create Customer: satu kolom di HP, grid 12 kolom tetap di desktop
+
+Section "Basic Information" memakai grid 12 kolom TETAP
+(`columns(12)`) dengan `columnSpan` pecahan (4, 4, 4, 2, 2, 2, 3, 3) tanpa
+breakpoint. Filament v3 TIDAK otomatis menyusun ulang jadi satu kolom di
+layar sempit kalau breakpoint tidak diberikan eksplisit -- pecahan 2/12
+untuk TOP, misalnya, jadi kolom yang lebih sempit daripada jari sendiri di
+HP.
+
+**Perbaikan:** setiap `columnSpan` diubah jadi array breakpoint
+`['default' => 12, 'md' => N]` -- satu kolom penuh di bawah `md`, kembali ke
+tata letak desktop yang sudah dirancang (lihat komentar tata letak di
+`CustomerResource::form()`) begitu layarnya cukup lebar. `CheckboxList`
+`required_documents` (8 opsi dokumen) juga diubah dari `columns(4)` tetap
+jadi `['default' => 1, 'sm' => 2, 'lg' => 4]` -- 4 kolom sempit untuk label
+sepanjang "Sertifikat Halal" tidak muat di HP.
+
+Section-nya sendiri TIDAK perlu diubah jadi responsif -- grid 12 kolom tetap
+ada di semua breakpoint, yang berubah cuma berapa banyak dari 12 kolom itu
+diambil tiap field pada breakpoint tertentu.
+
+### Menu "Cattle Products" diganti "Beef Product" -- ini pembalikan keputusan lama, sadar dan dikonfirmasi ulang
+
+Sebelum mengubah, ditemukan `NavigationTerminologyTest` menjaga label ini
+persis karena alasan yang terdokumentasi: "Beef" dianggap terlalu sempit
+(tulang, offal, kulit ikut tercatat sebagai Product, bukan cuma daging).
+Alasan itu disampaikan ulang ke Owner sebelum mengubah apa pun (lihat
+`AskUserQuestion` di sesi ini) -- **jawabannya tetap ganti ke "Beef
+Product"**, dikonfirmasi sadar bahwa cakupan datanya tidak berubah.
+
+Yang diubah: `ProductsCluster::getNavigationLabel()`, kunci
+`lang/en.json`/`lang/id.json` (`"Cattle Products"` -> `"Beef Product"`,
+nilai Indonesia tetap "Produk Sapi"), dan `NavigationTerminologyTest`
+(termasuk docblock kelasnya) supaya menjaga keputusan BARU, bukan menandai
+perbaikan ini sebagai pelanggaran. Detail lengkap alasannya ada di bagian
+"Istilah menu" dokumen ini.
+
+**Pelajaran untuk sesi berikutnya:** kalau sebuah test menjaga sesuatu
+dengan alasan yang jelas dan terdokumentasi, itu tanda BERHENTI dan
+tanya -- bukan tanda "test-nya salah, timpa saja". Di sini alasannya
+benar dan tetap valid, Owner cuma memilih trade-off yang berbeda setelah
+mendengarnya lagi.

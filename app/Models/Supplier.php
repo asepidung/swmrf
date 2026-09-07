@@ -31,6 +31,42 @@ class Supplier extends Model
     ];
 
     /**
+     * Keputusan Owner, 7 September 2026: nama dan alamat pemasok wajib huruf
+     * besar. Sebelumnya SupplierResource sama sekali tidak menerapkannya --
+     * beda dengan Customer/CustomerGroup/CustomerSegment/dst yang sudah lama
+     * begini.
+     */
+    public function setNameAttribute($value)
+    {
+        $this->attributes['name'] = strtoupper(trim($value));
+    }
+
+    public function setAddressAttribute($value)
+    {
+        $this->attributes['address'] = $value === null ? null : strtoupper(trim($value));
+    }
+
+    public function setPicAttribute($value)
+    {
+        $this->attributes['pic'] = $value === null ? null : strtoupper(trim($value));
+    }
+
+    public function setSuppliedGoodsAttribute($value)
+    {
+        $this->attributes['supplied_goods'] = $value === null ? null : strtoupper(trim($value));
+    }
+
+    public function setBankNameAttribute($value)
+    {
+        $this->attributes['bank_name'] = $value === null ? null : strtoupper(trim($value));
+    }
+
+    public function setAccountNameAttribute($value)
+    {
+        $this->attributes['account_name'] = $value === null ? null : strtoupper(trim($value));
+    }
+
+    /**
      * Pemasok ini memungut PPN atau tidak.
      *
      * Namanya di basis data `is_tax_11`, dan HANYA itu yang ada. Sisi

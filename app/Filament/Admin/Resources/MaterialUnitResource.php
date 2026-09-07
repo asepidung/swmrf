@@ -33,7 +33,8 @@ class MaterialUnitResource extends Resource
                 Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
                     ->label(fn() => __('Unit Name'))
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->extraInputAttributes(['style' => 'text-transform:uppercase']),
             ]);
     }
 

@@ -32,6 +32,32 @@ class Customer extends Model
         'is_active' => 'boolean',
     ];
 
+    /**
+     * Keputusan Owner, 7 September 2026: nama dan alamat pelanggan wajib
+     * huruf besar, mengikuti pola yang sudah baku di CustomerGroup/
+     * CustomerSegment/Product/dst. CSS `text-transform:uppercase` di form
+     * hanya visual -- nilai yang benar-benar tersimpan tetap apa adanya
+     * kalau tidak ditegaskan di sini.
+     *
+     * Nama juga sudah di-uppercase di `KeepsCustomerInAGroup` SEBELUM dipakai
+     * mencocokkan/membuat CustomerGroup; mutator ini sengaja tetap ada supaya
+     * jalur lain (import, tinker, seeder) tidak lolos tanpa uppercase.
+     */
+    public function setNameAttribute($value)
+    {
+        $this->attributes['name'] = strtoupper(trim($value));
+    }
+
+    public function setAddressAttribute($value)
+    {
+        $this->attributes['address'] = $value === null ? null : strtoupper(trim($value));
+    }
+
+    public function setPicAttribute($value)
+    {
+        $this->attributes['pic'] = $value === null ? null : strtoupper(trim($value));
+    }
+
     public function group()
     {
         return $this->belongsTo(CustomerGroup::class, 'customer_group_id');

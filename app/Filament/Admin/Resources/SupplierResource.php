@@ -51,21 +51,25 @@ class SupplierResource extends Resource
                                     ->label(fn() => __('Supplier Name'))
                                     ->autofocus()
                                     ->required()
-                                    ->maxLength(255),
+                                    ->maxLength(255)
+                                    ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                                 Forms\Components\TextInput::make('pic')
                                     ->label(fn() => __('PIC / Person In Charge'))
                                     ->required()
-                                    ->maxLength(255),
+                                    ->maxLength(255)
+                                    ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                                 Forms\Components\TextInput::make('phone')
                                     ->label(fn() => __('Phone Number'))
                                     ->tel()
                                     ->maxLength(255),
                                 Forms\Components\TextInput::make('supplied_goods')
                                     ->label(fn() => __('Supplied Goods'))
-                                    ->maxLength(255),
+                                    ->maxLength(255)
+                                    ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                                 Forms\Components\Textarea::make('address')
                                     ->label(fn() => __('Address'))
                                     ->required()
+                                    ->extraInputAttributes(['style' => 'text-transform:uppercase'])
                                     ->columnSpanFull(),
                             ])->columns(2),
 
@@ -74,13 +78,15 @@ class SupplierResource extends Resource
                             ->schema([
                                 Forms\Components\TextInput::make('bank_name')
                                     ->label(fn() => __('Bank Name'))
-                                    ->maxLength(255),
+                                    ->maxLength(255)
+                                    ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                                 Forms\Components\TextInput::make('account_number')
                                     ->label(fn() => __('Account Number'))
                                     ->maxLength(255),
                                 Forms\Components\TextInput::make('account_name')
                                     ->label(fn() => __('Account Name'))
-                                    ->maxLength(255),
+                                    ->maxLength(255)
+                                    ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                             ])->columns(3),
                     ])->columnSpan(['lg' => 2]),
 
