@@ -5052,3 +5052,57 @@ cost-nya bisa dihitung saat dibutuhkan.
 417 baris BOM aktif di aplikasi legacy belum dipindahkan. Pemindahannya
 menuntut pemetaan produk dan bahan antara dua master yang berbeda, dan
 `basis` tiap barisnya harus ditentukan -- legacy tidak menyimpannya.
+
+---
+
+## #346 -- Dua chart Report ikut nyelonong ke Dashboard
+
+Keputusan Owner, 7 September 2026: "times ordered sama sales trend itu jangan
+ditaruh di dashboard karena enggak semua orang boleh lihat itu, cukup taruh
+di menu report dulu aja".
+
+### Bug-nya, dan kenapa tidak ada satu pun gejala sebelumnya
+
+`FastMovingChart` ("Times ordered") dan `SalesYearlyChart` ("Sales trend")
+memang DIRANCANG untuk halaman Report masing-masing
+(`FastMovingProducts`/`SalesReport`), dipasang lewat `getHeaderWidgets()`
+persis seperti pola widget lain di project ini. Keduanya juga tidak punya
+`canView()` sendiri -- itu sengaja, karena satu-satunya jalur masuk yang
+dibayangkan adalah lewat halaman Report yang sudah dijaga
+`canAccess()` (`view_sales_report`, `view_fast_moving_products`).
+
+Supaya `getHeaderWidgets()` bisa memakainya, keduanya harus terdaftar di
+panel lewat `discoverWidgets()` di `AdminPanelProvider`. Tapi bawaan
+Filament, `\Filament\Pages\Dashboard::getWidgets()` mengembalikan
+`Filament::getWidgets()` -- **SEMUA** widget yang terdaftar di panel, tanpa
+peduli itu dibuat untuk Dashboard atau bukan. Karena `App\Filament\Admin\Pages\Dashboard`
+tidak pernah meng-override `getWidgets()`, kedua chart itu ikut tampil ke
+SIAPA PUN yang bisa membuka Dashboard -- memotong `canAccess()` yang menjaga
+halaman Report-nya, tanpa satu pun galat atau test yang menangkapnya.
+
+`WidgetRegistrationTest` tidak menangkap ini karena ia memeriksa
+`Filament::getPanel('admin')->getWidgets()` (widget apa saja yang TERDAFTAR
+di panel), bukan `Dashboard::getWidgets()` (widget apa yang benar-benar
+DITAMPILKAN di Dashboard). Keduanya terdengar sama tapi menjawab pertanyaan
+yang berbeda.
+
+### Perbaikan: Dashboard memilih sendiri widgetnya, eksplisit
+
+`App\Filament\Admin\Pages\Dashboard::getWidgets()` sekarang di-override
+dengan daftar eksplisit: `PendingTaskWidget`, `PushSubscriptionCoverageWidget`,
+`ScheduledReminderHealthWidget`. Ketiganya memang menjaga dirinya sendiri
+lewat `canView()` berbasis izin/role, dan ketiganya memang dirancang untuk
+Dashboard sejak awal (#338-#342 untuk yang pertama, catatan lain untuk dua
+yang terakhir).
+
+**Sengaja daftar eksplisit (allow-list), bukan "semua widget kecuali dua
+ini" (deny-list).** Alasannya: widget baru yang nanti ditambahkan ke folder
+`app/Filament/Admin/Widgets` biasanya dibuat untuk kebutuhan SATU halaman
+tertentu (report lain, dashboard modul lain) -- persis seperti kasus ini.
+Allow-list memaksa keputusan "ini tampil di Dashboard atau tidak" dibuat
+sadar sekali per widget baru; deny-list akan mengulang bug yang sama persis
+untuk widget berikutnya, karena defaultnya "tampil" kecuali dikecualikan.
+
+Ditambahkan `tests/Feature/DashboardTest.php` yang menjaga dua arah
+sekaligus: `FastMovingChart`/`SalesYearlyChart` TIDAK ada di
+`Dashboard::getWidgets()`, dan ketiga widget Dashboard tetap ada.
