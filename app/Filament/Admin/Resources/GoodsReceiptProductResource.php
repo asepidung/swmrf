@@ -63,8 +63,8 @@ class GoodsReceiptProductResource extends Resource
                     ->schema([
                         Forms\Components\Grid::make(7)
                             ->schema([
-                                Forms\Components\Placeholder::make('col_barcode')->label(__('Barcode'))->columnSpan(2),
-                                Forms\Components\Placeholder::make('col_product')->label(__('Product'))->columnSpan(2),
+                                Forms\Components\Placeholder::make('col_barcode')->label(__('Barcode'))->columnSpan(['default' => 1, 'lg' => 2]),
+                                Forms\Components\Placeholder::make('col_product')->label(__('Product'))->columnSpan(['default' => 1, 'lg' => 2]),
                                 Forms\Components\Placeholder::make('col_grade')->label(__('Grade')),
                                 Forms\Components\Placeholder::make('col_weight')->label(__('Weight (Kg)')),
                                 Forms\Components\Placeholder::make('col_pcs')->label(__('Pcs')),
@@ -79,13 +79,13 @@ class GoodsReceiptProductResource extends Resource
                                     ->label(__('Barcode'))
                                     ->hiddenLabel()
                                     ->disabled()
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 1, 'lg' => 2]),
                                 Forms\Components\Select::make('product_id')
                                     ->relationship('product', 'name')
                                     ->label(__('Product'))
                                     ->hiddenLabel()
                                     ->disabled()
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 1, 'lg' => 2]),
                                 Forms\Components\Select::make('grade_id')
                                     ->relationship('grade', 'name')
                                     ->label(__('Grade'))

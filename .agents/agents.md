@@ -5434,3 +5434,143 @@ menutupnya (Dashboard kembali terlihat penuh sesudah diklik). Test yang
 sudah ada (`GoodsReceiptWarehouseAndPhTest`) hanya membaca source PHP
 `ScanGoodsReceiptProduct.php`/`LabelingGoodsReceiptProduct.php` mentah --
 tidak tersentuh karena perubahan ini murni di Blade.
+
+---
+
+## #354 -- `columns()` vs `columnSpan()`: dua jebakan bernama sama, mengisi kunci breakpoint yang berbeda
+
+Koreksi dari Hafizh (sesi lain, dulu dipanggil "REFACTORY SWM") atas
+pekerjaan Ruby (sesi ini) sendiri di #350 dan #352. Owner menugaskan
+perbaikannya balik ke Ruby. Ini BUKAN sekadar tambal -- pemahamannya
+mengoreksi apa yang ditulis #350 tentang penyebab bug Carcass.
+
+### Sumber kebenarannya, dibaca langsung dari vendor
+
+`vendor/filament/forms/src/Concerns/HasColumns.php`:
+```php
+public function columns(array|int|string|null $columns = 2): static
+{
+    if (!is_array($columns)) {
+        $columns = ['lg' => $columns];   // angka polos -> HANYA kunci lg
+    }
+    ...
+}
+```
+Kunci `default` yang tidak ikut terisi jatuh ke bawaan blade
+(`grid/index.blade.php`: `@props(['default' => 1, ...])`). Jadi
+`Section::columns(7)` (angka polos) berarti **1 kolom di breakpoint
+`default`, 7 kolom mulai `lg`** -- BUKAN 7 kolom di semua breakpoint.
+Wadahnya SUDAH satu kolom di HP sejak awal, tanpa disentuh sama sekali.
+
+`vendor/filament/forms/src/Components/Concerns/CanSpanColumns.php`:
+```php
+protected array $columnSpan = ['default' => 1, 'sm' => null, 'md' => null, 'lg' => null, ...];
+
+public function columnSpan(array|int|string|Closure|null $span): static
+{
+    if (!is_array($span)) {
+        $span = ['default' => $span];   // angka polos -> kunci default, SEMUA breakpoint
+    }
+    ...
+}
+```
+`columnSpan(4)` (angka polos) berarti **span 4 di SEMUA breakpoint**,
+termasuk `default` yang wadahnya cuma 1 kolom -- grid CSS terpaksa membuat
+kolom TERSIRAT untuk memuaskan permintaan itu, dan baris yang memuatnya
+gepeng/bertabrakan.
+
+**Intinya: `columns()` dan `columnSpan()` menerima angka polos yang sama
+persis, tapi mengisi kunci breakpoint yang BERBEDA.** `columns()` mengisi
+`lg`; `columnSpan()` mengisi `default`. Menyamakan keduanya dalam kepala
+("angka polos = kolom desktop, aman di semua ukuran") adalah jebakannya,
+dan jebakan itu sudah menjerat DUA kali berturut-turut di sesi ini sendiri.
+
+### Riwayat: dua ronde yang salah sebelum benar
+
+1. **#350, ronde pertama (Full Address):** `CustomerResource` ditambal
+   `columnSpan(['default' => 12, ...])` -- mengira `default` harus disamakan
+   dengan kolom WADAHNYA di breakpoint lebar (12). Salah: wadahnya cuma 1
+   kolom di `default`. Span 12 di wadah 1 kolom membuat 11 kolom tersirat,
+   dan `address` (`columnSpanFull()`, "1/-1") ikut memanjang ke kolom-kolom
+   tersirat yang nyaris nol lebarnya itu -- gepeng.
+2. **#350, ronde kedua (perbaikan di atas):** dikoreksi jadi
+   `columnSpan(['default' => 1, 'md' => N])` -- BENAR untuk kunci `default`,
+   tapi SALAH memilih kunci pasangannya: `Section::columns(12)` (angka
+   polos) baru berganti kolom di `lg` (1024px), bukan `md` (768px). Antara
+   md dan lg (lebar TABLET), field tetap membentang N kolom padahal
+   wadahnya masih 1 -- bug yang SAMA, cuma berpindah dari HP ke tablet.
+   Tidak terlihat karena verifikasi #350 cuma menguji 375px dan 1280px,
+   melompati rentang 768-1023px sama sekali.
+3. **#352 (Carcass):** catatan yang ditulis di sana keliru mengira
+   `columns(7)` polos-lah biang keroknya, lalu "memperbaikinya" jadi
+   `columns(['default' => 1, 'md' => 7])`. Wadahnya memang tidak pernah
+   salah -- yang salah `notes` dengan `columnSpan(2)` polos (kunci
+   `default`, bukan `lg`). "Perbaikan" itu DICABUT (dikembalikan ke
+   `columns(7)` polos); efek sampingnya (tablet jadi N kolom mulai md,
+   bukan lg) tidak pernah diminta dan bukan bagian dari laporan Owner.
+
+### Perbaikan #354: satu pola konsisten, disapu ke seluruh `app/Filament/`
+
+`columnSpan(['default' => 1, 'lg' => N])` -- `lg` dipilih karena SEMUA
+wadah `columns()` di `app/Filament/` (diperiksa menyeluruh, tidak ada
+pengecualian) memakai angka polos, yang berarti kuncinya selalu `lg`.
+Perkecualian: `QcReportResource.php` menulis wadahnya sendiri sebagai array
+eksplisit `columns(['default' => 1, 'md' => 3])` -- bukan angka polos --
+jadi `columnSpan(['default' => 1, 'md' => 2])` di dalamnya SUDAH benar
+sejak awal dan TIDAK disentuh. Kuncinya: breakpoint anak harus sama dengan
+breakpoint yang BENAR-BENAR dipakai wadahnya, bukan ditebak `md` sebagai
+default aman.
+
+**Cakupan perbaikan** (semua bentuk: angka polos, array `'default' => N`,
+closure bare):
+
+- `CustomerResource.php` -- 8 titik (`md` -> `lg`, ronde kedua #350 tadi)
+- `MaterialRequisitionResource.php`, `ProductRequisitionResource.php`,
+  `PurchaseProductResource.php`, `PurchaseMaterialResource.php` -- setiap
+  `columnSpan` dengan `default` bukan 1 (bukan cuma qty/price yang disentuh
+  #352, tapi SEMUA field di Section Header dan Repeater: due_date,
+  supplier_id, note, placeholder header kolom, material/product_id,
+  item_total/subtotal, Grid Summary). Juga kelas `hidden md:grid` pada
+  header Repeater diubah `hidden lg:grid` supaya header baru muncul pas
+  wadah repeaternya benar-benar sudah berkolom banyak.
+- `CarcassResource.php` -- `notes` (`columnSpan(2)` -> `['default'=>1,'lg'=>2]`),
+  komentar ditulis ulang menyebut sebab yang benar.
+- `ActivityLogResource.php`, `DeliveryOrderResource.php` -- closure bare
+  (`columnSpan(fn ($record) => ... ? 2 : 1)`) dibungkus jadi
+  `columnSpan(['default' => 1, 'lg' => fn (...) => ...])`. Bentuk ini
+  lolos dari sapuan sed berbasis angka karena tidak ada digit langsung
+  sesudah `columnSpan(`.
+- 8 Resource lain yang sebelumnya tidak pernah disentuh siapa pun untuk
+  urusan responsif: `BoningResource` (ViewBoning), `DeliveryOrderReceiptResource`,
+  `DeliveryOrderResource` (+ halaman ApproveDeliveryOrder), `DeliveryPlanResource`,
+  `GoodsReceiptProductResource`, `PriceListResource`, `ReceivableResource`
+  (ReceivePayment), `SalesOrderResource` -- 46 titik `columnSpan(N)` angka
+  polos, disapu dengan pola yang sama.
+
+**Yang SENGAJA tidak disentuh:** `SupplierResource.php` sudah memakai
+`columnSpan(['lg' => 2])` (tanpa kunci `default` sama sekali) -- itu SAH:
+kunci yang tidak diisi tetap memakai nilai bawaan `1` dari properti kelas,
+bukan ikut nol/null. Pola ini malah contoh yang benar sejak awal.
+
+### Test penjaga: `ResponsiveColumnSpanTest`
+
+Memindai seluruh `app/Filament/`, membuang komentar lewat `token_get_all`
+(pola yang sama dengan `BilingualParityTest`), menolak tiga bentuk:
+`columnSpan(N)` angka polos (N>1), `columnSpan(['default' => N, ...])`
+dengan N>1, dan `columnSpan(fn (...) => ...)` closure bare (tidak
+dibungkus array breakpoint). `columnSpanFull()` dan `columnSpan(['lg' =>
+N])` (tanpa kunci `default`) tidak dituduh -- keduanya aman.
+
+Dibuktikan menggigit sebelum dipakai: disisipkan `columnSpan(5)` sementara
+di `CattleClassResource.php`, dijalankan, MERAH (menyebut baris dan
+berkasnya persis), lalu dipulihkan dan hijau lagi.
+
+### Pelajaran untuk sesi berikutnya
+
+Kalau menulis `columnSpan()` responsif, JANGAN menebak breakpoint
+pasangannya (`md` terasa seperti pilihan "aman/lazim"). Cek dulu wadahnya
+ditulis dengan cara apa: angka polos (`columns(N)`) berarti kuncinya `lg`;
+array eksplisit berarti kuncinya PERSIS kunci yang ditulis di array itu.
+Dua fungsi yang namanya mirip (`columns`/`columnSpan`) dan menerima
+argumen yang sama bentuknya (angka polos) tidak berarti keduanya
+menerjemahkannya dengan cara yang sama.

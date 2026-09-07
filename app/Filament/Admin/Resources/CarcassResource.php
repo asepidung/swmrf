@@ -75,7 +75,7 @@ class CarcassResource extends Resource
                         ->default(now()),
                     Forms\Components\Textarea::make('note')
                         ->columnSpanFull(),
-                ])->columns(['default' => 1, 'md' => 2]),
+                ])->columns(2),
 
                 Forms\Components\Section::make(__('Carcass Details'))->schema([
                     Forms\Components\Repeater::make('items')
@@ -287,7 +287,7 @@ class CarcassResource extends Resource
                                 ]),
                             Forms\Components\TextInput::make('notes')
                                 ->label(__('Note'))
-                                ->columnSpan(['default' => 1, 'md' => 2])
+                                ->columnSpan(['default' => 1, 'lg' => 2])
                                 ->extraInputAttributes([
                                     'class' => 'enter-to-next-notes',
                                     'onkeydown' => "
@@ -302,18 +302,31 @@ class CarcassResource extends Resource
                                     "
                                 ]),
                         ])
-                        // Responsif: satu kolom penuh di HP, tujuh kolom
-                        // mulai md. Sebelumnya `columns(7)` polos -- tujuh
-                        // field (eartag, carcass_1/2, hides, tail, notes)
-                        // ikut terpaksa berbagi 7 kolom di HP juga, membuat
-                        // tiap kolom cuma dapat ~50px dan label tiap field
-                        // saling bertabrakan/wrap. Keputusan Owner,
-                        // 7 September 2026. Field individualnya TIDAK perlu
-                        // columnSpan tambahan -- default span 1 sudah benar
-                        // di kedua breakpoint (1 dari 1 kolom = penuh di HP,
-                        // 1 dari 7 kolom = sempit seperti semula di desktop);
-                        // hanya `notes` (span 2) yang perlu breakpoint sendiri.
-                        ->columns(['default' => 1, 'md' => 7])
+                        // KOREKSI 7 September 2026 atas catatan sebelumnya di sini:
+                        // `columns(7)` (angka polos) BUKAN penyebabnya. Filament
+                        // menerjemahkan angka polos pada `columns()` sebagai
+                        // `['lg' => 7]` -- constructor `Concerns\HasColumns::columns()`
+                        // di vendor cuma mengisi kunci `lg`, dan kunci `default`
+                        // yang tidak diisi jatuh ke bawaan `1`. Jadi wadah Repeater
+                        // ini SUDAH satu kolom di HP sejak awal, tanpa disentuh.
+                        //
+                        // Yang benar-benar membuat gepeng adalah `notes` (baris di
+                        // atas): `columnSpan(2)` angka polos berarti span 2 di
+                        // SEMUA breakpoint (`Concerns\CanSpanColumns::columnSpan()`
+                        // mengisi kunci `default`, bukan `lg`) -- span 2 di wadah
+                        // yang cuma py 1 kolom di HP memaksa grid membuat kolom
+                        // tersirat, dan itu yang menggeser/menabrakkan field lain
+                        // di baris yang sama. Sudah diperbaiki jadi
+                        // `columnSpan(['default' => 1, 'lg' => 2])` di atas.
+                        //
+                        // `columns()` vs `columnSpan()` mengisi kunci breakpoint
+                        // yang BERBEDA untuk angka polos yang sama -- jebakan ini
+                        // menjerat perbaikan pertama di sini dan menular ke
+                        // CustomerResource, MaterialRequisitionResource,
+                        // ProductRequisitionResource, PurchaseProductResource,
+                        // PurchaseMaterialResource. Lihat #354 untuk sapuan
+                        // penuhnya dan test yang sekarang menjaganya.
+                        ->columns(7)
                         ->addable(false)
                         ->deletable(true)
                         ->label('')
@@ -371,7 +384,7 @@ class CarcassResource extends Resource
                                 }
                                 return new \Illuminate\Support\HtmlString("<span class='font-bold text-primary-600'>" . number_format($total, 2) . " Kg</span>");
                             }),
-                    ])->columns(['default' => 1, 'md' => 5]),
+                    ])->columns(5),
             ]);
     }
 

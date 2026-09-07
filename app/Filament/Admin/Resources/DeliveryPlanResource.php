@@ -73,9 +73,9 @@ class DeliveryPlanResource extends Resource
                         // Clean Repeater Header UI
                         Forms\Components\Grid::make(12)
                             ->schema([
-                                Forms\Components\Placeholder::make('col_so_number')->label(__('SO Number'))->columnSpan(4),
-                                Forms\Components\Placeholder::make('col_weight')->label(__('Qty (Kg)'))->columnSpan(3),
-                                Forms\Components\Placeholder::make('col_note')->label(__('Note'))->columnSpan(5),
+                                Forms\Components\Placeholder::make('col_so_number')->label(__('SO Number'))->columnSpan(['default' => 1, 'lg' => 4]),
+                                Forms\Components\Placeholder::make('col_weight')->label(__('Qty (Kg)'))->columnSpan(['default' => 1, 'lg' => 3]),
+                                Forms\Components\Placeholder::make('col_note')->label(__('Note'))->columnSpan(['default' => 1, 'lg' => 5]),
                             ]),
 
                         Forms\Components\Repeater::make('salesOrders')
@@ -91,18 +91,18 @@ class DeliveryPlanResource extends Resource
                                     ->hiddenLabel()
                                     ->disabled()
                                     ->dehydrated(false)
-                                    ->columnSpan(4),
+                                    ->columnSpan(['default' => 1, 'lg' => 4]),
                                 Forms\Components\Placeholder::make('total_weight')
                                     ->label('')
                                     ->hiddenLabel()
                                     ->content(fn ($record) => $record ? number_format($record->items()->sum('weight')) . ' Kg' : '-')
-                                    ->columnSpan(3),
+                                    ->columnSpan(['default' => 1, 'lg' => 3]),
                                 Forms\Components\TextInput::make('delivery_note')
                                     ->label('')
                                     ->hiddenLabel()
                                     ->placeholder(__('Note'))
                                     ->maxLength(255)
-                                    ->columnSpan(5),
+                                    ->columnSpan(['default' => 1, 'lg' => 5]),
                             ]),
                     ]),
             ]);

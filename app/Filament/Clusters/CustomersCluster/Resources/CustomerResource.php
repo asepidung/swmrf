@@ -53,32 +53,48 @@ class CustomerResource extends Resource
                 //
                 // Sekarang satu kartu dengan kisi 12 kolom: lebar ditentukan
                 // per isian, dan tiap baris genap dua belas -- MULAI breakpoint
-                // md. Keputusan Owner, 7 September 2026: halaman Create belum
+                // `lg`. Keputusan Owner, 7 September 2026: halaman Create belum
                 // nyaman di HP. Pecahan 2/3/4 dari 12 kolom hanya masuk akal di
-                // layar lebar; di HP setiap isian sengaja dibuat SATU kolom
-                // penuh (`columnSpan(['default' => 1, 'md' => ...])`) supaya
-                // tidak ada input yang lebih sempit daripada jarinya sendiri.
+                // layar lebar; di HP dan TABLET setiap isian sengaja dibuat SATU
+                // kolom penuh (`columnSpan(['default' => 1, 'lg' => ...])`)
+                // supaya tidak ada input yang lebih sempit daripada jarinya
+                // sendiri.
                 //
-                // JEBAKANNYA: Filament menerjemahkan `Section::columns(12)`
-                // (angka polos) menjadi grid 1 kolom di breakpoint default dan
-                // 12 kolom mulai `lg` -- BUKAN 12 kolom di semua breakpoint.
-                // `columnSpan(['default' => 12, ...])` (versi awal perbaikan
-                // ini) minta setiap isian membentang 12 kolom padahal
-                // wadahnya di layar sempit cuma 1 -- grid-nya terpaksa
-                // membuat 11 kolom TERSIRAT tambahan untuk memuaskan
-                // permintaan itu, dan lebar 1fr-nya nyaris nol karena tidak
-                // ada yang benar-benar mengisinya. Akibatnya SEMUA isian
-                // (termasuk alamat yang cuma minta `columnSpanFull()`) ikut
-                // gepeng, walau alamat sendiri tidak salah. Nilai `default`
-                // yang benar mengikuti jumlah kolom WADAHNYA di breakpoint
-                // itu (1), bukan jumlah kolom di breakpoint `md`/`lg` (12).
+                // DUA JEBAKAN, bukan satu -- ditemukan lewat dua ronde koreksi:
                 //
-                //   md ke atas:
+                // 1. `Section::columns(12)` (angka polos) diterjemahkan
+                //    Filament sebagai grid 1 kolom di breakpoint `default` dan
+                //    12 kolom mulai `lg` (`Concerns\HasColumns::columns()` di
+                //    vendor cuma mengisi kunci `lg` untuk angka polos) --
+                //    BUKAN 12 kolom di semua breakpoint. `columnSpan(['default'
+                //    => 12, ...])` (ronde pertama) minta setiap isian
+                //    membentang 12 kolom padahal wadahnya di layar sempit cuma
+                //    1 -- grid-nya terpaksa membuat 11 kolom TERSIRAT, dan
+                //    lebar 1fr-nya nyaris nol. Nilai `default` yang benar
+                //    mengikuti jumlah kolom WADAHNYA di breakpoint itu (1).
+                // 2. `columnSpan()` (angka polos ATAU array) mengisi kunci
+                //    breakpoint yang BEDA dari `columns()`: bawaan
+                //    `Concerns\CanSpanColumns::columnSpan()` mengisi kunci
+                //    `default`, bukan `lg`. Ronde kedua (perbaikan sebelum ini)
+                //    mengira memberi kunci `md` sudah cukup -- tapi wadahnya
+                //    baru berganti kolom di `lg` (1024px), bukan `md` (768px).
+                //    Antara md dan lg isian tetap membentang seolah wadahnya
+                //    sudah 12 kolom padahal masih 1 -- bug yang sama, cuma
+                //    berpindah ke lebar TABLET. Kunci breakpoint anak WAJIB
+                //    sama dengan kunci yang benar-benar dipakai wadahnya.
+                //
+                // Jebakan #2 menular ke MaterialRequisitionResource,
+                // ProductRequisitionResource, PurchaseProductResource,
+                // PurchaseMaterialResource, dan CarcassResource -- lihat #354
+                // untuk sapuan penuhnya dan test yang sekarang menjaganya.
+                //
+                //   lg ke atas:
                 //   nama 4 | grup 4   | segmen 4
                 //   TOP 2  | diskon 2 | I-Ex 2 | PIC 3 | telepon 3
                 //   alamat 12
                 //
-                //   di bawah md: semuanya satu kolom penuh, urut ke bawah.
+                //   di bawah lg (HP maupun tablet): semuanya satu kolom
+                //   penuh, urut ke bawah.
                 //
                 // Toggle Aktif sengaja ditaruh PALING BAWAH, bukan disisipkan
                 // di baris pertama. Ia hanya muncul di halaman Edit, dan isian
@@ -98,7 +114,7 @@ class CustomerResource extends Resource
                             ->maxLength(255)
                             ->autofocus()
                             ->extraInputAttributes(['style' => 'text-transform:uppercase'])
-                            ->columnSpan(['default' => 1, 'md' => 4]),
+                            ->columnSpan(['default' => 1, 'lg' => 4]),
 
                         // Tanpa helperText: keterangannya sudah ada di
                         // deskripsi kartu, satu baris untuk seluruh form,
@@ -122,7 +138,7 @@ class CustomerResource extends Resource
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase'])
                                     ->columnSpanFull(),
                             ])
-                            ->columnSpan(['default' => 1, 'md' => 4]),
+                            ->columnSpan(['default' => 1, 'lg' => 4]),
 
                         Forms\Components\Select::make('customer_segment_id')
                             ->relationship('segment', 'name')
@@ -136,7 +152,7 @@ class CustomerResource extends Resource
                                     ->required()
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                             ])
-                            ->columnSpan(['default' => 1, 'md' => 4]),
+                            ->columnSpan(['default' => 1, 'lg' => 4]),
 
                         // Tanpa ->numeric(), yang akan membuat input menjadi
                         // type=number lengkap dengan tombol panah. TOP
@@ -157,7 +173,7 @@ class CustomerResource extends Resource
                             ->required()
                             ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right'])
                             ->rules(['integer', 'min:0'])
-                            ->columnSpan(['default' => 1, 'md' => 2]),
+                            ->columnSpan(['default' => 1, 'lg' => 2]),
 
                         // Mengisi NILAI AWAL kolom diskon di Sales Order,
                         // sejajar dengan cara price list mengisi harga. Yang
@@ -192,7 +208,7 @@ class CustomerResource extends Resource
                                 'min' => __('Discount cannot be negative.'),
                                 'max' => __('Discount cannot be more than 100%.'),
                             ])
-                            ->columnSpan(['default' => 1, 'md' => 2]),
+                            ->columnSpan(['default' => 1, 'lg' => 2]),
 
                         Forms\Components\Select::make('invoice_exchange')
                             ->label(fn() => __('Invoice Exchange'))
@@ -202,19 +218,19 @@ class CustomerResource extends Resource
                             ])
                             ->required()
                             ->native(false)
-                            ->columnSpan(['default' => 1, 'md' => 2]),
+                            ->columnSpan(['default' => 1, 'lg' => 2]),
 
                         Forms\Components\TextInput::make('pic')
                             ->label(fn() => __('PIC / Person In Charge'))
                             ->maxLength(255)
                             ->extraInputAttributes(['style' => 'text-transform:uppercase'])
-                            ->columnSpan(['default' => 1, 'md' => 3]),
+                            ->columnSpan(['default' => 1, 'lg' => 3]),
 
                         Forms\Components\TextInput::make('phone')
                             ->label(fn() => __('Phone Number'))
                             ->tel()
                             ->maxLength(255)
-                            ->columnSpan(['default' => 1, 'md' => 3]),
+                            ->columnSpan(['default' => 1, 'lg' => 3]),
 
                         Forms\Components\Textarea::make('address')
                             ->label(fn() => __('Full Address'))
@@ -227,7 +243,7 @@ class CustomerResource extends Resource
                             ->label(fn() => __('Active'))
                             ->default(true)
                             ->visibleOn('edit')
-                            ->columnSpan(['default' => 1, 'md' => 2]),
+                            ->columnSpan(['default' => 1, 'lg' => 2]),
                     ]),
 
                 Forms\Components\Section::make(__('Required Documents'))
