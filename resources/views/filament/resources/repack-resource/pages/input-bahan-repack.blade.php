@@ -140,6 +140,10 @@
         }
     </style>
 
+    @include('filament.admin.partials.mobile-not-supported-warning', [
+        'backUrl' => \App\Filament\Admin\Resources\RepackResource::getUrl('index'),
+    ])
+
     <div class="repack-wrapper flex flex-col gap-4">
         <!-- Header Banner Sleek & Simple -->
         <div class="repack-header">

@@ -24,40 +24,32 @@ class LihatLaporanQc
     /**
      * Tombolnya, siap ditaruh di `->actions([...])` sebuah tabel.
      *
-     * Warnanya menggambarkan KEADAAN: abu kalau laporannya sudah diisi,
-     * kuning kalau masih menunggu. Yang membuka daftar dokumen karena itu
-     * bisa melihat mana yang belum diperiksa tanpa membuka satu per satu.
+     * Keputusan Owner, 7 September 2026: modul pendamping (Carcass, Boning,
+     * dst) HANYA untuk MELIHAT laporan yang sudah jadi -- pengisian/
+     * penyuntingannya harus lewat menu QC > QC Report, bukan dari sini.
+     * Konsekuensinya dua: tombol ini SELALU membuka halaman VIEW (tidak
+     * pernah lagi bercabang ke `edit`), dan tombol ini sama sekali TIDAK
+     * TAMPIL selama laporannya belum diisi (`submitted_at` masih kosong) --
+     * bukan cuma disembunyikan warnanya jadi kuning seperti sebelumnya.
+     * Draft yang baru lahir otomatis (lihat `QcCompanionObserver`) memang
+     * selalu `submitted_at = null`, jadi syarat ini otomatis menahan tombol
+     * sampai QC benar-benar menyelesaikannya lewat menunya sendiri.
      */
     public static function make(): Action
     {
         return Action::make('qc_report')
             ->label(__('QC Report'))
             ->icon('heroicon-o-clipboard-document-check')
-            ->color(fn (Model $record): string => static::laporan($record)?->sudahDiisi()
-                ? 'gray'
-                : 'warning')
-            ->tooltip(fn (Model $record): string => static::laporan($record)?->sudahDiisi()
-                ? __('QC report has been submitted')
-                : __('QC report is still waiting'))
-            ->url(function (Model $record): ?string {
-                $laporan = static::laporan($record);
-
-                if (! $laporan) {
-                    return null;
-                }
-
-                // Yang sudah diisi dibuka untuk DIBACA; yang masih menunggu
-                // dibuka untuk DIKERJAKAN. Satu tombol, dua maksud, dan
-                // maksudnya ditentukan keadaan laporannya -- bukan oleh yang
-                // mengklik.
-                return $laporan->sudahDiisi()
-                    ? QcReportResource::getUrl('view', ['record' => $laporan])
-                    : QcReportResource::getUrl('edit', ['record' => $laporan]);
-            })
-            // Tidak ditampilkan kepada yang tidak boleh membacanya, dan tidak
-            // ditampilkan untuk dokumen lama yang memang tidak punya tugas QC.
+            ->color('gray')
+            ->tooltip(__('QC report has been submitted'))
+            ->url(fn (Model $record): ?string => ($laporan = static::laporan($record))
+                ? QcReportResource::getUrl('view', ['record' => $laporan])
+                : null)
+            // Tidak ditampilkan kepada yang tidak boleh membacanya, tidak
+            // ditampilkan untuk dokumen lama yang tidak punya tugas QC, dan
+            // TIDAK ditampilkan selama laporannya masih draft kosong.
             ->visible(fn (Model $record): bool => (auth()->user()?->hasPermission('view_qc_reports') ?? false)
-                && static::laporan($record) !== null);
+                && (static::laporan($record)?->sudahDiisi() ?? false));
     }
 
     /** Laporan QC terbaru milik sebuah dokumen. */

@@ -5603,3 +5603,140 @@ array eksplisit berarti kuncinya PERSIS kunci yang ditulis di array itu.
 Dua fungsi yang namanya mirip (`columns`/`columnSpan`) dan menerima
 argumen yang sama bentuknya (angka polos) tidak berarti keduanya
 menerjemahkannya dengan cara yang sama.
+
+---
+
+## #356 -- Tujuh temuan dari penyusuran HP, termasuk perombakan QC Report
+
+Owner menyusur lagi, 7 September 2026: "itu dulu deh pelan-pelan aja".
+Dikerjakan bertahap, item kecil dulu.
+
+### 1. Peringatan "tidak cocok di HP" kurang terlihat sebagai warning
+
+Versi pertama (#352) cuma kartu putih polos. Diperbaiki: ikon segitiga
+merah (`<x-heroicon-o-exclamation-triangle>`, pola yang sudah dipakai
+`repack-resource/partials/balance.blade.php`), garis atas merah
+(`border-top: 6px solid rgb(var(--danger-600))` -- diverifikasi variabel
+ini memang di-set Filament secara global, bukan tebakan), judul huruf
+besar warna merah, tombol "Continue Anyway" jadi warna `danger` (dulu
+`warning`).
+
+**Dijadikan partial bersama** (`resources/views/filament/admin/partials/mobile-not-supported-warning.blade.php`,
+butuh `$backUrl`) karena dipakai lebih dari satu halaman (poin 4 dan 6 di
+bawah) -- revisi tampilan sekarang pun jadi cukup satu tempat. GR
+Scan/Labeling (#352) diganti memakai partial ini juga, bukan salinan
+lokal.
+
+### 2. Halaman 403 Forbidden bikin buntu di PWA HP
+
+Sebelum ini project TIDAK punya `resources/views/errors/403.blade.php`
+sama sekali -- 100% jatuh ke fallback Laravel (`errors::minimal`), cuma
+menampilkan teks "403 FORBIDDEN" tanpa satu pun link. Filament sendiri
+tidak menangani ini secara khusus: `CanAuthorizeAccess`/
+`CanAuthorizeResourceAccess` di vendor cuma `abort_unless(canAccess(),
+403)`, dan Laravel-lah yang merender halaman errornya.
+
+Dua jalur berbeda, dan cuma satu yang benar-benar bikin buntu:
+- **Refresh/GET biasa** -- lewat hook Livewire `mount()`, Laravel
+  merender HTML PENUH menggantikan seluruh halaman (termasuk sidebar/
+  topbar PWA). Ini yang dilaporkan Owner.
+- **Interaksi Livewire tanpa refresh** -- lewat hook `hydrate()`,
+  request-nya `Accept: application/json`, Laravel membalas JSON, dan
+  Livewire menampilkannya lewat modal `<dialog>` bawaan yang masih bisa
+  ditutup (ESC/klik luar) -- sidebar di baliknya tetap utuh. Jalur ini
+  TIDAK dibuntukan.
+
+**Perbaikan:** `resources/views/errors/403.blade.php` kustom (halaman
+mandiri, tidak bergantung Filament/Livewire supaya tetap tampil sekalipun
+ada yang rusak) dengan tombol "Back to Dashboard" ke
+`\App\Filament\Admin\Pages\Dashboard::getUrl()`. Ini SATU-SATUNYA cara
+resmi meng-custom 403 di seluruh app -- `Handler::getHttpExceptionView()`
+mencari `errors::403` sebelum jatuh ke bawaan framework, tidak perlu
+registrasi apa pun di `bootstrap/app.php`.
+
+**Yang TIDAK diperbaiki, dicatat supaya tidak dianggap kelupaan:** jalur
+`hydrate()` (modal JSON Livewire) tetap seperti semula -- itu bukan jalan
+buntu, cuma kurang cantik, dan Owner cuma melaporkan yang benar-benar
+mengunci.
+
+Diverifikasi end-to-end: user tanpa izin (`view_warehouses` dicabut),
+buka `/admin/warehouses`, tab benar-benar berjudul "Access Denied",
+tombol "Back to Dashboard" mengarah ke `/admin`.
+
+### 3. Autofocus Create Boning pindah dari tanggal ke note
+
+`boning_date` (sudah terisi default hari ini) kehilangan `->autofocus()`,
+`note` yang mendapatkannya -- alasan sama persis dengan pola di
+`CustomerResource` (field yang sudah terisi default tidak perlu
+diperebutkan fokusnya).
+
+### 4 &amp; 6. Peringatan HP di Boning Label dan Repack Scan/Label Hasil
+
+Pola identik dengan GR Scan/Labeling (#352): halaman kerja layar-lebar
+(form + tabel berdampingan, sidebar/header disembunyikan sendiri lewat
+`<style>`), sengaja TIDAK dibuat responsif. Ditambahkan
+`@include('filament.admin.partials.mobile-not-supported-warning', ['backUrl' => ...])`
+ke:
+- `labeling-boning.blade.php` (`backUrl` -> `BoningResource::getUrl('index')`)
+- `input-bahan-repack.blade.php` ("Repack Scan", `backUrl` -> `RepackResource::getUrl('index')`)
+- `input-hasil-repack.blade.php` ("Repack Label Hasil", sama)
+
+Grid dua kolom/tiga kolom masing-masing (termasuk `.repack-grid` dengan
+`@media (max-width: 1024px)` miliknya sendiri) SAMA SEKALI tidak
+disentuh. Test yang sudah ada (`RepackTest`, `RepackBalanceWarningTest`)
+tetap hijau -- yang terakhir secara khusus memeriksa string
+`partials.balance` masih ada di kedua Blade, dan partial itu tidak
+tersentuh oleh penyisipan partial baru ini.
+
+### 5 &amp; 7. QC Report: companion read-only, index dipangkas satu tombol
+
+Bagian paling besar hari ini, dan dua-duanya saling terkait.
+
+**Bagian 1 -- `LihatLaporanQc` (tombol di modul pendamping: Carcass,
+Boning, GR Beef, Tally, Repack, Sales Return, Stock Take).** Sebelumnya
+tombol ini tampil begitu baris `qc_reports` ADA -- termasuk draft kosong
+yang baru lahir otomatis (`QcCompanionObserver` cuma mengisi
+`reportable_type`/`reportable_id`, `submitted_at` selalu `null` saat
+lahir) -- dan mengarah ke `edit` kalau belum diisi. Itu pintu pengisian
+dari LUAR menu QC, dan Owner memintanya ditutup.
+
+Diubah: `visible()` sekarang mensyaratkan `sudahDiisi()` (bukan cuma "baris
+ada"), dan `url()` SELALU ke `QcReportResource::getUrl('view', ...)` --
+tidak pernah lagi bercabang ke `edit`. Karena `visible()` sudah menjamin
+`sudahDiisi()`, warna/tooltip "masih menunggu" jadi kondisi yang tidak
+pernah tercapai -- disederhanakan jadi satu warna (`gray`) saja, bukan
+dibiarkan sebagai cabang mati.
+
+**Bagian 2 -- `QcReportResource` (menu QC > QC Report).** Tabelnya
+sebelumnya tiga tombol per baris (`ViewAction`, `EditAction`, `print`
+custom) dan TIDAK punya `recordUrl()` -- satu-satunya Resource pendamping
+QC yang belum pakai pola itu, padahal ketujuh Resource pendampingnya
+sendiri semua sudah. Ditambahkan `recordUrl()` ke `view`, dan ketiga
+tombol dipangkas jadi SATU (`isi_laporan`), mengikuti pola yang sudah ada
+di `PriceListResource::manage_pricelist` (label/ikon/warna berubah
+menurut kondisi record): `sudahDiisi() ? 'Edit' : 'Fill Report'`, `url()`
+selalu ke `edit` (baris `qc_reports` selalu sudah ada sejak dokumen
+pasangannya dibuat, tidak pernah butuh cabang "buat baru" -- `canCreate()`
+tetap `false`, tidak disentuh, test `test_there_is_no_create_page_any_more`
+tetap hijau).
+
+Tombol Print yang sebelumnya cuma ada di tabel index dipindah ke header
+`ViewQcReport` (gated `sudahDiisi()`, sama seperti sebelumnya) --
+konsekuensi wajar dari "klik baris = buka View, Print-nya di dalam sana"
+sesuai instruksi Owner.
+
+**Kunci bahasa baru:** `"Fill Report"` -> `"Isi Laporan"` (dan
+`"Access Denied"`, `"You don't have permission..."`, `"Back to
+Dashboard"` untuk item 2) -- didaftarkan di kedua `lang/*.json`.
+
+**Test baru:** `tests/Feature/QcReportCompanionVisibilityTest.php`
+(mengunci: tombol tersembunyi saat draft kosong, tampil dan selalu ke
+`view` saat sudah diisi, tetap tersembunyi tanpa izin) -- sebelumnya
+`LihatLaporanQc` dan struktur tabel `QcReportResource` sama sekali tidak
+punya penjaga test.
+
+Diverifikasi end-to-end di browser dengan Carcass + QcReport sungguhan:
+tabel index QC Report cuma satu tombol ("Fill Report" lalu "Edit" setelah
+disubmit), baris bisa diklik ke View, View menampilkan Print+Edit setelah
+disubmit (cuma Edit sebelumnya), dan tombol companion di tabel Carcass
+mengarah persis ke `/admin/qc-reports/{id}` (View, bukan `/edit`).

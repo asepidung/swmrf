@@ -74,7 +74,15 @@
             width: 16px !important;
             height: 16px !important;
         }
+
+        [x-cloak] {
+            display: none !important;
+        }
     </style>
+
+    @include('filament.admin.partials.mobile-not-supported-warning', [
+        'backUrl' => \App\Filament\Admin\Resources\BoningResource::getUrl('index'),
+    ])
 
     <div class="mb-6 flex items-center justify-between rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
         <x-filament::button
