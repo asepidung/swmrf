@@ -52,11 +52,19 @@ class CustomerResource extends Resource
                 // tepinya sendiri.
                 //
                 // Sekarang satu kartu dengan kisi 12 kolom: lebar ditentukan
-                // per isian, dan tiap baris genap dua belas.
+                // per isian, dan tiap baris genap dua belas -- MULAI breakpoint
+                // md. Keputusan Owner, 7 September 2026: halaman Create belum
+                // nyaman di HP. Pecahan 2/3/4 dari 12 kolom hanya masuk akal di
+                // layar lebar; di HP setiap isian sengaja dibuat SATU kolom
+                // penuh (`columnSpan(['default' => 12, 'md' => ...])`) supaya
+                // tidak ada input yang lebih sempit daripada jarinya sendiri.
                 //
+                //   md ke atas:
                 //   nama 4 | grup 4   | segmen 4
                 //   TOP 2  | diskon 2 | I-Ex 2 | PIC 3 | telepon 3
                 //   alamat 12
+                //
+                //   di bawah md: semuanya satu kolom penuh, urut ke bawah.
                 //
                 // Toggle Aktif sengaja ditaruh PALING BAWAH, bukan disisipkan
                 // di baris pertama. Ia hanya muncul di halaman Edit, dan isian
@@ -76,7 +84,7 @@ class CustomerResource extends Resource
                             ->maxLength(255)
                             ->autofocus()
                             ->extraInputAttributes(['style' => 'text-transform:uppercase'])
-                            ->columnSpan(4),
+                            ->columnSpan(['default' => 12, 'md' => 4]),
 
                         // Tanpa helperText: keterangannya sudah ada di
                         // deskripsi kartu, satu baris untuk seluruh form,
@@ -93,12 +101,14 @@ class CustomerResource extends Resource
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                                 Forms\Components\TextInput::make('head_office_pic')
                                     ->label(fn() => __('Head Office PIC'))
-                                    ->maxLength(255),
+                                    ->maxLength(255)
+                                    ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                                 Forms\Components\Textarea::make('head_office_address')
                                     ->label(fn() => __('Head Office Address'))
+                                    ->extraInputAttributes(['style' => 'text-transform:uppercase'])
                                     ->columnSpanFull(),
                             ])
-                            ->columnSpan(4),
+                            ->columnSpan(['default' => 12, 'md' => 4]),
 
                         Forms\Components\Select::make('customer_segment_id')
                             ->relationship('segment', 'name')
@@ -112,7 +122,7 @@ class CustomerResource extends Resource
                                     ->required()
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                             ])
-                            ->columnSpan(4),
+                            ->columnSpan(['default' => 12, 'md' => 4]),
 
                         // Tanpa ->numeric(), yang akan membuat input menjadi
                         // type=number lengkap dengan tombol panah. TOP
@@ -125,7 +135,7 @@ class CustomerResource extends Resource
                             ->maxLength(3)
                             ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right'])
                             ->rules(['integer', 'min:0'])
-                            ->columnSpan(2),
+                            ->columnSpan(['default' => 12, 'md' => 2]),
 
                         // Mengisi NILAI AWAL kolom diskon di Sales Order,
                         // sejajar dengan cara price list mengisi harga. Yang
@@ -155,7 +165,7 @@ class CustomerResource extends Resource
                                 'min' => __('Discount cannot be negative.'),
                                 'max' => __('Discount cannot be more than 100%.'),
                             ])
-                            ->columnSpan(2),
+                            ->columnSpan(['default' => 12, 'md' => 2]),
 
                         Forms\Components\Select::make('invoice_exchange')
                             ->label(fn() => __('Invoice Exchange'))
@@ -165,30 +175,32 @@ class CustomerResource extends Resource
                             ])
                             ->required()
                             ->native(false)
-                            ->columnSpan(2),
+                            ->columnSpan(['default' => 12, 'md' => 2]),
 
                         Forms\Components\TextInput::make('pic')
                             ->label(fn() => __('PIC / Person In Charge'))
                             ->maxLength(255)
-                            ->columnSpan(3),
+                            ->extraInputAttributes(['style' => 'text-transform:uppercase'])
+                            ->columnSpan(['default' => 12, 'md' => 3]),
 
                         Forms\Components\TextInput::make('phone')
                             ->label(fn() => __('Phone Number'))
                             ->tel()
                             ->maxLength(255)
-                            ->columnSpan(3),
+                            ->columnSpan(['default' => 12, 'md' => 3]),
 
                         Forms\Components\Textarea::make('address')
                             ->label(fn() => __('Full Address'))
                             ->required()
                             ->rows(2)
+                            ->extraInputAttributes(['style' => 'text-transform:uppercase'])
                             ->columnSpanFull(),
 
                         Forms\Components\Toggle::make('is_active')
                             ->label(fn() => __('Active'))
                             ->default(true)
                             ->visibleOn('edit')
-                            ->columnSpan(2),
+                            ->columnSpan(['default' => 12, 'md' => 2]),
                     ]),
 
                 Forms\Components\Section::make(__('Required Documents'))
@@ -206,7 +218,7 @@ class CustomerResource extends Resource
                                 'PHD' => 'PHD',
                                 'JOSS' => 'JOSS',
                             ])
-                            ->columns(4)
+                            ->columns(['default' => 1, 'sm' => 2, 'lg' => 4])
                             ->gridDirection('row'),
                     ]),
             ]);

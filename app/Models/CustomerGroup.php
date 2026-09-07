@@ -21,6 +21,17 @@ class CustomerGroup extends Model
         $this->attributes['name'] = strtoupper(trim($value));
     }
 
+    /** Keputusan Owner, 7 September 2026: alamat dan PIC kantor pusat ikut wajib huruf besar. */
+    public function setHeadOfficeAddressAttribute($value)
+    {
+        $this->attributes['head_office_address'] = $value === null ? null : strtoupper(trim($value));
+    }
+
+    public function setHeadOfficePicAttribute($value)
+    {
+        $this->attributes['head_office_pic'] = $value === null ? null : strtoupper(trim($value));
+    }
+
     public function customers()
     {
         return $this->hasMany(Customer::class);

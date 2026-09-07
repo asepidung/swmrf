@@ -10,4 +10,9 @@ class MaterialUnit extends Model
     use HasFactory;
 
     protected $fillable = ['name'];
+
+    public function setNameAttribute($value)
+    {
+        $this->attributes['name'] = strtoupper(trim($value));
+    }
 }

@@ -19,6 +19,6 @@ class ProductsCluster extends Cluster
 
     public static function getNavigationLabel(): string
     {
-        return __('Cattle Products');
+        return __('Beef Product');
     }
 }

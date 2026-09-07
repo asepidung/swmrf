@@ -63,7 +63,8 @@ class MaterialResource extends Resource
                             ->createOptionForm([
                                 Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
                                     ->required()
-                                    ->maxLength(255),
+                                    ->maxLength(255)
+                                    ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                             ]),
                         Forms\Components\Select::make('material_category_id')
                             ->label(fn() => __('Category'))

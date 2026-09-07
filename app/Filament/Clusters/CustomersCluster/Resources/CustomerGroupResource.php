@@ -52,10 +52,12 @@ class CustomerGroupResource extends Resource
                         
                         Forms\Components\TextInput::make('head_office_pic')
                             ->label(fn() => __('Head Office PIC'))
-                            ->maxLength(255),
-                            
+                            ->maxLength(255)
+                            ->extraInputAttributes(['style' => 'text-transform:uppercase']),
+
                         Forms\Components\Textarea::make('head_office_address')
                             ->label(fn() => __('Head Office Address'))
+                            ->extraInputAttributes(['style' => 'text-transform:uppercase'])
                             ->columnSpanFull(),
                     ])->columns(2),
             ]);

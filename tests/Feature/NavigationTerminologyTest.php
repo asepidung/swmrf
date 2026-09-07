@@ -8,9 +8,14 @@ use Tests\TestCase;
  * Menjaga konsistensi istilah dan kelengkapan terjemahan pada navigasi.
  *
  * Produk di sistem ini adalah hasil pemotongan sapi: daging, tulang, offal,
- * dan kulit. "Beef" terlalu sempit karena tulang dan kulit bukan daging,
- * sementara "Products" terlalu luas dan tidak membedakannya dari Material
- * (bahan penolong). Istilah yang dipakai: "Cattle Products" / "Produk Sapi".
+ * dan kulit -- itu alasan menu ini dulu sengaja disebut "Cattle Products",
+ * bukan "Beef" (terlalu sempit, tulang dan kulit bukan daging) atau
+ * "Products" (terlalu luas, tidak membedakannya dari Material).
+ *
+ * Keputusan Owner, 7 September 2026: tetap diganti ke "Beef Product" untuk
+ * kesederhanaan istilah menu, walau cakupan datanya tidak berubah (tulang,
+ * offal, kulit tetap tercatat di modul yang sama). Istilah Indonesia-nya
+ * tidak ikut berubah: tetap "Produk Sapi".
  */
 class NavigationTerminologyTest extends TestCase
 {
@@ -42,7 +47,7 @@ class NavigationTerminologyTest extends TestCase
         $id = $this->translations('id');
 
         $keys = [
-            'Cattle Products',
+            'Beef Product',
             'Beef',
             'Beef Categories',
             'Beef Category',
@@ -65,7 +70,7 @@ class NavigationTerminologyTest extends TestCase
     {
         $id = $this->translations('id');
 
-        $this->assertSame('Produk Sapi', $id['Cattle Products']);
+        $this->assertSame('Produk Sapi', $id['Beef Product']);
         $this->assertSame('Produk Sapi', $id['Beef']);
         $this->assertSame('Kategori Produk Sapi', $id['Beef Categories']);
         $this->assertSame('Permintaan Produk Sapi', $id['Beef Requests']);
@@ -223,10 +228,10 @@ class NavigationTerminologyTest extends TestCase
     }
 
     /** @test */
-    public function it_names_the_master_data_cluster_cattle_products()
+    public function it_names_the_master_data_cluster_beef_product()
     {
         $this->assertSame(
-            'Cattle Products',
+            'Beef Product',
             \App\Filament\Clusters\ProductsCluster::getNavigationLabel()
         );
     }
