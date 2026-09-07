@@ -80,40 +80,9 @@
         }
     </style>
 
-    {{--
-        Keputusan Owner, 7 September 2026: halaman ini MEMANG harus
-        dioperasikan dari layar lebar (scan barcode + ringkasan PO
-        berdampingan). Bukan dibuat responsif -- ditambah peringatan supaya
-        yang membuka dari HP sadar sebelum lanjut, dengan pilihan tetap
-        meneruskan kalau memang terpaksa. Grid dua kolom di bawah TIDAK
-        disentuh sama sekali supaya tata letak desktop tidak ikut berubah.
-    --}}
-    <div
-        x-data="{ show: window.innerWidth < 768 }"
-        x-show="show"
-        x-cloak
-        style="position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; padding: 1.5rem;"
-    >
-        <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10" style="max-width: 24rem; width: 100%; text-align: center;">
-            <div style="font-size: 1.125rem; font-weight: 700; margin-bottom: 0.75rem;">
-                {{ __('This page is not suitable for phones') }}
-            </div>
-            <p style="margin-bottom: 1.5rem; color: #6b7280;">
-                {{ __('It needs a wide screen to work properly. Please continue from a laptop or computer.') }}
-            </p>
-            <div style="display: flex; gap: 0.75rem; justify-content: center;">
-                <x-filament::button
-                    href="{{ \App\Filament\Admin\Resources\GoodsReceiptProductResource::getUrl('index') }}"
-                    tag="a"
-                    color="gray">
-                    {{ __('BACK') }}
-                </x-filament::button>
-                <x-filament::button x-on:click="show = false" color="warning">
-                    {{ __('Continue Anyway') }}
-                </x-filament::button>
-            </div>
-        </div>
-    </div>
+    @include('filament.admin.partials.mobile-not-supported-warning', [
+        'backUrl' => \App\Filament\Admin\Resources\GoodsReceiptProductResource::getUrl('index'),
+    ])
 
     <div class="mb-6 flex items-center justify-between rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
         <x-filament::button

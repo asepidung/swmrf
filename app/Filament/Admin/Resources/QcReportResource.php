@@ -212,28 +212,30 @@ class QcReportResource extends Resource
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()?->hasPermission('view_deleted_qc_reports') ?? false),
             ])
+            /*
+             * Klik baris membuka View -- Print-nya ada di dalam sana.
+             *
+             * Keputusan Owner, 7 September 2026: tabel index kebanyakan
+             * tombol. Dipangkas jadi satu ("Isi Laporan"/"Edit" di bawah),
+             * mengikuti pola yang sudah dipakai `PriceListResource` untuk
+             * kasus yang sama (satu tombol yang label/warnanya berubah
+             * menurut keadaan record).
+             */
+            ->recordUrl(fn (QcReport $record): string => static::getUrl('view', ['record' => $record]))
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-
                 /*
-                 * Cetak per laporan.
-                 *
-                 * Permintaan Owner, 7 September 2026. Yang diminta auditor
-                 * biasanya justru berkas, bukan layar.
-                 *
-                 * Hanya untuk laporan yang SUDAH diisi: mencetak tugas yang
-                 * belum dikerjakan menghasilkan kertas berisi tanda strip,
-                 * dan kertas itu terlihat seperti pemeriksaan yang hasilnya
-                 * kosong -- bukan pemeriksaan yang belum dilakukan.
+                 * Satu tombol, dua keadaan: label, ikon, dan warnanya
+                 * mengikuti `sudahDiisi()`. Selalu mengarah ke `edit` --
+                 * baris `qc_reports`-nya SELALU sudah ada (lahir otomatis
+                 * lewat QcCompanionObserver saat dokumen pasangannya
+                 * dibuat), jadi tidak pernah butuh cabang "belum ada,
+                 * buat baru".
                  */
-                Tables\Actions\Action::make('print')
-                    ->label(__('Print'))
-                    ->icon('heroicon-o-printer')
-                    ->color('gray')
-                    ->url(fn (QcReport $record): string => route('qc-reports.print', $record))
-                    ->openUrlInNewTab()
-                    ->visible(fn (QcReport $record): bool => $record->sudahDiisi()),
+                Tables\Actions\Action::make('isi_laporan')
+                    ->label(fn (QcReport $record): string => $record->sudahDiisi() ? __('Edit') : __('Fill Report'))
+                    ->icon(fn (QcReport $record): string => $record->sudahDiisi() ? 'heroicon-o-pencil-square' : 'heroicon-o-document-plus')
+                    ->color(fn (QcReport $record): string => $record->sudahDiisi() ? 'gray' : 'warning')
+                    ->url(fn (QcReport $record): string => static::getUrl('edit', ['record' => $record])),
             ])
             /*
              * Yang belum diisi naik ke atas.

@@ -70,11 +70,15 @@ class BoningResource extends Resource
                         Forms\Components\DatePicker::make('boning_date')
                             ->label(__('Boning Date'))
                             ->required()
-                            ->default(now())
-                            ->autofocus(),
+                            ->default(now()),
 
+                        // Keputusan Owner, 7 September 2026: autofocus di
+                        // tanggal mengganggu -- tanggal sudah terisi default
+                        // hari ini, sedangkan Note yang paling sering diisi
+                        // manual duluan.
                         Forms\Components\Textarea::make('note')
                             ->label(__('Note'))
+                            ->autofocus()
                             ->columnSpanFull(),
 
                         Forms\Components\Hidden::make('status')
