@@ -214,7 +214,7 @@ class MaterialRequisitionResource extends Resource
                                     // Field itu jadi <input type="number">, yang menolak pemisah
                                     // ribuan sehingga tampil kosong.
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'qty-input text-right', 'inputmode' => 'numeric', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll(".qty-input")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
-                                    ->columnSpan(['default' => 6, 'md' => 2]),
+                                    ->columnSpan(['default' => 12, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('price')
                                     ->hiddenLabel()
@@ -222,7 +222,7 @@ class MaterialRequisitionResource extends Resource
                                     ->prefix('Rp')
                                     ->default(0)
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'price-input text-right', 'inputmode' => 'numeric', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll(".price-input")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
-                                    ->columnSpan(['default' => 6, 'md' => 2]),
+                                    ->columnSpan(['default' => 12, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('item_total')
                                     ->hiddenLabel()

@@ -142,6 +142,32 @@ class AdminPanelProvider extends PanelProvider
                             row-gap: 0.375rem !important;
                         }
                     }
+
+                    /*
+                     * Toast notifikasi (sukses/gagal) bawaan Filament muncul
+                     * di ATAS layar. Di HP itu menutupi topbar -- pengguna
+                     * harus menutupnya dulu sebelum bisa pindah menu.
+                     * Keputusan Owner, 7 September 2026: cukup pindah ke
+                     * bawah KHUSUS di HP, desktop dibiarkan seperti bawaan.
+                     *
+                     * Filament sendiri punya API resminya
+                     * (`Notifications::verticalAlignment()`), tapi itu
+                     * SATU nilai untuk semua ukuran layar -- tidak ada
+                     * versi "beda di HP, beda di desktop". Container
+                     * notifikasi (`.fi-no`) sudah `fixed inset-4` (menempel
+                     * ke seluruh sisi viewport); yang benar-benar membedakan
+                     * "dari atas" vs "dari bawah" cuma `flex-direction`
+                     * (`column-reverse` vs `column`) -- `justify-content`
+                     * sama-sama `flex-end` di kedua pengaturan Filament.
+                     * Jadi cukup dibalik SATU properti itu, KHUSUS di bawah
+                     * breakpoint `md`, tanpa menyentuh konfigurasi PHP-nya
+                     * sama sekali.
+                     */
+                    @media (max-width: 767px) {
+                        .fi-no {
+                            flex-direction: column !important;
+                        }
+                    }
                 </style>' . '
                 <script>
                     document.addEventListener("alpine:initialized", () => {

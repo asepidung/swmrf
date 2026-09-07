@@ -5309,3 +5309,128 @@ supaya tidak menawarkan pintu yang terkunci. Akun `coba` di hosting
 (programmer) punya. Notifikasinya sendiri tetap tampil untuk akun `coba`
 -- yang hilang cuma tombolnya, persis seperti yang dirancang. Kode ini
 benar, tidak diubah.
+
+---
+
+## #352 -- Toast notifikasi pindah ke bawah di HP; grid Carcass, Requisition, PO dibenahi; GR Scan/Labeling diberi peringatan HP
+
+Owner menyusur lebih jauh dengan tangkapan layar, 7 September 2026, plus satu
+temuan terpisah soal posisi toast.
+
+### Toast notifikasi: bawah di HP, tetap di atas di desktop
+
+Toast sukses/gagal bawaan Filament tampil di ATAS layar dan menutupi
+topbar di HP -- pengguna harus menutupnya dulu sebelum pindah menu.
+
+Filament punya API resmi untuk ini
+(`Filament\Notifications\Livewire\Notifications::verticalAlignment()`),
+tapi itu SATU nilai untuk SEMUA ukuran layar -- tidak ada versi "beda di HP,
+beda di desktop" secara bawaan. Container notifikasi (`.fi-no`) sudah
+`fixed inset-4` (menempel ke seluruh sisi viewport); yang benar-benar
+membedakan "dari atas" (`VerticalAlignment::Start`, default) vs "dari
+bawah" (`VerticalAlignment::End`) cuma properti `flex-direction`
+(`column-reverse` vs `column`) -- `justify-content` sama-sama `flex-end`
+di keduanya. Jadi cukup dibalik SATU properti itu lewat CSS, KHUSUS di
+bawah breakpoint `md` (`app/Providers/Filament/AdminPanelProvider.php`,
+renderHook `HEAD_START` yang sudah ada, menyusul CSS tab-form responsif):
+
+```css
+@media (max-width: 767px) {
+    .fi-no { flex-direction: column !important; }
+}
+```
+
+Diverifikasi langsung: elemen `.fi-no` sintetis di 375px menghasilkan
+`column`, di 1280px menghasilkan `column-reverse` -- tidak ada
+konfigurasi PHP yang disentuh sama sekali.
+
+### Create Carcass: grid `columns(7)` polos, sama seperti bug CustomerResource #350
+
+Persis pola yang sama dengan bug Full Address di #350: `Repeater::make('items')`
+pada Section "Carcass Details" memakai `->columns(7)` -- angka polos, bukan
+breakpoint array -- sehingga tetap 7 kolom di HP juga. Field `eartag`,
+`carcass_1`, `carcass_2`, `hides`, `tail` (masing-masing default span 1)
+jadi cuma dapat ~50px di layar 375px. Filament tetap merender label di
+atas tiap input seperti biasa (BUKAN elemen absolute-position seperti
+dugaan awal), tapi teksnya wrap/bertabrakan karena kolomnya jauh lebih
+sempit daripada teksnya sendiri -- itulah yang terlihat seperti
+"bertumpuk" di tangkapan layar Owner.
+
+Section "Carcass Information" (`columns(2)`) dan "Calculation Results"
+(`columns(5)`) punya masalah yang sama, satu tingkat lebih ringan (field-nya
+Placeholder baca-saja, bukan input).
+
+**Perbaikan:** ketiganya diubah ke `columns(['default' => 1, 'md' => N])`.
+Field individual TIDAK perlu `columnSpan` tambahan -- default span 1 sudah
+benar di kedua breakpoint (1 dari 1 kolom = penuh di HP, 1 dari N kolom =
+sempit seperti semula di desktop). Satu-satunya field yang perlu disentuh
+adalah `notes` (span 2 tetap) -- jadi `columnSpan(['default' => 1, 'md' => 2])`.
+
+Diverifikasi lewat `getComputedStyle().gridTemplateColumns` pada replika
+sintetis kelas yang sama: 375px -> satu nilai bersih (`375.2px`), 1280px ->
+tujuh nilai sama besar (`162.275px` x7) -- desktop terbukti tidak berubah.
+
+### Material/Product Requisition ("Beef Request") dan PurchaseProduct/PurchaseMaterial "View": qty & price berdampingan di HP
+
+Beda akar masalah dari Carcass: di sini `Repeater`-nya SUDAH pakai breakpoint
+array dengan benar (`columns(12)` di Repeater, field pakai
+`columnSpan(['default' => X, 'md' => Y])`) -- tapi nilai `default`-nya
+salah diisi `6` (bukan `12`) untuk field `qty` dan `price`. Karena Repeater
+memang benar 12 kolom bahkan di breakpoint default (beda dari kasus
+Carcass/Customer), `default => 6` membuat qty dan price masing-masing
+mengambil setengah dari 12 kolom itu -- BERDAMPINGAN, bukan gepeng
+seperti Carcass. Field lain di Repeater yang sama (`item_total`, `note`,
+`subtotal`) sudah benar `default => 12` sejak awal.
+
+Polanya identik di 4 Resource, diduplikasi (bukan trait/komponen bersama):
+`MaterialRequisitionResource.php`, `ProductRequisitionResource.php`,
+`PurchaseProductResource.php`, `PurchaseMaterialResource.php`. Semua
+halaman turunannya (Create/View/Review/Approve/Edit) mewarisi `form()` dari
+Resource, tidak ada satu pun yang override -- jadi perbaikan cukup di
+4 file itu, bukan di setiap halaman. Diubah: `default => 6` -> `default => 12`
+pada `TextInput::make('qty')` dan `TextInput::make('price')` di keempat
+file (nilai `md` TIDAK disentuh, supaya tampilan desktop yang sudah benar
+tidak ikut berubah).
+
+### Goods Receipt Beef -- Scan &amp; Labeling: peringatan, BUKAN dibuat responsif
+
+Keputusan Owner eksplisit: halaman ini MEMANG harus dioperasikan dari layar
+lebar (scan barcode + ringkasan PO berdampingan; form + tabel label
+berdampingan dengan kolom kiri sticky) -- jangan dikorbankan demi HP.
+Kedua Blade (`scan-goods-receipt-product.blade.php`,
+`labeling-goods-receipt-product.blade.php`) memakai grid dua kolom
+`display:grid` inline TANPA media query sama sekali, dan sengaja
+menyembunyikan sidebar+header panel lewat `<style>` -- konsisten dengan
+niatnya sebagai layar kerja operator, bukan kelalaian.
+
+Ditambahkan overlay peringatan di kedua Blade (elemen baru, grid dua kolom
+yang sudah ada TIDAK disentuh sama sekali): `x-data="{ show:
+window.innerWidth < 768 }"` + `x-show="show"` menampilkan kartu
+"halaman ini tidak cocok dibuka di HP" dengan dua tombol -- "BACK" (kembali
+ke index, memakai kunci `__('BACK')` yang sudah ada di halaman yang sama)
+dan "Continue Anyway" (menutup overlay, `show = false`, lanjut pakai
+halaman apa adanya). Dicek: hanya sekali saat halaman dimuat, tidak
+memantau resize -- pengguna HP jarang mengubah ukuran jendela di tengah
+sesi.
+
+**Kenapa CSS inline, bukan class Tailwind sembarang:** panel admin ini
+TIDAK memuat hasil build Tailwind proyek sendiri (`tailwind.config.js`
+tidak menyertakan `vendor/filament/**`) -- yang dipakai CSS bawaan
+paket Filament, yang cuma berisi class yang benar-benar dipakai
+komponen Filament sendiri. Class seperti `rounded-xl`, `shadow-sm`,
+`ring-1`, `bg-white`, `p-6` aman dipakai karena SUDAH ada di file yang
+sama (dipakai tombol BACK yang sudah ada); untuk posisi overlay
+(`fixed`, `inset-0`, backdrop transparan) dipakai inline `style="..."`
+mengikuti pola yang sudah baku di kedua Blade ini (lihat blok `<style>`
+di bagian atas berkas).
+
+Kunci bahasa baru: `"This page is not suitable for phones"`,
+`"It needs a wide screen to work properly. Please continue from a laptop
+or computer."`, `"Continue Anyway"` -- didaftarkan di `lang/en.json` DAN
+`lang/id.json` (wajib, dijaga `BilingualParityTest`).
+
+Diverifikasi: overlay muncul di 375px (screenshot), tombol "Continue Anyway"
+menutupnya (Dashboard kembali terlihat penuh sesudah diklik). Test yang
+sudah ada (`GoodsReceiptWarehouseAndPhTest`) hanya membaca source PHP
+`ScanGoodsReceiptProduct.php`/`LabelingGoodsReceiptProduct.php` mentah --
+tidak tersentuh karena perubahan ini murni di Blade.

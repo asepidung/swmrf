@@ -75,7 +75,7 @@ class CarcassResource extends Resource
                         ->default(now()),
                     Forms\Components\Textarea::make('note')
                         ->columnSpanFull(),
-                ])->columns(2),
+                ])->columns(['default' => 1, 'md' => 2]),
 
                 Forms\Components\Section::make(__('Carcass Details'))->schema([
                     Forms\Components\Repeater::make('items')
@@ -287,7 +287,7 @@ class CarcassResource extends Resource
                                 ]),
                             Forms\Components\TextInput::make('notes')
                                 ->label(__('Note'))
-                                ->columnSpan(2)
+                                ->columnSpan(['default' => 1, 'md' => 2])
                                 ->extraInputAttributes([
                                     'class' => 'enter-to-next-notes',
                                     'onkeydown' => "
@@ -302,7 +302,18 @@ class CarcassResource extends Resource
                                     "
                                 ]),
                         ])
-                        ->columns(7)
+                        // Responsif: satu kolom penuh di HP, tujuh kolom
+                        // mulai md. Sebelumnya `columns(7)` polos -- tujuh
+                        // field (eartag, carcass_1/2, hides, tail, notes)
+                        // ikut terpaksa berbagi 7 kolom di HP juga, membuat
+                        // tiap kolom cuma dapat ~50px dan label tiap field
+                        // saling bertabrakan/wrap. Keputusan Owner,
+                        // 7 September 2026. Field individualnya TIDAK perlu
+                        // columnSpan tambahan -- default span 1 sudah benar
+                        // di kedua breakpoint (1 dari 1 kolom = penuh di HP,
+                        // 1 dari 7 kolom = sempit seperti semula di desktop);
+                        // hanya `notes` (span 2) yang perlu breakpoint sendiri.
+                        ->columns(['default' => 1, 'md' => 7])
                         ->addable(false)
                         ->deletable(true)
                         ->label('')
@@ -360,7 +371,7 @@ class CarcassResource extends Resource
                                 }
                                 return new \Illuminate\Support\HtmlString("<span class='font-bold text-primary-600'>" . number_format($total, 2) . " Kg</span>");
                             }),
-                    ])->columns(5),
+                    ])->columns(['default' => 1, 'md' => 5]),
             ]);
     }
 
