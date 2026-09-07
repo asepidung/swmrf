@@ -73,16 +73,37 @@ terima beres". Kedua lingkungan diserahkan sepenuhnya; keduanya percobaan.
 Jadi setiap kali sebuah PR di-merge, KEDUA sisi diselesaikan sendiri:
 
 ```
-# lokal (direktori kerja ini sendiri)
+# 1. PR-nya DI-MERGE lebih dulu -- ini yang paling sering terlewat
+gh pr merge <nomor> --merge --delete-branch
+
+# 2. lokal (direktori kerja ini sendiri)
 git checkout main && git pull origin main
 php artisan migrate            # bila PR-nya membawa migrasi
 
-# hosting -- TIDAK menunggu klon otomatis
+# 3. hosting -- TIDAK menunggu klon otomatis
 ssh -tt -p 65002 u525862761@153.92.9.218
 cd ~/domains/coba.wijayameat.co.id/public_html
 git pull && php artisan migrate --force && php artisan optimize:clear
 php artisan config:cache && php artisan route:cache && php artisan view:cache
 ```
+
+**`Already up to date` di server BUKAN kegagalan.** Hosting hanya menarik
+`main`. Selama PR-nya masih terbuka, `main` memang belum berubah, dan jawaban
+itu justru benar.
+
+Kejadian 7 September 2026: sebuah perbaikan sudah di-commit, sudah di-push,
+PR-nya sudah dibuka dan MERGEABLE -- tetapi tidak pernah di-merge. Server
+menjawab `Already up to date`, dan itu terbaca sebagai "tidak bisa push ke
+hosting". Padahal servernya sehat; yang putus satu langkah sebelumnya.
+
+Cara memastikannya dalam satu tarikan, sebelum menyalahkan server:
+
+```
+git --no-pager log --oneline -1 origin/main     # apa yang seharusnya ada di sana
+gh pr list --state open                          # ada yang belum di-merge?
+```
+
+Kalau keduanya cocok dan daftar PR kosong, server memang sudah mutakhir.
 
 Lalu laporkan keduanya sudah sama -- commit yang sama, migrasi yang sama.
 Jangan menyuruh Owner menjalankan apa pun.
