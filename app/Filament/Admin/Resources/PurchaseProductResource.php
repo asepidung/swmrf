@@ -118,7 +118,7 @@ class PurchaseProductResource extends Resource
                                     ->hiddenLabel()
                                     ->extraInputAttributes(['class' => 'text-right'])
                                     ->formatStateUsing(fn($state) => number_format((int) ($state ?? 0), 0, ',', '.'))
-                                    ->columnSpan(['default' => 6, 'md' => 2]),
+                                    ->columnSpan(['default' => 12, 'md' => 2]),
 
                                 Forms\Components\TextInput::make('price')
                                     ->hiddenLabel()
@@ -126,7 +126,7 @@ class PurchaseProductResource extends Resource
                                     ->disabled()
                                     ->extraInputAttributes(['class' => 'text-right'])
                                     ->formatStateUsing(fn($state) => number_format($state ?? 0, 0, ',', '.'))
-                                    ->columnSpan(['default' => 6, 'md' => 3]),
+                                    ->columnSpan(['default' => 12, 'md' => 3]),
 
                                 Forms\Components\TextInput::make('subtotal')
                                     ->hiddenLabel()
