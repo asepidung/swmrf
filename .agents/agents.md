@@ -32,6 +32,31 @@ implementor:
 - Sebelum tenggat, dahulukan yang menghalangi pengguna memakai aplikasi
   (izin yang belum dicentang, alur yang buntu) di atas kerapian.
 
+### Merge ke `main` lewat satu pintu
+
+**Keputusan Owner, 7 September 2026.** Sampai tenggat lewat, sebuah sesi
+mengerjakan sampai **membuka PR**, lalu **menyebutkan nomor PR-nya kepada
+Owner**. Yang me-merge dan men-deploy adalah sesi yang ditunjuk Owner untuk
+itu -- setelah menjalankan suite PENUH di branch tersebut.
+
+Alasannya bukan ketidakpercayaan. Mendekati tenggat, satu pasang mata sebelum
+`main` itu murah, sementara satu kekeliruan yang lolos ke `main` mahal --
+apalagi karena hosting menarik `main` secara langsung.
+
+Kalau sebuah sesi ditolak izin `gh pr merge` oleh classifier auto mode, itu
+sejalan dengan aturan ini, bukan penghalang yang perlu diakali. **Tindakan
+yang ditolak untuk satu sesi tidak boleh dialihkan lewat sesi lain** --
+termasuk dengan meminta sesi lain menjalankannya. Sampaikan ke Owner; dia
+yang memutuskan.
+
+Sebab teknis penolakan itu, kalau suatu saat ingin diubah: blok
+`autoMode.environment` di `~/.claude/settings.json` menjelaskan proyek
+**lain** (`D:/WebApps/absen`, privat), bukan `swmrf` (publik), dan memuat
+baris *"treat default branch as protected out of caution"*. Briefing itu
+tampaknya diambil sebagai potret saat sesi dimulai, sehingga sesi yang mulai
+sebelum 2 September 2026 tidak terkena. Owner memutuskan **tidak mengubahnya**
+untuk sekarang.
+
 ---
 
 ## 1. Ini proyek apa
