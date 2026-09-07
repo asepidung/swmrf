@@ -429,49 +429,248 @@ supaya tidak dikira ada kolom tambahan yang bermakna.
 
 ---
 
-## 9. Pertanyaan untuk accounting
+## 9. Jawaban dari sisi penjualan, 7 September 2026
 
-Disusun supaya bisa ditanyakan apa adanya.
+Owner menanyakan tujuh pertanyaan di bagian sebelumnya. Yang menjawab ternyata
+**orang marketing, bukan accounting** -- perlu diingat saat membaca, karena
+sebagian jawabannya sendiri memakai kata "mungkin".
 
-1. **Potongan gross -> net itu artinya apa, dan kenapa berbeda-beda per
-   produk?** Terlihat di rumus kolom `H` (NET PRICE) -- bukan di catatan mana
-   pun:
+### Warna sel = pelanggan
 
-   ```
-   H6  = I6 - (I6*6%)          Topside dan sebagian besar potongan utama
-   H18 = I18 - (I18*16.45%)    Striploin Whole, GOLD, Less fat, Cuberoll
-   H36 = I36 - (I36*5%)        Brisket PEDO, RIBS, Fat Brisket
-   ```
+| Warna | Isi | Potongan |
+|---|---|---|
+| Kuning (`FFFF00`) | LION | 6% |
+| Hijau (theme 9) | HYPERMART | 16,45% |
+| Biru (indexed 27) | **selain kedua pelanggan itu** | tidak ada |
 
-   Sisanya diketik langsung tanpa rumus -- sebagian kebetulan sama dengan
-   gross, sebagian tidak (Back Rib 69.000 sementara gross-nya 105.000).
+**Diverifikasi langsung dari `styles.xml`**, bukan diterima begitu saja:
+seluruh baris kuning berpotongan 6% dan seluruh baris hijau berpotongan
+16,45%, nol pengecualian.
 
-   Kalau ini diskon pelanggan, ia akan berubah tiap periode dan ikut menggeser
-   HPP.
-2. Kenapa tulang, lemak, dan jeroan **tidak punya harga gross sama sekali**?
-   Apakah keduanya memang tidak pernah dijual dengan daftar harga?
-3. **Overhead 3.000/kg** datang dari mana? Angkanya sama di ketujuh lot
-   sepanjang Juni, jadi ia tetapan -- bukan sesuatu yang dihitung per lot.
-   Ditinjau berapa lama sekali? Dan kenapa ia tidak menambah HPP, hanya
-   memotong profit?
+Biru **bukan sebuah grup bernama "regular"** -- itu koreksi Owner. Biru
+berarti "harga umum, untuk siapa pun di luar LION dan HYPERMART". Bedanya
+penting saat modulnya dibangun: acuannya bukan menunjuk satu grup tertentu,
+melainkan menyatakan bahwa produk itu dinilai memakai harga umum.
 
-   Ini bukan pertanyaan kecil: BQR 11 ekor tercatat **merugi** semata-mata
-   karena overhead rata ini, padahal rendemennya lebih baik daripada lima lot
-   yang untung.
-4. Blok baris 98-100 (**1.100 kg @51.000 + 6.072 kg @50.000**) muncul sama
-   persis di kedua costing, jadi tampaknya sisa template. **Boleh dibuang?**
-5. **Kolom `GROSS PRICE` itu menyalin price list yang mana, dan kapan
-   diperbarui?** Kedua costing memakai daftar harga yang identik sampai ke
-   sen, jadi harganya hidup di template. Kalau price list sebenarnya sudah
-   berubah, HPP seluruh lot ikut meleset tanpa gejala.
-7. Daftar produk di form costing selalu sama tiap kali (puluhan baris ber-qty
-   0 tetap ada), atau boleh mengikuti hasil boning hari itu?
-8. Kalau bahan penolong nanti ikut dihitung, ia **menambah HPP** atau
-   diperlakukan seperti overhead sekarang -- hanya memotong profit?
+Jadi potongan gross -> net adalah **trading terms per pelanggan**, bukan
+diskon produk. Dan pertanyaan "kenapa tulang dan lemak tidak punya harga
+gross" terjawab: di luar kedua pelanggan itu tidak ada trading terms, jadi
+gross dan net-nya sama dan hanya satu yang diketik.
+
+### Potongan HANYA untuk dua pelanggan utama
+
+Keterangan Owner: trading terms **hanya berlaku untuk HYPERMART dan LION**.
+Semua pelanggan akan punya grup -- warga sekitar punya grup warga, karyawan
+punya grup karyawan -- tetapi grup-grup itu untuk **transaksi penjualannya**,
+bukan untuk menilai hasil boning.
+
+**Batasan yang lahir dari sini, dan harus ditegakkan kode saat modulnya
+dibangun:** penilaian hanya boleh memakai harga LION, harga HYPERMART, atau
+harga umum. Kalau sebuah produk dinilai memakai harga karyawan atau warga,
+total nilai jual turun, rasio naik, dan **HPP seluruh produk lain ikut naik**
+-- potongan untuk karyawan berubah wujud menjadi tambahan biaya bagi produk
+komersial, tanpa satu pun gejala yang menandainya.
+
+### Overhead 3.000/kg adalah pengganti BOM
+
+> "estimasi, mungkin itu pengganti build material"
+
+Ini jawaban untuk pertanyaan overhead DAN pertanyaan bahan penolong --
+keduanya hal yang sama. Konsekuensinya: begitu BOM benar-benar dihitung, bukan
+hanya angkanya yang berubah, **posisinya di rumus juga pindah**. Sekarang ia
+hanya memotong laba di baris bawah; kalau ia memang biaya kemasan, ia biaya
+produksi dan tempatnya di dalam HPP.
+
+Dan itu berarti lot BQR yang tercatat rugi 436/kg **dinyatakan rugi oleh angka
+tebakan**.
+
+### Blok baris 98-100 ternyata hidup
+
+> "itu cuma itungan sampingan kadang digunakan jika Harga class berbeda"
+
+Persis kasus `CPO-260112` (HEIFER 61.700, STEER 62.000). Jadi blok itu adalah
+versi manual dari `SUM(berat kelas x harga kelas)` -- bukan sisa template.
+Rumus yang diusulkan di bagian 6 karena itu bukan konsep baru, hanya
+mengotomatiskan yang sudah dikerjakan dengan tangan.
+
+### Sisanya
+
+- **Daftar harga diperbarui saat ada negosiasi harga dengan pelanggan.**
+  Legacy belum punya price list sama sekali; aplikasi ini punya, jadi kolom
+  `GROSS PRICE` bisa diambil dari `price_list_items`.
+- **Daftar produk mengikuti hasil boning** ("lebih baik ikuti hasil boning").
+- **Produk yang harganya masih rentang tawar dinilai memakai NET.** Keputusan
+  Owner. Back Rib tetap dinilai 69.000, bukan 105.000 -- gross dan net di
+  baris-baris itu berfungsi sebagai batas atas dan batas bawah untuk pelanggan
+  baru, bukan harga sungguhan.
 
 ---
 
-## 10. Ganjalan lain di berkasnya
+## 10. Pengganti warna sel di aplikasi
+
+Seluruh potongannya sudah punya rumah:
+
+```
+price_lists       (customer_group_id)
+price_list_items  (product_id, price)      <- GROSS PRICE
+customers         (default_discount)       <- potongan trading terms
+```
+
+Yang belum ada **hanya satu**: costing perlu tahu sebuah produk dinilai
+memakai harga siapa. Di Excel itu dijawab warna sel; di aplikasi ia harus
+menjadi data.
+
+```
+products.costing_customer_group_id  ->  customer_groups   (boleh kosong)
+```
+
+Kosong berarti **harga umum** -- itulah biru, dan itu keadaan yang paling
+banyak, bukan pengecualian. Terisi berarti dinilai memakai harga pelanggan
+tersebut, dan potongannya ikut dipakai:
+
+```
+GROSS = price_list_items.price     (produk itu, di grup acuannya)
+NET   = GROSS x (1 - potongan grup itu)
+```
+
+Alasan memilih kolom, bukan menyalin gagasan warna: warna hanya terlihat oleh
+yang membuka berkasnya. Kalau LION berhenti mengambil Topside, tidak ada yang
+tahu HPP-nya melenceng. Sebagai kolom, asumsinya bisa dicetak di dokumen
+costing -- *"Topside, dinilai memakai harga LION"* -- sehingga yang membaca
+laporan melihat asumsinya, bukan menebaknya.
+
+**Masih terbuka:** apa yang dilakukan costing bila sebuah produk seharusnya
+memakai harga pelanggan tertentu tetapi belum diisi. Tiga pilihan yang
+diajukan -- tolak, jatuh ke harga umum, atau jalan tetapi ditandai. Usulan:
+yang ketiga.
+
+---
+
+## 11. Yang menurut Hafizh keliru dari metode ini
+
+Diminta Owner, 7 September 2026: "kalau ada yang menurut lu keliru dari
+hitungan hpp ini pasti gw tampung". Diurut dari yang paling mendasar.
+
+### 11.1 Costing ini tidak bisa menyatakan produk mana yang untung
+
+Bukan pendapat, melainkan akibat rumusnya:
+
+```
+HPP            = net x k
+margin         = net - HPP = net x (1 - k)
+margin persen  = 1 - k = 5,19%      untuk SETIAP produk
+```
+
+Topside 5,19%. Tulang 5,19%. Oxtail 5,19%. Semuanya sama persis, karena
+marginnya memang diturunkan dari satu angka yang sama. Sheet-nya sendiri
+menuliskan angka itu di `L92` = `J92/J90`.
+
+Jadi pertanyaan "produk mana yang paling menguntungkan" akan selalu dijawab
+"semuanya sama" -- bukan karena kenyataannya begitu, melainkan karena rumusnya
+tidak sanggup menjawab lain.
+
+### 11.2 HPP mengikuti harga jual, sehingga tidak bisa mendeteksi harga yang kemurahan
+
+Menaikkan harga Topside 10% menaikkan HPP Topside kira-kira 10%, dan
+marginnya tetap 5,19%. Produk yang selama ini kemurahan akan selalu terlihat
+sama sehatnya dengan yang lain.
+
+Ini konsekuensi metodenya, bukan cacat perhitungan -- tetapi harus disadari
+kalau suatu saat HPP dipakai untuk memutuskan harga, karena ia akan mengamini
+harga apa pun yang sudah ada.
+
+### 11.3 Acuan satu produk menggeser HPP SELURUH produk
+
+`k = biaya beli / total nilai jual`. Memindahkan satu produk ke harga yang
+lebih rendah menurunkan penyebutnya, menaikkan `k`, dan menaikkan HPP semua
+produk -- bukan hanya produk itu. Turun 1% pada total nilai jual menaikkan HPP
+Topside sekitar 1.300 rupiah per kg.
+
+Sebagian besar bahaya ini hilang selama batasan di bagian 9 dipegang. Karena
+itu batasan tersebut harus ditegakkan kode, bukan diserahkan pada kebiasaan.
+
+### 11.4 Risiko menghitung susut dua kali
+
+Ini yang paling mungkin menghasilkan angka salah tanpa gejala.
+
+Biaya beli dihitung dari **berat surat jalan** -- termasuk kilogram yang
+menyusut dan tidak pernah menjadi produk. Biaya itu dialokasikan ke produk.
+**Jadi susut sudah berada di dalam HPP.**
+
+Sementara itu `financial_losses` mencatat susut, dan rencananya (bagian A
+`tertunda.md`) nilainya diisi `quantity x HPP` begitu HPP tersedia. Kalau
+keduanya dilaporkan, kerugian yang sama dihitung dua kali: sekali terbenam di
+harga pokok produk, sekali lagi sebagai baris kerugian.
+
+Berlaku juga untuk susut boning (40,64 kg pada lot 15 Juni).
+
+**Harus diputuskan sebelum HPP dipakai, bukan sesudah.**
+
+### 11.5 Untung-rugi sebuah lot ditentukan angka tebakan
+
+Overhead 3.000/kg adalah estimasi. Lot BQR 11 ekor tercatat rugi 436/kg
+semata-mata karenanya, padahal rendemennya (56,36%) lebih baik daripada lima
+lot yang untung.
+
+### 11.6 HPP ini untuk apa -- SUDAH DIJAWAB
+
+Keterangan Owner, 7 September 2026: **untuk menilai persediaan** -- berapa
+nilai stok di gudang, dan berapa harga pokok saat barang keluar.
+
+Itu kabar baik, dan mengubah bobot keberatan di atas: untuk keperluan itu,
+alokasi berbasis nilai jual adalah praktik yang **sah dan dipakai luas**.
+Metodenya memadai apa adanya.
+
+Yang tetap berlaku adalah batasnya: **HPP ini tidak boleh dipakai untuk
+memutuskan harga atau menilai produk mana yang layak diproduksi** (11.1 dan
+11.2). Untuk pertanyaan itu diperlukan metode yang berbeda, dan menambahkan
+BOM pun tidak menolong -- cacatnya ada di rumus alokasinya, bukan pada
+kelengkapan biayanya.
+
+Keberatan yang tersisa dan tetap harus diselesaikan: **11.3** (batasan acuan)
+dan **11.4** (susut dihitung dua kali). Keduanya menghasilkan angka yang salah
+untuk keperluan penilaian persediaan itu sendiri.
+
+---
+
+## 12. Yang masih menunggu jawaban ACCOUNTING
+
+Tujuh pertanyaan sebelumnya dijawab dari sisi penjualan (bagian 9). Lima di
+antaranya tuntas. Yang tersisa di bawah ini bersifat akuntansi, dan orang
+marketing memang bukan tempat bertanyanya.
+
+1. **Susut apakah dihitung dua kali?** Biaya beli memakai berat surat jalan,
+   sehingga kilogram yang menyusut sudah terbenam di dalam HPP produk.
+   Sementara itu susut juga dicatat sebagai kerugian tersendiri. Kalau
+   keduanya masuk laporan, kerugian yang sama muncul dua kali. Rinciannya di
+   bagian 11.4. **Ini yang paling mendesak** -- ia menghasilkan angka yang
+   salah untuk penilaian persediaan itu sendiri.
+
+2. **Overhead 3.000/kg: dari mana angkanya, dan siapa yang meninjaunya?**
+   Marketing menjawab "estimasi, mungkin pengganti build material". Angkanya
+   sama di ketujuh lot sepanjang Juni, jadi ia tetapan. Yang belum jelas:
+   berapa lama sekali ditinjau, dan atas dasar apa.
+
+3. **Kalau bahan penolong nanti benar-benar dihitung dari BOM, ia menambah
+   HPP atau tetap hanya memotong laba?** Kalau ia biaya kemasan, tempatnya di
+   dalam HPP. Perpindahan itu mengubah nilai persediaan, jadi bukan keputusan
+   yang boleh diambil implementor.
+
+4. **Blok baris 98-100 dipakai kalau harga kelas sapi berbeda.** Konfirmasi:
+   apakah benar maksudnya `SUM(berat kelas x harga kelas)`? Kalau ya, ia tidak
+   perlu blok terpisah -- rumus itu bisa berlaku selalu, dan menghasilkan
+   angka yang sama persis ketika harga kedua kelas kebetulan sama.
+
+5. **Rendemen yang ditampilkan aplikasi memakai pembagi yang mana?** Laporan
+   carcass legacy membaginya dengan berat terima; `Carcass::yieldPercent()`
+   di aplikasi ini membaginya dengan berat timbang ulang. Biaya beli sudah
+   dipastikan memakai berat terima (bagian 6), tetapi rendemen menjawab
+   pertanyaan yang berbeda dan boleh saja memakai pembagi yang lain -- asalkan
+   disengaja.
+
+---
+
+## 13. Ganjalan lain di berkasnya
 
 - **Pembaginya tidak konsisten.** `G87 = F87/F91` (daging dibanding load
   weight -- rendemen). Tetapi `G88 = F88/F87` (offal dibanding **daging**,
