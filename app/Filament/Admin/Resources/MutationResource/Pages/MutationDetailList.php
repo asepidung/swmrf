@@ -117,13 +117,19 @@ class MutationDetailList extends Page implements HasTable
                         \Filament\Forms\Components\DatePicker::make('until')
                             ->label(__('Until Date')),
                     ])
+                    // Keputusan Owner, 7 September 2026: dulu kosongnya field
+                    // ini diam-diam diganti "bulan berjalan" -- dibuang tanpa
+                    // ->when() di sini pun berbahaya: whereDate(..., null)
+                    // tidak pernah cocok, jadi tanpa penjaga ini SEMUA baris
+                    // akan hilang begitu filter dikosongkan, bukan cuma bulan
+                    // lain. Sekarang kosong benar-benar berarti tanpa batasan.
                     ->query(function (Builder $query, array $data): Builder {
-                        $from = $data['from'] ?? now()->startOfMonth()->toDateString();
-                        $until = $data['until'] ?? now()->toDateString();
+                        $from = $data['from'] ?? null;
+                        $until = $data['until'] ?? null;
 
                         return $query->whereHas('mutation', function ($q) use ($from, $until) {
-                            $q->whereDate('mutation_date', '>=', $from)
-                              ->whereDate('mutation_date', '<=', $until);
+                            $q->when($from, fn ($q, $date) => $q->whereDate('mutation_date', '>=', $date))
+                              ->when($until, fn ($q, $date) => $q->whereDate('mutation_date', '<=', $date));
                         });
                     }),
             ]);

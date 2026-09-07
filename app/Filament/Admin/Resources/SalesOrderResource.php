@@ -247,7 +247,17 @@ class SalesOrderResource extends Resource
                                         $newKey = 'item_' . \Illuminate\Support\Str::random(12);
                                         $currentItems[$newKey] = [
                                             'product_id' => $productId,
-                                            'weight' => 0,
+                                            // Keputusan Owner, 7 September 2026: dibiarkan
+                                            // KOSONG, bukan 0. Placeholder "Weight" cuma
+                                            // tampil kalau isinya benar-benar kosong --
+                                            // angka 0 yang ditaruh di sini dari awal
+                                            // membuat field terlihat tanpa label sama
+                                            // sekali di HP (headernya sendiri sengaja
+                                            // sembunyi di layar sempit, lihat komentar di
+                                            // form()). Efek sampingnya malah benar:
+                                            // `->required()` sekarang sungguh menahan
+                                            // baris berat nol tersimpan tanpa disadari.
+                                            'weight' => null,
                                             'price' => number_format($price, 0, '', '.'),
                                             'discount' => static::customerDefaultDiscount($customerId),
                                             'note' => '',
@@ -258,8 +268,21 @@ class SalesOrderResource extends Resource
                             })
                     ])
                     ->schema([
-                        // Clean Repeater Header UI
+                        // Baris judul kolom, hanya untuk layar lebar.
+                        //
+                        // Keputusan Owner, 7 September 2026: label ini muncul
+                        // sebagai daftar tergantung tanpa isi di HP -- wadahnya
+                        // (Grid::make(12) angka polos, jadi 1 kolom di
+                        // breakpoint default) tidak pernah disembunyikan sama
+                        // sekali, tampil di SEMUA ukuran layar. Ditambahkan
+                        // `.swm-wide-only` (bukan `hidden md:grid` -- kelas itu
+                        // TIDAK PUNYA CSS di panel ini, lihat `agents.md`
+                        // sekitar baris 1505-an), pola yang sama yang sudah
+                        // terbukti benar di InvoiceResource. Di bawah 1024px
+                        // headernya sembunyi total; setiap field baris memakai
+                        // placeholder-nya sendiri sebagai pengganti label.
                         Forms\Components\Grid::make(12)
+                            ->extraAttributes(['class' => 'swm-wide-only'])
                             ->schema([
                                 Forms\Components\Placeholder::make('col_produk')->label(__('Product'))->columnSpan(['default' => 1, 'lg' => 3]),
                                 Forms\Components\Placeholder::make('col_berat')->label(__('Weight/Qty'))->columnSpan(['default' => 1, 'lg' => 2]),

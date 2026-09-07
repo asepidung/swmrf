@@ -76,8 +76,11 @@ class DeliveryPlanDetailList extends Page implements HasTable
                         \Filament\Forms\Components\DatePicker::make('delivery_until')
                             ->label(__('Until Date')),
                     ])
+                    // Keputusan Owner, 7 September 2026: kosong berarti tanpa
+                    // batasan tanggal -- dulu diam-diam dibatasi bulan
+                    // berjalan meski form terlihat kosong.
                     ->query(function (Builder $query, array $data): Builder {
-                        $from = $data['delivery_from'] ?? now()->startOfMonth()->toDateString();
+                        $from = $data['delivery_from'] ?? null;
                         $until = $data['delivery_until'] ?? null;
 
                         return $query->whereHas('deliveryPlan', function ($q) use ($from, $until) {

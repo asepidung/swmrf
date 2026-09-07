@@ -51,7 +51,7 @@ class InvoiceTotals
     }
 
     /**
-     * Baca angka yang datang dari form.
+     * Baca angka UANG yang datang dari form.
      *
      * Titik SELALU pemisah ribuan di sini, karena setiap field uang di form
      * Invoice memasang mask `$money` yang memang menaruhnya. Sebelum mask itu
@@ -61,6 +61,15 @@ class InvoiceTotals
      *
      * Koma diterjemahkan menjadi titik desimal, satu-satunya arti yang mungkin
      * ia punya.
+     *
+     * **HANYA untuk field yang dimask `$money` (price, discount_rp, amount,
+     * charge, down_payment, subtotal, balance).** Berat (`weight`) dan qty
+     * biaya tambahan BUKAN uang -- keduanya `->numeric()` polos tanpa mask,
+     * jadi titiknya titik desimal SUNGGUHAN. Memakai `number()` untuk
+     * keduanya pernah membuat `22.22` kg terbaca `2222` kg (titik desimalnya
+     * ikut dibuang sebagai "pemisah ribuan"), dan tagihan yang dihitung dari
+     * angka itu ikut meleset seratus kali lipat. Pakai `quantity()` untuk
+     * field semacam ini.
      */
     public static function number(mixed $value): float
     {
@@ -68,6 +77,20 @@ class InvoiceTotals
         $text = str_replace('.', '', $text);
 
         return (float) str_replace(',', '.', $text);
+    }
+
+    /**
+     * Baca angka BUKAN UANG yang datang dari field `->numeric()` polos --
+     * berat (kg) dan qty biaya tambahan.
+     *
+     * Field-field ini sengaja tidak dimask (`weight` malah `->disabled()`,
+     * diisi dari data lain, bukan diketik) sehingga titiknya SELALU titik
+     * desimal sungguhan, tidak pernah pemisah ribuan -- alasan yang sama
+     * persis dengan `percent()` di bawah.
+     */
+    public static function quantity(mixed $value): float
+    {
+        return (float) str_replace(',', '.', (string) ($value ?? '0'));
     }
 
     /**

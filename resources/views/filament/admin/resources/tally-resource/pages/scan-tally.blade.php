@@ -52,6 +52,10 @@
     --}}
     @include('filament.partials.scanner-page-style')
 
+    @include('filament.admin.partials.mobile-not-supported-warning', [
+        'backUrl' => \App\Filament\Admin\Resources\TallyResource::getUrl('index'),
+    ])
+
     <div style="display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 1.5rem; align-items: start; width: 100%;">
 
         {{-- Kiri: pemindai dan daftar hasil pindai --}}

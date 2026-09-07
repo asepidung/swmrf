@@ -160,41 +160,41 @@ class FinancialLossResource extends Resource
                         ->mapWithKeys(fn (string $sumber): array => [$sumber => __($sumber)])
                         ->all()),
 
+                // Keputusan Owner, 7 September 2026: sebelumnya kedua field
+                // ini punya ->default() bulan berjalan, jadi begitu halaman
+                // dibuka filter ini SUDAH terlihat aktif/tercentang -- padahal
+                // belum ada apa pun yang dipilih user. Sekarang filter ini
+                // netral sampai user sendiri mengisinya lewat GUI; tidak ada
+                // batasan tanggal tersembunyi yang diam-diam diterapkan ke
+                // query (lihat juga perbaikan serupa di *DetailList.php untuk
+                // kasus yang lebih parah: data hilang tanpa indikator sama
+                // sekali).
                 Tables\Filters\Filter::make('date')
                     ->form([
                         Forms\Components\DatePicker::make('from')
-                            ->label(__('From'))
-                            ->default(now()->startOfMonth()),
+                            ->label(__('From')),
                         Forms\Components\DatePicker::make('until')
-                            ->label(__('Until'))
-                            ->default(now()),
+                            ->label(__('Until')),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
-                        $from = $data['from'] ?? now()->startOfMonth()->format('Y-m-d');
-                        $until = $data['until'] ?? now()->format('Y-m-d');
-
                         return $query
-                            ->whereDate('date', '>=', $from)
-                            ->whereDate('date', '<=', $until);
+                            ->when($data['from'] ?? null, fn (Builder $q, $date) => $q->whereDate('date', '>=', $date))
+                            ->when($data['until'] ?? null, fn (Builder $q, $date) => $q->whereDate('date', '<=', $date));
                     })
-                    // Rentang tanggalnya SELALU ditampilkan.
-                    //
-                    // Dulu penunjuknya disembunyikan selama nilainya masih
-                    // sama dengan bawaan -- bulan berjalan. Layarnya jadi
-                    // terlihat seperti menampilkan seluruh kerugian padahal
-                    // sedang menyaring, dan totalnya di bawah ikut tersaring.
-                    // Untuk laporan kerugian, angka yang dikira total tetapi
-                    // sebenarnya sebulan itu salah baca yang mahal.
                     ->indicateUsing(function (array $data): array {
-                        $dari = $data['from'] ?? now()->startOfMonth()->format('Y-m-d');
-                        $sampai = $data['until'] ?? now()->format('Y-m-d');
+                        $indicators = [];
 
-                        return [
-                            Tables\Filters\Indicator::make(__('From').': '.Carbon::parse($dari)->format('d M Y'))
-                                ->removeField('from'),
-                            Tables\Filters\Indicator::make(__('Until').': '.Carbon::parse($sampai)->format('d M Y'))
-                                ->removeField('until'),
-                        ];
+                        if ($data['from'] ?? null) {
+                            $indicators[] = Tables\Filters\Indicator::make(__('From').': '.Carbon::parse($data['from'])->format('d M Y'))
+                                ->removeField('from');
+                        }
+
+                        if ($data['until'] ?? null) {
+                            $indicators[] = Tables\Filters\Indicator::make(__('Until').': '.Carbon::parse($data['until'])->format('d M Y'))
+                                ->removeField('until');
+                        }
+
+                        return $indicators;
                     }),
             ])
             ->actions([])

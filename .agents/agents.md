@@ -5740,3 +5740,154 @@ tabel index QC Report cuma satu tombol ("Fill Report" lalu "Edit" setelah
 disubmit), baris bisa diklik ke View, View menampilkan Print+Edit setelah
 disubmit (cuma Edit sebelumnya), dan tombol companion di tabel Carcass
 mengarah persis ke `/admin/qc-reports/{id}` (View, bukan `/edit`).
+
+## #358 -- Tujuh temuan lanjutan: label repeater Sales Order, peringatan HP di Tally/Sales Return, autofocus, salah hitung Invoice, filter tanggal diam-diam
+
+Batch kedua dari sesi penyusuran yang sama (#356). Owner mengirim 7 poin
+sekaligus dengan 2 tangkapan layar; dikerjakan satu per satu ("pelan-pelan
+aja").
+
+### 1. Label repeater Sales Order "aneh" di HP
+
+`SalesOrderResource.php`, blok header `Grid::make(12)` (Product/Weight-Qty/
+Price/Discount/Note) di atas repeater "Products Detail" TIDAK PERNAH punya
+kelas penyembunyi apa pun -- beda dari resource lain yang setidaknya sudah
+(walau salah) pakai `hidden md:grid`. Di layar sempit header ini tetap
+tampil sebagai tumpukan label yang lepas dari barisnya, persis keluhan
+Owner. Ditambahkan `.extraAttributes(['class' => 'swm-wide-only'])` --
+pola yang SAMA dengan yang sudah terbukti benar di InvoiceResource (lihat
+riwayat `.swm-wide-only` vs `hidden md:grid` di #354 sekitar baris 1505).
+
+Owner juga minta field `weight` baris baru punya placeholder tapi tetap
+"ada nilai bawaan seperti 0" -- setelah dicek, `->required()` pada field
+ini justru TIDAK PERNAH menahan apa pun selama nilainya `0` (bukan `null`),
+karena `0` dianggap "ada isi". Constructor "Add Products" diubah dari
+`'weight' => 0` menjadi `'weight' => null`: placeholder-nya sekarang
+kelihatan DAN `->required()` sungguh-sungguh menahan baris berat kosong
+tersimpan tanpa disadari -- efek samping yang benar.
+
+Diverifikasi: `SalesOrderTest`, `SalesOrderDiscountAndAlertTest` tetap
+hijau; di browser (375px) header lima kolom itu sekarang sembunyi total,
+di desktop tetap tampil seperti semula.
+
+### 2. Scan Tally: peringatan HP
+
+`ScanTally.php` (halaman pemindai layar-lebar, sudah menyembunyikan
+sidebar lewat `filament.partials.scanner-page-style`) belum punya
+peringatan "tidak cocok dibuka di HP" -- satu-satunya di antara
+Scan/Labeling GR, Boning Label, Repack Scan/Label Hasil yang belum
+ditambahkan di #356. Ditambahkan `@include('filament.admin.partials.
+mobile-not-supported-warning', ['backUrl' => TallyResource::getUrl
+('index')])` persis sesudah include gaya pemindainya. `TallyPodRelabelTest`
+tetap hijau (test itu mengunci beberapa string persis di file ini lewat
+`file_get_contents`, tidak ada yang tersentuh).
+
+### 3. Autofocus: sisa sapuan
+
+Diperiksa 28 titik `->autofocus()` di `app/Filament/`. Dua pelanggaran
+sungguhan (field yang sudah `default(now())`/DB, jadi autofocus di sana
+cuma mengganggu tanpa guna): `InvoiceResource.php` (dari `invoice_date` ke
+`note`) dan `MaterialUsageResource/Pages/CreateManualUsage.php` (dari
+`adjustment_date` ke `note`). `BoningResource.php` sudah dibenahi di #356.
+Sisanya sudah menunjuk field yang benar (belum ada nilai bawaan) --
+tidak disentuh.
+
+### 4. Nilai Invoice keliru -- PALING PARAH
+
+`InvoiceTotals::number()` membuang SEMUA titik sebagai pemisah ribuan
+uang -- benar untuk `price`, salah total untuk `weight`/`qty` biaya
+tambahan yang cuma `->numeric()` polos (tidak dimask). `22.22` kg terbaca
+`2222` kg: `Products`/`Total Billed` meleset seratus kali lipat. Dibuat
+method baru `InvoiceTotals::quantity()` (sekadar tukar koma jadi titik,
+tanpa buang titik ribuan) dan dipakai untuk `weight` serta `qty` biaya
+tambahan di `InvoiceResource::updateTotals()`. `number()` tinggal untuk
+uang. Test baru: `test_a_fractional_weight_is_not_multiplied_by_a_hundred`,
+`test_a_fractional_additional_charge_qty_is_not_multiplied_by_a_hundred`
+di `InvoiceTotalsTest.php` -- keduanya memakai skenario laporan Owner
+persis (22,22 kg x 215.000).
+
+### 5. Sales Return: "Relabel Mode" dan "Scan Mode" tidak cocok di HP
+
+Dua tab dalam SATU halaman (`InputReturnItems.php`/
+`input-return-items.blade.php`): "Scan Mode" (barcode masuk) dan "Relabel
+Mode" (form timbang ulang, grid sempit `32% 1fr`). Tidak ada Notification
+Filament yang "kurang nendang" secara harfiah -- yang dimaksud Owner
+kemungkinan tampilan form Relabel Mode sendiri, sempit di layar kecil.
+
+**Jawaban pertanyaan Owner ("bisa scan dari HP?"): TIDAK BISA.** Field
+`barcode` di tab Scan Mode murni `TextInput` yang menunggu ketikan dari
+scanner USB/Bluetooth + Enter (`onkeydown` submit) -- tidak ada kamera
+(`html5-qrcode`/`zxing`/`getUserMedia`/`<video>`, digrep, nihil).
+Karena kedua mode sama-sama tidak cocok untuk HP dan berbagi satu halaman
+Livewire, peringatan HP yang sama (`mobile-not-supported-warning`, backUrl
+`SalesReturnResource::getUrl('index')`) ditambahkan sekali untuk seluruh
+halaman -- bukan per-tab, karena keduanya butuh laptop/komputer. `SalesReturnTest`
+tetap hijau (test menguji lewat properti Livewire, bukan blade).
+
+### 6. Financial Loss: filter tanggal terlihat aktif sejak dibuka
+
+`Filter::make('date')` di `FinancialLossResource` punya `->default(now()
+->startOfMonth())`/`->default(now())` di kedua `DatePicker`-nya -- form
+filter sudah terisi "bulan berjalan" begitu halaman dibuka, dan
+`indicateUsing()` SELALU menampilkan chip From/Until apa pun isinya
+(sengaja, sejak revisi sebelumnya, supaya user tidak salah baca total
+sebagai "semua data" padahal tersaring). Owner tidak mau tampilan
+"filter aktif bawaan" ini. Kedua `->default()` dihapus, fallback
+`?? now()->startOfMonth()...` di `query()` ikut dihapus (kosong = benar-benar
+tanpa batasan, bukan diam-diam dibatasi), dan `indicateUsing()`
+dikembalikan jadi kondisional (chip hanya muncul kalau user benar-benar
+mengisi). Diverifikasi di browser: badge filter menunjukkan "0" dan kedua
+field kosong saat halaman pertama dibuka.
+
+### 7. Delivery Order: urutan kolom, dan Detail List yang datanya hilang
+
+Kolom `delivery_date` dipindah dari posisi ke-4 (di belakang Tally
+Number, Customer) ke posisi ke-2, persis sesudah `delivery_order_number`.
+
+**Bug sesungguhnya di balik "detail list belum nampilin data":**
+`DeliveryOrderDetailList.php`, filter `delivery_date` -- form-nya TIDAK
+punya `->default()` (terlihat netral) dan `indicateUsing()` cuma
+menampilkan chip kalau user mengisi (terlihat benar), TAPI `query()`-nya
+tetap punya fallback `?? now()->startOfMonth()->toDateString()` --
+sehingga kosong pun diam-diam dibatasi ke bulan berjalan TANPA satu pun
+indikator yang memberi tahu user. Data bulan lain (mayoritas data
+historis) hilang tanpa jejak. Fallback itu dihapus (kosong = tanpa
+batasan).
+
+**"Cek juga yang lain" -- pola yang sama ditemukan di 10 halaman
+`*DetailList.php` lain sekaligus:** GoodsReceiptMaterial/Product,
+PurchaseMaterial/Product/Cattle, Mutation, DeliveryPlan, SalesOrder,
+SalesReturn, Invoice. Semua diperbaiki dengan cara yang sama. Dua di
+antaranya (`MutationDetailList`, `SalesReturnDetailList`) ternyata lebih
+parah: `whereDate(..., $from)` dipanggil TANPA `->when()` -- setelah
+fallback dibuang, `whereDate(..., null)` tidak akan pernah cocok dan
+SEMUA baris hilang (bukan cuma bulan lain). Ditambahkan penjaga
+`->when($from, fn ($q, $date) => ...)` di kedua file itu supaya kosong
+sungguh berarti tanpa batasan, bukan "tanpa baris".
+
+`DeliveryOrderTest` (termasuk
+`it_can_render_delivery_orders_detail_list_page`), `FinancialLossSourceTest`,
+`CattleWeighingTest`, `NavigationGroupConsistencyTest`,
+`SalesOrderStatusTest`, `PurchaseCattleNumberingAndExportTest` semua tetap
+hijau (127 test, 434 assertion, dijalankan penuh sebelum PR dibuka).
+
+**Temuan yang SENGAJA TIDAK dikerjakan di PR ini -- pola yang sama masih
+ada di 30 titik lain, 15 modul:** dibuat penjaga sapuan sekali pakai
+(seperti `ResponsiveColumnSpanTest`, lalu dihapus lagi) untuk memindai
+seluruh `app/Filament/` mencari `$data['x'] ?? now()`. Hasilnya jauh lebih
+besar dari yang diminta hari ini -- filter tanggal di HALAMAN INDEX UTAMA
+(bukan cuma Detail List): `TallyResource`, `CashBookResource`,
+`GoodsReceiptProductResource`, `BoningResource`, `DeliveryOrderReceiptResource`,
+`DeliveryPlanResource`, `PurchaseProductResource`,
+`FoundItemScanner` (BeefStocks), `RepackResource`, `CattleReceivingResource`,
+`StockTakeResource/Pages/ScanStockTake`, `DeliveryOrderResource` (filter
+`created_from`/`created_until` di index-nya sendiri, TERPISAH dari yang
+sudah dibenahi di Detail List-nya), `SalesOrderResource`, `InvoiceResource`,
+dan `MaterialRequisitionResource`/`ProductRequisitionResource` (halaman
+Detail-nya). Ini menyentuh HALAMAN INDEX UTAMA yang dipakai staf setiap
+hari di hampir semua modul -- terlalu besar untuk disapu diam-diam dalam
+satu sesi "sisir pelan-pelan", dan meniru skala PR #204 (yang direvert
+karena sapuan sekaligus tanpa konfirmasi visual per modul). Sengaja
+DITUNDA dan dilaporkan ke Owner secara eksplisit supaya diprioritaskan
+sendiri -- bukan bug yang "dilupakan", tapi bug yang ditemukan lalu
+sengaja diserahkan keputusan cakupannya ke Owner sebelum dikerjakan.
