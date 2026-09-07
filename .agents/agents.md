@@ -32,6 +32,35 @@ implementor:
 - Sebelum tenggat, dahulukan yang menghalangi pengguna memakai aplikasi
   (izin yang belum dicentang, alur yang buntu) di atas kerapian.
 
+### Siapa dipanggil apa
+
+Keputusan Owner, 7 September 2026, supaya instruksinya gampang diarahkan:
+
+| Panggilan | Sesi |
+|---|---|
+| **Hafizh** | sesi Opus, memegang HPP/BOM dan menjadi tempat bertanya |
+| **Ruby** | sesi Sonnet, menyusur modul dan mengerjakan perbaikan |
+
+Kalau Owner menulis "suruh Ruby kerjain" atau "tanya Hafizh", itu yang
+dimaksud. Nama ini melekat pada perannya, bukan pada nomor sesinya -- sesi
+boleh berganti, perannya tetap.
+
+### Satu direktori kerja, dipakai bersama
+
+Kedua sesi bekerja di `D:/WebApps/swmrf` yang SAMA. Tidak ada worktree
+terpisah -- keputusan Owner, 7 September 2026: "nunggu ruby beres nanti
+naekin aja biar aman".
+
+**Konsekuensinya: periksa `git status` sebelum menyentuh git sama sekali.**
+Kalau ada berkas yang belum di-commit dan bukan milik lu, berhenti -- jangan
+berpindah branch, jangan `pull`, jangan `commit`.
+
+Ini sudah nyaris terjadi: sebuah sesi berpindah branch dua kali sementara sesi
+lain memegang tujuh belas berkas yang belum di-commit. Kali itu selamat karena
+tidak ada berkas yang bertabrakan, dan itu keberuntungan, bukan pengaman.
+Kalau keduanya kebetulan menyentuh berkas yang sama, `git checkout` akan
+menolak -- atau lebih buruk, salah satu pekerjaan hilang.
+
 ### Merge ke `main` lewat satu pintu
 
 **Keputusan Owner, 7 September 2026.** Sampai tenggat lewat, sebuah sesi
