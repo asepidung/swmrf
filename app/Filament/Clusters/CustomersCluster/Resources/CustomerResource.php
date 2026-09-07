@@ -56,8 +56,22 @@ class CustomerResource extends Resource
                 // md. Keputusan Owner, 7 September 2026: halaman Create belum
                 // nyaman di HP. Pecahan 2/3/4 dari 12 kolom hanya masuk akal di
                 // layar lebar; di HP setiap isian sengaja dibuat SATU kolom
-                // penuh (`columnSpan(['default' => 12, 'md' => ...])`) supaya
+                // penuh (`columnSpan(['default' => 1, 'md' => ...])`) supaya
                 // tidak ada input yang lebih sempit daripada jarinya sendiri.
+                //
+                // JEBAKANNYA: Filament menerjemahkan `Section::columns(12)`
+                // (angka polos) menjadi grid 1 kolom di breakpoint default dan
+                // 12 kolom mulai `lg` -- BUKAN 12 kolom di semua breakpoint.
+                // `columnSpan(['default' => 12, ...])` (versi awal perbaikan
+                // ini) minta setiap isian membentang 12 kolom padahal
+                // wadahnya di layar sempit cuma 1 -- grid-nya terpaksa
+                // membuat 11 kolom TERSIRAT tambahan untuk memuaskan
+                // permintaan itu, dan lebar 1fr-nya nyaris nol karena tidak
+                // ada yang benar-benar mengisinya. Akibatnya SEMUA isian
+                // (termasuk alamat yang cuma minta `columnSpanFull()`) ikut
+                // gepeng, walau alamat sendiri tidak salah. Nilai `default`
+                // yang benar mengikuti jumlah kolom WADAHNYA di breakpoint
+                // itu (1), bukan jumlah kolom di breakpoint `md`/`lg` (12).
                 //
                 //   md ke atas:
                 //   nama 4 | grup 4   | segmen 4
@@ -84,7 +98,7 @@ class CustomerResource extends Resource
                             ->maxLength(255)
                             ->autofocus()
                             ->extraInputAttributes(['style' => 'text-transform:uppercase'])
-                            ->columnSpan(['default' => 12, 'md' => 4]),
+                            ->columnSpan(['default' => 1, 'md' => 4]),
 
                         // Tanpa helperText: keterangannya sudah ada di
                         // deskripsi kartu, satu baris untuk seluruh form,
@@ -108,7 +122,7 @@ class CustomerResource extends Resource
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase'])
                                     ->columnSpanFull(),
                             ])
-                            ->columnSpan(['default' => 12, 'md' => 4]),
+                            ->columnSpan(['default' => 1, 'md' => 4]),
 
                         Forms\Components\Select::make('customer_segment_id')
                             ->relationship('segment', 'name')
@@ -122,20 +136,28 @@ class CustomerResource extends Resource
                                     ->required()
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                             ])
-                            ->columnSpan(['default' => 12, 'md' => 4]),
+                            ->columnSpan(['default' => 1, 'md' => 4]),
 
                         // Tanpa ->numeric(), yang akan membuat input menjadi
                         // type=number lengkap dengan tombol panah. TOP
                         // menentukan tanggal jatuh tempo piutang, jadi
                         // tergeser satu tanpa disadari bukan hal sepele.
+                        //
+                        // TIDAK diberi maxLength. Keputusan Owner, 7 September
+                        // 2026: TOP sangat variatif lamanya -- `maxLength(3)`
+                        // (dibatasi 999) di sini murni batas UI, tidak pernah
+                        // ada padanannya di kolom DB (`integer` polos, lihat
+                        // `create_customers_table`) atau di Supplier
+                        // (`top_days` tidak dibatasi sama sekali). Yang tetap
+                        // menjaga isian tidak masuk akal adalah
+                        // `rules(['integer', 'min:0'])`.
                         Forms\Components\TextInput::make('top')
                             ->label(fn() => __('TOP'))
                             ->suffix(__('days'))
                             ->required()
-                            ->maxLength(3)
                             ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right'])
                             ->rules(['integer', 'min:0'])
-                            ->columnSpan(['default' => 12, 'md' => 2]),
+                            ->columnSpan(['default' => 1, 'md' => 2]),
 
                         // Mengisi NILAI AWAL kolom diskon di Sales Order,
                         // sejajar dengan cara price list mengisi harga. Yang
@@ -158,14 +180,19 @@ class CustomerResource extends Resource
                             ->suffix('%')
                             ->default(0)
                             ->maxLength(3)
-                            ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right'])
+                            // Keputusan Owner, 7 September 2026: default 0
+                            // terpilih otomatis saat difokus, supaya bisa
+                            // langsung diketik tanpa menghapus nolnya dulu.
+                            // Pola sama dipakai Invoice/SalesOrder untuk
+                            // field angka yang sudah terisi nilai awal.
+                            ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right', 'onfocus' => 'this.select()'])
                             ->rules(['integer', 'min:0', 'max:100'])
                             ->validationMessages([
                                 'integer' => __('Discount must be a whole percent.'),
                                 'min' => __('Discount cannot be negative.'),
                                 'max' => __('Discount cannot be more than 100%.'),
                             ])
-                            ->columnSpan(['default' => 12, 'md' => 2]),
+                            ->columnSpan(['default' => 1, 'md' => 2]),
 
                         Forms\Components\Select::make('invoice_exchange')
                             ->label(fn() => __('Invoice Exchange'))
@@ -175,19 +202,19 @@ class CustomerResource extends Resource
                             ])
                             ->required()
                             ->native(false)
-                            ->columnSpan(['default' => 12, 'md' => 2]),
+                            ->columnSpan(['default' => 1, 'md' => 2]),
 
                         Forms\Components\TextInput::make('pic')
                             ->label(fn() => __('PIC / Person In Charge'))
                             ->maxLength(255)
                             ->extraInputAttributes(['style' => 'text-transform:uppercase'])
-                            ->columnSpan(['default' => 12, 'md' => 3]),
+                            ->columnSpan(['default' => 1, 'md' => 3]),
 
                         Forms\Components\TextInput::make('phone')
                             ->label(fn() => __('Phone Number'))
                             ->tel()
                             ->maxLength(255)
-                            ->columnSpan(['default' => 12, 'md' => 3]),
+                            ->columnSpan(['default' => 1, 'md' => 3]),
 
                         Forms\Components\Textarea::make('address')
                             ->label(fn() => __('Full Address'))
@@ -200,7 +227,7 @@ class CustomerResource extends Resource
                             ->label(fn() => __('Active'))
                             ->default(true)
                             ->visibleOn('edit')
-                            ->columnSpan(['default' => 12, 'md' => 2]),
+                            ->columnSpan(['default' => 1, 'md' => 2]),
                     ]),
 
                 Forms\Components\Section::make(__('Required Documents'))

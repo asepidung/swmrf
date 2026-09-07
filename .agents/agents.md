@@ -5250,3 +5250,62 @@ dengan alasan yang jelas dan terdokumentasi, itu tanda BERHENTI dan
 tanya -- bukan tanda "test-nya salah, timpa saja". Di sini alasannya
 benar dan tetap valid, Owner cuma memilih trade-off yang berbeda setelah
 mendengarnya lagi.
+
+---
+
+## #350 -- Empat bug dari penyusuran Owner: grid kolom Customer, TOP, Discount, price list di HP
+
+Owner menyusur Create Customer sendiri di HP dan melapor empat hal
+sekaligus, 7 September 2026.
+
+### 1. Full Address gepeng di HP -- bug NYATA, sumbernya salah kaprah breakpoint di #348
+
+Perbaikan responsif #348 salah menerjemahkan breakpoint `default`.
+`Section::columns(12)` (angka polos) diterjemahkan Filament sebagai grid
+**1 kolom** di breakpoint default (HP) dan **12 kolom** mulai `lg` -- bukan
+12 kolom di semua breakpoint. #348 menulis
+`columnSpan(['default' => 12, 'md' => N])`, memaksa setiap isian membentang
+12 kolom padahal WADAHNYA di HP cuma 1. Grid terpaksa membuat 11 kolom
+TERSIRAT tambahan untuk memuaskan permintaan itu, dan karena lebar
+`minmax(0, 1fr)`-nya tidak ada yang benar-benar mengisi, sebagian besar
+kolom tersirat itu menyusut ke hampir nol -- korban paling kentara adalah
+`address` yang memakai `columnSpanFull()` ("1 / -1"), karena rentang
+"sampai kolom terakhir" ikut memanjang ke 12 kolom yang sebagian besar
+lebarnya nol.
+
+Dibuktikan langsung lewat `getComputedStyle().gridTemplateColumns` di
+browser: SEBELUM perbaikan menunjukkan 12 nilai (`47px 0px 0px ...`),
+SESUDAH `default` diperbaiki ke `1` menunjukkan satu nilai bersih
+(`311px`). Perbaikannya cuma mengganti angka `default => 12` menjadi
+`default => 1` di sembilan `columnSpan()` -- nilai `default` mengikuti
+jumlah kolom WADAHNYA di breakpoint itu, bukan jumlah kolom di breakpoint
+`md`/`lg`. Pelajaran untuk breakpoint array manapun di project ini:
+sebelum menulis `columnSpan(['default' => X, ...])`, pastikan `X` sama
+dengan jumlah kolom milik CONTAINER-nya sendiri di breakpoint `default`,
+bukan disamakan dengan kolom di breakpoint yang lebih besar.
+
+### 2. TOP dibatasi `maxLength(3)` -- pembatas yang tidak berdasar apa pun
+
+Kolom `top` di database `integer` polos (`create_customers_table`), tidak
+ada padanan batas 3 digit di mana pun -- bandingkan dengan `top_days` di
+Supplier yang sama sekali tidak dibatasi. `maxLength(3)` di form Customer
+murni rekaan UI lama. Dicabut; yang tetap menjaga isian masuk akal cuma
+`rules(['integer', 'min:0'])`.
+
+### 3. Discount default `0` tidak ter-select saat fokus
+
+Pola yang sudah dipakai di Invoice/SalesOrder untuk field angka berisi
+nilai awal: `extraInputAttributes(['onfocus' => 'this.select()'])`.
+Diterapkan sama ke `default_discount` supaya user bisa langsung mengetik
+tanpa menghapus nol dulu.
+
+### 4. Tombol "Create Price List Now" tidak muncul di HP -- BUKAN bug
+
+Dicek langsung: `PriceListInvitation::offerFor()` cuma menampilkan tombol
+bila `auth()->user()->hasPermission('create_price_lists')` -- sengaja,
+supaya tidak menawarkan pintu yang terkunci. Akun `coba` di hosting
+(role `employee`) memang TIDAK punya izin ini (dicek langsung lewat SSH:
+`coba -> create_price_lists: TIDAK`), sementara `saepullrock`
+(programmer) punya. Notifikasinya sendiri tetap tampil untuk akun `coba`
+-- yang hilang cuma tombolnya, persis seperti yang dirancang. Kode ini
+benar, tidak diubah.
