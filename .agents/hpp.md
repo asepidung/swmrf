@@ -678,3 +678,90 @@ marketing memang bukan tempat bertanyanya.
 - **Rumus mati.** `H87 = I87*0,935` sementara `I87` kosong, jadi hasilnya 0.
 - **Daftar harga tertanam di dalam form costing**, bukan diambil dari price
   list.
+
+---
+
+## 14. Yang masih dibutuhkan sebelum modulnya bisa dibangun
+
+Ditulis 7 September 2026 atas permintaan Owner, supaya bisa dikumpulkan
+sementara jatah token habis. Diurut menurut apa yang menghalangi apa.
+
+### A. Keputusan Owner -- paling menghalangi, dan tidak butuh siapa pun
+
+Ketiganya bisa dijawab Owner sendiri tanpa menunggu accounting.
+
+1. **Produk yang belum punya grup acuan, costing harus bagaimana?**
+   Tolak (costing tidak bisa dibuat), jatuh ke harga umum, atau jalan tetapi
+   ditandai di dokumennya. Usulan: yang ketiga -- pekerjaan tidak berhenti,
+   tetapi asumsinya kelihatan.
+
+2. **Susut mau dihitung sekali atau dua kali?** Susut sudah terbenam di dalam
+   HPP lewat berat surat jalan (bagian 11.4). Kalau `financial_losses` nanti
+   diisi `quantity x HPP`, kerugian yang sama muncul dua kali. Pilihannya:
+   biarkan di HPP saja dan `financial_losses` tetap nol rupiah, atau keluarkan
+   dari HPP dan laporkan sebagai kerugian tersendiri.
+
+3. **Rendemen yang kita tampilkan pakai pembagi yang mana?** Berat terima
+   (seperti laporan carcass legacy) atau berat timbang ulang (seperti
+   `Carcass::yieldPercent()` sekarang). Keduanya sah; yang penting disengaja.
+
+### B. Data yang perlu dikumpulkan
+
+Tanpa ini modulnya bisa dibangun, tetapi tidak bisa menghasilkan angka.
+
+1. **Daftar grup pelanggan yang sebenarnya.** Nama persisnya, dan pelanggan
+   mana masuk grup mana. Sekarang tabel `customer_groups` masih KOSONG.
+
+2. **Price list per grup.** Ini yang paling besar: sekitar 80 produk dikali
+   tiga daftar (LION, HYPERMART, harga umum). Tabel `price_lists` dan
+   `price_list_items` juga masih kosong.
+
+   Kalau menyalin dari form costing lebih mudah, kolom `GROSS PRICE` di sana
+   adalah harga yang dicari -- dan isinya sama persis di ketujuh lot Juni,
+   jadi cukup satu kali salin.
+
+3. **Potongan trading terms.** Konfirmasi bahwa LION masih 6% dan HYPERMART
+   masih 16,45%, dan apakah ada pelanggan utama ketiga.
+
+4. **Pemetaan produk -> grup acuan.** Produk mana dinilai memakai harga siapa.
+   **Ini tidak perlu dikumpulkan dari nol** -- warna sel di `Costing Juni.xlsx`
+   sudah memuatnya seluruhnya, dan sudah terbaca. Hafizh bisa mengeluarkan
+   daftarnya kapan saja (80 baris: nama produk dan warnanya), tinggal Owner
+   periksa apakah masih berlaku.
+
+5. **Overhead.** Apakah masih 3.000/kg, dan siapa yang menetapkannya.
+
+### C. Jawaban accounting yang masih ditunggu
+
+Lima pertanyaan di bagian 12. Yang paling menentukan cuma satu -- **susut
+dihitung dua kali** -- dan itu sebenarnya sudah masuk daftar A karena Owner
+bisa memutuskannya sendiri kalau accounting lambat menjawab.
+
+Empat sisanya (asal angka overhead, posisi bahan penolong di rumus, blok
+baris 98-100, pembagi rendemen) **tidak menghalangi** pembangunan modulnya.
+Modul bisa dibuat dengan overhead sebagai angka yang bisa disetel, lalu
+diisi belakangan.
+
+### D. Yang TIDAK dibutuhkan lagi
+
+Supaya tidak ada yang mengumpulkan dua kali:
+
+- Contoh costing tambahan. Tujuh lot sudah cukup; polanya sudah terbukti
+  seragam.
+- Contoh boning atau carcass tambahan. Rantainya sudah diuji menyambung
+  sampai dua desimal.
+- Penjelasan metode. Rumusnya sudah diturunkan dan diverifikasi.
+
+### E. Urutan pengerjaan yang gw usulkan
+
+1. Isi `customer_groups` dan `price_lists` (butuh B1, B2, B3).
+2. Tambah kolom `products.costing_customer_group_id` dan isi dari daftar
+   warna (butuh B4).
+3. Bangun dokumen costing: satu costing per laporan carcass, menyalin harga
+   yang dipakainya (harga dikunci saat costing dibuat).
+4. Sambungkan BOM ke pemakaian bahan per boning (sudah siap sejak #344).
+5. Terakhir, baru pindahkan overhead ke dalam HPP kalau accounting setuju.
+
+Langkah 1 dan 2 bisa dimulai kapan saja -- keduanya master data, tidak
+menyentuh perhitungan apa pun, jadi aman dikerjakan sebelum jawaban accounting
+datang.

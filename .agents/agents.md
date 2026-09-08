@@ -61,6 +61,18 @@ tidak ada berkas yang bertabrakan, dan itu keberuntungan, bukan pengaman.
 Kalau keduanya kebetulan menyentuh berkas yang sama, `git checkout` akan
 menolak -- atau lebih buruk, salah satu pekerjaan hilang.
 
+### Pelimpahan merge, 7 September 2026
+
+Owner melimpahkan merge dan deploy sepenuhnya: "klo udah ok langsung gas
+deploy aja bro, dan kalau ada yang perlu di tanyakan, pakai pilihan yang
+menurut lu paling baik aja". Jadi PR dari Ruby yang suitenya hijau langsung
+di-merge tanpa menunggu Owner.
+
+Tiga hal tetap ditahan: suite merah tidak pernah diakali, setelan izin tidak
+disentuh, dan apa pun yang membalik keputusan Owner atau menabrak `project.md`
+tetap ditanyakan lebih dulu -- itu sudah sekali menyelamatkan sapuan 42 titik
+filter tanggal dari salah arah.
+
 ### Merge ke `main` lewat satu pintu
 
 **Keputusan Owner, 7 September 2026.** Sampai tenggat lewat, sebuah sesi
