@@ -83,19 +83,39 @@ class ListMaterialRequisitionDetails extends Page implements HasTable
                     ->limit(50),
             ])
             ->filters([
+                // Silent date filter, standar modul transaksional (rujukan:
+                // CashBookResource) -- default bulan berjalan ADA di form,
+                // badge cuma tampil kalau user mengubahnya. `->when()` wajib
+                // di sini: sebelumnya `whereDate(..., $from)` dipanggil
+                // langsung tanpa penjaga, jadi begitu field dikosongkan lewat
+                // GUI, `whereDate(..., null)` tidak pernah cocok dan SEMUA
+                // baris hilang, bukan cuma bulan lain.
                 Filter::make('created_at')
                     ->form([
-                        DatePicker::make('created_from')->label(__('Period start')),
-                        DatePicker::make('created_until')->label(__('Period end')),
+                        DatePicker::make('created_from')->label(__('Period start'))->default(now()->startOfMonth()),
+                        DatePicker::make('created_until')->label(__('Period end'))->default(now()),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         $from = $data['created_from'] ?? now()->startOfMonth()->toDateString();
                         $until = $data['created_until'] ?? now()->toDateString();
 
                         return $query->whereHas('requisition', function ($q) use ($from, $until) {
-                            $q->whereDate('created_at', '>=', $from)
-                              ->whereDate('created_at', '<=', $until);
+                            $q->when($from, fn ($q, $date) => $q->whereDate('created_at', '>=', $date))
+                              ->when($until, fn ($q, $date) => $q->whereDate('created_at', '<=', $date));
                         });
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        $defaultFrom = now()->startOfMonth()->toDateString();
+                        $defaultUntil = now()->toDateString();
+
+                        if (($data['created_from'] ?? null) && $data['created_from'] !== $defaultFrom) {
+                            $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['created_from'])->format('d M Y');
+                        }
+                        if (($data['created_until'] ?? null) && $data['created_until'] !== $defaultUntil) {
+                            $indicators[] = 'Until: ' . \Carbon\Carbon::parse($data['created_until'])->format('d M Y');
+                        }
+                        return $indicators;
                     }),
                 SelectFilter::make('supplier')
                     ->label(__('Supplier'))

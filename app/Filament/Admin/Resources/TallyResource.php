@@ -116,12 +116,19 @@ class TallyResource extends Resource
                     ->searchable()
                     ->preload(),
 
+                // Silent date filter, standar modul transaksional (rujukan:
+                // CashBookResource) -- default bulan berjalan ADA di form
+                // (jujur kalau panel dibuka), badge cuma tampil kalau user
+                // mengubahnya. `->when()` tetap wajib: field defaultnya bisa
+                // dikosongkan lewat GUI.
                 Tables\Filters\Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')
-                            ->label(__('From Date')),
+                            ->label(__('From Date'))
+                            ->default(now()->startOfMonth()),
                         Forms\Components\DatePicker::make('created_until')
-                            ->label(__('Until Date')),
+                            ->label(__('Until Date'))
+                            ->default(now()),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         $from = $data['created_from'] ?? now()->startOfMonth()->toDateString();
@@ -139,10 +146,13 @@ class TallyResource extends Resource
                     })
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
-                        if ($data['created_from'] ?? null) {
+                        $defaultFrom = now()->startOfMonth()->toDateString();
+                        $defaultUntil = now()->toDateString();
+
+                        if (($data['created_from'] ?? null) && $data['created_from'] !== $defaultFrom) {
                             $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['created_from'])->format('d M Y');
                         }
-                        if ($data['created_until'] ?? null) {
+                        if (($data['created_until'] ?? null) && $data['created_until'] !== $defaultUntil) {
                             $indicators[] = 'Until: ' . \Carbon\Carbon::parse($data['created_until'])->format('d M Y');
                         }
                         return $indicators;

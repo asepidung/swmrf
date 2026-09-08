@@ -81,22 +81,27 @@ class DeliveryOrderDetailList extends Page implements HasTable
                     ->limit(30),
             ])
             ->filters([
+                // Keputusan Owner, 7 September 2026 (dikoreksi ulang setelah
+                // rujukan CashBookResource ditemukan): perbaikan pertama
+                // menghapus default-nya sama sekali (kosong = tanpa
+                // batasan), tapi `project.md:112` mewajibkan silent date
+                // filter untuk halaman Detail List, dan Owner minta seragam
+                // "tanggal 1 bulan ini sampai hari ini" tetap jadi tampilan
+                // bawaan -- cuma badge-nya yang tidak boleh terlihat aktif
+                // sejak awal. Sekarang ikut pola CashBookResource: default
+                // ADA di form, badge cuma tampil kalau user mengubahnya.
                 Tables\Filters\Filter::make('delivery_date')
                     ->form([
                         \Filament\Forms\Components\DatePicker::make('delivery_from')
-                            ->label(__('From Date')),
+                            ->label(__('From Date'))
+                            ->default(now()->startOfMonth()),
                         \Filament\Forms\Components\DatePicker::make('delivery_until')
-                            ->label(__('Until Date')),
+                            ->label(__('Until Date'))
+                            ->default(now()),
                     ])
-                    // Keputusan Owner, 7 September 2026: dulu kosongnya field
-                    // ini diam-diam diganti "bulan berjalan" di sini, padahal
-                    // form filter dan indicateUsing terlihat kosong/netral --
-                    // hasilnya seluruh data bulan lain hilang tanpa indikator
-                    // apa pun yang memberi tahu user sedang tersaring. Sekarang
-                    // kosong berarti benar-benar tidak ada batasan tanggal.
                     ->query(function (Builder $query, array $data): Builder {
-                        $from = $data['delivery_from'] ?? null;
-                        $until = $data['delivery_until'] ?? null;
+                        $from = $data['delivery_from'] ?? now()->startOfMonth()->toDateString();
+                        $until = $data['delivery_until'] ?? now()->toDateString();
 
                         return $query->whereHas('deliveryOrder', function ($q) use ($from, $until) {
                             $q->when(
@@ -110,10 +115,13 @@ class DeliveryOrderDetailList extends Page implements HasTable
                     })
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
-                        if ($data['delivery_from'] ?? null) {
+                        $defaultFrom = now()->startOfMonth()->toDateString();
+                        $defaultUntil = now()->toDateString();
+
+                        if (($data['delivery_from'] ?? null) && $data['delivery_from'] !== $defaultFrom) {
                             $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['delivery_from'])->format('d M Y');
                         }
-                        if ($data['delivery_until'] ?? null) {
+                        if (($data['delivery_until'] ?? null) && $data['delivery_until'] !== $defaultUntil) {
                             $indicators[] = 'Until: ' . \Carbon\Carbon::parse($data['delivery_until'])->format('d M Y');
                         }
                         return $indicators;

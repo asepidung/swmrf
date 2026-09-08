@@ -516,16 +516,26 @@ class SalesOrderResource extends Resource
                     ->searchable()
                     ->preload(),
 
+                // Silent date filter, standar modul transaksional (rujukan:
+                // CashBookResource) -- default bulan berjalan ADA di form,
+                // badge cuma tampil kalau user mengubahnya. Sebelumnya
+                // `until` memakai `SalesOrder::max('delivery_date')` --
+                // dipertimbangkan lagi karena delivery_date bisa jatuh di
+                // masa depan, tapi Owner memutuskan tetap seragam "tanggal 1
+                // sampai hari ini" di semua modul, termasuk ini (7 September
+                // 2026).
                 Tables\Filters\Filter::make('delivery_date')
                     ->form([
                         Forms\Components\DatePicker::make('delivery_from')
-                            ->label(__('From Date')),
+                            ->label(__('From Date'))
+                            ->default(now()->startOfMonth()),
                         Forms\Components\DatePicker::make('delivery_until')
-                            ->label(__('Until Date')),
+                            ->label(__('Until Date'))
+                            ->default(now()),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         $from = $data['delivery_from'] ?? now()->startOfMonth()->toDateString();
-                        $until = $data['delivery_until'] ?? SalesOrder::max('delivery_date') ?? now()->toDateString();
+                        $until = $data['delivery_until'] ?? now()->toDateString();
 
                         return $query
                             ->when(
@@ -539,10 +549,13 @@ class SalesOrderResource extends Resource
                     })
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
-                        if ($data['delivery_from'] ?? null) {
+                        $defaultFrom = now()->startOfMonth()->toDateString();
+                        $defaultUntil = now()->toDateString();
+
+                        if (($data['delivery_from'] ?? null) && $data['delivery_from'] !== $defaultFrom) {
                             $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['delivery_from'])->format('d M Y');
                         }
-                        if ($data['delivery_until'] ?? null) {
+                        if (($data['delivery_until'] ?? null) && $data['delivery_until'] !== $defaultUntil) {
                             $indicators[] = 'Until: ' . \Carbon\Carbon::parse($data['delivery_until'])->format('d M Y');
                         }
                         return $indicators;

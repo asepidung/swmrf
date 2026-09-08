@@ -331,12 +331,17 @@ Tables\Actions\ActionGroup::make([
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()?->hasPermission('view_deleted_repacks') ?? false),
 
+                // Silent date filter, standar modul transaksional (rujukan:
+                // CashBookResource) -- default bulan berjalan ADA di form,
+                // badge cuma tampil kalau user mengubahnya.
                 Tables\Filters\Filter::make('repack_date')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')
-                            ->label(__('From Date')),
+                            ->label(__('From Date'))
+                            ->default(now()->startOfMonth()),
                         Forms\Components\DatePicker::make('created_until')
-                            ->label(__('Until Date')),
+                            ->label(__('Until Date'))
+                            ->default(now()),
                     ])
                     ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
                         $from = $data['created_from'] ?? now()->startOfMonth()->toDateString();
@@ -354,11 +359,14 @@ Tables\Actions\ActionGroup::make([
                     })
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
-                        if ($data['created_from'] ?? null) {
+                        $defaultFrom = now()->startOfMonth()->toDateString();
+                        $defaultUntil = now()->toDateString();
+
+                        if (($data['created_from'] ?? null) && $data['created_from'] !== $defaultFrom) {
                             $indicators[] = Tables\Filters\Indicator::make('From: ' . \Carbon\Carbon::parse($data['created_from'])->toFormattedDateString())
                                 ->removeField('created_from');
                         }
-                        if ($data['created_until'] ?? null) {
+                        if (($data['created_until'] ?? null) && $data['created_until'] !== $defaultUntil) {
                             $indicators[] = Tables\Filters\Indicator::make('Until: ' . \Carbon\Carbon::parse($data['created_until'])->toFormattedDateString())
                                 ->removeField('created_until');
                         }

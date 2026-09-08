@@ -68,19 +68,22 @@ class PurchaseCattleDetailList extends Page implements HasTable
                     ->limit(30),
             ])
             ->filters([
+                // Keputusan Owner, 7 September 2026 (dikoreksi ulang):
+                // silent date filter wajib (project.md:112), rujukan
+                // CashBookResource -- default ADA di form, badge cuma
+                // tampil kalau user mengubahnya.
                 Tables\Filters\Filter::make('po_date')
                     ->form([
                         Forms\Components\DatePicker::make('po_from')
-                            ->label(__('From Date')),
+                            ->label(__('From Date'))
+                            ->default(now()->startOfMonth()),
                         Forms\Components\DatePicker::make('po_until')
-                            ->label(__('Until Date')),
+                            ->label(__('Until Date'))
+                            ->default(now()),
                     ])
-                    // Keputusan Owner, 7 September 2026: kosong berarti tanpa
-                    // batasan tanggal -- dulu diam-diam dibatasi bulan
-                    // berjalan meski form terlihat kosong.
                     ->query(function (Builder $query, array $data): Builder {
-                        $from = $data['po_from'] ?? null;
-                        $until = $data['po_until'] ?? null;
+                        $from = $data['po_from'] ?? now()->startOfMonth()->toDateString();
+                        $until = $data['po_until'] ?? now()->toDateString();
 
                         return $query->whereHas('purchaseCattle', function ($q) use ($from, $until) {
                             $q->when(
@@ -94,10 +97,13 @@ class PurchaseCattleDetailList extends Page implements HasTable
                     })
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
-                        if ($data['po_from'] ?? null) {
+                        $defaultFrom = now()->startOfMonth()->toDateString();
+                        $defaultUntil = now()->toDateString();
+
+                        if (($data['po_from'] ?? null) && $data['po_from'] !== $defaultFrom) {
                             $indicators[] = 'From: ' . Carbon::parse($data['po_from'])->format('d M Y');
                         }
-                        if ($data['po_until'] ?? null) {
+                        if (($data['po_until'] ?? null) && $data['po_until'] !== $defaultUntil) {
                             $indicators[] = 'Until: ' . Carbon::parse($data['po_until'])->format('d M Y');
                         }
                         return $indicators;
