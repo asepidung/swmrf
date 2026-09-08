@@ -192,10 +192,23 @@ class DeliveryPlanResource extends Resource
                     ->relationship('customer', 'name')
                     ->searchable()
                     ->preload(),
+                // Silent date filter, standar modul transaksional (rujukan:
+                // CashBookResource) -- TAPI hanya sisi `from` yang ikut pola
+                // itu di sini. `until` SENGAJA dibiarkan tanpa batas atas:
+                // `ListDeliveryPlans::getTabs()` punya tab "Active" yang
+                // memang harus menampilkan delivery_date di MASA DEPAN
+                // (rencana kirim besok, lusa, dst -- lihat
+                // `it_filters_active_and_history_delivery_plans_correctly`
+                // di DeliveryPlanTest.php). Menyamakan `until` ke "hari ini"
+                // seperti modul lain membuat tab Active kehilangan semua
+                // rencana yang belum jatuh tempo -- ketahuan lewat suite
+                // penuh, bukan lewat baca kode. `from` tetap dibatasi bulan
+                // berjalan (aman, cuma menyembunyikan riwayat lama).
                 Tables\Filters\Filter::make('delivery_date')
                     ->form([
                         Forms\Components\DatePicker::make('delivery_from')
-                            ->label(__('From Date')),
+                            ->label(__('From Date'))
+                            ->default(now()->startOfMonth()),
                         Forms\Components\DatePicker::make('delivery_until')
                             ->label(__('Until Date')),
                     ])
@@ -215,7 +228,9 @@ class DeliveryPlanResource extends Resource
                     })
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
-                        if ($data['delivery_from'] ?? null) {
+                        $defaultFrom = now()->startOfMonth()->toDateString();
+
+                        if (($data['delivery_from'] ?? null) && $data['delivery_from'] !== $defaultFrom) {
                             $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['delivery_from'])->format('d M Y');
                         }
                         if ($data['delivery_until'] ?? null) {

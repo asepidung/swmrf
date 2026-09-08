@@ -80,19 +80,22 @@ class SalesOrderDetailList extends Page implements HasTable
                     ->limit(30),
             ])
             ->filters([
+                // Keputusan Owner, 7 September 2026 (dikoreksi ulang):
+                // silent date filter wajib (project.md:112), rujukan
+                // CashBookResource -- default ADA di form, badge cuma
+                // tampil kalau user mengubahnya.
                 Tables\Filters\Filter::make('delivery_date')
                     ->form([
                         \Filament\Forms\Components\DatePicker::make('delivery_from')
-                            ->label(__('From Date')),
+                            ->label(__('From Date'))
+                            ->default(now()->startOfMonth()),
                         \Filament\Forms\Components\DatePicker::make('delivery_until')
-                            ->label(__('Until Date')),
+                            ->label(__('Until Date'))
+                            ->default(now()),
                     ])
-                    // Keputusan Owner, 7 September 2026: kosong berarti tanpa
-                    // batasan tanggal -- dulu diam-diam dibatasi bulan
-                    // berjalan meski form terlihat kosong.
                     ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
-                        $from = $data['delivery_from'] ?? null;
-                        $until = $data['delivery_until'] ?? null;
+                        $from = $data['delivery_from'] ?? now()->startOfMonth()->toDateString();
+                        $until = $data['delivery_until'] ?? now()->toDateString();
 
                         return $query->whereHas('salesOrder', function ($q) use ($from, $until) {
                             $q->when(
@@ -106,10 +109,13 @@ class SalesOrderDetailList extends Page implements HasTable
                     })
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
-                        if ($data['delivery_from'] ?? null) {
+                        $defaultFrom = now()->startOfMonth()->toDateString();
+                        $defaultUntil = now()->toDateString();
+
+                        if (($data['delivery_from'] ?? null) && $data['delivery_from'] !== $defaultFrom) {
                             $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['delivery_from'])->format('d M Y');
                         }
-                        if ($data['delivery_until'] ?? null) {
+                        if (($data['delivery_until'] ?? null) && $data['delivery_until'] !== $defaultUntil) {
                             $indicators[] = 'Until: ' . \Carbon\Carbon::parse($data['delivery_until'])->format('d M Y');
                         }
                         return $indicators;

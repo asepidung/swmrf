@@ -91,19 +91,22 @@ class InvoiceDetailList extends Page implements HasTable
                     ->sortable(),
             ])
             ->filters([
+                // Keputusan Owner, 7 September 2026 (dikoreksi ulang):
+                // silent date filter wajib (project.md:112), rujukan
+                // CashBookResource -- default ADA di form, badge cuma
+                // tampil kalau user mengubahnya.
                 Tables\Filters\Filter::make('invoice_date')
                     ->form([
                         Forms\Components\DatePicker::make('date_from')
-                            ->label(__('From Date')),
+                            ->label(__('From Date'))
+                            ->default(now()->startOfMonth()),
                         Forms\Components\DatePicker::make('date_until')
-                            ->label(__('Until Date')),
+                            ->label(__('Until Date'))
+                            ->default(now()),
                     ])
-                    // Keputusan Owner, 7 September 2026: kosong berarti tanpa
-                    // batasan tanggal -- dulu diam-diam dibatasi bulan
-                    // berjalan meski form terlihat kosong.
                     ->query(function (Builder $query, array $data): Builder {
-                        $from = $data['date_from'] ?? null;
-                        $until = $data['date_until'] ?? null;
+                        $from = $data['date_from'] ?? now()->startOfMonth()->toDateString();
+                        $until = $data['date_until'] ?? now()->toDateString();
 
                         return $query->whereHas('invoice', function ($q) use ($from, $until) {
                             $q->when($from, fn ($q, $date) => $q->whereDate('invoice_date', '>=', $date))
@@ -112,10 +115,13 @@ class InvoiceDetailList extends Page implements HasTable
                     })
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
-                        if ($data['date_from'] ?? null) {
+                        $defaultFrom = now()->startOfMonth()->toDateString();
+                        $defaultUntil = now()->toDateString();
+
+                        if (($data['date_from'] ?? null) && $data['date_from'] !== $defaultFrom) {
                             $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['date_from'])->format('d M Y');
                         }
-                        if ($data['date_until'] ?? null) {
+                        if (($data['date_until'] ?? null) && $data['date_until'] !== $defaultUntil) {
                             $indicators[] = 'Until: ' . \Carbon\Carbon::parse($data['date_until'])->format('d M Y');
                         }
                         return $indicators;

@@ -184,12 +184,17 @@ class BoningResource extends Resource
                     ->searchable(),
             ])
             ->filters([
+                // Silent date filter, standar modul transaksional (rujukan:
+                // CashBookResource) -- default bulan berjalan ADA di form,
+                // badge cuma tampil kalau user mengubahnya.
                 Tables\Filters\Filter::make('boning_date')
                     ->form([
                         Forms\Components\DatePicker::make('boning_from')
-                            ->label(__('From Date')),
+                            ->label(__('From Date'))
+                            ->default(now()->startOfMonth()),
                         Forms\Components\DatePicker::make('boning_until')
-                            ->label(__('Until Date')),
+                            ->label(__('Until Date'))
+                            ->default(now()),
                     ])
                     ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
                         $from = $data['boning_from'] ?? now()->startOfMonth()->toDateString();
@@ -201,10 +206,13 @@ class BoningResource extends Resource
                     })
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
-                        if ($data['boning_from'] ?? null) {
+                        $defaultFrom = now()->startOfMonth()->toDateString();
+                        $defaultUntil = now()->toDateString();
+
+                        if (($data['boning_from'] ?? null) && $data['boning_from'] !== $defaultFrom) {
                             $indicators[] = __('From Date') . ': ' . \Carbon\Carbon::parse($data['boning_from'])->format('d M Y');
                         }
-                        if ($data['boning_until'] ?? null) {
+                        if (($data['boning_until'] ?? null) && $data['boning_until'] !== $defaultUntil) {
                             $indicators[] = __('Until Date') . ': ' . \Carbon\Carbon::parse($data['boning_until'])->format('d M Y');
                         }
                         return $indicators;

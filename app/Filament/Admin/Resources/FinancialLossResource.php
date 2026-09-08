@@ -160,36 +160,45 @@ class FinancialLossResource extends Resource
                         ->mapWithKeys(fn (string $sumber): array => [$sumber => __($sumber)])
                         ->all()),
 
-                // Keputusan Owner, 7 September 2026: sebelumnya kedua field
-                // ini punya ->default() bulan berjalan, jadi begitu halaman
-                // dibuka filter ini SUDAH terlihat aktif/tercentang -- padahal
-                // belum ada apa pun yang dipilih user. Sekarang filter ini
-                // netral sampai user sendiri mengisinya lewat GUI; tidak ada
-                // batasan tanggal tersembunyi yang diam-diam diterapkan ke
-                // query (lihat juga perbaikan serupa di *DetailList.php untuk
-                // kasus yang lebih parah: data hilang tanpa indikator sama
-                // sekali).
+                // Keputusan Owner, 7 September 2026 (dikoreksi ulang setelah
+                // rujukan CashBookResource ditemukan): bukan soal "ada
+                // default" atau "tidak ada default" -- soal form dan query
+                // TIDAK SEPAKAT. Perbaikan pertama menghapus default-nya sama
+                // sekali (kosong = tanpa batasan), padahal `project.md:112`
+                // mewajibkan silent date filter, dan Owner sendiri minta
+                // "dari tanggal 1 bulan ini sampai hari ini" tetap jadi
+                // tampilan bawaan -- cuma badge-nya yang tidak boleh terlihat
+                // aktif sejak awal. Sekarang ikut pola CashBookResource:
+                // default ADA di form (jujur kalau panel dibuka), badge cuma
+                // tampil kalau user mengubahnya dari default.
                 Tables\Filters\Filter::make('date')
                     ->form([
                         Forms\Components\DatePicker::make('from')
-                            ->label(__('From')),
+                            ->label(__('From'))
+                            ->default(now()->startOfMonth()),
                         Forms\Components\DatePicker::make('until')
-                            ->label(__('Until')),
+                            ->label(__('Until'))
+                            ->default(now()),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
+                        $from = $data['from'] ?? now()->startOfMonth()->format('Y-m-d');
+                        $until = $data['until'] ?? now()->format('Y-m-d');
+
                         return $query
-                            ->when($data['from'] ?? null, fn (Builder $q, $date) => $q->whereDate('date', '>=', $date))
-                            ->when($data['until'] ?? null, fn (Builder $q, $date) => $q->whereDate('date', '<=', $date));
+                            ->when($from, fn (Builder $q, $date) => $q->whereDate('date', '>=', $date))
+                            ->when($until, fn (Builder $q, $date) => $q->whereDate('date', '<=', $date));
                     })
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
+                        $defaultFrom = now()->startOfMonth()->format('Y-m-d');
+                        $defaultUntil = now()->format('Y-m-d');
 
-                        if ($data['from'] ?? null) {
+                        if (($data['from'] ?? null) && $data['from'] !== $defaultFrom) {
                             $indicators[] = Tables\Filters\Indicator::make(__('From').': '.Carbon::parse($data['from'])->format('d M Y'))
                                 ->removeField('from');
                         }
 
-                        if ($data['until'] ?? null) {
+                        if (($data['until'] ?? null) && $data['until'] !== $defaultUntil) {
                             $indicators[] = Tables\Filters\Indicator::make(__('Until').': '.Carbon::parse($data['until'])->format('d M Y'))
                                 ->removeField('until');
                         }

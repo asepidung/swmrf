@@ -702,12 +702,17 @@ class InvoiceResource extends Resource
                     ->toggle()
                     ->query(fn (\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder => $query->whereNull('invoice_exchange_date')->whereHas('customer', fn($q) => $q->where('invoice_exchange', true))),
 
+                // Silent date filter, standar modul transaksional (rujukan:
+                // CashBookResource) -- default bulan berjalan ADA di form,
+                // badge cuma tampil kalau user mengubahnya.
                 Tables\Filters\Filter::make('invoice_date')
                     ->form([
                         Forms\Components\DatePicker::make('date_from')
-                            ->label(__('From Date')),
+                            ->label(__('From Date'))
+                            ->default(now()->startOfMonth()),
                         Forms\Components\DatePicker::make('date_until')
-                            ->label(__('Until Date')),
+                            ->label(__('Until Date'))
+                            ->default(now()),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         $from = $data['date_from'] ?? now()->startOfMonth()->toDateString();
@@ -719,10 +724,13 @@ class InvoiceResource extends Resource
                     })
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
-                        if ($data['date_from'] ?? null) {
+                        $defaultFrom = now()->startOfMonth()->toDateString();
+                        $defaultUntil = now()->toDateString();
+
+                        if (($data['date_from'] ?? null) && $data['date_from'] !== $defaultFrom) {
                             $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['date_from'])->format('d M Y');
                         }
-                        if ($data['date_until'] ?? null) {
+                        if (($data['date_until'] ?? null) && $data['date_until'] !== $defaultUntil) {
                             $indicators[] = 'Until: ' . \Carbon\Carbon::parse($data['date_until'])->format('d M Y');
                         }
                         return $indicators;

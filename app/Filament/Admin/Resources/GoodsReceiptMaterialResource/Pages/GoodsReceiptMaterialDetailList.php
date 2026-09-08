@@ -71,19 +71,22 @@ class GoodsReceiptMaterialDetailList extends Page implements HasTable
                     ->sortable(),
             ])
             ->filters([
+                // Keputusan Owner, 7 September 2026 (dikoreksi ulang):
+                // silent date filter wajib (project.md:112), rujukan
+                // CashBookResource -- default ADA di form, badge cuma
+                // tampil kalau user mengubahnya.
                 Tables\Filters\Filter::make('receive_date')
                     ->form([
                         Forms\Components\DatePicker::make('gr_from')
-                            ->label(__('From Date')),
+                            ->label(__('From Date'))
+                            ->default(now()->startOfMonth()),
                         Forms\Components\DatePicker::make('gr_until')
-                            ->label(__('Until Date')),
+                            ->label(__('Until Date'))
+                            ->default(now()),
                     ])
-                    // Keputusan Owner, 7 September 2026: kosong berarti tanpa
-                    // batasan tanggal -- dulu diam-diam dibatasi bulan
-                    // berjalan meski form terlihat kosong.
                     ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
-                        $from = $data['gr_from'] ?? null;
-                        $until = $data['gr_until'] ?? null;
+                        $from = $data['gr_from'] ?? now()->startOfMonth()->toDateString();
+                        $until = $data['gr_until'] ?? now()->toDateString();
 
                         return $query->whereHas('goodsReceiptMaterial', function ($q) use ($from, $until) {
                             $q->when(
@@ -97,10 +100,13 @@ class GoodsReceiptMaterialDetailList extends Page implements HasTable
                     })
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
-                        if ($data['gr_from'] ?? null) {
+                        $defaultFrom = now()->startOfMonth()->toDateString();
+                        $defaultUntil = now()->toDateString();
+
+                        if (($data['gr_from'] ?? null) && $data['gr_from'] !== $defaultFrom) {
                             $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['gr_from'])->format('d M Y');
                         }
-                        if ($data['gr_until'] ?? null) {
+                        if (($data['gr_until'] ?? null) && $data['gr_until'] !== $defaultUntil) {
                             $indicators[] = 'Until: ' . \Carbon\Carbon::parse($data['gr_until'])->format('d M Y');
                         }
                         return $indicators;

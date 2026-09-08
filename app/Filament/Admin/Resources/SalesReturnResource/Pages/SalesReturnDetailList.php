@@ -104,27 +104,43 @@ class SalesReturnDetailList extends Page implements HasTable
                 ->color('success'),
             ])
             ->filters([
+                // Keputusan Owner, 7 September 2026 (dikoreksi ulang):
+                // silent date filter wajib (project.md:112), rujukan
+                // CashBookResource -- default ADA di form, badge cuma
+                // tampil kalau user mengubahnya. `->when()` tetap wajib:
+                // field defaultnya bisa dikosongkan lewat GUI, dan
+                // whereDate(..., null) tanpa penjaga akan menghilangkan
+                // SEMUA baris, bukan cuma bulan lain.
                 Tables\Filters\Filter::make('created_at')
                     ->form([
                         \Filament\Forms\Components\DatePicker::make('from')
-                            ->label(__('From Date')),
+                            ->label(__('From Date'))
+                            ->default(now()->startOfMonth()),
                         \Filament\Forms\Components\DatePicker::make('until')
-                            ->label(__('Until Date')),
+                            ->label(__('Until Date'))
+                            ->default(now()),
                     ])
-                    // Keputusan Owner, 7 September 2026: dulu kosongnya field
-                    // ini diam-diam diganti "bulan berjalan" -- dibuang tanpa
-                    // ->when() di sini pun berbahaya: whereDate(..., null)
-                    // tidak pernah cocok, jadi tanpa penjaga ini SEMUA baris
-                    // akan hilang begitu filter dikosongkan, bukan cuma bulan
-                    // lain. Sekarang kosong benar-benar berarti tanpa batasan.
                     ->query(function (Builder $query, array $data): Builder {
-                        $from = $data['from'] ?? null;
-                        $until = $data['until'] ?? null;
+                        $from = $data['from'] ?? now()->startOfMonth()->toDateString();
+                        $until = $data['until'] ?? now()->toDateString();
 
                         return $query->whereHas('salesReturn', function ($q) use ($from, $until) {
                             $q->when($from, fn ($q, $date) => $q->whereDate('created_at', '>=', $date))
                               ->when($until, fn ($q, $date) => $q->whereDate('created_at', '<=', $date));
                         });
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        $defaultFrom = now()->startOfMonth()->toDateString();
+                        $defaultUntil = now()->toDateString();
+
+                        if (($data['from'] ?? null) && $data['from'] !== $defaultFrom) {
+                            $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['from'])->format('d M Y');
+                        }
+                        if (($data['until'] ?? null) && $data['until'] !== $defaultUntil) {
+                            $indicators[] = 'Until: ' . \Carbon\Carbon::parse($data['until'])->format('d M Y');
+                        }
+                        return $indicators;
                     }),
             ]);
     }

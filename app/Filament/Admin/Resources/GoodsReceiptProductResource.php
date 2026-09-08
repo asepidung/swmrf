@@ -159,12 +159,17 @@ class GoodsReceiptProductResource extends Resource
                 Tables\Filters\SelectFilter::make('supplier_id')
                     ->relationship('supplier', 'name')
                     ->label(__('Supplier')),
+                // Silent date filter, standar modul transaksional (rujukan:
+                // CashBookResource) -- default bulan berjalan ADA di form,
+                // badge cuma tampil kalau user mengubahnya.
                 Tables\Filters\Filter::make('receive_date')
                     ->form([
                         Forms\Components\DatePicker::make('from')
-                            ->label(__('From')),
+                            ->label(__('From'))
+                            ->default(now()->startOfMonth()),
                         Forms\Components\DatePicker::make('until')
-                            ->label(__('Until')),
+                            ->label(__('Until'))
+                            ->default(now()),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         $from = $data['from'] ?? now()->startOfMonth()->toDateString();
@@ -178,6 +183,19 @@ class GoodsReceiptProductResource extends Resource
                                 $until,
                                 fn (Builder $query, $date): Builder => $query->whereDate('receive_date', '<=', $date),
                             );
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        $defaultFrom = now()->startOfMonth()->toDateString();
+                        $defaultUntil = now()->toDateString();
+
+                        if (($data['from'] ?? null) && $data['from'] !== $defaultFrom) {
+                            $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['from'])->format('d M Y');
+                        }
+                        if (($data['until'] ?? null) && $data['until'] !== $defaultUntil) {
+                            $indicators[] = 'Until: ' . \Carbon\Carbon::parse($data['until'])->format('d M Y');
+                        }
+                        return $indicators;
                     }),
             ])
             ->actions([

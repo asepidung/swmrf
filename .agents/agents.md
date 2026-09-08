@@ -5891,3 +5891,130 @@ karena sapuan sekaligus tanpa konfirmasi visual per modul). Sengaja
 DITUNDA dan dilaporkan ke Owner secara eksplisit supaya diprioritaskan
 sendiri -- bukan bug yang "dilupakan", tapi bug yang ditemukan lalu
 sengaja diserahkan keputusan cakupannya ke Owner sebelum dikerjakan.
+
+## #359 -- Silent date filter: `CashBookResource` adalah rujukan resminya, dan arah perbaikan #358 salah
+
+Tindak lanjut #358. Sebelum menyapu 30 titik yang ditunda, Hafizh
+memeriksa ulang dan menemukan sesuatu yang seharusnya dicek LEBIH DULU di
+#358: `project.md:112` -- **"Halaman Detail (Flat List) ... wajib punya
+Custom Page `detail-list` ... lengkap dengan silent date filter dan
+Export."** Silent date filter itu STANDAR TERDOKUMENTASI, bukan bug.
+
+**`CashBookResource`** (ditulis Project Owner sendiri, 30 Agustus 2026)
+adalah SATU-SATUNYA implementasi yang benar-benar mengikuti standar itu
+sejak awal, dan sekarang jadi rujukan resmi untuk seluruh modul lain:
+
+```php
+->form([
+    DatePicker::make('from')->default(now()->startOfMonth()),
+    DatePicker::make('until')->default(now()),
+])
+->query(fn ($q, $data) => $q
+    ->when($data['from'] ?? now()->startOfMonth()->format('Y-m-d'), ...)
+    ->when($data['until'] ?? now()->format('Y-m-d'), ...))
+->indicateUsing(function ($data) {
+    // badge CUMA muncul kalau nilainya BEDA dari default
+    if (($data['from'] ?? null) && $data['from'] !== $defaultFrom) { ... }
+});
+```
+
+Bug intinya BUKAN "ada default" atau "tidak ada default" -- soal **form
+dan query tidak sepakat**:
+
+```
+CashBook (benar) :  form terisi bulan ini  +  query bulan ini   -> sepakat
+30 titik (rusak) :  form KOSONG            +  query bulan ini   -> berbohong
+#358 (arah salah):  form kosong            +  query tanpa batas -> sepakat,
+                                                tapi mengubah perilaku bawaan
+                                                dan melanggar project.md:112
+```
+
+**Arah perbaikan #358 KELIRU.** Menghapus `->default()` sama sekali
+(kosong = tanpa batasan) memang membuat form dan query sepakat lagi, tapi
+mengubah balik perilaku bawaan seluruh modul transaksional dari "bulan
+berjalan" jadi "sepanjang masa", dan melanggar standar wajib yang sudah
+ada. Owner, setelah ditanya soal kemungkinan lain (memakai tanggal
+terbaru di data untuk modul bertanggal depan seperti Delivery Plan atau
+jatuh tempo Invoice), memutuskan SERAGAM: "dari tanggal 1 bulan ini
+sampai hari ini", di semua modul, tanpa pengecualian -- termasuk
+`SalesOrderResource` yang sebelumnya punya kekhususan
+`SalesOrder::max('delivery_date')` untuk `until` (sudah dinormalkan ke
+`now()` juga) dan `FinancialLossResource`.
+
+**Diperbaiki ke pola CashBookResource, 25 berkas sekaligus** (12 dari
+#358 dikoreksi ulang + 13 titik baru yang di #358 sengaja ditunda):
+`TallyResource`, `GoodsReceiptProductResource` (+ `.../Pages/
+GoodsReceiptProductDetailList`), `BoningResource`,
+`DeliveryOrderReceiptResource`, `DeliveryOrderResource` (+ `.../Pages/
+DeliveryOrderDetailList`), `DeliveryPlanResource` (+ `.../Pages/
+DeliveryPlanDetailList`), `PurchaseProductResource` (+ `.../Pages/
+PurchaseProductDetailList`), `RepackResource`, `CattleReceivingResource`,
+`SalesOrderResource` (+ `.../Pages/SalesOrderDetailList`),
+`InvoiceResource` (+ `.../Pages/InvoiceDetailList`),
+`MaterialRequisitionResource/Pages/ListMaterialRequisitionDetails`,
+`ProductRequisitionResource/Pages/ListProductRequisitionDetails`,
+`GoodsReceiptMaterialResource/Pages/GoodsReceiptMaterialDetailList`,
+`PurchaseMaterialResource/Pages/PurchaseMaterialDetailList`,
+`PurchaseCattleResource/Pages/PurchaseCattleDetailList`,
+`MutationResource/Pages/MutationDetailList`,
+`SalesReturnResource/Pages/SalesReturnDetailList`,
+`FinancialLossResource`.
+
+**Dua titik lebih parah dari sekadar "kehilangan default":**
+`MutationResource/Pages/MutationDetailList.php` dan
+`SalesReturnResource/Pages/SalesReturnDetailList.php` memanggil
+`whereDate(..., $from)` TANPA `->when()` sama sekali -- begitu field-nya
+dikosongkan lewat GUI (mudah sekali, tombol "x" bawaan Filament ada di
+tiap DatePicker), `whereDate(..., null)` tidak akan pernah cocok dan
+SEMUA baris hilang, bukan cuma bulan lain. Ditambahkan penjaga
+`->when()` yang benar di keduanya, sekaligus `indicateUsing()` yang
+sebelumnya tidak ada sama sekali di kedua berkas itu.
+
+**Satu "salah ketik" yang ternyata BUKAN salah ketik -- ketahuan lewat
+suite penuh, bukan lewat baca kode:** `DeliveryPlanResource.php` (Resource
+utama, bukan DetailList-nya) punya `until` yang sejak awal `?? null` --
+beda dari `from`-nya yang `?? now()->startOfMonth()`. Pertama disangka
+inkonsistensi yang perlu diseragamkan (sudah sempat disamakan ke
+`?? now()->toDateString()`, sama seperti 24 titik lain), TAPI
+`php artisan test` penuh langsung memerah:
+`DeliveryPlanTest::it_filters_and_history_delivery_plans_correctly`
+gagal -- rencana kirim BESOK hilang dari tab "Active".
+
+Sebabnya: `ListDeliveryPlans::getTabs()` sengaja mendefinisikan tab
+"Active" yang harus menampilkan `delivery_date` di MASA DEPAN (rencana
+yang belum jatuh tempo). `until` yang `?? null` (tanpa batas atas) BUKAN
+bug -- itu SATU-SATUNYA cara batasan tanggal di Filter ini tidak
+bentrok dengan tab yang butuh melihat ke depan. Menyamakannya ke
+"hari ini" seperti modul lain membuat tab Active kosong dari apa pun yang
+belum jatuh tempo, tepat kasus "modul bertanggal depan" yang sempat
+ditanyakan ke Owner sebelum keputusan seragam diambil -- tapi belum ada
+yang menaruh test di depan mata saat itu. Dikoreksi: `from` tetap ikut
+pola CashBookResource (default bulan berjalan), `until` dikembalikan
+tanpa batas atas sama sekali (form tanpa `->default()`, query tanpa
+fallback `now()`) -- pengecualian yang DISENGAJA dan didokumentasikan
+langsung di kode, bukan bug yang lolos. `DeliveryPlanResource/Pages/
+DeliveryPlanDetailList.php` (halaman Detail/Flat List-nya, laporan
+historis tanpa konsep "Active") tidak kena pengecualian ini, tetap penuh
+mengikuti pola CashBookResource.
+
+**Penjaga permanen, bukan sekali pakai:**
+`tests/Feature/SilentDateFilterDefaultTest.php` -- memindai SELURUH
+`app/Filament/` mencari `Filter::make()` (bukan `SelectFilter`/
+`TrashedFilter`) yang blok `query()`-nya punya fallback `?? now(...)`
+TANPA `->default()` yang sepadan di form-nya. Dibiarkan hidup permanen di
+`tests/Feature/` (bukan dibuang sesudah dipakai seperti sapuan #358),
+supaya pola "form kosong, query diam-diam berbeda" ini tidak bisa
+tersalin lagi ke modul berikutnya tanpa ketahuan. Dibuktikan menggigit:
+`->default()` di `CattleReceivingResource.php` sengaja dihapus sementara,
+test memerah tepat menunjuk baris yang dihapus, dipulihkan, test hijau
+lagi.
+
+**Yang SENGAJA TIDAK disentuh:** `FoundItemScanner.php` (cluster
+BeefStocks) dan `StockTakeResource/Pages/ScanStockTake.php` sempat
+tertangkap regex awal di #358 karena sama-sama punya `$data['pack_date']
+?? now()` -- setelah dibaca, keduanya BUKAN filter tanggal tabel sama
+sekali, melainkan fallback pada field `pack_date` yang `->required()` di
+dalam FORM pembuatan barcode temuan (nilainya dijamin selalu ada saat
+action berjalan, `?? now()` di situ kode mati/jaga-jaga, bukan bug).
+`CashBookResource.php` sendiri tidak disentuh -- dia rujukannya, sudah
+benar sejak awal.
