@@ -57,6 +57,7 @@ class MaterialUnitResource extends Resource
             ->filters([
                 //
             ])
+            ->defaultSort('name')
             ->actions([
                 //
             ])
@@ -86,3 +87,4 @@ class MaterialUnitResource extends Resource
         ];
     }
 }
+

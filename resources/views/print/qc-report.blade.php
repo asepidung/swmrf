@@ -123,7 +123,8 @@
                     <tr>
                         <td class="nomor">{{ $nomor + 1 }}</td>
                         <td>{{ $temuan->description }}</td>
-                        <td class="jumlah">{{ $temuan->affected_count !== null ? number_format($temuan->affected_count) : '-' }}</td>
+                        {{-- Teks bebas sejak 8 September 2026 ("5 Pcs", "2 Kg"), bukan lagi angka. --}}
+                        <td class="jumlah">{{ filled($temuan->affected_count) ? $temuan->affected_count : '-' }}</td>
                         <td>{{ $temuan->action_taken ?: '-' }}</td>
                     </tr>
                 @endforeach

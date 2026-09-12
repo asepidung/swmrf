@@ -56,6 +56,10 @@ class MaterialUsageRepack extends EditRecord
                             ->relationship('materialUsages')
                             ->schema([
                                 Forms\Components\Select::make('material_id')
+                                    ->columnSpan([
+                                        'default' => 1,
+                                        'md' => 5,
+                                    ])
                                     ->label(__('Material'))
                                     ->hiddenLabel()
                                     ->placeholder(__('Material'))
@@ -63,13 +67,17 @@ class MaterialUsageRepack extends EditRecord
                                     ->required()
                                     ->searchable()
                                     ->live()
-                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                                    ->afterStateUpdated(fn ($state, Forms\Set $set) => $set('unit', Material::find($state)?->unit?->name)),
+                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
                                 
                                 Forms\Components\TextInput::make('qty')
+                                    ->columnSpan([
+                                        'default' => 1,
+                                        'md' => 3,
+                                    ])
                                     ->label(__('Quantity'))
                                     ->hiddenLabel()
                                     ->placeholder(__('Quantity'))
+                                    ->suffix(fn ($get) => Material::find($get('material_id'))?->unit?->name)
                                     // Tanpa komponen angka bawaan; tombol panahnya
                                     // gampang tertekan tanpa sengaja.
                                     ->extraInputAttributes(['inputmode' => 'decimal'])
@@ -77,21 +85,17 @@ class MaterialUsageRepack extends EditRecord
                                     ->rules(['numeric', 'gt:0'])
                                     ->validationMessages(['gt' => __('Quantity must be greater than zero.')]),
 
-                                Forms\Components\TextInput::make('unit')
-                                    ->label(__('Unit'))
-                                    ->hiddenLabel()
-                                    ->placeholder(__('Unit'))
-                                    ->disabled()
-                                    ->dehydrated(false)
-                                    ->formatStateUsing(fn ($get) => Material::find($get('material_id'))?->unit?->name),
-
                                 Forms\Components\TextInput::make('note')
+                                    ->columnSpan([
+                                        'default' => 1,
+                                        'md' => 4,
+                                    ])
                                     ->label(__('Note'))
                                     ->hiddenLabel()
                                     ->placeholder(__('Note'))
                                     ->maxLength(255),
                             ])
-                            ->columns(4)
+                            ->columns(['default' => 1, 'md' => 12])
                             ->addActionLabel(__('Add Material'))
                             ->defaultItems(0)
                     ]),

@@ -103,13 +103,47 @@ class DeliveryOrderResource extends Resource
                                 return $tallyId ? \App\Models\Tally::find($tallyId)?->seal_number : null;
                             }),
 
-                        Forms\Components\TextInput::make('driver')
+                        Forms\Components\Select::make('driver_id')
                             ->label(__('Driver'))
+                            ->relationship('driver', 'name', fn ($query) => $query->where('is_active', true))
+                            ->searchable()
+                            ->preload()
                             ->autofocus()
-                            ->required(),
+                            ->required()
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('name')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->unique(ignoreRecord: true),
+                                Forms\Components\Toggle::make('is_active')
+                                    ->default(true),
+                            ])
+                            ->default(function () {
+                                $tallyId = request()->query('tally_id');
+                                return $tallyId ? \App\Models\Tally::with('salesOrder.deliveryPlan')->find($tallyId)?->salesOrder?->deliveryPlan?->driver_id : null;
+                            }),
 
-                        Forms\Components\TextInput::make('police_number')
-                            ->label(__('Police Number')),
+                        Forms\Components\Select::make('vehicle_id')
+                            ->label(__('Fleet'))
+                            ->relationship('vehicle', 'vehicle_type', fn ($query) => $query->where('is_active', true))
+                            ->getOptionLabelFromRecordUsing(fn (\App\Models\Vehicle $record) => "{$record->vehicle_type} - {$record->police_number}")
+                            ->searchable()
+                            ->preload()
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('vehicle_type')
+                                    ->required()
+                                    ->maxLength(255),
+                                Forms\Components\TextInput::make('police_number')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->unique(ignoreRecord: true),
+                                Forms\Components\Toggle::make('is_active')
+                                    ->default(true),
+                            ])
+                            ->default(function () {
+                                $tallyId = request()->query('tally_id');
+                                return $tallyId ? \App\Models\Tally::with('salesOrder.deliveryPlan')->find($tallyId)?->salesOrder?->deliveryPlan?->vehicle_id : null;
+                            }),
 
                         Forms\Components\Textarea::make('note')
                             ->label(__('Note'))

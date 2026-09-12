@@ -14,6 +14,7 @@ class CustomerGroup extends Model
         'name',
         'head_office_address',
         'head_office_pic',
+        'top',
     ];
 
     public function setNameAttribute($value)

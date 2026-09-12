@@ -137,6 +137,7 @@ class MaterialResource extends Resource
                 Tables\Filters\TernaryFilter::make('show_in_stock')
                     ->label(fn() => __('Show In Stock')),
             ])
+            ->defaultSort('name')
             ->actions([
                 //
             ])
@@ -192,3 +193,4 @@ class MaterialResource extends Resource
         ];
     }
 }
+

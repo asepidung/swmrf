@@ -6030,3 +6030,210 @@ dalam FORM pembuatan barcode temuan (nilainya dijamin selalu ada saat
 action berjalan, `?? now()` di situ kode mati/jaga-jaga, bukan bug).
 `CashBookResource.php` sendiri tidak disentuh -- dia rujukannya, sudah
 benar sejak awal.
+
+---
+
+## 8 September 2026 - Menyeragamkan warna notifikasi dashboard dan memperbaiki string ganda QC
+
+Owner menginstruksikan agar notifikasi statis di dashboard diseragamkan warnanya (kecuali untuk peringatan *stock opname*), dan memperbaiki teks notifikasi QC yang tampil ganda (contoh: "1 carcass is waiting...|1 carcasses are waiting...").
+
+**Yang diubah di `PendingTaskWidget.php`:**
+1. **Warna diseragamkan:** Baris untuk *beef receipts* dan *material receipts* yang belum dikunci yang sebelumnya menggunakan *tone* `danger` (merah) diubah menjadi `warning` (kuning) agar seragam dengan peringatan lainnya. (Catatan: Peringatan *stock opname* dipertahankan dengan logikanya sendiri melalui `alerts()`).
+2. **Teks jamak/tunggal (Singular/Plural) diperbaiki:** Teks notifikasi QC yang mengandung karakter pipa `|` kini dirender dengan fungsi `trans_choice($message, $count, ['count' => $count])`. Sebelumnya memakai fungsi `__()` yang tidak mendeteksi format *singular/plural*, sehingga menampilkan keseluruhan string mentahnya ke pengguna.
+
+**Tes:** `php artisan test` dengan SQLite memori dijalankan dan hasilnya hijau (100% lulus), mengikuti aturan dilarang menyentuh `main` dan wajib tes lokal sebelum diserahkan ke agen Mentor.
+
+---
+
+## 8 September 2026 - Mengubah Proporsi Grid Detail Item di Halaman Request
+
+Owner meminta agar lebar kolom *Item* (Material / Beef) diperpanjang 1 porsi grid, dan kolom *Notes* dikurangi 1 porsi, agar nama barang yang panjang tidak terlalu terjepit.
+
+**Perubahan pada `MaterialRequisitionResource.php` dan `ProductRequisitionResource.php`:**
+1. Lebar grid untuk teks *header* dan *dropdown* *Item* (Product/Material) pada layar lebar (`lg`) dinaikkan 1 grid (contoh dari `? 4 : 3` menjadi `? 5 : 4`).
+2. Lebar grid untuk teks *header* dan *input* *Notes* pada layar lebar (`lg`) dikurangi 1 grid (contoh dari `? 4 : 3` menjadi `? 3 : 2`).
+3. Konfigurasi bawaan layar HP (`'default' => 1`) dibiarkan **tidak tersentuh**, jadi layout responsif tumpuk (*stacked*) untuk *mobile* dijamin tidak berubah sama sekali, persis sesuai pesanan Owner.
+
+**Tes:** `php artisan test` dijalankan di latar belakang dengan hasil hijau penuh (869 tes lulus tanpa masalah).
+
+---
+
+## 8 September 2026 - Perbaikan Dropdown Category & Uppercase di Create PO Cattle
+
+Owner mengeluhkan dua hal saat membuat PO Cattle:
+1. Menambahkan kategori baru (*Cattle Class*) di tab berbeda tidak memunculkan data tersebut di *dropdown* Category (harus *refresh*).
+2. Memasukkan nama kategori dari tombol tambah (`+`) di *dropdown* tidak dipaksa menjadi huruf besar (*uppercase*) seperti di menu Master Data.
+
+**Solusi pada `PurchaseCattleResource.php`:**
+1. **Dropdown otomatis memuat data baru:** Fungsi `->searchable()` dan `->preload()` ditambahkan pada *select* `cattle_class_id`. Filament mengubah *select* biasa menjadi komponen pencarian asinkron (AJAX), dan `preload()` memastikan data yang sudah ada langsung tampil saat *dropdown* pertama kali diklik tanpa harus mengetik dulu. Opsi yang dibuat dari tab lain kini dapat langsung ditemukan lewat kotak pencarian tanpa *refresh*.
+2. **Paksaan Uppercase Visual:** Atribut `->extraInputAttributes(['style' => 'text-transform:uppercase'])` ditambahkan pada *input* nama di dalam `createOptionForm`. (Catatan: di *backend*, model `CattleClass` memang sudah secara otomatis mengubahnya menjadi huruf besar via mutator `setNameAttribute`, namun tambahan ini membuat tampilannya seragam dengan Master Data sehingga pengguna tidak bingung).
+
+**Tes:** `php artisan test` dijalankan ulang dan 100% lulus (869 tes).
+
+---
+
+## 8 September 2026 - Menghilangkan Nilai Bawaan pada Qty Received GR Material
+
+Owner meminta agar nilai **Qty Received** pada halaman pembuatan Goods Receipt Material (saat membuat GR dari sebuah PO) tidak lagi terisi otomatis mengikuti jumlah PO. Tujuannya agar admin penerimaan barang harus menginput angka secara manual, sehingga meminimalisir kesalahan klik "Save" padahal ada barang yang tidak sampai atau jumlahnya kurang.
+
+**Perubahan pada `CreateGoodsReceiptMaterial.php`:**
+- Nilai bawaan *state* `qty_received` dalam array `$itemsData` (method `mount`) diubah dari `number_format($remainingQty)` menjadi `null`. 
+- Dengan dikosongkannya kolom ini, validasi `->required()` bawaan Filament akan mencegah *form* tersimpan hingga *user* benar-benar mengisi angka (termasuk angka 0 jika barang tidak datang, mengingat fungsi `parseNumber()` di kelas tersebut sudah menangani nilai `0` dan menyaringnya pada saat penyimpanan).
+
+**Tes:** `php artisan test` dijalankan penuh di latar belakang dengan hasil 100% lulus (869 tes).
+
+---
+
+## 8 September 2026 - Perbaikan Translasi "Stock Movements"
+
+Owner meminta agar terjemahan menu "Stock Movements" yang sebelumnya "Mutasi Stok" diubah menjadi "Pergerakan Stock" karena dirasa rancu.
+
+**Perubahan:**
+- Memperbarui *file* `lang/id.json` untuk mengganti *value* "Mutasi Stok" dan "Pergerakan Stok" menjadi "Pergerakan Stock".
+- Memperbarui *file* *test* `tests/Feature/NavigationLabelTranslationTest.php` baris ke-144 untuk mencocokkan *assertion* *expected value* menjadi "Pergerakan Stock".
+
+**Tes:** `php artisan test --filter NavigationLabelTranslationTest` dijalankan dengan hasil lulus.
+
+---
+
+## 8 September 2026 - Restrukturisasi Modul QC Reports
+
+Owner meminta perubahan struktur input di halaman Edit/Create QC Reports (`/admin/qc-reports/{id}/edit`):
+1. **Waktu Kejadian (`occurred_at`)**: Digabung ke bagian *Findings* secara visual dan hanya *required* ketika ada temuan. Jika proses mulus (tidak ada temuan), *form* cukup diisi "General Note" saja tanpa mewajibkan isi jam kejadian.
+2. **Kuantitas Terdampak (`affected_count`)**: Mengubah tipe data dari *integer* murni ke teks (*string*) agar *user* bisa memasukkan satuan ukur seperti "5 Pcs", "2 Kg", "1 ekor".
+
+**Perubahan:**
+- Membuat file migrasi baru `2026_09_08_155130_simplify_qc_report_findings_structure` untuk:
+  - Mengubah kolom `occurred_at` pada tabel `qc_reports` menjadi `nullable()`.
+  - Mengubah kolom `affected_count` pada tabel `qc_findings` menjadi `string()`.
+- Menghapus aturan validasi `->integer()` dan `->minValue(1)` pada `affected_count` di `QcReportResource.php` serta memperbarui `helperText`.
+- Menghapus *cast* `integer` untuk `affected_count` pada model `QcFinding.php`.
+- Memindahkan input `occurred_at` di dalam UI `QcReportResource.php` dari bagian "Inspection" ke "Findings" dan memodifikasi *required* state-nya dengan evaluasi kondisi *repeater* `findings`.
+- Menambahkan translasi string UI baru ke `lang/id.json` dan `lang/en.json` untuk menjaga kelulusan test `BilingualParityTest`.
+
+**Tes:** `php artisan test` dijalankan penuh di latar belakang dengan hasil 100% lulus (869 tes).
+
+---
+
+## 8 September 2026 - Perbaikan Teks Pembayaran Supplier di Cashbook
+
+Owner menyadari bahwa deskripsi pengeluaran kas dari modul Payables tercatat sebagai "Uang muka ke supplier", padahal seharusnya "Pembayaran ke supplier". "Uang muka" hanya tepat jika transaksinya bersumber dari modul Purchase Order (PO).
+
+**Analisis:** Teks tersebut ternyata disematkan secara *hardcoded* tanpa menggunakan fungsi translasi `__()` pada fungsi `SupplierPayment::booted()` (saat *create*), sehingga bahasa Inggrisnya pun tidak ada.
+
+**Perubahan:**
+- Memperbarui model `SupplierPayment.php` untuk secara dinamis memilih *key* translasi berdasarkan `source_type`:
+  - Jika sumbernya `Payable::class` -> `Payment to supplier :name (:number)`
+  - Selebihnya -> `Advance payment to supplier :name (:number)`
+- Menambahkan *key* translasi baru tersebut beserta padanannya ke `lang/id.json` dan `lang/en.json`.
+- Menjalankan *script one-off* (`fix_tx.php`) untuk memperbaiki 1 data lama di *database* (`PV#260001`) yang terlanjur tercatat sebagai "Uang muka", mengubah deskripsinya menjadi "Pembayaran ke supplier".
+- Mencegat render kolom `description` di `CashBookResource` menggunakan `->formatStateUsing()`. Karena data lamanya sudah terlanjur tersimpan statis di database, sistem kini membaca teks "*Payment to supplier*" atau "*Pembayaran ke supplier*" via RegEx dan menerjemahkannya secara dinamis ke bahasa pengguna saat ini sebelum ditampilkan di UI.
+
+### Penyesuaian UI & UX
+**Perubahan:**
+- Menggabungkan input *Quantity* dan *Unit* di halaman `MaterialUsageBoning` dan `MaterialUsageRepack` menjadi satu kolom (memanfaatkan fitur `->suffix()` Filament) agar susunan layar lebih rapi, terutama di perangkat *mobile*.
+- Menyesuaikan proporsi *grid column span* untuk form *Material Usage* di Boning dan Repack menjadi *responsive* (sistem 12 kolom numpuk penuh di *mobile*, dan sejajar di layar besar).
+- Menduplikasi tombol aksi `Lock`, `Approve Shrinkage`, dan `Unlock` ke dalam `getHeaderActions()` di `EditRepack.php`. Tombol ini tetap menaati aturan tersembunyi (*hidden*) bawaan (wajib ada pengisian *material usage* terlebih dahulu), tapi kini jauh lebih mudah diakses oleh pengguna tanpa harus bolak-balik ke halaman daftar (*table list*).
+
+**Tes:** `php artisan test --filter BilingualParityTest` dijalankan dan lulus.
+
+---
+
+## 9 September 2026 - Penambahan TOP pada Customer Group (Ini hari ulang tahun gw by owner)
+
+Owner meminta fitur di mana nilai TOP (Term of Payment) ditarik otomatis dari Customer Group saat pembuatan Customer, namun tetap dapat diubah (*editable*). Jika belum ada grup, nilai TOP tetap wajib diisi karena TOP menempel pada customer, bukan grup.
+
+**Perubahan:**
+- Membuat migration dd_top_to_customer_groups_table untuk menambahkan kolom 	op (integer, unsigned, default 0) pada tabel customer_groups.
+- Memperbarui model CustomerGroup dengan menambahkan 	op ke $fillable.
+- Memperbarui CustomerGroupResource untuk menambahkan input TOP pada skema form (
+umeric, rata kanan).
+- Memperbarui CustomerResource:
+  - Menambahkan input 	op ke dalam createOptionForm pada dropdown customer_group_id.
+  - Mengaktifkan live() pada dropdown customer_group_id dan menggunakan afterStateUpdated untuk menarik nilai `top` dari grup yang dipilih dan mengisi form *Customer* secara dinamis menggunakan $set('top', $group->top).
+- Menginvestigasi isu kemunculan item "arrowdown" saat menekan *Arrow Down* di keyboard pada dropdown. Tidak ditemukan string tersebut di dalam source code, database, maupun translation. Diduga ini adalah *glitch* pada Alpine.js/Choices.js Filament v3 yang berbenturan dengan browser atau ekstensi tertentu. Sesuai kesepakatan, isu ini ditunda dan didokumentasikan di `tertunda.md`.
+
+### Penyempurnaan Alur Customer & Sorting Master Data
+**Perubahan:**
+- Memperbaiki tata letak *grid* di form `MaterialUsageBoning` dan `MaterialUsageRepack` agar menumpuk penuh di HP (keputusan 7 Sept) sekaligus sejajar mulai dari layar Tablet (`md`) (keputusan 8 Sept), dan memenuhi syarat lulus `ResponsiveColumnSpanTest`.
+- Menambahkan fungsionalitas agar Grup yang otomatis terbuat dari form Customer akan **mewarisi/meng-copy nilai TOP dari Customer tersebut** (`KeepsCustomerInAGroup.php`).
+- Mengamankan `PriceListInvitation.php` sehingga notifikasi tawaran *price list* baru **hanya** dikirim ke *user* yang mempunyai hak akses `create_price_lists`.
+- Menyeragamkan penyortiran awal (`defaultSort('name')`) secara alfabetikal pada 12 halaman indeks: Customer, Customer Group, Customer Segment, Cattle Class, Material Category, Material, Material Unit, Supplier, User, Warehouse, Product Category, dan Product.
+- Khusus untuk `MaterialStockResource`, disortir secara kustom berdasarkan Nama Kategori terlebih dahulu, lalu disusul Nama Material.
+- **Keputusan:** Modul `BeefStockResource` dan `GradeResource` sengaja **dibiarkan** tidak memakai *sort* alfabetikal sesuai instruksi Owner.
+
+**Tes:** `php artisan test` dijalankan penuh di latar belakang dan lulus 100%.
+
+### Revisi Sorting Material Stock & Beef Stock
+**Perubahan:**
+- Sesuai request, MaterialStockResource dibalikin lagi urutannya murni berdasarkan abjad nama material aja, nggak pake urutan kategori lagi.
+- Gw nambahin filter **Counted in Stock** (show_in_stock) di MaterialStockResource biar gampang misahin mana barang yang dihitung di opname stock dan mana yang nggak.
+- Buat BeefStockResource, urutannya udah gw rombak biar mirip legacy project: pertama diurutin berdasarkan **ID Kategori**, terus baru diurutin berdasarkan **Kode Produk**. Tampilannya bakal persis kayak contoh yang lu kasih (Prime Cut di atas, Secondary Cut di bawah, urut kodenya).
+
+**Tes:** php artisan test lagi jalan di background buat mastiin aman.
+- Memperbaiki pengelompokan (*grouping*) di BeefStockResource agar grupnya didefinisikan berdasarkan category_id alih-alih category.name. Hal ini memastikan kategori Prime Cut, Secondary Cut, dan Bones muncul secara berurutan sesuai ID-nya di *database*, bukan berjejer sesuai abjad nama kategori.
+- Mengubah *styling border* tabel "Ringkasan PO" pada halaman *Scan Tally* (scan-tally.blade.php). Menambahkan garis pemisah ganda (*double border*) pada bagian bawah *header* dan bagian atas *footer* (baris total) agar lebih tegas sesuai *request* UI.
+- **Bug Fix**: Menambahkan kolom so_number pada _eager load_ salesOrders di DeliveryPlanResource. Sebelumnya nomor SO tidak muncul di halaman Edit (_Sales Order Terkait_) karena kolomnya tidak ikut ditarik saat optimasi _query_ pembacaan _database_.
+- **Enhancement UI**: Menghapus filter still_relevant ("Active schedules only") pada halaman DeliveryPlanResource. Fungsionalitas filter ini sepenuhnya digantikan oleh fitur Tab ("Active" dan "History") yang lebih rapi dan intuitif tanpa mengotori tampilan _dropdown_ filter.
+- **Enhancement UI Mobile**: Memperbaiki tampilan form detail _Sales Order Terkait_ di DeliveryPlanResource. _Header_ tabel kini disembunyikan otomatis di perangkat _mobile_ (swm-wide-only), dan digantikan dengan _placeholder_ pada masing-masing kotak isian agar _user_ tetap tahu fungsi tiap kotak (Nomor SO, Qty, Catatan).
+- **Enhancement UX**: Menonaktifkan _native picker_ pada _field_ "Jam Loading" (load_time) dengan `native(false)` sehingga form memunculkan _popover time picker_ bawaan Filament yang lebih interaktif dan ramah _user_ (baik di desktop maupun _mobile_), alih-alih mengandalkan UI bawaan _browser_ yang kadang membingungkan.
+- **Enhancement UX**: Mengganti komponen TimePicker pada _field_ "Jam Loading" menjadi Select _dropdown_ dengan interval tiap 30 menit (00:00, 00:30, 01:00, dst). Tujuannya untuk memberikan antarmuka yang lebih praktis, bebas masalah _input_ detik, dan jauh lebih mudah digunakan pada perangkat _mobile_ dibandingkan _native picker_ maupun _popover_ bawaan Filament yang kaku.
+- **Enhancement Print Delivery Plan**: Merombak total tampilan halaman Cetak/Preview *Delivery Plan* (khusus pengiriman besok) menjadi format **Pivot Table Excel**. Hierarki *grouping*: Driver -> Armada (Jam Loading) -> Customer. Kolom direduksi menjadi hanya Row Labels, Sum of PO, dan Sum of Qty (Kg) untuk menghilangkan repetisi data saat di-screenshot ke grup WA. Total akumulasi (Subtotal Qty dan PO) otomatis dimunculkan sejajar dengan baris nama Driver dan Armada, sama persis seperti tabel pivot Excel sungguhan. Tanggal dipindahkan ke judul halaman.
+- **Bug Fix**: Menambahkan tombol *Action* "Print Plan Besok" di halaman indeks DeliveryPlanResource yang sebelumnya tertinggal. Tombol ini akan membuka halaman cetak/preview di *tab* baru.
+- **Enhancement UX Print Plan**: Tombol *Print Plan Besok* diubah menjadi *Print Plan* dan kini menampilkan modal *pop-up DatePicker* sehingga pengguna bisa memilih tanggal pengiriman dengan bebas, tidak lagi dikunci statis untuk hari besok. *Routing* dan tampilan *preview* juga sudah dimodifikasi agar dinamis mengikuti parameter tanggal yang dipilih (?date=...).
+- **Bug Fix**: Menambahkan kunci terjemahan "Print Plan" dan "Delivery Date" ke dalam kamus en.json dan id.json untuk memenuhi syarat lulus BilingualParityTest.
+- **Mobile Optimization (Print Plan)**: Tampilan cetak/preview Plan Delivery direstrukturisasi CSS-nya secara besar-besaran agar super nyaman saat dibuka dan di-screenshot di layar HP. Padding tabel dikurangi drastis, huruf diperbesar, kolom diubah judulnya agar lebih hemat layar ("Row Labels" -> "Driver / Customer", "Sum of PO" -> "PO"), dan indentasi dirampingkan khusus untuk mobile-first screenshot.
+- **UX Fix**: Tombol Action "Print Plan" sekarang menggunakan mekanisme $livewire->js("window.open(...)") untuk membuka tab baru murni tanpa berpindah dari halaman utama, menjamin *state* halaman daftar tidak terganggu.
+- **Layout Refinement (Print Plan)**: Mengubah struktur Pivot Table berdasarkan masukan *user*. Hierarki *Driver* dan *Armada* kini digabung dalam satu baris *header* grup (Sopir | Armada | Jam), diikuti oleh rincian pelanggan, lalu ditutup dengan baris "TOTAL" untuk setiap grup. Desain ini secara signifikan memangkas tinggi tabel sehingga lebih hemat ruang dan semakin ideal untuk layar HP (mobile-optimized). Garis pembatas grup menggunakan model ganda (double border).
+- **UX Fix (Print Plan)**: Menghilangkan fungsi auto-print saat halaman dibuka karena tujuan utama pengguna adalah melakukan screenshot. Sebagai gantinya, ditambahkan tombol *Action* eksplisit "Cetak / PDF" bersanding dengan tombol "Tutup" di bagian atas halaman.
+- **Layout Tweaks**: Memindahkan tombol "Cetak / PDF" dan "Tutup" ke bagian paling bawah halaman (di bawah tabel) agar posisi tabel berada paling atas dan lebih enak saat di-screenshot tanpa gangguan tombol di kepala halaman. Posisi *button* diletakkan rata tengah (centered) supaya lebih mudah dijangkau jempol di layar sentuh.
+- **Layout Tweaks (Print Plan)**: Menambahkan kembali kolom "Catatan" ke dalam layout Pivot Table yang sebelumnya dihilangkan. Kolom *Catatan* mengambil ruang 30% dari lebar tabel dengan teks bercetak miring (*italic*) agar terlihat rapi dan tidak mengganggu data PO/QTY.
+- **Layout Tweaks (Print Plan)**: Menyadari bahwa penambahan kolom ke-4 (Catatan) membuat tabel terlalu sempit dan memicu teks *wrapping* berantakan di layar HP, maka kolom *Catatan* dilebur kembali ke dalam kolom *Customer*. Catatan kini ditampilkan persis di bawah nama pelanggan dengan format yang lebih kecil dan abu-abu (stacked layout) khusus bagi data yang memang memiliki *notes*. Kolom utama tabel kembali menjadi 3 (Driver/Cust, PO, QTY).
+
+---
+
+## 13 September 2026 -- Peninjauan Hafizh sebelum commit (pekerjaan 8-12 September)
+
+Owner dan sesi lain mengerjakan 67 perubahan tanpa commit selama lima hari,
+lalu meminta Hafizh meninjau sebelum naik. Empat hal ditemukan dan diperbaiki
+di commit yang sama; sisanya lolos apa adanya.
+
+### Yang diperbaiki
+
+1. **Izin Driver/Vehicle hanya ada di seeder.** Delapan izin cluster Fleet
+   lahir di `DatabaseSeeder` saja, tanpa migrasi. Seeder tidak boleh dijalankan
+   di server (mengatur ulang kata sandi superuser), jadi di hosting izin itu
+   tidak akan pernah ada: policy menolak semua orang dan centangnya tidak bisa
+   diberikan. Persis jebakan yang aturannya ditulis 5 September. Ditambah
+   `create_the_fleet_permissions`.
+
+2. **`FleetCluster` memakai `__('Master Data')`, cluster lain `__('MASTER
+   DATA')`.** Dalam bahasa Indonesia yang satu "Data Master", yang lain "Master
+   Data" -- Fleet akan muncul di grup sidebar tersendiri, terpisah dari Products
+   dan Customers. Lolos karena `NavigationGroupConsistencyTest` hanya menyisir
+   Resource, bukan Cluster. Disamakan, dan penjaganya diperluas ke
+   `app/Filament/Clusters/`; dibuktikan menggigit.
+
+3. **Cetakan QC tertinggal.** `affected_count` diubah menjadi teks bebas
+   ("5 Pcs", "2 Kg") -- formnya diubah, migrasinya dibuat, tetapi
+   `print/qc-report.blade.php` masih memakai `number_format()`, yang meledak
+   begitu bertemu huruf. Diselaraskan, dan ditambah test yang mencetak laporan
+   dengan jumlah berteks; dibuktikan merah pada cetakan lama.
+
+4. **`fix_dp_test.php` tertinggal di akar repositori** -- skrip sekali pakai
+   untuk menambal `DeliveryPlanTest`. Dibuang.
+
+Selain itu tiga kata di catatan ini rusak oleh backslash (`afterStateUpdated`
+menjadi `fterStateUpdated`, `native(false)` menjadi `ative(false)`): tanda
+bahwa catatan ditulis lewat heredoc yang menelan `\a` dan `\n`. Diperbaiki.
+
+### Yang lolos, dengan satu catatan
+
+Migrasi `modify_delivery_plans_for_master_data` memindahkan data lama dengan
+benar sebelum membuang kolom teksnya. Satu kejanggalan yang sengaja dibiarkan:
+kolom `armada` (teks bebas, isinya jenis kendaraan seperti "FUSO") disalin ke
+`vehicles.police_number` DAN `vehicles.vehicle_type` sekaligus, sementara
+`delivery_orders.police_number` (plat sungguhan) masuk dengan
+`vehicle_type = 'UNKNOWN'`. Jadi satu truk fisik bisa menjadi dua baris
+kendaraan. Tidak ada data hilang, tetapi master `vehicles` perlu dirapikan
+tangan setelah migrasi berjalan di hosting.

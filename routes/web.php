@@ -182,10 +182,10 @@ Route::middleware(['web', 'auth'])->group(function () {
     // ------------------------------------------
     // 8. MODUL PLAN DELIVERY PREVIEW
     // ------------------------------------------
-    Route::get('/print/delivery-plan/preview', function () {
-        $tomorrow = now()->addDay()->toDateString();
+    Route::get('/print/delivery-plan/preview', function (\Illuminate\Http\Request $request) {
+        $targetDate = $request->query('date', now()->addDay()->toDateString());
 
-        $records = \App\Models\DeliveryPlan::whereDate('delivery_date', $tomorrow)
+        $records = \App\Models\DeliveryPlan::whereDate('delivery_date', $targetDate)
             ->whereHas('salesOrders', function ($q) {
                 $q->whereNotIn('status', ['canceled', 'cancelled']);
             })
@@ -193,7 +193,7 @@ Route::middleware(['web', 'auth'])->group(function () {
             ->get()
             ->sortBy('customer.name');
 
-        return view('print.delivery-plan-preview', compact('records', 'tomorrow'));
+        return view('print.delivery-plan-preview', compact('records', 'targetDate'));
     })->name('print.delivery-plan.preview');
 
     // ------------------------------------------

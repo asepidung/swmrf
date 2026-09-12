@@ -52,14 +52,16 @@ class PriceListInvitation
         // Tautannya hanya ditampilkan kepada yang memang berhak mengisi
         // harga. Menawarkan pintu yang terkunci lebih membingungkan
         // daripada tidak menawarkan apa-apa.
-        if (auth()->user()?->hasPermission('create_price_lists')) {
-            $notification->actions([
-                Action::make('create_price_list')
-                    ->label(__('Create Price List Now'))
-                    ->button()
-                    ->url(PriceListResource\Pages\EditPriceList::getUrl([$group->id])),
-            ]);
+        if (! auth()->user()?->hasPermission('create_price_lists')) {
+            return;
         }
+
+        $notification->actions([
+            Action::make('create_price_list')
+                ->label(__('Create Price List Now'))
+                ->button()
+                ->url(PriceListResource\Pages\EditPriceList::getUrl([$group->id])),
+        ]);
 
         $notification->send();
     }

@@ -91,7 +91,7 @@ class WarehouseResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->defaultSort('id')
+            ->defaultSort('name')
             ->headerActions([
                 Tables\Actions\Action::make('export_excel')
                     ->label(fn () => __('Excel'))
@@ -146,3 +146,4 @@ class WarehouseResource extends Resource
         ];
     }
 }
+

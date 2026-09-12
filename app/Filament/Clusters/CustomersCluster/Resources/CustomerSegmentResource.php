@@ -71,6 +71,7 @@ class CustomerSegmentResource extends Resource
             ->filters([
                 //
             ])
+            ->defaultSort('name')
             ->actions([
                 //
             ])

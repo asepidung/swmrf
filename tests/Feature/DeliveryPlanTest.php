@@ -278,8 +278,8 @@ class DeliveryPlanTest extends TestCase
 
         $plan = DeliveryPlan::find($so->delivery_plan_id);
         $plan->update([
-            'driver' => 'JOHN DOE',
-            'armada' => 'TRUCK A',
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'Joko'])->id,
+            'vehicle_id' => \App\Models\Vehicle::firstOrCreate(['vehicle_type' => 'FUSO', 'police_number' => 'B 1234 CD'])->id,
             'load_time' => '08:00:00',
         ]);
 
@@ -289,8 +289,8 @@ class DeliveryPlanTest extends TestCase
         ]);
 
         $plan = $plan->fresh();
-        $this->assertEquals('JOHN DOE', $plan->driver);
-        $this->assertEquals('TRUCK A', $plan->armada);
+        $this->assertEquals('Joko', $plan->driver->name);
+        $this->assertEquals('FUSO - B 1234 CD', $plan->vehicle->vehicle_type . ' - ' . $plan->vehicle->police_number);
         $this->assertEquals('08:00:00', $plan->load_time);
     }
 }

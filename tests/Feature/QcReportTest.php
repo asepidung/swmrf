@@ -329,6 +329,37 @@ class QcReportTest extends TestCase
         $this->assertSame(0, $this->tugasQc(), 'Tugasnya masih terhitung padahal laporannya sudah diisi.');
     }
 
+    /**
+     * Cetakannya sanggup menampilkan jumlah temuan yang berupa TEKS.
+     *
+     * Sejak 8 September 2026 `affected_count` bukan lagi angka melainkan
+     * teks bebas ("5 Pcs", "2 Kg"). Formnya diubah, migrasinya dibuat, tetapi
+     * cetakannya tertinggal memakai `number_format()` -- yang meledak begitu
+     * bertemu huruf. Ditemukan saat peninjauan 13 September, sebelum
+     * di-commit. Penjaga ini menahan kelas kesalahannya: skema berubah,
+     * salah satu pembacanya tidak ikut.
+     */
+    public function test_the_print_shows_a_free_text_affected_count(): void
+    {
+        $this->seed(\Database\Seeders\DatabaseSeeder::class);
+
+        $laporan = $this->laporan($this->carcass());
+
+        QcFinding::create([
+            'qc_report_id' => $laporan->id,
+            'description' => 'Plastik vakum sobek.',
+            'affected_count' => '5 Pcs',
+        ]);
+
+        $pembaca = User::factory()->create(['role' => 'employee', 'is_active' => true]);
+        $pembaca->permissions()->attach(Permission::where('name', 'view_qc_reports')->firstOrFail()->id);
+
+        $this->actingAs($pembaca)
+            ->get(route('qc-reports.print', $laporan))
+            ->assertOk()
+            ->assertSee('5 Pcs');
+    }
+
     /** Yang tidak boleh menulis laporan tidak diberi tugasnya. */
     public function test_someone_who_cannot_write_reports_is_not_given_the_task(): void
     {

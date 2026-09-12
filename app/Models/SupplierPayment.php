@@ -96,13 +96,19 @@ class SupplierPayment extends Model
             return;
         }
 
+        $isPayment = $this->source_type === \App\Models\Payable::class;
+        $langKey = $isPayment ? 'Payment to supplier :name (:number)' : 'Advance payment to supplier :name (:number)';
+
         BankTransaction::create([
             'bank_account_id' => $bankAccount->id,
             'type' => 'out',
             'amount' => $this->amount,
             'reference_type' => static::class,
             'reference_id' => $this->id,
-            'description' => 'Uang muka ke supplier ' . ($this->supplier->name ?? '-') . ' (' . $this->payment_number . ')',
+            'description' => __($langKey, [
+                'name' => $this->supplier->name ?? '-',
+                'number' => $this->payment_number,
+            ]),
             'transaction_date' => $this->payment_date,
         ]);
 

@@ -173,6 +173,7 @@ class UserResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_active')
                     ->label(__('Active Status')),
             ])
+            ->defaultSort('name')
             ->actions([
                 Tables\Actions\Action::make('reset_password')
                     ->label(__('Reset Password'))
@@ -220,3 +221,4 @@ class UserResource extends Resource
         ];
     }
 }
+

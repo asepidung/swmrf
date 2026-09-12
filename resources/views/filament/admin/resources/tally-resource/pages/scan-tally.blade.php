@@ -117,7 +117,7 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse text-sm">
                     <thead>
-                        <tr class="border-b border-gray-200 dark:border-gray-800 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                        <tr class="border-gray-200 dark:border-gray-800 text-xs font-semibold text-gray-500 dark:text-gray-400" style="border-bottom-width: 4px; border-bottom-style: double;">
                             <th class="py-2 px-2 font-semibold">{{ __('Product') }}</th>
                             <th class="py-2 px-2 text-right font-semibold whitespace-nowrap">{{ __('PO') }}</th>
                             <th class="py-2 px-2 text-right font-semibold whitespace-nowrap">{{ __('Scan / Box') }}</th>
@@ -164,7 +164,7 @@
                         @php
                             $totalBalance = $totalScan - $totalPo;
                         @endphp
-                        <tr class="border-t-2 border-gray-200 dark:border-gray-800 font-bold text-gray-900 dark:text-white">
+                        <tr class="border-gray-200 dark:border-gray-800 font-bold text-gray-900 dark:text-white" style="border-top-width: 4px; border-top-style: double;">
                             <td class="py-2 px-2">{{ __('Total') }}</td>
                             <td class="py-2 px-2 text-right whitespace-nowrap">{{ number_format($totalPo, 2) }}</td>
                             <td class="py-2 px-2 text-right whitespace-nowrap">

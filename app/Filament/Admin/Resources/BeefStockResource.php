@@ -485,7 +485,9 @@ class BeefStockResource extends Resource
             ->striped()
             ->paginated(false)
             ->defaultGroup(
-                Group::make('category.name')
+                Group::make('category_id')
+                    ->getTitleFromRecordUsing(fn (\App\Models\Product $record) => strtoupper($record->category->name ?? ''))
+                    ->orderQueryUsing(fn (Builder $query, string $direction) => $query->orderBy('category_id', $direction))
                     ->titlePrefixedWithLabel(false)
             )
             ->columns($columns)
@@ -602,6 +604,10 @@ class BeefStockResource extends Resource
                 // menyaringnya dari atas hanya mengulang hal yang sama dengan
                 // cara kedua.
             ])
+            ->defaultSort(fn (Builder $query) => $query
+                ->orderBy('category_id', 'asc')
+                ->orderBy('code', 'asc')
+            )
             ->actions([
                 // Clickable rows are enabled, no explicit view action button is needed
             ])

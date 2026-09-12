@@ -58,6 +58,7 @@ class MaterialCategoryResource extends Resource
             ->filters([
                 //
             ])
+            ->defaultSort('name')
             ->actions([
                 //
             ])
@@ -87,3 +88,4 @@ class MaterialCategoryResource extends Resource
         ];
     }
 }
+

@@ -11,18 +11,18 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
-            color: #1e293b;
+            background-color: #ffffff;
+            color: #000000;
             margin: 0;
-            padding: 24px;
+            padding: 8px; /* Dikurangi drastis untuk layar HP */
             -webkit-print-color-adjust: exact;
         }
         
-        /* Top Navigation Bar */
-        .top-bar {
+        /* Bottom Navigation Bar */
+        .bottom-bar {
             display: flex;
-            justify-content: flex-end;
-            margin-bottom: 16px;
+            justify-content: center;
+            margin-top: 24px;
         }
         .btn-close {
             display: inline-flex;
@@ -30,9 +30,9 @@
             background-color: #ef4444; /* Red color */
             color: #ffffff;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             padding: 8px 16px;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.05);
@@ -44,60 +44,71 @@
         }
 
         h2 {
-            text-align: center;
-            color: #0f172a;
-            margin-top: 10px;
-            margin-bottom: 4px;
-            font-size: 22px;
+            text-align: left;
+            color: #000000;
+            margin-top: 0;
+            margin-bottom: 12px;
+            font-size: 17px;
             font-weight: 700;
         }
-        .subtitle {
-            text-align: center;
-            color: #64748b;
-            margin-bottom: 24px;
-            font-size: 14px;
-        }
         
-        /* Desktop Table Layout */
-        .desktop-table {
+        /* Pivot Table Layout */
+        .pivot-table {
             width: 100%;
+            max-width: 100%;
             border-collapse: collapse;
             background-color: #ffffff;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid #e2e8f0;
+            font-size: 14px; /* Sedikit dibesarkan agar jelas di layar HP */
         }
-        .desktop-table th, .desktop-table td {
-            padding: 14px 16px;
+        .pivot-table th, .pivot-table td {
+            padding: 6px 4px; /* Padding sel direduksi */
             text-align: left;
-            border-bottom: 1px solid #f1f5f9;
         }
-        .desktop-table th {
-            background-color: #f8fafc;
-            color: #475569;
-            font-weight: 600;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            border-bottom: 2px solid #e2e8f0;
+        .pivot-table th {
+            background-color: #ffffff;
+            color: #000000;
+            font-weight: 700;
+            border-bottom: 1px solid #000000;
         }
-        .desktop-table td {
-            font-size: 14px;
-            color: #334155;
-        }
-        .desktop-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-        .desktop-table tbody tr:hover {
-            background-color: #f8fafc;
-        }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
+        .text-right { text-align: right !important; }
+        .text-center { text-align: center !important; }
 
-        /* Mobile Cards Layout (Hidden on Desktop) */
-        .mobile-cards {
-            display: none;
+        /* Group Header */
+        .group-header td {
+            font-weight: 700;
+            padding-top: 12px;
+        }
+
+        /* Item Row */
+        .item-row td {
+            background-color: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .item-row .row-label {
+            padding-left: 12px;
+        }
+
+        /* Group Total */
+        .group-total td {
+            font-weight: 700;
+            border-top: 1px solid #000000;
+            border-bottom: 3px double #000000; /* Double line separator as requested */
+            padding-top: 6px;
+            padding-bottom: 6px;
+        }
+
+        /* Grand Total */
+        .pivot-table tfoot th {
+            background-color: #ffffff;
+            color: #000000;
+            font-weight: 700;
+            border-bottom: 1px solid #000000;
+        }
+
+        .icon {
+            font-family: monospace;
+            margin-right: 4px;
+            color: #000000;
         }
 
         /* Print Specifics */
@@ -107,203 +118,92 @@
             }
             body {
                 padding: 0;
-                background-color: #ffffff;
-            }
-        }
-
-        /* Responsive Breakpoint for Phone / Mobile View */
-        @media (max-width: 768px) {
-            body {
-                padding: 16px;
-                background-color: #f1f5f9;
-            }
-            .top-bar {
-                margin-bottom: 12px;
-            }
-            h2 {
-                font-size: 18px;
-                margin-top: 5px;
-            }
-            .subtitle {
-                font-size: 12px;
-                margin-bottom: 16px;
-            }
-            .desktop-table {
-                display: none;
-            }
-            .mobile-cards {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-            }
-            .delivery-card {
-                background: #ffffff;
-                border: 1px solid #e2e8f0;
-                border-radius: 14px;
-                box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-                overflow: hidden;
-                border-left: 4px solid #3b82f6; /* Blue accent line */
-            }
-            .card-header {
-                background: #f8fafc;
-                padding: 12px 14px;
-                border-bottom: 1px solid #f1f5f9;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 8px;
-            }
-            .customer-name {
-                font-weight: 700;
-                font-size: 14px;
-                color: #0f172a;
-            }
-            .delivery-date {
-                font-size: 11px;
-                color: #475569;
-                background: #e2e8f0;
-                padding: 2px 6px;
-                border-radius: 9999px;
-                white-space: nowrap;
-                font-weight: 500;
-            }
-            .card-body {
-                padding: 14px;
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-            .info-row {
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-                font-size: 13px;
-                gap: 12px;
-            }
-            .info-label {
-                color: #64748b;
-                font-weight: 500;
-            }
-            .info-value {
-                color: #334155;
-                text-align: right;
-                flex-grow: 1;
-            }
-            .note-row {
-                flex-direction: column;
-                gap: 4px;
-                border-top: 1px dashed #e2e8f0;
-                padding-top: 8px;
-                margin-top: 2px;
-            }
-            .note-row .info-label {
-                font-size: 11px;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-            }
-            .note-row .info-value {
-                text-align: left;
-                width: 100%;
-                color: #475569;
-                font-style: italic;
-                font-size: 12px;
-            }
-            .no-records {
-                text-align: center;
-                padding: 30px 16px;
-                background: #ffffff;
-                border-radius: 14px;
-                border: 1px solid #e2e8f0;
-                color: #64748b;
-                font-size: 13px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Top Action Toolbar -->
-    <div class="top-bar no-print">
-        <button onclick="handleClose('{{ route('filament.admin.resources.delivery-plans.index') }}')" class="btn-close">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 14px; height: 14px; margin-right: 6px;">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            Tutup
-        </button>
-    </div>
 
-    <h2>Plan Delivery Preview</h2>
-    <div class="subtitle">Jadwal Kirim Besok ({{ \Carbon\Carbon::parse($tomorrow)->format('d M Y') }})</div>
 
-    <!-- Desktop Table View -->
-    <table class="desktop-table">
+    @php
+        // Grouping logic (Driver | Armada | Jam)
+        $groupedRecords = $records->groupBy(function($r) {
+            $driverName = $r->driver ? $r->driver->name : 'N/A';
+            $vehicleLabel = $r->vehicle ? $r->vehicle->vehicle_type . ' (' . $r->vehicle->police_number . ')' : 'N/A';
+            $loadTime = $r->load_time ? \Carbon\Carbon::parse($r->load_time)->format('H:i') : 'N/A';
+            return $driverName . ' | ' . $vehicleLabel . ' | ' . $loadTime;
+        });
+        $grandTotalPO = $records->sum('sales_orders_count');
+        $grandTotalQty = $records->sum('total_qty');
+    @endphp
+
+    <h2>Plan Delivery {{ \Carbon\Carbon::parse($targetDate)->translatedFormat('d M Y') }}</h2>
+
+    <table class="pivot-table">
         <thead>
             <tr>
-                <th class="text-center" width="5%">No</th>
-                <th width="12%">Tgl Kirim</th>
-                <th width="20%">Customer</th>
-                <th class="text-center" width="8%">Total PO</th>
-                <th class="text-right" width="10%">Qty (Kg)</th>
-                <th width="15%">Driver</th>
-                <th width="12%">Armada</th>
-                <th class="text-center" width="10%">Jam Loading</th>
-                <th width="18%">Notes</th>
+                <th width="70%"></th>
+                <th class="text-center" width="10%">PO</th>
+                <th class="text-right" width="20%">QTY</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($records as $index => $record)
-            <tr>
-                <td class="text-center">{{ $index + 1 }}</td>
-                <td>{{ $record->delivery_date ? \Carbon\Carbon::parse($record->delivery_date)->format('d-m-Y') : '-' }}</td>
-                <td>{{ optional($record->customer)->name ?? '-' }}</td>
-                <td class="text-center">{{ $record->sales_orders_count }}</td>
-                <td class="text-right">{{ number_format($record->total_qty) }}</td>
-                <td>{{ $record->driver ?? '-' }}</td>
-                <td>{{ $record->armada ?? '-' }}</td>
-                <td class="text-center">{{ $record->load_time ? \Carbon\Carbon::parse($record->load_time)->format('H:i') : '-' }}</td>
-                <td>{{ $record->notes ?? '-' }}</td>
-            </tr>
+            @forelse($groupedRecords as $groupLabel => $groupItems)
+                @php
+                    $groupTotalPO = $groupItems->sum('sales_orders_count');
+                    $groupTotalQty = $groupItems->sum('total_qty');
+                @endphp
+                
+                <!-- Group Header Row -->
+                <tr class="group-header">
+                    <td colspan="3">{{ $groupLabel }}</td>
+                </tr>
+                
+                <!-- Items Rows -->
+                @foreach($groupItems as $record)
+                <tr class="item-row">
+                    <td class="row-label">
+                        <span class="icon">[-]</span> {{ optional($record->customer)->name ?? 'Tanpa Customer' }}
+                        @if($record->notes)
+                            <div style="font-size: 11px; color: #6b7280; font-style: italic; margin-top: 2px; padding-left: 18px;">
+                                * {{ $record->notes }}
+                            </div>
+                        @endif
+                    </td>
+                    <td class="text-center" style="vertical-align: top;">{{ $record->sales_orders_count }}</td>
+                    <td class="text-right" style="vertical-align: top;">{{ number_format($record->total_qty) }}</td>
+                </tr>
+                @endforeach
+                
+                <!-- Group Total Row -->
+                <tr class="group-total">
+                    <td class="text-right"><strong>TOTAL</strong></td>
+                    <td class="text-center"><strong>{{ $groupTotalPO }}</strong></td>
+                    <td class="text-right"><strong>{{ number_format($groupTotalQty) }}</strong></td>
+                </tr>
             @empty
-            <tr>
-                <td colspan="9" class="text-center" style="color: #64748b;">Tidak ada jadwal pengiriman besok.</td>
-            </tr>
+                <tr>
+                    <td colspan="3" class="text-center" style="padding-top: 20px;">Tidak ada jadwal pengiriman.</td>
+                </tr>
             @endforelse
         </tbody>
+        <tfoot>
+            <tr>
+                <th>Grand Total</th>
+                <th class="text-center">{{ $grandTotalPO }}</th>
+                <th class="text-right">{{ number_format($grandTotalQty) }}</th>
+            </tr>
+        </tfoot>
     </table>
 
-    <!-- Mobile Cards View -->
-    <div class="mobile-cards">
-        @forelse($records as $index => $record)
-        <div class="delivery-card">
-            <div class="card-header">
-                <span class="customer-name">{{ optional($record->customer)->name ?? '-' }}</span>
-                <span class="delivery-date">{{ $record->delivery_date ? \Carbon\Carbon::parse($record->delivery_date)->format('d-m-Y') : '-' }}</span>
-            </div>
-            <div class="card-body">
-                <div class="info-row">
-                    <span class="info-label">Driver / Armada</span>
-                    <span class="info-value"><strong>{{ $record->driver ?? '-' }}</strong> @if($record->armada) ({{ $record->armada }}) @endif</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Jam Loading</span>
-                    <span class="info-value">{{ $record->load_time ? \Carbon\Carbon::parse($record->load_time)->format('H:i') : '-' }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">PO / Qty (Kg)</span>
-                    <span class="info-value">{{ $record->sales_orders_count }} PO | <strong>{{ number_format($record->total_qty) }} Kg</strong></span>
-                </div>
-                @if($record->notes)
-                <div class="info-row note-row">
-                    <span class="info-label">Notes</span>
-                    <span class="info-value">{{ $record->notes }}</span>
-                </div>
-                @endif
-            </div>
-        </div>
-        @empty
-        <div class="no-records">
-            Tidak ada jadwal pengiriman besok.
-        </div>
-        @endforelse
+    <!-- Bottom Action Toolbar -->
+    <div class="bottom-bar no-print" style="gap: 12px; padding-bottom: 24px;">
+        <button onclick="window.print()" style="background-color: #3b82f6; color: #ffffff; border: none; border-radius: 6px; padding: 10px 24px; font-size: 15px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);">
+            🖨️ Cetak / PDF
+        </button>
+        <button onclick="handleClose('{{ route('filament.admin.resources.delivery-plans.index') }}')" class="btn-close" style="padding: 10px 24px; font-size: 15px;">
+            Tutup
+        </button>
     </div>
 
     <!-- Smart Close Window / Redirect Script -->

@@ -163,7 +163,7 @@ class ProductRequisitionResource extends Resource
                             ->schema([
                                 Forms\Components\Placeholder::make('col_product')
                                     ->label(fn() => __('Product'))
-                                    ->columnSpan(['default' => 1, 'lg' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 4 : 3]),
+                                    ->columnSpan(['default' => 1, 'lg' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 5 : 4]),
                                 Forms\Components\Placeholder::make('col_qty')
                                     ->label(fn() => __('Qty'))
                                     ->columnSpan(['default' => 1, 'lg' => 2]),
@@ -176,7 +176,7 @@ class ProductRequisitionResource extends Resource
                                     ->hidden(fn ($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord),
                                 Forms\Components\Placeholder::make('col_note')
                                     ->label(fn() => __('Notes'))
-                                    ->columnSpan(['default' => 1, 'lg' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 4 : 3]),
+                                    ->columnSpan(['default' => 1, 'lg' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 3 : 2]),
                             ])
                             ->extraAttributes(['class' => 'hidden lg:grid']),
 
@@ -191,7 +191,7 @@ class ProductRequisitionResource extends Resource
                                     ->hiddenLabel()
                                     ->placeholder(fn() => __('Pick a product...'))
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                                    ->columnSpan(['default' => 1, 'lg' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 4 : 3]),
+                                    ->columnSpan(['default' => 1, 'lg' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 5 : 4]),
 
                                 Forms\Components\TextInput::make('qty')
                                     ->required()
@@ -247,7 +247,7 @@ class ProductRequisitionResource extends Resource
                                     ->hiddenLabel()
                                     ->placeholder(fn() => __('Notes'))
                                     ->extraInputAttributes(['class' => 'note-input', 'x-on:keydown.enter.prevent' => 'let inputs = Array.from(document.querySelectorAll(".note-input")); let idx = inputs.indexOf($el); if(idx !== -1 && idx + 1 < inputs.length) { inputs[idx + 1].focus(); }'])
-                                    ->columnSpan(['default' => 1, 'lg' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 4 : 3]),
+                                    ->columnSpan(['default' => 1, 'lg' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 3 : 2]),
                             ])
                             ->columns(12),
                     ]),

@@ -66,15 +66,24 @@ class QcReportResource extends Resource
 
             Forms\Components\Section::make(__('Inspection'))
                 ->schema([
+                    // Satu-satunya bagian yang WAJIB. Proses yang tidak
+                    // bermasalah tetap punya laporan, isinya kalimat ini.
+                    Forms\Components\Textarea::make('note')
+                        ->label(__('General note'))
+                        ->helperText(__('What happened overall, even when nothing went wrong.'))
+                        ->rows(3)
+                        ->required()
+                        ->columnSpanFull(),
+                ]),
+
+            Forms\Components\Section::make(__('Findings'))
+                ->description(__('Leave this empty when nothing went wrong. Do not add a blank row.'))
+                ->schema([
                     /*
                      * Kapan hal ini BENAR-BENAR terjadi -- bukan kapan
                      * barisnya diketik.
                      *
-                     * Laporan QC hampir selalu ditulis sesudah kejadiannya;
-                     * QC memindahkannya dari catatan manual. Kalau yang
-                     * tersimpan hanya waktu ketik, seluruh laporannya
-                     * menunjuk jam yang salah -- dan justru jam itu yang
-                     * ditanya kalau ada yang ditelusuri.
+                     * Wajib HANYA jika ada temuan (artinya ada kejadian).
                      */
                     Forms\Components\DateTimePicker::make('occurred_at')
                         ->label(__('When it happened'))
@@ -84,22 +93,8 @@ class QcReportResource extends Resource
                         ->displayFormat('d M Y H:i')
                         ->default(now())
                         ->maxDate(now())
-                        ->required(),
+                        ->required(fn (Forms\Get $get) => count($get('findings') ?? []) > 0),
 
-                    // Satu-satunya bagian yang WAJIB. Proses yang tidak
-                    // bermasalah tetap punya laporan, isinya kalimat ini.
-                    Forms\Components\Textarea::make('note')
-                        ->label(__('General note'))
-                        ->helperText(__('What happened overall, even when nothing went wrong.'))
-                        ->rows(3)
-                        ->required()
-                        ->columnSpanFull(),
-                ])
-                ->columns(2),
-
-            Forms\Components\Section::make(__('Findings'))
-                ->description(__('Leave this empty when nothing went wrong. Do not add a blank row.'))
-                ->schema([
                     Forms\Components\Repeater::make('findings')
                         ->relationship()
                         ->hiddenLabel()
@@ -116,9 +111,7 @@ class QcReportResource extends Resource
 
                             Forms\Components\TextInput::make('affected_count')
                                 ->label(__('How many affected'))
-                                ->helperText(__('Optional'))
-                                ->integer()
-                                ->minValue(1),
+                                ->helperText(__('Optional (e.g. "5 Pcs", "2 Kg")')),
 
                             Forms\Components\Textarea::make('action_taken')
                                 ->label(__('Action taken'))

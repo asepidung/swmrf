@@ -174,6 +174,8 @@ class Permission extends Model
                 'Customer Segments',
                 'Cattle Classes',
                 'Logistic Items',
+                'Drivers',
+                'Vehicles',
             ],
             'SYSTEM' => [
                 'Users',

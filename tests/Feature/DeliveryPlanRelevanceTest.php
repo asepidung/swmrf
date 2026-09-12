@@ -188,13 +188,14 @@ class DeliveryPlanRelevanceTest extends TestCase
      */
     public function test_the_history_is_still_reachable(): void
     {
-        $source = file_get_contents(app_path('Filament/Admin/Resources/DeliveryPlanResource.php'));
+        $resource = file_get_contents(app_path('Filament/Admin/Resources/DeliveryPlanResource.php'));
+        $listPage = file_get_contents(app_path('Filament/Admin/Resources/DeliveryPlanResource/Pages/ListDeliveryPlans.php'));
 
-        $this->assertStringContainsString("Filter::make('still_relevant')", $source);
-        $this->assertStringContainsString('->default()', $source);
+        $this->assertStringContainsString('public function getTabs(): array', $listPage);
+        $this->assertStringContainsString("'history' =>", $listPage);
 
         // Bukan di getEloquentQuery(), yang tidak bisa dimatikan pengguna.
-        $query = substr($source, strpos($source, 'public static function getEloquentQuery'), 700);
+        $query = substr($resource, strpos($resource, 'public static function getEloquentQuery'), 700);
         $this->assertStringNotContainsString('stillRelevant', $query);
     }
 

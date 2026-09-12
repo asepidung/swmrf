@@ -61,7 +61,7 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
                     'material_name' => $item->material->name,
                     'unit_name' => $item->material->unit?->name ?? '',
                     'po_qty' => number_format((int) $remainingQty, 0, ',', '.'),
-                    'qty_received' => number_format((int) $remainingQty, 0, ',', '.'),
+                    'qty_received' => null,
                     'price' => $item->price,
                 ];
             }

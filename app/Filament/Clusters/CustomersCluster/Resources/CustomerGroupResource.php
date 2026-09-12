@@ -49,6 +49,13 @@ class CustomerGroupResource extends Resource
                             ->maxLength(255)
                             ->autofocus()
                             ->extraInputAttributes(['style' => 'text-transform:uppercase']),
+                            
+                        Forms\Components\TextInput::make('top')
+                            ->label(fn() => __('TOP'))
+                            ->suffix(__('days'))
+                            ->required()
+                            ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right'])
+                            ->rules(['integer', 'min:0']),
                         
                         Forms\Components\TextInput::make('head_office_pic')
                             ->label(fn() => __('Head Office PIC'))
@@ -93,6 +100,7 @@ class CustomerGroupResource extends Resource
             ->filters([
                 //
             ])
+            ->defaultSort('name')
             ->actions([
                 //
             ])

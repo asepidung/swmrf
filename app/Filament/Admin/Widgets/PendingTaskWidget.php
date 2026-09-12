@@ -119,7 +119,9 @@ class PendingTaskWidget extends Widget
             }
 
             $tasks[] = [
-                'label' => __($message, ['count' => $count]),
+                'label' => str_contains($message, '|')
+                    ? trans_choice($message, $count, ['count' => $count])
+                    : __($message, ['count' => $count]),
                 'url' => $url,
                 'tone' => $tone,
             ];
@@ -153,13 +155,13 @@ class PendingTaskWidget extends Widget
                 $this->getUnlockedGrProductCount(),
                 ':count beef receipts have not been locked yet.',
                 \App\Filament\Admin\Resources\GoodsReceiptProductResource::getUrl('index'),
-                'danger',
+                'warning',
             ],
             [
                 $this->getUnlockedGrMaterialCount(),
                 ':count material receipts have not been locked yet.',
                 \App\Filament\Admin\Resources\GoodsReceiptMaterialResource::getUrl('index'),
-                'danger',
+                'warning',
             ],
 
             // Bukti terima yang sudah masuk tetapi belum ditagihkan. Selama

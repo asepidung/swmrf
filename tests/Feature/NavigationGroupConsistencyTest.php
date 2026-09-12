@@ -56,7 +56,17 @@ class NavigationGroupConsistencyTest extends TestCase
     {
         $used = [];
 
-        foreach (glob(app_path('Filament/Admin/Resources/*Resource.php')) as $file) {
+        // Cluster ikut disisir. Sebuah Cluster menaruh seluruh Resource di
+        // dalamnya ke grup yang ia sebut, jadi satu Cluster yang salah eja
+        // memindahkan banyak menu sekaligus -- dan itulah yang terjadi pada
+        // FleetCluster (`Master Data`, bukan `MASTER DATA`), yang lolos
+        // karena pemindai ini dulu hanya membaca Resource.
+        $berkas = array_merge(
+            glob(app_path('Filament/Admin/Resources/*Resource.php')),
+            glob(app_path('Filament/Clusters/*.php')),
+        );
+
+        foreach ($berkas as $file) {
             $source = file_get_contents($file);
 
             // Menangkap kedua bentuk yang dipakai di proyek ini:

@@ -102,6 +102,7 @@ Bukan menunggu apa pun -- hanya belum dikerjakan, dan besarnya diketahui.
 |---|---|
 | **View tabel Stock Overview masih fork Filament** | **Sisa pekerjaannya: tidak ada yang bisa dikerjakan lagi.** Tinggal 105 baris, dan seluruhnya satu hal: baris kategori yang mencetak angka ringkasan DI DALAM dirinya. Filament v3 merender header grup sebagai satu sel membentang, jadi tidak ada tempat menaruh angka per kolom -- yang disediakannya baris ringkasan TERSENDIRI. Owner memutuskan baris kategori tetap SATU baris (#330). Ketertinggalannya dijaga `ForkedTableViewTest` |
 | **Kedua `stock:reconcile` belum diuji di data tebal** | **Sisa pekerjaannya:** jalankan lagi setelah dipakai beberapa minggu. Sisi daging 5 Sep dan sisi material 6 Sep dua-duanya bersih, tetapi bahannya masih puluhan baris — buku besar sekecil itu memang selalu cocok. Sisi material menemukan 3 baris saldo minus lama (KERTAS HVS, 31 Agu & 1 Sep), semuanya sebelum penolakan stok minus dipasang |
+| **Glitch 'arrowdown' pada Select Filament** | **Ditunda (9 Sep 2026):** Saat Dropdown (terutama yang Searchable) difokuskan dan ditekankan panah bawah di keyboard, kadang muncul teks "arrowdown" di daftar opsi. Sudah disisir, tidak ada file/DB yang memuat *string* "arrowdown" secara statis. Kemungkinan besar disebabkan oleh intercept/bug di Alpine.js/Choices.js bawaan Filament v3 dengan browser atau extension macro tertentu. Diputuskan ditunda. |
 
 ---
 
@@ -119,4 +120,54 @@ siapa pun. Selama belum dicentang, hanya akun programmer yang bisa memakainya.
 `view_qc_reports` · `create_qc_reports` · `edit_qc_reports` ·
 `delete_qc_reports` · `view_deleted_qc_reports` ·
 `view_product_materials` · `create_product_materials` ·
-`edit_product_materials` · `delete_product_materials`
+`edit_product_materials` · `delete_product_materials` ·
+`view_drivers` · `create_drivers` · `edit_drivers` · `delete_drivers` ·
+`view_vehicles` · `create_vehicles` · `edit_vehicles` · `delete_vehicles`
+
+---
+
+## H. Setelah aplikasi live -- changelog dan versi
+
+Keputusan Owner, 7 September 2026. **Belum dikerjakan, dan sengaja tidak
+dikerjakan sebelum live** -- versinya baru mulai dihitung sejak produksi.
+
+### Penomoran versi
+
+Mulai dari **2.0.0**, dengan arti yang ditetapkan Owner sendiri:
+
+```
+2 . 0 . 0
+|   |   +--  perbaikan bug
+|   +------  modul / fitur
++----------  versi aplikasi
+```
+
+Jadi `2.0.0` berarti: aplikasi versi kedua (yang pertama aplikasi legacy),
+belum ada modul baru sejak live, belum ada perbaikan bug sejak live.
+
+Angka mayor 2 dipilih karena ini penerus aplikasi legacy, bukan aplikasi
+pertama -- penomorannya melanjutkan sejarahnya, bukan mengulang dari nol.
+
+### Changelog yang tampil saat login
+
+Setiap kali versinya berubah, pengguna melihat changelog terbaru **saat
+login**. Syaratnya satu, dan itu bagian yang menentukan bentuknya:
+
+**Hanya tampil SEKALI per pengguna, sampai ada changelog baru.**
+
+Artinya yang disimpan bukan "sudah pernah lihat atau belum", melainkan
+**versi changelog terakhir yang sudah dilihat pengguna itu**. Kalau yang
+tersimpan lebih lama daripada versi sekarang, changelog ditampilkan; kalau
+sama, tidak. Menyimpan penanda boolean akan gagal pada rilis berikutnya --
+penanda itu harus direset untuk semua orang tiap kali rilis, dan reset yang
+terlewat membuat sebagian orang tidak pernah melihat rilis baru tanpa gejala
+apa pun.
+
+### Yang belum diputuskan
+
+- Di mana changelog-nya ditulis: berkas di repositori, atau tabel yang bisa
+  disunting dari aplikasi.
+- Apakah pengguna bisa membukanya lagi setelah ditutup (misalnya dari menu
+  About), atau memang sekali lewat.
+- Apakah rilis yang cuma perbaikan bug juga memunculkannya, atau hanya rilis
+  yang membawa modul/fitur.

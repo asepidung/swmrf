@@ -15,8 +15,8 @@ class DeliveryPlan extends Model
     protected $fillable = [
         'customer_id',
         'delivery_date',
-        'driver',
-        'armada',
+        'driver_id',
+        'vehicle_id',
         'load_time',
         'created_by',
     ];
@@ -48,6 +48,16 @@ class DeliveryPlan extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function driver()
+    {
+        return $this->belongsTo(Driver::class);
+    }
+
+    public function vehicle()
+    {
+        return $this->belongsTo(Vehicle::class);
     }
 
     /**
