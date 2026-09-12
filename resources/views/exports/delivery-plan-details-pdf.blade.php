@@ -37,8 +37,8 @@
                 <td>{{ optional($record->customer)->name ?? '-' }}</td>
                 <td><strong>{{ $record->so_number }}</strong></td>
                 <td class="text-right">{{ number_format($record->items()->sum('weight')) }}</td>
-                <td>{{ $record->deliveryPlan->driver ?? '-' }}</td>
-                <td>{{ $record->deliveryPlan->armada ?? '-' }}</td>
+                <td>{{ $record->deliveryPlan->driver?->name ?? '-' }}</td>
+                <td>{{ $record->deliveryPlan->vehicle?->police_number ?? '-' }}</td>
                 <td class="text-center">{{ $record->deliveryPlan->load_time ? \Carbon\Carbon::parse($record->deliveryPlan->load_time)->format('H:i') : '-' }}</td>
                 <td>{{ $record->delivery_note ?? '-' }}</td>
             </tr>

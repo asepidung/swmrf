@@ -37,8 +37,8 @@
                 <td>{{ optional($record->customer)->name ?? '-' }}</td>
                 <td class="text-center">{{ $record->sales_orders_count }}</td>
                 <td class="text-right">{{ number_format($record->total_qty) }}</td>
-                <td>{{ $record->driver ?? '-' }}</td>
-                <td>{{ $record->armada ?? '-' }}</td>
+                <td>{{ $record->driver?->name ?? '-' }}</td>
+                <td>{{ $record->vehicle?->police_number ?? '-' }}</td>
                 <td class="text-center">{{ $record->load_time ? \Carbon\Carbon::parse($record->load_time)->format('H:i') : '-' }}</td>
                 <td>{{ $record->notes ?? '-' }}</td>
             </tr>

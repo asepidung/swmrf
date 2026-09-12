@@ -27,8 +27,8 @@ class DeliveryPlan extends Model
             ->logOnly([
                 'customer.name',
                 'delivery_date',
-                'driver',
-                'armada',
+                'driver.name',
+                'vehicle.police_number',
                 'load_time',
             ])
             ->logOnlyDirty()

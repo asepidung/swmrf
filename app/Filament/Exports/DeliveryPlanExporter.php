@@ -18,8 +18,8 @@ class DeliveryPlanExporter extends Exporter
             ExportColumn::make('customer.name')->label('Customer'),
             ExportColumn::make('sales_orders_count')->label('Total PO'),
             ExportColumn::make('total_qty')->label('Qty (Kg)'),
-            ExportColumn::make('driver')->label('Driver'),
-            ExportColumn::make('armada')->label(__('Fleet')),
+            ExportColumn::make('driver.name')->label('Driver'),
+            ExportColumn::make('vehicle.police_number')->label(__('Fleet')),
             ExportColumn::make('load_time')->label('Jam Loading'),
             ExportColumn::make('notes')->label('Notes'),
         ];
