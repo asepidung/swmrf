@@ -293,4 +293,57 @@ class DeliveryPlanTest extends TestCase
         $this->assertEquals('FUSO - B 1234 CD', $plan->vehicle->vehicle_type . ' - ' . $plan->vehicle->police_number);
         $this->assertEquals('08:00:00', $plan->load_time);
     }
+
+    /**
+     * Dashboard menghitung rencana kirim besok yang belum lengkap TANPA meledak.
+     *
+     * Sejak 12 September 2026 sopir dan armada adalah relasi ke master
+     * (`driver_id`, `vehicle_id`); kolom teks `driver` dan `armada` sudah
+     * dibuang. `PendingTaskWidget` masih menanyakan kolom lama itu, dan
+     * seluruh Dashboard jatuh dengan "Unknown column 'driver'" bagi siapa pun
+     * yang punya rencana kirim besok -- ditemukan Owner di lokal, 13
+     * September, SETELAH suite hijau. Tidak ada satu test pun yang melewati
+     * jalur ini. Sekarang ada.
+     *
+     * @test
+     */
+    public function the_dashboard_counts_incomplete_plans_for_tomorrow_against_the_master_columns()
+    {
+        $tomorrow = now()->addDay()->format('Y-m-d');
+
+        // Belum lengkap: sopir dan armada masih kosong -- tetapi jam loading
+        // SENGAJA diisi. Kalau dibiarkan kosong, penjaga ini lolos walau
+        // query-nya masih menanyakan kolom lama: SQLite memperlakukan
+        // "driver" yang tidak ada sebagai string 'driver' (bukan galat),
+        // dan hitungannya diselamatkan oleh `load_time is null`. MySQL
+        // menolak, SQLite mengangguk -- itulah kenapa suite hijau sementara
+        // Dashboard jatuh. Jam loading yang terisi menutup jalan keluar itu.
+        $belumLengkap = SalesOrder::create([
+            'customer_id' => $this->customer1->id,
+            'delivery_date' => $tomorrow,
+            'created_by' => $this->adminUser->id,
+        ]);
+        DeliveryPlan::find($belumLengkap->delivery_plan_id)->update(['load_time' => '07:00:00']);
+
+        // Lengkap: keduanya terisi dari master.
+        $lengkap = SalesOrder::create([
+            'customer_id' => $this->customer2->id,
+            'delivery_date' => $tomorrow,
+            'created_by' => $this->adminUser->id,
+        ]);
+        DeliveryPlan::find($lengkap->delivery_plan_id)->update([
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'Joko'])->id,
+            'vehicle_id' => \App\Models\Vehicle::firstOrCreate(['vehicle_type' => 'FUSO', 'police_number' => 'B 1234 CD'])->id,
+            'load_time' => '08:00:00',
+        ]);
+
+        $this->actingAs($this->adminUser);
+
+        $this->assertSame(
+            1,
+            (new \App\Filament\Admin\Widgets\PendingTaskWidget())->getPendingDeliveryPlanCount(),
+            'Hanya rencana yang sopir/armadanya kosong yang dihitung sebagai tugas.',
+        );
+    }
 }
+

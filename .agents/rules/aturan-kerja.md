@@ -93,6 +93,15 @@ Test memakai SQLite, produksi MySQL. Akibatnya:
   `sqlite_master`, jangan menyalin definisinya).
 - `->change()` menulis ulang SELURUH definisi kolom. Nullability dan default
   yang tidak disebut ulang akan hilang. Baca dulu definisi aslinya.
+- **SQLite tidak menolak kolom yang tidak ada.** `"driver" is null` pada tabel
+  tanpa kolom `driver` tidak menghasilkan galat -- SQLite diam-diam
+  memperlakukannya sebagai string `'driver'`. MySQL menolak dengan "Unknown
+  column". Akibatnya query yang masih menanyakan kolom yang sudah dibuang
+  LOLOS di suite dan JATUH di produksi. Ini terjadi 13 September 2026 pada
+  Dashboard. Karena itu: setiap kali kolom dibuang, cari SEMUA pembacanya
+  dengan grep (`'nama_kolom'`, `->nama_kolom`), dan tulis test yang hanya
+  bisa hijau kalau kolom BARU-nya yang dibaca -- bukan test yang kebetulan
+  hijau lewat jalur lain.
 
 Fixture yang sering membuat test merah tanpa sebab yang jelas:
 

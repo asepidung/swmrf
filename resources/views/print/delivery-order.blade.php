@@ -81,7 +81,7 @@
         <tr>
             <td>Driver</td>
             <td>:</td>
-            <td>{{ $record->driver }}</td>
+            <td>{{ $record->driver?->name ?? '-' }}</td>
             <td>Customer</td>
             <td>:</td>
             <td>{{ $record->customer?->name }}</td>
@@ -89,7 +89,7 @@
         <tr>
             <td>Police Number</td>
             <td>:</td>
-            <td>{{ $record->police_number }}</td>
+            <td>{{ $record->vehicle?->police_number ?? '-' }}</td>
             <td valign="top">Address</td>
             <td valign="top">:</td>
             <td valign="top" align="justify">{{ $record->customer?->address }}</td>

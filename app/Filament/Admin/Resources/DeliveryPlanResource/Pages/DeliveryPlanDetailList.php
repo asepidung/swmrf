@@ -145,8 +145,8 @@ class DeliveryPlanDetailList extends Page implements HasTable
                                         $row->customer->name,
                                         $row->so_number,
                                         $row->items()->sum('weight'),
-                                        $row->deliveryPlan->driver,
-                                        $row->deliveryPlan->armada,
+                                        $row->deliveryPlan->driver?->name,
+                                        $row->deliveryPlan->vehicle?->police_number,
                                         $row->deliveryPlan->load_time,
                                         $row->delivery_note
                                     ]);

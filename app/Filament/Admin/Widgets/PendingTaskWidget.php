@@ -513,10 +513,10 @@ class PendingTaskWidget extends Widget
         $tomorrow = now()->addDay()->toDateString();
         return \App\Models\DeliveryPlan::whereDate('delivery_date', $tomorrow)
             ->where(function ($query) {
-                $query->whereNull('driver')
-                    ->orWhere('driver', '')
-                    ->orWhereNull('armada')
-                    ->orWhere('armada', '')
+                // Sejak 12 September 2026 sopir dan armada adalah relasi ke
+                // master (driver_id, vehicle_id), bukan teks bebas.
+                $query->whereNull('driver_id')
+                    ->orWhereNull('vehicle_id')
                     ->orWhereNull('load_time');
             })
             ->count();
