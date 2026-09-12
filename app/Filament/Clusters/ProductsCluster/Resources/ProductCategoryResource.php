@@ -86,6 +86,7 @@ class ProductCategoryResource extends Resource
             ->filters([
                 //
             ])
+            ->defaultSort('name')
             ->actions([
                 // Clickable rows handles edit redirection, actions left clean per project rules
             ])
@@ -115,3 +116,4 @@ class ProductCategoryResource extends Resource
         ];
     }
 }
+

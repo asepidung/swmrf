@@ -12,7 +12,22 @@ class ListDeliveryPlans extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            Actions\Action::make('print_preview')
+                ->label(__('Print Plan'))
+                ->icon('heroicon-o-printer')
+                ->color('success')
+                ->form([
+                    \Filament\Forms\Components\DatePicker::make('date')
+                        ->label(__('Delivery Date'))
+                        ->default(now()->addDay()->toDateString())
+                        ->required(),
+                ])
+                ->action(function (array $data, \Filament\Resources\Pages\ListRecords $livewire) {
+                    $url = route('print.delivery-plan.preview', ['date' => $data['date']]);
+                    $livewire->js("window.open('{$url}', '_blank');");
+                }),
+        ];
     }
 
     public function getTabs(): array

@@ -25,9 +25,8 @@ class QcFinding extends Model
         'action_taken',
     ];
 
-    protected $casts = [
-        'affected_count' => 'integer',
-    ];
+    //
+
 
     public function qcReport(): BelongsTo
     {

@@ -56,16 +56,24 @@ class MaterialUsageBoning extends EditRecord
                             ->relationship('materialUsages')
                             ->schema([
                                 Forms\Components\Select::make('material_id')
+                                    ->columnSpan([
+                                        'default' => 1,
+                                        'md' => 5,
+                                    ])
                                     ->label(__('Material'))
                                     ->options(Material::pluck('name', 'id'))
                                     ->required()
                                     ->searchable()
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                                    ->live()
-                                    ->afterStateUpdated(fn ($state, Forms\Set $set) => $set('unit', Material::find($state)?->unit?->name)),
+                                    ->live(),
                                 
                                 Forms\Components\TextInput::make('qty')
+                                    ->columnSpan([
+                                        'default' => 1,
+                                        'md' => 3,
+                                    ])
                                     ->label(__('Quantity'))
+                                    ->suffix(fn ($get) => Material::find($get('material_id'))?->unit?->name)
                                     // Tanpa komponen angka bawaan (tombol
                                     // panahnya gampang tertekan), dan dengan
                                     // batas bawah -- sebelumnya qty nol atau
@@ -77,17 +85,15 @@ class MaterialUsageBoning extends EditRecord
                                     ])
                                     ->required(),
 
-                                Forms\Components\TextInput::make('unit')
-                                    ->label(__('Unit'))
-                                    ->disabled()
-                                    ->dehydrated(false)
-                                    ->formatStateUsing(fn ($get) => Material::find($get('material_id'))?->unit?->name),
-
                                 Forms\Components\TextInput::make('note')
+                                    ->columnSpan([
+                                        'default' => 1,
+                                        'md' => 4,
+                                    ])
                                     ->label(__('Note'))
                                     ->maxLength(255),
                             ])
-                            ->columns(4)
+                            ->columns(['default' => 1, 'md' => 12])
                             ->addActionLabel(__('Add Material'))
                             ->defaultItems(0)
                     ]),

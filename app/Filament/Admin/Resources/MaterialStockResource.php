@@ -228,6 +228,11 @@ class MaterialStockResource extends Resource
                 ->color('success'),
             ])
             ->filters([
+                Tables\Filters\TernaryFilter::make('show_in_stock')
+                    ->label(__('Counted in Stock'))
+                    ->placeholder(__('All'))
+                    ->trueLabel(__('Yes'))
+                    ->falseLabel(__('No')),
                 Tables\Filters\SelectFilter::make('material_category_id')
                     ->relationship('category', 'name')
                     ->label(__('Category')),
@@ -250,7 +255,7 @@ class MaterialStockResource extends Resource
             ])
             ->recordUrl(null)
             ->recordAction(null)
-            ->defaultSort('id', 'desc');
+            ->defaultSort('name');
     }
 
     public static function getRecordUrl(\Illuminate\Database\Eloquent\Model $record): ?string

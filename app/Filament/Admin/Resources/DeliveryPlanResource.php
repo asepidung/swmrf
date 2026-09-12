@@ -52,18 +52,51 @@ class DeliveryPlanResource extends Resource
                 Forms\Components\Section::make(__('Trip Details'))
                     ->compact()
                     ->schema([
-                        Forms\Components\TextInput::make('driver')
+                        Forms\Components\Select::make('driver_id')
                             ->label(__('Driver'))
+                            ->relationship('driver', 'name', fn ($query) => $query->where('is_active', true))
+                            ->searchable()
+                            ->preload()
                             ->required()
-                            ->maxLength(255)
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('name')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->unique(ignoreRecord: true),
+                                Forms\Components\Toggle::make('is_active')
+                                    ->default(true),
+                            ])
                             ->autofocus(), // Ergonomic UI: autofocus on first editable field
-                        Forms\Components\TextInput::make('armada')
+                        Forms\Components\Select::make('vehicle_id')
                             ->label(__('Fleet'))
+                            ->relationship('vehicle', 'vehicle_type', fn ($query) => $query->where('is_active', true))
+                            ->getOptionLabelFromRecordUsing(fn (\App\Models\Vehicle $record) => "{$record->vehicle_type} - {$record->police_number}")
+                            ->searchable()
+                            ->preload()
                             ->required()
-                            ->maxLength(255),
-                        Forms\Components\TimePicker::make('load_time')
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('vehicle_type')
+                                    ->required()
+                                    ->maxLength(255),
+                                Forms\Components\TextInput::make('police_number')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->unique(ignoreRecord: true),
+                                Forms\Components\Toggle::make('is_active')
+                                    ->default(true),
+                            ]),
+                        Forms\Components\Select::make('load_time')
                             ->label(__('Loading Time'))
-                            ->seconds(false)
+                            ->options(function () {
+                                $options = [];
+                                foreach (range(0, 23) as $h) {
+                                    foreach (['00', '30'] as $m) {
+                                        $options[sprintf('%02d:%s:00', $h, $m)] = sprintf('%02d:%s', $h, $m);
+                                    }
+                                }
+                                return $options;
+                            })
+                            ->searchable()
                             ->required(),
                     ])->columns(3),
 
@@ -72,6 +105,7 @@ class DeliveryPlanResource extends Resource
                     ->schema([
                         // Clean Repeater Header UI
                         Forms\Components\Grid::make(12)
+                            ->extraAttributes(['class' => 'swm-wide-only'])
                             ->schema([
                                 Forms\Components\Placeholder::make('col_so_number')->label(__('SO Number'))->columnSpan(['default' => 1, 'lg' => 4]),
                                 Forms\Components\Placeholder::make('col_weight')->label(__('Qty (Kg)'))->columnSpan(['default' => 1, 'lg' => 3]),
@@ -89,13 +123,17 @@ class DeliveryPlanResource extends Resource
                                 Forms\Components\TextInput::make('so_number')
                                     ->label('')
                                     ->hiddenLabel()
+                                    ->placeholder(__('SO Number'))
                                     ->disabled()
                                     ->dehydrated(false)
                                     ->columnSpan(['default' => 1, 'lg' => 4]),
-                                Forms\Components\Placeholder::make('total_weight')
+                                Forms\Components\TextInput::make('total_weight')
                                     ->label('')
                                     ->hiddenLabel()
-                                    ->content(fn ($record) => $record ? number_format($record->items()->sum('weight')) . ' Kg' : '-')
+                                    ->placeholder(__('Qty (Kg)'))
+                                    ->disabled()
+                                    ->dehydrated(false)
+                                    ->formatStateUsing(fn ($record) => $record ? number_format($record->items()->sum('weight')) . ' Kg' : '-')
                                     ->columnSpan(['default' => 1, 'lg' => 3]),
                                 Forms\Components\TextInput::make('delivery_note')
                                     ->label('')
@@ -129,12 +167,13 @@ class DeliveryPlanResource extends Resource
                     ->label(__('Qty (Kg)'))
                     ->state(fn (DeliveryPlan $record) => number_format($record->total_qty))
                     ->alignRight(),
-                Tables\Columns\TextColumn::make('driver')
+                Tables\Columns\TextColumn::make('driver.name')
                     ->label(__('Driver'))
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('armada')
+                Tables\Columns\TextColumn::make('vehicle.vehicle_type')
                     ->label(__('Fleet'))
+                    ->state(fn ($record) => $record->vehicle ? $record->vehicle->vehicle_type . ' - ' . $record->vehicle->police_number : '-')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('load_time')
@@ -169,21 +208,6 @@ class DeliveryPlanResource extends Resource
                 default => null,
             })
             ->filters([
-                // Menyala secara bawaan. Daftar ini adalah alat kerja
-                // petugas distribusi, jadi yang pertama terlihat harus
-                // jadwal yang masih perlu diurus -- bukan seluruh jadwal
-                // yang pernah dibuat sejak sistem berdiri.
-                //
-                // Dibuat sebagai SARINGAN, bukan sebagai batasan tetap pada
-                // kueri, supaya riwayatnya tetap bisa dibuka: mematikan
-                // saringannya mengembalikan seluruh daftar.
-                //
-                // Batasnya akhir hari kirim, bukan peristiwa dokumen; lihat
-                // DeliveryPlan::scopeStillRelevant() untuk alasannya.
-                Tables\Filters\Filter::make('still_relevant')
-                    ->label(__('Active schedules only'))
-                    ->default()
-                    ->query(fn (Builder $query): Builder => $query->stillRelevant()),
 
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_delivery_plans')),
@@ -276,7 +300,7 @@ class DeliveryPlanResource extends Resource
             // Dimuat sekaligus. Kolom Qty dan Notes membaca Sales Order
             // beserta barisnya untuk setiap jadwal; tanpa ini, satu kueri
             // menembak untuk setiap Sales Order pada setiap baris tabel.
-            ->with(['salesOrders:id,delivery_plan_id,status,delivery_note', 'salesOrders.items:id,sales_order_id,weight']);
+            ->with(['salesOrders:id,delivery_plan_id,status,delivery_note,so_number', 'salesOrders.items:id,sales_order_id,weight']);
 
         return TrashedRecords::visibleTo($query, 'view_deleted_delivery_plans');
     }

@@ -102,7 +102,16 @@ class CashBookResource extends Resource
                 Tables\Columns\TextColumn::make('description')
                     ->label(__('Description'))
                     ->wrap()
-                    ->searchable(),
+                    ->searchable()
+                    ->formatStateUsing(function ($state) {
+                        if (preg_match('/^(Payment to supplier|Pembayaran ke supplier) (.*?) \((.*)\)$/', (string) $state, $matches)) {
+                            return __('Payment to supplier :name (:number)', ['name' => $matches[2], 'number' => $matches[3]]);
+                        }
+                        if (preg_match('/^(Advance payment to supplier|Uang muka ke supplier) (.*?) \((.*)\)$/', (string) $state, $matches)) {
+                            return __('Advance payment to supplier :name (:number)', ['name' => $matches[2], 'number' => $matches[3]]);
+                        }
+                        return $state;
+                    }),
             ])
             ->headerActions([
                 Tables\Actions\ActionGroup::make([

@@ -75,6 +75,8 @@ class PurchaseCattleResource extends Resource
                         ->schema([
                             Forms\Components\Select::make('cattle_class_id')
                                 ->relationship('cattleClass', 'name')
+                                ->searchable()
+                                ->preload()
                                 ->required()
                                 ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                                 ->createOptionForm([
@@ -82,7 +84,8 @@ class PurchaseCattleResource extends Resource
                                         ->required()
                                         ->maxLength(255)
                                         ->unique(table: 'cattle_classes', column: 'name')
-                                        ->label(__('Name')),
+                                        ->label(__('Name'))
+                                        ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                                 ])
                                 ->placeholder(__('Category'))
                                 ->label('')

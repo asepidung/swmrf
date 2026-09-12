@@ -137,7 +137,7 @@ class SalesReturnTest extends TestCase
             'sales_order_id' => $so->id,
             'customer_id' => $this->customer->id,
             'delivery_date' => now()->toDateString(),
-            'driver' => 'Joko',
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'Joko'])->id,
             'status' => 'Delivered',
         ]);
 

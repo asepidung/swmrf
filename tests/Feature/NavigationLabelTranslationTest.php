@@ -141,7 +141,7 @@ class NavigationLabelTranslationTest extends TestCase
             'Material Receipt' => 'Penerimaan Material',
             'Price List' => 'Daftar Harga',
             'Receivables' => 'Piutang',
-            'Stock Movements' => 'Mutasi Stok',
+            'Stock Movements' => 'Pergerakan Stock',
         ] as $key => $expected) {
             $this->assertSame($expected, $id[$key] ?? null, $key.' belum diterjemahkan.');
         }

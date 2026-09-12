@@ -34,6 +34,7 @@ trait KeepsCustomerInAGroup
                 [
                     'head_office_pic' => $data['pic'] ?? null,
                     'head_office_address' => $data['address'] ?? null,
+                    'top' => $data['top'] ?? null,
                 ],
             );
 

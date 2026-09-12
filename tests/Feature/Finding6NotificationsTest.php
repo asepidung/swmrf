@@ -139,7 +139,7 @@ class Finding6NotificationsTest extends TestCase
             'customer_id' => $customer->id,
             'delivery_order_number' => 'SWM-DO#260001',
             'delivery_date' => now()->toDateString(),
-            'driver' => 'Driver 1',
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'Joko'])->id,
             'status' => 'Ready',
         ]);
 

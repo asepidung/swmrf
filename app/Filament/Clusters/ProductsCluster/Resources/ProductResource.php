@@ -200,6 +200,7 @@ class ProductResource extends Resource
                         }, 'Beefs.xlsx');
                     }),
             ])
+            ->defaultSort('name')
             ->actions([
                 // Clickable rows handles edit redirection, actions left clean per project rules
             ])
@@ -295,3 +296,4 @@ class ProductResource extends Resource
         }
     }
 }
+

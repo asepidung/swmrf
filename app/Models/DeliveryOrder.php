@@ -39,8 +39,8 @@ class DeliveryOrder extends Model
         'delivery_order_number',
         'delivery_date',
         'po_number',
-        'driver',
-        'police_number',
+        'driver_id',
+        'vehicle_id',
         'seal_number',
         'note',
         'status',
@@ -88,6 +88,16 @@ class DeliveryOrder extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function driver(): BelongsTo
+    {
+        return $this->belongsTo(Driver::class);
+    }
+
+    public function vehicle(): BelongsTo
+    {
+        return $this->belongsTo(Vehicle::class);
     }
 
     public function financialLoss(): \Illuminate\Database\Eloquent\Relations\MorphOne

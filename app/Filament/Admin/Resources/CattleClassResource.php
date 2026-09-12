@@ -90,6 +90,7 @@ class CattleClassResource extends Resource
                         }, 'Cattle_Classes.xlsx');
                     }),
             ])
+            ->defaultSort('name')
             ->actions([
                 // 
             ])
@@ -119,3 +120,4 @@ class CattleClassResource extends Resource
         ];
     }
 }
+

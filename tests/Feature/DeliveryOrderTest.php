@@ -107,8 +107,8 @@ class DeliveryOrderTest extends TestCase
             'customer_id' => $this->customer->id,
             'delivery_date' => now()->addDays(1)->format('Y-m-d'),
             'po_number' => 'PO-XYZ-789',
-            'driver' => 'Joko',
-            'police_number' => 'B 1234 CD',
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'Joko'])->id,
+            'vehicle_id' => \App\Models\Vehicle::firstOrCreate(['vehicle_type' => 'FUSO', 'police_number' => 'B 1234 CD'])->id,
             'status' => 'Ready',
         ]);
 
@@ -116,7 +116,7 @@ class DeliveryOrderTest extends TestCase
             'id' => $do->id,
             'tally_id' => $tally->id,
             'sales_order_id' => $so->id,
-            'driver' => 'Joko',
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'Joko'])->id,
         ]);
 
         // Assert auto number is SWM-DO#26xxxx or similar
@@ -296,7 +296,7 @@ class DeliveryOrderTest extends TestCase
             'customer_id' => $this->customer->id,
             'delivery_date' => now()->addDays(1)->format('Y-m-d'),
             'po_number' => 'PO-XYZ-789',
-            'driver' => 'Joko',
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'Joko'])->id,
             'status' => 'Ready',
         ]);
 
@@ -359,7 +359,7 @@ class DeliveryOrderTest extends TestCase
             'customer_id' => $this->customer->id,
             'delivery_date' => now()->addDays(1)->format('Y-m-d'),
             'po_number' => 'PO-XYZ-789',
-            'driver' => 'Joko',
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'Joko'])->id,
             'status' => 'Approved',
         ]);
 
@@ -429,7 +429,7 @@ class DeliveryOrderTest extends TestCase
             'customer_id' => $this->customer->id,
             'delivery_date' => now()->addDays(1)->format('Y-m-d'),
             'po_number' => 'PO-XYZ-789',
-            'driver' => 'Joko',
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'Joko'])->id,
             'status' => 'Ready',
             'delivery_order_number' => 'SWM-DO#260001',
         ]);
@@ -492,7 +492,7 @@ class DeliveryOrderTest extends TestCase
             'customer_id' => $this->customer->id,
             'delivery_date' => now()->addDays(1)->format('Y-m-d'),
             'po_number' => 'PO-XYZ-789',
-            'driver' => 'Joko',
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'Joko'])->id,
             'status' => 'Ready',
         ]);
 
@@ -533,7 +533,7 @@ class DeliveryOrderTest extends TestCase
             'customer_id' => $this->customer->id,
             'delivery_date' => now()->addDays(1)->format('Y-m-d'),
             'po_number' => 'PO-XYZ-789',
-            'driver' => 'Joko',
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'Joko'])->id,
             'status' => 'Approved',
         ]);
 
@@ -568,7 +568,7 @@ class DeliveryOrderTest extends TestCase
             'customer_id' => $this->customer->id,
             'delivery_date' => now()->addDays(1)->format('Y-m-d'),
             'po_number' => 'PO-XYZ-789',
-            'driver' => 'Joko',
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'Joko'])->id,
             'status' => 'Approved',
             'delivery_order_number' => 'SWM-DO#260001',
         ]);
@@ -655,7 +655,7 @@ class DeliveryOrderTest extends TestCase
             'customer_id' => $this->customer->id,
             'delivery_date' => now()->addDays(1)->format('Y-m-d'),
             'po_number' => 'PO-XYZ-789',
-            'driver' => 'Joko',
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'Joko'])->id,
             'status' => 'Ready',
         ]);
 
@@ -740,7 +740,7 @@ class DeliveryOrderTest extends TestCase
             'customer_id' => $this->customer->id,
             'delivery_date' => now()->format('Y-m-d'),
             'po_number' => 'PO-XYZ-789',
-            'driver' => 'Joko',
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'Joko'])->id,
             'status' => 'Ready',
         ]);
 

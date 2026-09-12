@@ -322,6 +322,18 @@ class DatabaseSeeder extends Seeder
             ['name' => 'create_warehouses', 'module_name' => 'Warehouses', 'description' => 'Create warehouses'],
             ['name' => 'edit_warehouses', 'module_name' => 'Warehouses', 'description' => 'Edit warehouses'],
             ['name' => 'delete_warehouses', 'module_name' => 'Warehouses', 'description' => 'Delete warehouses'],
+
+            // Driver Module
+            ['name' => 'view_drivers', 'module_name' => 'Drivers', 'description' => 'View drivers'],
+            ['name' => 'create_drivers', 'module_name' => 'Drivers', 'description' => 'Create drivers'],
+            ['name' => 'edit_drivers', 'module_name' => 'Drivers', 'description' => 'Edit drivers'],
+            ['name' => 'delete_drivers', 'module_name' => 'Drivers', 'description' => 'Delete drivers'],
+
+            // Vehicle Module
+            ['name' => 'view_vehicles', 'module_name' => 'Vehicles', 'description' => 'View vehicles'],
+            ['name' => 'create_vehicles', 'module_name' => 'Vehicles', 'description' => 'Create vehicles'],
+            ['name' => 'edit_vehicles', 'module_name' => 'Vehicles', 'description' => 'Edit vehicles'],
+            ['name' => 'delete_vehicles', 'module_name' => 'Vehicles', 'description' => 'Delete vehicles'],
         ];
 
         foreach ($permissions as $perm) {

@@ -124,11 +124,26 @@ class CustomerResource extends Resource
                             ->label(fn() => __('Customer Group'))
                             ->searchable()
                             ->preload()
+                            ->live()
+                            ->afterStateUpdated(function (Forms\Set $set, $state) {
+                                if ($state) {
+                                    $group = \App\Models\CustomerGroup::find($state);
+                                    if ($group) {
+                                        $set('top', $group->top);
+                                    }
+                                }
+                            })
                             ->createOptionForm([
                                 Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
                                     ->label(fn() => __('Name'))
                                     ->required()
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
+                                Forms\Components\TextInput::make('top')
+                                    ->label(fn() => __('TOP'))
+                                    ->suffix(__('days'))
+                                    ->required()
+                                    ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right'])
+                                    ->rules(['integer', 'min:0']),
                                 Forms\Components\TextInput::make('head_office_pic')
                                     ->label(fn() => __('Head Office PIC'))
                                     ->maxLength(255)
@@ -349,6 +364,7 @@ class CustomerResource extends Resource
                         }, 'Customers.xlsx');
                     }),
             ])
+            ->defaultSort('name')
             ->actions([
                 //
             ])

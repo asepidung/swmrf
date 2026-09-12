@@ -152,6 +152,7 @@ class SupplierResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_tax_11')
                     ->label(fn() => __('Tax 11%')),
             ])
+            ->defaultSort('name')
             ->actions([
                 // No action columns to keep clean, clickable rows are used instead.
             ])
@@ -179,3 +180,4 @@ class SupplierResource extends Resource
         ];
     }
 }
+
