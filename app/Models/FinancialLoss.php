@@ -27,9 +27,12 @@ class FinancialLoss extends Model
 
     public const SUMBER_SURAT_JALAN = 'Delivery Order';
 
+    public const SUMBER_REPACK = 'Repack';
+
     public const SEMUA_SUMBER = [
         self::SUMBER_TIMBANG_SAPI,
         self::SUMBER_SURAT_JALAN,
+        self::SUMBER_REPACK,
     ];
 
     protected $fillable = [
