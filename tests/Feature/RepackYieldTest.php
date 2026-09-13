@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\BeefStock;
 use App\Models\Grade;
 use App\Models\Product;
 use App\Models\ProductCategory;
@@ -101,15 +102,33 @@ class RepackYieldTest extends TestCase
         }
 
         foreach ($hasil as $i => $berat) {
+            $barcode = 'HASIL-'.$repack->id.'-'.$i;
+
             RepackResult::create([
                 'repack_id' => $repack->id,
                 'product_id' => $this->product->id,
                 'warehouse_id' => $this->warehouse->id,
                 'grade_id' => $this->grade->id,
-                'barcode' => 'HASIL-'.$repack->id.'-'.$i,
+                'barcode' => $barcode,
                 'weight' => $berat,
                 'qty_pcs' => 1,
                 'pack_date' => now()->toDateString(),
+            ]);
+
+            // Disambungkan lewat barcode yang sama, meniru pasangan yang
+            // dibuat `InputHasilRepack::create()` -- `unlock()` memeriksa
+            // baris ini masih ada di gudang sebelum mengizinkan dokumennya
+            // dibuka lagi.
+            BeefStock::create([
+                'barcode' => $barcode,
+                'product_id' => $this->product->id,
+                'warehouse_id' => $this->warehouse->id,
+                'grade_id' => $this->grade->id,
+                'weight' => $berat,
+                'qty_pcs' => 1,
+                'pack_date' => now()->toDateString(),
+                'origin' => '2',
+                'status' => 'IN_STOCK',
             ]);
         }
 
@@ -336,6 +355,72 @@ class RepackYieldTest extends TestCase
         $this->assertNull($tersimpan->yield_override_by);
         $this->assertNull($tersimpan->yield_override_at);
         $this->assertFalse($tersimpan->shrinkLimitWasOverridden());
+    }
+
+    /**
+     * Buka kunci ditolak kalau salah satu hasilnya sudah tidak ada lagi di
+     * gudang -- dikirim, jadi bahan Repack lain, direlabel, dst.
+     *
+     * `RepackResult` sendiri tidak pernah dihapus modul lain (ia riwayat
+     * produksi yang permanen); yang hilang adalah baris `BeefStock` dengan
+     * barcode yang sama, karena setiap modul yang mengeluarkan barang dari
+     * gudang MENGHAPUS baris stoknya (lihat `InputBahanRepack::create()`,
+     * `ScanTally::create()`, dst -- semuanya pola yang sama), bukan sekadar
+     * mengubah `status`-nya.
+     */
+    public function test_unlock_is_refused_when_a_result_has_left_the_warehouse(): void
+    {
+        $repack = $this->repack([100], [80]);
+        $repack->fresh()->lock();
+
+        $barcode = $repack->results()->first()->barcode;
+        \App\Models\BeefStock::where('barcode', $barcode)->delete();
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage($barcode);
+
+        $repack->fresh()->unlock();
+    }
+
+    /**
+     * Buka kunci ditolak juga kalau baris stoknya masih ADA tapi sudah
+     * bukan `IN_STOCK` -- Repack tidak pernah menulis status lain, tapi
+     * penjaganya tetap memeriksanya, sama seperti `SalesReturn::unlock()`
+     * yang ditiru pola ini.
+     */
+    public function test_unlock_is_refused_when_a_result_is_no_longer_in_stock_status(): void
+    {
+        $repack = $this->repack([100], [80]);
+        $repack->fresh()->lock();
+
+        $barcode = $repack->results()->first()->barcode;
+        \App\Models\BeefStock::where('barcode', $barcode)->update(['status' => 'MATCHED']);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage($barcode);
+
+        $repack->fresh()->unlock();
+    }
+
+    /**
+     * Repack yang sudah dibuka tetap TERKUNCI -- dokumen ini tidak pernah
+     * berubah `kunci=false` diam-diam saat penjaganya menolak.
+     */
+    public function test_a_refused_unlock_leaves_the_document_still_locked(): void
+    {
+        $repack = $this->repack([100], [80]);
+        $repack->fresh()->lock();
+
+        $barcode = $repack->results()->first()->barcode;
+        \App\Models\BeefStock::where('barcode', $barcode)->delete();
+
+        try {
+            $repack->fresh()->unlock();
+        } catch (\RuntimeException $e) {
+            // diharapkan
+        }
+
+        $this->assertTrue($repack->fresh()->kunci);
     }
 
     // =====================================================================

@@ -13,6 +13,7 @@ use Spatie\Activitylog\LogOptions;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 class Repack extends Model
 {
@@ -62,6 +63,20 @@ class Repack extends Model
                 $model->status = 'OPEN';
             }
         });
+
+        static::deleted(function ($model) {
+            if ($model->isForceDeleting()) {
+                $model->financialLoss()->forceDelete();
+            } else {
+                $model->financialLoss()->delete();
+            }
+        });
+
+        static::restored(function ($model) {
+            if ($model->financialLoss()->withTrashed()->exists()) {
+                $model->financialLoss()->withTrashed()->restore();
+            }
+        });
     }
 
     public function user(): BelongsTo
@@ -93,6 +108,11 @@ class Repack extends Model
     public function yieldOverriddenBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'yield_override_by');
+    }
+
+    public function financialLoss(): MorphOne
+    {
+        return $this->morphOne(FinancialLoss::class, 'lossable');
     }
 
     // =================================================================
@@ -301,25 +321,119 @@ class Repack extends Model
                 'yield_override_by' => $menembus ? $this->yield_override_by : null,
                 'yield_override_at' => $menembus ? $this->yield_override_at : null,
             ])->save();
+
+            // Kilogramnya masuk ke KOLOMNYA SENDIRI, bukan cuma dihitung
+            // ulang setiap kali dibaca -- pola yang sama dengan susut kirim
+            // (DeliveryOrder) dan susut timbang sapi (CattleWeighing).
+            //
+            // `amount` MASIH nol, dan itu disengaja. Menilai susut repack
+            // dengan harga jual melebih-lebihkan: perusahaan tidak kehilangan
+            // sebesar harga jual, melainkan sebesar modalnya ditambah margin
+            // yang tidak jadi didapat. Angka yang benar HPP, dan HPP menunggu
+            // B.O.M. Saat itu tiba, rupiahnya tinggal `quantity x HPP` dari
+            // kolom ini -- tanpa menggali ulang catatan lama.
+            //
+            // Syaratnya berat susut (`shrinkWeight() > 0`), bukan rupiah --
+            // rupiahnya memang akan selalu nol sampai HPP ada, jadi memakai
+            // `amount > 0` sebagai syarat akan membuat baris ini tidak pernah
+            // tertulis sama sekali (jebakan yang sudah pernah terjadi di
+            // CattleWeighing, #299).
+            $susut = $this->shrinkWeight();
+
+            if ($susut > 0) {
+                $this->financialLoss()->updateOrCreate(
+                    [
+                        'transaction_type' => FinancialLoss::SUMBER_REPACK,
+                        'reference_number' => $this->doc_no,
+                    ],
+                    [
+                        'date' => $this->repack_date,
+                        'amount' => 0.00,
+                        'quantity' => $susut,
+                        'unit' => 'Kg',
+                        'note' => __('Repack shrinkage on :document', [
+                            'document' => $this->doc_no,
+                        ]),
+                    ]
+                );
+            } else {
+                $this->financialLoss()->delete();
+            }
         });
     }
 
-    /** Buka kuncinya, beserta jejak penembusannya. */
+    /**
+     * Buka kuncinya, beserta jejak penembusannya DAN kerugian yang sempat
+     * tercatat.
+     *
+     * DITOLAK kalau salah satu hasilnya sudah tidak ada lagi di gudang.
+     * Begitu satu barcode hasil Repack ini dipakai lagi di modul lain
+     * (dikirim, jadi bahan Repack lain, direlabel, dst), membuka kunci dan
+     * mengizinkan bahan/hasilnya diubah membuat riwayat produksinya tidak
+     * lagi cocok dengan apa yang sungguh terjadi ke barang itu -- pola yang
+     * sama persis dengan `SalesReturn::unlock()`: semua barang diperiksa
+     * LEBIH DULU, baru dokumennya dibuka, supaya tidak berhenti di tengah
+     * karena satu barang sudah terlanjur pindah.
+     *
+     * `RepackResult` sendiri BUKAN baris stok -- ia riwayat produksi yang
+     * permanen, disambungkan ke `BeefStock` cuma lewat kesamaan `barcode`
+     * (dibuat sepasang saat Input Hasil, lihat `InputHasilRepack::create()`).
+     * Jadi "sudah dipakai" berarti barisnya sudah TIDAK ADA lagi di
+     * `beef_stocks` (modul lain menghapusnya begitu barang keluar gudang,
+     * bukan mengubah `status`-nya) -- itulah yang diperiksa di sini.
+     *
+     * Baris `FinancialLoss` yang ditulis `lock()` mengandalkan dokumennya
+     * FINAL -- begitu dibuka lagi, bahan/hasilnya bisa berubah sama sekali
+     * sebelum dikunci ulang (atau tidak pernah dikunci ulang sama sekali).
+     * Membiarkan barisnya berdiri berarti laporan kerugian menampilkan
+     * susut yang belum pasti terjadi. Pola yang sama dengan "Unapprove"
+     * pada Delivery Order (`ViewDeliveryOrder.php`) -- membatalkan
+     * finalisasi menghapus kerugian yang menyertainya. Kalau dikunci lagi,
+     * `lock()` menulis ulang dari angka yang berlaku saat itu.
+     *
+     * Beda dari `SalesReturn::unlock()`: baris `BeefStock` di sini TIDAK
+     * ditarik/dihapus. Buka kunci Repack cuma berarti "izinkan koreksi",
+     * bukan "batalkan seluruh produksinya" -- kartonnya tetap ada di
+     * gudang apa adanya, cuma dokumennya yang jadi bisa diedit lagi.
+     *
+     * @throws \RuntimeException
+     */
     public function unlock(): void
     {
         if (! $this->kunci) {
             throw new \RuntimeException(__('This repack is not locked.'));
         }
 
-        $this->forceFill([
-            'kunci' => false,
-            'status' => 'OPEN',
-            // Jejak penembusan ikut dilepas: begitu dokumennya bisa diubah
-            // lagi, alasan yang dulu menyertai angka lama tidak lagi
-            // menjelaskan angka yang sekarang.
-            'yield_override_reason' => null,
-            'yield_override_by' => null,
-            'yield_override_at' => null,
-        ])->save();
+        DB::transaction(function (): void {
+            foreach ($this->results as $result) {
+                $stock = BeefStock::where('barcode', $result->barcode)->lockForUpdate()->first();
+
+                if (! $stock) {
+                    throw new \RuntimeException(__('Item :barcode is no longer in stock (already used or shipped).', [
+                        'barcode' => $result->barcode,
+                    ]));
+                }
+
+                if ($stock->status !== 'IN_STOCK') {
+                    throw new \RuntimeException(__('Item :barcode is no longer in the warehouse (status: :status).', [
+                        'barcode' => $result->barcode,
+                        'status' => $stock->status,
+                    ]));
+                }
+            }
+
+            $this->financialLoss()->delete();
+
+            $this->forceFill([
+                'kunci' => false,
+                'status' => 'OPEN',
+                // Jejak penembusan ikut dilepas: begitu dokumennya bisa diubah
+                // lagi, alasan yang dulu menyertai angka lama tidak lagi
+                // menjelaskan angka yang sekarang.
+                'yield_override_reason' => null,
+                'yield_override_by' => null,
+                'yield_override_at' => null,
+            ])->save();
+        });
     }
 }

@@ -1262,12 +1262,26 @@ membuang waktu Project Owner.
 | Delivery Plan | 1 Sep 2026 | jadwal hilang di akhir hari kirim |
 | Dashboard (notifikasi) | 1 Sep 2026 | seragam, bilingual, GR belum dikunci |
 | Hutang (kompensasi) | 1 Sep 2026 | potongan total, saldo satu rumus |
+| Mutation | 5 Sep 2026 | nomor mutasi bisa dobel, mutasi kosong bisa dikirim |
+| Stock Take | 5 Sep 2026 (#283) | hapus stok tanpa izin, gudang beku nyangkut, penomoran barcode, umur simpan |
+| Sales Return | 4 Sep 2026 | izin approve/unlock dipisah, alur retur lintas-pengiriman dirombak, snapshot harga -- penyisiran paling dalam sejauh ini |
+| Invoice | 3 Sep 2026 | rumus tagihan disatukan ke `InvoiceTotals`; susulan 7 Sep (weight/qty salah parse) |
+| Carcass | 31 Agu 2026 + koreksi 4-5 Sep | rendemen karkas &amp; offal sempat hilang saat ditulis ulang, sudah dipulihkan |
+| QC / QC Report | 6-8 Sep 2026, direstrukturisasi 8 Sep | modul pendamping baru (Carcass, Boning, GR Beef, Tally, Repack, Sales Return, Stock Take); belum ada `docs/modules/qc.md` |
+| Fleet (Driver/Vehicle) | 8-12 Sep 2026, ditinjau 13 Sep | baru, lahir bersama restrukturisasi Delivery Plan; belum ada `docs/modules/fleet.md` |
+| Financial Loss | 6-7 Sep 2026 + 13 Sep (susut Repack) | lihat §"Menunggu HPP" di `tertunda.md` untuk sisa nilai rupiahnya |
 
-**Belum tersentuh:** Sales Return, Invoice, Stock Take, Mutation. Sales Order
-baru disisir pada bagian harga dan diskonnya saja, mengikuti alur price
-list -- sisanya belum. Tally baru disisir pada halaman pindainya; halaman
-Draft, View, dan cetaknya belum. Delivery Order disisir pada ringkasan,
-halaman Approve, dan daftar tolakannya.
+**Diperbarui 13 September 2026** (baris di atas sempat berhenti di 1 Sep dan
+ketinggalan lima sesi penyisiran besar -- Invoice/Stock Take/Mutation/Sales
+Return sempat tertulis "belum tersentuh" di sini padahal sudah lama disisir
+tuntas; jangan percaya paragraf ini tanpa mengecek tanggalnya kalau
+membaca versi lama file ini). **Modul resmi yang MASIH BENAR-BENAR belum
+pernah disisir sampai hari ini: hanya Material Usage** (lihat `tertunda.md`
+§B, menunggu BOM). **Baru SEBAGIAN, jangan dikira selesai:** Sales Order
+(baru bagian harga &amp; diskon, mengikuti alur price list -- sisanya belum)
+dan Tally (baru halaman pindainya; halaman Draft, View, dan cetaknya
+belum). Delivery Order disisir pada ringkasan, halaman Approve, dan daftar
+tolakannya (urutan kolom index &amp; bug Detail List ditambal 7 Sep).
 
 **Sesi 1 September 2026 berhenti di sini.** Berikutnya **Delivery Order**,
 lalu ingatkan Owner mengerjakan **plandev**. Tata letak halaman Scan Tally
@@ -6237,3 +6251,103 @@ kolom `armada` (teks bebas, isinya jenis kendaraan seperti "FUSO") disalin ke
 `vehicle_type = 'UNKNOWN'`. Jadi satu truk fisik bisa menjadi dua baris
 kendaraan. Tidak ada data hilang, tetapi master `vehicles` perlu dirapikan
 tangan setelah migrasi berjalan di hosting.
+
+## 13 September 2026 -- Susut Repack tidak pernah masuk Financial Loss
+
+Laporan Owner: cetakan "LAPORAN PRODUKSI REPACK" sudah lama menampilkan
+"Balance (Loss)" (Total Bahan dikurangi Total Hasil), tapi angka itu cuma
+hidup di cetakan -- tidak pernah tersimpan ke `financial_losses`. Digrep:
+`Repack::lock()` sama sekali tidak menyentuh `FinancialLoss`, dan model
+`Repack` bahkan belum punya relasi `financialLoss()`.
+
+Ditiru PERSIS pola yang sudah ada dan terbukti benar untuk susut kirim
+(`DeliveryOrder`) dan susut timbang sapi (`CattleWeighing`, #299) --
+bukan dibuat ulang dari nol:
+
+- Konstanta baru `FinancialLoss::SUMBER_REPACK = 'Repack'`, didaftarkan di
+  `SEMUA_SUMBER` (kunci `"Repack"` sudah ada di kedua `lang/*.json` sejak
+  lama sebagai nav label, jadi tidak perlu entri terjemahan baru untuk
+  sumbernya sendiri; kunci catatan `"Repack shrinkage on :document"` yang
+  baru).
+- `Repack::financialLoss(): MorphOne` + `boot()` ditambah `deleted`/
+  `restored` (hapus/pulihkan baris kerugian mengikuti hapus/pulihkan
+  dokumennya, sama persis `CattleWeighing`).
+- Penulisannya diletakkan DI DALAM `Repack::lock()`, bukan di halaman --
+  method itu sendiri sudah berkomentar "SATU RUMAH untuk seluruh
+  syaratnya" (lihat #328-an area), jadi kedua titik tombol Lock
+  (`RepackResource.php` tabel & `EditRepack.php` header) otomatis ikut
+  benar tanpa disalin dua kali.
+- **`amount` tetap 0.00, disengaja** -- alasan yang sama dengan susut
+  kirim: menilai dengan harga jual melebih-lebihkan kerugian (yang hilang
+  modal ditambah margin yang tidak jadi didapat, bukan harga jualnya).
+  Angka yang benar HPP, dan HPP menunggu B.O.M. `quantity` (kg susut)
+  tercatat SEKARANG, `amount` menyusul begitu HPP ada (`quantity x HPP`).
+- **Syarat tulis/hapusnya `shrinkWeight() > 0` (berat), BUKAN `amount > 0`
+  (rupiah)** -- rupiahnya akan selalu nol sampai HPP ada, jadi kalau
+  syaratnya rupiah baris ini tidak akan pernah tertulis sama sekali.
+  Ini persis jebakan yang sudah pernah terjadi di CattleWeighing (#299).
+- Kunci unik `updateOrCreate`: `['transaction_type' => SUMBER_REPACK,
+  'reference_number' => doc_no]` -- buka kunci, betulkan, kunci lagi
+  MEMPERBARUI baris yang sama, tidak menumpuk baris baru untuk dokumen
+  yang sama. Kalau susutnya hilang sesudah dibetulkan, barisnya dihapus.
+
+Test baru `tests/Feature/RepackFinancialLossTest.php` (5 test) menjaga
+kontrak ini -- meniru bentuk `CattleWeighingTest`: susut tercatat saat
+lock, tidak tercatat kalau tidak susut atau hasil lebih berat dari bahan
+(kasus mustahil secara fisik, perlu izin QC dulu supaya `lock()` sendiri
+tidak menolak sebelum sempat menulis apa pun), baris diperbarui bukan
+digandakan saat lock-ulang, dan baris lama tercabut saat susutnya sudah
+hilang. Test lama (`RepackTest`, `RepackYieldTest`,
+`RepackBalanceWarningTest`, `FinancialLossSourceTest`, `CattleWeighingTest`,
+`BilingualParityTest`) tetap hijau -- terutama
+`test_no_loss_is_written_with_a_hand_typed_source` yang memaksa sumber
+baru ini memakai konstanta, bukan string `'Repack'` lepas.
+
+### Susulan hari yang sama -- `unlock()` sekarang menolak kalau hasilnya sudah dipakai downstream
+
+Owner bertanya: "kalo di unlock gimana ada mitigasi?" -- sebelum susulan
+ini, `Repack::unlock()` cuma memeriksa `$this->kunci`, tidak menyentuh
+`results()` sama sekali. Kalau hasil Repack sudah dikirim/jadi bahan
+Repack lain/direlabel sesudah dikunci, membuka kuncinya lagi dan
+mengizinkan bahan/hasilnya diubah membuat riwayat produksinya tidak lagi
+cocok dengan apa yang sungguh terjadi ke barang itu.
+
+Ternyata **sudah ada pola persis** untuk kasus ini: `SalesReturn::unlock()`
+(app/Models/SalesReturn.php) memeriksa SEMUA barangnya lebih dulu (barcode
+masih ada di `beef_stocks` dengan `status = 'IN_STOCK'`) sebelum mengizinkan
+apa pun ditarik -- "diperiksa semua dulu, baru ditarik, supaya tidak
+berhenti di tengah karena satu barang sudah terlanjur pindah". `Repack`
+BERBEDA dari `SalesReturn` dalam satu hal: `RepackResult` bukan baris stok
+itu sendiri, cuma disambungkan ke `BeefStock` lewat kesamaan `barcode`
+(dibuat sepasang saat Input Hasil). Dan setiap modul yang mengeluarkan
+barang dari gudang MENGHAPUS baris `BeefStock`-nya, bukan mengubah
+`status`-nya -- jadi "sudah dipakai" berarti barisnya sudah tidak ada.
+
+Ditiru pola pemeriksaannya persis (loop `foreach ($this->results as
+$result)`, `BeefStock::where('barcode', ...)->lockForUpdate()->first()`,
+tolak kalau tidak ada atau `status !== 'IN_STOCK'`, pesan error yang SAMA
+persis dengan `SalesReturn` -- kuncinya sudah ada di kedua `lang/*.json`,
+tidak perlu terjemahan baru). **Beda dari `SalesReturn::unlock()`**: baris
+`BeefStock`-nya TIDAK ditarik/dihapus -- buka kunci Repack cuma berarti
+"izinkan koreksi", bukan "batalkan seluruh produksinya". Kartonnya tetap
+ada di gudang apa adanya.
+
+Konsekuensi ke data uji: `RepackYieldTest::repack()` dan
+`RepackFinancialLossTest::repack()` dulu membuat `RepackResult` TANPA baris
+`BeefStock` pasangannya -- guard baru langsung menolak `unlock()` di tiga
+test lama yang memakainya. Diperbaiki dengan menambahkan `BeefStock::create()`
+sepasang di kedua helper, meniru pasangan yang sungguhan dibuat
+`InputHasilRepack::create()`.
+
+Tiga test baru di `RepackYieldTest.php`: `unlock` ditolak kalau baris
+stoknya sudah hilang, ditolak kalau statusnya bukan `IN_STOCK`, dan
+dokumennya tetap `kunci=true` sesudah penolakan (tidak setengah-terbuka).
+
+Ditemukan sebagai catatan sampingan, TIDAK dikerjakan (di luar cakupan
+laporan Owner hari ini): `Boning::unlock()` punya lubang yang SAMA PERSIS
+-- tidak ada pemeriksaan apa pun sebelum membuka kunci. Perlu keputusan
+Owner terpisah apakah mau disapu sekarang atau ditunda.
+
+**BELUM commit** -- Owner minta ditahan dulu, mau ditinjau di lokal
+bersama beberapa perubahan lain yang sedang dikumpulkan sebelum dikabari
+ke Hafizh.
