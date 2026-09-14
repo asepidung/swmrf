@@ -292,6 +292,12 @@ class ActivityLogResource extends Resource
                         'updated' => 'Updated',
                         'deleted' => 'Deleted',
                     ]),
+                // Silent date filter, standar modul transaksional (rujukan:
+                // CashBookResource) -- default bulan berjalan ADA di form,
+                // badge cuma tampil kalau user mengubahnya. Sebelumnya
+                // indicateUsing() tidak ada sama sekali, jadi badge SELALU
+                // tampil sejak halaman dibuka -- terlihat seperti filter
+                // sudah dipilih user, padahal itu cuma nilai bawaan.
                 Tables\Filters\Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')
@@ -311,6 +317,19 @@ class ActivityLogResource extends Resource
                                 $data['created_until'],
                                 fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
                             );
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        $defaultFrom = now()->startOfMonth()->toDateString();
+                        $defaultUntil = now()->toDateString();
+
+                        if (($data['created_from'] ?? null) && $data['created_from'] !== $defaultFrom) {
+                            $indicators[] = __('From Date').': '.\Carbon\Carbon::parse($data['created_from'])->format('d M Y');
+                        }
+                        if (($data['created_until'] ?? null) && $data['created_until'] !== $defaultUntil) {
+                            $indicators[] = __('Until Date').': '.\Carbon\Carbon::parse($data['created_until'])->format('d M Y');
+                        }
+                        return $indicators;
                     }),
             ])
             ->actions([
@@ -330,6 +349,9 @@ class ActivityLogResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            // Kolom subject_label membaca $record->subject (morphTo) per
+            // baris tanpa ini -- sampai N query tambahan per halaman.
+            ->with(['subject', 'causer'])
             ->whereNotIn('subject_type', [
                 'App\Models\PurchaseCattleItem',
                 'App\Models\CattleReceivingItem',
