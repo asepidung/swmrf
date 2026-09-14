@@ -96,10 +96,16 @@ class StockTake extends Model
     /**
      * Apakah ada opname daging yang sedang berlangsung?
      *
-     * Selama berlangsung, angka yang bisa dipakai menyalin jawaban
-     * disembunyikan: enam digit terakhir barcode di daftar stok, dan seluruh
-     * angka di halaman Posisi Stok per Tanggal. Hitungan fisik yang bisa
-     * menyalin jawabannya tidak memeriksa apa pun.
+     * Selama berlangsung, satu angka yang bisa dipakai menyalin jawaban
+     * disembunyikan: enam digit terakhir barcode di daftar stok. Hitungan
+     * fisik yang bisa menyalin jawabannya tidak memeriksa apa pun.
+     *
+     * Percobaan pertama (#277) juga menutup SELURUH angka berat di halaman
+     * Posisi Stok per Tanggal, tapi itu DIBATALKAN di #279: halaman itu
+     * bagian dari Stock Overview yang dipakai sepanjang hari, bukan cuma
+     * saat opname -- menggelapkannya berarti mengorbankan layar yang dipakai
+     * setiap saat demi satu kejadian yang jarang. Stock Overview tetap
+     * menampilkan berat stok apa adanya, opname atau tidak.
      */
     public static function isCounting(): bool
     {

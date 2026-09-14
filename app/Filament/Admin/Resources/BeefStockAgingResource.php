@@ -113,6 +113,19 @@ class BeefStockAgingResource extends Resource
                     ->label(__('Barcode'))
                     ->weight('bold')
                     ->alignCenter()
+                    ->formatStateUsing(function ($state) {
+                        if (!is_string($state)) return $state;
+
+                        // Mask 6 digit terakhir (pH & Counter) selama opname
+                        // berjalan -- aturan yang sama dengan
+                        // BeefStocksRelationManager, cuma bocor di sini.
+                        // Pertanyaannya satu rumah di StockTake::isCounting().
+                        if (\App\Models\StockTake::isCounting() && strlen($state) >= 10) {
+                            return substr($state, 0, -6) . '******';
+                        }
+
+                        return $state;
+                    })
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('product.name')
