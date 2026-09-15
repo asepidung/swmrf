@@ -105,6 +105,7 @@ class PaymentsRelationManager extends RelationManager
                     // orangnya juga berbeda.
                     ->visible(fn (Payment $record): bool => ! $record->isCancelled()
                         && (auth()->user()?->hasPermission('cancel_receivable_payments') ?? false))
+                    ->authorize(fn (): bool => auth()->user()?->hasPermission('cancel_receivable_payments') ?? false)
                     ->requiresConfirmation()
                     ->modalHeading(__('Cancel Payment'))
                     ->modalDescription(__('The allocation goes back to each invoice and the cash book gets its reversing lines. The payment itself stays on record.'))
