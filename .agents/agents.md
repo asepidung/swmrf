@@ -6351,3 +6351,141 @@ Owner terpisah apakah mau disapu sekarang atau ditunda.
 **BELUM commit** -- Owner minta ditahan dulu, mau ditinjau di lokal
 bersama beberapa perubahan lain yang sedang dikumpulkan sebelum dikabari
 ke Hafizh.
+
+## 14 September 2026 -- Penyisiran modul yang belum pernah disentuh, ditugaskan Owner lewat Hafizh
+
+Arahan Owner: gerayangi seluruh project cari masalah dan potensi masalah,
+mulai dari modul yang belum ada di tabel "Modul yang SUDAH disisir".
+Ruby mencari, Hafizh mengarahkan & memutuskan kategori [A]/[B], Owner
+memutuskan yang [B]. Dikecualikan: HPP, BOM, Sales Return (termasuk klaim
+retur -- lihat `tertunda.md`), dan semua yang sudah tercatat tertunda.
+
+Lima kelompok modul diteliti paralel: Receivable, cluster Material Stock
+(Take/Finding/Movement/Overview), cluster Beef Stock
+(Overview/Aging/Movement), Activity Log, User & Warehouse. Temuan lengkap
+per modul ada di riwayat pesan sesi (belum disalin ke sini satu-satu --
+terlalu panjang; yang dicatat di bawah cuma yang SUDAH dikerjakan).
+
+### Sudah dikerjakan (kategori [A], disetujui Hafizh)
+
+**PR #390 (issue #389) -- Activity Log:**
+- Filter tanggal `created_at` punya default bulan-berjalan tapi tidak ada
+  `indicateUsing()` -- badge selalu tampil sejak halaman dibuka. Ditambah,
+  pola `CashBookResource`.
+- Kolom `subject_label` baca `$record->subject` (morphTo) per baris tanpa
+  eager load -- N query tambahan per halaman (terbukti 8 vs 4 query untuk
+  5 baris vs 1 baris). Ditambah `->with(['subject', 'causer'])`.
+- Dua test baru, keduanya dibuktikan menggigit.
+
+**Beef Stock (issue & PR menyusul) -- tiga temuan:**
+- `StockTake::isCounting()` docblock basi -- masih menyebut "seluruh angka
+  di halaman Posisi Stok per Tanggal" yang penyamarannya sudah DIBATALKAN
+  di #279 (5 September: Stock Overview dipakai sepanjang hari, tidak boleh
+  ikut gelap saat opname). Docblock diperbaiki supaya sesuai keputusan
+  yang sebenarnya berlaku -- cuma barcode 6-digit-terakhir yang disamarkan.
+- `BeefStockAgingResource` menampilkan barcode UTUH selama opname
+  berjalan, padahal aturan yang sama sudah berlaku di
+  `BeefStocksRelationManager` sejak lama -- cuma bocor di laporan aging.
+  Ditiru pola masking-nya persis. **Catatan yang TIDAK dikerjakan** (di
+  luar cakupan yang disetujui): ekspor Excel & PDF `BeefStockAgingResource`
+  masih mencetak barcode utuh tanpa syarat -- kalau kebocoran ini dianggap
+  perlu ditutup juga, perlu keputusan terpisah.
+- `BeefStockAgingPolicy` dihapus -- kode mati, tidak pernah didaftarkan ke
+  `Gate::policy()` (tidak ada model `BeefStockAging`, jadi auto-discovery
+  Laravel pun tidak menemukannya). Dibuktikan lewat grep: satu-satunya
+  referensi lain cuma komentar penjelas di `BeefStockAgingResource.php`,
+  bukan pemanggilan kode.
+- Test baru `BeefStockAgingTest.php`, dibuktikan menggigit.
+
+### Ditahan untuk Owner ([B], BELUM dikerjakan)
+
+- **User -- eskalasi izin diri sendiri**: `edit_users` bisa dipakai
+  mencentang SEMUA izin sistem lewat form Edit, termasuk akun sendiri,
+  tanpa batasan apa pun. Setara superuser tanpa perlu jadi `programmer`.
+  Prioritas TERTINGGI, belum ada keputusan.
+- **User -- tidak ada ekspor** (mungkin sengaja, data izin sensitif).
+- **Receivable -- piutang customer tanpa Customer Group hilang total**
+  dari modul Piutang (tidak pernah muncul di daftar, tidak bisa dibayar
+  lewat `ReceivePayment`) karena seluruh `ReceivableResource` dibangun di
+  atas `CustomerGroup`. Prioritas tinggi -- data finansial nyata yang
+  tidak tertagih lewat sistem.
+- **Receivable -- `view_receivables` mungkin cuma hidup di seeder**, belum
+  dipastikan ada di migrasi. Perlu verifikasi server dulu.
+- **MaterialStockTake -- halaman Input Stock bisa diakses tanpa izin
+  sama sekali** (tidak ada `MaterialStockTakeItemPolicy`, jatuh ke
+  allow-default). Prioritas tinggi -- integritas opname.
+- **MaterialStockTake -- route print tanpa pengecekan izin.**
+- **Warehouse -- gudang nonaktif masih bisa dipilih** di
+  `FoundItemScanner`, `LabelingBoning`, `LabelingGoodsReceiptProduct` --
+  disetujui arahnya [A] tapi menyentuh 3 modul di luar cakupan tugas ini,
+  jadi menyusul setelah PR Beef Stock & User/Warehouse selesai.
+
+Detail lengkap tiap temuan (file:baris, cara memicu, usulan) ada di
+riwayat pesan ke Hafizh -- sesi berikutnya yang perlu mengerjakan salah
+satu dari daftar ini sebaiknya minta Hafizh menyalin ulang detailnya,
+bukan menebak dari ringkasan di atas.
+
+## 14 September 2026 -- Penyisiran modul belum tersentuh (lanjutan): User & Warehouse
+
+Bagian dari tugas sapu Owner lewat Hafizh (lihat entri sebelumnya soal
+Activity Log #389/#390 dan Beef Stock #391/#392, keduanya di branch
+terpisah yang belum di-merge saat catatan ini ditulis). Kategori [A] yang
+disetujui Hafizh untuk User & Warehouse:
+
+- **`UserResource::shouldRegisterNavigation()` ditambahkan** -- menu "User
+  Management" sebelumnya tampil di sidebar SEMUA orang yang login,
+  termasuk yang tidak punya `view_users`; baru ditolak (403) begitu
+  diklik. Filament tidak mengaitkan `shouldRegisterNavigation()` bawaan
+  dengan policy apa pun. Ditiru pola `WarehouseResource`.
+- **`User` model sekarang memakai `LogsActivity`** -- master data paling
+  sensitif di aplikasi ini (mengendalikan akses & izin) sebelumnya sama
+  sekali tidak tercatat. `logExcept(['password', 'remember_token'])`
+  WAJIB -- password sudah ter-hash, tapi hash tetap tidak boleh singgah
+  di `properties` activity log.
+- **Perubahan izin lewat `permissions()->sync()` dicatat manual** di
+  `EditUser::afterSave()` -- pivot table tidak tertangkap `LogsActivity`
+  otomatis. Dicatat nama izin yang ditambah/dicabut lewat
+  `activity()->performedOn($user)->log('permissions synced')`.
+- **13 halaman Edit master data** (`Warehouse`, `Grade`, `Supplier`,
+  `CattleClass`, `ProductCategory`, `Product`, `MaterialCategory`,
+  `Material`, `MaterialUnit`, `Customer`, `CustomerSegment`,
+  `CustomerGroup`, `BankAccount`) **dibungkus `MasterDataDeletion::attempt()`**
+  -- sebelumnya cuma `WarehouseResource`'s BULK delete di index yang
+  dibungkus; tombol Delete di halaman Edit-nya sendiri (di 13 modul ini
+  sekaligus) masih polos, jadi menghapus data yang masih dipakai
+  menampilkan galat SQL mentah alih-alih notifikasi ramah.
+- **Gudang nonaktif dikeluarkan dari 3 dropdown** yang menciptakan stok
+  BARU: `FoundItemScanner`, `LabelingBoning`, `LabelingGoodsReceiptProduct`
+  -- pola yang sama dengan yang sudah dipakai `Mutation`/`Repack`/
+  `SalesReturn`.
+
+### Temuan sampingan yang JUSTRU lebih penting: `MasterDataDeletion` tidak pernah teruji betulan
+
+Saat menulis test untuk salah satu dari 13 fix di atas, ditemukan
+`MasterDataDeletion::isStillInUse()` cuma mengenali kode galat MySQL 1451
+-- SQLite (dipakai SELURUH suite test proyek ini) memberi kode BERBEDA
+(19, `SQLITE_CONSTRAINT`) untuk pelanggaran kunci asing yang SAMA.
+Akibatnya: `MasterDataDeletionTest.php` yang sudah ada sejak lama TIDAK
+PERNAH membuktikan skenario utamanya ("masih dipakai, tolak dengan
+kalimat ramah") -- cuma menguji jalur sukses dan jalur "galat lain".
+Diperbaiki dengan mengenali KEDUA kode (1451 dan 19); perilaku produksi
+(MySQL) sama sekali tidak berubah. Test baru dibuat memakai tabel
+bertautan sungguhan (bukan tiruan) supaya kode error yang diperiksa
+benar-benar berasal dari driver, bukan dikarang.
+
+### Jebakan pengujian yang ditemukan, dicatat supaya tidak diulang
+
+Form izin `UserResource` (`CheckboxList` per modul, `dehydrated(false)`,
+`afterStateHydrated()` membaca ulang dari database) tidak bisa diuji lewat
+`Livewire::test()->fillForm()->call('save')` biasa untuk skenario
+"mencabut" izin -- setiap siklus request Livewire memicu hidrasi ulang
+yang MENGGABUNG nilai lama dengan nilai baru (union), bukan mengganti.
+Skenario "menambah" izin dari kosong tidak kena masalah ini (union dengan
+himpunan kosong = nilai baru itu sendiri), jadi itu yang diuji.
+
+**Ditahan untuk Owner (Temuan 1 & 4 dari laporan User awal, TIDAK
+disentuh)**: eskalasi izin diri sendiri lewat `edit_users`, dan
+ketiadaan ekspor di `UserResource`.
+
+Full suite dijalankan sebelum commit; hasil & nomor PR ada di riwayat
+pesan ke Hafizh.

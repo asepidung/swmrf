@@ -13,7 +13,17 @@ class EditBankAccount extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            // Sebelumnya DeleteAction polos -- galat SQL mentah kalau
+            // akun banknya masih dipakai. Sama seperti EditWarehouse.
+            Actions\DeleteAction::make()
+                ->action(function () {
+                    if (\App\Support\MasterDataDeletion::attempt(
+                        fn () => $this->record->delete(),
+                        __('Bank Account').' '.($this->record->bank_name ?? $this->record->initial),
+                    )) {
+                        $this->redirect($this->getResource()::getUrl('index'));
+                    }
+                }),
         ];
     }
 
