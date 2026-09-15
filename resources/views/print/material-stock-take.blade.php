@@ -204,7 +204,7 @@
                 <div class="doc-meta">
                     <strong>Doc No:</strong> {{ $record->document_number }}<br>
                     <strong>Date:</strong> {{ \Carbon\Carbon::parse($record->date)->format('d-M-Y') }}<br>
-                    <strong>Period:</strong> {{ $record->periode }}
+                    <strong>Period:</strong> {{ $record->period }}
                 </div>
             </div>
         </div>
@@ -257,19 +257,19 @@
                     <td class="text-center">{{ $item->material->code ?? '-' }}</td>
                     <td>{{ $item->material->name ?? '-' }}</td>
                     
-                    <td class="text-right">{{ number_format($sys, 2, ',', '.') }}</td>
+                    <td class="text-right">{{ number_format($sys, 0, ',', '.') }}</td>
                     <td class="text-right" style="font-weight: bold;">
                         @if($isNull)
                             <span style="color: #d9534f;">- (Kosong)</span>
                         @else
-                            {{ number_format($phys, 2, ',', '.') }}
+                            {{ number_format($phys, 0, ',', '.') }}
                         @endif
                     </td>
                     <td class="text-right" style="font-weight: bold; {{ $diff > 0 ? 'color: #5cb85c;' : ($diff < 0 ? 'color: #d9534f;' : '') }}">
                         @if($isNull)
                             <span style="color: #d9534f;">Hilang</span>
                         @else
-                            {{ $diff > 0 ? '+' : '' }}{{ number_format($diff, 2, ',', '.') }}
+                            {{ $diff > 0 ? '+' : '' }}{{ number_format($diff, 0, ',', '.') }}
                         @endif
                     </td>
                 </tr>
@@ -285,7 +285,7 @@
             <div class="note-section">
                 <strong>{{ __('Notes') }}:</strong>
                 <div class="note-box">
-                    {{ $record->note ?? __('No additional notes.') }}
+                    {{ $record->summary_note ?? __('No additional notes.') }}
                 </div>
             </div>
         </div>

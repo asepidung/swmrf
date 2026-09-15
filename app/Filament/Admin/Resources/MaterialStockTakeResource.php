@@ -116,10 +116,20 @@ class MaterialStockTakeResource extends Resource
             ->filters([
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()?->hasPermission('view_deleted_material_stock_takes') ?? false),
+                // Silent date filter: tanggal 1 bulan berjalan sampai hari
+                // ini, diterapkan diam-diam -- pola sama dengan
+                // MaterialStockMovementResource di cluster yang sama.
+                // Sebelumnya kedua DatePicker tidak punya ->default(), jadi
+                // daftar Opname Material menampilkan SELURUH riwayat sejak
+                // awal, bukan bulan berjalan seperti standar wajib project.md.
                 Tables\Filters\Filter::make('created_at')
                     ->form([
-                        Forms\Components\DatePicker::make('created_from')->label(__('Start Date')),
-                        Forms\Components\DatePicker::make('created_until')->label(__('End Date')),
+                        Forms\Components\DatePicker::make('created_from')
+                            ->label(__('Start Date'))
+                            ->default(now()->startOfMonth()),
+                        Forms\Components\DatePicker::make('created_until')
+                            ->label(__('End Date'))
+                            ->default(now()),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
@@ -132,6 +142,7 @@ class MaterialStockTakeResource extends Resource
                                 fn (Builder $query, $date): Builder => $query->whereDate('date', '<=', $date),
                             );
                     })
+                    ->indicateUsing(fn (array $data): array => []),
     ])
     ->actions([
         Tables\Actions\Action::make('input_stock')
