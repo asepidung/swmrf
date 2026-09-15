@@ -118,13 +118,13 @@ class MaterialStockMovementResource extends Resource
                 Tables\Columns\TextColumn::make('transaction_type')
                     ->label(__('Transaction Type'))
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'GR' => 'success',
-                        'ISSUE' => 'danger',
-                        'ADJUSTMENT' => 'warning',
-                        'RETUR' => 'info',
-                        default => 'gray',
-                    })
+                    // `match` lama cuma mengenali 4 dari 9 jenis nyata
+                    // (`MaterialStockMovement::TYPES`) -- MATERIAL_USAGE,
+                    // STOCK_TAKE_ADJUSTMENT, TEMUAN MATERIAL, dll selalu abu-
+                    // abu, padahal itu mayoritas pergerakan sungguhan. Model
+                    // sudah punya `typeColor()` persis untuk ini, dan
+                    // BeefStockMovementResource (kembarannya) sudah memakainya.
+                    ->color(fn (string $state): string => MaterialStockMovement::typeColor($state))
                     ->formatStateUsing(fn (string $state): string => __($state))
                     ->tooltip(fn (MaterialStockMovement $record): ?string => $record->note),
                 Tables\Columns\TextColumn::make('qty_in')
