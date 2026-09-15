@@ -67,7 +67,10 @@ class CarcassYieldTest extends TestCase
     /**
      * Satu dokumen karkas beserta sapinya.
      *
-     * @param  array<int, array{hidup: float, a: float, b: float, kulit: float, buntut: float}>  $ekor
+     * @param  array<int, array{hidup: float, a: float, b: float, kulit: float, buntut: float, ditimbang?: bool}>  $ekor
+     *                            'ditimbang' => false membuat `actual_weight`
+     *                            baris itu NULL -- sapi yang belum ditimbang
+     *                            ulang, walau karkasnya sudah tercatat.
      */
     private function karkas(array $ekor): Carcass
     {
@@ -123,7 +126,7 @@ class CarcassYieldTest extends TestCase
                 'cattle_class_id' => $class->id,
                 'eartag' => $eartag,
                 'initial_weight' => $e['hidup'],
-                'actual_weight' => $e['hidup'],
+                'actual_weight' => ($e['ditimbang'] ?? true) ? $e['hidup'] : null,
             ]);
 
             CarcassItem::create([
@@ -222,6 +225,67 @@ class CarcassYieldTest extends TestCase
         $karkas = $this->karkas([]);
 
         $this->assertNull($karkas->yieldPercent());
+    }
+
+    /**
+     * Keputusan Project Owner, 15 September 2026, untuk Boning #7 (soal ini
+     * sebenarnya ada di Carcass, bukan Boning): SATU ekor saja yang belum
+     * ditimbang ulang sudah cukup membuat rendemen ditampilkan "-", bukan
+     * dihitung dari sisa yang sudah ditimbang. Menghitung dari sisanya akan
+     * membuat rendemen tampak LEBIH TINGGI daripada sebenarnya -- karkasnya
+     * (ditimbang saat pemotongan) tetap utuh, sementara bobot hidup yang
+     * jadi penyebut diam-diam berkurang.
+     */
+    public function test_a_carcass_with_any_unweighed_cattle_has_no_yield_at_all(): void
+    {
+        $ekor = [];
+        for ($i = 1; $i <= 8; $i++) {
+            $ekor[] = ['hidup' => 500.00 + $i, 'a' => 140.00, 'b' => 145.00, 'kulit' => 30.00, 'buntut' => 5.00];
+        }
+        // 2 dari 10 ekor belum ditimbang ulang.
+        $ekor[] = ['hidup' => 510.00, 'a' => 140.00, 'b' => 145.00, 'kulit' => 30.00, 'buntut' => 5.00, 'ditimbang' => false];
+        $ekor[] = ['hidup' => 512.00, 'a' => 140.00, 'b' => 145.00, 'kulit' => 30.00, 'buntut' => 5.00, 'ditimbang' => false];
+
+        $karkas = $this->karkas($ekor);
+
+        $this->assertSame(10, $karkas->items()->count());
+        $this->assertTrue($karkas->hasUnweighedCattle());
+        $this->assertNull($karkas->yieldPercent());
+    }
+
+    public function test_a_fully_weighed_carcass_has_no_unweighed_cattle(): void
+    {
+        $karkas = $this->karkas([
+            ['hidup' => 531.00, 'a' => 149.96, 'b' => 158.98, 'kulit' => 34.60, 'buntut' => 0.00],
+        ]);
+
+        $this->assertFalse($karkas->hasUnweighedCattle());
+    }
+
+    /**
+     * Sama seperti model-nya, tapi dibuktikan lewat cetakan sungguhan --
+     * "berlaku di layar, cetakan, dan ekspor laporan karkas" per keputusan
+     * Owner. Sebelum diperbaiki, total baris "Carcase Yield" di sini dihitung
+     * dari $tLive yang diam-diam mengabaikan sapi yang belum ditimbang
+     * (SQL SUM melompati NULL), membuat rendemen tampak lebih tinggi.
+     */
+    public function test_the_printed_report_shows_a_dash_when_any_cattle_is_unweighed(): void
+    {
+        $karkas = $this->karkas([
+            ['hidup' => 531.00, 'a' => 149.96, 'b' => 158.98, 'kulit' => 34.60, 'buntut' => 0.00],
+            ['hidup' => 564.00, 'a' => 158.96, 'b' => 162.94, 'kulit' => 32.10, 'buntut' => 0.00, 'ditimbang' => false],
+        ]);
+
+        $html = \Livewire\Livewire::test(
+            \App\Filament\Admin\Resources\CarcassResource\Pages\PrintCarcass::class,
+            ['record' => $karkas]
+        )->assertSee('Carcase Yield')->html();
+
+        $this->assertMatchesRegularExpression(
+            '/Carcase Yield<\/th>\s*<td>-<\/td>/',
+            $html,
+            'Baris total "Carcase Yield" seharusnya tampil "-", bukan angka yang dihitung dari sisa sapi yang sudah ditimbang.'
+        );
     }
 
     /**

@@ -32,6 +32,19 @@ class LabelingBoning extends Page implements HasForms, HasTable
     protected static string $resource = BoningResource::class;
     protected static string $view = 'filament.resources.boning-resource.pages.labeling-boning';
 
+    /**
+     * Halaman ini MENCETAK LABEL -- setiap label lahir sebagai baris
+     * `BeefStock` sungguhan. Sebelumnya sama sekali tidak punya
+     * `canAccess()`, jadi satu-satunya gerbang cuma `view_bonings` milik
+     * Resource (lewat `canViewAny()`) -- siapa pun yang boleh MELIHAT
+     * boning bisa mencetak label yang menciptakan stok baru.
+     */
+    public static function canAccess(array $parameters = []): bool
+    {
+        return auth()->user()?->isProgrammer()
+            || (auth()->user()?->hasPermission('edit_bonings') ?? false);
+    }
+
     public function getMaxContentWidth(): MaxWidth | string | null
     {
         return MaxWidth::Full;
@@ -199,7 +212,24 @@ class LabelingBoning extends Page implements HasForms, HasTable
 
     public function exportExcel()
     {
-        $summary = $this->getProductionSummary();
+        // Sengaja BUKAN getProductionSummary() -- yang itu grand total
+        // seluruh dokumen, dipakai widget ringkasan di layar. Ekspor ini
+        // harus mengikuti apa yang sedang disaring di tabel (produk/grade),
+        // bukan diam-diam mengekspor semuanya walau layarnya sudah
+        // disaring.
+        $summary = $this->getFilteredTableQuery()
+            ->with('product')
+            ->get()
+            ->groupBy('product_id')
+            ->map(function ($items) {
+                return [
+                    'product_name' => $items->first()->product->name ?? 'Unknown',
+                    'box' => $items->count(),
+                    'pcs' => $items->sum('qty_pcs'),
+                    'qty' => $items->sum('weight'),
+                ];
+            })
+            ->sortBy('product_name');
 
         $csvData = "Product,Box,Pcs,Qty (Kg)\n";
         $totalBox = 0;
@@ -324,6 +354,19 @@ class LabelingBoning extends Page implements HasForms, HasTable
                     ->action(function (BoningItem $record) {
                         try {
                             DB::transaction(function () use ($record) {
+                                // Kunci dibaca ULANG dari baris yang dikunci
+                                // -- pengecekan TOCTOU di bawah sudah benar
+                                // untuk repack/tally usage, tapi sebelumnya
+                                // tidak ikut memeriksa kunci dokumennya
+                                // sendiri. Tanpa ini, tab yang masih terbuka
+                                // saat dokumen baru saja dikunci di sesi lain
+                                // tetap bisa void/hapus barisnya.
+                                $boning = \App\Models\Boning::whereKey($record->boning_id)->lockForUpdate()->first();
+
+                                if (! $boning || $boning->kunci) {
+                                    throw new \Exception(__('This document is locked; its items can no longer be voided.'));
+                                }
+
                                 // Cek pengaman ganda sebelum menghapus (TOCTOU Fixed)
                                 if (DB::table('repack_materials')->where('barcode', $record->barcode)->lockForUpdate()->exists()) {
                                     throw new \Exception(__('This item has already been used in Repack.'));
@@ -387,6 +430,18 @@ class LabelingBoning extends Page implements HasForms, HasTable
 
         try {
             $insertedItem = DB::transaction(function () use ($formData, $weight, $pcs) {
+                // Formnya cuma disembunyikan di Blade kalau kunci=true --
+                // server-side create() ini sendiri tidak pernah memeriksa
+                // kunci sama sekali. Dibaca ULANG dari basis data (bukan
+                // dari $this->record yang bisa basi lintas request/tab),
+                // supaya dokumen yang baru saja dikunci dari sesi lain
+                // tidak kebobolan label baru.
+                $boning = \App\Models\Boning::whereKey($this->record->id)->lockForUpdate()->first();
+
+                if (! $boning || $boning->kunci) {
+                    throw new \Exception(__('This document is locked and can no longer be labeled.'));
+                }
+
                 $origin = '1';
                 $dateStr = Carbon::parse($formData['pack_date'])->format('dmy');
                 $product = Product::find($formData['product_id']);
