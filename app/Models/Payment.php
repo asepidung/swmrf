@@ -115,8 +115,29 @@ class Payment extends Model
         }
 
         \Illuminate\Support\Facades\DB::transaction(function () use ($reason, $userId): void {
+            // Baris pembayarannya sendiri dikunci dan diperiksa ULANG --
+            // dua klik Cancel yang bersamaan pada pembayaran yang sama
+            // tidak boleh sama-sama lolos pemeriksaan isCancelled() di atas
+            // (yang membaca state sebelum transaksi ini) dan sama-sama
+            // membalik alokasi serta baris buku kasnya.
+            $locked = static::whereKey($this->id)->lockForUpdate()->first();
+
+            if (! $locked || $locked->isCancelled()) {
+                throw new \RuntimeException(__('This payment has already been cancelled.'));
+            }
+
             foreach ($this->allocations as $allocation) {
-                $invoice = $allocation->invoice;
+                if (! $allocation->invoice_id) {
+                    continue;
+                }
+
+                // Dikunci dan dibaca ULANG dari basis data, bukan lewat
+                // relasi yang sudah dimuat -- ReceivePayment.php mengunci
+                // baris invoice yang sama saat melunasinya. Tanpa penguncian
+                // yang sama di sini, pelunasan yang sedang berjalan dan
+                // pembatalan pembayaran lain yang menunjuk invoice yang sama
+                // bisa saling menimpa paid_amount/balance (lost update).
+                $invoice = Invoice::whereKey($allocation->invoice_id)->lockForUpdate()->first();
 
                 if (! $invoice) {
                     continue;
