@@ -522,19 +522,10 @@ class ActionAuthorizationTest extends TestCase
     private function belumDiperbaikiDiCabangLain(): array
     {
         return [
-            // Mutation #5 (issue #421) -- ScanMutation unscan. Ditemukan
-            // sekaligus lewat penjaga ini: addBarcode() (aksi SCAN-nya
-            // sendiri, sekelas persis dengan Tally::scan() sebelum
-            // diperbaiki) juga tanpa satu pun pemeriksaan izin -- ikut
-            // masuk PR yang sama.
+            // Mutation #5 (issue #421) -- unscan dan addBarcode di ScanMutation,
+            // diperbaiki di cabang Mutation yang belum digabung.
             'app/Filament/Admin/Resources/MutationResource/Pages/ScanMutation.php:DeleteAction',
             'app/Filament/Admin/Resources/MutationResource/Pages/ScanMutation.php:addBarcode',
-
-            // Boning #1/#2/#3 (issue #420) -- LabelingBoning izin halaman,
-            // create() tulis stok tanpa cek, dan hapus/void item baris tabel.
-            'app/Filament/Admin/Resources/BoningResource/Pages/LabelingBoning.php:create',
-            'app/Filament/Admin/Resources/BoningResource/Pages/LabelingBoning.php:DeleteAction',
-            'app/Filament/Admin/Resources/BoningResource.php:DeleteAction',
 
             // Repack #3/#4 (issue #422) -- kunci barcode + try/catch void
             // bahan/hasil, ditemukan sekaligus jadi digabung satu PR.

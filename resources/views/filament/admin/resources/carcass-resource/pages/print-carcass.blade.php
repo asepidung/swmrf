@@ -230,16 +230,22 @@
                 <tbody>
                     @php
                         $tLive = 0; $tC1 = 0; $tC2 = 0; $tH = 0; $tT = 0;
+                        $adaBelumTimbang = false;
                     @endphp
                     @forelse($record->items as $index => $item)
                         @php
-                            $liveWeight = (float) optional($item->weighingItem)->actual_weight;
+                            $beratHidupTertimbang = optional($item->weighingItem)->actual_weight;
+                            $liveWeight = (float) $beratHidupTertimbang;
                             $c1 = (float) $item->carcass_1;
                             $c2 = (float) $item->carcass_2;
                             $h = (float) $item->hides;
                             $t = (float) $item->tail;
                             $totCarc = $c1 + $c2;
                             $yield = $liveWeight > 0 ? ($totCarc / $liveWeight * 100) : 0;
+
+                            if ($beratHidupTertimbang === null) {
+                                $adaBelumTimbang = true;
+                            }
 
                             $tLive += $liveWeight;
                             $tC1 += $c1;
@@ -272,7 +278,12 @@
             @php
                 $totalCarcass = $tC1 + $tC2;
                 $offal = $totalCarcass + $tT;
-                $totalYield = $tLive > 0 ? ($totalCarcass / $tLive * 100) : 0;
+                // $tLive hanya menjumlahkan baris yang SUDAH ditimbang ulang
+                // (baris yang belum menyumbang 0). Kalau ada yang belum
+                // ditimbang, memakai $tLive apa adanya sebagai penyebut akan
+                // membuat rendemen tampak lebih tinggi daripada sebenarnya --
+                // jadi rendemen totalnya ditahan sampai semua ekor ditimbang.
+                $totalYield = (! $adaBelumTimbang && $tLive > 0) ? ($totalCarcass / $tLive * 100) : 0;
             @endphp
 
             <!-- Totals -->
@@ -296,7 +307,7 @@
                     </tr>
                     <tr>
                         <th>Carcase Yield</th>
-                        <td>{{ $tLive > 0 ? number_format($totalYield, 2, ',', '.') . ' %' : '-' }}</td>
+                        <td>{{ (! $adaBelumTimbang && $tLive > 0) ? number_format($totalYield, 2, ',', '.') . ' %' : '-' }}</td>
                     </tr>
                 </table>
             </div>

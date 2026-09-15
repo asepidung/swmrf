@@ -182,6 +182,30 @@ class Carcass extends Model
     }
 
     /**
+     * Ada sapi di karkas ini yang belum ditimbang ulang.
+     *
+     * Keputusan Project Owner, 15 September 2026, memperluas aturan 6
+     * September (`CattleWeighing::weighingWasSkipped()`, SELURUH baris
+     * kosong baru dianggap "penimbangan dilewati"): untuk rendemen karkas,
+     * SATU ekor saja yang belum ditimbang sudah cukup membuat angkanya
+     * tidak bisa dipercaya.
+     *
+     * `liveWeight()` memakai SQL SUM, yang diam-diam MENGABAIKAN baris
+     * NULL -- bobot hidup yang terhitung jadi lebih kecil daripada
+     * sebenarnya, sementara berat karkasnya (ditimbang di titik yang
+     * berbeda, saat pemotongan) tetap ikut utuh. Rendemen yang keluar jadi
+     * lebih BESAR daripada yang sebenarnya, bukan sekadar kurang presisi --
+     * dan satu ekor sapi bisa menggeser angkanya berpuluh kilogram.
+     */
+    public function hasUnweighedCattle(): bool
+    {
+        return $this->items()
+            ->join('cattle_weighing_items', 'carcass_items.cattle_weighing_item_id', '=', 'cattle_weighing_items.id')
+            ->whereNull('cattle_weighing_items.actual_weight')
+            ->exists();
+    }
+
+    /**
      * Rendemen karkas: berapa persen bobot hidup yang menjadi karkas.
      *
      * Angka baku di rumah potong, dan sudah ADA di aplikasi lama:
@@ -192,10 +216,16 @@ class Carcass extends Model
      * sungguhan tanggal 27 Agustus 2026: 3.943,32 / 6.856,00 = 57,52%, persis
      * angka yang tercetak di sana.
      *
-     * `null` berarti belum bisa dihitung -- bukan nol persen.
+     * `null` berarti belum bisa dihitung -- bukan nol persen. Berlaku juga
+     * kalau ada sapi yang belum ditimbang ulang (lihat `hasUnweighedCattle()`),
+     * bukan hanya kalau SEMUANYA belum.
      */
     public function yieldPercent(): ?float
     {
+        if ($this->hasUnweighedCattle()) {
+            return null;
+        }
+
         $hidup = $this->liveWeight();
 
         if ($hidup <= 0) {
