@@ -220,7 +220,64 @@ class ReceivableResource extends Resource
             ])
             ->filters([])
             ->actions([])
-            ->headerActions([])
+            // Sebelumnya tidak ada ekspor sama sekali -- project.md mewajibkan
+            // Excel DAN PDF di setiap halaman Index. `PayableResource` (modul
+            // kembarannya, hutang supplier) sudah punya keduanya; pola ini
+            // ditiru persis, termasuk memakai `getFilteredTableQuery()` supaya
+            // menghormati pencarian/pengurutan yang aktif di layar.
+            ->headerActions([
+                \Filament\Tables\Actions\ActionGroup::make([
+                    \Filament\Tables\Actions\Action::make('excel')
+                        ->label(__('Excel'))
+                        ->icon('heroicon-o-document-text')
+                        ->color('success')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+
+                            return response()->streamDownload(function () use ($records) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    __('Group Name'),
+                                    __('Total Receivable'),
+                                    __('Number of Invoices'),
+                                    __('Due Soon'),
+                                    __('Overdue'),
+                                    __('Customer Deposit'),
+                                ]));
+                                foreach ($records as $record) {
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $record->name,
+                                        (float) ($record->total_receivable ?? 0),
+                                        (int) ($record->total_receivable_count ?? 0),
+                                        (float) ($record->due_soon ?? 0),
+                                        (float) ($record->overdue ?? 0),
+                                        static::depositOf($record),
+                                    ]));
+                                }
+                                $writer->close();
+                            }, 'piutang.xlsx');
+                        }),
+                    \Filament\Tables\Actions\Action::make('pdf')
+                        ->label('PDF')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('danger')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->get();
+                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.receivables-pdf', [
+                                'records' => $records,
+                                'title' => __('Receivables'),
+                                'depositOf' => fn ($record) => static::depositOf($record),
+                            ]);
+
+                            return response()->streamDownload(fn () => print($pdf->output()), 'piutang.pdf');
+                        }),
+                ])
+                    ->label('Export Data')
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->button()
+                    ->color('success'),
+            ])
             ->bulkActions([])
             ->recordUrl(
                 fn (\App\Models\CustomerGroup $record): string => Pages\ViewReceivable::getUrl([$record->id]),
