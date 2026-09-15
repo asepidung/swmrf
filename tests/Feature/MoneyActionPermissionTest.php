@@ -129,14 +129,30 @@ class MoneyActionPermissionTest extends TestCase
      * MENCIPTAKAN uang, bukan sekadar mencatat perpindahannya. Saldo awal
      * adalah aksi seperti itu, dan yang berikutnya akan sama.
      *
-     * @test
+     * Diperketat 15 September 2026, sesudah penyisiran BankAccount. Sebelum
+     * ini pemindainya menerima `hasPermission(` di MANA PUN dalam berkas --
+     * termasuk di dalam KOMENTAR yang cuma MENJELASKAN niat tanpa sungguh
+     * menegakkannya, memberi rasa aman palsu. Sekarang komentarnya dibuang
+     * dulu (`token_get_all`, pola sama `GhostPropertyTest`) sebelum dipindai.
+     *
+     * Catatan penting hasil penelusuran empiris (`BankAccountAuthorizationTest`):
+     * `->visible()`/`->hidden()` di Filament versi ini BUKAN sekadar kosmetik
+     * render tombol -- `isDisabled()` (diperiksa `mountTableAction()` sebelum
+     * eksekusi) memanggil `isHidden()`, dan `isHidden()` sungguh memeriksa
+     * closure `->visible()` maupun `->authorize()`/`isAuthorized()`. Jadi
+     * `hasPermission(` di dalam `->visible(`/`->hidden(`/`->authorize(` ATAU
+     * langsung di dalam `->action(` sama-sama penegakan yang nyata, bukan
+     * cuma salah satunya -- pemindai ini tetap tidak membedakan MANA di
+     * antara keduanya yang dipakai (itu di luar cakupan perbaikan ini),
+     * hanya memastikan pemeriksaannya bukan sekadar teks di komentar.
      */
+    /** @test */
     public function no_page_creates_a_payment_without_checking_a_permission()
     {
         $offenders = [];
 
         foreach ($this->filamentPageFiles() as $file) {
-            $source = file_get_contents($file);
+            $source = $this->tanpaKomentar(file_get_contents($file));
 
             $createsPayment = str_contains($source, 'SupplierPayment::create')
                 || str_contains($source, 'Payment::create(')
@@ -147,7 +163,7 @@ class MoneyActionPermissionTest extends TestCase
                 continue;
             }
 
-            if (! str_contains($source, 'hasPermission(')) {
+            if (! str_contains($source, 'hasPermission(') && ! str_contains($source, '->authorize(')) {
                 $offenders[] = basename($file);
             }
         }
@@ -157,9 +173,25 @@ class MoneyActionPermissionTest extends TestCase
         $this->assertSame(
             [],
             $offenders,
-            "Halaman berikut membuat pembayaran tanpa memeriksa hak akses sama sekali:\n"
-            . implode("\n", $offenders),
+            "Halaman berikut membuat pembayaran tanpa memeriksa hak akses sama sekali "
+            ."(di luar komentar):\n" . implode("\n", $offenders),
         );
+    }
+
+    /** Komentar dibuang supaya kutipan/keterangan tidak ikut tertuduh (atau ikut meloloskan). */
+    private function tanpaKomentar(string $isi): string
+    {
+        $hasil = '';
+
+        foreach (@token_get_all($isi) as $token) {
+            if (is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+
+            $hasil .= is_array($token) ? $token[1] : $token;
+        }
+
+        return $hasil;
     }
 
     /** @return array<int, string> */
