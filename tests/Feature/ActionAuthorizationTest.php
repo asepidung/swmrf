@@ -40,6 +40,7 @@ class ActionAuthorizationTest extends TestCase
             [\App\Filament\Admin\Resources\MaterialRequisitionResource\Pages\ApproveFinanceMaterialRequisition::class, 'approve_material_requisitions'],
             [\App\Filament\Admin\Resources\MaterialRequisitionResource\Pages\ReviewMaterialRequisition::class, 'review_material_requisitions'],
             [\App\Filament\Admin\Resources\DeliveryOrderResource\Pages\ApproveDeliveryOrder::class, 'approve_delivery_orders'],
+            [\App\Filament\Admin\Resources\MaterialStockTakeResource\Pages\ManageMaterialStockTakeItems::class, 'view_material_stock_takes'],
         ];
     }
 
