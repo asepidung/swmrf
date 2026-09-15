@@ -6,6 +6,7 @@ use App\Filament\Admin\Resources\BankAccountResource\Pages;
 use App\Filament\Admin\Resources\BankAccountResource\RelationManagers;
 use App\Models\BankAccount;
 use App\Models\BankTransaction;
+use App\Support\MasterDataDeletion;
 use Filament\Notifications\Notification;
 use Filament\Support\RawJs;
 use Filament\Forms;
@@ -15,6 +16,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\DB;
 
 class BankAccountResource extends Resource
 {
@@ -22,7 +24,19 @@ class BankAccountResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
 
+    // Sebelumnya tidak ada -- menu "Bank Accounts" tampil di sidebar SEMUA
+    // orang yang login, termasuk yang tidak punya `view_bank_accounts`.
+    // Modul PALING sensitif (nomor rekening, saldo) di antara master data
+    // yang disisir -- izin yang ditegakkan sudah ada, bukan izin baru.
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasPermission('view_bank_accounts');
+    }
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->check() && auth()->user()->hasPermission('view_bank_accounts');
+    }
 
     public static function getNavigationGroup(): ?string
     {
@@ -133,8 +147,19 @@ class BankAccountResource extends Resource
                     ->color('warning')
                     // Menyetel saldo awal berarti menciptakan uang di buku kas.
                     // Boleh MELIHAT rekening tidak otomatis berarti boleh
-                    // melakukannya -- lihat MoneyActionPermissionTest.
-                    ->visible(fn (BankAccount $record): bool => auth()->user()->hasPermission('set_opening_balance')
+                    // melakukannya -- lihat MoneyActionPermissionTest dan
+                    // BankAccountAuthorizationTest.
+                    //
+                    // `->authorize()`, bukan `->visible()`. Diverifikasi
+                    // empiris (BankAccountAuthorizationTest): mountTableAction()
+                    // + callMountedTableAction() sebagai user TANPA izin ini
+                    // menghasilkan 0 baris BankTransaction -- `isDisabled()`
+                    // Filament (dipanggil mountTableAction() sebelum eksekusi)
+                    // memang mengevaluasi `isHidden()`, dan `isHidden()` ikut
+                    // memeriksa `isAuthorized()`. `->authorize()` dipakai di
+                    // sini alih-alih `->visible()` supaya niatnya eksplisit:
+                    // ini gerbang otorisasi, bukan sekadar kosmetik tombol.
+                    ->authorize(fn (BankAccount $record): bool => auth()->user()->hasPermission('set_opening_balance')
                         && $record->canSetOpeningBalance())
                     ->form([
                         Forms\Components\DatePicker::make('transaction_date')
@@ -183,18 +208,29 @@ class BankAccountResource extends Resource
                             return;
                         }
 
-                        // Menimpa baris yang sudah ada, bukan menambah baris
-                        // kedua: sebuah rekening hanya punya satu titik awal.
-                        $entry = $record->openingBalanceEntry() ?? new BankTransaction();
+                        // Dikunci: dua klik cepat (atau dua tab) bisa
+                        // sama-sama membaca openingBalanceEntry() sebagai null
+                        // lalu sama-sama INSERT -- dua baris "opening_balance",
+                        // saldo dobel karena currentBalance() menjumlahkan
+                        // SEMUA baris type=in. Pola sama BankAccount::cashAccount().
+                        DB::transaction(function () use ($record, $amount, $data): void {
+                            $entry = $record->transactions()
+                                ->where('reference_type', BankAccount::OPENING_BALANCE_REFERENCE)
+                                ->lockForUpdate()
+                                ->first() ?? new BankTransaction();
 
-                        $entry->fill([
-                            'bank_account_id' => $record->id,
-                            'type' => 'in',
-                            'amount' => $amount,
-                            'reference_type' => BankAccount::OPENING_BALANCE_REFERENCE,
-                            'description' => __('Opening balance for :account', ['account' => $record->initial]),
-                            'transaction_date' => $data['transaction_date'],
-                        ])->save();
+                            // Menimpa baris yang sudah ada, bukan menambah
+                            // baris kedua: sebuah rekening hanya punya satu
+                            // titik awal.
+                            $entry->fill([
+                                'bank_account_id' => $record->id,
+                                'type' => 'in',
+                                'amount' => $amount,
+                                'reference_type' => BankAccount::OPENING_BALANCE_REFERENCE,
+                                'description' => __('Opening balance for :account', ['account' => $record->initial]),
+                                'transaction_date' => $data['transaction_date'],
+                            ])->save();
+                        });
 
                         Notification::make()
                             ->success()
@@ -216,7 +252,9 @@ class BankAccountResource extends Resource
                     ->label(__('Cash Adjustment'))
                     ->icon('heroicon-o-scale')
                     ->color('gray')
-                    ->visible(fn (): bool => auth()->user()->hasPermission('adjust_cash_balance'))
+                    // `->authorize()`, bukan `->visible()` -- alasan sama
+                    // dengan setOpeningBalance di atas.
+                    ->authorize(fn (): bool => auth()->user()->hasPermission('adjust_cash_balance'))
                     ->form([
                         Forms\Components\DatePicker::make('transaction_date')
                             ->label(__('Date'))
@@ -277,7 +315,15 @@ class BankAccountResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records): void {
+                            foreach ($records as $record) {
+                                MasterDataDeletion::attempt(
+                                    fn () => $record->delete(),
+                                    __('Bank Account').' '.$record->initial,
+                                );
+                            }
+                        }),
                 ]),
             ]);
     }

@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class BankAccount extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     /** Penanda akun kas tunai. Bukan rekening bank sungguhan. */
     public const CASH_INITIAL = 'KAS';
@@ -23,6 +25,31 @@ class BankAccount extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    /**
+     * Rekening bank PERUSAHAAN sendiri -- master data paling sensitif di
+     * seluruh sweep ini. Mengubah account_number tanpa jejak siapa/kapan
+     * adalah risiko lebih besar daripada di Supplier: ini rekening tempat
+     * perusahaan MENERIMA dan MENGIRIM uang sungguhan.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
+
+    /**
+     * Konsisten dengan Grade/Supplier yang sudah lama begini. Tanpa ini,
+     * "bca" dan "BCA" bisa dianggap dua entri berbeda secara tampilan, dan
+     * unique constraint bisa berperilaku beda antara SQLite (case-sensitive)
+     * dan MySQL produksi (biasanya case-insensitive).
+     */
+    public function setInitialAttribute($value)
+    {
+        $this->attributes['initial'] = $value === null ? null : strtoupper(trim($value));
+    }
 
     /**
      * Penanda baris saldo awal di buku kas.
