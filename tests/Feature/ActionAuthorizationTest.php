@@ -522,12 +522,6 @@ class ActionAuthorizationTest extends TestCase
     private function belumDiperbaikiDiCabangLain(): array
     {
         return [
-            // Repack #3/#4 (issue #422) -- kunci barcode + try/catch void
-            // bahan/hasil, ditemukan sekaligus jadi digabung satu PR.
-            'app/Filament/Admin/Resources/RepackResource/Pages/InputBahanRepack.php:DeleteAction',
-            'app/Filament/Admin/Resources/RepackResource/Pages/InputHasilRepack.php:DeleteAction',
-            'app/Filament/Admin/Resources/RepackResource/Pages/InputBahanRepack.php:submitBarcode',
-            'app/Filament/Admin/Resources/RepackResource/Pages/InputHasilRepack.php:create',
         ];
     }
 

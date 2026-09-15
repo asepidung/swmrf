@@ -29,8 +29,19 @@ class InputHasilRepack extends Page implements HasForms, HasTable
     use InteractsWithForms, InteractsWithTable;
 
     protected static string $resource = RepackResource::class;
-    
+
     protected static string $view = 'filament.resources.repack-resource.pages.input-hasil-repack';
+
+    /**
+     * Halaman ini MENCIPTAKAN STOK HASIL (BeefStock baru) -- satu-satunya
+     * gerbang sebelumnya `view_repacks` (via `canViewAny()` Resource).
+     * Sekelas persis dengan LabelingBoning sebelum diperbaiki.
+     */
+    public static function canAccess(array $parameters = []): bool
+    {
+        return auth()->user()?->isProgrammer()
+            || (auth()->user()?->hasPermission('edit_repacks') ?? false);
+    }
 
     public function getMaxContentWidth(): MaxWidth | string | null
     {
@@ -239,24 +250,37 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                     ->requiresConfirmation()
                     ->hidden(fn () => $this->record->kunci == 1)
                     ->action(function ($record, $livewire) {
-                        DB::transaction(function () use ($record) {
-                            /* 1. Mencatat pengurangan stok dari hasil produksi yang dibatalkan */
-                            BeefStockMovement::create([
-                                'product_id' => $record->product_id,
-                                'warehouse_id' => $record->warehouse_id ?? 1,
-                                'condition' => $record->grade_id,
-                                'barcode' => $record->barcode,
-                                'transaction_type' => 'VOID_IN_REPACK',
-                                'reference_document' => $record->repack->doc_no ?? 'DELETED',
-                                'weight_in' => -$record->weight, // Nilai minus karena batal masuk
-                                'pcs_in' => -$record->qty_pcs, // Nilai minus karena batal masuk
-                                'created_by' => Auth::id(),
-                            ]);
+                        try {
+                            DB::transaction(function () use ($record) {
+                                /* 1. Mencatat pengurangan stok dari hasil produksi yang dibatalkan */
+                                BeefStockMovement::create([
+                                    'product_id' => $record->product_id,
+                                    'warehouse_id' => $record->warehouse_id ?? 1,
+                                    'condition' => $record->grade_id,
+                                    'barcode' => $record->barcode,
+                                    'transaction_type' => 'VOID_IN_REPACK',
+                                    'reference_document' => $record->repack->doc_no ?? 'DELETED',
+                                    'weight_in' => -$record->weight, // Nilai minus karena batal masuk
+                                    'pcs_in' => -$record->qty_pcs, // Nilai minus karena batal masuk
+                                    'created_by' => Auth::id(),
+                                ]);
 
-                            /* 2. Menghapus data stok hasil dari gudang dan rekaman hasil produksi */
-                            BeefStock::where('barcode', $record->barcode)->delete();
-                            $record->delete();
-                        });
+                                /* 2. Menghapus data stok hasil dari gudang dan rekaman hasil produksi */
+                                BeefStock::where('barcode', $record->barcode)->delete();
+                                $record->delete();
+                            });
+                        } catch (\Throwable $e) {
+                            // Sebelumnya tidak ada try/catch sama sekali di
+                            // sini.
+                            report($e);
+                            Notification::make()
+                                ->title(__('Failed'))
+                                ->body(__('This item could not be voided. It may have already been removed.'))
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
 
                         Notification::make()
                             ->title(__('The output has been deleted'))
@@ -323,8 +347,17 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                 // Urutannya satu rumah di `BarcodeSequence`. Bentuk lamanya
                 // memakai panjang barcode sebagai penanda sah dan membaca
                 // baris TERAKHIR menurut id, bukan urutan TERBESAR.
+                //
+                // BeefStock ikut dikunci di sini -- barcode-nya SAMA dengan
+                // RepackResult (dibuat sepasang, baris di bawah), dan
+                // `beef_stocks.barcode` yang punya unique index-nya, bukan
+                // `repack_results.barcode` (tidak diindeks sama sekali).
+                // Tanpa BeefStock ikut dikunci, dua scan bersamaan bisa
+                // menghitung urutan yang sama dan baru ditangkap belakangan
+                // sebagai tabrakan unique constraint.
                 $counterStr = \App\Support\BarcodeSequence::nextPadded($prefix, [
                     RepackResult::withTrashed()->lockForUpdate(),
+                    BeefStock::query()->lockForUpdate(),
                 ]);
 
                 $barcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
@@ -399,6 +432,20 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                 ]);
                 $this->dispatch('auto-print', url: $printUrl);
             }
+        } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+            // Dua scan bersamaan yang menghitung urutan barcode yang sama
+            // (kombinasi produk/grade/tanggal/berat/pcs/pH yang sama persis)
+            // sebelumnya sampai ke pengguna sebagai galat SQL mentah
+            // ("SQLSTATE[23000]: ... Duplicate entry ..."). Sekarang
+            // diberi tahu ramah -- kuncinya di atas menutup kasus umumnya,
+            // ini jaring pengaman untuk sisa race yang genuinely butuh dua
+            // proses bersamaan.
+            report($e);
+            Notification::make()
+                ->title(__('Barcode collision, please try again'))
+                ->body(__('Someone else just added an item with the exact same barcode sequence. Nothing was lost -- submit the form again.'))
+                ->danger()
+                ->send();
         } catch (\Exception $e) {
             if (app()->runningUnitTests()) {
                 throw $e;
