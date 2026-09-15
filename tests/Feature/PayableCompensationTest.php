@@ -161,8 +161,15 @@ class PayableCompensationTest extends TestCase
             'Filament/Admin/Resources/PayableResource/Pages/ViewPayable.php'
         ));
 
-        $this->assertStringContainsString('$this->record->recalculate();', $page);
+        // Bukan `$this->record` lagi sejak baris utang dikunci dan dibaca
+        // ulang dari basis data sebelum ditulis (susulan 15 Sept, cegah race
+        // Pay/Compensate ganda) -- yang dipanggil recalculate()-nya sekarang
+        // instance yang terkunci itu, bukan cache Livewire yang bisa basi.
+        // Intinya tetap sama: rumusnya cuma dipanggil, tidak ditulis ulang
+        // di sini.
+        $this->assertStringContainsString('->recalculate();', $page);
         $this->assertStringNotContainsString("\$this->record->status = 'paid'", $page);
+        $this->assertStringNotContainsString("\$payable->status = 'paid'", $page);
     }
 
     /**

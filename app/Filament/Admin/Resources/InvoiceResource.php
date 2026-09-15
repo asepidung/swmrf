@@ -653,6 +653,7 @@ class InvoiceResource extends Resource
                         Tables\Actions\Action::make('tukar_faktur')
                             ->modalHeading(__('Invoice exchange'))
                             ->visible(fn () => auth()->user()->hasPermission('tukar_faktur'))
+                            ->authorize(fn (): bool => auth()->user()?->hasPermission('tukar_faktur') ?? false)
                             ->form([
                                 Forms\Components\DatePicker::make('invoice_exchange_date')
                                     ->label(__('Invoice exchange date'))
@@ -677,12 +678,24 @@ class InvoiceResource extends Resource
                                 // 'Sudah TF' pada hook itulah yang menghitungnya dari
                                 // invoice_exchange_date + term_of_payment, jadi rumusnya
                                 // cukup hidup di satu tempat.
-                                $record->update([
-                                    'status' => Invoice::STATUS_EXCHANGED,
-                                    'invoice_exchange_date' => $data['invoice_exchange_date'],
-                                    'exchange_by' => $data['exchange_by'],
-                                    'exchange_note' => $data['exchange_note'],
-                                ]);
+                                //
+                                // Baris invoice dikunci sebelum ditulis: tukar faktur
+                                // memaksa `status` menjadi EXCHANGED tanpa membaca
+                                // `balance` sama sekali, jadi kalau baris ini bersamaan
+                                // ditulis oleh pelunasan yang sedang berjalan
+                                // (ReceivePayment mengunci baris yang sama), salah satu
+                                // harus menunggu -- bukan sama-sama menimpa `status`
+                                // dengan kebenaran yang berbeda.
+                                \Illuminate\Support\Facades\DB::transaction(function () use ($record, $data) {
+                                    Invoice::whereKey($record->id)->lockForUpdate()->first();
+
+                                    $record->update([
+                                        'status' => Invoice::STATUS_EXCHANGED,
+                                        'invoice_exchange_date' => $data['invoice_exchange_date'],
+                                        'exchange_by' => $data['exchange_by'],
+                                        'exchange_note' => $data['exchange_note'],
+                                    ]);
+                                });
                             })
                             ->disabled(fn (Invoice $record) => !($record->customer?->invoice_exchange && is_null($record->invoice_exchange_date)) || $record->trashed())
                     ),

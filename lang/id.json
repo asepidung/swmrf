@@ -1436,5 +1436,12 @@
     "used first, before the money received today": "dipakai lebih dulu, sebelum uang yang masuk hari ini",
     "Barcode collision, please try again": "Barcode bentrok, coba lagi",
     "Someone else just added an item with the exact same barcode sequence. Nothing was lost -- submit the form again.": "Orang lain baru saja menambahkan barang dengan urutan barcode yang persis sama. Tidak ada yang hilang -- kirim ulang formulirnya.",
-    "This stock count has already been finished": "Opname ini sudah diselesaikan"
+    "This stock count has already been finished": "Opname ini sudah diselesaikan",
+    "This bill no longer has enough outstanding balance for that amount": "Sisa tagihan ini sudah tidak cukup untuk jumlah tersebut",
+    "It may have just been paid or compensated from another session. Refresh the page and check the current balance.": "Kemungkinan baru saja dibayar atau dikompensasi dari sesi lain. Muat ulang halaman dan periksa sisa tagihan saat ini.",
+    "This Delivery Order has already been approved": "Surat jalan ini sudah disetujui",
+    "This Delivery Order has already been unapproved": "Persetujuan surat jalan ini sudah dibatalkan",
+    "This Tally already has a Delivery Order.": "Tally ini sudah punya surat jalan.",
+    "Some delivery orders were not deleted": "Ada surat jalan yang tidak terhapus",
+    ":count delivery order(s) are no longer Ready and can only be reverted via Unapprove first.": ":count surat jalan sudah tidak berstatus Ready dan hanya bisa dihapus setelah dibatalkan persetujuannya (Unapprove) lebih dulu."
 }

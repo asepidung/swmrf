@@ -126,7 +126,6 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                 Tables\Columns\TextInputColumn::make('physical_qty')
                     ->label(__('Physical Qty'))
                     ->type('text')
-                    ->numeric()
                     ->visible($isInProgress)
                     // Hitungan material selalu BILANGAN BULAT.
                     //
