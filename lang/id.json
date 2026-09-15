@@ -1433,5 +1433,7 @@
     "paid": "Lunas",
     "partial": "Dibayar Sebagian",
     "unpaid": "Belum Lunas",
-    "used first, before the money received today": "dipakai lebih dulu, sebelum uang yang masuk hari ini"
+    "used first, before the money received today": "dipakai lebih dulu, sebelum uang yang masuk hari ini",
+    "This bill no longer has enough outstanding balance for that amount": "Sisa tagihan ini sudah tidak cukup untuk jumlah tersebut",
+    "It may have just been paid or compensated from another session. Refresh the page and check the current balance.": "Kemungkinan baru saja dibayar atau dikompensasi dari sesi lain. Muat ulang halaman dan periksa sisa tagihan saat ini."
 }
