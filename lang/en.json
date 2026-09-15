@@ -1445,5 +1445,20 @@
     "Some delivery orders were not deleted": "Some delivery orders were not deleted",
     ":count delivery order(s) are no longer Ready and can only be reverted via Unapprove first.": ":count delivery order(s) are no longer Ready and can only be reverted via Unapprove first.",
     "Some sales orders were not deleted": "Some sales orders were not deleted",
-    ":count sales order(s) still have a Tally or Invoice recorded against them.": ":count sales order(s) still have a Tally or Invoice recorded against them."
+    ":count sales order(s) still have a Tally or Invoice recorded against them.": ":count sales order(s) still have a Tally or Invoice recorded against them.",
+    "Barcode collision, please try again": "Barcode collision, please try again",
+    "Someone else just added an item with the exact same barcode sequence. Nothing was lost -- submit the form again.": "Someone else just added an item with the exact same barcode sequence. Nothing was lost -- submit the form again.",
+    "This item could not be voided. It may have already been removed.": "This item could not be voided. It may have already been removed.",
+    "You do not have permission to scan items": "You do not have permission to scan items",
+    "This mutation can no longer be edited": "This mutation can no longer be edited",
+    "It has already been sent or received, so items can no longer be removed from it.": "It has already been sent or received, so items can no longer be removed from it.",
+    "This document is locked and can no longer be labeled.": "This document is locked and can no longer be labeled.",
+    "This document is locked; its items can no longer be voided.": "This document is locked; its items can no longer be voided.",
+    "You do not have permission to scan items": "You do not have permission to scan items",
+    "This tally can no longer be edited": "This tally can no longer be edited",
+    "It has already been approved or turned into a Delivery Order, so items can no longer be removed from it.": "It has already been approved or turned into a Delivery Order, so items can no longer be removed from it.",
+    "This Sales Order is no longer waiting for a tally": "This Sales Order is no longer waiting for a tally",
+    "It may have just been tallied or cancelled from another session.": "It may have just been tallied or cancelled from another session.",
+    "This Sales Order is no longer waiting": "This Sales Order is no longer waiting",
+    "It may have just been tallied from another session.": "It may have just been tallied from another session."
 }

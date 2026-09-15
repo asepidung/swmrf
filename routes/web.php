@@ -129,12 +129,20 @@ Route::middleware(['web', 'auth'])->group(function () {
     // ------------------------------------------
     // 5. MODUL REPACK
     // ------------------------------------------
+    // Izinnya diperiksa di sini, bukan diserahkan kepada tombolnya -- pola
+    // sama dengan qc-reports.print/material-stock-take.print/stock-take.print
+    // di berkas yang sama. Sebelumnya siapa pun yang login bisa membuka
+    // label atau ringkasan Repack manapun lewat tebak ID.
     Route::get('/print-repack-label/{id}', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_repacks') ?? false, 403);
+
         $item = \App\Models\RepackResult::with(['product', 'repack', 'grade'])->findOrFail($id);
         return view('print.repack-label', compact('item'));
     })->name('repack.label');
 
     Route::get('/print-repack-summary/{id}', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_repacks') ?? false, 403);
+
         $repack = \App\Models\Repack::findOrFail($id);
         $bahan = \App\Models\RepackMaterial::with('product', 'grade')->where('repack_id', $id)->get();
         $hasil = \App\Models\RepackResult::with('product', 'grade')->where('repack_id', $id)->get();
@@ -227,6 +235,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     // cetaknya. Uang masuk, lalu hilang dari pandangan -- keberadaannya hanya
     // bisa disimpulkan dari sisa tagihan invoice yang berkurang.
     Route::get('/print/payment-receipt/{id}', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_receivables') ?? false, 403);
+
         $record = \App\Models\Payment::withTrashed()
             ->with(['customerGroup', 'bankAccount', 'deductions', 'allocations.invoice', 'creator'])
             ->findOrFail($id);
@@ -251,6 +261,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     // 11. MODUL MUTASI
     // ------------------------------------------
     Route::get('/print/mutation/{record}', function (\App\Models\Mutation $record) {
+        abort_unless(auth()->user()?->hasPermission('view_mutations') ?? false, 403);
+
         $record->load(['fromWarehouse', 'toWarehouse', 'items.product', 'items.grade', 'createdBy', 'receivedBy']);
         return view('print.mutation', compact('record'));
     })->name('filament.admin.resources.mutations.print');

@@ -230,23 +230,37 @@ class Repack extends Model
      */
     public function grantShrinkOverride(string $reason, ?int $userId = null): void
     {
-        if ($this->kunci) {
-            throw new \RuntimeException(__('This repack is already locked.'));
-        }
+        DB::transaction(function () use ($reason, $userId): void {
+            // Baris dikunci dan dibaca ULANG dari basis data sebelum
+            // ditulis -- tanpa ini, dua persetujuan QC yang bersamaan (atau
+            // persetujuan yang bersamaan dengan material/hasil yang baru
+            // saja berubah dan mencabut izin sebelumnya) bisa sama-sama
+            // lolos pemeriksaan `kunci` yang membaca state PHP, bukan baris
+            // yang sungguh dikunci.
+            $locked = static::whereKey($this->id)->lockForUpdate()->first();
 
-        if ($this->isWithinShrinkLimit()) {
-            throw new \RuntimeException(__('The shrinkage of this repack is still within the limit, so it needs no approval.'));
-        }
+            if (! $locked || $locked->kunci) {
+                throw new \RuntimeException(__('This repack is already locked.'));
+            }
 
-        if (trim($reason) === '') {
-            throw new \RuntimeException(__('An approval must say why.'));
-        }
+            if ($this->isWithinShrinkLimit()) {
+                throw new \RuntimeException(__('The shrinkage of this repack is still within the limit, so it needs no approval.'));
+            }
 
-        $this->forceFill([
-            'yield_override_reason' => trim($reason),
-            'yield_override_by' => $userId ?? Auth::id(),
-            'yield_override_at' => now(),
-        ])->save();
+            if (trim($reason) === '') {
+                throw new \RuntimeException(__('An approval must say why.'));
+            }
+
+            $locked->forceFill([
+                'yield_override_reason' => trim($reason),
+                'yield_override_by' => $userId ?? Auth::id(),
+                'yield_override_at' => now(),
+            ])->save();
+
+            $this->yield_override_reason = $locked->yield_override_reason;
+            $this->yield_override_by = $locked->yield_override_by;
+            $this->yield_override_at = $locked->yield_override_at;
+        });
     }
 
     /**
@@ -292,26 +306,33 @@ class Repack extends Model
      */
     public function lock(): void
     {
-        if ($this->kunci) {
-            throw new \RuntimeException(__('This repack is already locked.'));
-        }
+        DB::transaction(function (): void {
+            // Baris dikunci dan dibaca ulang sebelum syarat-syaratnya
+            // diperiksa -- alasan yang sama dengan grantShrinkOverride():
+            // dua klik Lock yang bersamaan tidak boleh sama-sama lolos
+            // pemeriksaan `kunci` yang membaca state PHP, bukan baris yang
+            // sungguh dikunci.
+            $locked = static::whereKey($this->id)->lockForUpdate()->first();
 
-        if ($this->materials()->doesntExist()) {
-            throw new \RuntimeException(__('This repack has no input goods yet.'));
-        }
+            if (! $locked || $locked->kunci) {
+                throw new \RuntimeException(__('This repack is already locked.'));
+            }
 
-        if ($this->results()->doesntExist()) {
-            throw new \RuntimeException(__('This repack has no output goods yet.'));
-        }
+            if ($this->materials()->doesntExist()) {
+                throw new \RuntimeException(__('This repack has no input goods yet.'));
+            }
 
-        $menembus = ! $this->isWithinShrinkLimit();
+            if ($this->results()->doesntExist()) {
+                throw new \RuntimeException(__('This repack has no output goods yet.'));
+            }
 
-        if ($menembus && ! $this->shrinkLimitWasOverridden()) {
-            throw new \RuntimeException(__('The shrinkage of this repack is outside the reasonable limit. QC has to approve it before it can be locked.'));
-        }
+            $menembus = ! $this->isWithinShrinkLimit();
 
-        DB::transaction(function () use ($menembus): void {
-            $this->forceFill([
+            if ($menembus && ! $this->shrinkLimitWasOverridden()) {
+                throw new \RuntimeException(__('The shrinkage of this repack is outside the reasonable limit. QC has to approve it before it can be locked.'));
+            }
+
+            $locked->forceFill([
                 'kunci' => true,
                 'status' => 'LOCKED',
                 // Yang tidak menembus tidak menyimpan jejak izin apa pun --
@@ -359,6 +380,12 @@ class Repack extends Model
             } else {
                 $this->financialLoss()->delete();
             }
+
+            $this->kunci = true;
+            $this->status = 'LOCKED';
+            $this->yield_override_reason = $locked->yield_override_reason;
+            $this->yield_override_by = $locked->yield_override_by;
+            $this->yield_override_at = $locked->yield_override_at;
         });
     }
 
@@ -400,11 +427,16 @@ class Repack extends Model
      */
     public function unlock(): void
     {
-        if (! $this->kunci) {
-            throw new \RuntimeException(__('This repack is not locked.'));
-        }
-
         DB::transaction(function (): void {
+            // Alasan sama dengan lock(): baris dikunci dan dibaca ulang
+            // sebelum diperiksa, supaya dua klik Unlock bersamaan tidak
+            // sama-sama lolos pemeriksaan `kunci` yang membaca state PHP.
+            $locked = static::whereKey($this->id)->lockForUpdate()->first();
+
+            if (! $locked || ! $locked->kunci) {
+                throw new \RuntimeException(__('This repack is not locked.'));
+            }
+
             foreach ($this->results as $result) {
                 $stock = BeefStock::where('barcode', $result->barcode)->lockForUpdate()->first();
 
@@ -424,7 +456,7 @@ class Repack extends Model
 
             $this->financialLoss()->delete();
 
-            $this->forceFill([
+            $locked->forceFill([
                 'kunci' => false,
                 'status' => 'OPEN',
                 // Jejak penembusan ikut dilepas: begitu dokumennya bisa diubah
@@ -434,6 +466,12 @@ class Repack extends Model
                 'yield_override_by' => null,
                 'yield_override_at' => null,
             ])->save();
+
+            $this->kunci = false;
+            $this->status = 'OPEN';
+            $this->yield_override_reason = null;
+            $this->yield_override_by = null;
+            $this->yield_override_at = null;
         });
     }
 }

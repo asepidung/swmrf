@@ -522,31 +522,6 @@ class ActionAuthorizationTest extends TestCase
     private function belumDiperbaikiDiCabangLain(): array
     {
         return [
-            // Tally #1/#3 (issue #419) -- belum digabung ke main saat
-            // cabang Sales Order ini dibuat.
-            'app/Filament/Admin/Resources/TallyResource/Pages/ScanTally.php:scan',
-            'app/Filament/Admin/Resources/TallyResource/Pages/ScanTally.php:DeleteAction',
-
-            // Mutation #5 (issue #421) -- ScanMutation unscan. Ditemukan
-            // sekaligus lewat penjaga ini: addBarcode() (aksi SCAN-nya
-            // sendiri, sekelas persis dengan Tally::scan() sebelum
-            // diperbaiki) juga tanpa satu pun pemeriksaan izin -- ikut
-            // masuk PR yang sama.
-            'app/Filament/Admin/Resources/MutationResource/Pages/ScanMutation.php:DeleteAction',
-            'app/Filament/Admin/Resources/MutationResource/Pages/ScanMutation.php:addBarcode',
-
-            // Boning #1/#2/#3 (issue #420) -- LabelingBoning izin halaman,
-            // create() tulis stok tanpa cek, dan hapus/void item baris tabel.
-            'app/Filament/Admin/Resources/BoningResource/Pages/LabelingBoning.php:create',
-            'app/Filament/Admin/Resources/BoningResource/Pages/LabelingBoning.php:DeleteAction',
-            'app/Filament/Admin/Resources/BoningResource.php:DeleteAction',
-
-            // Repack #3/#4 (issue #422) -- kunci barcode + try/catch void
-            // bahan/hasil, ditemukan sekaligus jadi digabung satu PR.
-            'app/Filament/Admin/Resources/RepackResource/Pages/InputBahanRepack.php:DeleteAction',
-            'app/Filament/Admin/Resources/RepackResource/Pages/InputHasilRepack.php:DeleteAction',
-            'app/Filament/Admin/Resources/RepackResource/Pages/InputBahanRepack.php:submitBarcode',
-            'app/Filament/Admin/Resources/RepackResource/Pages/InputHasilRepack.php:create',
         ];
     }
 

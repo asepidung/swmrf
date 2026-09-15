@@ -70,6 +70,21 @@ class ScanMutation extends Page implements HasForms, HasTable
 
     public function addBarcode(): void
     {
+        // Method Livewire biasa, bukan Filament Action -- tidak ada
+        // ->hidden()/->authorize() yang bisa dipasang. Sebelumnya
+        // satu-satunya gerbang view_mutations (lewat canViewAny()
+        // Resource), sekelas persis dengan Tally::scan() sebelum
+        // diperbaiki: siapa pun berizin MELIHAT saja bisa mengonsumsi
+        // stok lewat scan.
+        if (! auth()->user()?->hasPermission('edit_mutations')) {
+            Notification::make()
+                ->title(__('You do not have permission to scan items'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         $barcode = trim($this->barcode);
         $this->barcode = '';
 
@@ -166,7 +181,46 @@ class ScanMutation extends Page implements HasForms, HasTable
                     ->label('')
                     ->icon('heroicon-o-trash')
                     ->tooltip(__('Delete'))
-                    ->successNotificationTitle(__('Item removed and returned to stock')),
+                    ->hidden(fn () => ! auth()->user()?->hasPermission('edit_mutations'))
+                    ->authorize(fn (): bool => auth()->user()?->hasPermission('edit_mutations') ?? false)
+                    ->action(function (MutationItem $record) {
+                        $ditolak = false;
+
+                        DB::transaction(function () use ($record, &$ditolak) {
+                            // Baris Mutation dikunci dan statusnya dibaca
+                            // ULANG dari basis data sebelum baris item
+                            // dihapus. Tanpa ini, tab yang masih terbuka
+                            // saat mutasinya sudah SENT/RECEIVED di sesi
+                            // lain tetap bisa unscan -- MutationItem::deleted()
+                            // otomatis mengembalikan barcode itu ke
+                            // beef_stocks (gudang ASAL) padahal fisiknya
+                            // sudah dalam perjalanan atau sudah diterima.
+                            $mutation = Mutation::whereKey($record->mutation_id)->lockForUpdate()->first();
+
+                            if (! $mutation || $mutation->status !== 'DRAFT') {
+                                $ditolak = true;
+
+                                return;
+                            }
+
+                            $record->delete();
+                        });
+
+                        if ($ditolak) {
+                            Notification::make()
+                                ->title(__('This mutation can no longer be edited'))
+                                ->body(__('It has already been sent or received, so items can no longer be removed from it.'))
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title(__('Item removed and returned to stock'))
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->defaultSort('created_at', 'desc');
     }
