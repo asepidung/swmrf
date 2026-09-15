@@ -6,6 +6,7 @@ use App\Filament\Clusters\CustomersCluster;
 use App\Filament\Clusters\CustomersCluster\Resources\CustomerSegmentResource\Pages;
 use App\Filament\Clusters\CustomersCluster\Resources\CustomerSegmentResource\RelationManagers;
 use App\Models\CustomerSegment;
+use App\Support\MasterDataDeletion;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -72,6 +73,25 @@ class CustomerSegmentResource extends Resource
                 //
             ])
             ->defaultSort('name')
+            ->headerActions([
+                Tables\Actions\Action::make('excel')
+                    ->label(__('Excel'))
+                    ->icon('heroicon-o-document-text')
+                    ->color('success')
+                    ->action(function ($livewire) {
+                        $records = $livewire->getFilteredTableQuery()->get();
+
+                        return response()->streamDownload(function () use ($records) {
+                            $writer = new \OpenSpout\Writer\XLSX\Writer();
+                            $writer->openToFile('php://output');
+                            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([__('Name')]));
+                            foreach ($records as $record) {
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([$record->name]));
+                            }
+                            $writer->close();
+                        }, 'customer-segments.xlsx');
+                    }),
+            ])
             ->actions([
                 //
             ])
@@ -80,7 +100,15 @@ class CustomerSegmentResource extends Resource
             )
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records): void {
+                            foreach ($records as $record) {
+                                MasterDataDeletion::attempt(
+                                    fn () => $record->delete(),
+                                    __('Customer Segment').' '.$record->name,
+                                );
+                            }
+                        }),
                 ]),
             ]);
     }

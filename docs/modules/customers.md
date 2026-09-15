@@ -1,20 +1,59 @@
 # Modul Customers (Pelanggan)
 
-Modul **Customers** adalah manajemen basis data pelanggan yang menyimpan seluruh identitas pembeli B2B (Bisnis) maupun B2C (Konsumen Akhir). Data dari modul ini menjadi tulang punggung bagi seluruh modul hilir seperti *Sales Orders*, *Delivery Orders*, dan *Invoices*.
+Ditulis ulang 15 September 2026 -- versi sebelumnya menggambarkan fitur yang
+tidak pernah diimplementasikan (Email, Global Search, halaman View/Infolist).
+Dokumen ini mengikuti kolom & perilaku yang sungguhan berlaku sekarang.
 
-## 1. Arsitektur & Relasi Database
-Model utama `Customer` bertindak sebagai entitas sentral (*Master Data*) untuk operasional penjualan:
-- **Tabel `customers`**: Menyimpan data esensial seperti Nama, PIC (*Person In Charge*), Email, Nomor Telepon, Alamat, serta pengaturan status Aktif/Nonaktif.
-- **Relasi Sentral**: Pelanggan memiliki relasi `HasMany` secara ekstensif terhadap tabel `sales_orders`, `delivery_orders`, `invoices`, `receivables` (Piutang), dan log `payments`.
+Cluster **Customers** terdiri dari tiga Resource: `CustomerResource`,
+`CustomerGroupResource`, dan `CustomerSegmentResource`.
 
-## 2. Alur Logika (Business Logic)
-1. **Lifecycle Pelanggan (Active/Inactive State)**: Pelanggan tidak dihancurkan dari database (*Hard Delete*) jika mereka berhenti bertransaksi. Sebaliknya, modul ini menggunakan *boolean toggle* `is_active`. Pelanggan yang tidak aktif secara otomatis disembunyikan (*filtered out*) dari *dropdown* pembuatan *Sales Order* atau faktur baru, namun riwayat transaksi masa lalu mereka tetap utuh di laporan keuangan.
-2. **Standardisasi Format Kontak**: Sistem secara internal memformat atau memberikan validasi ketat terhadap pengisian struktur Email (wajib *valid email format*) dan format Nomor Telepon, mencegah *error* ketika sistem akan mengeksekusi integrasi notifikasi (misal: pengiriman faktur via email atau WhatsApp di masa depan).
-3. **Penyimpanan Alamat yang Ekstensif**: Karena industri daging melibatkan pengiriman logistik (*Cold Chain*), modul mewajibkan *field* alamat untuk bisa menyimpan input teks panjang (*Long Text/Textarea*) agar memuat *waypoint* yang jelas.
+## 1. Struktur data
 
-## 3. UI/UX (Antarmuka Pengguna)
-- **Pencarian Agresif (Global Search)**: Modul ini diintegrasikan secara penuh ke *Global Search* bawaan Filament. *User* bisa mencari "Nama Pelanggan" dari *bar* navigasi manapun (bahkan saat berada di modul lain) untuk menemukan profil pelanggan dalam sedetik.
-- **Grid Layout pada Form**: Formulir pengisian profil menggunakan struktur *Grid* (2 atau 3 kolom). Detail seperti Nama, Email, dan Telepon disajikan berdampingan di bagian atas, sementara area *Address* disajikan merentang penuh (*columnSpanFull*) di bagian bawah, mencerminkan hierarki visual yang natural.
-- **Visualisasi Status (Toggle)**: Menggunakan elemen *Toggle* UI untuk status aktif/nonaktif. Berbeda dengan *checkbox* kaku, *toggle* memberi kesan umpan balik (*feedback*) instan seperti aplikasi *mobile*.
-- **List & Infolist Kompak**: Tabel data dirancang *responsive*. Informasi sekunder seperti Alamat dipotong (*truncated*) dengan `limit()` pada *Table View* agar tidak menghabiskan baris layar, namun bisa dibaca secara penuh pada halaman *View/Infolist*.
-- **Dukungan Bilingual Terpadu**: Seperti standar ERP ini, semua antarmuka (nama form, kolom, error) diatur mengikuti preferensi bahasa lokal tanpa perlu penyetelan manual dari sisi *user*.
+- **`customers`**: `name`, `customer_group_id`, `customer_segment_id`,
+  `address`, `top` (Term of Payment, hari), `default_discount`, `pic`,
+  `phone`, `required_documents` (array), `invoice_exchange` (boolean),
+  `is_active`. Tidak ada kolom Email. `is_taxable` sempat ada tapi dihapus
+  15 September 2026 -- tidak pernah bisa diisi lewat form, dan Wijaya Meat
+  berstatus non-PKP sehingga penjualan memang tidak dikenai PPN.
+- **`customer_groups`**: `name` (unique), `head_office_address`,
+  `head_office_pic`, `top`. Satu-satunya jalan menuju harga -- `price_lists`
+  dikunci ke grup, bukan ke customer perorangan.
+- **`customer_segments`**: `name` saja.
+- `name`/`address`/`pic`/`head_office_*` dipaksa UPPERCASE lewat mutator di
+  model, bukan cuma CSS.
+
+## 2. Aturan bisnis
+
+1. **Setiap Customer wajib punya grup** (keputusan Ayah, 15 September 2026).
+   Field `customer_group_id` `->required()` di form Create & Edit. Data lama
+   yang sempat tanpa grup dibereskan migrasi backfill
+   (`2026_09_15_130000_...`): dibuatkan `CustomerGroup` baru bernama sama
+   dengan Customer-nya. Alasannya: `ReceivableResource` dibangun di atas
+   model `CustomerGroup` -- Customer tanpa grup piutangnya tidak pernah
+   muncul di modul Piutang sama sekali.
+2. **Grup baru otomatis dari nama**, kalau field grup dikosongkan lewat jalur
+   selain form (`KeepsCustomerInAGroup::ensureCustomerGroup()`) -- dipakai
+   `Create`/`EditCustomer`. Sejak field-nya wajib di form, jalur ini praktis
+   hanya relevan untuk pemanggilan di luar form (import, tinker).
+3. **Lifecycle Aktif/Nonaktif**: Customer tidak dihapus permanen kalau sudah
+   pernah bertransaksi -- tombol Delete disembunyikan (`EditCustomer`) dan
+   bulk delete melewati baris yang punya `salesOrders()`
+   (`CustomerResource::table()`).
+4. **Hapus CustomerGroup ditolak** kalau masih punya Customer, PriceList,
+   Receivable, atau Payment (`CustomerGroup::isInUse()`) -- baik lewat Delete
+   tunggal maupun bulk. Hapus CustomerSegment yang masih dipakai Customer
+   ditolak lewat `MasterDataDeletion` (pesan ramah, bukan galat SQL) karena
+   `customers.customer_segment_id` RESTRICT.
+5. **Jejak audit**: `Customer`, `CustomerGroup`, `CustomerSegment` memakai
+   `LogsActivity` (sejak 15 September 2026) -- data yang menentukan TOP,
+   diskon, dan grup harga sekarang tercatat siapa mengubah apa.
+
+## 3. UI
+
+- Ekspor Excel tersedia di ketiga Resource (`CustomerResource` sudah lama
+  punya, `CustomerGroupResource`/`CustomerSegmentResource` ditambahkan
+  15 September 2026). Tidak ada ekspor PDF.
+- Tidak ada Global Search, tidak ada halaman View/Infolist -- hanya
+  `index`/`create`/`edit` di ketiga Resource.
+- Dukungan bilingual (`lang/en.json` + `lang/id.json`) seperti standar
+  seluruh panel.

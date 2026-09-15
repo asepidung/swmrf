@@ -57,7 +57,6 @@ class InvoiceTest extends TestCase
             'phone' => '0812345678',
             'top' => 30,
             'invoice_exchange' => false,
-            'is_taxable' => false,
         ]);
 
         $this->customerExchange = Customer::create([
@@ -73,7 +72,6 @@ class InvoiceTest extends TestCase
             'top' => 14,
             'default_discount' => 2,
             'invoice_exchange' => true,
-            'is_taxable' => true,
         ]);
 
         $category = ProductCategory::create([
@@ -273,9 +271,10 @@ class InvoiceTest extends TestCase
                 // Tidak ada baris 'tax' di sini karena memang tidak boleh ada:
                 // Wijaya Meat berstatus nonPKP, sehingga invoice dan penjualan
                 // tidak dikenai PPN. Pajak hanya relevan pada pembelian
-                // material. Kolom invoices.tax dan flag customers.is_taxable
-                // adalah sisa desain lama yang tidak terpakai di sisi
-                // penjualan, jadi balance = subtotal tanpa tambahan pajak.
+                // material. Kolom invoices.tax adalah sisa desain lama yang
+                // tidak terpakai di sisi penjualan (`customers.is_taxable`
+                // sudah dihapus 15 September 2026), jadi balance = subtotal
+                // tanpa tambahan pajak.
                 'balance' => '1.960.000',
             ]);
 

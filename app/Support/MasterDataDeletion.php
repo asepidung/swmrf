@@ -55,12 +55,20 @@ class MasterDataDeletion
         }
     }
 
+    /** Kode SQLite untuk pelanggaran constraint apa pun (termasuk kunci asing). */
+    private const SQLITE_CONSTRAINT_VIOLATION = 19;
+
     private static function isStillInUse(QueryException $e): bool
     {
         // SQLSTATE 23000 dipakai beberapa pelanggaran sekaligus, jadi kodenya
         // saja belum cukup. Nomor galat MySQL 1451 -- "Cannot delete or update
-        // a parent row" -- yang menyempitkannya ke kasus ini.
+        // a parent row" -- yang menyempitkannya ke kasus ini di produksi.
+        //
+        // Test memakai SQLite, yang memberi kode BERBEDA (19, bukan 1451)
+        // untuk pelanggaran yang SAMA. Duplikasi kecil dari fix yang sama di
+        // PR #394 (belum merge saat PR ini dibuka) -- Hafizh perlu
+        // menyelesaikan konfliknya sendiri saat menggabungkan keduanya.
         return $e->getCode() === self::FOREIGN_KEY_VIOLATION
-            && (int) ($e->errorInfo[1] ?? 0) === 1451;
+            && in_array((int) ($e->errorInfo[1] ?? 0), [1451, self::SQLITE_CONSTRAINT_VIOLATION], true);
     }
 }

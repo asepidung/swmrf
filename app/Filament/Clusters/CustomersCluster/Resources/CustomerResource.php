@@ -6,8 +6,10 @@ use App\Filament\Clusters\CustomersCluster;
 use App\Filament\Clusters\CustomersCluster\Resources\CustomerResource\Pages;
 use App\Filament\Clusters\CustomersCluster\Resources\CustomerResource\RelationManagers;
 use App\Models\Customer;
+use App\Support\MasterDataDeletion;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -104,7 +106,7 @@ class CustomerResource extends Resource
                 // Invoice Exchange yang sejenis dengannya. Di bawah sendiri,
                 // hilangnya tidak menggeser apa pun.
                 Forms\Components\Section::make(__('Basic Information'))
-                    ->description(__('The group decides which price list applies. Leave it empty to create a group named after this customer.'))
+                    ->description(__('The group decides which price list applies. Pick an existing one or create a new one from the field below.'))
                     ->compact()
                     ->columns(12)
                     ->schema([
@@ -119,9 +121,15 @@ class CustomerResource extends Resource
                         // Tanpa helperText: keterangannya sudah ada di
                         // deskripsi kartu, satu baris untuk seluruh form,
                         // sehingga tidak menambah tinggi barisnya sendiri.
+                        // Keputusan Ayah, 15 September 2026: customer TANPA
+                        // grup lenyap total dari modul Piutang (piutangnya
+                        // tidak pernah muncul di daftar, tidak pernah bisa
+                        // dibayar lewat alur resminya) -- lihat migrasi
+                        // backfill `2026_09_15_130000_...`.
                         Forms\Components\Select::make('customer_group_id')
                             ->relationship('group', 'name')
                             ->label(fn() => __('Customer Group'))
+                            ->required()
                             ->searchable()
                             ->preload()
                             ->live()
@@ -373,7 +381,37 @@ class CustomerResource extends Resource
             )
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Jalur bulk sebelumnya tidak dijaga sama sekali, beda
+                    // dari Delete tunggal di EditCustomer yang sudah benar
+                    // menyembunyikan tombol saat ada salesOrders(). Baris
+                    // dengan salesOrders dilewati (bukan diam-diam ikut
+                    // diproses lalu menampilkan galat SQL), sisanya dibungkus
+                    // MasterDataDeletion::attempt() pola WarehouseResource.
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records): void {
+                            $dilewati = 0;
+
+                            foreach ($records as $record) {
+                                if ($record->salesOrders()->exists()) {
+                                    $dilewati++;
+
+                                    continue;
+                                }
+
+                                MasterDataDeletion::attempt(
+                                    fn () => $record->delete(),
+                                    __('Customer').' '.$record->name,
+                                );
+                            }
+
+                            if ($dilewati > 0) {
+                                Notification::make()
+                                    ->title(__('Some customers were not deleted'))
+                                    ->body(__(':count customer(s) already have sales orders and were skipped.', ['count' => $dilewati]))
+                                    ->danger()
+                                    ->send();
+                            }
+                        }),
                 ]),
             ]);
     }
