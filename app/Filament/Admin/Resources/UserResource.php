@@ -19,6 +19,18 @@ class UserResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
 
+    // Sebelumnya tidak ada -- menu "User Management" tampil di sidebar
+    // SEMUA orang yang login, termasuk yang tidak punya `view_users`.
+    // `Resource::shouldRegisterNavigation()` bawaan Filament mengembalikan
+    // true tanpa memeriksa policy apa pun; baru ditolak (403) begitu
+    // diklik. Meniru pola persis `WarehouseResource`, disamakan dengan
+    // syarat `UserPolicy::viewAny()`.
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->check()
+            && (auth()->user()->isProgrammer() || auth()->user()->hasPermission('view_users'));
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return __('SYSTEM');

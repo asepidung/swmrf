@@ -21,8 +21,20 @@ class EditCustomer extends EditRecord
                 ->label(__('Back'))
                 ->color('gray')
                 ->url($this->getResource()::getUrl('index')),
+            // Sembunyi kalau punya Sales Order (syarat bisnis lama), TAPI
+            // itu tidak menutup kunci asing LAIN (invoice, receivable, dst)
+            // -- galat SQL mentah tetap mungkin lolos dari sana. Dibungkus
+            // sama seperti EditWarehouse untuk kunci asing di luar itu.
             Actions\DeleteAction::make()
-                ->hidden(fn ($record) => $record->salesOrders()->exists()),
+                ->hidden(fn ($record) => $record->salesOrders()->exists())
+                ->action(function () {
+                    if (\App\Support\MasterDataDeletion::attempt(
+                        fn () => $this->record->delete(),
+                        __('Customer').' '.$this->record->name,
+                    )) {
+                        $this->redirect($this->getResource()::getUrl('index'));
+                    }
+                }),
         ];
     }
 

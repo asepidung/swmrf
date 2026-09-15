@@ -13,7 +13,17 @@ class EditCustomerGroup extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            // Sebelumnya DeleteAction polos -- galat SQL mentah kalau
+            // grupnya masih dipakai. Sama seperti EditWarehouse.
+            Actions\DeleteAction::make()
+                ->action(function () {
+                    if (\App\Support\MasterDataDeletion::attempt(
+                        fn () => $this->record->delete(),
+                        __('Customer Group').' '.$this->record->name,
+                    )) {
+                        $this->redirect($this->getResource()::getUrl('index'));
+                    }
+                }),
         ];
     }
 

@@ -102,7 +102,10 @@ class LabelingBoning extends Page implements HasForms, HasTable
                         Forms\Components\Select::make('warehouse_id')
                             ->hiddenLabel()
                             ->placeholder(__('Warehouse'))
-                            ->options(Warehouse::pluck('name', 'id'))
+                            // Gudang nonaktif tidak boleh jadi tujuan stok
+                            // BARU -- pola yang sama dengan Mutation/Repack/
+                            // SalesReturn.
+                            ->options(Warehouse::where('is_active', true)->pluck('name', 'id'))
                             ->required()
                             ->extraAttributes(['tabindex' => '-1'])
                             ->extraInputAttributes(['tabindex' => '-1']),
