@@ -196,6 +196,19 @@ Ditulis supaya tidak perlu ditabrak ulang. Tiap baris punya cerita di
 - **Kalau SSH ke hosting timeout, kemungkinan besar IP-nya diblokir
   Hostinger**, bukan servernya mati. Sudah terjadi dua kali; jalan keluarnya
   hotspot.
+- **`canAccess()` milik Filament Resource Page harus diuji lewat `$this->get()`
+  HTTP sungguhan, bukan `Livewire::test()->mount()` maupun memanggil
+  `Halaman::canAccess()` secara statis.** Kedua cara itu melewati hook
+  `mountCanAuthorizeAccess` yang sungguh menggerbangi halaman saat dimuat
+  lewat rute nyata (`Filament\Pages\Concerns\CanAuthorizeAccess`, dipicu
+  Livewire untuk SEMUA trait di rantai kelas, termasuk induk
+  `Filament\Pages\Page` -- bukan cuma `CanAuthorizeResourceAccess` milik
+  `Resources\Pages\Page`). Riset sudah dua kali salah persis di titik yang
+  sama karena hanya memakai salah satu dari kedua cara yang menyesatkan itu:
+  sekali menyimpulkan `canAccess()` "kode mati", sekali lagi menulis penjaga
+  (`ActionAuthorizationTest`) yang lolos padahal cuma membuktikan logikanya
+  sendiri, bukan bahwa Filament sungguh memanggilnya. 15 September 2026,
+  susulan Delivery Order (#414/#415).
 
 ---
 
