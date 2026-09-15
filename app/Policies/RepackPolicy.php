@@ -41,9 +41,4 @@ class RepackPolicy
     {
         return $user->hasPermission('delete_repacks');
     }
-
-    public function lock(User $user, Repack $model): bool
-    {
-        return $user->hasPermission('lock_repacks');
-    }
 }

@@ -26,8 +26,19 @@ class InputBahanRepack extends Page implements HasForms, HasTable
     use InteractsWithForms, InteractsWithTable;
 
     protected static string $resource = RepackResource::class;
-    
+
     protected static string $view = 'filament.resources.repack-resource.pages.input-bahan-repack';
+
+    /**
+     * Halaman ini MENGONSUMSI STOK BAHAN -- satu-satunya gerbang
+     * sebelumnya `view_repacks` (via `canViewAny()` Resource). Sekelas
+     * persis dengan LabelingBoning sebelum diperbaiki.
+     */
+    public static function canAccess(array $parameters = []): bool
+    {
+        return auth()->user()?->isProgrammer()
+            || (auth()->user()?->hasPermission('edit_repacks') ?? false);
+    }
 
     public function getMaxContentWidth(): MaxWidth | string | null
     {
@@ -180,38 +191,53 @@ class InputBahanRepack extends Page implements HasForms, HasTable
                     ->tooltip(__('Cancel / Delete'))
                     ->hidden(fn () => $this->record->kunci == 1)
                     ->action(function ($record, $livewire) {
-                        DB::transaction(function () use ($record) {
-                            // Mengembalikan data stok ke tabel beef_stocks dengan atribut lengkap
-                            BeefStock::create([
-                                'barcode' => $record->barcode,
-                                'product_id' => $record->product_id,
-                                'warehouse_id' => $record->warehouse_id,
-                                'grade_id' => $record->grade_id,
-                                'weight' => $record->weight,
-                                'qty_pcs' => $record->qty_pcs,
-                                'ph_level' => $record->ph_level,
-                                'pack_date' => $record->pack_date,
-                                'exp_date' => $record->exp_date,
-                                'origin' => $record->origin,
-                                'status' => $record->status,
-                            ]);
+                        try {
+                            DB::transaction(function () use ($record) {
+                                // Mengembalikan data stok ke tabel beef_stocks dengan atribut lengkap
+                                BeefStock::create([
+                                    'barcode' => $record->barcode,
+                                    'product_id' => $record->product_id,
+                                    'warehouse_id' => $record->warehouse_id,
+                                    'grade_id' => $record->grade_id,
+                                    'weight' => $record->weight,
+                                    'qty_pcs' => $record->qty_pcs,
+                                    'ph_level' => $record->ph_level,
+                                    'pack_date' => $record->pack_date,
+                                    'exp_date' => $record->exp_date,
+                                    'origin' => $record->origin,
+                                    'status' => $record->status,
+                                ]);
 
-                            // Mencatat riwayat pergerakan pengembalian stok bahan
-                            BeefStockMovement::create([
-                                'product_id' => $record->product_id,
-                                'warehouse_id' => $record->warehouse_id,
-                                'condition' => $record->grade_id,
-                                'barcode' => $record->barcode,
-                                'transaction_type' => 'VOID_OUT_REPACK',
-                                'reference_document' => $record->repack->doc_no ?? null,
-                                'weight_in' => $record->weight,
-                                'pcs_in' => $record->qty_pcs,
-                                'created_by' => Auth::id(),
-                            ]);
+                                // Mencatat riwayat pergerakan pengembalian stok bahan
+                                BeefStockMovement::create([
+                                    'product_id' => $record->product_id,
+                                    'warehouse_id' => $record->warehouse_id,
+                                    'condition' => $record->grade_id,
+                                    'barcode' => $record->barcode,
+                                    'transaction_type' => 'VOID_OUT_REPACK',
+                                    'reference_document' => $record->repack->doc_no ?? null,
+                                    'weight_in' => $record->weight,
+                                    'pcs_in' => $record->qty_pcs,
+                                    'created_by' => Auth::id(),
+                                ]);
 
-                            // Menghapus data dari keranjang bahan repack
-                            $record->delete();
-                        });
+                                // Menghapus data dari keranjang bahan repack
+                                $record->delete();
+                            });
+                        } catch (\Throwable $e) {
+                            // Sebelumnya tidak ada try/catch sama sekali di
+                            // sini -- beda dari submitBarcode() di halaman
+                            // yang sama, yang sudah benar. Tabrakan barcode
+                            // (klik ganda/retry) sebelumnya jadi galat mentah.
+                            report($e);
+                            Notification::make()
+                                ->title(__('Failed'))
+                                ->body(__('This item could not be voided. It may have already been removed.'))
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
 
                         Notification::make()
                             ->title(__('The material has been returned to stock'))
