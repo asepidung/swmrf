@@ -44,8 +44,10 @@ class PurchaseCattleResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Section::make(__('Header Info'))->schema([
+                    // Supplier nonaktif dikeluarkan dari daftar pilihan --
+                    // pola sama MaterialRequisitionResource.
                     Forms\Components\Select::make('supplier_id')
-                        ->relationship('supplier', 'name')
+                        ->relationship('supplier', 'name', fn ($query) => $query->where('is_active', true))
                         ->required()
                         ->autofocus()
                         ->label(__('Supplier')),
