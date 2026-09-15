@@ -79,7 +79,7 @@
                         {{ ($masked ?? false) ? '***' : number_format((int) $record->qty, 0, ',', '.')}}
                     </td>
                     <td class="text-right">
-                        {{ number_format($record->min_stock ?? 0, 2, ',', '.') }}
+                        {{ number_format($record->min_stock ?? 0, 0, ',', '.') }}
                     </td>
                 </tr>
             @endforeach

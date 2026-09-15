@@ -125,7 +125,7 @@ class MaterialStockResource extends Resource
                         Forms\Components\TextInput::make('min_stock')
                             ->label(__('Min. Stock'))
                             ->disabled()
-                            ->formatStateUsing(fn ($state) => number_format((float) $state, 2, ',', '.')),
+                            ->formatStateUsing(fn ($state) => number_format((float) $state, 0, ',', '.')),
                     ])->columns(3)
             ]);
     }
@@ -168,7 +168,7 @@ class MaterialStockResource extends Resource
                         : ($record->qty < ($record->min_stock ?? 0) ? 'bold' : null)),
                 Tables\Columns\TextColumn::make('min_stock')
                     ->label(__('Min. Stock'))
-                    ->numeric(decimalPlaces: 2, decimalSeparator: ',', thousandsSeparator: '.')
+                    ->numeric(decimalPlaces: 0, decimalSeparator: ',', thousandsSeparator: '.')
                     ->sortable(),
             ])
             ->headerActions([
@@ -228,11 +228,12 @@ class MaterialStockResource extends Resource
                 ->color('success'),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('show_in_stock')
-                    ->label(__('Counted in Stock'))
-                    ->placeholder(__('All'))
-                    ->trueLabel(__('Yes'))
-                    ->falseLabel(__('No')),
+                // Filter "Counted in Stock" (dulu di sini) DIHAPUS -- fungsinya
+                // sudah mati sejak `getEloquentQuery()` memaksa
+                // `where('show_in_stock', true)` tanpa syarat (lihat komentar
+                // di atas `table()`). Memilih "No" selalu menghasilkan 0
+                // baris, memilih "All" tetap hanya menampilkan yang true --
+                // UI menjanjikan pilihan yang tidak pernah bekerja.
                 Tables\Filters\SelectFilter::make('material_category_id')
                     ->relationship('category', 'name')
                     ->label(__('Category')),
