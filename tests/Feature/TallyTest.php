@@ -819,7 +819,19 @@ class TallyTest extends TestCase
             ->assertActionHidden('delete')
             ->assertActionVisible('cancel');
 
-        // Test with status 'canceled'
+        // 'canceled' (satu L) BUKAN ejaan Sales Order -- lihat komentar
+        // SalesOrder::STATUS_LOCKED_FOR_EDIT: hanya 'cancelled' (dua L) yang
+        // dipakai SO/Tally/Delivery Plan, dan pemeriksaan ganda ejaan sudah
+        // sengaja dilepas karena data sungguhan tidak pernah berejaan satu L
+        // di sini. Assersi 'print' hidden di sini SEBELUMNYA lolos hanya
+        // karena bug precedence `!` di EditSalesOrder (print selalu
+        // tersembunyi apa pun statusnya) -- bukan karena SO ini benar-benar
+        // dianggap batal. Setelah bug itu diperbaiki, print SEHARUSNYA
+        // tampil untuk status yang tidak dikenali seperti ini, konsisten
+        // dengan delete/forceDelete/restore yang juga hanya memeriksa ejaan
+        // baku. 'delete' tetap tersembunyi di sini, tapi karena
+        // SalesOrderPolicy::delete() menolak status di luar
+        // [waiting, cancelled] -- bukan karena hidden() milik EditSalesOrder.
         $so2 = SalesOrder::create([
             'customer_id' => $this->customer->id,
             'delivery_date' => now()->addDays(2)->format('Y-m-d'),
@@ -830,7 +842,7 @@ class TallyTest extends TestCase
         Livewire::actingAs($this->user)
             ->test(\App\Filament\Admin\Resources\SalesOrderResource\Pages\EditSalesOrder::class, ['record' => $so2->id])
             ->assertOk()
-            ->assertActionHidden('print')
+            ->assertActionVisible('print')
             ->assertActionHidden('delete')
             ->assertActionVisible('cancel');
     }

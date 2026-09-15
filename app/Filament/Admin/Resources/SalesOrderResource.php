@@ -297,8 +297,15 @@ class SalesOrderResource extends Resource
                             ->disableItemMovement()
                             ->disableItemCreation() // Disable standard "Add Item" to force modal usage
                             ->disableItemDeletion(fn (?SalesOrder $record) => $record?->status === SalesOrder::STATUS_PROCESSING)
+                            // Pesan validasi di bawah sudah ada sejak awal,
+                            // tapi minItems(1)-nya sendiri tidak pernah
+                            // dipasang -- teksnya mati, dan SO bisa
+                            // tersimpan dengan NOL item, mengalir kosong ke
+                            // Tally/DO/Invoice.
+                            ->minItems(1)
                             ->validationMessages([
                                 'min' => __('Sales order cannot be created without any products.'),
+                                'minItems' => __('Sales order cannot be created without any products.'),
                             ])
                             ->columns(12)
                             ->schema([
@@ -573,7 +580,33 @@ class SalesOrderResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
+                    // tallies.sales_order_id (unique, RESTRICT) dan
+                    // invoices.sales_order_id (RESTRICT) -- sama dengan
+                    // ForceDeleteAction di EditSalesOrder. Tanpa ini,
+                    // force-delete massal yang menabrak salah satu SO
+                    // dengan Tally/Invoice berhenti dengan galat SQL
+                    // mentah alih-alih notifikasi ramah.
+                    Tables\Actions\ForceDeleteBulkAction::make()
+                        ->action(function (\Illuminate\Support\Collection $records): void {
+                            $ditolak = 0;
+
+                            foreach ($records as $record) {
+                                if (! \App\Support\MasterDataDeletion::attempt(
+                                    fn () => $record->forceDelete(),
+                                    __('Sales Order').' '.$record->so_number,
+                                )) {
+                                    $ditolak++;
+                                }
+                            }
+
+                            if ($ditolak > 0) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title(__('Some sales orders were not deleted'))
+                                    ->body(__(':count sales order(s) still have a Tally or Invoice recorded against them.', ['count' => $ditolak]))
+                                    ->danger()
+                                    ->send();
+                            }
+                        }),
                     Tables\Actions\RestoreBulkAction::make(),
                 ]),
             ])

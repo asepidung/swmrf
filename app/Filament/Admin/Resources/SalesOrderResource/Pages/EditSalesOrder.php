@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\SalesOrderResource\Pages;
 
 use App\Filament\Admin\Resources\SalesOrderResource;
 use App\Models\SalesOrder;
+use App\Support\MasterDataDeletion;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
@@ -20,15 +21,30 @@ class EditSalesOrder extends EditRecord
                 ->color('success')
                 ->url(fn(): string => route('print.salesorder', $this->record))
                 ->openUrlInNewTab()
-                ->visible(fn(): bool => !$this->record->status === SalesOrder::STATUS_CANCELLED),
+                // `!` mengikat lebih dulu daripada `===`, jadi bentuk lamanya
+                // `(!$this->record->status) === 'cancelled'` -- selalu
+                // `false === 'cancelled'`, selalu false. Tombol Print TIDAK
+                // PERNAH tampil, status apa pun.
+                ->visible(fn(): bool => $this->record->status !== SalesOrder::STATUS_CANCELLED),
             Actions\Action::make('cancel')
                 ->label(__('Cancel'))
                 ->color('gray')
                 ->url($this->getResource()::getUrl('index')),
             Actions\DeleteAction::make()
                 ->hidden(fn(): bool => in_array($this->record->status, SalesOrder::STATUS_LOCKED_FOR_EDIT, true)),
+            // tallies.sales_order_id (unique, RESTRICT) dan
+            // invoices.sales_order_id (RESTRICT) -- datanya aman, tapi
+            // tanpa ini force-delete SO yang masih punya Tally/Invoice
+            // menampilkan galat SQL mentah.
             Actions\ForceDeleteAction::make()
-                ->hidden(fn(): bool => in_array($this->record->status, SalesOrder::STATUS_LOCKED_FOR_EDIT, true)),
+                ->hidden(fn(): bool => in_array($this->record->status, SalesOrder::STATUS_LOCKED_FOR_EDIT, true))
+                ->action(function () {
+                    $record = $this->getRecord();
+
+                    if (MasterDataDeletion::attempt(fn () => $record->forceDelete(), __('Sales Order').' '.$record->so_number)) {
+                        $this->redirect($this->getResource()::getUrl('index'));
+                    }
+                }),
             Actions\RestoreAction::make()
                 ->hidden(fn(): bool => in_array($this->record->status, SalesOrder::STATUS_LOCKED_FOR_EDIT, true)),
         ];

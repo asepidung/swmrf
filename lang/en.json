@@ -1443,5 +1443,7 @@
     "This Delivery Order has already been unapproved": "This Delivery Order has already been unapproved",
     "This Tally already has a Delivery Order.": "This Tally already has a Delivery Order.",
     "Some delivery orders were not deleted": "Some delivery orders were not deleted",
-    ":count delivery order(s) are no longer Ready and can only be reverted via Unapprove first.": ":count delivery order(s) are no longer Ready and can only be reverted via Unapprove first."
+    ":count delivery order(s) are no longer Ready and can only be reverted via Unapprove first.": ":count delivery order(s) are no longer Ready and can only be reverted via Unapprove first.",
+    "Some sales orders were not deleted": "Some sales orders were not deleted",
+    ":count sales order(s) still have a Tally or Invoice recorded against them.": ":count sales order(s) still have a Tally or Invoice recorded against them."
 }
