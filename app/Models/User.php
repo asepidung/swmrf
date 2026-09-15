@@ -10,11 +10,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use NotificationChannels\WebPush\HasPushSubscriptions;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasPushSubscriptions;
+    use HasFactory, Notifiable, HasPushSubscriptions, LogsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -51,6 +53,26 @@ class User extends Authenticatable implements FilamentUser
             'password' => 'hashed',
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * User master data paling sensitif di aplikasi ini -- mengendalikan
+     * akses dan izin -- tapi sebelumnya perubahannya sama sekali tidak
+     * tercatat di mana pun. `password` dan `remember_token` dikecualikan
+     * KERAS: nilainya sudah ter-hash, tapi hash tetap tidak boleh singgah
+     * di `properties` activity log.
+     *
+     * Perubahan izin lewat `permissions()->sync()` TIDAK tertangkap ini --
+     * itu tabel pivot, bukan atribut model. Dicatat manual di
+     * `CreateUser`/`EditUser` lewat `activity()->performedOn($user)`.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->logExcept(['password', 'remember_token'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 
     /**

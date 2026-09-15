@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Customer extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'name',
@@ -20,7 +22,6 @@ class Customer extends Model
         'phone',
         'required_documents',
         'invoice_exchange',
-        'is_taxable',
         'is_active',
     ];
 
@@ -28,9 +29,20 @@ class Customer extends Model
         'default_discount' => 'integer',
         'required_documents' => 'array',
         'invoice_exchange' => 'boolean',
-        'is_taxable' => 'boolean',
         'is_active' => 'boolean',
     ];
+
+    /**
+     * Master data yang menentukan uang (TOP, diskon, grup harga) -- wajib
+     * memakai activity log seperti Warehouse/Grade.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
 
     /**
      * Keputusan Owner, 7 September 2026: nama dan alamat pelanggan wajib

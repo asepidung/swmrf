@@ -5,17 +5,31 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class CustomerGroup extends Model
 {
-    use HasFactory;
-    
+    use HasFactory, LogsActivity;
+
     protected $fillable = [
         'name',
         'head_office_address',
         'head_office_pic',
         'top',
     ];
+
+    /**
+     * Master data yang menentukan uang (TOP grup, diskon per grup lewat
+     * PriceList) -- wajib memakai activity log seperti Warehouse/Grade.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
 
     public function setNameAttribute($value)
     {
@@ -36,6 +50,26 @@ class CustomerGroup extends Model
     public function customers()
     {
         return $this->hasMany(Customer::class);
+    }
+
+    /**
+     * Grup ini masih dipakai, dan tidak boleh dihapus.
+     *
+     * `customers.customer_group_id` (nullOnDelete) dan
+     * `price_lists.customer_group_id` (cascadeOnDelete) TIDAK melempar galat
+     * apa pun saat grupnya dihapus -- skema DB diam-diam menjadikannya NULL
+     * atau ikut menghapus PriceList beserta seluruh itemnya. `receivables`
+     * juga nullOnDelete. Hanya `payments.customer_group_id` yang RESTRICT.
+     * Karena tiga dari empat relasi ini tidak akan pernah melempar
+     * `QueryException`, `MasterDataDeletion` sendirian tidak cukup --
+     * pemeriksaan bisnis ini yang menahannya SEBELUM baris manapun hilang.
+     */
+    public function isInUse(): bool
+    {
+        return $this->customers()->exists()
+            || $this->priceList()->exists()
+            || $this->receivables()->exists()
+            || $this->payments()->exists();
     }
 
     public function priceList()

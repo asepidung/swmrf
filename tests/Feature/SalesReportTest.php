@@ -57,7 +57,6 @@ class SalesReportTest extends TestCase
             'phone' => '0812345678',
             'top' => 30,
             'invoice_exchange' => false,
-            'is_taxable' => false,
         ]);
     }
 

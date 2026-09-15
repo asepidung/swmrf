@@ -98,7 +98,12 @@ Route::middleware(['web', 'auth'])->group(function () {
         return view('print.stock-take', compact('record'));
     })->name('stock-take.print');
 
+    // Izinnya diperiksa di sini, bukan diserahkan kepada tombolnya -- pola
+    // sama dengan qc-reports.print di atas. Sebelumnya siapa pun yang login
+    // bisa membuka cetakan opname material manapun lewat tebak ID.
     Route::get('/material-stock-take/{id}/print', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_material_stock_takes') ?? false, 403);
+
         $record = \App\Models\MaterialStockTake::with(['items.material'])->findOrFail($id);
         return view('print.material-stock-take', compact('record'));
     })->name('material-stock-take.print');

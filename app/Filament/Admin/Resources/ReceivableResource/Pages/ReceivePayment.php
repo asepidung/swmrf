@@ -156,6 +156,44 @@ class ReceivePayment extends Page
 
                 Section::make(__('Deductions'))
                     ->description(__('Fill this in when the customer pays less than the full amount because of bank fees, promotion claims, and the like.'))
+                    /*
+                     * `$money()` DILARANG di dalam Repeater (lihat docblock
+                     * `money()` di atas dan project.md) -- mask Alpine yang
+                     * dipasang di SETIAP baris membuat Morphdom gagal
+                     * membersihkan elemennya saat barisnya dihapus, dan itu
+                     * salah satu akar "baris hantu" yang ditambal
+                     * `forgetGhostDeductionRows()`. Polanya sama dengan
+                     * `SalesOrderResource`: listener `x-on:input` dipasang di
+                     * SINI, di Section pembungkus, bukan di tiap baris --
+                     * memformat tampilan dengan JS biasa, bukan Alpine mask.
+                     * Titiknya dibuang lagi manual lewat `angka()` sebelum
+                     * dipakai/disimpan (lihat `save()`).
+                     */
+                    ->extraAttributes([
+                        'x-on:input' => '
+                            (function(e) {
+                                let target = e.target;
+                                if (!target) return;
+                                if (!target.classList.contains("rp-deduction-amount-column")) return;
+
+                                let digits = target.value.replace(/[^0-9]/g, "");
+                                let formatted = digits === "" ? "" : new Intl.NumberFormat("de-DE").format(parseInt(digits, 10));
+
+                                if (target.value !== formatted) {
+                                    let selectionStart = target.selectionStart;
+                                    let selectionEnd = target.selectionEnd;
+                                    let originalLength = target.value.length;
+
+                                    target.value = formatted;
+
+                                    let diff = formatted.length - originalLength;
+                                    target.setSelectionRange(selectionStart + diff, selectionEnd + diff);
+
+                                    target.dispatchEvent(new Event("input", { bubbles: true }));
+                                }
+                            })(event)
+                        ',
+                    ])
                     ->schema([
                         Repeater::make('deductions')
                             ->hiddenLabel()
@@ -213,12 +251,17 @@ class ReceivePayment extends Page
                                     ->maxLength(255)
                                     ->live(onBlur: true)
                                     ->columnSpan(['default' => 1, 'lg' => 3]),
-                                $this->money('amount')
+                                TextInput::make('amount')
                                     ->label(__('Amount (Rp)'))
+                                    ->prefix('Rp')
                                     ->required()
-                                    ->rules(['numeric', 'gt:0'])
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(fn () => $this->autoAllocate())
+                                    ->extraInputAttributes([
+                                        'class' => 'text-right rp-deduction-amount-column',
+                                        'inputmode' => 'numeric',
+                                        'x-on:focus' => '$el.select()',
+                                    ])
                                     ->columnSpan(['default' => 1, 'lg' => 2]),
                             ])
                             ->columns(['default' => 1, 'lg' => 9])
@@ -475,9 +518,13 @@ class ReceivePayment extends Page
         $deductions = $data['deductions'] ?? [];
         $allocations = $data['allocations'] ?? [];
 
+        // Baris potongan tidak lagi memakai `$money()` (lihat komentar di
+        // `form()`), jadi nilainya bisa datang berpemisah ribuan seperti
+        // field lain di luar Repeater -- dibaca lewat `angka()`, bukan
+        // `(float)` polos, supaya "500.000" tidak terbaca sebagai 500.
         $totalDeduction = 0;
         foreach ($deductions as $deduction) {
-            $totalDeduction += (float) $deduction['amount'];
+            $totalDeduction += $this->angka($deduction['amount'] ?? 0);
         }
 
         $totalAvailable = $amountTransfer + $totalDeduction;
@@ -549,8 +596,8 @@ class ReceivePayment extends Page
             return;
         }
 
-        DB::beginTransaction();
         try {
+            DB::transaction(function () use ($data, $amountTransfer, $totalDeduction, $deductions, $allocations, $totalAvailable): void {
             // 1. Create Payment
             $payment = Payment::create([
                 'customer_group_id' => $this->record->id,
@@ -564,12 +611,14 @@ class ReceivePayment extends Page
 
             // 2. Insert Deductions
             foreach ($deductions as $deduction) {
-                if ((float) $deduction['amount'] > 0) {
+                $jumlahPotongan = $this->angka($deduction['amount'] ?? 0);
+
+                if ($jumlahPotongan > 0) {
                     $payment->deductions()->create([
                         'type' => $deduction['type'] ?? \App\Models\PaymentDeduction::TYPE_OTHER,
                         'invoice_id' => $deduction['invoice_id'] ?? null,
                         'description' => $deduction['description'],
-                        'amount' => $deduction['amount'],
+                        'amount' => $jumlahPotongan,
                     ]);
                 }
             }
@@ -585,9 +634,29 @@ class ReceivePayment extends Page
             // terpakai tetap bisa ditelusuri ke pembayaran asalnya -- dan
             // membatalkan pembayaran lama otomatis mengembalikan tagihan yang
             // ditutupnya, karena alokasinya memang melekat di sana.
+            //
+            // Baris deposit yang dipakai di sini DIKUNCI (`lockForUpdate()`)
+            // sebelum dibaca -- tanpa ini, dua staf mencatat pembayaran nyaris
+            // bersamaan untuk grup yang sama bisa sama-sama membaca
+            // `unallocatedAmount()` yang sama-sama basi, lalu menulis alokasi
+            // ganda dari deposit yang sama. Pola sama dengan
+            // `SupplierPayment::allocatedFor()/unallocatedFor()` di sisi
+            // hutang (`depositPayments()` sendiri sengaja TIDAK dikunci --
+            // dipakai juga di luar transaksi, mis. `availableDeposit()` untuk
+            // tampilan).
             $sumber = [];
 
-            foreach ($this->record->depositPayments() as $deposit) {
+            $depositPayments = $this->record->payments()
+                ->active()
+                ->with('allocations')
+                ->orderBy('payment_date')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->filter(fn (Payment $p): bool => $p->unallocatedAmount() > 0)
+                ->values();
+
+            foreach ($depositPayments as $deposit) {
                 $sumber[] = ['payment' => $deposit, 'sisa' => $deposit->unallocatedAmount()];
             }
 
@@ -631,7 +700,11 @@ class ReceivePayment extends Page
                 // muka, tanpa tahu apa-apa tentang pembayaran -- jadi cukup
                 // menyunting invoicenya sekali dan pembayaran ini lenyap dari
                 // tagihan.
-                \App\Models\Invoice::find($invId)?->applyPayment($allocAmount);
+                //
+                // Baris invoice-nya sendiri dikunci sebelum applyPayment()
+                // membaca `paid_amount` lama -- alasan sama dengan kunci
+                // deposit di atas.
+                \App\Models\Invoice::where('id', $invId)->lockForUpdate()->first()?->applyPayment($allocAmount);
             }
 
             // 4. Buku kas: seluruh tagihan yang lunas MASUK, potongannya KELUAR.
@@ -694,16 +767,14 @@ class ReceivePayment extends Page
                     ]);
                 }
             }
-
-            DB::commit();
+            });
 
             Notification::make()->success()->title(__('Payment recorded'))->send();
-            
+
             $this->redirect(ReceivableResource::getUrl('view', ['record' => $this->record->id]));
 
         } catch (\Exception $e) {
             report($e);
-            DB::rollBack();
             Notification::make()->danger()->title(__('Something went wrong.'))->body($e->getMessage())->send();
         }
     }

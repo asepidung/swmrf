@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class MaterialFinding extends Model
 {
@@ -20,7 +22,7 @@ class MaterialFinding extends Model
      * dipakai lagi oleh temuan berikutnya -- dua dokumen berbeda dirujuk satu
      * nomor yang sama di buku besar.
      */
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, LogsActivity;
 
     protected $fillable = [
         'document_number',
@@ -43,6 +45,19 @@ class MaterialFinding extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Dokumen yang MENYUNTIK stok tanpa dokumen asal -- lebih sensitif
+     * daripada dokumen biasa, dan `MaterialStockTake` di cluster yang sama
+     * sudah memakai ini.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 
     protected static function booted()

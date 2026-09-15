@@ -109,6 +109,20 @@ class GradeResource extends Resource
                             $writer->close();
                         }, 'Grades.xlsx');
                     }),
+                // project.md mewajibkan Excel DAN PDF; hanya Excel yang ada.
+                Tables\Actions\Action::make('pdf')
+                    ->label('PDF')
+                    ->color('danger')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->action(function ($livewire) {
+                        $records = $livewire->getFilteredTableQuery()->get();
+                        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.grades-pdf', [
+                            'records' => $records,
+                            'title' => __('Grades'),
+                        ]);
+
+                        return response()->streamDownload(fn () => print($pdf->output()), 'grades.pdf');
+                    }),
             ])
             ->actions([
                 // Baris tabel dibuat clickable, tombol Edit statis tidak diperlukan

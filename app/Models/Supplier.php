@@ -3,9 +3,27 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Supplier extends Model
 {
+    use LogsActivity;
+
+    /**
+     * Supplier menyimpan rekening tujuan transfer DP/pembayaran
+     * (`bank_name`, `account_number`, `account_name`) -- master data
+     * sensitif yang sebelumnya tidak punya jejak audit sama sekali. Ubah
+     * nomor rekening sengaja/salah ketik tidak bisa ditelusuri siapa/kapan.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
+
     /**
      * Tarif PPN, di satu tempat saja.
      *
@@ -88,5 +106,33 @@ class Supplier extends Model
     public function ppnAtas(float|int|string $dasar): float
     {
         return $this->isPkp() ? round((float) $dasar * self::TARIF_PPN, 2) : 0.0;
+    }
+
+    public function cattleReceivings()
+    {
+        return $this->hasMany(CattleReceiving::class);
+    }
+
+    public function supplierPayments()
+    {
+        return $this->hasMany(SupplierPayment::class);
+    }
+
+    /**
+     * Supplier ini masih dipakai, dan tidak boleh dihapus.
+     *
+     * `cattle_receivings.supplier_id` dan `supplier_payments.supplier_id`
+     * memakai cascadeOnDelete() -- beda dari tabel supplier lain
+     * (purchase_materials, goods_receipt_*, payables) yang RESTRICT.
+     * Supplier yang belum pernah punya PO (jadi tidak tertahan FK RESTRICT
+     * manapun) tapi sudah punya riwayat penerimaan sapi dan/atau DP yang
+     * sudah dibayar akan lolos dihapus TANPA PENOLAKAN lewat
+     * `MasterDataDeletion` sendirian -- dan sekaligus menghapus permanen
+     * kedua riwayat itu lewat cascade. Pemeriksaan ini menahannya SEBELUM
+     * baris manapun hilang, skema FK sengaja tidak diubah.
+     */
+    public function isInUse(): bool
+    {
+        return $this->cattleReceivings()->exists() || $this->supplierPayments()->exists();
     }
 }

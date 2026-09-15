@@ -167,6 +167,12 @@ class GhostPropertyTest extends TestCase
             'due_soon_count',
             'overdue_count',
             'total_receivable_count',
+
+            // Alias `withSum` di daftar piutang -- dulu cuma dipakai sebagai
+            // nama kolom string di TextColumn::make(), belum pernah dibaca
+            // lewat `->` sampai ekspor Excel/PDF-nya ditambahkan.
+            'due_soon',
+            'total_receivable',
         ];
     }
 
