@@ -69,6 +69,24 @@ class UserResource extends Resource
 
                 Forms\Components\Section::make(__('Permissions (Hak Akses)'))
                     ->description(__('Define custom permissions for this employee.'))
+                    /*
+                     * `edit_users` dulu menanggung dua hal sekaligus: data &
+                     * status aktif, DAN izin modul lain lewat checkbox yang
+                     * sama -- siapa pun yang bisa mengedit user otomatis bisa
+                     * mengangkat dirinya sendiri ke akses penuh. Seksi ini
+                     * sekarang perlu `manage_user_permissions` (izin
+                     * terpisah, tidak diberikan otomatis ke siapa pun -- lihat
+                     * migrasi `2026_09_15_100000_...` dan `tertunda.md` §G),
+                     * dan disembunyikan sama sekali saat mengedit AKUN
+                     * SENDIRI -- tidak peduli izinnya apa.
+                     */
+                    ->visible(function (?User $record): bool {
+                        if (! auth()->user()?->hasPermission('manage_user_permissions')) {
+                            return false;
+                        }
+
+                        return ! $record || $record->id !== auth()->id();
+                    })
                     ->schema([
                         // Dikelompokkan ke TAB mengikuti grup sidebar.
                         //
