@@ -158,6 +158,8 @@ Tables\Actions\Action::make('scan')
                     ->visible(fn (StockTake $record): bool => $record->status === StockTake::STATUS_IN_PROGRESS
                         && (auth()->user()?->isProgrammer()
                             || (auth()->user()?->hasPermission('finish_stock_takes') ?? false)))
+                    ->authorize(fn (): bool => auth()->user()?->isProgrammer()
+                        || (auth()->user()?->hasPermission('finish_stock_takes') ?? false))
                     ->action(function (StockTake $record) {
                         // Pembekuan dilewati lewat `bypass()`, bukan dengan
                         // menyentuh properti statisnya sendiri.
@@ -173,9 +175,27 @@ Tables\Actions\Action::make('scan')
                         // setiap pemakai berikutnya. Pembantunya menutup
                         // kemungkinan itu: pemulihannya ada di dalam, satu kali,
                         // untuk semua.
-                        \App\Services\WarehouseFreezeService::bypass(function () use ($record) {
-                        \Illuminate\Support\Facades\DB::transaction(function () use ($record) {
-                            
+                        $sudahSelesai = false;
+
+                        \App\Services\WarehouseFreezeService::bypass(function () use ($record, &$sudahSelesai) {
+                        \Illuminate\Support\Facades\DB::transaction(function () use ($record, &$sudahSelesai) {
+                            // Baris opname dikunci dan statusnya dibaca ULANG
+                            // dari basis data sebelum apa pun ditulis. Tanpa
+                            // ini, dua permintaan Finish yang bersamaan
+                            // (klik ganda, atau dua admin) bisa sama-sama
+                            // lolos pemeriksaan status di atas (yang membaca
+                            // state SEBELUM salah satunya menulis) dan
+                            // sama-sama mencoba menghapus/membuat baris
+                            // BeefStock yang sama -- yang kedua akan
+                            // menabrak unique constraint barcode.
+                            $locked = StockTake::whereKey($record->id)->lockForUpdate()->first();
+
+                            if (! $locked || $locked->status !== StockTake::STATUS_IN_PROGRESS) {
+                                $sudahSelesai = true;
+
+                                return;
+                            }
+
                             // 2. Handle MISSING items (Delete from BeefStock)
                             $missingItems = $record->items()->where('status', 'MISSING')->get();
                             foreach ($missingItems as $item) {
@@ -216,6 +236,13 @@ Tables\Actions\Action::make('scan')
                                     'qty_pcs' => $item->qty_pcs,
                                     'ph_level' => $item->ph_level,
                                     'pack_date' => $item->pack_date,
+                                    // Sudah dihitung App\Support\ShelfLife saat
+                                    // baris ini dipindai/diinput manual --
+                                    // sebelumnya tidak ikut disalin, sehingga
+                                    // setiap temuan yang jadi stok baru
+                                    // kehilangan tanggal kedaluwarsanya secara
+                                    // diam-diam.
+                                    'exp_date' => $item->exp_date,
                                     'origin' => \App\Helpers\BarcodeHelper::getOrigin($item->barcode),
                                     'status' => 'IN_STOCK',
                                     'note' => $item->note,
@@ -242,7 +269,16 @@ Tables\Actions\Action::make('scan')
                             $record->update(['status' => StockTake::STATUS_COMPLETED]);
                         });
                         });
-                        
+
+                        if ($sudahSelesai) {
+                            \Filament\Notifications\Notification::make()
+                                ->title(__('This stock count has already been finished'))
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+
                         \Filament\Notifications\Notification::make()
                             ->title(__('Stock Opname Completed'))
                             ->body(__('Stock reconciliation completed successfully.'))

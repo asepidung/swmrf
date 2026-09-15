@@ -326,8 +326,58 @@ class ScanStockTake extends Page implements HasForms, HasTable
 
                 $barcode = $data['barcode'] ?? null;
                 $generateNew = empty($barcode) || strlen($barcode) !== 26;
-                
-                if ($generateNew) {
+
+                try {
+                    $insertedItem = \Illuminate\Support\Facades\DB::transaction(
+                        fn () => $this->buatTemuanManual($data, $barcode, $generateNew)
+                    );
+                } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                    // BarcodeSequence::nextPadded() sendiri BUKAN dikunci --
+                    // dokumennya bilang penguncian itu tanggung jawab
+                    // pemanggil. Dua orang menginput temuan identik
+                    // (produk/tanggal/grade/berat/pcs sama) pada saat
+                    // bersamaan di opname yang sama bisa lolos penguncian di
+                    // atas (baris dengan awalan yang sama BELUM ada saat
+                    // keduanya membaca) dan menghitung urutan yang SAMA --
+                    // barcode kembar, ditolak unique constraint. Sebelumnya
+                    // ini meledak sebagai galat SQL mentah, kehilangan input
+                    // orang kedua tanpa penjelasan.
+                    report($e);
+
+                    \Filament\Notifications\Notification::make()
+                        ->title(__('Barcode collision, please try again'))
+                        ->body(__('Someone else just added an item with the exact same barcode sequence. Nothing was lost -- submit the form again.'))
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                \Filament\Notifications\Notification::make()
+                    ->title(__('Manual item added'))
+                    ->success()
+                    ->send();
+
+                if (($data['print_label'] ?? false) || $generateNew) {
+                    $printUrl = route('stock-take.label', [
+                        'id' => $insertedItem->id,
+                        'show_exp' => ($data['show_exp'] ?? false) ? 1 : 0
+                    ]);
+                    $this->dispatch('auto-print', url: $printUrl);
+                }
+
+                $this->dispatch('focus-barcode');
+            });
+    }
+
+    /**
+     * Isi transaksi Manual Input, dipisah supaya bisa dikunci sebagai satu
+     * unit -- lihat pemanggilnya untuk penjelasan penguncian dan
+     * penangkapan tabrakan barcode.
+     */
+    private function buatTemuanManual(array $data, ?string $barcode, bool $generateNew): StockTakeItem
+    {
+        if ($generateNew) {
                     $oldPrefix = !empty($barcode) ? substr($barcode, 0, 1) : null;
                     
                     // Legacy to New Origin Mapping
@@ -383,6 +433,16 @@ class ScanStockTake extends Page implements HasForms, HasTable
                     // tempat sekaligus.
                     $prefix = $origin . $dateStr;
 
+                    // Baris yang sudah memakai awalan ini dikunci lebih
+                    // dulu di KEDUA tabel -- BarcodeSequence::nextPadded()
+                    // sendiri mensyaratkan pemanggilnya yang mengunci.
+                    // Ini menyerialkan dua permintaan yang menghitung
+                    // urutan untuk awalan yang SAMA (bukan seluruh tabel),
+                    // sehingga yang kedua melihat baris yang baru saja
+                    // ditulis yang pertama, bukan snapshot sebelum itu.
+                    \App\Models\BeefStock::where('barcode', 'like', $prefix.'%')->lockForUpdate()->get();
+                    \App\Models\StockTakeItem::where('barcode', 'like', $prefix.'%')->lockForUpdate()->get();
+
                     $counterStr = \App\Support\BarcodeSequence::nextPadded($prefix, [
                         \App\Models\BeefStock::query(),
                         \App\Models\StockTakeItem::query(),
@@ -420,21 +480,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
                     'is_manual' => true,
                 ]);
 
-                \Filament\Notifications\Notification::make()
-                    ->title(__('Manual item added'))
-                    ->success()
-                    ->send();
-                    
-                if (($data['print_label'] ?? false) || $generateNew) {
-                    $printUrl = route('stock-take.label', [
-                        'id' => $insertedItem->id,
-                        'show_exp' => ($data['show_exp'] ?? false) ? 1 : 0
-                    ]);
-                    $this->dispatch('auto-print', url: $printUrl);
-                }
-
-                $this->dispatch('focus-barcode');
-            });
+        return $insertedItem;
     }
 
     public function table(Table $table): Table
