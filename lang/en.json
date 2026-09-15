@@ -1433,5 +1433,10 @@
     "paid": "Paid",
     "partial": "Partial",
     "unpaid": "Unpaid",
-    "used first, before the money received today": "used first, before the money received today"
+    "used first, before the money received today": "used first, before the money received today",
+    "This Delivery Order has already been approved": "This Delivery Order has already been approved",
+    "This Delivery Order has already been unapproved": "This Delivery Order has already been unapproved",
+    "This Tally already has a Delivery Order.": "This Tally already has a Delivery Order.",
+    "Some delivery orders were not deleted": "Some delivery orders were not deleted",
+    ":count delivery order(s) are no longer Ready and can only be reverted via Unapprove first.": ":count delivery order(s) are no longer Ready and can only be reverted via Unapprove first."
 }

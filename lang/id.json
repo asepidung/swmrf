@@ -1433,5 +1433,10 @@
     "paid": "Lunas",
     "partial": "Dibayar Sebagian",
     "unpaid": "Belum Lunas",
-    "used first, before the money received today": "dipakai lebih dulu, sebelum uang yang masuk hari ini"
+    "used first, before the money received today": "dipakai lebih dulu, sebelum uang yang masuk hari ini",
+    "This Delivery Order has already been approved": "Surat jalan ini sudah disetujui",
+    "This Delivery Order has already been unapproved": "Persetujuan surat jalan ini sudah dibatalkan",
+    "This Tally already has a Delivery Order.": "Tally ini sudah punya surat jalan.",
+    "Some delivery orders were not deleted": "Ada surat jalan yang tidak terhapus",
+    ":count delivery order(s) are no longer Ready and can only be reverted via Unapprove first.": ":count surat jalan sudah tidak berstatus Ready dan hanya bisa dihapus setelah dibatalkan persetujuannya (Unapprove) lebih dulu."
 }
