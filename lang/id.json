@@ -1433,5 +1433,8 @@
     "paid": "Lunas",
     "partial": "Dibayar Sebagian",
     "unpaid": "Belum Lunas",
-    "used first, before the money received today": "dipakai lebih dulu, sebelum uang yang masuk hari ini"
+    "used first, before the money received today": "dipakai lebih dulu, sebelum uang yang masuk hari ini",
+    "Barcode collision, please try again": "Barcode bentrok, coba lagi",
+    "Someone else just added an item with the exact same barcode sequence. Nothing was lost -- submit the form again.": "Orang lain baru saja menambahkan barang dengan urutan barcode yang persis sama. Tidak ada yang hilang -- kirim ulang formulirnya.",
+    "This stock count has already been finished": "Opname ini sudah diselesaikan"
 }

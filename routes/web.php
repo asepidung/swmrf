@@ -93,7 +93,13 @@ Route::middleware(['web', 'auth'])->group(function () {
     // ------------------------------------------
     // 4. MODUL STOCK TAKE
     // ------------------------------------------
+    // Izinnya diperiksa di sini, bukan diserahkan kepada tombolnya -- pola
+    // sama dengan qc-reports.print/material-stock-take.print di atas.
+    // Sebelumnya siapa pun yang login bisa membuka cetakan opname daging
+    // manapun lewat tebak ID.
     Route::get('/stock-take/{id}/print', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_stock_takes') ?? false, 403);
+
         $record = \App\Models\StockTake::with(['items.product', 'items.grade'])->findOrFail($id);
         return view('print.stock-take', compact('record'));
     })->name('stock-take.print');
@@ -109,6 +115,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     })->name('material-stock-take.print');
 
     Route::get('/print-stock-take-label/{id}', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_stock_takes') ?? false, 403);
+
         $item = \App\Models\StockTakeItem::with(['product', 'stockTake', 'grade'])->findOrFail($id);
         return view('print.stock-take-label', compact('item'));
     })->name('stock-take.label');

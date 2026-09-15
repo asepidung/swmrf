@@ -1433,5 +1433,8 @@
     "paid": "Paid",
     "partial": "Partial",
     "unpaid": "Unpaid",
-    "used first, before the money received today": "used first, before the money received today"
+    "used first, before the money received today": "used first, before the money received today",
+    "Barcode collision, please try again": "Barcode collision, please try again",
+    "Someone else just added an item with the exact same barcode sequence. Nothing was lost -- submit the form again.": "Someone else just added an item with the exact same barcode sequence. Nothing was lost -- submit the form again.",
+    "This stock count has already been finished": "This stock count has already been finished"
 }
