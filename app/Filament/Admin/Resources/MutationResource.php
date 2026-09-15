@@ -48,7 +48,15 @@ class MutationResource extends Resource
                             ->label(__('To Warehouse'))
                             ->options(\App\Models\Warehouse::where('is_active', true)->pluck('name', 'id'))
                             ->required()
-                            ->searchable(),
+                            ->searchable()
+                            // Tujuan mutasi tidak boleh diam-diam berubah
+                            // sesudah dikirim -- ReceiveMutation::finish()
+                            // membaca kolom ini LIVE saat diterima, bukan
+                            // nilai yang dibekukan saat kirim. Sebelumnya
+                            // tetap bisa diedit lewat halaman Edit biasa
+                            // bahkan sesudah barangnya sudah discan dan
+                            // "dalam perjalanan".
+                            ->disabled(fn (?\App\Models\Mutation $record) => $record && $record->status !== 'DRAFT'),
                         Forms\Components\Textarea::make('note')
                             ->label(__('Note'))
                             ->columnSpanFull(),

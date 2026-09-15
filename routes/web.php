@@ -227,6 +227,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     // cetaknya. Uang masuk, lalu hilang dari pandangan -- keberadaannya hanya
     // bisa disimpulkan dari sisa tagihan invoice yang berkurang.
     Route::get('/print/payment-receipt/{id}', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_receivables') ?? false, 403);
+
         $record = \App\Models\Payment::withTrashed()
             ->with(['customerGroup', 'bankAccount', 'deductions', 'allocations.invoice', 'creator'])
             ->findOrFail($id);
@@ -251,6 +253,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     // 11. MODUL MUTASI
     // ------------------------------------------
     Route::get('/print/mutation/{record}', function (\App\Models\Mutation $record) {
+        abort_unless(auth()->user()?->hasPermission('view_mutations') ?? false, 403);
+
         $record->load(['fromWarehouse', 'toWarehouse', 'items.product', 'items.grade', 'createdBy', 'receivedBy']);
         return view('print.mutation', compact('record'));
     })->name('filament.admin.resources.mutations.print');
