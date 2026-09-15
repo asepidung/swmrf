@@ -1445,5 +1445,12 @@
     "Some delivery orders were not deleted": "Ada surat jalan yang tidak terhapus",
     ":count delivery order(s) are no longer Ready and can only be reverted via Unapprove first.": ":count surat jalan sudah tidak berstatus Ready dan hanya bisa dihapus setelah dibatalkan persetujuannya (Unapprove) lebih dulu.",
     "This document is locked and can no longer be labeled.": "Dokumen ini sudah terkunci dan sudah tidak bisa diberi label lagi.",
-    "This document is locked; its items can no longer be voided.": "Dokumen ini sudah terkunci; barisnya sudah tidak bisa di-void lagi."
+    "This document is locked; its items can no longer be voided.": "Dokumen ini sudah terkunci; barisnya sudah tidak bisa di-void lagi.",
+    "You do not have permission to scan items": "Anda tidak punya izin memindai barang",
+    "This tally can no longer be edited": "Tally ini sudah tidak bisa diubah",
+    "It has already been approved or turned into a Delivery Order, so items can no longer be removed from it.": "Tally ini sudah disetujui atau sudah menjadi surat jalan, jadi barisnya sudah tidak bisa dihapus.",
+    "This Sales Order is no longer waiting for a tally": "Sales Order ini sudah tidak menunggu tally",
+    "It may have just been tallied or cancelled from another session.": "Kemungkinan baru saja di-tally atau dibatalkan dari sesi lain.",
+    "This Sales Order is no longer waiting": "Sales Order ini sudah tidak berstatus menunggu",
+    "It may have just been tallied from another session.": "Kemungkinan baru saja di-tally dari sesi lain."
 }

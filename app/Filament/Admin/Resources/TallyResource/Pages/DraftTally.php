@@ -67,6 +67,8 @@ class DraftTally extends Page implements HasTable
                     ->label(__('Create Tally'))
                     ->icon('heroicon-m-arrow-right-circle')
                     ->color('primary')
+                    ->hidden(fn () => ! auth()->user()?->hasPermission('create_tallies'))
+                    ->authorize(fn (): bool => auth()->user()?->hasPermission('create_tallies') ?? false)
                     ->form([
                         Forms\Components\TextInput::make('pod_limit')
                             ->label(__('Max POD Age (Days)'))
@@ -75,7 +77,23 @@ class DraftTally extends Page implements HasTable
                             ->default(fn () => session('tally_pod_limit', 30)),
                     ])
                     ->action(function (SalesOrder $record, array $data) {
-                        return DB::transaction(function () use ($record, $data) {
+                        $ditolak = false;
+
+                        $tally = DB::transaction(function () use ($record, $data, &$ditolak) {
+                            // Baris SO dikunci dan statusnya dibaca ULANG
+                            // sebelum Tally dibuat. Tanpa ini, dua klik
+                            // "Create Tally" yang bersamaan (atau klik ganda)
+                            // untuk SO yang sama bisa sama-sama lolos dan
+                            // sama-sama membuat Tally -- yang kedua menabrak
+                            // unique constraint sales_order_id mentah.
+                            $locked = SalesOrder::whereKey($record->id)->lockForUpdate()->first();
+
+                            if (! $locked || $locked->status !== SalesOrder::STATUS_WAITING) {
+                                $ditolak = true;
+
+                                return null;
+                            }
+
                             session(['tally_pod_limit' => (int) $data['pod_limit']]);
 
                             $tally = Tally::create([
@@ -83,19 +101,31 @@ class DraftTally extends Page implements HasTable
                                 'status' => Tally::STATUS_PROCESSING,
                             ]);
 
-                            $record->update(['status' => Tally::STATUS_PROCESSING]);
+                            $locked->update(['status' => SalesOrder::STATUS_PROCESSING]);
 
                             activity('tally')
                                 ->performedOn($tally)
                                 ->log('Buat Data Tally: ' . $tally->tally_number);
 
+                            return $tally;
+                        });
+
+                        if ($ditolak) {
                             Notification::make()
-                                ->title(__('Tally Created Successfully'))
-                                ->success()
+                                ->title(__('This Sales Order is no longer waiting for a tally'))
+                                ->body(__('It may have just been tallied or cancelled from another session.'))
+                                ->danger()
                                 ->send();
 
-                            return redirect()->to(TallyResource::getUrl('scan', ['record' => $tally->id]));
-                        });
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title(__('Tally Created Successfully'))
+                            ->success()
+                            ->send();
+
+                        return redirect()->to(TallyResource::getUrl('scan', ['record' => $tally->id]));
                     }),
 
                 Tables\Actions\Action::make('cancel')
@@ -104,13 +134,39 @@ class DraftTally extends Page implements HasTable
                     ->color('danger')
                     ->requiresConfirmation()
                     ->action(function (SalesOrder $record) {
-                        DB::transaction(function () use ($record) {
-                            $record->update(['status' => SalesOrder::STATUS_CANCELLED]);
+                        $ditolak = false;
+
+                        DB::transaction(function () use ($record, &$ditolak) {
+                            // Dikunci dan dibaca ulang dengan alasan yang
+                            // sama dengan process(): mencegah race di mana
+                            // SO ini baru saja mendapat Tally (proses()
+                            // menang lebih dulu) tetapi cancel() yang
+                            // membaca state lama tetap menimpanya menjadi
+                            // dibatalkan.
+                            $locked = SalesOrder::whereKey($record->id)->lockForUpdate()->first();
+
+                            if (! $locked || $locked->status !== SalesOrder::STATUS_WAITING) {
+                                $ditolak = true;
+
+                                return;
+                            }
+
+                            $locked->update(['status' => SalesOrder::STATUS_CANCELLED]);
 
                             activity('sales_order')
-                                ->performedOn($record)
-                                ->log('Cancel Sales Order: ' . $record->so_number);
+                                ->performedOn($locked)
+                                ->log('Cancel Sales Order: ' . $locked->so_number);
                         });
+
+                        if ($ditolak) {
+                            Notification::make()
+                                ->title(__('This Sales Order is no longer waiting'))
+                                ->body(__('It may have just been tallied from another session.'))
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
 
                         Notification::make()
                             ->title(__('Sales Order Cancelled'))
