@@ -3,6 +3,7 @@
 namespace App\Filament\Clusters\CustomersCluster\Resources\CustomerSegmentResource\Pages;
 
 use App\Filament\Clusters\CustomersCluster\Resources\CustomerSegmentResource;
+use App\Support\MasterDataDeletion;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
@@ -13,14 +14,14 @@ class EditCustomerSegment extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            // Sebelumnya DeleteAction polos -- galat SQL mentah kalau
-            // segmennya masih dipakai. Sama seperti EditWarehouse.
+            // customers.customer_segment_id adalah restrictOnDelete() DAN
+            // NOT NULL -- menghapus segment yang masih dipakai satu saja
+            // Customer sebelumnya menampilkan galat SQL mentah.
             Actions\DeleteAction::make()
                 ->action(function () {
-                    if (\App\Support\MasterDataDeletion::attempt(
-                        fn () => $this->record->delete(),
-                        __('Customer Segment').' '.$this->record->name,
-                    )) {
+                    $record = $this->getRecord();
+
+                    if (MasterDataDeletion::attempt(fn () => $record->delete(), __('Customer Segment').' '.$record->name)) {
                         $this->redirect($this->getResource()::getUrl('index'));
                     }
                 }),

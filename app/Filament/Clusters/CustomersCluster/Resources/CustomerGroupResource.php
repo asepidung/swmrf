@@ -6,8 +6,10 @@ use App\Filament\Clusters\CustomersCluster;
 use App\Filament\Clusters\CustomersCluster\Resources\CustomerGroupResource\Pages;
 use App\Filament\Clusters\CustomersCluster\Resources\CustomerGroupResource\RelationManagers;
 use App\Models\CustomerGroup;
+use App\Support\MasterDataDeletion;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -101,6 +103,36 @@ class CustomerGroupResource extends Resource
                 //
             ])
             ->defaultSort('name')
+            // Master data lain yang setara (Grade, CattleClass, Warehouse,
+            // Material) sudah punya tombol Excel; CustomerGroup sebelumnya
+            // tidak, padahal datanya (TOP per grup, PIC kantor pusat) sama
+            // relevannya untuk direkap.
+            ->headerActions([
+                Tables\Actions\Action::make('excel')
+                    ->label(__('Excel'))
+                    ->icon('heroicon-o-document-text')
+                    ->color('success')
+                    ->action(function ($livewire) {
+                        $records = $livewire->getFilteredTableQuery()->get();
+
+                        return response()->streamDownload(function () use ($records) {
+                            $writer = new \OpenSpout\Writer\XLSX\Writer();
+                            $writer->openToFile('php://output');
+                            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                __('Name'), __('Head Office PIC'), __('Head Office Address'), __('TOP'),
+                            ]));
+                            foreach ($records as $record) {
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    $record->name,
+                                    $record->head_office_pic ?? '',
+                                    $record->head_office_address ?? '',
+                                    $record->top,
+                                ]));
+                            }
+                            $writer->close();
+                        }, 'customer-groups.xlsx');
+                    }),
+            ])
             ->actions([
                 //
             ])
@@ -109,7 +141,34 @@ class CustomerGroupResource extends Resource
             )
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Sama seperti Delete tunggal (lihat EditCustomerGroup):
+                    // grup yang masih dipakai ditolak, bukan diam-diam
+                    // menghapus PriceList/mengosongkan customer_group_id.
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records): void {
+                            $ditolak = 0;
+
+                            foreach ($records as $record) {
+                                if ($record->isInUse()) {
+                                    $ditolak++;
+
+                                    continue;
+                                }
+
+                                MasterDataDeletion::attempt(
+                                    fn () => $record->delete(),
+                                    __('Customer Group').' '.$record->name,
+                                );
+                            }
+
+                            if ($ditolak > 0) {
+                                Notification::make()
+                                    ->title(__('Some customer groups were not deleted'))
+                                    ->body(__(':count group(s) still have customers, a price list, receivables, or payments attached.', ['count' => $ditolak]))
+                                    ->danger()
+                                    ->send();
+                            }
+                        }),
                 ]),
             ]);
     }
