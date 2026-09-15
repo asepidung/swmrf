@@ -6424,3 +6424,68 @@ Detail lengkap tiap temuan (file:baris, cara memicu, usulan) ada di
 riwayat pesan ke Hafizh -- sesi berikutnya yang perlu mengerjakan salah
 satu dari daftar ini sebaiknya minta Hafizh menyalin ulang detailnya,
 bukan menebak dari ringkasan di atas.
+
+## 14 September 2026 -- Penyisiran modul belum tersentuh (lanjutan): User & Warehouse
+
+Bagian dari tugas sapu Owner lewat Hafizh (lihat entri sebelumnya soal
+Activity Log #389/#390 dan Beef Stock #391/#392, keduanya di branch
+terpisah yang belum di-merge saat catatan ini ditulis). Kategori [A] yang
+disetujui Hafizh untuk User & Warehouse:
+
+- **`UserResource::shouldRegisterNavigation()` ditambahkan** -- menu "User
+  Management" sebelumnya tampil di sidebar SEMUA orang yang login,
+  termasuk yang tidak punya `view_users`; baru ditolak (403) begitu
+  diklik. Filament tidak mengaitkan `shouldRegisterNavigation()` bawaan
+  dengan policy apa pun. Ditiru pola `WarehouseResource`.
+- **`User` model sekarang memakai `LogsActivity`** -- master data paling
+  sensitif di aplikasi ini (mengendalikan akses & izin) sebelumnya sama
+  sekali tidak tercatat. `logExcept(['password', 'remember_token'])`
+  WAJIB -- password sudah ter-hash, tapi hash tetap tidak boleh singgah
+  di `properties` activity log.
+- **Perubahan izin lewat `permissions()->sync()` dicatat manual** di
+  `EditUser::afterSave()` -- pivot table tidak tertangkap `LogsActivity`
+  otomatis. Dicatat nama izin yang ditambah/dicabut lewat
+  `activity()->performedOn($user)->log('permissions synced')`.
+- **13 halaman Edit master data** (`Warehouse`, `Grade`, `Supplier`,
+  `CattleClass`, `ProductCategory`, `Product`, `MaterialCategory`,
+  `Material`, `MaterialUnit`, `Customer`, `CustomerSegment`,
+  `CustomerGroup`, `BankAccount`) **dibungkus `MasterDataDeletion::attempt()`**
+  -- sebelumnya cuma `WarehouseResource`'s BULK delete di index yang
+  dibungkus; tombol Delete di halaman Edit-nya sendiri (di 13 modul ini
+  sekaligus) masih polos, jadi menghapus data yang masih dipakai
+  menampilkan galat SQL mentah alih-alih notifikasi ramah.
+- **Gudang nonaktif dikeluarkan dari 3 dropdown** yang menciptakan stok
+  BARU: `FoundItemScanner`, `LabelingBoning`, `LabelingGoodsReceiptProduct`
+  -- pola yang sama dengan yang sudah dipakai `Mutation`/`Repack`/
+  `SalesReturn`.
+
+### Temuan sampingan yang JUSTRU lebih penting: `MasterDataDeletion` tidak pernah teruji betulan
+
+Saat menulis test untuk salah satu dari 13 fix di atas, ditemukan
+`MasterDataDeletion::isStillInUse()` cuma mengenali kode galat MySQL 1451
+-- SQLite (dipakai SELURUH suite test proyek ini) memberi kode BERBEDA
+(19, `SQLITE_CONSTRAINT`) untuk pelanggaran kunci asing yang SAMA.
+Akibatnya: `MasterDataDeletionTest.php` yang sudah ada sejak lama TIDAK
+PERNAH membuktikan skenario utamanya ("masih dipakai, tolak dengan
+kalimat ramah") -- cuma menguji jalur sukses dan jalur "galat lain".
+Diperbaiki dengan mengenali KEDUA kode (1451 dan 19); perilaku produksi
+(MySQL) sama sekali tidak berubah. Test baru dibuat memakai tabel
+bertautan sungguhan (bukan tiruan) supaya kode error yang diperiksa
+benar-benar berasal dari driver, bukan dikarang.
+
+### Jebakan pengujian yang ditemukan, dicatat supaya tidak diulang
+
+Form izin `UserResource` (`CheckboxList` per modul, `dehydrated(false)`,
+`afterStateHydrated()` membaca ulang dari database) tidak bisa diuji lewat
+`Livewire::test()->fillForm()->call('save')` biasa untuk skenario
+"mencabut" izin -- setiap siklus request Livewire memicu hidrasi ulang
+yang MENGGABUNG nilai lama dengan nilai baru (union), bukan mengganti.
+Skenario "menambah" izin dari kosong tidak kena masalah ini (union dengan
+himpunan kosong = nilai baru itu sendiri), jadi itu yang diuji.
+
+**Ditahan untuk Owner (Temuan 1 & 4 dari laporan User awal, TIDAK
+disentuh)**: eskalasi izin diri sendiri lewat `edit_users`, dan
+ketiadaan ekspor di `UserResource`.
+
+Full suite dijalankan sebelum commit; hasil & nomor PR ada di riwayat
+pesan ke Hafizh.

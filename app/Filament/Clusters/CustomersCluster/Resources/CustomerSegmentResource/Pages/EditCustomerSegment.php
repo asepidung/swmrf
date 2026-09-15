@@ -13,7 +13,17 @@ class EditCustomerSegment extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            // Sebelumnya DeleteAction polos -- galat SQL mentah kalau
+            // segmennya masih dipakai. Sama seperti EditWarehouse.
+            Actions\DeleteAction::make()
+                ->action(function () {
+                    if (\App\Support\MasterDataDeletion::attempt(
+                        fn () => $this->record->delete(),
+                        __('Customer Segment').' '.$this->record->name,
+                    )) {
+                        $this->redirect($this->getResource()::getUrl('index'));
+                    }
+                }),
         ];
     }
 
