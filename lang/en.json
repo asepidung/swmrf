@@ -1434,6 +1434,8 @@
     "partial": "Partial",
     "unpaid": "Unpaid",
     "used first, before the money received today": "used first, before the money received today",
+    "This bill no longer has enough outstanding balance for that amount": "This bill no longer has enough outstanding balance for that amount",
+    "It may have just been paid or compensated from another session. Refresh the page and check the current balance.": "It may have just been paid or compensated from another session. Refresh the page and check the current balance.",
     "This Delivery Order has already been approved": "This Delivery Order has already been approved",
     "This Delivery Order has already been unapproved": "This Delivery Order has already been unapproved",
     "This Tally already has a Delivery Order.": "This Tally already has a Delivery Order.",

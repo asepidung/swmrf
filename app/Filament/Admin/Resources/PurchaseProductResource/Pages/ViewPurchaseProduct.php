@@ -20,6 +20,7 @@ class ViewPurchaseProduct extends ViewRecord
                 // Melihat PO dan MEMBAYAR DP adalah dua tingkat wewenang
                 // yang berbeda. Sebelumnya tidak dibedakan sama sekali.
                 ->visible(fn () => auth()->user()?->hasPermission('pay_purchase_products') ?? false)
+                ->authorize(fn (): bool => auth()->user()?->hasPermission('pay_purchase_products') ?? false)
                 ->form([
                     \Filament\Forms\Components\DatePicker::make('payment_date')
                         ->label(__('Payment Date'))

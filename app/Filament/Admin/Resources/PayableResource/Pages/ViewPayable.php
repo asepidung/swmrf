@@ -22,6 +22,7 @@ class ViewPayable extends ViewRecord
                 // melihat utang otomatis bisa mengeluarkan uang perusahaan.
                 ->visible(fn () => $this->record->balance > 0
                     && (auth()->user()?->hasPermission('pay_payables') ?? false))
+                ->authorize(fn (): bool => auth()->user()?->hasPermission('pay_payables') ?? false)
                 ->form([
                     \Filament\Forms\Components\DatePicker::make('payment_date')
                         ->label(__('Payment Date'))
@@ -70,35 +71,66 @@ class ViewPayable extends ViewRecord
                 ])
                 ->action(function (array $data) {
                     $amount = (float) str_replace('.', '', $data['amount_input']);
-                    
-                    // Buat SupplierPayment (mencatat uang keluar ke kas/bank)
-                    $payment = \App\Models\SupplierPayment::create([
-                        'supplier_id' => $this->record->supplier_id,
-                        'source_type' => get_class($this->record),
-                        'source_id' => $this->record->id,
-                        'payment_date' => $data['payment_date'],
-                        'method' => $data['method'],
-                        'bank_account_id' => $data['method'] === \App\Models\SupplierPayment::METHOD_TRANSFER ? $data['bank_account_id'] : null,
-                        'amount' => $amount,
-                        'reference_number' => $data['reference_number'],
-                        'note' => $data['note'],
-                        'allocated_amount' => $amount, // Langsung dialokasikan semua karena ini bayar hutang langsung
-                    ]);
+                    $ditolak = false;
 
-                    // Update hutangnya lewat satu-satunya tempat rumus saldo
-                    // dan status ditulis. Salinan rumus di sini dulu tidak
-                    // mengenal kompensasi, sehingga hutang yang sama bisa
-                    // menunjukkan angka berbeda tergantung apakah ia terakhir
-                    // disentuh lewat halaman ini atau lewat modelnya.
-                    $this->record->paid_amount += $amount;
-                    $this->record->recalculate();
-                    $this->record->save();
+                    \Illuminate\Support\Facades\DB::transaction(function () use ($data, $amount, &$ditolak) {
+                        // Baris utang dikunci dan saldonya dibaca ULANG dari
+                        // basis data sebelum uang dikeluarkan. Validasi form
+                        // di atas membaca saldo dari state Livewire yang bisa
+                        // sudah basi -- tanpa kunci ini, dua permintaan Pay
+                        // yang bersamaan (klik ganda, atau dua tab terbuka)
+                        // bisa sama-sama lolos validasi itu dan sama-sama
+                        // membuat SupplierPayment: uang keluar dobel untuk
+                        // utang yang cuma perlu dibayar sekali.
+                        $payable = \App\Models\Payable::whereKey($this->record->id)->lockForUpdate()->first();
+
+                        if ($amount > (float) $payable->balance) {
+                            $ditolak = true;
+
+                            return;
+                        }
+
+                        // Buat SupplierPayment (mencatat uang keluar ke kas/bank)
+                        \App\Models\SupplierPayment::create([
+                            'supplier_id' => $payable->supplier_id,
+                            'source_type' => get_class($payable),
+                            'source_id' => $payable->id,
+                            'payment_date' => $data['payment_date'],
+                            'method' => $data['method'],
+                            'bank_account_id' => $data['method'] === \App\Models\SupplierPayment::METHOD_TRANSFER ? $data['bank_account_id'] : null,
+                            'amount' => $amount,
+                            'reference_number' => $data['reference_number'],
+                            'note' => $data['note'],
+                            'allocated_amount' => $amount, // Langsung dialokasikan semua karena ini bayar hutang langsung
+                        ]);
+
+                        // Update hutangnya lewat satu-satunya tempat rumus saldo
+                        // dan status ditulis. Salinan rumus di sini dulu tidak
+                        // mengenal kompensasi, sehingga hutang yang sama bisa
+                        // menunjukkan angka berbeda tergantung apakah ia terakhir
+                        // disentuh lewat halaman ini atau lewat modelnya.
+                        $payable->paid_amount += $amount;
+                        $payable->recalculate();
+                        $payable->save();
+                    });
+
+                    if ($ditolak) {
+                        \Filament\Notifications\Notification::make()
+                            ->title(__('This bill no longer has enough outstanding balance for that amount'))
+                            ->body(__('It may have just been paid or compensated from another session. Refresh the page and check the current balance.'))
+                            ->danger()
+                            ->send();
+
+                        $this->redirect($this->getResource()::getUrl('view', ['record' => $this->record]));
+
+                        return;
+                    }
 
                     \Filament\Notifications\Notification::make()
                         ->title(__('Payment Recorded Successfully'))
                         ->success()
                         ->send();
-                        
+
                     $this->redirect($this->getResource()::getUrl('view', ['record' => $this->record]));
                 }),
 
@@ -119,6 +151,7 @@ class ViewPayable extends ViewRecord
                 ->color('warning')
                 ->visible(fn () => $this->record->balance > 0
                     && (auth()->user()?->hasPermission('record_payable_compensations') ?? false))
+                ->authorize(fn (): bool => auth()->user()?->hasPermission('record_payable_compensations') ?? false)
                 ->modalHeading(__('Record Compensation'))
                 ->modalDescription(__('The purchase order keeps its agreed price, and the recorded shrinkage loss stays as it is. Only the payable goes down.'))
                 ->form([
@@ -163,15 +196,29 @@ class ViewPayable extends ViewRecord
                         ->rows(2),
                 ])
                 ->action(function (array $data): void {
-                    try {
-                        $this->record->applyCompensation(
-                            (float) $data['amount'],
-                            $data['note'] ?? null,
-                        );
-                    } catch (\InvalidArgumentException $e) {
-                        report($e);
+                    $gagal = null;
+
+                    \Illuminate\Support\Facades\DB::transaction(function () use ($data, &$gagal) {
+                        // Dikunci dulu, sama alasannya dengan Pay: dua
+                        // permintaan Compensate yang bersamaan tidak boleh
+                        // sama-sama membaca sisa hutang yang sama SEBELUM
+                        // salah satunya menuliskan kompensasinya.
+                        $payable = \App\Models\Payable::whereKey($this->record->id)->lockForUpdate()->first();
+
+                        try {
+                            $payable->applyCompensation(
+                                (float) $data['amount'],
+                                $data['note'] ?? null,
+                            );
+                        } catch (\InvalidArgumentException $e) {
+                            report($e);
+                            $gagal = $e->getMessage();
+                        }
+                    });
+
+                    if ($gagal !== null) {
                         \Filament\Notifications\Notification::make()
-                            ->title($e->getMessage())
+                            ->title($gagal)
                             ->danger()
                             ->send();
 
