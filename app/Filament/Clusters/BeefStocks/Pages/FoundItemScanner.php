@@ -205,7 +205,10 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                     ->schema([
                         Forms\Components\Select::make('warehouse_id')
                             ->label(__('Warehouse Where It Was Found'))
-                            ->options(Warehouse::pluck('name', 'id'))
+                            // Gudang nonaktif tidak boleh jadi tujuan stok
+                            // BARU -- pola yang sama dengan Mutation/Repack/
+                            // SalesReturn.
+                            ->options(Warehouse::where('is_active', true)->pluck('name', 'id'))
                             ->searchable()
                             ->required()
                             ->columnSpanFull(),

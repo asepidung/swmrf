@@ -17,7 +17,17 @@ class EditMaterialUnit extends EditRecord
                 ->label(__('Back'))
                 ->url(fn () => $this->getResource()::getUrl('index'))
                 ->color('gray'),
-            Actions\DeleteAction::make(),
+            // Sebelumnya DeleteAction polos -- galat SQL mentah kalau
+            // satuannya masih dipakai. Sama seperti EditWarehouse.
+            Actions\DeleteAction::make()
+                ->action(function () {
+                    if (\App\Support\MasterDataDeletion::attempt(
+                        fn () => $this->record->delete(),
+                        __('Material Unit').' '.$this->record->name,
+                    )) {
+                        $this->redirect($this->getResource()::getUrl('index'));
+                    }
+                }),
         ];
     }
 

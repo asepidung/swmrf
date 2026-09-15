@@ -3,7 +3,6 @@
 namespace App\Filament\Admin\Resources\GradeResource\Pages;
 
 use App\Filament\Admin\Resources\GradeResource;
-use App\Support\MasterDataDeletion;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
@@ -18,15 +17,14 @@ class EditGrade extends EditRecord
                 ->label(fn () => __('Back'))
                 ->url(fn () => $this->getResource()::getUrl('index'))
                 ->color('gray'),
-            // GradeResource's DeleteBulkAction di halaman Index sudah benar
-            // dibungkus MasterDataDeletion::attempt() -- tombol Delete di
-            // halaman Edit ini sendiri masih polos, jadi menghapus grade
-            // yang masih dipakai menampilkan galat SQL mentah.
+            // Sebelumnya DeleteAction polos -- galat SQL mentah kalau
+            // gradenya masih dipakai. Sama seperti EditWarehouse.
             Actions\DeleteAction::make()
                 ->action(function () {
-                    $record = $this->getRecord();
-
-                    if (MasterDataDeletion::attempt(fn () => $record->delete(), __('Grade').' '.$record->name)) {
+                    if (\App\Support\MasterDataDeletion::attempt(
+                        fn () => $this->record->delete(),
+                        __('Grade').' '.$this->record->name,
+                    )) {
                         $this->redirect($this->getResource()::getUrl('index'));
                     }
                 }),

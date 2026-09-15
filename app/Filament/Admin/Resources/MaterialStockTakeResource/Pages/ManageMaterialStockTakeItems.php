@@ -15,6 +15,24 @@ use Filament\Notifications\Notification;
 
 class ManageMaterialStockTakeItems extends ManageRelatedRecords
 {
+    /**
+     * Halaman ini TIDAK boleh terbuka lewat alamatnya saja.
+     *
+     * Tidak ada `MaterialStockTakeItemPolicy`, dan proyek ini tidak punya
+     * `Gate::before` -- jadi `authorize('viewAny', MaterialStockTakeItem::class)`
+     * bawaan `ManageRelatedRecords::canAccess()` jatuh ke `Response::allow()`.
+     * Tombol "Input Stock" di daftar memang disembunyikan dari yang tidak
+     * berhak, tapi alamatnya sendiri tidak tertutup -- siapa pun yang bisa
+     * masuk panel admin bisa mengetik URL-nya langsung dan mengubah hitungan
+     * fisik sebelum opname diselesaikan. Pola sama dengan
+     * `ReviewMaterialRequisition::canAccess()`.
+     */
+    public static function canAccess(array $parameters = []): bool
+    {
+        return auth()->user()?->isProgrammer()
+            || (auth()->user()?->hasPermission('view_material_stock_takes') ?? false);
+    }
+
     protected static string $resource = MaterialStockTakeResource::class;
 
     protected static string $relationship = 'items';
