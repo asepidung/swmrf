@@ -1444,6 +1444,8 @@
     "This Tally already has a Delivery Order.": "Tally ini sudah punya surat jalan.",
     "Some delivery orders were not deleted": "Ada surat jalan yang tidak terhapus",
     ":count delivery order(s) are no longer Ready and can only be reverted via Unapprove first.": ":count surat jalan sudah tidak berstatus Ready dan hanya bisa dihapus setelah dibatalkan persetujuannya (Unapprove) lebih dulu.",
+    "Some sales orders were not deleted": "Ada sales order yang tidak terhapus",
+    ":count sales order(s) still have a Tally or Invoice recorded against them.": ":count sales order masih punya Tally atau Invoice yang tercatat.",
     "Barcode collision, please try again": "Barcode bentrok, coba lagi",
     "Someone else just added an item with the exact same barcode sequence. Nothing was lost -- submit the form again.": "Orang lain baru saja menambahkan barang dengan urutan barcode yang persis sama. Tidak ada yang hilang -- kirim ulang formulirnya.",
     "This item could not be voided. It may have already been removed.": "Barang ini tidak bisa di-void. Kemungkinan sudah terlanjur terhapus.",
