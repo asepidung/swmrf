@@ -142,39 +142,59 @@ class Boning extends Model
      */
     public function lock(): void
     {
-        if ($this->kunci) {
-            throw new \RuntimeException(__('This boning is already locked.'));
-        }
+        \Illuminate\Support\Facades\DB::transaction(function () {
+            // Baris dikunci dan dibaca ULANG dari basis data sebelum
+            // ditulis. Tanpa ini, dua klik Lock yang bersamaan (klik ganda,
+            // atau dua orang) bisa sama-sama lolos pemeriksaan `kunci` di
+            // bawah -- yang membaca state PHP, bukan baris yang sungguh
+            // dikunci -- dan sama-sama mencoba mengunci.
+            $locked = static::whereKey($this->id)->lockForUpdate()->first();
 
-        // Tiap boning WAJIB punya karkas.
-        //
-        // Syarat ini sempat dicabut karena disangka ada dokumen boning khusus
-        // kulit dan offal yang tidak punya karkas. Itu salah baca: kulit dan
-        // offal DIBERI LABEL DI DALAM boning yang sama, yang karkasnya memang
-        // dipilih saat dokumennya dibuat. Project Owner:
-        //
-        //   "pas create boning kan kita pilih karkas mana yang di boning
-        //    bahkan bisa pilih beberapa karkas"
-        //
-        // Jadi tidak pernah ada boning tanpa karkas, dan boning yang tidak
-        // menyebut karkasnya adalah dokumen yang belum selesai dibuat.
-        if ($this->carcasses()->doesntExist()) {
-            throw new \RuntimeException(__('This boning has no carcass yet.'));
-        }
+            if (! $locked || $locked->kunci) {
+                throw new \RuntimeException(__('This boning is already locked.'));
+            }
 
-        if ($this->items()->doesntExist()) {
-            throw new \RuntimeException(__('This boning has no output goods yet.'));
-        }
+            // Tiap boning WAJIB punya karkas.
+            //
+            // Syarat ini sempat dicabut karena disangka ada dokumen boning khusus
+            // kulit dan offal yang tidak punya karkas. Itu salah baca: kulit dan
+            // offal DIBERI LABEL DI DALAM boning yang sama, yang karkasnya memang
+            // dipilih saat dokumennya dibuat. Project Owner:
+            //
+            //   "pas create boning kan kita pilih karkas mana yang di boning
+            //    bahkan bisa pilih beberapa karkas"
+            //
+            // Jadi tidak pernah ada boning tanpa karkas, dan boning yang tidak
+            // menyebut karkasnya adalah dokumen yang belum selesai dibuat.
+            if ($this->carcasses()->doesntExist()) {
+                throw new \RuntimeException(__('This boning has no carcass yet.'));
+            }
 
-        $this->forceFill(['kunci' => true, 'status' => 'LOCKED'])->save();
+            if ($this->items()->doesntExist()) {
+                throw new \RuntimeException(__('This boning has no output goods yet.'));
+            }
+
+            $locked->forceFill(['kunci' => true, 'status' => 'LOCKED'])->save();
+            $this->kunci = true;
+            $this->status = 'LOCKED';
+        });
     }
 
     public function unlock(): void
     {
-        if (! $this->kunci) {
-            throw new \RuntimeException(__('This boning is not locked.'));
-        }
+        \Illuminate\Support\Facades\DB::transaction(function () {
+            // Alasan sama dengan lock(): baris dikunci dan dibaca ulang
+            // sebelum ditulis, supaya dua klik Unlock bersamaan tidak
+            // sama-sama lolos.
+            $locked = static::whereKey($this->id)->lockForUpdate()->first();
 
-        $this->forceFill(['kunci' => false, 'status' => 'OPEN'])->save();
+            if (! $locked || ! $locked->kunci) {
+                throw new \RuntimeException(__('This boning is not locked.'));
+            }
+
+            $locked->forceFill(['kunci' => false, 'status' => 'OPEN'])->save();
+            $this->kunci = false;
+            $this->status = 'OPEN';
+        });
     }
 }

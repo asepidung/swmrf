@@ -322,6 +322,263 @@ class ActionAuthorizationTest extends TestCase
     }
 
     /**
+     * Susulan 15 September 2026, atas temuan Tally #1/#3, Mutation #5,
+     * Boning #1: bentuk berbeda dari penjaga di atas, dan lolos dari
+     * regexnya.
+     *
+     * Penjaga di atas hanya menuduh `Action::make('nama-berbahaya')` --
+     * tapi `Tables\Actions\DeleteAction::make()` (TANPA argumen, nama
+     * bawaannya diam-diam `'delete'`) tidak pernah cocok dengan pola itu.
+     *
+     * Dibuktikan langsung dari source Filament (`vendor/filament/tables/
+     * src/Actions/DeleteAction.php::setUp()`): kelas AKSI TABEL ini --
+     * beda dari `Filament\Actions\DeleteAction` yang dipakai di
+     * `getHeaderActions()` halaman Resource baku, yang OTOMATIS dipasangi
+     * `->authorize()` lewat `EditRecord::configureAction()` dkk -- TIDAK
+     * PERNAH memasang otorisasi apa pun sendiri, di halaman MANAPUN ia
+     * dipakai. Satu-satunya `->hidden()` bawaannya cuma memeriksa
+     * `trashed()`. Jadi bedanya BUKAN "halaman custom vs Resource baku"
+     * seperti dugaan awal, melainkan NAMESPACE aksinya: `Tables\Actions\`
+     * (baris tabel, tidak pernah tergerbangi otomatis) lawan `Actions\`
+     * polos di `getHeaderActions()` (tergerbangi otomatis).
+     */
+    public function test_no_bare_crud_action_is_left_unguarded_on_a_custom_page(): void
+    {
+        $pelanggar = [];
+
+        foreach ($this->berkasPhp() as $berkas) {
+            $isi = $this->tanpaKomentar(file_get_contents($berkas));
+
+            // Halaman yang gerbangnya sendiri sudah menuntut izin yang
+            // tepat (canAccess()) tidak perlu mengulang pemeriksaan yang
+            // sama di setiap aksi tabel di dalamnya -- siapa pun yang bisa
+            // sampai ke tabelnya sudah pasti berizin.
+            if (str_contains($isi, 'function canAccess')) {
+                continue;
+            }
+
+            if (! preg_match('/\bTables\\\\Actions\\\\(?:DeleteAction|ForceDeleteAction|RestoreAction)::make\(\s*\)/', $isi)) {
+                continue;
+            }
+
+            preg_match_all('/\bTables\\\\Actions\\\\(DeleteAction|ForceDeleteAction|RestoreAction)::make\(\s*\)/', $isi, $cocok, PREG_OFFSET_CAPTURE);
+
+            foreach ($cocok[0] as $index => $satu) {
+                [$teks, $posisi] = $satu;
+                $nama = $cocok[1][$index][0];
+
+                $potong = substr($isi, $posisi, 1500);
+
+                if (str_contains($potong, 'hasPermission') || str_contains($potong, 'isProgrammer') || str_contains($potong, '->authorize(')) {
+                    continue;
+                }
+
+                $kunci = $this->relatif($berkas).':'.$nama;
+
+                if (in_array($kunci, [...$this->belumDiperbaikiDiCabangLain(), ...$this->diluarCakupanBatchIni()], true)) {
+                    continue;
+                }
+
+                $pelanggar[] = $kunci;
+            }
+        }
+
+        sort($pelanggar);
+
+        $this->assertSame(
+            [],
+            $pelanggar,
+            "Aksi CRUD bawaan Filament (Delete/ForceDelete/Restore) dipakai TANPA nama (jadi tanpa izin) "
+            ."di halaman yang BUKAN EditRecord/ViewRecord/ListRecords/ManageRelatedRecords -- di luar keempat "
+            ."itu Filament tidak memasang otorisasi apa pun secara otomatis:\n".implode("\n", $pelanggar),
+        );
+    }
+
+    /**
+     * Susulan yang sama dengan penjaga di atas: method Livewire BIASA (bukan
+     * Filament Action sama sekali) di halaman custom yang menulis/menghapus
+     * BeefStock secara langsung -- seperti `ScanTally::scan()` sebelum
+     * diperbaiki. Method semacam ini tidak punya `->hidden()`/`->authorize()`
+     * yang bisa dipasang; pemeriksaan izinnya WAJIB ditulis tangan di baris
+     * pertama badan methodnya sendiri.
+     */
+    public function test_no_public_method_on_a_custom_page_moves_beef_stock_without_a_permission_check(): void
+    {
+        $abaikanNama = [
+            'mount', 'boot', 'booted', 'render', 'table', 'form', 'infolist',
+            'getHeaderActions', 'getFormActions', 'getTableQuery', 'getTitle',
+            'getSubheading', 'getHeading', 'getMaxContentWidth', 'getBreadcrumbs',
+            'getViewData', 'getSummaryData', 'getProductionSummary', 'getRedirectUrl',
+            'mutateFormDataBeforeFill', 'mutateFormDataBeforeSave', 'mutateFormDataBeforeCreate',
+            'canAccess', 'shouldRegisterNavigation', 'isPastPodLimit', 'updatedPodLimit',
+            'getListeners', 'dehydrateState', 'hydrateState',
+        ];
+
+        $pelanggar = [];
+
+        foreach ($this->berkasPhp() as $berkas) {
+            $jalur = str_replace('\\', '/', $berkas);
+
+            if (! str_contains($jalur, '/app/Filament/')) {
+                continue;
+            }
+
+            $isiAsli = file_get_contents($berkas);
+
+            if (! preg_match('/class\s+\w+\s+extends\s+Page\b/', $isiAsli)) {
+                continue;
+            }
+
+            $isi = $this->tanpaKomentar($isiAsli);
+
+            // Halaman yang sudah menjaga pintunya sendiri (canAccess())
+            // tidak perlu mengulang penjagaan di setiap method di
+            // dalamnya -- sama seperti penjaga lama di atas.
+            if (str_contains($isi, 'function canAccess')) {
+                continue;
+            }
+
+            preg_match_all('/public function (\w+)\s*\(/', $isi, $cocok, PREG_OFFSET_CAPTURE);
+
+            foreach ($cocok[1] as $satu) {
+                [$nama, $posisi] = $satu;
+
+                if (in_array($nama, $abaikanNama, true)) {
+                    continue;
+                }
+
+                $awalKurung = strpos($isi, '{', $posisi);
+
+                if ($awalKurung === false) {
+                    continue;
+                }
+
+                $tubuh = $this->tubuhMethod($isi, $awalKurung);
+
+                $menyentuhStok = str_contains($tubuh, 'BeefStock::create(')
+                    || (str_contains($tubuh, 'BeefStock::') && str_contains($tubuh, '->delete()'));
+
+                if (! $menyentuhStok) {
+                    continue;
+                }
+
+                if (str_contains($tubuh, 'hasPermission') || str_contains($tubuh, 'isProgrammer')) {
+                    continue;
+                }
+
+                $kunci = $this->relatif($berkas).':'.$nama;
+
+                if (in_array($kunci, [...$this->belumDiperbaikiDiCabangLain(), ...$this->diluarCakupanBatchIni()], true)) {
+                    continue;
+                }
+
+                $pelanggar[] = $kunci;
+            }
+        }
+
+        sort($pelanggar);
+
+        $this->assertSame(
+            [],
+            $pelanggar,
+            "Method Livewire publik berikut, di halaman Filament custom (`extends Page`), menulis/menghapus "
+            ."BeefStock tanpa satu pun pemeriksaan izin di badannya sendiri:\n".implode("\n", $pelanggar),
+        );
+    }
+
+    /** Isi method, dihitung lewat kurawal berpasangan mulai dari `{` pembukanya. */
+    private function tubuhMethod(string $isi, int $awalKurung): string
+    {
+        $dalam = 0;
+        $panjang = strlen($isi);
+
+        for ($i = $awalKurung; $i < $panjang; $i++) {
+            if ($isi[$i] === '{') {
+                $dalam++;
+            } elseif ($isi[$i] === '}') {
+                $dalam--;
+
+                if ($dalam === 0) {
+                    return substr($isi, $awalKurung, $i - $awalKurung + 1);
+                }
+            }
+        }
+
+        return substr($isi, $awalKurung);
+    }
+
+    /**
+     * Susulan 15 September 2026 dikerjakan sebagai 5 PR TERPISAH (satu per
+     * modul), masing-masing bercabang dari `main` yang SAMA -- jadi cabang
+     * Tally ini belum melihat perbaikan Boning/Mutation/Repack/Sales Order,
+     * dan sebaliknya. Daftar ini murni supaya penjaga BARU di atas bisa
+     * hijau di SETIAP cabang sambil menunggu PR sebelahnya digabung --
+     * BUKAN keputusan permanen seperti `sengajaTanpaIzin()`. Begitu kelima
+     * PR sudah digabung ke `main`, baris-baris ini sudah tidak perlu dan
+     * boleh dibuang (penjaganya sendiri yang akan membuktikan sudah aman).
+     *
+     * @return array<int, string>
+     */
+    private function belumDiperbaikiDiCabangLain(): array
+    {
+        return [
+            // Tally #1/#3 (issue #419) -- belum digabung ke main saat
+            // cabang Boning ini dibuat.
+            'app/Filament/Admin/Resources/TallyResource/Pages/ScanTally.php:scan',
+            'app/Filament/Admin/Resources/TallyResource/Pages/ScanTally.php:DeleteAction',
+
+            // Mutation #5 (issue #421) -- ScanMutation unscan. Ditemukan
+            // sekaligus lewat penjaga ini: addBarcode() (aksi SCAN-nya
+            // sendiri, sekelas persis dengan Tally::scan() sebelum
+            // diperbaiki) juga tanpa satu pun pemeriksaan izin -- ikut
+            // masuk PR yang sama.
+            'app/Filament/Admin/Resources/MutationResource/Pages/ScanMutation.php:DeleteAction',
+            'app/Filament/Admin/Resources/MutationResource/Pages/ScanMutation.php:addBarcode',
+
+            // Boning #1/#2/#3 (issue #420) sudah diperbaiki DI CABANG INI --
+            // tidak perlu didaftarkan lagi (canAccess() baru di
+            // LabelingBoning membuat file itu dilewati penjaga sejak awal).
+
+            // Repack #3/#4 (issue #422) -- kunci barcode + try/catch void
+            // bahan/hasil, ditemukan sekaligus jadi digabung satu PR.
+            'app/Filament/Admin/Resources/RepackResource/Pages/InputBahanRepack.php:DeleteAction',
+            'app/Filament/Admin/Resources/RepackResource/Pages/InputHasilRepack.php:DeleteAction',
+            'app/Filament/Admin/Resources/RepackResource/Pages/InputBahanRepack.php:submitBarcode',
+            'app/Filament/Admin/Resources/RepackResource/Pages/InputHasilRepack.php:create',
+        ];
+    }
+
+    /**
+     * Susulan 15 September 2026: ditemukan SEKALIGUS oleh penjaga baru di
+     * atas, tapi di LUAR lima modul batch ini (Sales Order, Tally, Repack,
+     * Mutation, Boning) -- termasuk di modul yang sudah pernah "disisir"
+     * sebelumnya (Material Stock, Stock Take). Sudah dilaporkan terpisah ke
+     * Hafizh/Owner untuk ditriase sebagai pekerjaan sendiri; SENGAJA belum
+     * disentuh di sini supaya tidak memperluas cakupan PR tanpa persetujuan.
+     * Jangan dibuang sampai ada keputusan eksplisit menutupnya.
+     *
+     * `SalesReturnResource` masuk daftar ini juga, tapi alasannya beda:
+     * Sales Return memang dikecualikan permanen (lihat `tertunda.md`),
+     * bukan menunggu triase.
+     *
+     * @return array<int, string>
+     */
+    private function diluarCakupanBatchIni(): array
+    {
+        return [
+            'app/Filament/Admin/Resources/GoodsReceiptMaterialResource.php:DeleteAction',
+            'app/Filament/Admin/Resources/GoodsReceiptProductResource/Pages/LabelingGoodsReceiptProduct.php:DeleteAction',
+            'app/Filament/Admin/Resources/GoodsReceiptProductResource/Pages/ScanGoodsReceiptProduct.php:DeleteAction',
+            'app/Filament/Admin/Resources/MaterialStockTakeResource.php:DeleteAction',
+            'app/Filament/Admin/Resources/StockTakeResource/Pages/ScanStockTake.php:DeleteAction',
+            'app/Filament/Clusters/MaterialsStock/Resources/MaterialFindingResource.php:DeleteAction',
+            'app/Filament/Admin/Resources/SalesReturnResource/Pages/InputReturnItems.php:DeleteAction',
+            'app/Filament/Admin/Resources/GoodsReceiptProductResource/Pages/LabelingGoodsReceiptProduct.php:create',
+            'app/Filament/Admin/Resources/GoodsReceiptProductResource/Pages/ScanGoodsReceiptProduct.php:scan',
+        ];
+    }
+
+    /**
      * Aksi yang SENGAJA tidak diberi izin tersendiri.
      *
      * @return array<int, string>

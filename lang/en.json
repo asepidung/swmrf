@@ -1443,5 +1443,7 @@
     "This Delivery Order has already been unapproved": "This Delivery Order has already been unapproved",
     "This Tally already has a Delivery Order.": "This Tally already has a Delivery Order.",
     "Some delivery orders were not deleted": "Some delivery orders were not deleted",
-    ":count delivery order(s) are no longer Ready and can only be reverted via Unapprove first.": ":count delivery order(s) are no longer Ready and can only be reverted via Unapprove first."
+    ":count delivery order(s) are no longer Ready and can only be reverted via Unapprove first.": ":count delivery order(s) are no longer Ready and can only be reverted via Unapprove first.",
+    "This document is locked and can no longer be labeled.": "This document is locked and can no longer be labeled.",
+    "This document is locked; its items can no longer be voided.": "This document is locked; its items can no longer be voided."
 }
