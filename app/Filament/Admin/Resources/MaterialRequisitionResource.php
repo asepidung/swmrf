@@ -78,9 +78,13 @@ class MaterialRequisitionResource extends Resource
                             ->disabled(fn($record) => $record && $record->status !== 'Requested')
                             ->columnSpan(['default' => 1, 'lg' => 6]),
 
+                        // Supplier nonaktif dikeluarkan dari daftar pilihan --
+                        // sebelumnya toggle "Active/Non-Aktif" di
+                        // SupplierResource tidak berfungsi sebagai dinding
+                        // penahan seperti dijanjikan dokumentasi modul.
                         Forms\Components\Select::make('supplier_id')
                             ->label(fn() => __('Supplier'))
-                            ->relationship('supplier', 'name')
+                            ->relationship('supplier', 'name', fn ($query) => $query->where('is_active', true))
                             ->searchable()
                             ->preload()
                             ->required()
