@@ -522,11 +522,6 @@ class ActionAuthorizationTest extends TestCase
     private function belumDiperbaikiDiCabangLain(): array
     {
         return [
-            // Mutation #5 (issue #421) -- unscan dan addBarcode di ScanMutation,
-            // diperbaiki di cabang Mutation yang belum digabung.
-            'app/Filament/Admin/Resources/MutationResource/Pages/ScanMutation.php:DeleteAction',
-            'app/Filament/Admin/Resources/MutationResource/Pages/ScanMutation.php:addBarcode',
-
             // Repack #3/#4 (issue #422) -- kunci barcode + try/catch void
             // bahan/hasil, ditemukan sekaligus jadi digabung satu PR.
             'app/Filament/Admin/Resources/RepackResource/Pages/InputBahanRepack.php:DeleteAction',
