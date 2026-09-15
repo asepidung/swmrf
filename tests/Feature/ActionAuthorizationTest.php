@@ -522,26 +522,6 @@ class ActionAuthorizationTest extends TestCase
     private function belumDiperbaikiDiCabangLain(): array
     {
         return [
-            // Tally #1/#3 (issue #419) -- belum digabung ke main saat
-            // cabang Repack ini dibuat.
-            'app/Filament/Admin/Resources/TallyResource/Pages/ScanTally.php:scan',
-            'app/Filament/Admin/Resources/TallyResource/Pages/ScanTally.php:DeleteAction',
-
-            // Mutation #5 (issue #421) -- belum digabung ke main saat
-            // cabang Repack ini dibuat.
-            'app/Filament/Admin/Resources/MutationResource/Pages/ScanMutation.php:DeleteAction',
-            'app/Filament/Admin/Resources/MutationResource/Pages/ScanMutation.php:addBarcode',
-
-            // Boning #1/#2/#3 (issue #420) -- belum digabung ke main saat
-            // cabang Repack ini dibuat.
-            'app/Filament/Admin/Resources/BoningResource/Pages/LabelingBoning.php:create',
-            'app/Filament/Admin/Resources/BoningResource/Pages/LabelingBoning.php:DeleteAction',
-            'app/Filament/Admin/Resources/BoningResource.php:DeleteAction',
-
-            // Repack #3/#4 (issue #422) sudah diperbaiki DI CABANG INI --
-            // tidak perlu didaftarkan lagi (canAccess() baru di
-            // InputBahanRepack/InputHasilRepack membuat kedua file itu
-            // dilewati penjaga sejak awal).
         ];
     }
 

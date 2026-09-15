@@ -355,7 +355,42 @@ class ScanTally extends Page implements HasForms, HasTable
                     ->iconButton()
                     ->requiresConfirmation()
                     ->tooltip(__('Delete Data'))
-                    ->after(function () {
+                    ->hidden(fn () => ! auth()->user()?->hasPermission('edit_tallies'))
+                    ->authorize(fn (): bool => auth()->user()?->hasPermission('edit_tallies') ?? false)
+                    ->action(function (TallyItem $record) {
+                        $ditolak = false;
+
+                        DB::transaction(function () use ($record, &$ditolak) {
+                            // Baris Tally dikunci dan statusnya dibaca ULANG
+                            // dari basis data sebelum baris item dihapus.
+                            // Tanpa ini, tab yang masih terbuka saat Tally-nya
+                            // sudah diapprove/menjadi DO di sesi lain tetap
+                            // bisa menghapus barisnya -- TallyItem::deleted()
+                            // otomatis mengembalikan barcode itu ke
+                            // beef_stocks (IN_STOCK) padahal fisiknya sudah
+                            // dikirim, dan karton yang sama bisa di-scan lagi
+                            // ke Tally lain lalu dikirim dua kali.
+                            $tally = Tally::whereKey($record->tally_id)->lockForUpdate()->first();
+
+                            if (! $tally || $tally->status !== Tally::STATUS_PROCESSING) {
+                                $ditolak = true;
+
+                                return;
+                            }
+
+                            $record->delete();
+                        });
+
+                        if ($ditolak) {
+                            Notification::make()
+                                ->title(__('This tally can no longer be edited'))
+                                ->body(__('It has already been approved or turned into a Delivery Order, so items can no longer be removed from it.'))
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
                         Notification::make()
                             ->title(__('Item removed and returned to stock'))
                             ->success()
@@ -366,6 +401,20 @@ class ScanTally extends Page implements HasForms, HasTable
 
     public function scan()
     {
+        // scan() adalah method Livewire biasa, bukan Filament Action --
+        // tidak ada ->hidden()/->authorize() yang bisa dipasang padanya.
+        // Sebelumnya satu-satunya gerbang halaman ini `view_tallies`
+        // (lewat canViewAny() Resource), jadi siapa pun berizin MELIHAT
+        // saja bisa mengonsumsi stok lewat scan.
+        if (! auth()->user()?->hasPermission('edit_tallies')) {
+            Notification::make()
+                ->title(__('You do not have permission to scan items'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         if ($this->record->status !== Tally::STATUS_PROCESSING || $this->record->salesOrder?->status === SalesOrder::STATUS_CANCELLED) {
             return;
         }

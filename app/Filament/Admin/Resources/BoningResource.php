@@ -267,7 +267,15 @@ class BoningResource extends Resource
                     ->modalHeading(__('Unlock Boning Data'))
                     ->modalDescription(__('Are you sure you want to unlock this data? It will become editable again.'))
                     ->action(function (Boning $record) {
-                        $record->unlock();
+                        try {
+                            $record->unlock();
+                        } catch (\Throwable $e) {
+                            report($e);
+                            Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
+
+                            return;
+                        }
+
                         Notification::make()
                             ->title(__('Data unlocked successfully'))
                             ->success()
@@ -298,7 +306,9 @@ class BoningResource extends Resource
                 Tables\Actions\DeleteAction::make()
                     ->iconButton()
                     ->tooltip(__('Delete Data'))
-                    ->hidden(fn(Boning $record) => $record->kunci || $record->items()->exists()),
+                    ->hidden(fn(Boning $record) => ! auth()->user()?->hasPermission('delete_bonings')
+                        || $record->kunci
+                        || $record->items()->exists()),
             ]);
     }
 

@@ -26,7 +26,14 @@ class MutationDetailList extends Page implements HasTable
         return $table
             ->query(MutationItem::query()->with(['mutation.fromWarehouse', 'mutation.toWarehouse', 'product', 'grade']))
             ->columns([
-                Tables\Columns\TextColumn::make('mutation.doc_no')
+                // Kolom hantu: Mutation TIDAK PUNYA doc_no, namanya
+                // mutation_number. Sebelumnya ini selalu kosong (kolom
+                // hantu jadi baca null) DAN membuat kotak pencarian tabel
+                // ini melempar QueryException mentah begitu diketik --
+                // ->searchable() pada kolom relasi membangun
+                // whereHas('mutation', fn ($q) => $q->where('doc_no', ...)),
+                // dan kolom itu tidak ada di tabel mutations.
+                Tables\Columns\TextColumn::make('mutation.mutation_number')
                     ->label(__('Mutation No'))
                     ->searchable()
                     ->sortable(),
@@ -89,7 +96,7 @@ class MutationDetailList extends Page implements HasTable
                                 $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Mutation No', 'Mutation Date', 'From Warehouse', 'To Warehouse', 'Barcode', 'Product', 'Weight', 'Grade', 'Received']));
                                 foreach ($records as $record) {
                                     $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                        $record->mutation->doc_no ?? '',
+                                        $record->mutation->mutation_number ?? '',
                                         $record->mutation->mutation_date ? \Carbon\Carbon::parse($record->mutation->mutation_date)->format('Y-m-d') : '',
                                         $record->mutation->fromWarehouse->name ?? '',
                                         $record->mutation->toWarehouse->name ?? '',
