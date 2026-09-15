@@ -2,7 +2,25 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Admin\Resources\DeliveryOrderResource;
+use App\Filament\Admin\Resources\MaterialRequisitionResource;
+use App\Filament\Admin\Resources\MaterialStockTakeResource;
+use App\Filament\Admin\Resources\ProductRequisitionResource;
+use App\Models\Customer;
+use App\Models\CustomerSegment;
+use App\Models\DeliveryOrder;
+use App\Models\Material;
+use App\Models\MaterialCategory;
+use App\Models\MaterialRequisition;
+use App\Models\MaterialStockTake;
+use App\Models\MaterialUnit;
 use App\Models\Permission;
+use App\Models\Product;
+use App\Models\ProductCategory;
+use App\Models\ProductRequisition;
+use App\Models\SalesOrder;
+use App\Models\Supplier;
+use App\Models\Tally;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -75,6 +93,162 @@ class ActionAuthorizationTest extends TestCase
             $halaman::canAccess(['record' => 1]),
             "{$halaman} tetap tertutup padahal izin {$izin} sudah diberikan.",
         );
+    }
+
+    /**
+     * Penjaga di atas cuma memanggil `Halaman::canAccess()` secara statis --
+     * itu MEMBUKTIKAN logikanya benar, tapi TIDAK membuktikan Filament
+     * sungguh MEMANGGIL logika itu saat halamannya diminta lewat alamat
+     * sungguhan. 15 September 2026: sempat disangka `canAccess()` pada
+     * Resource Page adalah kode mati (cuma dipakai membangun tautan
+     * sub-navigasi), berdasarkan bacaan kode `CanAuthorizeResourceAccess`
+     * saja -- dan itu KELIRU. Dibuktikan lewat test HTTP sungguhan:
+     * `Filament\Pages\Page` (induk `Resources\Pages\Page`) JUGA memakai
+     * trait `CanAuthorizeAccess`, dan Livewire memanggil SEMUA hook
+     * `mount<NamaTrait>` dari SEMUA trait di rantai kelas saat komponen
+     * full-page sungguh dimuat -- bukan cuma satu. `canAccess()` milik
+     * Page memang tergerbangi, hanya saja `Livewire::test()->mount()` tidak
+     * melalui jalur yang sama seperti request HTTP asli.
+     *
+     * Test ini menutup jarak itu: memanggil rute sungguhan (`$this->get(...)`)
+     * untuk setiap halaman di `halamanBerbahaya()`, supaya kalau suatu saat
+     * versi Filament berubah dan hook trait ini berhenti dipanggil ganda,
+     * penjaga ini yang pertama menggigit -- bukan ditemukan lewat insiden.
+     */
+    public function test_a_state_changing_page_is_closed_over_http_without_its_permission(): void
+    {
+        $orangLuar = User::create([
+            'name' => 'Luar HTTP', 'username' => 'luar_http_'.uniqid(),
+            'password' => 'secret-password', 'gender' => 'L',
+            'role' => 'employee', 'is_active' => true,
+        ]);
+
+        foreach ($this->halamanBerbahayaUrls() as [$url, $izin, $izinLain]) {
+            $this->actingAs($orangLuar->fresh());
+
+            $this->get($url)->assertForbidden();
+
+            // Izin aksinya sendiri, DITAMBAH izin lain yang ternyata juga
+            // menggerbangi halaman yang sama (lihat catatan panjang di
+            // `halamanBerbahayaUrls()`). Tanpa semuanya, halaman tetap 403
+            // walau izin aksinya sudah ada -- itu bukan bug, tapi kalau
+            // tidak diberikan di sini test akan salah menuduh gerbang
+            // halamannya yang rusak.
+            foreach ([$izin, ...$izinLain] as $nama) {
+                $orangLuar->permissions()->attach(
+                    Permission::firstOrCreate(
+                        ['name' => $nama],
+                        ['module_name' => 'Test', 'description' => $nama],
+                    )->id
+                );
+            }
+
+            $this->actingAs($orangLuar->fresh());
+
+            $this->get($url)->assertSuccessful();
+
+            $orangLuar->permissions()->detach();
+        }
+    }
+
+    /**
+     * Satu record sungguhan per halaman berbahaya, supaya route model
+     * binding menemukan sesuatu (404 duluan akan menyamarkan 403 yang
+     * seharusnya diuji).
+     *
+     * @return array<int, array{0: string, 1: string}>
+     */
+    private function halamanBerbahayaUrls(): array
+    {
+        $orang = User::create([
+            'name' => 'Pembuat Fixture', 'username' => 'fixture_'.uniqid(),
+            'password' => 'secret-password', 'gender' => 'L',
+            'role' => 'programmer', 'is_active' => true,
+        ]);
+
+        $supplier = Supplier::create([
+            'name' => 'FIXTURE SUPPLIER', 'address' => 'X', 'pic' => 'X', 'top_days' => 30,
+        ]);
+
+        $productCategory = ProductCategory::create(['name' => 'FIXTURE PRODUCT CAT', 'prefix' => 'FX']);
+        $product = Product::create([
+            'name' => 'FIXTURE PRODUCT', 'code' => 'FX001', 'category_id' => $productCategory->id,
+            'structure_type' => 'main', 'is_active' => true,
+        ]);
+
+        // Kedua halaman keputusan Product Requisition masing-masing hanya
+        // terbuka pada TAHAPNYA sendiri (`ApproveFinanceProductRequisition::
+        // APPROVABLE_STATUS`, `ReviewProductRequisition::EDITABLE_STATUSES`)
+        // -- di luar itu mount() langsung redirect, jadi butuh dua dokumen
+        // dengan status berbeda, bukan satu dipakai berdua.
+        $productRequisitionForApproval = ProductRequisition::create([
+            'user_id' => $orang->id, 'supplier_id' => $supplier->id,
+            'due_date' => now()->toDateString(), 'status' => 'Pending Finance',
+        ]);
+        $productRequisitionForApproval->items()->create([
+            'product_id' => $product->id, 'qty' => 10, 'price' => 1000, 'subtotal' => 10000,
+        ]);
+
+        $productRequisitionForReview = ProductRequisition::create([
+            'user_id' => $orang->id, 'supplier_id' => $supplier->id,
+            'due_date' => now()->toDateString(), 'status' => 'Requested',
+        ]);
+        $productRequisitionForReview->items()->create([
+            'product_id' => $product->id, 'qty' => 10, 'price' => 1000, 'subtotal' => 10000,
+        ]);
+
+        $materialCategory = MaterialCategory::create(['name' => 'FIXTURE MATERIAL CAT']);
+        $materialUnit = MaterialUnit::create(['name' => 'PCS']);
+        $material = Material::create([
+            'code' => 'MFX001', 'name' => 'FIXTURE MATERIAL',
+            'material_category_id' => $materialCategory->id, 'material_unit_id' => $materialUnit->id,
+            'is_active' => true,
+        ]);
+
+        $materialRequisition = MaterialRequisition::create([
+            'user_id' => $orang->id, 'supplier_id' => $supplier->id,
+            'due_date' => now()->toDateString(), 'status' => 'Pending',
+        ]);
+        $materialRequisition->items()->create([
+            'material_id' => $material->id, 'qty' => 10, 'price' => 1000, 'subtotal' => 10000,
+        ]);
+
+        $materialStockTake = MaterialStockTake::create([
+            'document_number' => 'MSO-FIXTURE-'.uniqid(),
+            'period' => now()->format('Y-m'), 'date' => now()->toDateString(),
+            'status' => MaterialStockTake::STATUS_IN_PROGRESS, 'created_by' => $orang->id,
+        ]);
+
+        $segment = CustomerSegment::create(['name' => 'FIXTURE SEGMENT', 'is_active' => true]);
+        $customer = Customer::create([
+            'name' => 'FIXTURE CUSTOMER', 'customer_segment_id' => $segment->id,
+            'address' => 'X', 'pic' => 'X', 'phone' => '08', 'top' => 30,
+        ]);
+        $salesOrder = SalesOrder::create([
+            'customer_id' => $customer->id, 'delivery_date' => now()->addDay()->format('Y-m-d'),
+            'po_number' => 'PO-FIXTURE', 'created_by' => $orang->id, 'status' => 'ready',
+        ]);
+        $tally = Tally::create(['sales_order_id' => $salesOrder->id, 'status' => 'locked']);
+        $deliveryOrder = DeliveryOrder::create([
+            'tally_id' => $tally->id, 'sales_order_id' => $salesOrder->id, 'customer_id' => $customer->id,
+            'delivery_date' => now()->addDay()->format('Y-m-d'), 'po_number' => 'PO-FIXTURE', 'status' => 'Ready',
+        ]);
+
+        return [
+            // Halaman ApproveFinance/Review adalah `EditRecord` Filament --
+            // itu berarti ADA gerbang ketiga di luar canAccess() halaman
+            // dan canViewAny() Resource: `EditRecord::mount()` sendiri
+            // memanggil `authorizeAccess()` yang mengecek
+            // `Resource::canEdit()` (Policy `update`). Untuk ProductRequisition/
+            // MaterialRequisition itu berarti izin `edit_*` juga wajib ada
+            // -- bukan cuma izin aksi dan izin lihat.
+            [ProductRequisitionResource::getUrl('approve-finance', ['record' => $productRequisitionForApproval->getKey()]), 'approve_product_requisitions', ['view_product_requisitions', 'edit_product_requisitions']],
+            [ProductRequisitionResource::getUrl('review', ['record' => $productRequisitionForReview->getKey()]), 'review_product_requisitions', ['view_product_requisitions', 'edit_product_requisitions']],
+            [MaterialRequisitionResource::getUrl('approve-finance', ['record' => $materialRequisition->getKey()]), 'approve_material_requisitions', ['view_material_requisitions', 'edit_material_requisitions']],
+            [MaterialRequisitionResource::getUrl('review', ['record' => $materialRequisition->getKey()]), 'review_material_requisitions', ['view_material_requisitions', 'edit_material_requisitions']],
+            [DeliveryOrderResource::getUrl('approve', ['record' => $deliveryOrder->getKey()]), 'approve_delivery_orders', ['view_delivery_orders']],
+            [MaterialStockTakeResource::getUrl('items', ['record' => $materialStockTake->getKey()]), 'view_material_stock_takes', []],
+        ];
     }
 
     /**

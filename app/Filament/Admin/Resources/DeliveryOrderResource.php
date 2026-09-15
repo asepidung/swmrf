@@ -479,8 +479,34 @@ class DeliveryOrderResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    // Hapus tunggal (halaman Edit) sudah membatasi diri:
+                    // Edit hanya terbuka untuk DO berstatus Ready, DO
+                    // Approved dialihkan ke View. Hapus massal di sini tidak
+                    // ikut aturan itu -- DO yang sudah Approved (mungkin
+                    // sudah punya resi/invoice) bisa ikut terhapus lewat
+                    // centang massal. Disamakan di sini.
                     Tables\Actions\DeleteBulkAction::make()
-                        ->action(fn (\Illuminate\Support\Collection $records) => $records->each->delete()),
+                        ->action(function (\Illuminate\Support\Collection $records): void {
+                            $ditolak = 0;
+
+                            foreach ($records as $record) {
+                                if ($record->status !== 'Ready') {
+                                    $ditolak++;
+
+                                    continue;
+                                }
+
+                                $record->delete();
+                            }
+
+                            if ($ditolak > 0) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title(__('Some delivery orders were not deleted'))
+                                    ->body(__(':count delivery order(s) are no longer Ready and can only be reverted via Unapprove first.', ['count' => $ditolak]))
+                                    ->danger()
+                                    ->send();
+                            }
+                        }),
                 ]),
             ]);
     }

@@ -205,12 +205,16 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
             Actions\Action::make('submit_header')
                 ->label(__('Approve DO'))
                 ->color('success')
+                ->authorize(fn (): bool => auth()->user()?->isProgrammer()
+                    || (auth()->user()?->hasPermission('approve_delivery_orders') ?? false))
                 ->action(fn () => $this->submit()),
 
             Actions\Action::make('rejections')
                 ->label(__('Rejections'))
                 ->color('warning')
                 ->icon('heroicon-o-arrow-path')
+                ->authorize(fn (): bool => auth()->user()?->isProgrammer()
+                    || (auth()->user()?->hasPermission('approve_delivery_orders') ?? false))
                 ->modalWidth('4xl')
                 ->modalHeading(__('Return Rejected Goods to Stock'))
                 ->form([
@@ -315,8 +319,16 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                     }
 
                     DB::transaction(function () use ($barcodes) {
+                        // Dikunci sebelum dihapus: dua permintaan yang
+                        // menolak barcode yang sama pada saat bersamaan
+                        // (klik ganda, atau dua orang) tidak boleh
+                        // sama-sama membaca baris yang sama SEBELUM salah
+                        // satunya menghapusnya -- itu yang membuat
+                        // BeefStock/BeefStockMovement lahir dua kali untuk
+                        // satu karton fisik.
                         TallyItem::where('tally_id', $this->record->tally_id)
                             ->whereIn('barcode', $barcodes)
+                            ->lockForUpdate()
                             ->get()
                             ->each->delete();
 
@@ -347,8 +359,25 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
     public function submit(): void
     {
         $data = $this->form->getState();
+        $alreadyApproved = false;
 
-        DB::transaction(function () use ($data) {
+        DB::transaction(function () use ($data, &$alreadyApproved) {
+            // Baris DO dikunci dan statusnya dibaca ULANG dari basis data
+            // sebelum apa pun ditulis. Tanpa ini, dua permintaan approve
+            // yang bersamaan (klik ganda, atau dua tab) bisa sama-sama
+            // lolos pemeriksaan status yang dilakukan sekali di awal
+            // request -- dan keduanya membuat DeliveryOrderReceipt SENDIRI2
+            // lewat updateOrCreate() di bawah, karena unique index di
+            // receipt_number sudah dilepas 1 Juli 2026 dan tidak ada lagi
+            // yang menahan duplikatnya di tingkat basis data.
+            $locked = DeliveryOrder::whereKey($this->record->id)->lockForUpdate()->first();
+
+            if (! $locked || $locked->status !== 'Ready') {
+                $alreadyApproved = true;
+
+                return;
+            }
+
             // Kedua awalan diambil dari model, bukan diketik ulang di sini.
             // Kalau awalannya berubah dan salinan di sini tertinggal,
             // penggantiannya tidak menemukan apa pun dan nomor resi menjadi
@@ -460,6 +489,17 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                 $this->record->salesOrder->update(['status' => \App\Models\SalesOrder::STATUS_COMPLETED]);
             }
         });
+
+        if ($alreadyApproved) {
+            Notification::make()
+                ->title(__('This Delivery Order has already been approved'))
+                ->warning()
+                ->send();
+
+            $this->redirect(DeliveryOrderResource::getUrl('index'));
+
+            return;
+        }
 
         Notification::make()
             ->title(__('Delivery Order Approved & Receipt Created'))

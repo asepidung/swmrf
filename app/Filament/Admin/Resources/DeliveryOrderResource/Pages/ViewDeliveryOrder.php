@@ -51,13 +51,29 @@ class ViewDeliveryOrder extends ViewRecord
                     && ! $this->record->receipt?->invoice
                     && (auth()->user()?->isProgrammer()
                         || (auth()->user()?->hasPermission('approve_delivery_orders') ?? false)))
+                ->authorize(fn (): bool => auth()->user()?->isProgrammer()
+                    || (auth()->user()?->hasPermission('approve_delivery_orders') ?? false))
                 ->requiresConfirmation()
                 ->modalHeading(__('Confirm Unapprove'))
                 ->modalDescription(__('Undo the approval of this delivery order? Its receipt will be deleted and the rejected goods go back to the tally.'))
                 ->action(function () {
-                    $receipt = DeliveryOrderReceipt::where('delivery_order_id', $this->record->id)->first();
+                    $alreadyReverted = false;
 
-                    DB::transaction(function () use ($receipt) {
+                    DB::transaction(function () use (&$alreadyReverted) {
+                        // Baris DO dikunci dan statusnya dibaca ulang: dua
+                        // permintaan Unapprove yang bersamaan tidak boleh
+                        // sama-sama lolos dan sama-sama memindahkan
+                        // BeefStock tolakan yang sama kembali ke TallyItem.
+                        $locked = \App\Models\DeliveryOrder::whereKey($this->record->id)->lockForUpdate()->first();
+
+                        if (! $locked || $locked->status !== 'Approved') {
+                            $alreadyReverted = true;
+
+                            return;
+                        }
+
+                        $receipt = DeliveryOrderReceipt::where('delivery_order_id', $this->record->id)->first();
+
                         if ($receipt) {
                             $receipt->delete(); // soft delete
                         }
@@ -66,6 +82,7 @@ class ViewDeliveryOrder extends ViewRecord
                         $doNumber = $this->record->delivery_order_number;
                         $rejectedStocks = BeefStock::where('note', 'Tolakan dari DO#' . $doNumber)
                             ->where('status', 'IN_STOCK')
+                            ->lockForUpdate()
                             ->get();
 
                         foreach ($rejectedStocks as $stock) {
@@ -114,6 +131,17 @@ class ViewDeliveryOrder extends ViewRecord
                             $this->record->salesOrder->update(['status' => \App\Models\SalesOrder::STATUS_ON_DELIVERY]);
                         }
                     });
+
+                    if ($alreadyReverted) {
+                        Notification::make()
+                            ->title(__('This Delivery Order has already been unapproved'))
+                            ->warning()
+                            ->send();
+
+                        $this->redirect($this->getResource()::getUrl('index'));
+
+                        return;
+                    }
 
                     Notification::make()
                         ->title(__('Unapproved Successfully'))
