@@ -69,6 +69,18 @@ class ScanStockTake extends Page implements HasForms, HasTable
     public ?string $barcode = '';
 
     /**
+     * Halaman ini MEMINDAHKAN STOK sungguhan -- unscan mengembalikan
+     * `BeefStock`, dan "Manual Input of Findings" melahirkan baris baru.
+     * Sebelumnya sama sekali tidak punya `canAccess()`, jadi siapa pun yang
+     * login (tanpa izin apa pun) bisa membuka dan memakai halaman ini penuh.
+     */
+    public static function canAccess(array $parameters = []): bool
+    {
+        return auth()->user()?->isProgrammer()
+            || (auth()->user()?->hasPermission('edit_stock_takes') ?? false);
+    }
+
+    /**
      * Halaman ini hanya untuk opname yang MASIH BERJALAN.
      *
      * Dulu yang ditolak hanya status `DRAFT` -- status yang tidak pernah
@@ -88,7 +100,18 @@ class ScanStockTake extends Page implements HasForms, HasTable
                 ->warning()
                 ->send();
 
-            redirect()->to(StockTakeResource::getUrl('view', ['record' => $this->record]));
+            // `redirect()->to(...)` (helper global Laravel) TIDAK PERNAH
+            // benar-benar mengalihkan di sini -- Livewire tidak memakai
+            // nilai balik `mount()` seperti respons controller biasa.
+            // `$this->redirect()` (method Livewire) yang dipakai di setiap
+            // halaman scan lain (ScanMutation, ScanTally,
+            // ScanGoodsReceiptProduct) adalah bentuk yang benar-benar
+            // berpindah. Tanpa ini, halaman tetap kebuka dan interaktif --
+            // dan itulah yang membuat manualInputAction() masih bisa
+            // dipanggil dari UI normal pada opname yang sudah selesai.
+            $this->redirect(StockTakeResource::getUrl('view', ['record' => $this->record]));
+
+            return;
         }
     }
 
@@ -127,7 +150,44 @@ class ScanStockTake extends Page implements HasForms, HasTable
 
         if ($existingItem) {
             if ($existingItem->status === 'MISSING') {
-                $existingItem->update(['status' => 'MATCHED']);
+                // Mengunci baris StockTake YANG SAMA yang dikunci "Finish
+                // Opname" (StockTakeResource.php) -- kalau Finish sedang
+                // memproses dokumen ini, permintaan ini menunggu sampai
+                // Finish selesai, lalu membaca ULANG statusnya. Tanpa ini,
+                // scan bisa lolos memeriksa status SEBELUM Finish berjalan,
+                // lalu menulis MATCHED SESUDAH dokumennya sudah ditutup dan
+                // baris ini sudah diproses (stoknya sudah dihapus permanen
+                // sebagai MISSING) -- item tampak cocok padahal stoknya
+                // sudah hilang tanpa jejak.
+                $cocok = \Illuminate\Support\Facades\DB::transaction(function () use ($existingItem) {
+                    $lockedRecord = StockTake::whereKey($this->record->id)->lockForUpdate()->first();
+
+                    if (! $lockedRecord || ! $lockedRecord->isCountable()) {
+                        return false;
+                    }
+
+                    $lockedItem = StockTakeItem::whereKey($existingItem->id)->lockForUpdate()->first();
+
+                    if (! $lockedItem || $lockedItem->status !== 'MISSING') {
+                        return false;
+                    }
+
+                    $lockedItem->update(['status' => 'MATCHED']);
+
+                    return true;
+                });
+
+                if (! $cocok) {
+                    \Filament\Notifications\Notification::make()
+                        ->title(__('This stock count is finished, so it can no longer be scanned.'))
+                        ->danger()
+                        ->send();
+
+                    $this->dispatch('focus-barcode');
+
+                    return;
+                }
+
                 \Filament\Notifications\Notification::make()
                     ->title(__('Barcode Matched!'))
                     ->success()
@@ -328,9 +388,35 @@ class ScanStockTake extends Page implements HasForms, HasTable
                 $generateNew = empty($barcode) || strlen($barcode) !== 26;
 
                 try {
-                    $insertedItem = \Illuminate\Support\Facades\DB::transaction(
-                        fn () => $this->buatTemuanManual($data, $barcode, $generateNew)
-                    );
+                    $insertedItem = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $barcode, $generateNew) {
+                        // Sebelumnya closure ini langsung menulis tanpa
+                        // memeriksa apa pun -- satu-satunya penjagaan
+                        // "opname masih boleh diubah" ada di scan(), bukan
+                        // di sini. Modal ini bisa tetap terbuka (atau
+                        // dipicu ulang lewat argumen barcode) sesudah
+                        // opname-nya SELESAI/DIBATALKAN dari sesi lain,
+                        // menulis temuan baru ke dokumen yang sudah
+                        // ditutup. Baris dikunci dan dibaca ulang di sini,
+                        // di dalam transaksi yang sama dengan penulisannya.
+                        $locked = StockTake::whereKey($this->record->id)->lockForUpdate()->first();
+
+                        if (! $locked || ! $locked->isCountable()) {
+                            throw new \RuntimeException('STOCK_TAKE_NOT_COUNTABLE');
+                        }
+
+                        return $this->buatTemuanManual($data, $barcode, $generateNew);
+                    });
+                } catch (\RuntimeException $e) {
+                    if ($e->getMessage() !== 'STOCK_TAKE_NOT_COUNTABLE') {
+                        throw $e;
+                    }
+
+                    \Filament\Notifications\Notification::make()
+                        ->title(__('This stock count is finished, so it can no longer be scanned.'))
+                        ->danger()
+                        ->send();
+
+                    return;
                 } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
                     // BarcodeSequence::nextPadded() sendiri BUKAN dikunci --
                     // dokumennya bilang penguncian itu tanggung jawab
@@ -537,8 +623,17 @@ class ScanStockTake extends Page implements HasForms, HasTable
                     ->label(__('Delete'))
                     ->icon('heroicon-o-x-mark')
                     ->color('danger')
+                    ->requiresConfirmation()
                     ->visible(fn (StockTakeItem $record): bool => $record->status === 'UNEXPECTED'
                         && $this->record->isCountable())
+                    // Baris ini terhapus PERMANEN (StockTakeItem tidak
+                    // memakai hapus lunak) dan sebelumnya tanpa izin apa
+                    // pun -- siapa saja yang bisa membuka halaman ini bisa
+                    // membuang temuan orang lain tanpa jejak. Izin yang
+                    // sama dengan `canAccess()` halaman ini, dan tanpa
+                    // konfirmasi ini gampang tertekan tak sengaja.
+                    ->authorize(fn (): bool => auth()->user()?->isProgrammer()
+                        || (auth()->user()?->hasPermission('edit_stock_takes') ?? false))
                     ->iconButton(),
             ]);
     }

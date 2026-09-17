@@ -196,6 +196,20 @@ Tables\Actions\Action::make('scan')
                                 return;
                             }
 
+                            // Baris item dikunci di sini juga, tidak hanya
+                            // header-nya. Tanpa ini, scan() yang sedang
+                            // memproses barcode yang sama bisa menulis di
+                            // antara pembacaan ini dan penyelesaian
+                            // transaksi. ScanStockTake::scan() mengunci
+                            // baris StockTake YANG SAMA sebelum
+                            // membaca/menulis baris item, jadi kedua sisi
+                            // benar-benar saling menunggu pada baris yang
+                            // sama, bukan cuma mengunci sendiri-sendiri.
+                            \App\Models\StockTakeItem::where('stock_take_id', $record->id)
+                                ->whereIn('status', ['MISSING', 'UNEXPECTED'])
+                                ->lockForUpdate()
+                                ->get();
+
                             // 2. Handle MISSING items (Delete from BeefStock)
                             $missingItems = $record->items()->where('status', 'MISSING')->get();
                             foreach ($missingItems as $item) {

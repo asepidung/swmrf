@@ -527,12 +527,13 @@ class ActionAuthorizationTest extends TestCase
 
     /**
      * Susulan 15 September 2026: ditemukan SEKALIGUS oleh penjaga baru di
-     * atas, tapi di LUAR lima modul batch ini (Sales Order, Tally, Repack,
+     * atas, tapi di LUAR lima modul batch 2 (Sales Order, Tally, Repack,
      * Mutation, Boning) -- termasuk di modul yang sudah pernah "disisir"
-     * sebelumnya (Material Stock, Stock Take). Sudah dilaporkan terpisah ke
-     * Hafizh/Owner untuk ditriase sebagai pekerjaan sendiri; SENGAJA belum
-     * disentuh di sini supaya tidak memperluas cakupan PR tanpa persetujuan.
-     * Jangan dibuang sampai ada keputusan eksplisit menutupnya.
+     * sebelumnya (Material Stock, Stock Take). Sudah ditriase jadi batch 3
+     * (lihat #JADWAL: Stock Take -> GR Beef -> GR Material -> Material
+     * Stock Take+Finding -> Carcass). Stock Take (Opname Daging) sudah
+     * diperbaiki DI CABANG INI; empat sisanya belum, jadi tetap di sini
+     * sampai masing-masing dapat PR-nya sendiri.
      *
      * `SalesReturnResource` masuk daftar ini juga, tapi alasannya beda:
      * Sales Return memang dikecualikan permanen (lihat `tertunda.md`),
@@ -547,7 +548,6 @@ class ActionAuthorizationTest extends TestCase
             'app/Filament/Admin/Resources/GoodsReceiptProductResource/Pages/LabelingGoodsReceiptProduct.php:DeleteAction',
             'app/Filament/Admin/Resources/GoodsReceiptProductResource/Pages/ScanGoodsReceiptProduct.php:DeleteAction',
             'app/Filament/Admin/Resources/MaterialStockTakeResource.php:DeleteAction',
-            'app/Filament/Admin/Resources/StockTakeResource/Pages/ScanStockTake.php:DeleteAction',
             'app/Filament/Clusters/MaterialsStock/Resources/MaterialFindingResource.php:DeleteAction',
             'app/Filament/Admin/Resources/SalesReturnResource/Pages/InputReturnItems.php:DeleteAction',
             'app/Filament/Admin/Resources/GoodsReceiptProductResource/Pages/LabelingGoodsReceiptProduct.php:create',
