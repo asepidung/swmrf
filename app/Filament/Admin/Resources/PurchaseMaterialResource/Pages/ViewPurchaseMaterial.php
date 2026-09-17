@@ -42,6 +42,15 @@ class ViewPurchaseMaterial extends ViewRecord
                     \Filament\Forms\Components\Placeholder::make('total_tagihan')
                         ->label(__('Total Bill'))
                         ->content(fn () => 'Rp ' . number_format($this->record->total_amount, 0, ',', '.')),
+                    \Filament\Forms\Components\Placeholder::make('sisa_tagihan')
+                        ->label(__('Outstanding Balance'))
+                        ->content(fn () => 'Rp ' . number_format(
+                            $this->record->total_amount - \App\Models\SupplierPayment::query()
+                                ->where('source_type', get_class($this->record))
+                                ->where('source_id', $this->record->id)
+                                ->sum('amount'),
+                            0, ',', '.',
+                        )),
                     \Filament\Forms\Components\TextInput::make('amount_input')
                         ->label(__('Amount (Rp)'))
                         ->required()
@@ -52,13 +61,21 @@ class ViewPurchaseMaterial extends ViewRecord
                             '
                         ])
                         ->rules([
+                            // Perbandingan di sini menyaring kesalahan lazim di layar
+                            // (tanpa kunci baris -- itu sebabnya bukan satu-satunya
+                            // penjagaan). Yang mengikat sungguh-sungguh ada di
+                            // ->action() di bawah, di dalam transaksi dengan
+                            // lockForUpdate().
                             fn (): \Closure => function (string $attribute, $value, \Closure $fail) {
                                 $val = (float) str_replace('.', '', $value);
                                 if ($val <= 0) {
                                     $fail(__('Amount must be greater than 0.'));
                                 }
-                                if ($val > $this->record->total_amount) {
-                                    $fail(__('Payment cannot exceed the bill of Rp :total.', ['total' => number_format($this->record->total_amount, 0, ',', '.')]));
+
+                                $sisa = (float) $this->record->total_amount - \App\Models\SupplierPayment::totalPaidFor($this->record);
+
+                                if ($val > $sisa) {
+                                    $fail(__('Payment cannot exceed the outstanding balance of Rp :total.', ['total' => number_format($sisa, 0, ',', '.')]));
                                 }
                             },
                         ]),
@@ -69,19 +86,47 @@ class ViewPurchaseMaterial extends ViewRecord
                 ])
                 ->action(function (array $data) {
                     $amount = (float) str_replace('.', '', $data['amount_input']);
-                    
-                    \App\Models\SupplierPayment::create([
-                        'supplier_id' => $this->record->supplier_id,
-                        'source_type' => get_class($this->record),
-                        'source_id' => $this->record->id,
-                        'payment_date' => $data['payment_date'],
-                        'method' => $data['method'],
-                        'bank_account_id' => $data['method'] === \App\Models\SupplierPayment::METHOD_TRANSFER ? $data['bank_account_id'] : null,
-                        'amount' => $amount,
-                        'reference_number' => $data['reference_number'],
-                        'note' => $data['note'],
-                        'allocated_amount' => 0,
-                    ]);
+
+                    // Uang muka BUKAN sekadar dibandingkan ke tagihan penuh --
+                    // itu yang dulu membiarkan DP yang sama dibayar berkali-kali
+                    // sampai melebihi tagihan tanpa satu pun galat. Sisa yang
+                    // sebenarnya cuma benar kalau baris PO dan baris pembayaran
+                    // yang sudah ada SAMA-SAMA dikunci di dalam satu transaksi --
+                    // tanpa itu, dua pembayaran yang diajukan nyaris bersamaan
+                    // bisa lolos berdasarkan sisa yang sama-sama basi.
+                    $recorded = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $amount): bool {
+                        $record = $this->record->newQuery()->lockForUpdate()->findOrFail($this->record->getKey());
+
+                        $sisa = (float) $record->total_amount - \App\Models\SupplierPayment::totalPaidFor($record);
+
+                        if ($amount > $sisa) {
+                            return false;
+                        }
+
+                        \App\Models\SupplierPayment::create([
+                            'supplier_id' => $record->supplier_id,
+                            'source_type' => get_class($record),
+                            'source_id' => $record->id,
+                            'payment_date' => $data['payment_date'],
+                            'method' => $data['method'],
+                            'bank_account_id' => $data['method'] === \App\Models\SupplierPayment::METHOD_TRANSFER ? $data['bank_account_id'] : null,
+                            'amount' => $amount,
+                            'reference_number' => $data['reference_number'],
+                            'note' => $data['note'],
+                            'allocated_amount' => 0,
+                        ]);
+
+                        return true;
+                    });
+
+                    if (! $recorded) {
+                        \Filament\Notifications\Notification::make()
+                            ->title(__('This payment could not be recorded because it now exceeds the outstanding balance.'))
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
 
                     \Filament\Notifications\Notification::make()
                         ->title(__('Payment Recorded Successfully'))

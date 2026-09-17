@@ -819,6 +819,8 @@
     "Payment cancelled": "Pembayaran dibatalkan",
     "Payment cannot exceed the bill of :total.": "Pembayaran tidak boleh melebihi tagihan :total.",
     "Payment cannot exceed the bill of Rp :total.": "Nominal pembayaran tidak boleh melebihi Rp :total.",
+    "Payment cannot exceed the outstanding balance of Rp :total.": "Nominal pembayaran tidak boleh melebihi sisa tagihan Rp :total.",
+    "This payment could not be recorded because it now exceeds the outstanding balance.": "Pembayaran ini tidak bisa dicatat karena sudah melebihi sisa tagihan.",
     "Payment must be more than zero.": "Pembayaran harus lebih dari nol.",
     "Payment recorded": "Pembayaran tercatat",
     "Payment to supplier :name (:number)": "Pembayaran ke supplier :name (:number)",

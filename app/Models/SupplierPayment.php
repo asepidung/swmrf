@@ -166,6 +166,27 @@ class SupplierPayment extends Model
         return $this->morphTo();
     }
 
+    /**
+     * Total pembayaran (termasuk DP) yang SUDAH tercatat untuk satu dokumen
+     * sumber -- dipakai untuk membatasi pembayaran BARU ke sisa yang belum
+     * dibayar, bukan ke nilai tagihan penuh.
+     *
+     * Tanpa ini, DP PO Material/Product bisa dibayar berkali-kali sampai
+     * melebihi tagihan: validasi lama hanya membandingkan nominal yang baru
+     * diketik terhadap total_amount, tidak pernah menjumlahkan yang sudah
+     * dibayar sebelumnya. `lockForUpdate()` mengunci baris pembayaran yang
+     * sudah ada supaya dua pembayaran yang diajukan nyaris bersamaan untuk PO
+     * yang sama tidak lolos berdasarkan angka sisa yang sama-sama basi.
+     */
+    public static function totalPaidFor(Model $source): float
+    {
+        return (float) static::query()
+            ->where('source_type', get_class($source))
+            ->where('source_id', $source->getKey())
+            ->lockForUpdate()
+            ->sum('amount');
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
