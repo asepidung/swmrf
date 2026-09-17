@@ -44,6 +44,10 @@ class PurchaseCattleTest extends TestCase
     public function it_allows_printing_po_cattle_when_authenticated()
     {
         $user = User::factory()->create();
+        $user->permissions()->attach(
+            \App\Models\Permission::firstOrCreate(['name' => 'view_purchase_cattles'], ['module_name' => 'Purchase Cattle', 'description' => 'view_purchase_cattles'])->id
+        );
+        $user = $user->fresh();
         $supplier = Supplier::create([
             'name' => 'SUPPLIER A',
             'address' => 'ADDRESS A',

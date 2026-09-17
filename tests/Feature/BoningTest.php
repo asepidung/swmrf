@@ -57,6 +57,10 @@ class BoningTest extends TestCase
     public function it_allows_authenticated_user_to_view_printed_boning_label()
     {
         $user = User::factory()->create();
+        $user->permissions()->attach(
+            \App\Models\Permission::firstOrCreate(['name' => 'view_bonings'], ['module_name' => 'Boning', 'description' => 'view_bonings'])->id
+        );
+        $user = $user->fresh();
 
         $boning = Boning::create([
             'boning_date' => now()->format('Y-m-d'),

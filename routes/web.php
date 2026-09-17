@@ -26,20 +26,37 @@ Route::middleware(['web', 'auth'])->group(function () {
         return view('print.qc-report', ['record' => $qcReport]);
     })->name('qc-reports.print');
 
+    /*
+     * Susulan 17 September 2026, batch 7: seluruh route print/export di
+     * bawah ini SEBELUMNYA tidak punya pemeriksaan izin sama sekali --
+     * siapa pun yang login bisa membuka cetakan apa pun lewat tebak ID,
+     * lubang yang sama dengan qc-reports.print/stock-take.print/dkk di atas
+     * sebelum diperbaiki. Ditutup sekaligus, memakai pola yang sama:
+     * abort_unless() memeriksa izin lihat modulnya sebelum record dimuat.
+     * Pengecualian yang disengaja: sales-return (tertunda, keputusan
+     * Owner terpisah).
+     */
+
     // ------------------------------------------
     // 1. MODUL REQUEST MATERIAL
     // ------------------------------------------
     Route::get('/print/material-request/{id}', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_material_requisitions') ?? false, 403);
+
         $record = \App\Models\MaterialRequisition::with(['user', 'supplier', 'items.material'])->findOrFail($id);
         return view('print.material-request', compact('record'));
     })->name('print.material-request');
 
     Route::get('/po-material/{id}/print', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_purchase_materials') ?? false, 403);
+
         $record = \App\Models\PurchaseMaterial::with(['supplier', 'items.material', 'approvedBy'])->findOrFail($id);
         return view('print.po-material', compact('record'));
     })->name('print.po-material');
 
     Route::get('/goods-receipt-material/{id}/print', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_gr_materials') ?? false, 403);
+
         $record = \App\Models\GoodsReceiptMaterial::withTrashed()->with([
             'supplier',
             'purchaseMaterial',
@@ -53,16 +70,22 @@ Route::middleware(['web', 'auth'])->group(function () {
     // 2. MODUL REQUEST BEEF (PRODUCT)
     // ------------------------------------------
     Route::get('/print/product-request/{id}', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_product_requisitions') ?? false, 403);
+
         $record = \App\Models\ProductRequisition::with(['user', 'supplier', 'items.product'])->findOrFail($id);
         return view('print.product-request', compact('record'));
     })->name('print.product-request');
 
     Route::get('/po-product/{id}/print', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_purchase_products') ?? false, 403);
+
         $record = \App\Models\PurchaseProduct::with(['supplier', 'items.product', 'approver'])->findOrFail($id);
         return view('print.po-product', compact('record'));
     })->name('print.po-product');
 
     Route::get('/goods-receipt-product/{id}/print', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_goods_receipt_products') ?? false, 403);
+
         $record = \App\Models\GoodsReceiptProduct::withTrashed()->with([
             'supplier',
             'purchaseProduct',
@@ -74,6 +97,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     })->name('goods-receipt-product.print');
 
     Route::get('/print-gr-beef-label/{id}', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_goods_receipt_products') ?? false, 403);
+
         $item = \App\Models\GoodsReceiptProductItem::with(['product', 'goodsReceiptProduct', 'grade'])->findOrFail($id);
         return view('print.goods-receipt-product-label', compact('item'));
     })->name('goods-receipt-product.label');
@@ -86,6 +111,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     // 3. MODUL BONING
     // ------------------------------------------
     Route::get('/print-label/{id}', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_bonings') ?? false, 403);
+
         $item = \App\Models\BoningItem::with(['product', 'boning', 'grade'])->findOrFail($id);
         return view('print.boning-label', compact('item'));
     })->name('boning.label');
@@ -122,6 +149,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     })->name('stock-take.label');
 
     Route::get('/print-beef-stock-label/{id}', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_beef_stocks') ?? false, 403);
+
         $item = \App\Models\BeefStock::with(['product', 'warehouse', 'grade'])->findOrFail($id);
         return view('print.beef-stock-label', compact('item'));
     })->name('beef-stock.label');
@@ -154,6 +183,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     // 5. MODUL PRICELIST
     // ------------------------------------------
     Route::get('/print/pricelist/{record}', function (\App\Models\PriceList $record) {
+        abort_unless(auth()->user()?->hasPermission('view_price_lists') ?? false, 403);
+
         $record->load(['customerGroup', 'items.product', 'creator']);
         return view('print.pricelist', compact('record'));
     })->name('print.pricelist');
@@ -162,6 +193,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     // 6. MODUL SALES ORDER
     // ------------------------------------------
     Route::get('/print/salesorder/{record}', function (\App\Models\SalesOrder $record) {
+        abort_unless(auth()->user()?->hasPermission('view_sales_orders') ?? false, 403);
+
         $record->load(['customer', 'items.product', 'creator']);
         return view('print.salesorder', compact('record'));
     })->name('print.salesorder');
@@ -170,6 +203,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     // 7. MODUL TALLY
     // ------------------------------------------
     Route::get('/print/tally/{record}', function (\App\Models\Tally $record) {
+        abort_unless(auth()->user()?->hasPermission('view_tallies') ?? false, 403);
+
         $record->load(['salesOrder.customer', 'items.product', 'creator']);
         
         $productData = [];
@@ -192,10 +227,14 @@ Route::middleware(['web', 'auth'])->group(function () {
     })->name('print.tally');
 
     Route::get('/print/delivery-order/{record}', function (\App\Models\DeliveryOrder $record) {
+        abort_unless(auth()->user()?->hasPermission('view_delivery_orders') ?? false, 403);
+
         return view('print.delivery-order', compact('record'));
     })->name('print.delivery-order');
 
     Route::get('/print/tally-item/{id}', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_tallies') ?? false, 403);
+
         $item = \App\Models\TallyItem::with(['product', 'grade'])->findOrFail($id);
         return view('print.tally-item-label', compact('item'));
     })->name('tally-item.label');
@@ -204,6 +243,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     // 8. MODUL PLAN DELIVERY PREVIEW
     // ------------------------------------------
     Route::get('/print/delivery-plan/preview', function (\Illuminate\Http\Request $request) {
+        abort_unless(auth()->user()?->hasPermission('view_delivery_plans') ?? false, 403);
+
         $targetDate = $request->query('date', now()->addDay()->toDateString());
 
         $records = \App\Models\DeliveryPlan::whereDate('delivery_date', $targetDate)
@@ -221,6 +262,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     // 9. MODUL INVOICE PRINT
     // ------------------------------------------
     Route::get('/print/invoice/{id}', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_invoices') ?? false, 403);
+
         $record = \App\Models\Invoice::withTrashed()->with(['customer', 'items.product'])->findOrFail($id);
         return view('print.invoice', compact('record'));
     })->name('print.invoice');
@@ -271,6 +314,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     // 12. MODUL MATERIAL USAGE
     // ------------------------------------------
     Route::get('/print/material-usage', function (\Illuminate\Http\Request $request) {
+        abort_unless(auth()->user()?->hasPermission('view_material_usages') ?? false, 403);
+
         $id = $request->query('id');
         $record = \App\Models\MaterialUsageHeader::findOrFail($id);
         
