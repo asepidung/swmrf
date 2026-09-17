@@ -45,6 +45,18 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
     public GoodsReceiptProduct $record;
     public ?array $data = [];
 
+    /**
+     * Halaman ini MENCETAK LABEL -- setiap label lahir sebagai baris
+     * `BeefStock` sungguhan. Sebelumnya sama sekali tidak punya
+     * `canAccess()`, jadi satu-satunya gerbang cuma
+     * `view_goods_receipt_products` milik Resource.
+     */
+    public static function canAccess(array $parameters = []): bool
+    {
+        return auth()->user()?->isProgrammer()
+            || (auth()->user()?->hasPermission('edit_goods_receipt_products') ?? false);
+    }
+
     public function mount(GoodsReceiptProduct $record): void
     {
         $this->record = $record;
@@ -293,6 +305,11 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                     ->color('danger')
                     ->tooltip(__('Delete Label'))
                     ->requiresConfirmation()
+                    // Sebelumnya bare -- siapa pun yang bisa membuka
+                    // halaman ini bisa membuang label orang lain dari
+                    // stok tanpa izin apa pun.
+                    ->authorize(fn (): bool => auth()->user()?->isProgrammer()
+                        || (auth()->user()?->hasPermission('edit_goods_receipt_products') ?? false))
                     ->action(function (GoodsReceiptProductItem $record) {
                         DB::transaction(function () use ($record) {
                             $stock = BeefStock::where('barcode', $record->barcode)->lockForUpdate()->first();
@@ -324,6 +341,14 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
 
     public function create(): void
     {
+        // Lapis kedua: `canAccess()` menjaga PINTU halaman, tapi
+        // `create()` sendiri adalah method Livewire publik yang bisa
+        // dipanggil langsung. Sama seperti keputusan Bank Account.
+        if (! (auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('edit_goods_receipt_products') ?? false))) {
+            Notification::make()->title(__('You do not have permission to do this.'))->danger()->send();
+            return;
+        }
+
         if ($this->record->is_locked) {
             Notification::make()->title(__('Failed'))->body(__('This goods receipt is locked.'))->danger()->send();
             return;
@@ -339,6 +364,17 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
             $pcs = isset($parts[1]) && trim($parts[1]) !== '' ? (int) trim($parts[1]) : 1;
 
             $insertedItem = DB::transaction(function () use ($formData, $weight, $pcs) {
+                // Baris GR dikunci dan status kuncinya dibaca ULANG di sini
+                // -- kalau "Lock" sedang/baru saja memproses dokumen ini,
+                // permintaan ini menunggu baris yang sama lalu menolak,
+                // bukan menyelipkan item SESUDAH Payable-nya sudah
+                // terlanjur dihitung.
+                $lockedGr = GoodsReceiptProduct::whereKey($this->record->id)->lockForUpdate()->first();
+
+                if (! $lockedGr || $lockedGr->is_locked) {
+                    throw new \Exception(__('This goods receipt is locked.'));
+                }
+
                 $origin = $formData['origin']; // 7 or 8
                 $dateStr = Carbon::parse($formData['pack_date'])->format('dmy');
                 $product = Product::find($formData['product_id']);
@@ -359,8 +395,17 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                 // Urutannya satu rumah di `BarcodeSequence`. Bentuk lamanya
                 // memakai panjang barcode sebagai penanda sah dan membaca
                 // baris TERAKHIR menurut id, bukan urutan TERBESAR.
+                //
+                // `beef_stocks.barcode` yang punya unique index-nya, bukan
+                // `goods_receipt_product_items.barcode`. Tanpa BeefStock
+                // ikut dikunci, dua label bersamaan (di sini atau dari
+                // ScanGoodsReceiptProduct yang berbagi awalan origin yang
+                // sama) bisa menghitung urutan yang sama dan baru tertangkap
+                // belakangan sebagai tabrakan unique constraint -- persis
+                // kelas bug yang sudah diperbaiki di Repack.
                 $counterStr = \App\Support\BarcodeSequence::nextPadded($prefix, [
                     GoodsReceiptProductItem::withTrashed()->lockForUpdate(),
+                    BeefStock::query()->lockForUpdate(),
                 ]);
 
                 $barcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
@@ -368,6 +413,13 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                 // Ambil harga dari PurchaseOrder untuk menghitung subtotal
                 $poItem = $this->record->purchaseProduct->items()->where('product_id', $formData['product_id'])->lockForUpdate()->first();
                 $price = $poItem ? $poItem->price : 0;
+
+                // Stok TIDAK boleh lahir tanpa harga -- lihat alasan yang
+                // sama di ScanGoodsReceiptProduct::scan().
+                if ($price <= 0) {
+                    throw new \Exception(__('This product has no price on the purchase order, so stock cannot be created without a price.'));
+                }
+
                 $subtotal = $price * $weight;
 
                 $item = GoodsReceiptProductItem::create([
