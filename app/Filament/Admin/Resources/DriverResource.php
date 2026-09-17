@@ -65,11 +65,11 @@ class DriverResource extends Resource
             ->recordUrl(
                 fn (Driver $record): string => Pages\EditDriver::getUrl([$record->id])
             )
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+            // Tidak ada hapus, satu maupun massal -- keputusan Owner. Tombol
+            // hapus satu baris sudah dihilangkan dari halaman Edit; aksi
+            // massal di sini sebelumnya masih tertinggal dan menembus
+            // keputusan yang sama lewat jalur lain.
+            ->bulkActions([]);
     }
 
     public static function getPages(): array

@@ -70,11 +70,8 @@ class VehicleResource extends Resource
             ->recordUrl(
                 fn (Vehicle $record): string => Pages\EditVehicle::getUrl([$record->id])
             )
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+            // Kembar dengan DriverResource -- lihat penjelasan di sana.
+            ->bulkActions([]);
     }
 
     public static function getPages(): array

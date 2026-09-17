@@ -209,7 +209,16 @@ class ProductResource extends Resource
             )
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Kembar dengan MaterialResource -- lihat penjelasan di sana.
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records): void {
+                            foreach ($records as $record) {
+                                \App\Support\MasterDataDeletion::attempt(
+                                    fn () => $record->delete(),
+                                    __('Product').' '.$record->name,
+                                );
+                            }
+                        }),
                 ]),
             ]);
     }

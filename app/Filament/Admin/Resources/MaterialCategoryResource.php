@@ -67,7 +67,38 @@ class MaterialCategoryResource extends Resource
             )
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Jalur bulk sebelumnya tidak dijaga sama sekali, beda
+                    // dari Delete tunggal di EditMaterialCategory yang sudah
+                    // dibungkus MasterDataDeletion. Kategori yang masih
+                    // dipakai dilewati (bukan diam-diam ikut diproses),
+                    // sisanya dibungkus MasterDataDeletion::attempt() --
+                    // pola yang sama dengan CustomerResource.
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records): void {
+                            $dilewati = 0;
+
+                            foreach ($records as $record) {
+                                if ($record->materials()->exists()) {
+                                    $dilewati++;
+
+                                    continue;
+                                }
+
+                                \App\Support\MasterDataDeletion::attempt(
+                                    fn () => $record->delete(),
+                                    __('Material Category').' '.$record->name,
+                                );
+                            }
+
+                            if ($dilewati > 0) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title(__('Some material categories were not deleted'))
+                                    ->body(__(':count of the selected material categories are still used by existing materials and were skipped.', ['count' => $dilewati]))
+                                    ->danger()
+                                    ->persistent()
+                                    ->send();
+                            }
+                        }),
                 ]),
             ]);
     }

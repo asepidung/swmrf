@@ -9,6 +9,16 @@ class ProductCategory extends Model
 {
     protected $fillable = ['name', 'prefix'];
 
+    protected static function booted(): void
+    {
+        // Kembar dengan MaterialCategory::booted() -- lihat penjelasan di sana.
+        static::deleting(function (self $category) {
+            if ($category->products()->exists()) {
+                throw new \Exception(__('This product category cannot be deleted because it is still used by existing products.'));
+            }
+        });
+    }
+
     public function setNameAttribute($value)
     {
         $this->attributes['name'] = strtoupper(trim($value));

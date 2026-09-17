@@ -66,7 +66,33 @@ class MaterialUnitResource extends Resource
             )
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Kembar dengan MaterialCategoryResource -- lihat penjelasan di sana.
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records): void {
+                            $dilewati = 0;
+
+                            foreach ($records as $record) {
+                                if ($record->materials()->exists()) {
+                                    $dilewati++;
+
+                                    continue;
+                                }
+
+                                \App\Support\MasterDataDeletion::attempt(
+                                    fn () => $record->delete(),
+                                    __('Material Unit').' '.$record->name,
+                                );
+                            }
+
+                            if ($dilewati > 0) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title(__('Some material units were not deleted'))
+                                    ->body(__(':count of the selected material units are still used by existing materials and were skipped.', ['count' => $dilewati]))
+                                    ->danger()
+                                    ->persistent()
+                                    ->send();
+                            }
+                        }),
                 ]),
             ]);
     }

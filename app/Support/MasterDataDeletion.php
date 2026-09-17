@@ -52,6 +52,24 @@ class MasterDataDeletion
                 ->send();
 
             return false;
+        } catch (\Exception $e) {
+            // Sebagian data induk (MaterialCategory, MaterialUnit,
+            // ProductCategory, dan lain-lain) menolak lewat guard
+            // `deleting()` di modelnya sendiri, BUKAN lewat FK basis data --
+            // supaya pesannya ramah di SEMUA mesin basis data (termasuk
+            // SQLite saat test) dan tidak menunggu permintaan sampai ke
+            // database dulu. Pesannya sendiri sudah jelas dan sudah
+            // diterjemahkan, jadi dipakai apa adanya di sini, bukan diganti
+            // kalimat umum di atas.
+            report($e);
+
+            Notification::make()
+                ->title($e->getMessage())
+                ->danger()
+                ->persistent()
+                ->send();
+
+            return false;
         }
     }
 

@@ -172,7 +172,23 @@ class MaterialResource extends Resource
             )
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Jalur bulk sebelumnya tidak dijaga sama sekali, beda
+                    // dari Delete tunggal di EditMaterial yang sudah
+                    // dibungkus MasterDataDeletion. Material yang masih
+                    // dipakai (PO, GR, pemakaian) tidak punya satu relasi
+                    // tunggal yang murah diperiksa lebih dulu seperti
+                    // kategori/satuan -- jadi tiap baris langsung dicoba
+                    // lewat MasterDataDeletion::attempt(), yang menampilkan
+                    // notifikasinya sendiri per baris yang tertahan.
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records): void {
+                            foreach ($records as $record) {
+                                \App\Support\MasterDataDeletion::attempt(
+                                    fn () => $record->delete(),
+                                    __('Material').' '.$record->name,
+                                );
+                            }
+                        }),
                 ]),
             ]);
     }
