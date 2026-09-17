@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Admin\Resources\CarcassResource;
+use App\Filament\Admin\Resources\CarcassResource\Pages\EditCarcass;
+use App\Filament\Admin\Resources\CarcassResource\Pages\ListCarcasses;
 use App\Models\Boning;
 use App\Models\BoningCarcass;
 use App\Models\BoningItem;
@@ -18,6 +21,7 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Warehouse;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -75,7 +79,7 @@ class CarcassYieldTest extends TestCase
     private function karkas(array $ekor): Carcass
     {
         $supplier = Supplier::create([
-            'name' => 'TEGUH AMANAH', 'address' => 'Bogor', 'pic' => 'Teguh', 'top_days' => 30,
+            'name' => 'TEGUH AMANAH '.uniqid(), 'address' => 'Bogor', 'pic' => 'Teguh', 'top_days' => 30,
         ]);
 
         $class = CattleClass::firstOrCreate(['name' => 'STEER'], ['is_active' => true]);
@@ -384,5 +388,143 @@ class CarcassYieldTest extends TestCase
                 "Boning::{$metode}() dihidupkan kembali. Baca alur satu batch boning di agents.md lebih dulu.",
             );
         }
+    }
+
+    // =====================================================================
+    // Susulan batch 3, 17 September 2026
+    // =====================================================================
+
+    /**
+     * Sebelumnya pencegahan edit Carcass yang sudah dipakai Boning HANYA
+     * di tampilan (tombol Save disembunyikan, mount() cuma memperingatkan)
+     * -- save() Livewire aslinya tidak dijaga apa pun di server.
+     */
+    /** @test */
+    public function saving_a_carcass_already_used_by_a_boning_is_rejected_on_the_server(): void
+    {
+        $karkas = $this->karkas([
+            ['hidup' => 500.00, 'a' => 150.00, 'b' => 150.00, 'kulit' => 30.00, 'buntut' => 0.00],
+        ]);
+        $this->boning($karkas, [200.00]);
+        $itemAsli = $karkas->items()->first();
+        $beratAsli = (float) $itemAsli->carcass_1;
+
+        Livewire::test(EditCarcass::class, ['record' => $karkas->getRouteKey()])
+            ->fillForm([
+                'items' => [
+                    $itemAsli->getKey() => [
+                        'cattle_weighing_item_id' => $itemAsli->cattle_weighing_item_id,
+                        'carcass_1' => $beratAsli + 999,
+                        'carcass_2' => $itemAsli->carcass_2,
+                        'hides' => $itemAsli->hides,
+                        'tail' => $itemAsli->tail,
+                    ],
+                ],
+            ])
+            ->call('save');
+
+        $this->assertSame($beratAsli, (float) $itemAsli->fresh()->carcass_1);
+    }
+
+    /**
+     * Delete tunggal sudah benar dicegah -- versi BULK tidak ditangkap
+     * sama sekali sebelumnya, `Carcass::boot()`'s deleting() melempar
+     * \Exception mentah yang sebelumnya sampai ke operator sebagai galat
+     * mentah alih-alih notifikasi yang bisa dibaca.
+     */
+    /** @test */
+    public function bulk_deleting_a_mix_of_free_and_boning_used_carcasses_only_removes_the_free_one(): void
+    {
+        $karkasBebas = $this->karkas([
+            ['hidup' => 500.00, 'a' => 150.00, 'b' => 150.00, 'kulit' => 30.00, 'buntut' => 0.00],
+        ]);
+        $karkasDipakai = $this->karkas([
+            ['hidup' => 500.00, 'a' => 150.00, 'b' => 150.00, 'kulit' => 30.00, 'buntut' => 0.00],
+        ]);
+        $this->boning($karkasDipakai, [200.00]);
+
+        Livewire::test(ListCarcasses::class)
+            ->callTableBulkAction('delete', [$karkasBebas->getKey(), $karkasDipakai->getKey()]);
+
+        $this->assertSoftDeleted('carcasses', ['id' => $karkasBebas->id]);
+        $this->assertDatabaseHas('carcasses', ['id' => $karkasDipakai->id, 'deleted_at' => null]);
+    }
+
+    /**
+     * Satu sapi tidak boleh masuk dua dokumen Carcass sekaligus --
+     * sebelumnya `whereDoesntHave('carcassItems')` di form cuma menyaring
+     * PILIHAN default, bukan aturan simpan.
+     */
+    /** @test */
+    public function an_animal_already_recorded_in_one_carcass_cannot_be_added_to_another(): void
+    {
+        $karkasPertama = $this->karkas([
+            ['hidup' => 500.00, 'a' => 150.00, 'b' => 150.00, 'kulit' => 30.00, 'buntut' => 0.00],
+        ]);
+        $itemDipakai = $karkasPertama->items()->first();
+
+        $weighingKedua = CattleWeighing::create([
+            'cattle_receiving_id' => $karkasPertama->weighing->cattle_receiving_id,
+            'weighing_date' => now()->toDateString(),
+            'created_by' => $this->user->id,
+        ]);
+
+        Livewire::test(\App\Filament\Admin\Resources\CarcassResource\Pages\CreateCarcass::class)
+            ->fillForm([
+                'cattle_weighing_id' => $weighingKedua->id,
+                'kill_date' => now()->toDateString(),
+                'items' => [
+                    [
+                        'cattle_weighing_item_id' => $itemDipakai->cattle_weighing_item_id,
+                        'carcass_1' => 140.00,
+                        'carcass_2' => 140.00,
+                        'hides' => 28.00,
+                        'tail' => 0.00,
+                    ],
+                ],
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['items.0.cattle_weighing_item_id']);
+
+        $this->assertSame(1, CarcassItem::where('cattle_weighing_item_id', $itemDipakai->cattle_weighing_item_id)->count());
+    }
+
+    /**
+     * `cattle_weighing_item_id` per baris adalah `Hidden`, diisi lewat
+     * kode -- kalau payload-nya dimanipulasi, tidak ada yang mencegah
+     * baris milik weighing LAIN tercampur ke dokumen ini sebelumnya.
+     */
+    /** @test */
+    public function an_animal_from_a_different_weighing_cannot_be_attached_to_this_document(): void
+    {
+        $karkasLain = $this->karkas([
+            ['hidup' => 500.00, 'a' => 150.00, 'b' => 150.00, 'kulit' => 30.00, 'buntut' => 0.00],
+        ]);
+        $itemWeighingLain = $karkasLain->items()->first();
+
+        $weighingSaya = CattleWeighing::create([
+            'cattle_receiving_id' => $karkasLain->weighing->cattle_receiving_id,
+            'weighing_date' => now()->toDateString(),
+            'created_by' => $this->user->id,
+        ]);
+
+        Livewire::test(\App\Filament\Admin\Resources\CarcassResource\Pages\CreateCarcass::class)
+            ->fillForm([
+                'cattle_weighing_id' => $weighingSaya->id,
+                'kill_date' => now()->toDateString(),
+                'items' => [
+                    [
+                        // cattle_weighing_item_id ini milik $karkasLain->weighing,
+                        // BUKAN $weighingSaya -- meniru payload yang dimanipulasi.
+                        'cattle_weighing_item_id' => $itemWeighingLain->cattle_weighing_item_id,
+                        'carcass_1' => 140.00,
+                        'carcass_2' => 140.00,
+                        'hides' => 28.00,
+                        'tail' => 0.00,
+                    ],
+                ],
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['items.0.cattle_weighing_item_id']);
     }
 }
