@@ -527,12 +527,21 @@ class ActionAuthorizationTest extends TestCase
 
     /**
      * Susulan 15 September 2026: ditemukan SEKALIGUS oleh penjaga baru di
-     * atas, tapi di LUAR lima modul batch ini (Sales Order, Tally, Repack,
+     * atas, tapi di LUAR lima modul batch 2 (Sales Order, Tally, Repack,
      * Mutation, Boning) -- termasuk di modul yang sudah pernah "disisir"
-     * sebelumnya (Material Stock, Stock Take). Sudah dilaporkan terpisah ke
-     * Hafizh/Owner untuk ditriase sebagai pekerjaan sendiri; SENGAJA belum
-     * disentuh di sini supaya tidak memperluas cakupan PR tanpa persetujuan.
-     * Jangan dibuang sampai ada keputusan eksplisit menutupnya.
+     * sebelumnya (Material Stock, Stock Take). Sudah ditriase jadi batch 3
+     * (Stock Take -> GR Beef -> GR Material -> Material Stock Take+Finding
+     * -> Carcass, plus satu PR sistemik terpisah untuk *Any() Policy).
+     *
+     * `GoodsReceiptMaterialResource.php:DeleteAction` DIKECUALIKAN
+     * PERMANEN dari sini, bukan menunggu perbaikan: dibaca ulang dari
+     * `ListRecords::configureTableAction()`/`configureDeleteAction()`,
+     * bare `Tables\Actions\DeleteAction::make()` di dalam `table()` sebuah
+     * Resource yang list page-nya `extends ListRecords` SUDAH diwiring
+     * otomatis ke `canDelete()` model policy (yang memang ada dan benar di
+     * sini) -- penjaga ini cuma memindai teks sumbernya, jadi tidak bisa
+     * melihat pengkabelan otomatis Filament itu. Menambah `->authorize()`
+     * di sini akan REDUNDAN, bukan memperbaiki apa pun.
      *
      * `SalesReturnResource` masuk daftar ini juga, tapi alasannya beda:
      * Sales Return memang dikecualikan permanen (lihat `tertunda.md`),

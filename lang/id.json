@@ -1460,5 +1460,7 @@
     "This Sales Order is no longer waiting for a tally": "Sales Order ini sudah tidak menunggu tally",
     "It may have just been tallied or cancelled from another session.": "Kemungkinan baru saja di-tally atau dibatalkan dari sesi lain.",
     "This Sales Order is no longer waiting": "Sales Order ini sudah tidak berstatus menunggu",
-    "It may have just been tallied from another session.": "Kemungkinan baru saja di-tally dari sesi lain."
+    "It may have just been tallied from another session.": "Kemungkinan baru saja di-tally dari sesi lain.",
+    "You do not have permission to do this.": "Anda tidak punya izin untuk melakukan ini.",
+    "This goods receipt is locked, so it cannot be edited.": "GR ini sudah dikunci, jadi tidak bisa diubah."
 }
