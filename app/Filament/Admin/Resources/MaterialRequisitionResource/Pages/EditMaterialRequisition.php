@@ -3,8 +3,11 @@
 namespace App\Filament\Admin\Resources\MaterialRequisitionResource\Pages;
 
 use App\Filament\Admin\Resources\MaterialRequisitionResource;
+use App\Models\MaterialRequisition;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Support\Exceptions\Halt;
 
 class EditMaterialRequisition extends EditRecord
 {
@@ -16,6 +19,48 @@ class EditMaterialRequisition extends EditRecord
     }
 
     public array $itemsData = [];
+
+    /**
+     * Halaman ini adalah satu-satunya jalur ubah item/harga/qty request yang
+     * TIDAK punya penjagaan status sama sekali -- beda dari Review dan
+     * Finance Approval yang memang sengaja tetap bisa diedit di tahapnya
+     * masing-masing. Begitu status lewat "Requested" (sudah direview,
+     * disetujui finance, bahkan PO-nya sudah terbit), dokumen ini seharusnya
+     * jadi riwayat, sama seperti due_date yang sudah lebih dulu dikunci lewat
+     * `->disabled()` di form -- hanya saja penguncian itu tidak pernah
+     * menjalar ke Repeater item maupun ke halamannya sendiri.
+     *
+     * Idiomnya sama dengan EditGoodsReceiptMaterial: `mount()` mengalihkan
+     * navigasi baru, `beforeSave()` menolak tab yang sudah terlanjur terbuka
+     * sebelum statusnya berubah dari sesi lain.
+     */
+    public function mount(int | string $record): void
+    {
+        parent::mount($record);
+
+        if ($this->getRecord()->status !== 'Requested') {
+            Notification::make()
+                ->title(__('This request can no longer be edited because it has moved past the Requested stage.'))
+                ->danger()
+                ->send();
+
+            $this->redirect($this->getResource()::getUrl('view', ['record' => $this->getRecord()]));
+        }
+    }
+
+    protected function beforeSave(): void
+    {
+        $locked = MaterialRequisition::whereKey($this->record->id)->lockForUpdate()->first();
+
+        if ($locked && $locked->status !== 'Requested') {
+            Notification::make()
+                ->title(__('This request can no longer be edited because it has moved past the Requested stage.'))
+                ->danger()
+                ->send();
+
+            throw new Halt();
+        }
+    }
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
@@ -79,7 +124,11 @@ class EditMaterialRequisition extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            // Tombolnya disembunyikan begitu PO sudah terbit -- penjagaan
+            // sungguhan ada di MaterialRequisition::deleting(), ini cuma
+            // mencegah orang menabraknya lewat jalur normal.
+            Actions\DeleteAction::make()
+                ->hidden(fn (): bool => $this->getRecord()->purchaseMaterial()->exists()),
             Actions\RestoreAction::make(),
             Actions\Action::make('cancel')
                 ->label('Cancel')

@@ -57,6 +57,16 @@ class ProductRequisition extends Model
                 padding: 3,
             );
         });
+
+        // Menghapus request yang PO-nya sudah terbit membiarkan PO itu
+        // menunjuk ke induk yang sudah tersembunyi -- kolom "Request Number"
+        // dan "Requester" di PO tampil kosong tanpa satu pun peringatan bahwa
+        // itu bukan data yang hilang, melainkan riwayatnya yang dibuang.
+        static::deleting(function ($model) {
+            if ($model->purchaseProduct()->exists()) {
+                throw new \Exception(__('This request cannot be deleted because a purchase order has already been generated from it.'));
+            }
+        });
     }
 
     public function updateTotalAmount()
