@@ -58,7 +58,7 @@ class ActionAuthorizationTest extends TestCase
             [\App\Filament\Admin\Resources\MaterialRequisitionResource\Pages\ApproveFinanceMaterialRequisition::class, 'approve_material_requisitions'],
             [\App\Filament\Admin\Resources\MaterialRequisitionResource\Pages\ReviewMaterialRequisition::class, 'review_material_requisitions'],
             [\App\Filament\Admin\Resources\DeliveryOrderResource\Pages\ApproveDeliveryOrder::class, 'approve_delivery_orders'],
-            [\App\Filament\Admin\Resources\MaterialStockTakeResource\Pages\ManageMaterialStockTakeItems::class, 'view_material_stock_takes'],
+            [\App\Filament\Admin\Resources\MaterialStockTakeResource\Pages\ManageMaterialStockTakeItems::class, 'edit_material_stock_takes'],
         ];
     }
 
@@ -247,7 +247,14 @@ class ActionAuthorizationTest extends TestCase
             [MaterialRequisitionResource::getUrl('approve-finance', ['record' => $materialRequisition->getKey()]), 'approve_material_requisitions', ['view_material_requisitions', 'edit_material_requisitions']],
             [MaterialRequisitionResource::getUrl('review', ['record' => $materialRequisition->getKey()]), 'review_material_requisitions', ['view_material_requisitions', 'edit_material_requisitions']],
             [DeliveryOrderResource::getUrl('approve', ['record' => $deliveryOrder->getKey()]), 'approve_delivery_orders', ['view_delivery_orders']],
-            [MaterialStockTakeResource::getUrl('items', ['record' => $materialStockTake->getKey()]), 'view_material_stock_takes', []],
+            // Susulan 17 September 2026: `ManageMaterialStockTakeItems`
+            // sekarang mensyaratkan `edit_material_stock_takes` di
+            // `canAccess()`-nya sendiri (lihat berkasnya), TAPI itu
+            // gerbang TERPISAH dari `canViewAny()` Resource
+            // (`view_material_stock_takes`) yang tetap dipanggil lewat
+            // `CanAuthorizeResourceAccess` -- keduanya harus lolos
+            // bersamaan.
+            [MaterialStockTakeResource::getUrl('items', ['record' => $materialStockTake->getKey()]), 'edit_material_stock_takes', ['view_material_stock_takes']],
         ];
     }
 

@@ -85,7 +85,11 @@ class EditMaterialStockTake extends EditRecord
                     // melewati `StockService` sepenuhnya -- sementara tombol
                     // yang satu lagi menambahkan SELISIH lewat service itu.
                     // Dua arti untuk satu tindakan yang sama.
-                    $this->record->applyToStock();
+                    if (! $this->record->applyToStock()) {
+                        Notification::make()->title(__('This stock count has already been finished'))->warning()->send();
+
+                        return;
+                    }
 
                     Notification::make()->title(__('The stock count is finished and the stock has been updated.'))->success()->send();
                     $this->redirect($this->getResource()::getUrl('index'));
