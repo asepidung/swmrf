@@ -34,6 +34,22 @@ class MaterialUsageResource extends Resource
         return auth()->user()->hasPermission('view_material_usages');
     }
 
+    /**
+     * Eksplisit, bukan cuma mengandalkan MaterialUsageHeaderPolicy::create().
+     *
+     * "Create Manual Usage" (CreateManualUsage) sebenarnya menulis ke
+     * MaterialAdjustment, bukan MaterialUsageHeader -- tapi gerbang akses
+     * halamannya (authorizeAccess() bawaan Filament) tetap memeriksa
+     * static::getResource()::canCreate(), yang tanpa baris ini kembali ke
+     * default Filament: mengecek Policy milik model Resource ini sendiri.
+     * Ditulis eksplisit di sini supaya jelas terlihat dan tidak diam-diam
+     * berubah kalau Policy-nya kelak disunting untuk keperluan lain.
+     */
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->hasPermission('create_material_usages') ?? false;
+    }
+
     public static function getNavigationLabel(): string
     {
         return __('Material Usage');
