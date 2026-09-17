@@ -983,6 +983,14 @@ perilakunya lama -- persis jenis kegagalan senyap yang berulang di proyek ini.
 6 September 2026 atas keputusan Owner: "gak usah auto clone lu aja manual pake
 ssh".**
 
+**17 September 2026: auto-deploy bawaan Hostinger DIMATIKAN Owner.** Gejala
+yang menuntunnya: tiap kali `main` berubah, server sudah berada di commit itu
+sebelum implementor `git pull`, dan HEAD-nya lepas dari `main` (detached).
+Sekarang satu-satunya jalan kode sampai ke server adalah `git pull` manual
+lewat SSH, diikuti `migrate --force` dan pembangunan ulang cache. Kalau
+suatu saat server kembali "sudah ter-pull duluan", berarti ada yang
+menyalakannya lagi -- periksa panel Hostinger, jangan menebak.
+
 Alasan aturan lamanya nyata dan tetap perlu diketahui: percobaan pertama gagal
 dengan `fatal: not a git repository` karena menabrak clone ulang yang sedang
 berjalan -- `.git` sedang diganti saat itu juga. Tetapi menunggu klon otomatis
