@@ -95,7 +95,33 @@ class ProductCategoryResource extends Resource
             )
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Kembar dengan MaterialCategoryResource -- lihat penjelasan di sana.
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records): void {
+                            $dilewati = 0;
+
+                            foreach ($records as $record) {
+                                if ($record->products()->exists()) {
+                                    $dilewati++;
+
+                                    continue;
+                                }
+
+                                \App\Support\MasterDataDeletion::attempt(
+                                    fn () => $record->delete(),
+                                    __('Product Category').' '.$record->name,
+                                );
+                            }
+
+                            if ($dilewati > 0) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title(__('Some product categories were not deleted'))
+                                    ->body(__(':count of the selected product categories are still used by existing products and were skipped.', ['count' => $dilewati]))
+                                    ->danger()
+                                    ->persistent()
+                                    ->send();
+                            }
+                        }),
                 ]),
             ]);
     }
