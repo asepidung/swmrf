@@ -1254,6 +1254,7 @@
     "This payment has already been cancelled.": "This payment has already been cancelled.",
     "This purchase order cannot be deleted because a supplier payment is already recorded against it.": "This purchase order cannot be deleted because a supplier payment is already recorded against it.",
     "This request cannot be deleted because a purchase order has already been generated from it.": "This request cannot be deleted because a purchase order has already been generated from it.",
+    "This receiving cannot be deleted because it has already been weighed.": "This receiving cannot be deleted because it has already been weighed.",
     "This receiving has already been weighed and cannot be edited.": "This receiving has already been weighed and cannot be edited.",
     "This receiving has no cattle recorded, so no payable was created.": "This receiving has no cattle recorded, so no payable was created.",
     "This record cannot be deleted because its payable status is partial or paid.": "This record cannot be deleted because its payable status is partial or paid.",

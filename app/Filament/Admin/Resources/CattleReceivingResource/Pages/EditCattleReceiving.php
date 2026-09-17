@@ -3,10 +3,12 @@
 namespace App\Filament\Admin\Resources\CattleReceivingResource\Pages;
 
 use App\Filament\Admin\Resources\CattleReceivingResource;
+use App\Models\CattleReceiving;
 use Filament\Actions;
 use App\Filament\Admin\Resources\CattleReceivingResource\Concerns\SavesUniqueEartags;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Support\Exceptions\Halt;
 use Illuminate\Database\Eloquent\Model;
 
 class EditCattleReceiving extends EditRecord
@@ -14,6 +16,44 @@ class EditCattleReceiving extends EditRecord
     use SavesUniqueEartags;
 
     protected static string $resource = CattleReceivingResource::class;
+
+    /**
+     * ->disabled() di form Resource cuma melindungi Repeater items yang
+     * relationship-backed. Field polos langsung di model (doc_no, sv_ok,
+     * skkh_ok, receive_date, note) TIDAK ikut terlindungi meski sama-sama
+     * di bawah ->disabled() yang sama -- terbukti lewat set()+save() paksa
+     * tetap tersimpan. Idiomnya sekarang sama dengan EditGoodsReceiptMaterial
+     * dan EditCattleWeighing: mount() mengalihkan navigasi baru, beforeSave()
+     * menolak tab yang sudah terlanjur terbuka sebelum ditimbang dari sesi
+     * lain.
+     */
+    public function mount(int | string $record): void
+    {
+        parent::mount($record);
+
+        if ($this->getRecord()->weighing()->exists()) {
+            Notification::make()
+                ->title(__('This receiving has already been weighed and cannot be edited.'))
+                ->danger()
+                ->send();
+
+            $this->redirect($this->getResource()::getUrl('view', ['record' => $this->getRecord()]));
+        }
+    }
+
+    protected function beforeSave(): void
+    {
+        $locked = CattleReceiving::whereKey($this->record->id)->lockForUpdate()->first();
+
+        if ($locked && $locked->weighing()->exists()) {
+            Notification::make()
+                ->title(__('This receiving has already been weighed and cannot be edited.'))
+                ->danger()
+                ->send();
+
+            throw new Halt();
+        }
+    }
 
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
