@@ -24,13 +24,18 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
      * Tombol "Input Stock" di daftar memang disembunyikan dari yang tidak
      * berhak, tapi alamatnya sendiri tidak tertutup -- siapa pun yang bisa
      * masuk panel admin bisa mengetik URL-nya langsung dan mengubah hitungan
-     * fisik sebelum opname diselesaikan. Pola sama dengan
-     * `ReviewMaterialRequisition::canAccess()`.
+     * fisik sebelum opname diselesaikan.
+     *
+     * Susulan 17 September 2026: sebelumnya mensyaratkan
+     * `view_material_stock_takes`, padahal halaman inilah tempat perubahan
+     * stok sungguhan terjadi (kolom `physical_qty` menulis langsung ke
+     * `MaterialStockTakeItem`). Keputusan yang sama dengan Tally: yang
+     * MENGUBAH stok butuh izin `edit_...`, bukan cuma `view_...`.
      */
     public static function canAccess(array $parameters = []): bool
     {
         return auth()->user()?->isProgrammer()
-            || (auth()->user()?->hasPermission('view_material_stock_takes') ?? false);
+            || (auth()->user()?->hasPermission('edit_material_stock_takes') ?? false);
     }
 
     protected static string $resource = MaterialStockTakeResource::class;
@@ -75,7 +80,11 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                     // halaman Edit punya penerapan sendiri-sendiri dengan
                     // ARTI YANG BERBEDA: yang satu menambahkan selisih, yang
                     // satu menimpa dengan angka hitungan.
-                    $this->getOwnerRecord()->applyToStock();
+                    if (! $this->getOwnerRecord()->applyToStock()) {
+                        Notification::make()->title(__('This stock count has already been finished'))->warning()->send();
+
+                        return;
+                    }
 
                     Notification::make()->title(__('The stock count is finished and the stock has been updated.'))->success()->send();
                     $this->redirect($this->getResource()::getUrl('items', ['record' => $this->getOwnerRecord()]));
@@ -143,6 +152,18 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                     // ditebak.
                     ->rules(['nullable', 'integer', 'min:0'])
                     ->updateStateUsing(function ($record, $state) {
+                        // Lapis kedua: `canAccess()` menjaga PINTU halaman,
+                        // tapi kolom tabel yang bisa diedit inline adalah
+                        // method Livewire yang bisa dipanggil langsung.
+                        if (! (auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('edit_material_stock_takes') ?? false))) {
+                            Notification::make()
+                                ->title(__('You do not have permission to do this.'))
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
                         $bersih = trim((string) $state);
 
                         if ($bersih === '') {

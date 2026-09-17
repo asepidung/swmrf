@@ -105,11 +105,29 @@ class MaterialStockTake extends Model
      * pencatatan buku besarnya sama dengan seluruh pergerakan material lain.
      * Pembekuan dilewati HANYA selama penerapan ini, dan dipulihkan lewat
      * `finally`.
+     *
+     * Mengembalikan `false` kalau tidak menerapkan apa pun (dokumennya
+     * sudah diselesaikan lebih dulu, dari sesi lain atau klik ganda) --
+     * pemanggilnya bertanggung jawab menunjukkan pesan yang sesuai, bukan
+     * menganggap "sukses" begitu saja.
      */
-    public function applyToStock(): void
+    public function applyToStock(): bool
     {
-        \App\Services\MaterialStockFreezeService::bypass(function (): void {
-            \Illuminate\Support\Facades\DB::transaction(function (): void {
+        return \App\Services\MaterialStockFreezeService::bypass(function (): bool {
+            return \Illuminate\Support\Facades\DB::transaction(function (): bool {
+                // Baris dikunci dan status dibaca ULANG sebelum apa pun
+                // diterapkan. Sebelumnya tidak ada penguncian di sini sama
+                // sekali -- klik ganda (atau dua tab) bisa lolos
+                // `isCountable()` di kedua sisi SEBELUM salah satunya
+                // menulis status COMPLETED, lalu KEDUANYA menerapkan
+                // selisih yang sama ke stok: setiap selisih diterapkan DUA
+                // KALI, bukan sekali.
+                $locked = self::whereKey($this->id)->lockForUpdate()->first();
+
+                if (! $locked || ! $locked->isCountable()) {
+                    return false;
+                }
+
                 foreach ($this->items()->whereNotNull('physical_qty')->get() as $item) {
                     if ((float) $item->difference_qty === 0.0) {
                         continue;
@@ -124,11 +142,14 @@ class MaterialStockTake extends Model
                     );
                 }
 
-                $this->update([
+                $locked->update([
                     'status' => self::STATUS_COMPLETED,
                     'completed_by' => auth()->id(),
                     'completed_at' => now(),
                 ]);
+                $this->status = self::STATUS_COMPLETED;
+
+                return true;
             });
         });
     }

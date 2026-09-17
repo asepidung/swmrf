@@ -58,7 +58,7 @@ class ActionAuthorizationTest extends TestCase
             [\App\Filament\Admin\Resources\MaterialRequisitionResource\Pages\ApproveFinanceMaterialRequisition::class, 'approve_material_requisitions'],
             [\App\Filament\Admin\Resources\MaterialRequisitionResource\Pages\ReviewMaterialRequisition::class, 'review_material_requisitions'],
             [\App\Filament\Admin\Resources\DeliveryOrderResource\Pages\ApproveDeliveryOrder::class, 'approve_delivery_orders'],
-            [\App\Filament\Admin\Resources\MaterialStockTakeResource\Pages\ManageMaterialStockTakeItems::class, 'view_material_stock_takes'],
+            [\App\Filament\Admin\Resources\MaterialStockTakeResource\Pages\ManageMaterialStockTakeItems::class, 'edit_material_stock_takes'],
         ];
     }
 
@@ -247,7 +247,14 @@ class ActionAuthorizationTest extends TestCase
             [MaterialRequisitionResource::getUrl('approve-finance', ['record' => $materialRequisition->getKey()]), 'approve_material_requisitions', ['view_material_requisitions', 'edit_material_requisitions']],
             [MaterialRequisitionResource::getUrl('review', ['record' => $materialRequisition->getKey()]), 'review_material_requisitions', ['view_material_requisitions', 'edit_material_requisitions']],
             [DeliveryOrderResource::getUrl('approve', ['record' => $deliveryOrder->getKey()]), 'approve_delivery_orders', ['view_delivery_orders']],
-            [MaterialStockTakeResource::getUrl('items', ['record' => $materialStockTake->getKey()]), 'view_material_stock_takes', []],
+            // Susulan 17 September 2026: `ManageMaterialStockTakeItems`
+            // sekarang mensyaratkan `edit_material_stock_takes` di
+            // `canAccess()`-nya sendiri (lihat berkasnya), TAPI itu
+            // gerbang TERPISAH dari `canViewAny()` Resource
+            // (`view_material_stock_takes`) yang tetap dipanggil lewat
+            // `CanAuthorizeResourceAccess` -- keduanya harus lolos
+            // bersamaan.
+            [MaterialStockTakeResource::getUrl('items', ['record' => $materialStockTake->getKey()]), 'edit_material_stock_takes', ['view_material_stock_takes']],
         ];
     }
 
@@ -527,12 +534,21 @@ class ActionAuthorizationTest extends TestCase
 
     /**
      * Susulan 15 September 2026: ditemukan SEKALIGUS oleh penjaga baru di
-     * atas, tapi di LUAR lima modul batch ini (Sales Order, Tally, Repack,
-     * Mutation, Boning) -- termasuk di modul yang sudah pernah "disisir"
-     * sebelumnya (Material Stock, Stock Take). Sudah dilaporkan terpisah ke
-     * Hafizh/Owner untuk ditriase sebagai pekerjaan sendiri; SENGAJA belum
-     * disentuh di sini supaya tidak memperluas cakupan PR tanpa persetujuan.
-     * Jangan dibuang sampai ada keputusan eksplisit menutupnya.
+     * atas, tapi di LUAR lima modul batch 2 (Sales Order, Tally, Repack,
+     * Mutation, Boning). Sudah ditriase jadi batch 3 (Stock Take -> GR Beef
+     * -> GR Material -> Material Stock Take+Finding -> Carcass, plus satu
+     * PR sistemik terpisah untuk *Any() Policy).
+     *
+     * `MaterialStockTakeResource.php:DeleteAction` dan
+     * `MaterialFindingResource.php:DeleteAction` DIKECUALIKAN PERMANEN dari
+     * sini, bukan menunggu perbaikan (sama seperti
+     * `GoodsReceiptMaterialResource.php:DeleteAction` di bawah): dibaca
+     * ulang dari `ListRecords`/`ManageRecords::configureTableAction()` --
+     * bare `Tables\Actions\DeleteAction::make()` di dalam `table()` sebuah
+     * Resource yang list page-nya lewat salah satu dari keduanya SUDAH
+     * diwiring otomatis ke `canDelete()` model/Resource (yang memang ada
+     * dan benar di kedua tempat ini) -- penjaga ini cuma memindai teks
+     * sumbernya, jadi tidak bisa melihat pengkabelan otomatis Filament itu.
      *
      * `SalesReturnResource` masuk daftar ini juga, tapi alasannya beda:
      * Sales Return memang dikecualikan permanen (lihat `tertunda.md`),
@@ -547,6 +563,9 @@ class ActionAuthorizationTest extends TestCase
             'app/Filament/Admin/Resources/GoodsReceiptProductResource/Pages/LabelingGoodsReceiptProduct.php:DeleteAction',
             'app/Filament/Admin/Resources/GoodsReceiptProductResource/Pages/ScanGoodsReceiptProduct.php:DeleteAction',
             'app/Filament/Admin/Resources/MaterialStockTakeResource.php:DeleteAction',
+            // Stock Take (Opname Daging) sudah diperbaiki di cabang batch 3
+            // yang lain, tapi belum digabung ke snapshot main tempat cabang
+            // ini dibuat.
             'app/Filament/Admin/Resources/StockTakeResource/Pages/ScanStockTake.php:DeleteAction',
             'app/Filament/Clusters/MaterialsStock/Resources/MaterialFindingResource.php:DeleteAction',
             'app/Filament/Admin/Resources/SalesReturnResource/Pages/InputReturnItems.php:DeleteAction',
