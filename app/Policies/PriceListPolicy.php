@@ -63,4 +63,19 @@ class PriceListPolicy
     {
         return $user->isProgrammer();
     }
+
+    public function deleteAny($user): bool
+    {
+        return $user->isProgrammer() || $user->hasPermission('delete_price_lists');
+    }
+
+    public function restoreAny($user): bool
+    {
+        return $user->isProgrammer() || $user->hasPermission('delete_price_lists');
+    }
+
+    public function forceDeleteAny($user): bool
+    {
+        return $user->isProgrammer();
+    }
 }

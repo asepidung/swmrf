@@ -14,4 +14,7 @@ class DriverPolicy
     public function delete(User $user, Driver $model): bool { return $user->hasPermission('delete_drivers'); }
     public function restore(User $user, Driver $model): bool { return $user->hasPermission('delete_drivers'); }
     public function forceDelete(User $user, Driver $model): bool { return $user->hasPermission('delete_drivers'); }
+    public function deleteAny(User $user): bool { return $user->hasPermission('delete_drivers'); }
+    public function restoreAny(User $user): bool { return $user->hasPermission('delete_drivers'); }
+    public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_drivers'); }
 }

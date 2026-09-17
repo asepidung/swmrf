@@ -14,4 +14,7 @@ class MaterialUnitPolicy
     public function delete(User $user, MaterialUnit $model): bool { return $user->hasPermission('delete_materials'); }
     public function restore(User $user, MaterialUnit $model): bool { return $user->hasPermission('delete_materials'); }
     public function forceDelete(User $user, MaterialUnit $model): bool { return $user->hasPermission('delete_materials'); }
+    public function deleteAny(User $user): bool { return $user->hasPermission('delete_materials'); }
+    public function restoreAny(User $user): bool { return $user->hasPermission('delete_materials'); }
+    public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_materials'); }
 }

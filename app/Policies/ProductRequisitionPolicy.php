@@ -42,4 +42,19 @@ class ProductRequisitionPolicy
     {
         return $user->hasPermission('delete_product_requisitions');
     }
+
+    public function deleteAny(User $user): bool
+    {
+        return $user->hasPermission('delete_product_requisitions');
+    }
+
+    public function restoreAny(User $user): bool
+    {
+        return $user->hasPermission('delete_product_requisitions');
+    }
+
+    public function forceDeleteAny(User $user): bool
+    {
+        return $user->hasPermission('delete_product_requisitions');
+    }
 }

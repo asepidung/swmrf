@@ -63,4 +63,19 @@ class SalesReturnPolicy
     {
         return $user->isProgrammer();
     }
+
+    public function deleteAny($user): bool
+    {
+        return $user->isProgrammer() || $user->hasPermission('delete_sales_returns');
+    }
+
+    public function restoreAny($user): bool
+    {
+        return $user->isProgrammer() || $user->hasPermission('delete_sales_returns');
+    }
+
+    public function forceDeleteAny($user): bool
+    {
+        return $user->isProgrammer();
+    }
 }

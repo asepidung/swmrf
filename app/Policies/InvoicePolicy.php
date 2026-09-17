@@ -63,4 +63,19 @@ class InvoicePolicy
     {
         return $user->isProgrammer();
     }
+
+    public function deleteAny($user): bool
+    {
+        return $user->isProgrammer() || $user->hasPermission('delete_invoices');
+    }
+
+    public function restoreAny($user): bool
+    {
+        return $user->isProgrammer() || $user->hasPermission('delete_invoices');
+    }
+
+    public function forceDeleteAny($user): bool
+    {
+        return $user->isProgrammer();
+    }
 }

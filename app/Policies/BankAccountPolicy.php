@@ -14,4 +14,7 @@ class BankAccountPolicy
     public function delete(User $user, BankAccount $model): bool { return $user->hasPermission('delete_bank_accounts'); }
     public function restore(User $user, BankAccount $model): bool { return $user->hasPermission('delete_bank_accounts'); }
     public function forceDelete(User $user, BankAccount $model): bool { return $user->hasPermission('delete_bank_accounts'); }
+    public function deleteAny(User $user): bool { return $user->hasPermission('delete_bank_accounts'); }
+    public function restoreAny(User $user): bool { return $user->hasPermission('delete_bank_accounts'); }
+    public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_bank_accounts'); }
 }

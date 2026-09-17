@@ -62,4 +62,19 @@ class DeliveryOrderReceiptPolicy
     {
         return false;
     }
+
+    public function deleteAny(User $user): bool
+    {
+        return false;
+    }
+
+    public function restoreAny(User $user): bool
+    {
+        return false;
+    }
+
+    public function forceDeleteAny(User $user): bool
+    {
+        return false;
+    }
 }

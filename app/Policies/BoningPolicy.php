@@ -46,4 +46,19 @@ class BoningPolicy
     {
         return $user->hasPermission('lock_bonings');
     }
+
+    public function deleteAny(User $user): bool
+    {
+        return $user->hasPermission('delete_bonings');
+    }
+
+    public function restoreAny(User $user): bool
+    {
+        return $user->hasPermission('delete_bonings');
+    }
+
+    public function forceDeleteAny(User $user): bool
+    {
+        return $user->hasPermission('delete_bonings');
+    }
 }

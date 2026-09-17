@@ -14,4 +14,7 @@ class CattleReceivingPolicy
     public function delete(User $user, CattleReceiving $model): bool { return $user->hasPermission('delete_cattle_receivings'); }
     public function restore(User $user, CattleReceiving $model): bool { return $user->hasPermission('delete_cattle_receivings'); }
     public function forceDelete(User $user, CattleReceiving $model): bool { return $user->hasPermission('delete_cattle_receivings'); }
+    public function deleteAny(User $user): bool { return $user->hasPermission('delete_cattle_receivings'); }
+    public function restoreAny(User $user): bool { return $user->hasPermission('delete_cattle_receivings'); }
+    public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_cattle_receivings'); }
 }

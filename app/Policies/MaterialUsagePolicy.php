@@ -63,4 +63,19 @@ class MaterialUsagePolicy
     {
         return $user->isProgrammer();
     }
+
+    public function deleteAny($user): bool
+    {
+        return $user->isProgrammer() || $user->hasPermission('delete_material_usages');
+    }
+
+    public function restoreAny($user): bool
+    {
+        return $user->isProgrammer() || $user->hasPermission('delete_material_usages');
+    }
+
+    public function forceDeleteAny($user): bool
+    {
+        return $user->isProgrammer();
+    }
 }

@@ -14,4 +14,7 @@ class ProductCategoryPolicy
     public function delete(User $user, ProductCategory $model): bool { return $user->hasPermission('delete_product_categories'); }
     public function restore(User $user, ProductCategory $model): bool { return $user->hasPermission('delete_product_categories'); }
     public function forceDelete(User $user, ProductCategory $model): bool { return $user->hasPermission('delete_product_categories'); }
+    public function deleteAny(User $user): bool { return $user->hasPermission('delete_product_categories'); }
+    public function restoreAny(User $user): bool { return $user->hasPermission('delete_product_categories'); }
+    public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_product_categories'); }
 }
