@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -17,6 +18,12 @@ class GoodsReceiptMaterial extends Model
     protected static function boot()
     {
         parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->gr_number)) {
+                $model->gr_number = self::generateGrNumber();
+            }
+        });
 
         static::deleting(function ($gr) {
             $payable = $gr->payable;
@@ -35,6 +42,24 @@ class GoodsReceiptMaterial extends Model
                 );
             }
         });
+    }
+
+    /**
+     * Satu rumah dengan `GoodsReceiptProduct::generateGrNumber()`.
+     *
+     * Bentuk lamanya membaca baris TERAKHIR MENURUT ID tanpa mengunci apa
+     * pun -- dua orang yang menyimpan GR pada saat yang sama membaca baris
+     * terakhir yang sama dan mendapat nomor yang sama; yang kedua ditolak
+     * unique index dengan galat SQL mentah di tengah hari kerja.
+     */
+    public static function generateGrNumber(): string
+    {
+        return DocumentNumber::next(
+            query: static::withTrashed(),
+            column: 'gr_number',
+            prefix: 'SWM-GRM#'.date('y'),
+            padding: 3,
+        );
     }
 
     public function getActivitylogOptions(): LogOptions
