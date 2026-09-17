@@ -129,6 +129,73 @@ siapa pun. Selama belum dicentang, hanya akun programmer yang bisa memakainya.
 `view_vehicles` · `create_vehicles` · `edit_vehicles` · `delete_vehicles` ·
 `manage_user_permissions`
 
+### Susulan sapuan 14-17 September 2026 (PR #390-#449)
+
+Sama seperti daftar di atas -- sudah berlaku lewat kode/migrasi, belum
+tentu ada yang mencentangnya. Bedanya: baris-baris ini bukan izin yang
+lahir tanpa halaman (seperti QC/Fleet di atas, yang memang modul baru),
+melainkan izin untuk halaman/aksi yang SUDAH dipakai staf setiap hari dan
+SEBELUMNYA sama sekali tidak dijaga. Begitu PR-nya naik ke produksi, staf
+yang biasa memakai fiturnya bisa mendadak ditolak kalau izinnya belum
+pernah dicentang untuk peran mereka -- baris ini disusun supaya Ayah bisa
+memeriksanya sekali jalan, modul demi modul, bukan menunggu staf lapor
+satu per satu.
+
+**Izin yang benar-benar baru** (belum pernah ada baris permission-nya di
+produksi -- kode/seeder yang menyebutnya sudah ada, tetapi baris izinnya
+sendiri baru dibuat migrasi PR #406):
+
+`view_customers` · `create_customers` · `edit_customers` · `delete_customers` ·
+`view_customer_groups` · `create_customer_groups` · `edit_customer_groups` ·
+`delete_customer_groups` · `view_customer_segments` ·
+`create_customer_segments` · `edit_customer_segments` ·
+`delete_customer_segments` · `view_receivables`
+
+**Izin yang sudah ada tetapi BARU DITEGAKKAN** di halaman/aksi yang
+sebelumnya sama sekali tidak dijaga -- periksa peran yang memakai modul
+ini setiap hari sudah punya izinnya:
+
+| Modul | Izin | Yang sekarang dijaga (PR) |
+|---|---|---|
+| User | `view_users` | Menu User sebelumnya tampil untuk siapa pun yang login (#394) |
+| Delivery Order | `approve_delivery_orders` | Aksi Approve DO itu sendiri, sebelumnya cuma tombolnya yang disembunyikan (#415) |
+| Invoice | `tukar_faktur` | Aksi tukar faktur itu sendiri (#416) |
+| Tally | `create_tallies`, `edit_tallies` | Tombol Create Tally, aksi hapus Draft Tally, DAN metode scan ScanTally -- sebelumnya cukup `view_tallies` untuk memakai stok lewat scan (#424) |
+| Boning | `edit_bonings`, `delete_bonings` | `canAccess()` LabelingBoning, aksi hapus tabel Boning (#425) |
+| Mutation | `edit_mutations`, `view_mutations` | Metode scan ScanMutation, aksi hapus item, route cetak (#426) |
+| Repack | `edit_repacks`, `view_repacks` | `canAccess()` Input Bahan/Hasil, route label &amp; ringkasan cetak (#427) |
+| Stock Take (daging) | `edit_stock_takes` | `canAccess()` ScanStockTake, aksi hapus temuan -- sebelumnya TANPA izin sama sekali (#429) |
+| GR Beef | `lock_goods_receipt_products`, `edit_goods_receipt_products`, `delete_goods_receipt_products` | Metode lock/save/hapus di halaman input, sebelumnya cuma tombolnya yang dijaga (#430) |
+| GR Material | `create_gr_materials` | `canAccess()` Create, metode processSave/confirmPartial/forceCompleted (#431) |
+| Material Stock Take | `edit_material_stock_takes` | Kolom hitung yang bisa diedit inline -- sebelumnya cukup `view_material_stock_takes` (#432) |
+| Material Usage | `view_material_usages`, `create_material_usages`, `edit_material_usages`, `delete_material_usages` | Belum ada Policy sama sekali sebelumnya -- Filament meloloskan siapa pun yang login (#447) |
+| Supplier | `view_suppliers` | Perlu diperiksa manual, kemungkinan sudah tercentang luas (#408) |
+
+**Sistemik, bentuknya beda dari dua daftar di atas (#433):** bulk delete
+lewat kotak centang tabel (`deleteAny`/`forceDeleteAny`/`restoreAny`) di
+SELURUH ~50 Resource sebelumnya TIDAK DIJAGA IZIN APA PUN, dan sekarang
+memakai izin `delete_...` yang SAMA dengan hapus satu baris. **Tidak perlu
+izin baru** untuk staf yang sudah punya izin hapus satu barisnya -- tetapi
+kalau ada staf yang sejauh ini bisa hapus massal tanpa punya izin hapus
+satu baris (lewat celah yang baru ditutup ini), hapus massalnya berhenti
+sampai izin `delete_...` modulnya dicentang untuk peran mereka. Modul yang
+kena: Bank Account, Beef Stock, Boning, Carcass, Cattle Class, Cattle
+Receiving, Cattle Weighing, Customer(+Group+Segment), Delivery Order,
+Delivery Plan, Driver, GR Beef/Material, Grade, Invoice,
+Material(+Requisition), Material Stock Take, Material Usage, Mutation,
+Price List, Product(+Category+Material)+Requisition, Purchase Cattle, QC
+Report, Repack, Sales Order, Sales Return, Stock Take, Supplier, Tally,
+Vehicle, Warehouse.
+
+**Tidak masuk daftar di atas, sengaja:** ~20 izin `view_...` yang mulai
+dijaga di route cetak/ekspor (batch 7, #449 -- `view_purchase_cattles`,
+`view_tallies`, `view_invoices`, dst). Tombol cetak/ekspor di layar selalu
+berada DI DALAM halaman Resource yang sudah mensyaratkan izin `view_...`
+yang SAMA untuk dibuka -- siapa pun yang sebelumnya bisa mengklik tombol
+cetak sudah otomatis punya izin itu. Yang ditutup #449 cuma jalur tebak
+URL langsung, bukan jalur normal staf memakai fiturnya, jadi tidak ada
+staf yang perlu izin baru karenanya.
+
 ---
 
 ## H. Setelah aplikasi live -- changelog dan versi
