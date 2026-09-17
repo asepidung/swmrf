@@ -63,4 +63,19 @@ class MaterialRequisitionPolicy
     {
         return $user->hasPermission('delete_material_requisitions');
     }
+
+    public function deleteAny(User $user): bool
+    {
+        return $user->hasPermission('delete_material_requisitions');
+    }
+
+    public function restoreAny(User $user): bool
+    {
+        return $user->hasPermission('delete_material_requisitions');
+    }
+
+    public function forceDeleteAny(User $user): bool
+    {
+        return $user->hasPermission('delete_material_requisitions');
+    }
 }

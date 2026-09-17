@@ -14,4 +14,7 @@ class GoodsReceiptProductPolicy
     public function delete(User $user, GoodsReceiptProduct $model): bool { return $user->hasPermission('delete_goods_receipt_products'); }
     public function restore(User $user, GoodsReceiptProduct $model): bool { return $user->hasPermission('delete_goods_receipt_products'); }
     public function forceDelete(User $user, GoodsReceiptProduct $model): bool { return $user->hasPermission('delete_goods_receipt_products'); }
+    public function deleteAny(User $user): bool { return $user->hasPermission('delete_goods_receipt_products'); }
+    public function restoreAny(User $user): bool { return $user->hasPermission('delete_goods_receipt_products'); }
+    public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_goods_receipt_products'); }
 }

@@ -15,4 +15,7 @@ class PurchaseMaterialPolicy
     public function delete(User $user, PurchaseMaterial $model): bool { return false; }
     public function restore(User $user, PurchaseMaterial $model): bool { return false; }
     public function forceDelete(User $user, PurchaseMaterial $model): bool { return false; }
+    public function deleteAny(User $user): bool { return false; }
+    public function restoreAny(User $user): bool { return false; }
+    public function forceDeleteAny(User $user): bool { return false; }
 }

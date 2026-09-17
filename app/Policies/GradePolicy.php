@@ -14,4 +14,7 @@ class GradePolicy
     public function delete(User $user, Grade $model): bool { return $user->hasPermission('delete_grades'); }
     public function restore(User $user, Grade $model): bool { return $user->hasPermission('delete_grades'); }
     public function forceDelete(User $user, Grade $model): bool { return $user->hasPermission('delete_grades'); }
+    public function deleteAny(User $user): bool { return $user->hasPermission('delete_grades'); }
+    public function restoreAny(User $user): bool { return $user->hasPermission('delete_grades'); }
+    public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_grades'); }
 }

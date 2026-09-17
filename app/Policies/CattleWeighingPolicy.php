@@ -14,4 +14,7 @@ class CattleWeighingPolicy
     public function delete(User $user, CattleWeighing $model): bool { return $user->hasPermission('delete_cattle_weighings'); }
     public function restore(User $user, CattleWeighing $model): bool { return $user->hasPermission('delete_cattle_weighings'); }
     public function forceDelete(User $user, CattleWeighing $model): bool { return $user->hasPermission('delete_cattle_weighings'); }
+    public function deleteAny(User $user): bool { return $user->hasPermission('delete_cattle_weighings'); }
+    public function restoreAny(User $user): bool { return $user->hasPermission('delete_cattle_weighings'); }
+    public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_cattle_weighings'); }
 }
