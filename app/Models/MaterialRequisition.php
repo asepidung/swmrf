@@ -57,6 +57,16 @@ class MaterialRequisition extends Model
                 padding: 3,
             );
         });
+
+        // Menghapus request yang PO-nya sudah terbit membiarkan PO itu
+        // menunjuk ke induk yang sudah tersembunyi -- kolom "Request Number"
+        // dan "Requester" di PO tampil kosong tanpa satu pun peringatan bahwa
+        // itu bukan data yang hilang, melainkan riwayatnya yang dibuang.
+        static::deleting(function ($model) {
+            if ($model->purchaseMaterial()->exists()) {
+                throw new \Exception(__('This request cannot be deleted because a purchase order has already been generated from it.'));
+            }
+        });
     }
 
     public function updateTotalAmount()
@@ -94,9 +104,33 @@ class MaterialRequisition extends Model
         return $this->hasOne(PurchaseMaterial::class);
     }
 
+    /**
+     * Terbitkan PO dari request ini.
+     *
+     * Menolak bila PO-nya sudah pernah terbit. Ini lapis kedua di belakang
+     * penjagaan status pada halaman Finance Approval: tanpa keduanya, membuka
+     * ulang URL finance-approval untuk dokumen ber-status PO Created
+     * menerbitkan PO KEDUA tanpa error apa pun, lengkap dengan dokumen uang
+     * muka kedua. Pemanggil tidak perlu menangkap pengecualian ini - halaman
+     * yang benar tidak akan pernah sampai ke sini.
+     *
+     * Kembar dengan ProductRequisition::generatePurchaseOrder(), yang sudah
+     * lebih dulu punya penjagaan ini.
+     *
+     * PO yang sudah di-soft-delete sengaja tidak dihitung, supaya dokumen yang
+     * dibatalkan masih bisa diterbitkan ulang.
+     *
+     * @throws \RuntimeException bila PO untuk request ini sudah ada
+     */
     public function generatePurchaseOrder()
     {
         $this->loadMissing(['items', 'supplier']);
+
+        if ($this->purchaseMaterial()->exists()) {
+            throw new \RuntimeException(
+                __('A purchase order for :document has already been issued.', ['document' => $this->document_number])
+            );
+        }
 
         DB::transaction(function () {
             // Nomor PO lewat `DocumentNumber`, bukan MENGHITUNG BARIS.

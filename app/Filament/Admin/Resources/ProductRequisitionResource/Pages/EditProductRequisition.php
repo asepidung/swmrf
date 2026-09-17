@@ -3,8 +3,11 @@
 namespace App\Filament\Admin\Resources\ProductRequisitionResource\Pages;
 
 use App\Filament\Admin\Resources\ProductRequisitionResource;
+use App\Models\ProductRequisition;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Support\Exceptions\Halt;
 
 class EditProductRequisition extends EditRecord
 {
@@ -16,6 +19,37 @@ class EditProductRequisition extends EditRecord
     }
 
     public array $itemsData = [];
+
+    /**
+     * Kembar dengan EditMaterialRequisition -- lihat penjelasan di sana.
+     */
+    public function mount(int | string $record): void
+    {
+        parent::mount($record);
+
+        if ($this->getRecord()->status !== 'Requested') {
+            Notification::make()
+                ->title(__('This request can no longer be edited because it has moved past the Requested stage.'))
+                ->danger()
+                ->send();
+
+            $this->redirect($this->getResource()::getUrl('view', ['record' => $this->getRecord()]));
+        }
+    }
+
+    protected function beforeSave(): void
+    {
+        $locked = ProductRequisition::whereKey($this->record->id)->lockForUpdate()->first();
+
+        if ($locked && $locked->status !== 'Requested') {
+            Notification::make()
+                ->title(__('This request can no longer be edited because it has moved past the Requested stage.'))
+                ->danger()
+                ->send();
+
+            throw new Halt();
+        }
+    }
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
@@ -79,7 +113,11 @@ class EditProductRequisition extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            // Tombolnya disembunyikan begitu PO sudah terbit -- penjagaan
+            // sungguhan ada di ProductRequisition::deleting(), ini cuma
+            // mencegah orang menabraknya lewat jalur normal.
+            Actions\DeleteAction::make()
+                ->hidden(fn (): bool => $this->getRecord()->purchaseProduct()->exists()),
             Actions\RestoreAction::make(),
             Actions\Action::make('cancel')
                 ->label('Cancel')
