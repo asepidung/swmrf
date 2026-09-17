@@ -145,4 +145,68 @@ class MaterialRequisitionAdvancePaymentCapTest extends TestCase
         $this->assertStringContainsString('amount_input', $source);
         $this->assertStringContainsString('Intl.NumberFormat("id-ID")', $source);
     }
+
+    /**
+     * DP tidak boleh dibayar dua kali sampai melebihi tagihan.
+     *
+     * Validasi lama hanya membandingkan nominal yang baru diketik terhadap
+     * total_amount PO -- tidak pernah menjumlahkan yang SUDAH dibayar. DP
+     * penuh 1.500.000 diterima (wajar), lalu DP penuh 1.500.000 KEDUA untuk
+     * PO yang SAMA juga lolos tanpa galat apa pun: total tercatat 3.000.000
+     * padahal tagihan cuma 1.500.000. Uang sungguhan keluar dua kali karena
+     * SupplierPayment::created() otomatis mencatat pengeluaran kas/bank.
+     *
+     * @test
+     */
+    public function it_rejects_a_second_advance_payment_that_would_exceed_the_outstanding_balance()
+    {
+        $po = $this->makePurchaseOrder();
+
+        Livewire::actingAs($this->user)
+            ->test(ViewPurchaseMaterial::class, ['record' => $po->id])
+            ->callAction('pay_down_payment', [
+                'payment_date' => now()->toDateString(),
+                'method' => SupplierPayment::METHOD_CASH,
+                'amount_input' => '1.500.000',
+            ])
+            ->assertHasNoActionErrors();
+
+        Livewire::actingAs($this->user)
+            ->test(ViewPurchaseMaterial::class, ['record' => $po->id])
+            ->callAction('pay_down_payment', [
+                'payment_date' => now()->toDateString(),
+                'method' => SupplierPayment::METHOD_CASH,
+                'amount_input' => '1.500.000',
+            ])
+            ->assertHasActionErrors(['amount_input']);
+
+        $this->assertEquals(1500000, SupplierPayment::sum('amount'), 'DP kedua tidak boleh tercatat sama sekali.');
+    }
+
+    /** Bertahap yang jumlahnya melebihi sisa juga wajib ditolak, bukan cuma dobel yang persis sama. */
+    public function test_it_rejects_a_partial_advance_payment_that_would_exceed_the_remaining_balance(): void
+    {
+        $po = $this->makePurchaseOrder();
+
+        Livewire::actingAs($this->user)
+            ->test(ViewPurchaseMaterial::class, ['record' => $po->id])
+            ->callAction('pay_down_payment', [
+                'payment_date' => now()->toDateString(),
+                'method' => SupplierPayment::METHOD_CASH,
+                'amount_input' => '1.000.000',
+            ])
+            ->assertHasNoActionErrors();
+
+        // Sisa tinggal 500.000, tapi yang diajukan 600.000.
+        Livewire::actingAs($this->user)
+            ->test(ViewPurchaseMaterial::class, ['record' => $po->id])
+            ->callAction('pay_down_payment', [
+                'payment_date' => now()->toDateString(),
+                'method' => SupplierPayment::METHOD_CASH,
+                'amount_input' => '600.000',
+            ])
+            ->assertHasActionErrors(['amount_input']);
+
+        $this->assertEquals(1000000, SupplierPayment::sum('amount'));
+    }
 }

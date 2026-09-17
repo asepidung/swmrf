@@ -819,6 +819,8 @@
     "Payment cancelled": "Payment cancelled",
     "Payment cannot exceed the bill of :total.": "Payment cannot exceed the bill of :total.",
     "Payment cannot exceed the bill of Rp :total.": "Payment cannot exceed the bill of Rp :total.",
+    "Payment cannot exceed the outstanding balance of Rp :total.": "Payment cannot exceed the outstanding balance of Rp :total.",
+    "This payment could not be recorded because it now exceeds the outstanding balance.": "This payment could not be recorded because it now exceeds the outstanding balance.",
     "Payment must be more than zero.": "Payment must be more than zero.",
     "Payment recorded": "Payment recorded",
     "Payment to supplier :name (:number)": "Payment to supplier :name (:number)",

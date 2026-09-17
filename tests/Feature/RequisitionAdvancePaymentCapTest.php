@@ -177,6 +177,64 @@ class RequisitionAdvancePaymentCapTest extends TestCase
     }
 
     /**
+     * DP tidak boleh dibayar dua kali sampai melebihi tagihan -- kembar
+     * dengan PO Material, kodenya disalin sama persis di kedua resource.
+     *
+     * @test
+     */
+    public function it_rejects_a_second_advance_payment_that_would_exceed_the_outstanding_balance()
+    {
+        $po = $this->makePurchaseOrder();
+
+        Livewire::actingAs($this->user)
+            ->test(ViewPurchaseProduct::class, ['record' => $po->id])
+            ->callAction('pay_down_payment', [
+                'payment_date' => now()->toDateString(),
+                'method' => SupplierPayment::METHOD_CASH,
+                'amount_input' => '75.000.000',
+            ])
+            ->assertHasNoActionErrors();
+
+        Livewire::actingAs($this->user)
+            ->test(ViewPurchaseProduct::class, ['record' => $po->id])
+            ->callAction('pay_down_payment', [
+                'payment_date' => now()->toDateString(),
+                'method' => SupplierPayment::METHOD_CASH,
+                'amount_input' => '75.000.000',
+            ])
+            ->assertHasActionErrors(['amount_input']);
+
+        $this->assertEquals(75000000, SupplierPayment::sum('amount'), 'DP kedua tidak boleh tercatat sama sekali.');
+    }
+
+    /** @test */
+    public function it_rejects_a_partial_advance_payment_that_would_exceed_the_remaining_balance()
+    {
+        $po = $this->makePurchaseOrder();
+
+        Livewire::actingAs($this->user)
+            ->test(ViewPurchaseProduct::class, ['record' => $po->id])
+            ->callAction('pay_down_payment', [
+                'payment_date' => now()->toDateString(),
+                'method' => SupplierPayment::METHOD_CASH,
+                'amount_input' => '50.000.000',
+            ])
+            ->assertHasNoActionErrors();
+
+        // Sisa tinggal 25.000.000, tapi yang diajukan 30.000.000.
+        Livewire::actingAs($this->user)
+            ->test(ViewPurchaseProduct::class, ['record' => $po->id])
+            ->callAction('pay_down_payment', [
+                'payment_date' => now()->toDateString(),
+                'method' => SupplierPayment::METHOD_CASH,
+                'amount_input' => '30.000.000',
+            ])
+            ->assertHasActionErrors(['amount_input']);
+
+        $this->assertEquals(50000000, SupplierPayment::sum('amount'));
+    }
+
+    /**
      * save() punya argumen kedua yang mengatur toast "Saved". Tanpa dimatikan,
      * pengguna melihat DUA toast sekaligus: "Saved" dari penyimpanan, dan pesan
      * hasil aksinya sendiri.
