@@ -5,10 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class MaterialStockTakeItem extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'material_stock_take_id',
@@ -17,7 +19,26 @@ class MaterialStockTakeItem extends Model
         'physical_qty',
         'difference_qty',
         'note',
+        'is_locked',
     ];
+
+    protected $casts = [
+        'is_locked' => 'boolean',
+    ];
+
+    /**
+     * Jejak angka lama saat "Minta Hitung Ulang" membuka kunci baris ini --
+     * `logOnlyDirty()` menyimpan nilai lama DAN baru tiap kali physical_qty/
+     * difference_qty berubah, dan Spatie mencatat siapa yang melakukannya
+     * secara bawaan.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['physical_qty', 'difference_qty', 'is_locked'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
 
     /**
      * Selisih hitungan ini dibaca sebagai apa: Over, Short, atau Sesuai.

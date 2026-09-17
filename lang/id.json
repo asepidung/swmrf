@@ -1468,5 +1468,10 @@
     "Some carcasses were not deleted": "Sebagian karkas tidak terhapus",
     ":count carcass(es) have already been processed into Boning.": ":count karkas sudah diproses ke Boning.",
     "This animal has already been recorded in another Carcass document.": "Sapi ini sudah tercatat di dokumen Carcass lain.",
-    "This animal does not belong to the weighing document selected here.": "Sapi ini bukan milik penimbangan dokumen ini."
+    "This animal does not belong to the weighing document selected here.": "Sapi ini bukan milik penimbangan dokumen ini.",
+    "Request Recount": "Minta Hitung Ulang",
+    "Request a recount for the selected items?": "Minta hitung ulang untuk item yang dipilih?",
+    "The stock count returns to In Progress for these items only. Their previous counts are kept as history, and the input fields start empty again.": "Opname kembali ke In Progress khusus untuk item ini. Hitungan lama tersimpan sebagai riwayat, dan kolom isian dimulai kosong lagi.",
+    "Recount requested for the selected items.": "Hitung ulang diminta untuk item yang dipilih.",
+    "This item is locked and can no longer be edited.": "Item ini sudah terkunci dan tidak bisa diubah lagi."
 }
