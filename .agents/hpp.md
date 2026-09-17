@@ -765,3 +765,30 @@ Supaya tidak ada yang mengumpulkan dua kali:
 Langkah 1 dan 2 bisa dimulai kapan saja -- keduanya master data, tidak
 menyentuh perhitungan apa pun, jadi aman dikerjakan sebelum jawaban accounting
 datang.
+
+---
+
+## 15. Jawaban Owner, 17 September 2026
+
+Menjawab bagian 14.A dan 14.B sekaligus, lewat Hafizh.
+
+1. **Rendemen memakai berat terima**, seperti laporan carcass legacy. Berarti
+   `Carcass::yieldPercent()` yang sekarang membagi dengan berat timbang ulang
+   harus diganti pembaginya. Akibat sampingan: aturan 15 September ("ada satu
+   sapi belum ditimbang -> rendemen tampil `-`") kehilangan alasannya, karena
+   berat terima selalu ada sejak sapi datang; yang tetap butuh timbang ulang
+   adalah susut perjalanan, bukan rendemen. Saat pembaginya diganti, aturan
+   `-` itu boleh dilepas dari rendemen -- putuskan di PR-nya, jangan diam-diam.
+2. **Overhead masih dipakai, dan berubah-ubah** -- 3.000, kadang 3.500 atau
+   4.000, "tergantung mood bos". Jadi ia **angka per costing yang bisa
+   disetel**, bukan tetapan aplikasi; nilai bawaannya angka costing terakhir.
+3. **Pelanggan utama hanya LION dan HYPERMART.** Tidak ada yang ketiga.
+4. **Grup pelanggan dan keanggotaannya akan terisi dari migrasi data legacy.**
+   Catatan Hafizh: legacy TIDAK punya price list, jadi `price_lists` per grup
+   tetap harus diisi tangan -- sumbernya kolom `GROSS PRICE` di form costing
+   (identik di ketujuh lot Juni, cukup sekali salin).
+5. Produk tanpa grup acuan -> jalan tapi ditandai; susut tetap di dalam HPP.
+   Owner tidak keberatan; sesudah migrasi semua customer pasti bergrup, jadi
+   kasus "tanpa grup" hanya mungkin untuk produk, bukan pelanggan.
+
+Pertanyaan accounting (bagian 12) belum ditanyakan; tidak menghalangi.
