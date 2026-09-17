@@ -1461,6 +1461,8 @@
     "It may have just been tallied or cancelled from another session.": "It may have just been tallied or cancelled from another session.",
     "This Sales Order is no longer waiting": "This Sales Order is no longer waiting",
     "It may have just been tallied from another session.": "It may have just been tallied from another session.",
+    "You do not have permission to do this.": "You do not have permission to do this.",
+    "This product has no price on the purchase order, so stock cannot be created without a price.": "This product has no price on the purchase order, so stock cannot be created without a price.",
     "Some carcasses were not deleted": "Some carcasses were not deleted",
     ":count carcass(es) have already been processed into Boning.": ":count carcass(es) have already been processed into Boning.",
     "This animal has already been recorded in another Carcass document.": "This animal has already been recorded in another Carcass document.",
