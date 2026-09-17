@@ -56,42 +56,27 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
     protected function getHeaderActions(): array
     {
         $actions = [];
-        
+
         $actions[] = Actions\Action::make('back')
             ->label(__('Back to List'))
             ->color('gray')
             ->url($this->getResource()::getUrl('index'));
 
-        if ($this->getOwnerRecord()->isCountable()) {
-            $actions[] = Actions\Action::make('complete_opname')
-                ->label(__('Finish Stock Opname'))
-                ->color('danger')
-                ->icon('heroicon-o-exclamation-triangle')
-                ->requiresConfirmation()
-                ->modalHeading(__('Finish this stock count?'))
-                ->modalDescription(__('Is everything counted carefully? Once you press this, nothing can be changed. Every difference cuts or adds stock permanently, and anything left uncounted is treated as missing.'))
-                ->modalSubmitActionLabel(__('Yes, I am sure'))
-                // Tombol ini MENGUBAH STOK secara permanen, jadi izinnya
-                // sendiri -- sama seperti padanannya di opname daging.
-                ->visible(fn (): bool => auth()->user()?->isProgrammer()
-                        || (auth()->user()?->hasPermission('finish_material_stock_takes') ?? false))
-                ->action(function () {
-                    // Satu jalur, di modelnya. Sebelumnya halaman ini dan
-                    // halaman Edit punya penerapan sendiri-sendiri dengan
-                    // ARTI YANG BERBEDA: yang satu menambahkan selisih, yang
-                    // satu menimpa dengan angka hitungan.
-                    if (! $this->getOwnerRecord()->applyToStock()) {
-                        Notification::make()->title(__('This stock count has already been finished'))->warning()->send();
-
-                        return;
-                    }
-
-                    Notification::make()->title(__('The stock count is finished and the stock has been updated.'))->success()->send();
-                    $this->redirect($this->getResource()::getUrl('items', ['record' => $this->getOwnerRecord()]));
-                });
-        }
+        // Keputusan Owner, 17 September 2026: Complete/Finish HANYA dari
+        // halaman REVIEW (EditMaterialStockTake) -- tombol di halaman
+        // input ini (yang sebelumnya menyelesaikan langsung dari
+        // DRAFT/IN_PROGRESS, sama sekali melewati tahap peninjauan)
+        // dihapus. Menyelesaikan opname sekarang wajib singgah di
+        // REVIEW lebih dulu, terlepas dari halaman mana pengguna mulai.
 
         return $actions;
+    }
+
+    /** Bisa melihat selisih dan meminta hitung ulang di tahap REVIEW. */
+    private function bisaMeninjau(): bool
+    {
+        return auth()->user()?->isProgrammer()
+            || (auth()->user()?->hasPermission('finish_material_stock_takes') ?? false);
     }
 
     public function form(Form $form): Form
@@ -109,8 +94,17 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
 
     public function table(Table $table): Table
     {
-        $isCompleted = $this->getOwnerRecord()->status === \App\Models\MaterialStockTake::STATUS_COMPLETED;
-        $isInProgress = $this->getOwnerRecord()->isCountable();
+        $doc = $this->getOwnerRecord();
+        $isCompleted = $doc->status === \App\Models\MaterialStockTake::STATUS_COMPLETED;
+        $isReview = $doc->status === \App\Models\MaterialStockTake::STATUS_REVIEW;
+        $bisaMeninjau = $this->bisaMeninjau();
+
+        // Baris boleh diedit kalau dokumennya masih dalam jendela hitung
+        // (DRAFT/IN_PROGRESS) DAN baris itu sendiri belum dikunci lewat
+        // Submit for Review. "Minta Hitung Ulang" membuka is_locked
+        // kembali untuk baris tertentu tanpa mengunci baris lain --
+        // itulah kenapa ini per BARIS, bukan cuma status dokumen.
+        $editable = fn (?\App\Models\MaterialStockTakeItem $record): bool => $record && $doc->isCountable() && ! $record->is_locked;
 
         return $table
             ->recordTitleAttribute('id')
@@ -130,12 +124,12 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                     ->label(__('System Qty'))
                     ->numeric(decimalPlaces: 0, decimalSeparator: ',', thousandsSeparator: '.')
                     ->visible($isCompleted),
-                
-                // Only show text input if in progress
+
+                // Only show text input if the row is still editable
                 Tables\Columns\TextInputColumn::make('physical_qty')
                     ->label(__('Physical Qty'))
                     ->type('text')
-                    ->visible($isInProgress)
+                    ->visible($editable)
                     // Hitungan material selalu BILANGAN BULAT.
                     //
                     // Keputusan Owner: "material itu gak ada qty koma-komaan".
@@ -151,13 +145,27 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                     // Sekarang yang memuat pemisah desimal DITOLAK, bukan
                     // ditebak.
                     ->rules(['nullable', 'integer', 'min:0'])
-                    ->updateStateUsing(function ($record, $state) {
+                    ->updateStateUsing(function (\App\Models\MaterialStockTakeItem $record, $state) use ($doc) {
                         // Lapis kedua: `canAccess()` menjaga PINTU halaman,
                         // tapi kolom tabel yang bisa diedit inline adalah
                         // method Livewire yang bisa dipanggil langsung.
                         if (! (auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('edit_material_stock_takes') ?? false))) {
                             Notification::make()
                                 ->title(__('You do not have permission to do this.'))
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        // Baris terkunci (sudah dikirim untuk ditinjau, dan
+                        // tidak dipilih untuk hitung ulang) tidak boleh
+                        // ditulis lewat jalur ini juga -- `visible()` di
+                        // atas cuma menyembunyikan kolomnya, method ini
+                        // sendiri tetap bisa dipanggil langsung.
+                        if ($record->is_locked || ! $doc->fresh()?->isCountable()) {
+                            Notification::make()
+                                ->title(__('This item is locked and can no longer be edited.'))
                                 ->danger()
                                 ->send();
 
@@ -192,25 +200,32 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                         $record->save();
                     }),
                 
-                // Show as text if completed
+                // Baris yang TIDAK bisa diedit (sudah dikunci, atau
+                // dokumennya sudah lewat tahap hitung) tampil sebagai teks
+                // biasa di sini -- kebalikan tepat dari kolom input di atas.
                 Tables\Columns\TextColumn::make('physical_qty_text')
                     ->label(__('Physical Qty'))
-                    ->getStateUsing(fn ($record) => $record->physical_qty)
+                    ->getStateUsing(fn (\App\Models\MaterialStockTakeItem $record) => $record->physical_qty)
                     ->numeric(decimalPlaces: 0, decimalSeparator: ',', thousandsSeparator: '.')
-                    ->visible($isCompleted),
+                    ->visible(fn (?\App\Models\MaterialStockTakeItem $record): bool => ! $editable($record)),
 
-                // Aturannya satu rumah di `MaterialStockTakeItem`.
+                // Selisih (dan status Over/Short/Sesuai turunannya) HANYA
+                // terlihat sesudah COMPLETED (riwayat permanen, buat siapa
+                // saja yang boleh melihat halaman ini) atau selama REVIEW
+                // TAPI hanya buat pemegang izin finish_material_stock_takes
+                // -- keputusan Owner, 17 September 2026. Aturannya satu
+                // rumah di `MaterialStockTakeItem`.
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('Variance Status'))
-                    ->visible($isCompleted)
+                    ->visible($isCompleted || ($isReview && $bisaMeninjau))
                     ->getStateUsing(fn (\App\Models\MaterialStockTakeItem $record): string => $record->varianceLabel())
                     ->badge()
                     ->color(fn ($state, \App\Models\MaterialStockTakeItem $record): string => $record->varianceColor()),
-                
+
                 Tables\Columns\TextColumn::make('difference_qty')
                     ->label(__('Difference Qty'))
                     ->numeric(decimalPlaces: 0, decimalSeparator: ',', thousandsSeparator: '.')
-                    ->visible($isCompleted)
+                    ->visible($isCompleted || ($isReview && $bisaMeninjau))
                     ->color(fn ($state) => $state > 0 ? 'info' : ($state < 0 ? 'danger' : 'success')),
             ])
             ->filters([
@@ -223,7 +238,45 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                 //
             ])
             ->bulkActions([
-                //
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('request_recount')
+                        ->label(__('Request Recount'))
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->modalHeading(__('Request a recount for the selected items?'))
+                        ->modalDescription(__('The stock count returns to In Progress for these items only. Their previous counts are kept as history, and the input fields start empty again.'))
+                        // Sama seperti Complete Opname: yang membuka
+                        // kembali hitungan yang sudah ditinjau adalah
+                        // keputusan peninjau, jadi izin yang sama.
+                        ->visible(fn (): bool => $isReview && $bisaMeninjau)
+                        ->action(function (\Illuminate\Support\Collection $records) {
+                            // Lapis kedua: visible() menjaga TOMBOLNYA,
+                            // method ini sendiri dipanggil langsung lewat
+                            // Livewire terlepas dari itu.
+                            if (! $this->bisaMeninjau()) {
+                                Notification::make()->title(__('You do not have permission to do this.'))->danger()->send();
+
+                                return;
+                            }
+
+                            if (! $this->getOwnerRecord()->requestRecount($records->pluck('id')->all())) {
+                                Notification::make()
+                                    ->title(__('This stock count has already been finished'))
+                                    ->warning()
+                                    ->send();
+
+                                return;
+                            }
+
+                            Notification::make()
+                                ->title(__('Recount requested for the selected items.'))
+                                ->success()
+                                ->send();
+
+                            $this->redirect($this->getResource()::getUrl('items', ['record' => $this->getOwnerRecord()]));
+                        }),
+                ]),
             ]);
     }
 }

@@ -1468,5 +1468,10 @@
     "Some carcasses were not deleted": "Some carcasses were not deleted",
     ":count carcass(es) have already been processed into Boning.": ":count carcass(es) have already been processed into Boning.",
     "This animal has already been recorded in another Carcass document.": "This animal has already been recorded in another Carcass document.",
-    "This animal does not belong to the weighing document selected here.": "This animal does not belong to the weighing document selected here."
+    "This animal does not belong to the weighing document selected here.": "This animal does not belong to the weighing document selected here.",
+    "Request Recount": "Request Recount",
+    "Request a recount for the selected items?": "Request a recount for the selected items?",
+    "The stock count returns to In Progress for these items only. Their previous counts are kept as history, and the input fields start empty again.": "The stock count returns to In Progress for these items only. Their previous counts are kept as history, and the input fields start empty again.",
+    "Recount requested for the selected items.": "Recount requested for the selected items.",
+    "This item is locked and can no longer be edited.": "This item is locked and can no longer be edited."
 }

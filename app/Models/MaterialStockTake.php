@@ -155,6 +155,88 @@ class MaterialStockTake extends Model
     }
 
     /**
+     * Mengirim opname untuk ditinjau -- SEMUA baris ikut terkunci di sini,
+     * termasuk yang sebelumnya dibuka lagi lewat "Minta Hitung Ulang".
+     * Baris yang terkunci tidak bisa diedit sampai dibuka lagi lewat
+     * `requestRecount()`.
+     *
+     * Mengembalikan `false` kalau dokumennya sudah tidak lagi bisa
+     * dihitung (klik ganda / sesi lain sudah mengirimnya lebih dulu).
+     */
+    public function submitForReview(): bool
+    {
+        return \Illuminate\Support\Facades\DB::transaction(function (): bool {
+            $locked = self::whereKey($this->id)->lockForUpdate()->first();
+
+            if (! $locked || ! $locked->isCountable()) {
+                return false;
+            }
+
+            $locked->items()->update(['is_locked' => true]);
+
+            $locked->update(['status' => self::STATUS_REVIEW]);
+            $this->status = self::STATUS_REVIEW;
+
+            return true;
+        });
+    }
+
+    /**
+     * Membuka kunci baris-baris TERTENTU untuk dihitung ulang, dan
+     * mengembalikan dokumen ke IN_PROGRESS -- keputusan Owner, 17
+     * September 2026: statusnya satu untuk seluruh dokumen (bukan
+     * "sebagian REVIEW sebagian tidak"), tapi yang benar-benar terkunci
+     * dari pengeditan adalah BARIS yang tidak diminta ulang, bukan status
+     * dokumennya.
+     *
+     * Angka lama dicatat ke activity log SEBELUM dikosongkan -- riwayat
+     * hitungan sebelumnya, bukan cuma "sekarang kosong" tanpa jejak.
+     *
+     * @param  array<int, int>  $itemIds
+     * @return bool  `false` kalau dokumennya sudah bukan REVIEW lagi
+     *               (klik ganda / sesi lain), atau kalau tidak ada satu
+     *               pun item valid yang dipilih.
+     */
+    public function requestRecount(array $itemIds): bool
+    {
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($itemIds): bool {
+            $locked = self::whereKey($this->id)->lockForUpdate()->first();
+
+            if (! $locked || $locked->status !== self::STATUS_REVIEW) {
+                return false;
+            }
+
+            $items = $locked->items()->whereIn('id', $itemIds)->lockForUpdate()->get();
+
+            if ($items->isEmpty()) {
+                return false;
+            }
+
+            foreach ($items as $item) {
+                activity()
+                    ->causedBy(auth()->user())
+                    ->performedOn($item)
+                    ->withProperties([
+                        'previous_physical_qty' => $item->physical_qty,
+                        'previous_difference_qty' => $item->difference_qty,
+                    ])
+                    ->log('Recount requested');
+
+                $item->update([
+                    'physical_qty' => null,
+                    'difference_qty' => null,
+                    'is_locked' => false,
+                ]);
+            }
+
+            $locked->update(['status' => self::STATUS_IN_PROGRESS]);
+            $this->status = self::STATUS_IN_PROGRESS;
+
+            return true;
+        });
+    }
+
+    /**
      * Apakah ada opname material yang sedang berlangsung?
      *
      * Selama berlangsung, angka stok di layar disamarkan menjadi `***`.

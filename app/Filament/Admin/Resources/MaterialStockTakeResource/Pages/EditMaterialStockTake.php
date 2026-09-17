@@ -58,7 +58,12 @@ class EditMaterialStockTake extends EditRecord
                 ->modalHeading(__('Submit this stock count for review?'))
                 ->modalDescription(__('Once submitted, the counts can no longer be edited and the variance is shown for review.'))
                 ->action(function () {
-                    $this->record->update(['status' => MaterialStockTake::STATUS_REVIEW]);
+                    if (! $this->record->submitForReview()) {
+                        Notification::make()->title(__('This stock count has already been finished'))->warning()->send();
+
+                        return;
+                    }
+
                     Notification::make()->title(__('Sent for review.'))->success()->send();
                     $this->redirect($this->getResource()::getUrl('edit', ['record' => $this->record]));
                 });
