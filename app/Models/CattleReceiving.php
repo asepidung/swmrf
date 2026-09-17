@@ -49,11 +49,31 @@ class CattleReceiving extends Model
     {
         parent::boot();
 
-        // Utang ikut dilepas bila dokumen penerimaannya dibatalkan. Tanpa ini,
-        // utang tetap berdiri untuk barang yang catatannya sudah tidak ada,
-        // dan tidak ada apa pun di layar yang menunjukkan asalnya.
+        // Sapi yang sudah ditimbang tidak boleh kehilangan dokumen
+        // penerimaannya. FK cattle_weighings.cattle_receiving_id di MySQL
+        // CASCADE ON DELETE -- force-delete di sini diam-diam ikut menghapus
+        // CattleWeighing-nya LEWAT DATABASE, melewati sama sekali guard
+        // CattleWeighing::deleting() (event Eloquent tidak pernah terpanggil
+        // untuk baris yang hilang lewat CASCADE), dan bisa mengorbankan
+        // Carcass yang sudah lahir dari situ. Dicegah di sini, bukan lewat
+        // FK, supaya guard yang sama berlaku dari jalur mana pun: tombol
+        // satu baris, aksi massal, maupun tinker.
         static::deleting(function ($model) {
+            if ($model->weighing()->exists()) {
+                throw new \Exception(__('This receiving cannot be deleted because it has already been weighed.'));
+            }
+
+            // Utang ikut dilepas bila dokumen penerimaannya dibatalkan. Tanpa
+            // ini, utang tetap berdiri untuk barang yang catatannya sudah
+            // tidak ada, dan tidak ada apa pun di layar yang menunjukkan
+            // asalnya.
             $model->payable?->delete();
+        });
+
+        static::forceDeleting(function ($model) {
+            if ($model->weighing()->exists()) {
+                throw new \Exception(__('This receiving cannot be deleted because it has already been weighed.'));
+            }
         });
 
         static::creating(function ($model) {

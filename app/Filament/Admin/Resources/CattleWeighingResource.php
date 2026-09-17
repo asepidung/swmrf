@@ -266,7 +266,16 @@ class CattleWeighingResource extends Resource
                                 return new \Illuminate\Support\HtmlString("<span class='font-bold {$color}'>" . number_format($variance, 2) . " Kg</span>");
                             }),
                     ])->columns(3),
-            ]);
+            ])
+            // Begitu Carcass sudah lahir dari dokumen ini, angka timbangannya
+            // menjadi acuan yang sudah dipakai orang lain: susut (Financial
+            // Loss) sudah dihitung darinya, dan Carcass sendiri memvalidasi
+            // "total potongan tidak melebihi bobot sapi" terhadap angka ini.
+            // Sebelumnya halaman ini sama sekali tidak punya ->disabled() --
+            // satu-satunya penjagaan adalah tombol Simpan yang disembunyikan,
+            // dan itu tidak menghalangi permintaan Livewire yang dipaksa.
+            ->disabled(fn (?\App\Models\CattleWeighing $record): bool => $record
+                && \App\Models\Carcass::where('cattle_weighing_id', $record->id)->exists());
     }
 
     public static function table(Table $table): Table

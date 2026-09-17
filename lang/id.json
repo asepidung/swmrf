@@ -1254,6 +1254,7 @@
     "This payment has already been cancelled.": "Pembayaran ini sudah dibatalkan.",
     "This purchase order cannot be deleted because a supplier payment is already recorded against it.": "Purchase Order ini tidak bisa dihapus karena sudah ada pembayaran ke pemasok yang tercatat atasnya.",
     "This request cannot be deleted because a purchase order has already been generated from it.": "Request ini tidak bisa dihapus karena PO sudah diterbitkan darinya.",
+    "This receiving cannot be deleted because it has already been weighed.": "Penerimaan ini tidak bisa dihapus karena sudah ditimbang.",
     "This receiving has already been weighed and cannot be edited.": "Penerimaan ini sudah ditimbang ulang dan tidak dapat diubah.",
     "This receiving has no cattle recorded, so no payable was created.": "Penerimaan ini belum berisi sapi, jadi hutangnya tidak dibuat.",
     "This record cannot be deleted because its payable status is partial or paid.": "Data ini tidak bisa dihapus karena hutangnya sudah dibayar sebagian atau lunas.",
