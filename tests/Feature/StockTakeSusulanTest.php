@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Admin\Resources\StockTakeResource;
 use App\Filament\Admin\Resources\StockTakeResource\Pages\ListStockTakes;
+use App\Filament\Admin\Resources\StockTakeResource\Pages\ScanStockTake;
 use App\Models\BeefStock;
 use App\Models\Grade;
 use App\Models\Permission;
@@ -54,6 +56,137 @@ class StockTakeSusulanTest extends TestCase
     private function programmer(): User
     {
         return User::factory()->create(['role' => 'programmer', 'is_active' => true]);
+    }
+
+    /**
+     * `view_stock_takes` selalu ikut disertakan: `ScanStockTake` mewarisi
+     * DUA gerbang `canAccess()` yang berbeda dan berjalan SENDIRI-SENDIRI --
+     * punya halaman sendiri (`Filament\Pages\Concerns\CanAuthorizeAccess`,
+     * yang baru ditambahkan di sini mensyaratkan `edit_stock_takes`) DAN
+     * milik `StockTakeResource` (`CanAuthorizeResourceAccess`, bawaan,
+     * mensyaratkan `view_stock_takes` lewat `canViewAny()`). Keduanya
+     * dipasang Livewire sebagai hook `mount*` terpisah dan SAMA-SAMA harus
+     * lolos -- tanpa `view_stock_takes` di sini, kasus "harus berhasil"
+     * akan salah menuduh gerbang `edit_stock_takes` yang menolak, padahal
+     * yang menolak gerbang `view_stock_takes` bawaan Resource.
+     */
+    private function employee(array $permissionNames = []): User
+    {
+        $user = User::factory()->create(['role' => 'employee', 'is_active' => true]);
+
+        foreach (array_unique([...$permissionNames, 'view_stock_takes']) as $name) {
+            $user->permissions()->attach(
+                Permission::firstOrCreate(['name' => $name], ['module_name' => 'Stock Takes', 'description' => $name])->id
+            );
+        }
+
+        return $user->fresh();
+    }
+
+    private function temuanUnexpected(\App\Models\StockTake $opname, ?string $barcode = null): StockTakeItem
+    {
+        return StockTakeItem::create([
+            'stock_take_id' => $opname->id,
+            'barcode' => $barcode ?? '0'.now()->format('dmy').'000100000011000055'.random_int(1000, 9999),
+            'product_id' => $this->produk->id, 'warehouse_id' => $this->gudang->id,
+            'grade_id' => $this->chill->id, 'weight' => 10.0, 'qty_pcs' => 1,
+            'pack_date' => now()->toDateString(), 'status' => 'UNEXPECTED', 'is_manual' => true,
+        ]);
+    }
+
+    // =========================================================================
+    // Susulan batch 3, 17 September 2026: ScanStockTake tanpa canAccess() sama
+    // sekali -- siapa pun yang login bisa memakai seluruh halaman ini.
+    // =========================================================================
+
+    /** @test */
+    public function scan_page_is_closed_over_http_without_edit_stock_takes(): void
+    {
+        $opname = $this->opnameBerjalan();
+
+        $this->actingAs($this->employee())
+            ->get(StockTakeResource::getUrl('scan', ['record' => $opname]))
+            ->assertForbidden();
+
+        $this->actingAs($this->employee(['edit_stock_takes']))
+            ->get(StockTakeResource::getUrl('scan', ['record' => $opname]))
+            ->assertSuccessful();
+    }
+
+    /** @test */
+    public function deleting_an_unexpected_finding_requires_the_same_permission(): void
+    {
+        $opname = $this->opnameBerjalan();
+        $item = $this->temuanUnexpected($opname);
+
+        Livewire::actingAs($this->employee(['edit_stock_takes']))
+            ->test(ScanStockTake::class, ['record' => $opname])
+            ->mountTableAction('delete', $item->id)
+            ->callMountedTableAction();
+
+        $this->assertDatabaseMissing('stock_take_items', ['id' => $item->id]);
+    }
+
+    /** @test */
+    public function scanning_a_missing_item_after_the_count_has_just_finished_leaves_it_missing(): void
+    {
+        $opname = $this->opnameBerjalan();
+        $item = StockTakeItem::create([
+            'stock_take_id' => $opname->id,
+            'barcode' => 'FX-STALE-SCAN-0001',
+            'product_id' => $this->produk->id, 'warehouse_id' => $this->gudang->id,
+            'grade_id' => $this->chill->id, 'weight' => 10.0, 'qty_pcs' => 1,
+            'pack_date' => now()->toDateString(), 'status' => 'MISSING', 'is_manual' => true,
+        ]);
+
+        // Halaman dibuka SELAGI opname masih IN_PROGRESS.
+        $test = Livewire::actingAs($this->employee(['edit_stock_takes']))
+            ->test(ScanStockTake::class, ['record' => $opname]);
+
+        // "Finish Opname" selesai dari sesi lain sebelum scan ini
+        // benar-benar menulis.
+        StockTake::whereKey($opname->id)->update(['status' => StockTake::STATUS_COMPLETED]);
+
+        $test->set('barcode', $item->barcode)->call('scan');
+
+        $this->assertSame('MISSING', $item->fresh()->status);
+    }
+
+    /**
+     * `manualInputAction()` sebelumnya menulis tanpa mengecek status
+     * dokumennya sama sekali.
+     */
+    /** @test */
+    public function manual_input_after_the_count_has_finished_is_rejected(): void
+    {
+        $opname = $this->opnameBerjalan();
+
+        $test = Livewire::actingAs($this->employee(['edit_stock_takes']))
+            ->test(ScanStockTake::class, ['record' => $opname]);
+
+        StockTake::whereKey($opname->id)->update(['status' => StockTake::STATUS_COMPLETED]);
+
+        $test->mountAction('manualInput')
+            ->setActionData([
+                'warehouse_id' => $this->gudang->id,
+                'product_id' => $this->produk->id,
+                'grade_id' => $this->chill->id,
+                'qty_pcs_combined' => '10.00/1',
+            ])
+            ->callMountedAction();
+
+        $this->assertSame(0, StockTakeItem::where('stock_take_id', $opname->id)->count());
+    }
+
+    /** @test */
+    public function opening_the_scan_page_for_a_finished_count_actually_redirects(): void
+    {
+        $opname = $this->opnameBerjalan();
+        StockTake::whereKey($opname->id)->update(['status' => StockTake::STATUS_COMPLETED]);
+
+        Livewire::actingAs($this->employee(['edit_stock_takes']))
+            ->test(ScanStockTake::class, ['record' => $opname->fresh()])
+            ->assertRedirect(StockTakeResource::getUrl('view', ['record' => $opname->id]));
     }
 
     // =========================================================================

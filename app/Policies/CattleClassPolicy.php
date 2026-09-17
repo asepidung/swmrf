@@ -14,4 +14,7 @@ class CattleClassPolicy
     public function delete(User $user, CattleClass $model): bool { return $user->hasPermission('delete_cattle_classes'); }
     public function restore(User $user, CattleClass $model): bool { return $user->hasPermission('delete_cattle_classes'); }
     public function forceDelete(User $user, CattleClass $model): bool { return $user->hasPermission('delete_cattle_classes'); }
+    public function deleteAny(User $user): bool { return $user->hasPermission('delete_cattle_classes'); }
+    public function restoreAny(User $user): bool { return $user->hasPermission('delete_cattle_classes'); }
+    public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_cattle_classes'); }
 }

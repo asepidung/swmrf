@@ -14,4 +14,7 @@ class MaterialCategoryPolicy
     public function delete(User $user, MaterialCategory $model): bool { return $user->hasPermission('delete_materials'); }
     public function restore(User $user, MaterialCategory $model): bool { return $user->hasPermission('delete_materials'); }
     public function forceDelete(User $user, MaterialCategory $model): bool { return $user->hasPermission('delete_materials'); }
+    public function deleteAny(User $user): bool { return $user->hasPermission('delete_materials'); }
+    public function restoreAny(User $user): bool { return $user->hasPermission('delete_materials'); }
+    public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_materials'); }
 }

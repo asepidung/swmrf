@@ -14,4 +14,7 @@ class SupplierPolicy
     public function delete(User $user, Supplier $model): bool { return $user->hasPermission('delete_suppliers'); }
     public function restore(User $user, Supplier $model): bool { return $user->hasPermission('delete_suppliers'); }
     public function forceDelete(User $user, Supplier $model): bool { return $user->hasPermission('delete_suppliers'); }
+    public function deleteAny(User $user): bool { return $user->hasPermission('delete_suppliers'); }
+    public function restoreAny(User $user): bool { return $user->hasPermission('delete_suppliers'); }
+    public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_suppliers'); }
 }

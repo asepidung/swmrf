@@ -52,4 +52,19 @@ class QcReportPolicy
     {
         return $user->hasPermission('delete_qc_reports');
     }
+
+    public function deleteAny(User $user): bool
+    {
+        return $user->hasPermission('delete_qc_reports');
+    }
+
+    public function restoreAny(User $user): bool
+    {
+        return $user->hasPermission('delete_qc_reports');
+    }
+
+    public function forceDeleteAny(User $user): bool
+    {
+        return $user->hasPermission('delete_qc_reports');
+    }
 }
