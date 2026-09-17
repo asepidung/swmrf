@@ -1278,18 +1278,116 @@ membuang waktu Project Owner.
 | QC / QC Report | 6-8 Sep 2026, direstrukturisasi 8 Sep | modul pendamping baru (Carcass, Boning, GR Beef, Tally, Repack, Sales Return, Stock Take); belum ada `docs/modules/qc.md` |
 | Fleet (Driver/Vehicle) | 8-12 Sep 2026, ditinjau 13 Sep | baru, lahir bersama restrukturisasi Delivery Plan; belum ada `docs/modules/fleet.md` |
 | Financial Loss | 6-7 Sep 2026 + 13 Sep (susut Repack) | lihat §"Menunggu HPP" di `tertunda.md` untuk sisa nilai rupiahnya |
+| Activity Log | 14 Sep 2026 (#390) | silent date filter ternyata tidak diam, N+1 query subject/causer |
+| Beef Stock (Aging) | 15 Sep 2026 (#392) | docblock basi, barcode aging bocor tanpa mask, Policy kode mati dihapus |
+| User &amp; Warehouse | 15 Sep 2026 (#394) | menu User tersembunyi untuk siapa pun yang login, audit log sinkron izin, dropdown gudang nonaktif |
+| Receivable | 15 Sep 2026 (#397, #402) | `$money()` keluar dari Repeater deductions (akar baris hantu), lockForUpdate saat terima pembayaran, ekspor Excel/PDF |
+| Material Stock Take | 15 Sep 2026 (#400) | izin halaman Input Stock, silent date filter, cetakan baca kolom salah, route print tanpa izin |
+| Material Stock cluster | 15 Sep 2026 (#403) | LogsActivity di MaterialFinding, silent date filter, badge warna dibetulkan |
+| User (form Edit) | 15 Sep 2026 (#404) | cegah eskalasi izin lewat form Edit User, izin `manage_user_permissions` dipisah dari `edit_users` |
+| Customers cluster | 15 Sep 2026 (#406) | konsolidasi 13 izin baru (customers/groups/segments/receivables), hapus dibungkus MasterDataDeletion |
+| Grade &amp; Supplier | 15 Sep 2026 (#408) | Delete dibungkus MasterDataDeletion, Supplier ditolak jika masih dipakai |
+| BankAccount | 15 Sep 2026 (#410) | otorisasi aksi saldo diperketat, race saldo awal dikunci |
+| Delivery Order | 15 Sep 2026 (#415) | otorisasi Approve DO dan penguncian disisir susulan |
+| Invoice | 15 Sep 2026 (#416) | otorisasi, lock saldo, dan ForceDelete crash mentah ditambal |
+| Payable | 15 Sep 2026 (#417) | race kondisi ganda Pay/Compensation ditutup + otorisasi |
+| Stock Take | 15 Sep 2026 (#418) | penguncian dan kelengkapan data disisir susulan |
+| Tally | 15 Sep 2026 (#424) | penguncian unscan susulan, izin aksi scan (sebelumnya `view_tallies` cukup untuk memakai stok lewat scan) |
+| Boning | 15 Sep 2026 (#425) | izin Labeling, penguncian, dan rendemen karkas partial disisir |
+| Mutation | 15 Sep 2026 (#426) | penguncian tujuan susulan dan izin unscan |
+| Repack | 15 Sep 2026 (#427) | penguncian model, izin akses halaman, dan barcode ganda |
+| Sales Order | 15 Sep 2026 (#428) | tombol Print, ForceDelete ramah, item tidak boleh kosong |
+| Sistemik (~50 Policy) | 17 Sep 2026 (#433) | `deleteAny`/`forceDeleteAny`/`restoreAny` (bulk delete tabel) sebelumnya tidak dijaga izin apa pun di seluruh Resource |
+| Stock Take (daging) | 17 Sep 2026 (#429) | `canAccess()` ScanStockTake ditambal, TOCTOU finish vs scan ditutup |
+| Carcass | 17 Sep 2026 (#434) | `save()` ditolak di server, bulk delete ramah, cegah sapi tercatat dobel |
+| GR Beef | 17 Sep 2026 (#430) | izin scan/label/lock, kunci barcode, tolak stok tanpa harga |
+| GR Material | 17 Sep 2026 (#431) | izin create, baris terkunci tak bisa diedit, nomor terkunci |
+| Material Stock Take | 17 Sep 2026 (#432, #437) | input hitung butuh `edit_material_stock_takes`, `applyToStock()` idempoten, Complete hanya dari REVIEW + aksi "Minta Hitung Ulang" |
+| Purchasing (PO Material/Product) | 17 Sep 2026, batch 4 (#444) | uang muka tidak boleh melebihi sisa tagihan |
+| Material/Product Requisition | 17 Sep 2026, batch 4 (#445) | terkunci begitu lewat tahap Requested |
+| Cattle Weighing &amp; Receiving | 17 Sep 2026, batch 5 (#446) | terkunci setelah tahap berikutnya |
+| **Material Usage** | 17 Sep 2026, batch 5 (#447) | `MaterialUsageHeaderPolicy` baru -- sebelumnya TANPA Policy sama sekali, Filament meloloskan siapa pun yang login |
+| Master Data (kategori/satuan Material &amp; Product) | 17 Sep 2026, batch 6 (#448) | hapus kategori/satuan tidak lagi ikut menghapus produk/materialnya diam-diam (FK cascade -&gt; restrict) |
+| Route print/export (`routes/web.php`) | 17 Sep 2026, batch 7 (#449) | 20 dari 30 route cetak/ekspor sebelumnya tanpa izin sama sekali, terbuka lewat tebak ID |
 
-**Diperbarui 13 September 2026** (baris di atas sempat berhenti di 1 Sep dan
-ketinggalan lima sesi penyisiran besar -- Invoice/Stock Take/Mutation/Sales
-Return sempat tertulis "belum tersentuh" di sini padahal sudah lama disisir
-tuntas; jangan percaya paragraf ini tanpa mengecek tanggalnya kalau
-membaca versi lama file ini). **Modul resmi yang MASIH BENAR-BENAR belum
-pernah disisir sampai hari ini: hanya Material Usage** (lihat `tertunda.md`
-§B, menunggu BOM). **Baru SEBAGIAN, jangan dikira selesai:** Sales Order
-(baru bagian harga &amp; diskon, mengikuti alur price list -- sisanya belum)
-dan Tally (baru halaman pindainya; halaman Draft, View, dan cetaknya
-belum). Delivery Order disisir pada ringkasan, halaman Approve, dan daftar
-tolakannya (urutan kolom index &amp; bug Detail List ditambal 7 Sep).
+**Diperbarui 17 September 2026** (baris di atas sempat berhenti di 13 Sep;
+jangan percaya paragraf ini tanpa mengecek tanggalnya kalau membaca versi
+lama file ini). **Material Usage yang tadinya "belum pernah disisir sama
+sekali" sudah disisir per #447** -- Policy-nya sekarang ada, meski BOM-nya
+sendiri masih menunggu (lihat `tertunda.md` §B). **Modul resmi yang MASIH
+BENAR-BENAR belum pernah disisir: tidak ada lagi** yang diketahui sampai
+hari ini; kalau ada yang ditemukan, catat di sini. **Baru SEBAGIAN, jangan
+dikira selesai:** Sales Order (baru bagian harga &amp; diskon plus tombol
+Print/ForceDelete, mengikuti alur price list -- sisanya belum) dan Tally
+(baru halaman pindainya plus penguncian unscan; halaman Draft, View, dan
+cetaknya belum). Delivery Order disisir pada ringkasan, halaman Approve,
+dan daftar tolakannya (urutan kolom index &amp; bug Detail List ditambal 7
+Sep; otorisasi Approve DO ditambal susulan 15 Sep #415).
+
+### Pelajaran yang berulang, sapuan 14-17 September 2026 (#390-#449)
+
+Empat pola yang muncul lagi dan lagi di hampir setiap PR susulan ini,
+dicatat sekali di sini supaya sesi berikutnya tidak perlu menemukannya
+ulang dari nol tiap kali menyisir modul baru.
+
+**1. `visible()`/`hidden()` (tombol) bukan `authorize()` (aksi).**
+Menyembunyikan tombol tidak menutup alamatnya. Pola yang ditemukan
+berulang: sebuah aksi/tombol sudah `->visible(fn () => ...->hasPermission(...))`,
+kelihatan aman dari layar, tetapi metode Livewire/aksi di baliknya
+(`lockGr()`, `saveGr()`, `processSave()`, metode scan `ScanTally`/
+`ScanMutation`, dst) tidak punya `->authorize()` atau pemeriksaan
+`hasPermission()` sendiri -- bisa dipanggil langsung lewat protokol wire
+Livewire oleh siapa pun yang tombolnya kebetulan tersembunyi, bukan yang
+benar-benar tidak berhak. Gejalanya selalu sama: aman kalau diuji lewat
+klik di layar, jebol kalau diuji lewat pemanggilan method langsung.
+
+**2. `Livewire::test()` bisa menyesatkan; verifikasi HTTP asli.**
+`Livewire::test()->assertForbidden()` kadang lolos padahal `abort()` yang
+sesungguhnya tidak pernah terjadi di jalur permintaan HTTP nyata -- dan
+sebaliknya, sebuah gerbang bisa terlihat berjalan di `Livewire::test()`
+padahal tidak pernah ditembus lewat request sungguhan sampai dicoba.
+**Untuk Resource** (halaman `EditRecord`/`ListRecords`/dll bawaan
+Filament): `canAccess()` HANYA kosmetik untuk nav, gerbang sesungguhnya
+`authorizeAccess()` yang dipanggil di `mount()` -- verifikasi pakai
+`$this->actingAs($user)->get(route(...))->assertForbidden()`, bukan
+`Livewire::test()->canAccess()`. **Untuk Page** (`Filament\Pages\Page`
+custom seperti `SalesReport`/`FastMovingProducts`): BEDA -- trait
+`CanAuthorizeAccess` membuat Livewire memanggil
+`mountCanAuthorizeAccess()`/`hydrateCanAuthorizeAccess()` secara otomatis
+di SETIAP mount dan hydrate, jadi `canAccess()` Page sekaligus jadi
+gerbang HTTP sungguhan, bukan cuma kosmetik nav seperti pada Resource.
+Diverifikasi empiris lewat probe HTTP asli (susulan batch 7, 17 Sep):
+pegawai tanpa izin memang menerima 403 sungguhan pada `SalesReport`/
+`FastMovingProducts`, bukan cuma nav yang tersembunyi. **Jangan
+menyamakan keduanya** -- yang benar untuk Resource belum tentu benar
+untuk Page, dan sebaliknya.
+
+**3. FK `cascadeOnDelete()` melewati event model Eloquent sepenuhnya.**
+Guard `deleting()` di model, atau pembungkus `MasterDataDeletion::attempt()`
+yang menerjemahkan galat SQL, TIDAK PERNAH tergigit kalau FK anaknya
+sendiri masih `cascadeOnDelete()` -- penghapusan beranak terjadi di dalam
+mesin basis data, bukan lewat Eloquent, dan tidak ada event apa pun yang
+bisa menahannya. Ditemukan headline batch 6: menghapus kategori
+material/produk yang masih dipakai "berhasil" tanpa Exception sambil diam-
+diam menghapus PERMANEN material/produknya (keduanya tidak soft-delete).
+**Kalau relasi itu semestinya tidak boleh dihapus selagi masih dipakai,
+FK-nya sendiri harus `restrictOnDelete()`** -- guard di kode itu lapis
+kedua, bukan pengganti lapis pertama di skema. SQLite dan MySQL juga
+melempar kode error BERBEDA untuk pelanggaran FK restrict yang sama
+(SQLSTATE 23000/error 1451 di MySQL, kode 19 di SQLite) -- migrasi FK
+restrict harus diuji di MySQL sungguhan, bukan SQLite saja.
+
+**4. Laravel Policy yang TIDAK TERDAFTAR meloloskan semua orang, diam-diam.**
+Tanpa Policy terdaftar untuk sebuah model dan tanpa `Gate::before`,
+`authorizeAccess()` bawaan Filament jatuh ke `Response::allow()` --
+SIAPA PUN yang login, terlepas dari izin apa pun, bisa membuka halamannya
+dan melakukan aksi sungguhan (batch 5: `MaterialUsageHeaderPolicy` tidak
+ada sama sekali, siapa pun bisa memposting penyesuaian stok material
+lewat "Create Manual Usage"). Ini FAIL-OPEN, bukan fail-closed -- kebalikan
+dari asumsi wajar bahwa "tidak ada Policy" berarti "ditolak". `ResourceHasPolicyTest`
+(dibuat #447) sekarang menyapu SELURUH Resource Admin + Cluster mencari
+`Gate::getPolicyFor($model)` yang kosong, supaya kelalaian ini tidak
+terulang untuk Resource baru.
 
 **Sesi 1 September 2026 berhenti di sini.** Berikutnya **Delivery Order**,
 lalu ingatkan Owner mengerjakan **plandev**. Tata letak halaman Scan Tally
