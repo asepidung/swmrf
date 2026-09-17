@@ -1462,5 +1462,10 @@
     "This Sales Order is no longer waiting": "This Sales Order is no longer waiting",
     "It may have just been tallied from another session.": "It may have just been tallied from another session.",
     "You do not have permission to do this.": "You do not have permission to do this.",
-    "This goods receipt is locked, so it cannot be edited.": "This goods receipt is locked, so it cannot be edited."
+    "This goods receipt is locked, so it cannot be edited.": "This goods receipt is locked, so it cannot be edited.",
+    "This product has no price on the purchase order, so stock cannot be created without a price.": "This product has no price on the purchase order, so stock cannot be created without a price.",
+    "Some carcasses were not deleted": "Some carcasses were not deleted",
+    ":count carcass(es) have already been processed into Boning.": ":count carcass(es) have already been processed into Boning.",
+    "This animal has already been recorded in another Carcass document.": "This animal has already been recorded in another Carcass document.",
+    "This animal does not belong to the weighing document selected here.": "This animal does not belong to the weighing document selected here."
 }

@@ -5,10 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class StockTakeItem extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'stock_take_id',
@@ -53,5 +55,18 @@ class StockTakeItem extends Model
     public function grade(): BelongsTo
     {
         return $this->belongsTo(Grade::class, 'grade_id');
+    }
+
+    /**
+     * Menghapus baris UNEXPECTED tidak meninggalkan jejak apa pun
+     * sebelumnya -- barisnya hilang permanen (tidak ada hapus lunak) tanpa
+     * catatan siapa yang menghapus atau apa isinya.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['stock_take_id', 'barcode', 'product_id', 'weight', 'qty_pcs', 'status'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 }

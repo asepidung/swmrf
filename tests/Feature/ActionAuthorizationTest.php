@@ -553,14 +553,9 @@ class ActionAuthorizationTest extends TestCase
     {
         return [
             'app/Filament/Admin/Resources/GoodsReceiptMaterialResource.php:DeleteAction',
-            'app/Filament/Admin/Resources/GoodsReceiptProductResource/Pages/LabelingGoodsReceiptProduct.php:DeleteAction',
-            'app/Filament/Admin/Resources/GoodsReceiptProductResource/Pages/ScanGoodsReceiptProduct.php:DeleteAction',
             'app/Filament/Admin/Resources/MaterialStockTakeResource.php:DeleteAction',
-            'app/Filament/Admin/Resources/StockTakeResource/Pages/ScanStockTake.php:DeleteAction',
             'app/Filament/Clusters/MaterialsStock/Resources/MaterialFindingResource.php:DeleteAction',
             'app/Filament/Admin/Resources/SalesReturnResource/Pages/InputReturnItems.php:DeleteAction',
-            'app/Filament/Admin/Resources/GoodsReceiptProductResource/Pages/LabelingGoodsReceiptProduct.php:create',
-            'app/Filament/Admin/Resources/GoodsReceiptProductResource/Pages/ScanGoodsReceiptProduct.php:scan',
         ];
     }
 

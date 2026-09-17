@@ -14,4 +14,7 @@ class WarehousePolicy
     public function delete(User $user, Warehouse $model): bool { return $user->hasPermission('delete_warehouses'); }
     public function restore(User $user, Warehouse $model): bool { return $user->hasPermission('delete_warehouses'); }
     public function forceDelete(User $user, Warehouse $model): bool { return $user->hasPermission('delete_warehouses'); }
+    public function deleteAny(User $user): bool { return $user->hasPermission('delete_warehouses'); }
+    public function restoreAny(User $user): bool { return $user->hasPermission('delete_warehouses'); }
+    public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_warehouses'); }
 }

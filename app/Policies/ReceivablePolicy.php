@@ -68,4 +68,19 @@ class ReceivablePolicy
     {
         return $user->isProgrammer();
     }
+
+    public function deleteAny($user): bool
+    {
+        return $user->isProgrammer();
+    }
+
+    public function restoreAny($user): bool
+    {
+        return $user->isProgrammer();
+    }
+
+    public function forceDeleteAny($user): bool
+    {
+        return $user->isProgrammer();
+    }
 }

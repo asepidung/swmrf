@@ -41,4 +41,19 @@ class TallyPolicy
     {
         return $user->hasPermission('delete_tallies');
     }
+
+    public function deleteAny(User $user): bool
+    {
+        return $user->hasPermission('delete_tallies');
+    }
+
+    public function restoreAny(User $user): bool
+    {
+        return $user->hasPermission('delete_tallies');
+    }
+
+    public function forceDeleteAny(User $user): bool
+    {
+        return $user->hasPermission('delete_tallies');
+    }
 }

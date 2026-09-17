@@ -63,4 +63,19 @@ class MutationPolicy
     {
         return $user->isProgrammer();
     }
+
+    public function deleteAny($user): bool
+    {
+        return $user->isProgrammer() || $user->hasPermission('delete_mutations');
+    }
+
+    public function restoreAny($user): bool
+    {
+        return $user->isProgrammer() || $user->hasPermission('delete_mutations');
+    }
+
+    public function forceDeleteAny($user): bool
+    {
+        return $user->isProgrammer();
+    }
 }

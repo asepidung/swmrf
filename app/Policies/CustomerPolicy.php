@@ -14,4 +14,7 @@ class CustomerPolicy
     public function delete(User $user, Customer $model): bool { return $user->hasPermission('delete_customers'); }
     public function restore(User $user, Customer $model): bool { return $user->hasPermission('delete_customers'); }
     public function forceDelete(User $user, Customer $model): bool { return $user->hasPermission('delete_customers'); }
+    public function deleteAny(User $user): bool { return $user->hasPermission('delete_customers'); }
+    public function restoreAny(User $user): bool { return $user->hasPermission('delete_customers'); }
+    public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_customers'); }
 }

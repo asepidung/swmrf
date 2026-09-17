@@ -14,4 +14,7 @@ class GoodsReceiptMaterialPolicy
     public function delete(User $user, GoodsReceiptMaterial $model): bool { return $user->hasPermission('delete_gr_materials'); }
     public function restore(User $user, GoodsReceiptMaterial $model): bool { return $user->hasPermission('delete_gr_materials'); }
     public function forceDelete(User $user, GoodsReceiptMaterial $model): bool { return $user->hasPermission('delete_gr_materials'); }
+    public function deleteAny(User $user): bool { return $user->hasPermission('delete_gr_materials'); }
+    public function restoreAny(User $user): bool { return $user->hasPermission('delete_gr_materials'); }
+    public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_gr_materials'); }
 }

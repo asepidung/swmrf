@@ -63,4 +63,19 @@ class DeliveryOrderPolicy
     {
         return $user->hasPermission('delete_delivery_orders');
     }
+
+    public function deleteAny(User $user): bool
+    {
+        return $user->hasPermission('delete_delivery_orders');
+    }
+
+    public function restoreAny(User $user): bool
+    {
+        return $user->hasPermission('delete_delivery_orders');
+    }
+
+    public function forceDeleteAny(User $user): bool
+    {
+        return $user->hasPermission('delete_delivery_orders');
+    }
 }

@@ -14,4 +14,7 @@ class CustomerGroupPolicy
     public function delete(User $user, CustomerGroup $model): bool { return $user->hasPermission('delete_customer_groups'); }
     public function restore(User $user, CustomerGroup $model): bool { return $user->hasPermission('delete_customer_groups'); }
     public function forceDelete(User $user, CustomerGroup $model): bool { return $user->hasPermission('delete_customer_groups'); }
+    public function deleteAny(User $user): bool { return $user->hasPermission('delete_customer_groups'); }
+    public function restoreAny(User $user): bool { return $user->hasPermission('delete_customer_groups'); }
+    public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_customer_groups'); }
 }
