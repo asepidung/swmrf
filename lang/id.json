@@ -1460,5 +1460,9 @@
     "This Sales Order is no longer waiting for a tally": "Sales Order ini sudah tidak menunggu tally",
     "It may have just been tallied or cancelled from another session.": "Kemungkinan baru saja di-tally atau dibatalkan dari sesi lain.",
     "This Sales Order is no longer waiting": "Sales Order ini sudah tidak berstatus menunggu",
-    "It may have just been tallied from another session.": "Kemungkinan baru saja di-tally dari sesi lain."
+    "It may have just been tallied from another session.": "Kemungkinan baru saja di-tally dari sesi lain.",
+    "Some carcasses were not deleted": "Sebagian karkas tidak terhapus",
+    ":count carcass(es) have already been processed into Boning.": ":count karkas sudah diproses ke Boning.",
+    "This animal has already been recorded in another Carcass document.": "Sapi ini sudah tercatat di dokumen Carcass lain.",
+    "This animal does not belong to the weighing document selected here.": "Sapi ini bukan milik penimbangan dokumen ini."
 }

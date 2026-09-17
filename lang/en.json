@@ -1460,5 +1460,9 @@
     "This Sales Order is no longer waiting for a tally": "This Sales Order is no longer waiting for a tally",
     "It may have just been tallied or cancelled from another session.": "It may have just been tallied or cancelled from another session.",
     "This Sales Order is no longer waiting": "This Sales Order is no longer waiting",
-    "It may have just been tallied from another session.": "It may have just been tallied from another session."
+    "It may have just been tallied from another session.": "It may have just been tallied from another session.",
+    "Some carcasses were not deleted": "Some carcasses were not deleted",
+    ":count carcass(es) have already been processed into Boning.": ":count carcass(es) have already been processed into Boning.",
+    "This animal has already been recorded in another Carcass document.": "This animal has already been recorded in another Carcass document.",
+    "This animal does not belong to the weighing document selected here.": "This animal does not belong to the weighing document selected here."
 }

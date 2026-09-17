@@ -3,8 +3,11 @@
 namespace App\Filament\Admin\Resources\CarcassResource\Pages;
 
 use App\Filament\Admin\Resources\CarcassResource;
+use App\Models\BoningCarcass;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Support\Exceptions\Halt;
 
 class EditCarcass extends EditRecord
 {
@@ -62,6 +65,22 @@ class EditCarcass extends EditRecord
 
     protected function beforeSave(): void
     {
+        // Sebelumnya pencegahan edit dokumen yang sudah dipakai Boning
+        // HANYA di tampilan -- tombol Save disembunyikan
+        // (`getFormActions()`) dan mount() cuma memperingatkan. `save()`
+        // Livewire bawaan Filament sendiri tidak pernah mengecek ini,
+        // jadi request yang diulang (devtools, tab basi) tetap bisa
+        // menulis angka karkas yang sudah dipakai Boning yang sudah
+        // terkunci.
+        if (BoningCarcass::where('carcass_id', $this->getRecord()->id)->exists()) {
+            Notification::make()
+                ->title(__('This Carcass has been processed into Boning and is now read-only.'))
+                ->danger()
+                ->send();
+
+            throw new Halt();
+        }
+
         if (isset($this->data['items']) && is_array($this->data['items'])) {
             $filteredItems = [];
             foreach ($this->data['items'] as $key => $item) {

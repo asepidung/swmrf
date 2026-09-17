@@ -103,7 +103,76 @@ class CarcassResource extends Resource
                             return [];
                         })
                         ->schema([
-                            Forms\Components\Hidden::make('cattle_weighing_item_id'),
+                            Forms\Components\Hidden::make('cattle_weighing_item_id')
+                                // Satu sapi tidak boleh masuk dua dokumen
+                                // Carcass sekaligus -- sebelumnya tidak ada
+                                // validasi apa pun di sini, hanya kemudahan
+                                // tampilan (`whereDoesntHave('carcassItems')`
+                                // di atas menyaring pilihan default, bukan
+                                // aturan simpan). Dua "Tarik Data" untuk
+                                // weighing yang sama (klik ganda, dua tab)
+                                // bisa lolos kemudahan tampilan itu dan
+                                // menghitung ekor yang sama di dua dokumen.
+                                ->rules([
+                                    function (\Filament\Forms\Contracts\HasForms $livewire) {
+                                        // `$record` di sini adalah milik BARIS
+                                        // Repeater (CarcassItem-nya sendiri
+                                        // kalau sudah ada), bukan dokumen
+                                        // Carcass induknya -- itulah yang
+                                        // dibutuhkan untuk mengecualikan
+                                        // baris milik dokumen ini sendiri.
+                                        // `$livewire` (halaman Edit/Create)
+                                        // yang menyimpan record induk itu.
+                                        $carcassId = method_exists($livewire, 'getRecord')
+                                            ? $livewire->getRecord()?->getKey()
+                                            : null;
+
+                                        return function (string $attribute, $value, \Closure $fail) use ($carcassId) {
+                                            if (blank($value)) {
+                                                return;
+                                            }
+
+                                            $konflik = \App\Models\CarcassItem::where('cattle_weighing_item_id', $value)
+                                                ->when($carcassId, fn ($q) => $q->where('carcass_id', '!=', $carcassId))
+                                                ->exists();
+
+                                            if ($konflik) {
+                                                $fail(__('This animal has already been recorded in another Carcass document.'));
+                                            }
+                                        };
+                                    },
+                                    // Baris ini `Hidden`, diisi lewat kode
+                                    // (default Repeater atau payload
+                                    // Livewire), bukan dipilih pengguna --
+                                    // tidak ada yang mencegah baris milik
+                                    // weighing LAIN tercampur ke dokumen ini
+                                    // kalau payload-nya dimanipulasi (mis.
+                                    // lewat devtools). Karkas dan rendemen
+                                    // dihitung per dokumen, jadi sapi dari
+                                    // weighing yang salah akan mencemari
+                                    // angka batch yang tidak seharusnya.
+                                    function (Forms\Get $get) {
+                                        return function (string $attribute, $value, \Closure $fail) use ($get) {
+                                            if (blank($value)) {
+                                                return;
+                                            }
+
+                                            $weighingIdDokumen = $get('../../cattle_weighing_id');
+
+                                            if (blank($weighingIdDokumen)) {
+                                                return;
+                                            }
+
+                                            $milikWeighingLain = \App\Models\CattleWeighingItem::where('id', $value)
+                                                ->where('cattle_weighing_id', '!=', $weighingIdDokumen)
+                                                ->exists();
+
+                                            if ($milikWeighingLain) {
+                                                $fail(__('This animal does not belong to the weighing document selected here.'));
+                                            }
+                                        };
+                                    },
+                                ]),
                             Forms\Components\TextInput::make('eartag')
                                 ->disabled()
                                 ->dehydrated(false)
@@ -491,8 +560,55 @@ class CarcassResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
+                    // Delete tunggal (EditCarcass/ViewCarcass) sudah benar
+                    // dicegah lewat ->disabled() saat Carcass-nya masih
+                    // dipakai Boning. Versi BULK tidak ditangkap sama
+                    // sekali sebelumnya -- Carcass::boot()'s deleting()
+                    // melempar \Exception mentah, dan bulk-select-lalu-
+                    // hapus akan menampilkannya sebagai galat mentah ke
+                    // operator alih-alih notifikasi yang bisa dibaca.
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Support\Collection $records): void {
+                            $ditolak = 0;
+
+                            foreach ($records as $record) {
+                                try {
+                                    $record->delete();
+                                } catch (\Exception $e) {
+                                    report($e);
+                                    $ditolak++;
+                                }
+                            }
+
+                            if ($ditolak > 0) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title(__('Some carcasses were not deleted'))
+                                    ->body(__(':count carcass(es) have already been processed into Boning.', ['count' => $ditolak]))
+                                    ->danger()
+                                    ->send();
+                            }
+                        }),
+                    Tables\Actions\ForceDeleteBulkAction::make()
+                        ->action(function (\Illuminate\Support\Collection $records): void {
+                            $ditolak = 0;
+
+                            foreach ($records as $record) {
+                                try {
+                                    $record->forceDelete();
+                                } catch (\Exception $e) {
+                                    report($e);
+                                    $ditolak++;
+                                }
+                            }
+
+                            if ($ditolak > 0) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title(__('Some carcasses were not deleted'))
+                                    ->body(__(':count carcass(es) have already been processed into Boning.', ['count' => $ditolak]))
+                                    ->danger()
+                                    ->send();
+                            }
+                        }),
                     Tables\Actions\RestoreBulkAction::make(),
                 ]),
             ]);
