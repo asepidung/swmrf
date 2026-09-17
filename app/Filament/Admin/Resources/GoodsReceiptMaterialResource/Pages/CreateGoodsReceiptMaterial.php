@@ -30,6 +30,19 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
 
     public bool $showPartialModal = false;
 
+    /**
+     * Halaman ini `extends Page` polos (bukan `CreateRecord`), jadi
+     * `mount()`-nya SENDIRI yang menggantikan seluruh alur `CreateRecord`
+     * bawaan -- termasuk `authorizeAccess()`-nya yang mensyaratkan
+     * `canCreate()`. Sebelumnya satu-satunya gerbang cuma
+     * `view_gr_materials` milik Resource (lewat `canViewAny()`).
+     */
+    public static function canAccess(array $parameters = []): bool
+    {
+        return auth()->user()?->isProgrammer()
+            || (auth()->user()?->hasPermission('create_gr_materials') ?? false);
+    }
+
     public function mount(): void
     {
         $this->poId = request()->query('po_id');
@@ -213,17 +226,24 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
 
     protected function executeCreate(string $poStatus): void
     {
+        // Lapis kedua: `canAccess()` menjaga PINTU halaman, tapi
+        // `processSave()`/`confirmPartial()`/`forceCompleted()` (yang
+        // semuanya berujung ke sini) adalah method Livewire publik yang
+        // bisa dipanggil langsung. Sama seperti keputusan Bank Account.
+        if (! (auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('create_gr_materials') ?? false))) {
+            Notification::make()->title(__('You do not have permission to do this.'))->danger()->send();
+            return;
+        }
+
         $data = $this->form->getState();
 
         DB::beginTransaction();
         try {
-            // Generate GR Number
-            $latest = GoodsReceiptMaterial::latest('id')->first();
-            $nextId = $latest ? $latest->id + 1 : 1;
-            $grNumber = 'SWM-GRM#' . date('y') . str_pad($nextId, 3, '0', STR_PAD_LEFT);
-
+            // Nomor GR sekarang dibuat oleh GoodsReceiptMaterial::boot()
+            // sendiri (creating -> generateGrNumber(), lewat
+            // DocumentNumber::next() yang mengunci baris) -- bukan dibaca
+            // di sini tanpa kunci apa pun.
             $gr = GoodsReceiptMaterial::create([
-                'gr_number' => $grNumber,
                 'purchase_material_id' => $this->purchaseMaterial->id,
                 'supplier_id' => $this->purchaseMaterial->supplier_id,
                 'receive_date' => $data['receive_date'],

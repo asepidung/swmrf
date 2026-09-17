@@ -535,20 +535,20 @@ class ActionAuthorizationTest extends TestCase
     /**
      * Susulan 15 September 2026: ditemukan SEKALIGUS oleh penjaga baru di
      * atas, tapi di LUAR lima modul batch 2 (Sales Order, Tally, Repack,
-     * Mutation, Boning). Sudah ditriase jadi batch 3 (Stock Take -> GR Beef
-     * -> GR Material -> Material Stock Take+Finding -> Carcass, plus satu
-     * PR sistemik terpisah untuk *Any() Policy).
+     * Mutation, Boning) -- termasuk di modul yang sudah pernah "disisir"
+     * sebelumnya (Material Stock, Stock Take). Sudah ditriase jadi batch 3
+     * (Stock Take -> GR Beef -> GR Material -> Material Stock Take+Finding
+     * -> Carcass, plus satu PR sistemik terpisah untuk *Any() Policy).
      *
-     * `MaterialStockTakeResource.php:DeleteAction` dan
-     * `MaterialFindingResource.php:DeleteAction` DIKECUALIKAN PERMANEN dari
-     * sini, bukan menunggu perbaikan (sama seperti
-     * `GoodsReceiptMaterialResource.php:DeleteAction` di bawah): dibaca
-     * ulang dari `ListRecords`/`ManageRecords::configureTableAction()` --
+     * `GoodsReceiptMaterialResource.php:DeleteAction` DIKECUALIKAN
+     * PERMANEN dari sini, bukan menunggu perbaikan: dibaca ulang dari
+     * `ListRecords::configureTableAction()`/`configureDeleteAction()`,
      * bare `Tables\Actions\DeleteAction::make()` di dalam `table()` sebuah
-     * Resource yang list page-nya lewat salah satu dari keduanya SUDAH
-     * diwiring otomatis ke `canDelete()` model/Resource (yang memang ada
-     * dan benar di kedua tempat ini) -- penjaga ini cuma memindai teks
-     * sumbernya, jadi tidak bisa melihat pengkabelan otomatis Filament itu.
+     * Resource yang list page-nya `extends ListRecords` SUDAH diwiring
+     * otomatis ke `canDelete()` model policy (yang memang ada dan benar di
+     * sini) -- penjaga ini cuma memindai teks sumbernya, jadi tidak bisa
+     * melihat pengkabelan otomatis Filament itu. Menambah `->authorize()`
+     * di sini akan REDUNDAN, bukan memperbaiki apa pun.
      *
      * `SalesReturnResource` masuk daftar ini juga, tapi alasannya beda:
      * Sales Return memang dikecualikan permanen (lihat `tertunda.md`),
@@ -560,17 +560,9 @@ class ActionAuthorizationTest extends TestCase
     {
         return [
             'app/Filament/Admin/Resources/GoodsReceiptMaterialResource.php:DeleteAction',
-            'app/Filament/Admin/Resources/GoodsReceiptProductResource/Pages/LabelingGoodsReceiptProduct.php:DeleteAction',
-            'app/Filament/Admin/Resources/GoodsReceiptProductResource/Pages/ScanGoodsReceiptProduct.php:DeleteAction',
             'app/Filament/Admin/Resources/MaterialStockTakeResource.php:DeleteAction',
-            // Stock Take (Opname Daging) sudah diperbaiki di cabang batch 3
-            // yang lain, tapi belum digabung ke snapshot main tempat cabang
-            // ini dibuat.
-            'app/Filament/Admin/Resources/StockTakeResource/Pages/ScanStockTake.php:DeleteAction',
             'app/Filament/Clusters/MaterialsStock/Resources/MaterialFindingResource.php:DeleteAction',
             'app/Filament/Admin/Resources/SalesReturnResource/Pages/InputReturnItems.php:DeleteAction',
-            'app/Filament/Admin/Resources/GoodsReceiptProductResource/Pages/LabelingGoodsReceiptProduct.php:create',
-            'app/Filament/Admin/Resources/GoodsReceiptProductResource/Pages/ScanGoodsReceiptProduct.php:scan',
         ];
     }
 

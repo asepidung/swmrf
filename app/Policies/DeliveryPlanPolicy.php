@@ -41,4 +41,19 @@ class DeliveryPlanPolicy
     {
         return $user->hasPermission('delete_delivery_plans');
     }
+
+    public function deleteAny(User $user): bool
+    {
+        return $user->hasPermission('delete_delivery_plans');
+    }
+
+    public function restoreAny(User $user): bool
+    {
+        return $user->hasPermission('delete_delivery_plans');
+    }
+
+    public function forceDeleteAny(User $user): bool
+    {
+        return $user->hasPermission('delete_delivery_plans');
+    }
 }

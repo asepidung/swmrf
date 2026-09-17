@@ -14,4 +14,7 @@ class VehiclePolicy
     public function delete(User $user, Vehicle $model): bool { return $user->hasPermission('delete_vehicles'); }
     public function restore(User $user, Vehicle $model): bool { return $user->hasPermission('delete_vehicles'); }
     public function forceDelete(User $user, Vehicle $model): bool { return $user->hasPermission('delete_vehicles'); }
+    public function deleteAny(User $user): bool { return $user->hasPermission('delete_vehicles'); }
+    public function restoreAny(User $user): bool { return $user->hasPermission('delete_vehicles'); }
+    public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_vehicles'); }
 }

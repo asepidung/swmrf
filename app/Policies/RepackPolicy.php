@@ -41,4 +41,19 @@ class RepackPolicy
     {
         return $user->hasPermission('delete_repacks');
     }
+
+    public function deleteAny(User $user): bool
+    {
+        return $user->hasPermission('delete_repacks');
+    }
+
+    public function restoreAny(User $user): bool
+    {
+        return $user->hasPermission('delete_repacks');
+    }
+
+    public function forceDeleteAny(User $user): bool
+    {
+        return $user->hasPermission('delete_repacks');
+    }
 }

@@ -110,6 +110,11 @@ class InputGoodsReceiptProduct extends Page implements HasForms
 
     public function saveGr(): void
     {
+        if (! (auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('edit_goods_receipt_products') ?? false))) {
+            Notification::make()->title(__('You do not have permission to do this.'))->danger()->send();
+            return;
+        }
+
         if ($this->record->is_locked) {
             Notification::make()->title(__('This goods receipt is locked, so it cannot be saved.'))->warning()->send();
             return;
@@ -145,16 +150,39 @@ class InputGoodsReceiptProduct extends Page implements HasForms
 
     public function lockGr(): void
     {
+        // Sebelumnya method ini nol pemeriksaan izin -- bukan cuma
+        // longgar, method Livewire publik biasa yang bisa dipanggil
+        // langsung terlepas dari tombol "Lock" di tabel Resource yang
+        // sudah benar mensyaratkan `lock_goods_receipt_products`.
+        if (! (auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('lock_goods_receipt_products') ?? false))) {
+            Notification::make()->title(__('You do not have permission to do this.'))->danger()->send();
+            return;
+        }
+
         if ($this->record->is_locked) {
             return;
         }
 
         DB::beginTransaction();
         try {
-            $this->record->update(['is_locked' => true]);
+            // Baris GR dikunci dan dibaca ULANG sebelum ditulis -- tanpa
+            // ini, scan()/create() yang sedang berjalan bersamaan bisa
+            // menyelipkan item SESUDAH Payable-nya dihitung dari baris
+            // ini, membuat nominal utang ke supplier tidak lagi cocok
+            // dengan isi GR yang sebenarnya.
+            $locked = GoodsReceiptProduct::whereKey($this->record->id)->lockForUpdate()->first();
+
+            if (! $locked || $locked->is_locked) {
+                DB::rollBack();
+
+                return;
+            }
+
+            $locked->update(['is_locked' => true]);
+            $this->record->is_locked = true;
 
             // Generate account payable
-            \App\Models\Payable::generateForGoodsReceiptProduct($this->record);
+            \App\Models\Payable::generateForGoodsReceiptProduct($locked);
 
             DB::commit();
 
@@ -169,6 +197,14 @@ class InputGoodsReceiptProduct extends Page implements HasForms
 
     public function deleteGr(): void
     {
+        // Tombol header-nya sudah benar mensyaratkan
+        // `delete_goods_receipt_products`, tapi method di baliknya sendiri
+        // tidak -- bisa dipanggil langsung terlepas dari tombolnya.
+        if (! (auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('delete_goods_receipt_products') ?? false))) {
+            Notification::make()->title(__('You do not have permission to do this.'))->danger()->send();
+            return;
+        }
+
         if ($this->record->items()->exists()) {
             Notification::make()->title(__('This goods receipt already has items, so it cannot be deleted.'))->warning()->send();
             return;

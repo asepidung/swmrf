@@ -37,6 +37,18 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
     public ?string $barcode = '';
     public ?int $warehouse_id = null;
 
+    /**
+     * Halaman ini MEMINDAHKAN STOK sungguhan -- setiap pindaian yang
+     * berhasil melahirkan baris `BeefStock` baru. Sebelumnya sama sekali
+     * tidak punya `canAccess()`, jadi satu-satunya gerbang cuma
+     * `view_goods_receipt_products` milik Resource (lewat `canViewAny()`).
+     */
+    public static function canAccess(array $parameters = []): bool
+    {
+        return auth()->user()?->isProgrammer()
+            || (auth()->user()?->hasPermission('edit_goods_receipt_products') ?? false);
+    }
+
     public function getMaxContentWidth(): MaxWidth | string | null
     {
         return MaxWidth::Full;
@@ -116,6 +128,11 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
                     ->iconButton()
                     ->requiresConfirmation()
                     ->tooltip(__('Delete Data'))
+                    // Sebelumnya bare -- siapa pun yang bisa membuka
+                    // halaman ini bisa membuang barang orang lain dari
+                    // stok tanpa izin apa pun.
+                    ->authorize(fn (): bool => auth()->user()?->isProgrammer()
+                        || (auth()->user()?->hasPermission('edit_goods_receipt_products') ?? false))
                     ->action(function (GoodsReceiptProductItem $item) {
                         DB::transaction(function () use ($item) {
                             $stock = BeefStock::where('barcode', $item->barcode)->lockForUpdate()->first();
@@ -150,6 +167,19 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
     public function scan()
     {
         if ($this->record->is_locked) {
+            return;
+        }
+
+        // Lapis kedua: `canAccess()` menjaga PINTU halaman, tapi `scan()`
+        // sendiri adalah method Livewire publik yang bisa dipanggil
+        // langsung. Sama seperti keputusan Bank Account: dua lapis, bukan
+        // satu.
+        if (! (auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('edit_goods_receipt_products') ?? false))) {
+            Notification::make()
+                ->title(__('You do not have permission to scan items'))
+                ->danger()
+                ->send();
+
             return;
         }
 
@@ -245,6 +275,17 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
         // Process insertion
         try {
             DB::transaction(function () use ($barcode, $product, $gradeId, $weightVal, $pcsVal, $phVal, $originCode, $poItem, $defaultPackDate, $expDate) {
+                // Baris GR dikunci dan status kuncinya dibaca ULANG di sini
+                // -- kalau "Lock" (InputGoodsReceiptProduct::lockGr())
+                // sedang/baru saja memproses dokumen ini, permintaan ini
+                // menunggu baris yang sama lalu menolak, bukan menyelipkan
+                // item SESUDAH Payable-nya sudah terlanjur dihitung.
+                $lockedGr = GoodsReceiptProduct::whereKey($this->record->id)->lockForUpdate()->first();
+
+                if (! $lockedGr || $lockedGr->is_locked) {
+                    throw new \Exception(__('This goods receipt is locked, so it cannot be saved.'));
+                }
+
                 // TOCTOU Fix: pengecekan duplikat wajib di dalam transaksi dan terkunci.
                 if ($this->record->items()->where('barcode', $barcode)->lockForUpdate()->exists()) {
                     throw new \Exception(__('Item Already Recorded'));
@@ -255,6 +296,16 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
                 }
 
                 $price = $poItem ? $poItem->price : 0;
+
+                // Stok TIDAK boleh lahir tanpa harga. Sebelumnya price=0
+                // lolos diam-diam kalau item PO-nya berubah/terhapus di
+                // antara render form dan submit -- subtotal jadi nol tanpa
+                // pemberitahuan apa pun, dan stok itu tidak pernah
+                // tertagih ke pelanggan lewat HPP.
+                if ($price <= 0) {
+                    throw new \Exception(__('This product has no price on the purchase order, so stock cannot be created without a price.'));
+                }
+
                 $subtotal = $price * $weightVal;
 
                 // 1. Create GoodsReceiptProductItem

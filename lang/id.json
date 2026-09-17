@@ -1462,5 +1462,11 @@
     "This Sales Order is no longer waiting": "Sales Order ini sudah tidak berstatus menunggu",
     "It may have just been tallied from another session.": "Kemungkinan baru saja di-tally dari sesi lain.",
     "You do not have permission to do this.": "Anda tidak punya izin untuk melakukan ini.",
-    "The stock count was just finished from another session, so this input can no longer be applied.": "Opname baru saja diselesaikan dari sesi lain, jadi masukan ini tidak bisa lagi diterapkan."
+    "The stock count was just finished from another session, so this input can no longer be applied.": "Opname baru saja diselesaikan dari sesi lain, jadi masukan ini tidak bisa lagi diterapkan.",
+    "This goods receipt is locked, so it cannot be edited.": "GR ini sudah dikunci, jadi tidak bisa diubah.",
+    "This product has no price on the purchase order, so stock cannot be created without a price.": "Produk ini tidak punya harga di purchase order, jadi stok tidak bisa lahir tanpa harga.",
+    "Some carcasses were not deleted": "Sebagian karkas tidak terhapus",
+    ":count carcass(es) have already been processed into Boning.": ":count karkas sudah diproses ke Boning.",
+    "This animal has already been recorded in another Carcass document.": "Sapi ini sudah tercatat di dokumen Carcass lain.",
+    "This animal does not belong to the weighing document selected here.": "Sapi ini bukan milik penimbangan dokumen ini."
 }

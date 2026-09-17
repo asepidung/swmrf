@@ -4,7 +4,9 @@ namespace App\Filament\Admin\Resources\GoodsReceiptMaterialResource\Pages;
 
 use App\Filament\Admin\Resources\GoodsReceiptMaterialResource;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Support\Exceptions\Halt;
 
 class EditGoodsReceiptMaterial extends EditRecord
 {
@@ -44,13 +46,50 @@ class EditGoodsReceiptMaterial extends EditRecord
     {
         parent::mount($record);
 
+        // "Lock" berarti TIDAK BISA DIUBAH SAMA SEKALI -- jalur untuk
+        // mengubahnya lagi adalah Unlock dulu (tombol lock/unlock di
+        // tabel Resource, yang menolak unlock kalau Payable-nya sudah
+        // partial/paid). Sebelumnya halaman ini hanya menolak berdasarkan
+        // status Payable, bukan is_locked itu sendiri -- GR yang terkunci
+        // tapi Payable-nya masih 'unpaid' tetap bisa dibuka dan diedit.
+        if ($this->getRecord()->is_locked) {
+            Notification::make()
+                ->title(__('This goods receipt is locked, so it cannot be edited.'))
+                ->danger()
+                ->send();
+            $this->redirect($this->getResource()::getUrl('index'));
+
+            return;
+        }
+
         $payable = $this->getRecord()->payable;
         if ($payable && in_array($payable->status, ['partial', 'paid'])) {
-            \Filament\Notifications\Notification::make()
+            Notification::make()
                 ->title(__('This Goods Receipt cannot be edited because its payment status is already partial or paid.'))
                 ->danger()
                 ->send();
             $this->redirect($this->getResource()::getUrl('index'));
+        }
+    }
+
+    /**
+     * Lapis kedua: `mount()` menolak MEMBUKA halaman untuk GR yang
+     * terkunci, tapi `save()` bawaan Filament sendiri tidak pernah
+     * mengecek `is_locked` -- tab yang sudah terbuka sebelum GR-nya
+     * dikunci dari sesi lain masih bisa menyimpan. Baris dikunci dan
+     * dibaca ULANG di sini sebelum penyimpanan benar-benar terjadi.
+     */
+    protected function beforeSave(): void
+    {
+        $locked = \App\Models\GoodsReceiptMaterial::whereKey($this->record->id)->lockForUpdate()->first();
+
+        if ($locked && $locked->is_locked) {
+            Notification::make()
+                ->title(__('This goods receipt is locked, so it cannot be edited.'))
+                ->danger()
+                ->send();
+
+            throw new Halt();
         }
     }
 
