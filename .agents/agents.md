@@ -8,6 +8,7 @@
 > - Penjelasan rinci tiap modul ada di [`docs/modules/`](../docs/modules/).
 > - Pekerjaan yang **sengaja ditunda** ada di [`tertunda.md`](tertunda.md), termasuk izin yang menunggu dicentang Owner.
 > - Bacaan dokumen HPP -- costing, carcass, boning, PO -- beserta pertanyaan yang **masih menunggu jawaban accounting** ada di [`hpp.md`](hpp.md). Jangan menurunkan ulang rumusnya dari nol; sudah diuji ke berkas aslinya.
+> - Isi basis data legacy PRODUKSI (90 tabel, jumlah baris, kolom, dan fakta yang mengubah asumsi -- price list, grup pelanggan, BOM) ada di [`legacy-db.md`](legacy-db.md). Bahan sesi import master data; legacy **hanya boleh dibaca**.
 > - Dokumen ini adalah **konteks**: alasan, riwayat, dan jebakan yang sudah pernah kami tabrak.
 >
 > **Perbarui dokumen ini setiap kali sebuah keputusan diambil.** Tujuannya supaya sesi berikutnya tidak perlu menggali ulang dari nol atau mengulang perdebatan yang sudah selesai.

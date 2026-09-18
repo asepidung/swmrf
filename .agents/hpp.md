@@ -784,8 +784,11 @@ Menjawab bagian 14.A dan 14.B sekaligus, lewat Hafizh.
    disetel**, bukan tetapan aplikasi; nilai bawaannya angka costing terakhir.
 3. **Pelanggan utama hanya LION dan HYPERMART.** Tidak ada yang ketiga.
 4. **Grup pelanggan dan keanggotaannya akan terisi dari migrasi data legacy.**
-   Catatan Hafizh: legacy TIDAK punya price list, jadi `price_lists` per grup
-   tetap harus diisi tangan -- sumbernya kolom `GROSS PRICE` di form costing
+   Catatan Hafizh (dikoreksi 18 Sep setelah membaca DB produksi, lihat
+   `legacy-db.md`): legacy punya 3 price list kecil (ASEP OFFAL, JAMAL, YADI)
+   dan kolom `groupcs.terms` yang kosong -- tidak ada harga LION/HYPERMART
+   maupun trading terms di sana, jadi `price_lists` per grup tetap harus
+   diisi tangan -- sumbernya kolom `GROSS PRICE` di form costing
    (identik di ketujuh lot Juni, cukup sekali salin).
 5. Produk tanpa grup acuan -> jalan tapi ditandai; susut tetap di dalam HPP.
    Owner tidak keberatan; sesudah migrasi semua customer pasti bergrup, jadi
