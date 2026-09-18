@@ -172,6 +172,13 @@ REGULER 141 SO / 79 customer, UNGROUP 64 / 23, GRAND LUCKY 51 / 12, AEON 44 /
 kecil sekarang. REGULER dan UNGROUP adalah dua grup "harga umum" yang harus
 dilebur jadi satu pengertian di swmrf (nullable = harga umum, `hpp.md` §10).
 
+**Penegasan Owner, 18 Sep 2026:** di swmrf **semua customer akan bergrup**,
+tanpa kecuali. Selain grup pelanggan komersial akan ada grup **UMUM**, grup
+**KARYAWAN**, dan grup **WARGA** (masing-masing dengan harga sendiri untuk
+transaksi penjualan). Ini menguatkan #406 (`customer_group_id` wajib) dan
+batasan `hpp.md` §9: grup KARYAWAN/WARGA **tidak boleh** dipakai sebagai acuan
+costing -- acuan HPP hanya LION, HYPERMART, atau harga umum.
+
 ### Diskon & trading terms TIDAK ada di legacy
 `salesorderdetail.discount` = 0 di seluruh 3 bulan terakhir, semua grup.
 Diskon di invoice hanya LION ~2,04% (itu diskon Lion DC yang sudah ada di
