@@ -147,3 +147,68 @@ terakhir 18 Sep 2026 pagi).
 - `users` (20): idusers,userid,passuser,fullname,status
 - `weight_cattle` (105): idweigh,idreceive,weigh_no,weigh_date,idweigher,note,is_deleted,creatime,createby,updatetime,updateby
 - `weight_cattle_detail` (3837): idweighdetail,idweigh,idreceivedetail,eartag,weight,notes,creatime,createby,updatetime,updateby
+
+## Jelajah lanjutan, 18 September 2026 malam
+
+Data mentah (daftar barang, material, BOM, customer, supplier, harga per grup)
+ada di scratchpad Hafizh, **sengaja tidak dimasukkan repo** -- repositori ini
+publik dan isinya nama pelanggan serta harga. Minta ke Hafizh saat sesi import.
+
+### Material legacy = katalog belanja, bukan hanya bahan produksi
+`rawcategory` 28 kategori; yang benar-benar bahan produksi/kemasan: KARTON (13),
+PLASTIK (20), LABEL (5), MIKA (2), STYROFOAM (6), TRAY (2), PACKAGING SUPPORT
+(8), MEAT PROCESSING (85), LAKBAN (1), PRODUKSI (8). Sisanya belanja
+operasional: ATK (16), INTERNET (2), MAINTENANCE (2), SPAREPART MOBIL (4),
+PERAWATAN ARMADA (5), PERCETAKAN (10), LAIN-LAIN (31), dan 9 kategori kosong.
+**Konsekuensi:** (a) import `materials` harus disaring per kategori, bukan
+semua 225; (b) kategori operasional itu adalah daftar kategori awal yang
+bagus untuk modul **Expense** (#453). `unit` NULL pada 100 dari 225 material;
+yang terisi: Pcs 39, Box 25, Pack 19, Kg 15, Ikat 14, Set 13.
+
+### Grup pelanggan yang hidup (SO sejak Jun 2026)
+REGULER 141 SO / 79 customer, UNGROUP 64 / 23, GRAND LUCKY 51 / 12, AEON 44 /
+12, ABUBA 32 / 32, **LION 32 SO / 28 toko**, EL ASADOR 22, MIKE PIZZA 10.
+**HPM (Hypermart) 31 toko tetapi hanya 8 baris SO dalam 3 bulan** -- volume
+kecil sekarang. REGULER dan UNGROUP adalah dua grup "harga umum" yang harus
+dilebur jadi satu pengertian di swmrf (nullable = harga umum, `hpp.md` §10).
+
+### Diskon & trading terms TIDAK ada di legacy
+`salesorderdetail.discount` = 0 di seluruh 3 bulan terakhir, semua grup.
+Diskon di invoice hanya LION ~2,04% (itu diskon Lion DC yang sudah ada di
+swmrf) dan AEON 0,23%. **Trading terms 6% / 16,45% tidak pernah masuk sistem
+legacy** -- hidup hanya di spreadsheet costing. Harus diisi tangan di
+`customer_groups`.
+
+### Harga per grup bisa diturunkan dari SO 3 bulan terakhir
+Untuk LION, HPM, REGULER tersedia min/max/harga terakhir per produk (89 baris,
+di scratchpad). Ini kandidat sumber `price_list_items` awal selain kolom
+GROSS PRICE costing -- keduanya perlu dicocokkan Owner.
+
+### Nilai status legacy (untuk memahami data, bukan untuk diimpor)
+- `tally.stat`: DO 7.881, kosong/NULL 356, Rejected 11, Approved 3.
+- `do.status`: Invoiced 8.359, Unapproved 228, Rejected 10, Approved 3.
+- `salesorder.progress`: Delivered 8.013, Waiting 95, Cancel 20, On Delivery
+  15, Rejected 10, DRAFT 4, On Process 2.
+- `invoice.status`: "-" 4.983, Sudah TF 3.474, Belum TF 66 (tukar faktur).
+- `returjual.status`: POSTED 33, DRAFT 2.
+- `stock.origin`: 1 = 378, 3 = 189, 2 = 11, 7 = 5, 6 = 3 (digit asal barcode;
+  cocokkan dengan konstanta origin swmrf sebelum opname awal).
+
+### Jebakan data yang terlihat
+- **Panjang barcode tidak seragam**: 18, 19, dan 20 digit bercampur di
+  `stock` (375 baris 19 digit awalan 1; 152 baris 20 digit awalan 3). Pemindai
+  swmrf yang memvalidasi panjang tetap akan menolak sebagian barcode lama saat
+  opname awal -- putuskan: relabel semua, atau longgarkan validasi untuk
+  barcode lama.
+- `customers.top` berisi nilai sampah: -1, 0, 2147483647, di samping 1..30.
+  Import harus membersihkan (NULL bila di luar 0..60).
+- `customers.pajak` dan `tukarfaktur` = 0 untuk semua 304 customer (tidak
+  pernah dipakai); bendera sertifikasi terisi sedikit (nkv 14, halal 15, sv 5,
+  joss 3, phd 4, ujilab 5) -- swmrf belum punya kolomnya; putuskan diimpor ke
+  catatan atau dilewati.
+- `segment` = rekening penagihan (BCA/BNI, pribadi/PT) -- padanannya di swmrf
+  adalah `bank_accounts` + pilihan rekening di invoice, bukan
+  `customer_segments`.
+- `supplier` 43 baris bercampur supplier sapi, material, dan jasa; `jenis_usaha`
+  teks bebas -- swmrf memisahkan supplier per jenis lewat PO, jadi cukup impor
+  apa adanya.
