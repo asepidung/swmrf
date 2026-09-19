@@ -207,6 +207,18 @@ ada yang perlu melihat plan yang sudah dihapus):
 `edit_sales_return_plans` · `delete_sales_return_plans` ·
 `view_deleted_sales_return_plans`
 
+### Expense, modul baru (issue #453, 20 September 2026)
+
+Enam izin baru untuk modul Expense (pengeluaran kas kecil), dibuat lewat
+migrasi (`2026_09_20_090200_create_the_expense_permissions.php` +
+`2026_09_20_150000_...` untuk `view_deleted_expenses`), belum dilekatkan
+ke siapa pun -- Owner perlu mencentangnya untuk peran yang mencatat kasbon/
+reimburse sehari-hari (view/create/edit) dan Finance (manage_expense_categories,
+delete, view_deleted):
+
+`view_expenses` · `create_expenses` · `edit_expenses` · `delete_expenses` ·
+`view_deleted_expenses` · `manage_expense_categories`
+
 ---
 
 ## H. Setelah aplikasi live -- changelog dan versi
