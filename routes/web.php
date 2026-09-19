@@ -300,6 +300,15 @@ Route::middleware(['web', 'auth'])->group(function () {
         return view('print.sales-return', compact('record'));
     })->name('sales-return.pdf');
 
+    // Plan Sales Return (issue #451) -- dokumen sales, terpisah dari
+    // Sales Return fisiknya di atas.
+    Route::get('/print/sales-return-plan/{record}', function (\App\Models\SalesReturnPlan $record) {
+        abort_unless(auth()->user()?->hasPermission('view_sales_return_plans') ?? false, 403);
+
+        $record->load(['customer', 'deliveryOrder', 'items.product', 'createdBy']);
+        return view('print.sales-return-plan', compact('record'));
+    })->name('sales-return-plan.print');
+
     // ------------------------------------------
     // 11. MODUL MUTASI
     // ------------------------------------------

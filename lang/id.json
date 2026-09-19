@@ -1500,5 +1500,20 @@
     "The claimed weight cannot exceed what was actually delivered on this delivery order.": "Berat klaim tidak boleh melebihi yang benar-benar terkirim di surat jalan ini.",
     "Items can only be added to a sales return plan while it is still a draft.": "Item hanya bisa ditambahkan ke plan retur selagi masih berstatus draft.",
     "This plan has already been received and its items can no longer be changed.": "Plan ini sudah diterima dan item-nya tidak bisa diubah lagi.",
-    "Items can only be removed from a sales return plan while it is still a draft.": "Item hanya bisa dihapus dari plan retur selagi masih berstatus draft."
+    "Items can only be removed from a sales return plan while it is still a draft.": "Item hanya bisa dihapus dari plan retur selagi masih berstatus draft.",
+    "Sales Return Plans": "Plan Retur Jual",
+    "Plan Information": "Informasi Plan",
+    "Plan Date": "Tanggal Plan",
+    "Plan No.": "No. Plan",
+    "Unidentified": "Tidak Diketahui",
+    "Manage Items": "Kelola Item",
+    "Submit Plan": "Submit Plan",
+    "Plan submitted.": "Plan disubmit.",
+    "Negotiate Claim": "Nego Klaim",
+    "Cancel Plan": "Batalkan Plan",
+    "Plan cancelled.": "Plan dibatalkan.",
+    "Manage Items for :document": "Kelola Item untuk :document",
+    "Claimed Weight (Kg)": "Berat Klaim (Kg)",
+    "Claimed Qty (Pcs)": "Qty Klaim (Pcs)",
+    "Item removed.": "Item dihapus."
 }

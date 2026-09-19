@@ -1500,5 +1500,20 @@
     "The claimed weight cannot exceed what was actually delivered on this delivery order.": "The claimed weight cannot exceed what was actually delivered on this delivery order.",
     "Items can only be added to a sales return plan while it is still a draft.": "Items can only be added to a sales return plan while it is still a draft.",
     "This plan has already been received and its items can no longer be changed.": "This plan has already been received and its items can no longer be changed.",
-    "Items can only be removed from a sales return plan while it is still a draft.": "Items can only be removed from a sales return plan while it is still a draft."
+    "Items can only be removed from a sales return plan while it is still a draft.": "Items can only be removed from a sales return plan while it is still a draft.",
+    "Sales Return Plans": "Sales Return Plans",
+    "Plan Information": "Plan Information",
+    "Plan Date": "Plan Date",
+    "Plan No.": "Plan No.",
+    "Unidentified": "Unidentified",
+    "Manage Items": "Manage Items",
+    "Submit Plan": "Submit Plan",
+    "Plan submitted.": "Plan submitted.",
+    "Negotiate Claim": "Negotiate Claim",
+    "Cancel Plan": "Cancel Plan",
+    "Plan cancelled.": "Plan cancelled.",
+    "Manage Items for :document": "Manage Items for :document",
+    "Claimed Weight (Kg)": "Claimed Weight (Kg)",
+    "Claimed Qty (Pcs)": "Claimed Qty (Pcs)",
+    "Item removed.": "Item removed."
 }

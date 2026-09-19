@@ -299,7 +299,17 @@ class DatabaseSeeder extends Seeder
             ['name' => 'edit_sales_returns', 'module_name' => 'Sales Returns', 'description' => 'Edit sales returns'],
             ['name' => 'delete_sales_returns', 'module_name' => 'Sales Returns', 'description' => 'Delete sales returns'],
             ['name' => 'view_deleted_sales_returns', 'module_name' => 'Sales Returns', 'description' => 'View deleted sales returns'],
-            
+
+            // Sales Return Plans Module (issue #451) -- izin sungguhannya
+            // dibuat lewat migrasi (seeder ini tidak boleh dijalankan di
+            // server), baris ini sekadar referensi historisnya tetap satu
+            // tempat, pola yang sama dengan Customers/Receivables.
+            ['name' => 'view_sales_return_plans', 'module_name' => 'Sales Return Plans', 'description' => 'View sales return plans'],
+            ['name' => 'create_sales_return_plans', 'module_name' => 'Sales Return Plans', 'description' => 'Create sales return plans'],
+            ['name' => 'edit_sales_return_plans', 'module_name' => 'Sales Return Plans', 'description' => 'Edit sales return plans'],
+            ['name' => 'delete_sales_return_plans', 'module_name' => 'Sales Return Plans', 'description' => 'Delete sales return plans'],
+            ['name' => 'view_deleted_sales_return_plans', 'module_name' => 'Sales Return Plans', 'description' => 'View deleted sales return plans'],
+
             // Beef Stock Aging Module
             ['name' => 'view_beef_stock_aging', 'module_name' => 'Beef Stock Aging', 'description' => 'View beef stock aging'],
             
