@@ -219,3 +219,26 @@ GROSS PRICE costing -- keduanya perlu dicocokkan Owner.
 - `supplier` 43 baris bercampur supplier sapi, material, dan jasa; `jenis_usaha`
   teks bebas -- swmrf memisahkan supplier per jenis lewat PO, jadi cukup impor
   apa adanya.
+
+## Perintah `legacy:import-master` -- hasil dry-run pertama, 19 September 2026
+
+Perintahnya ada (#472, #473): `php artisan legacy:import-master --source=<dump.sql>`
+(dry-run; `--apply` untuk menulis). Sumber: snapshot master produksi 19 Sep
+di `legacy/versi prosedural/konak/SWM-master-2026-09-19.sql` (gitignored).
+Dry-run terhadap DB lokal Hafizh:
+
+| Target | dibuat | dilewati | konflik | Yang harus diputuskan di sesi berdua |
+|---|---|---|---|---|
+| product_categories | 4 | 1 | 2 | dua kategori legacy yang nama-nya bertabrakan dengan yang sudah ada |
+| grades | 6 | 0 | 0 | -- |
+| suppliers | 42 | 0 | 3 | duplikat beda spasi CV. SAMUDERA KARUNIA RIZKY; NPWP tidak punya kolom |
+| cattle_classes | 4 | 3 | 0 | -- |
+| products | 59 | 3 | 96 | 9 barang tanpa kode legacy (STYROFOAM, ICE GELL, DELIVERY COST, LUNG, ...) -- sebagian bukan produk daging; sisanya periksa di laporan |
+| material_categories | 9 | 1 | 0 | -- |
+| materials | 89 | 2 | 59 | 59 material MEAT PROCESSING tanpa satuan (bumbu, tepung, saus) -- satuan harus ditetapkan |
+| product_materials (BOM) | 141 | 0 | 276 | basis box vs pcs untuk PLASTIK/LABEL/MIKA (ditandai TINJAU), sisanya baris is_active=0 / produk yang dilewati |
+
+Total konflik 436 -- itulah agenda sesi import: bukan menulis kode lagi,
+melainkan memutuskan satu per satu dari laporan dry-run. Customers, grup,
+segment, dan barcode stok TIDAK termasuk perintah ini (sengaja).
+
