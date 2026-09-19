@@ -1526,5 +1526,19 @@
     "Claimed but not physically received: :detail": "Diklaim tapi tidak diterima secara fisik: :detail",
     "Reduced by Sales Returns": "Dikurangi Retur Jual",
     "Returns": "Retur",
-    "Reduced by Return": "Dikurangi Retur"
+    "Reduced by Return": "Dikurangi Retur",
+    "This expense category cannot be deleted because it is still used by existing expenses.": "Kategori pengeluaran ini tidak bisa dihapus karena masih dipakai oleh pengeluaran yang ada.",
+    "The advance amount is required.": "Jumlah uang muka wajib diisi.",
+    "The receipt amount is required for a reimbursement.": "Jumlah nota wajib diisi untuk reimburse.",
+    "Only an open advance can be settled.": "Hanya kasbon berstatus Open yang bisa diselesaikan.",
+    "The receipt amount cannot be negative.": "Jumlah nota tidak boleh negatif.",
+    "Advance change returned for :number": "Sisa kasbon dikembalikan untuk :number",
+    "Additional expense beyond advance for :number": "Tambahan pengeluaran melebihi uang muka untuk :number",
+    "Only an open advance can be cancelled.": "Hanya kasbon berstatus Open yang bisa dibatalkan.",
+    "Advance cancelled for :number": "Kasbon dibatalkan untuk :number",
+    "This expense is locked and can no longer be edited.": "Pengeluaran ini sudah terkunci dan tidak bisa diubah lagi.",
+    "Only an open expense can be deleted; settled or cancelled expenses are locked.": "Hanya pengeluaran berstatus Open yang bisa dihapus; yang sudah Settled atau Cancelled terkunci.",
+    "Advance returned because the expense :number was deleted": "Uang muka dikembalikan karena pengeluaran :number dihapus",
+    "Advance given for :number": "Uang muka diberikan untuk :number",
+    "Reimbursement for :number": "Reimburse untuk :number"
 }

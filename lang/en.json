@@ -1526,5 +1526,19 @@
     "Claimed but not physically received: :detail": "Claimed but not physically received: :detail",
     "Reduced by Sales Returns": "Reduced by Sales Returns",
     "Returns": "Returns",
-    "Reduced by Return": "Reduced by Return"
+    "Reduced by Return": "Reduced by Return",
+    "This expense category cannot be deleted because it is still used by existing expenses.": "This expense category cannot be deleted because it is still used by existing expenses.",
+    "The advance amount is required.": "The advance amount is required.",
+    "The receipt amount is required for a reimbursement.": "The receipt amount is required for a reimbursement.",
+    "Only an open advance can be settled.": "Only an open advance can be settled.",
+    "The receipt amount cannot be negative.": "The receipt amount cannot be negative.",
+    "Advance change returned for :number": "Advance change returned for :number",
+    "Additional expense beyond advance for :number": "Additional expense beyond advance for :number",
+    "Only an open advance can be cancelled.": "Only an open advance can be cancelled.",
+    "Advance cancelled for :number": "Advance cancelled for :number",
+    "This expense is locked and can no longer be edited.": "This expense is locked and can no longer be edited.",
+    "Only an open expense can be deleted; settled or cancelled expenses are locked.": "Only an open expense can be deleted; settled or cancelled expenses are locked.",
+    "Advance returned because the expense :number was deleted": "Advance returned because the expense :number was deleted",
+    "Advance given for :number": "Advance given for :number",
+    "Reimbursement for :number": "Reimbursement for :number"
 }
