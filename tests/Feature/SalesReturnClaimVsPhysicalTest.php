@@ -258,11 +258,21 @@ class SalesReturnClaimVsPhysicalTest extends TestCase
     }
 
     // =========================================================================
-    // Scan menolak produk yang tidak diklaim
+    // Susulan issue #476: fisik ikut yang datang, uang ikut klaim
     // =========================================================================
 
-    /** @test */
-    public function scanning_a_product_absent_from_the_plan_is_refused(): void
+    /**
+     * Sebelum issue #476 scan produk di luar plan DITOLAK sama sekali.
+     * Owner membalik keputusan itu 20 September: kondisi lapangan (retur
+     * campur, kadang ada produk yang lupa diklaim) membuat penolakan itu
+     * menghalangi barang fisik masuk stok. Sekarang produk begini
+     * DITERIMA -- masuk stok seperti biasa, tapi kreditnya 0 dan TANPA
+     * FinancialLoss (bukan loss, bukan kredit -- murni stok bertambah
+     * tanpa efek uang).
+     *
+     * @test
+     */
+    public function scanning_a_product_absent_from_the_plan_is_received_with_zero_credit_and_no_loss(): void
     {
         ['tally' => $tally, 'do' => $do] = $this->kirimDanTagih(50, 100000);
 
@@ -275,10 +285,12 @@ class SalesReturnClaimVsPhysicalTest extends TestCase
             'warehouse_id' => $this->warehouse->id, 'grade_id' => $this->grade->id,
             'weight' => 10, 'qty_pcs' => 1, 'pack_date' => now()->toDateString(), 'origin' => '1',
         ]);
+        $do->syncItemsFromTally();
 
         // Plan cuma mengklaim $this->product, bukan $produkTakDiklaim.
         $plan = $this->planDenganKlaim($do, 50);
         $retur = $this->tarikPlan($plan);
+        $this->fisik($retur, 'BC-004', 50);
 
         $this->user->permissions()->attach(
             Permission::firstOrCreate(['name' => 'view_sales_returns'], ['module_name' => 'x', 'description' => 'x'])->id
@@ -292,6 +304,117 @@ class SalesReturnClaimVsPhysicalTest extends TestCase
             ->set('dataScan.barcode', 'BC-UNCLAIMED')
             ->call('processScan');
 
-        $this->assertSame(0, $retur->fresh()->items()->count());
+        // Diterima -- bukan ditolak.
+        $this->assertSame(2, $retur->fresh()->items()->count());
+        $this->assertDatabaseHas('sales_return_items', [
+            'sales_return_id' => $retur->id, 'product_id' => $produkTakDiklaim->id, 'barcode' => 'BC-UNCLAIMED',
+        ]);
+
+        $retur->refresh()->approve();
+
+        $itemTakDiklaim = $retur->fresh()->items()->where('product_id', $produkTakDiklaim->id)->first();
+        $this->assertSame(0.0, (float) $itemTakDiklaim->credited_weight);
+        $this->assertSame(0.0, (float) $itemTakDiklaim->line_amount);
+
+        // Produk yang diklaim tetap dikredit penuh seperti biasa.
+        $itemDiklaim = $retur->fresh()->items()->where('product_id', $this->product->id)->first();
+        $this->assertSame(50.0, (float) $itemDiklaim->credited_weight);
+
+        // Tidak ada FinancialLoss sama sekali -- klaim=fisik untuk produk
+        // yang diklaim (50=50), dan produk tanpa klaim tidak ikut hitungan.
+        $this->assertNull(FinancialLoss::where('transaction_type', FinancialLoss::SUMBER_RETUR)
+            ->where('reference_number', $retur->return_number)->first());
+
+        $ringkasan = $retur->fresh()->claimVsPhysicalSummary();
+        $barisTakDiklaim = $ringkasan->firstWhere('product_id', $produkTakDiklaim->id);
+        $this->assertNotNull($barisTakDiklaim);
+        $this->assertTrue($barisTakDiklaim['received_without_claim']);
+        $this->assertSame(0.0, $barisTakDiklaim['claimed']);
+        $this->assertSame(10.0, $barisTakDiklaim['physical']);
+
+        $barisDiklaim = $ringkasan->firstWhere('product_id', $this->product->id);
+        $this->assertFalse($barisDiklaim['received_without_claim']);
+    }
+
+    /**
+     * Retur lama TANPA plan sama sekali (dari sebelum issue #451) tidak
+     * punya konsep klaim -- ringkasannya harus kosong, bukan menandai
+     * SEMUA produknya "DITERIMA TANPA KLAIM" (itu akan membingungkan,
+     * bukan menerangkan apa pun).
+     *
+     * @test
+     */
+    public function a_return_with_no_plan_at_all_has_an_empty_claim_summary(): void
+    {
+        // `withoutEvents()` melewati guard `creating()` yang sekarang
+        // mewajibkan plan untuk retur BARU -- di sini sengaja meniru
+        // baris LAMA dari sebelum guard itu ada.
+        $retur = \App\Models\SalesReturn::withoutEvents(fn () => SalesReturn::create([
+            'return_number' => 'SR-LEGACY-001',
+            'return_date' => now()->toDateString(),
+            'customer_id' => $this->customer->id,
+        ]));
+        $this->fisik($retur, 'BC-LEGACY', 20);
+
+        $this->assertTrue($retur->fresh()->claimVsPhysicalSummary()->isEmpty());
+    }
+
+    /**
+     * Campuran realistis: produk A dan B diklaim (dan datang penuh),
+     * produk D datang tapi tidak pernah disebut plan-nya sama sekali.
+     *
+     * @test
+     */
+    public function a_mixed_return_credits_only_the_claimed_products_and_flags_the_rest(): void
+    {
+        $produkB = Product::create([
+            'name' => 'CHUCK', 'code' => 'MT00400',
+            'category_id' => $this->product->category_id, 'structure_type' => 'main', 'is_active' => true,
+        ]);
+        $produkD = Product::create([
+            'name' => 'BRISKET', 'code' => 'MT00500',
+            'category_id' => $this->product->category_id, 'structure_type' => 'main', 'is_active' => true,
+        ]);
+
+        $plan = SalesReturnPlan::create([
+            'plan_date' => now()->toDateString(), 'customer_id' => $this->customer->id,
+        ]);
+        $plan->items()->create(['product_id' => $this->product->id, 'claimed_weight' => 30]);
+        $plan->items()->create(['product_id' => $produkB->id, 'claimed_weight' => 20]);
+        $plan->submit();
+
+        $retur = $this->tarikPlan($plan);
+        $this->fisik($retur, 'BC-A', 30);
+        SalesReturnItem::create([
+            'sales_return_id' => $retur->id, 'product_id' => $produkB->id,
+            'warehouse_id' => $this->warehouse->id, 'grade_id' => $this->grade->id,
+            'barcode' => 'BC-B', 'weight' => 20, 'qty_pcs' => 1,
+            'pack_date' => now()->toDateString(), 'origin' => '1',
+        ]);
+        SalesReturnItem::create([
+            'sales_return_id' => $retur->id, 'product_id' => $produkD->id,
+            'warehouse_id' => $this->warehouse->id, 'grade_id' => $this->grade->id,
+            'barcode' => 'BC-D', 'weight' => 15, 'qty_pcs' => 1,
+            'pack_date' => now()->toDateString(), 'origin' => '1',
+        ]);
+
+        $retur->refresh()->approve();
+
+        $itemA = $retur->fresh()->items()->where('product_id', $this->product->id)->first();
+        $itemB = $retur->fresh()->items()->where('product_id', $produkB->id)->first();
+        $itemD = $retur->fresh()->items()->where('product_id', $produkD->id)->first();
+
+        $this->assertSame(30.0, (float) $itemA->credited_weight);
+        $this->assertSame(20.0, (float) $itemB->credited_weight);
+        $this->assertSame(0.0, (float) $itemD->credited_weight);
+        $this->assertSame(0.0, (float) $itemD->line_amount);
+
+        $this->assertNull(FinancialLoss::where('transaction_type', FinancialLoss::SUMBER_RETUR)
+            ->where('reference_number', $retur->return_number)->first());
+
+        $ringkasan = $retur->fresh()->claimVsPhysicalSummary();
+        $this->assertFalse($ringkasan->firstWhere('product_id', $this->product->id)['received_without_claim']);
+        $this->assertFalse($ringkasan->firstWhere('product_id', $produkB->id)['received_without_claim']);
+        $this->assertTrue($ringkasan->firstWhere('product_id', $produkD->id)['received_without_claim']);
     }
 }
