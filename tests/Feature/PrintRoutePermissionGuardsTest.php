@@ -593,6 +593,20 @@ class PrintRoutePermissionGuardsTest extends TestCase
         $this->assertRouteRequiresPermission('expense.receipt-photo', ['expense' => $expense->id], 'view_expenses');
     }
 
+    /** Issue #453 langkah 3: bukti kas keluar. */
+    /** @test */
+    public function expense_print_requires_view_expenses(): void
+    {
+        $category = ExpenseCategory::create(['name' => 'FIXTURE '.uniqid()]);
+        $expense = Expense::createAdvance([
+            'expense_date' => now()->toDateString(),
+            'expense_category_id' => $category->id,
+            'recipient_name' => 'fixture',
+            'advance_amount' => 10000,
+        ]);
+        $this->assertRouteRequiresPermission('expense.print', ['expense' => $expense->id], 'view_expenses');
+    }
+
     // =========================================================================
     // Penjaga: route cetak/label/pdf/ekspor baru wajib memeriksa izin
     // =========================================================================
@@ -676,10 +690,10 @@ class PrintRoutePermissionGuardsTest extends TestCase
             );
         }
 
-        // 32 sejak issue #453 langkah 2 menambah expense.receipt-photo;
-        // 31 sejak issue #451 menambah sales-return-plan.print; tidak ada
-        // lagi pengecualian sejak sales-return.label/.pdf ditutup di
-        // langkah 5.
-        $this->assertSame(32 - count($pengecualian), $diperiksa, 'Jumlah route yang benar-benar diperiksa tidak sesuai dugaan -- periksa apakah ada route baru yang perlu ditangani atau dikecualikan secara sadar.');
+        // 33 sejak issue #453 langkah 3 menambah expense.print; 32 sejak
+        // langkah 2 menambah expense.receipt-photo; 31 sejak issue #451
+        // menambah sales-return-plan.print; tidak ada lagi pengecualian
+        // sejak sales-return.label/.pdf ditutup di langkah 5.
+        $this->assertSame(33 - count($pengecualian), $diperiksa, 'Jumlah route yang benar-benar diperiksa tidak sesuai dugaan -- periksa apakah ada route baru yang perlu ditangani atau dikecualikan secara sadar.');
     }
 }

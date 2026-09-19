@@ -14,6 +14,13 @@ class ViewExpense extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('print')
+                ->label(__('Print'))
+                ->icon('heroicon-o-printer')
+                ->color('success')
+                ->url(fn () => route('expense.print', $this->record))
+                ->openUrlInNewTab(),
+
             Actions\Action::make('receipt_photo')
                 ->label(__('Receipt Photo'))
                 ->icon('heroicon-o-photo')

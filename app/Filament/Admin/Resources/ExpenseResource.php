@@ -181,6 +181,95 @@ class ExpenseResource extends Resource
                         default => 'gray',
                     }),
             ])
+            ->headerActions([
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('excel')
+                        ->label(__('Excel'))
+                        ->icon('heroicon-o-document-text')
+                        ->color('success')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->with('category')->get();
+
+                            return response()->streamDownload(function () use ($records) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    'Number', 'Date', 'Type', 'Category', 'Recipient', 'Advance (Rp)', 'Receipt (Rp)', 'Status',
+                                ]));
+
+                                foreach ($records as $record) {
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $record->expense_number,
+                                        optional($record->expense_date)->format('Y-m-d') ?? '',
+                                        $record->type,
+                                        $record->category?->name ?? '',
+                                        $record->recipient_name,
+                                        $record->advance_amount !== null ? (float) $record->advance_amount : 0,
+                                        $record->receipt_amount !== null ? (float) $record->receipt_amount : 0,
+                                        $record->status,
+                                    ]));
+                                }
+
+                                $writer->close();
+                            }, 'expenses.xlsx');
+                        }),
+
+                    Tables\Actions\Action::make('pdf')
+                        ->label('PDF')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('danger')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->with('category')->get();
+
+                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.expenses-pdf', [
+                                'records' => $records,
+                                'title' => __('Expenses'),
+                            ]);
+
+                            return response()->streamDownload(fn () => print($pdf->output()), 'expenses.pdf');
+                        }),
+
+                    // Rekap sederhana Owner: total nominal NOTA (bukan uang
+                    // muka) per kategori per bulan, dari expense yang
+                    // BENAR-BENAR Settled -- lihat docblock Expense soal
+                    // biaya yang dilaporkan = nominal nota, bukan uang yang
+                    // keluar. Advance yang masih Open belum punya biaya
+                    // nyata untuk direkap.
+                    Tables\Actions\Action::make('recap_by_category')
+                        ->label(__('Recap by Category'))
+                        ->icon('heroicon-o-chart-bar')
+                        ->color('gray')
+                        ->action(function ($livewire) {
+                            $settled = $livewire->getFilteredTableQuery()
+                                ->with('category')
+                                ->where('status', Expense::STATUS_SETTLED)
+                                ->get()
+                                ->groupBy(fn (Expense $expense) => $expense->category?->name ?? __('Uncategorized'));
+
+                            return response()->streamDownload(function () use ($settled) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    'Category', 'Count', 'Total Receipt (Rp)',
+                                ]));
+
+                                foreach ($settled as $categoryName => $expenses) {
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $categoryName,
+                                        $expenses->count(),
+                                        (float) $expenses->sum('receipt_amount'),
+                                    ]));
+                                }
+
+                                $writer->close();
+                            }, 'expenses-recap-by-category.xlsx');
+                        }),
+                ])
+                    ->label(__('Export Data'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->button()
+                    ->color('success'),
+            ])
             ->filters([
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()?->hasPermission('view_deleted_expenses') ?? false),
