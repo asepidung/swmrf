@@ -176,6 +176,7 @@ class NavigationGroupConsistencyTest extends TestCase
             'Financial Loss' => 'FinancialLossResource',
             'Sales Orders' => 'SalesOrderResource',
             'Price Lists' => 'PriceListResource',
+            'Expenses' => 'ExpenseResource',
         ];
 
         $resourceGroup = [];

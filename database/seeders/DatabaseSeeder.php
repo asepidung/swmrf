@@ -310,6 +310,16 @@ class DatabaseSeeder extends Seeder
             ['name' => 'delete_sales_return_plans', 'module_name' => 'Sales Return Plans', 'description' => 'Delete sales return plans'],
             ['name' => 'view_deleted_sales_return_plans', 'module_name' => 'Sales Return Plans', 'description' => 'View deleted sales return plans'],
 
+            // Expenses Module (issue #453) -- izin sungguhannya dibuat
+            // lewat migrasi (seeder ini tidak boleh dijalankan di server),
+            // baris ini sekadar referensi historisnya tetap satu tempat.
+            ['name' => 'view_expenses', 'module_name' => 'Expenses', 'description' => 'View expenses'],
+            ['name' => 'create_expenses', 'module_name' => 'Expenses', 'description' => 'Create expenses'],
+            ['name' => 'edit_expenses', 'module_name' => 'Expenses', 'description' => 'Edit expenses'],
+            ['name' => 'delete_expenses', 'module_name' => 'Expenses', 'description' => 'Delete expenses'],
+            ['name' => 'view_deleted_expenses', 'module_name' => 'Expenses', 'description' => 'View deleted expenses'],
+            ['name' => 'manage_expense_categories', 'module_name' => 'Expenses', 'description' => 'Manage expense categories'],
+
             // Beef Stock Aging Module
             ['name' => 'view_beef_stock_aging', 'module_name' => 'Beef Stock Aging', 'description' => 'View beef stock aging'],
             

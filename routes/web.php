@@ -353,6 +353,19 @@ Route::middleware(['web', 'auth'])->group(function () {
         
         return view('print.material-usage', compact('record'));
     })->name('material-usage.print');
+
+    // ------------------------------------------
+    // 13. MODUL EXPENSE
+    // ------------------------------------------
+    Route::get('/expenses/{expense}/receipt-photo', function (\App\Models\Expense $expense) {
+        abort_unless(auth()->user()?->hasPermission('view_expenses') ?? false, 403);
+        abort_unless($expense->receipt_photo, 404);
+
+        $disk = \Illuminate\Support\Facades\Storage::disk('local');
+        abort_unless($disk->exists($expense->receipt_photo), 404);
+
+        return $disk->response($expense->receipt_photo);
+    })->name('expense.receipt-photo');
 });
 
 /*
