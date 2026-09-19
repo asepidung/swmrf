@@ -140,6 +140,7 @@ class Permission extends Model
             ],
             'SALES' => [
                 'Sales Orders',
+                'Sales Return Plans',
                 'Sales Returns',
                 'Price Lists',
             ],
