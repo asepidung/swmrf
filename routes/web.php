@@ -290,14 +290,29 @@ Route::middleware(['web', 'auth'])->group(function () {
     // ------------------------------------------
     // 10. MODUL SALES RETURN
     // ------------------------------------------
+    // Issue #451 langkah 5 (susulan 13 Sep, #387): keduanya sengaja
+    // dikecualikan dari sapuan batch 7 sampai keputusan Owner soal
+    // tampilan uang Sales Return ada -- sekarang sudah, jadi ditutup di
+    // sini sekalian, pola yang sama dengan route cetak lain.
     Route::get('/print-sales-return-label/{id}', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_sales_returns') ?? false, 403);
+
         $item = \App\Models\SalesReturnItem::with(['product', 'salesReturn', 'grade'])->findOrFail($id);
         return view('print.sales-return-label', compact('item'));
     })->name('sales-return.label');
 
     Route::get('/print/sales-return/{record}', function (\App\Models\SalesReturn $record) {
+        abort_unless(auth()->user()?->hasPermission('view_sales_returns') ?? false, 403);
+
         $record->load(['customer', 'items.product', 'items.invoice', 'deliveryOrder']);
-        return view('print.sales-return', compact('record'));
+
+        // Issue #451 langkah 5: nilai uangnya sendiri mengikuti
+        // view_invoices, satu lapis lebih ketat dari view_sales_returns
+        // yang menjaga halamannya -- staf gudang boleh melihat DOKUMENnya,
+        // tidak otomatis boleh melihat berapa yang dipotong dari tagihan.
+        $canViewMoney = auth()->user()?->hasPermission('view_invoices') ?? false;
+
+        return view('print.sales-return', compact('record', 'canViewMoney'));
     })->name('sales-return.pdf');
 
     // Plan Sales Return (issue #451) -- dokumen sales, terpisah dari

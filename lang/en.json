@@ -1523,5 +1523,8 @@
     "Plan": "Plan",
     "This product was not claimed on the plan for this return.": "This product was not claimed on the plan for this return.",
     "Claimed product :product never physically arrived, so this return cannot be approved.": "Claimed product :product never physically arrived, so this return cannot be approved.",
-    "Claimed but not physically received: :detail": "Claimed but not physically received: :detail"
+    "Claimed but not physically received: :detail": "Claimed but not physically received: :detail",
+    "Reduced by Sales Returns": "Reduced by Sales Returns",
+    "Returns": "Returns",
+    "Reduced by Return": "Reduced by Return"
 }

@@ -108,7 +108,11 @@ class DeliveryOrderResource extends Resource
                             ->relationship('driver', 'name', fn ($query) => $query->where('is_active', true))
                             ->searchable()
                             ->preload()
-                            ->autofocus()
+                            // Issue #451 (susulan 13 Sep, #387): hanya saat
+                            // membuat DO baru. Halaman View/Edit read-only
+                            // tidak perlu kursor melompat ke sana begitu
+                            // dibuka -- form()-nya sama dipakai ketiganya.
+                            ->autofocus(fn ($livewire): bool => $livewire instanceof \Filament\Resources\Pages\CreateRecord)
                             ->required()
                             ->createOptionForm([
                                 Forms\Components\TextInput::make('name')

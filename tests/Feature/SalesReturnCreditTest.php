@@ -13,6 +13,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
+use App\Models\Permission;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\Receivable;
@@ -1020,6 +1021,14 @@ class SalesReturnCreditTest extends TestCase
         $retur = $this->retur([['produk' => $this->sirloin, 'berat' => 20]]);
         $retur->approve();
 
+        // Issue #451 langkah 5: halaman cetaknya sendiri butuh
+        // view_sales_returns, dan nilai uangnya butuh view_invoices --
+        // tes ini soal ISI dokumennya, bukan izinnya, jadi keduanya
+        // diberikan.
+        $this->user->permissions()->attach(Permission::firstOrCreate(['name' => 'view_sales_returns'], ['module_name' => 'x', 'description' => 'x'])->id);
+        $this->user->permissions()->attach(Permission::firstOrCreate(['name' => 'view_invoices'], ['module_name' => 'x', 'description' => 'x'])->id);
+        $this->actingAs($this->user->fresh());
+
         $this->get(route('sales-return.pdf', $retur->fresh()))
             ->assertOk()
             ->assertSee($retur->return_number)
@@ -1043,6 +1052,10 @@ class SalesReturnCreditTest extends TestCase
         $retur = $this->retur([['produk' => $this->sirloin, 'berat' => 20]]);
         $retur->approve();
 
+        $this->user->permissions()->attach(Permission::firstOrCreate(['name' => 'view_sales_returns'], ['module_name' => 'x', 'description' => 'x'])->id);
+        $this->user->permissions()->attach(Permission::firstOrCreate(['name' => 'view_invoices'], ['module_name' => 'x', 'description' => 'x'])->id);
+        $this->actingAs($this->user->fresh());
+
         $this->get(route('sales-return.pdf', $retur->fresh()))
             ->assertOk()
             ->assertSee('20.00 Kg')
@@ -1061,6 +1074,13 @@ class SalesReturnCreditTest extends TestCase
         $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
 
         $retur = $this->retur([['produk' => $this->sirloin, 'berat' => 20]]);
+
+        // Diberi view_invoices JUGA -- pesan tes ini justru absennya
+        // uang meski pelihatnya berhak, karena returnya Draft (belum ada
+        // nilai untuk ditampilkan sama sekali), bukan karena izinnya.
+        $this->user->permissions()->attach(Permission::firstOrCreate(['name' => 'view_sales_returns'], ['module_name' => 'x', 'description' => 'x'])->id);
+        $this->user->permissions()->attach(Permission::firstOrCreate(['name' => 'view_invoices'], ['module_name' => 'x', 'description' => 'x'])->id);
+        $this->actingAs($this->user->fresh());
 
         $this->get(route('sales-return.pdf', $retur))
             ->assertOk()

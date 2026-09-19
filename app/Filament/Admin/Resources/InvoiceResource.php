@@ -356,6 +356,38 @@ class InvoiceResource extends Resource
                                     ->columnStart(['lg' => 8]),
                             ]),
                     ]),
+
+                // Issue #451 langkah 5 (susulan 13 Sep, #387): badge +
+                // bagian retur di layar Invoice, supaya sisa tagihan yang
+                // sudah berkurang tidak terbaca sebagai galat oleh siapa
+                // pun yang membuka invoice ini tanpa tahu ada retur di
+                // baliknya.
+                Forms\Components\Section::make(__('Reduced by Sales Returns'))
+                    ->visible(fn (?\App\Models\Invoice $record): bool => (bool) $record?->returnedAmount())
+                    ->schema([
+                        Forms\Components\Repeater::make('reducingSalesReturns')
+                            ->label('')
+                            ->schema([
+                                Forms\Components\TextInput::make('return_number')->label(__('Return No.'))->disabled(),
+                                Forms\Components\TextInput::make('amount')->label(__('Amount'))->disabled(),
+                            ])
+                            ->columns(2)
+                            ->deletable(false)
+                            ->addable(false)
+                            ->dehydrated(false)
+                            ->default(fn (?\App\Models\Invoice $record) => $record
+                                ? $record->returnedItems()
+                                    ->with('salesReturn')
+                                    ->get()
+                                    ->groupBy('sales_return_id')
+                                    ->map(fn ($items) => [
+                                        'return_number' => $items->first()->salesReturn?->return_number,
+                                        'amount' => 'Rp '.number_format((float) $items->sum('line_amount'), 0, ',', '.'),
+                                    ])
+                                    ->values()
+                                    ->all()
+                                : []),
+                    ]),
             ]);
     }
 
@@ -631,6 +663,16 @@ class InvoiceResource extends Resource
                     ->numeric(0, ',', '.')
                     ->sortable()
                     ->alignEnd(),
+
+                // Issue #451 langkah 5: penanda kecil supaya sisa tagihan
+                // yang sudah berkurang tidak terbaca sebagai galat oleh
+                // siapa pun yang membuka daftar ini tanpa tahu ada retur
+                // di baliknya.
+                Tables\Columns\TextColumn::make('has_sales_returns')
+                    ->label(__('Returns'))
+                    ->getStateUsing(fn (Invoice $record): ?string => $record->returnedAmount() > 0 ? __('Reduced by Return') : null)
+                    ->badge()
+                    ->colors(['warning' => __('Reduced by Return')]),
 
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label(__('Created By'))

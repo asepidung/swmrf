@@ -90,11 +90,16 @@ class SalesReturnResource extends Resource
                     ->label(__('Customer'))
                     ->searchable()
                     ->sortable(),
+                // Issue #451 (susulan 13 Sep, #387): nilai uang retur hanya
+                // untuk pemegang view_invoices, sama seperti modul Invoice
+                // sendiri -- staf yang mengurus stok tidak otomatis berhak
+                // melihat berapa yang dipotong dari tagihan pelanggan.
                 Tables\Columns\TextColumn::make('credit_amount')
                     ->label(__('Credit Value'))
                     ->money('IDR', locale: 'id')
                     ->alignRight()
-                    ->sortable(),
+                    ->sortable()
+                    ->visible(fn (): bool => auth()->user()?->hasPermission('view_invoices') ?? false),
                 // Satu retur bisa memotong BEBERAPA invoice: pelanggan
                 // mengembalikan barang dari beberapa kiriman dalam satu kali
                 // jalan. Karena itu yang ditampilkan daftar, bukan satu nomor.
@@ -107,7 +112,8 @@ class SalesReturnResource extends Resource
                         ->unique()
                         ->join(', ') ?: null)
                     ->wrap()
-                    ->toggleable(),
+                    ->toggleable()
+                    ->visible(fn (): bool => auth()->user()?->hasPermission('view_invoices') ?? false),
                 Tables\Columns\TextColumn::make('note')
                     ->label(__('Note'))
                     ->searchable()

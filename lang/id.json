@@ -1523,5 +1523,8 @@
     "Plan": "Plan",
     "This product was not claimed on the plan for this return.": "Produk ini tidak diklaim di plan retur ini.",
     "Claimed product :product never physically arrived, so this return cannot be approved.": "Produk klaim :product tidak pernah datang secara fisik, jadi retur ini tidak bisa disetujui.",
-    "Claimed but not physically received: :detail": "Diklaim tapi tidak diterima secara fisik: :detail"
+    "Claimed but not physically received: :detail": "Diklaim tapi tidak diterima secara fisik: :detail",
+    "Reduced by Sales Returns": "Dikurangi Retur Jual",
+    "Returns": "Retur",
+    "Reduced by Return": "Dikurangi Retur"
 }
