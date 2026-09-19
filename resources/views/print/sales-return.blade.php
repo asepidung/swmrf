@@ -189,6 +189,43 @@
         </tbody>
     </table>
 
+    @php
+        // Ringkasan klaim vs fisik -- keputusan Owner 20 September 2026
+        // (issue #476): fisik ikut yang datang, uang ikut klaim. Produk
+        // yang di-scan tapi tidak diklaim tetap masuk dokumen ini
+        // (bukan diam-diam hilang dari cetakan), ditandai jelas supaya
+        // sales/finance tahu perlu diperbaiki manual.
+        $claimSummary = $record->claimVsPhysicalSummary();
+    @endphp
+    @if ($claimSummary->isNotEmpty())
+        <table class="items-table" style="margin-top: 15px;">
+            <thead>
+                <tr>
+                    <th width="40%">Item Descriptions</th>
+                    <th width="15%">Claimed (Kg)</th>
+                    <th width="15%">Physical (Kg)</th>
+                    <th width="15%">Variance (Kg)</th>
+                    <th width="15%">Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($claimSummary as $row)
+                    <tr>
+                        <td class="left-align">{{ $row['product_name'] }}</td>
+                        <td class="right-align">{{ number_format($row['claimed'], 2) }}</td>
+                        <td class="right-align">{{ number_format($row['physical'], 2) }}</td>
+                        <td class="right-align">{{ number_format($row['variance'], 2) }}</td>
+                        <td>
+                            @if ($row['received_without_claim'])
+                                <strong>DITERIMA TANPA KLAIM</strong>
+                            @endif
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
     @if ($adaNilai)
         <p style="margin-top: 12px; font-size: 13px;">
             <strong>Nilai retur : Rp {{ number_format((float) $record->credit_amount, 0, ',', '.') }}</strong><br />

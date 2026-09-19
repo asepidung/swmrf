@@ -1565,5 +1565,10 @@
     "Settle": "Settle",
     "Settled": "Settled",
     "Recap by Category": "Recap by Category",
-    "Uncategorized": "Uncategorized"
+    "Uncategorized": "Uncategorized",
+    "Claim vs Physical Summary": "Claim vs Physical Summary",
+    "Claimed (Kg)": "Claimed (Kg)",
+    "Physical (Kg)": "Physical (Kg)",
+    "Received without claim": "Received without claim",
+    "Variance (Kg)": "Variance (Kg)"
 }

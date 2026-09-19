@@ -83,35 +83,60 @@ barcode (`InputReturnItems::processScan()`/`processWeigh()`) TIDAK BOLEH
 berubah -- sudah teruji berat, dan satu produk bisa datang dalam banyak
 karton yang tidak punya hubungan satu-satu dengan satu baris klaim.
 
+**Susulan Owner 20 September (issue #476)**: prinsipnya sekarang **FISIK
+mengikuti yang datang, UANG mengikuti klaim** -- kondisi lapangan (retur
+datang campur, pcs tanpa box, kadang ada produk yang lupa diklaim)
+membuat penolakan scan di bawah ini justru menghalangi barang fisik
+masuk stok sama sekali. Bullet "Scan menolak produk yang tidak diklaim"
+di versi 19 September SUDAH TIDAK BERLAKU -- digantikan bullet yang sama
+di bawah ini.
+
 Konsekuensinya:
 
 - **`SalesReturnPlan::claimedWeightFor(productId)`**: jumlah klaim untuk
   satu produk (dari `sales_return_plan_items`, bisa lebih dari satu baris).
 - **`SalesReturn::physicalWeightFor(productId)`**: jumlah fisik yang
   benar-benar discan untuk produk itu DI RETUR INI.
-- **Scan menolak produk yang tidak diklaim** (keputusan Owner 19
-  September, "supaya kredit selalu punya dasar"): `processScan()` dan
-  `processWeigh()` memeriksa `$plan->claimedWeightFor($productId) > 0`
-  sebelum menyimpan apa pun. Retur tanpa plan (data lama) tidak dibatasi
-  ini.
-- **`SalesReturn::attachToBill()`**: dasar kredit sekarang KLAIM per
-  produk, bukan berat fisik kartonnya -- *"kredit = qty klaim di plan"*,
-  walau fisiknya kurang. Kalau ada LEBIH dari satu karton untuk produk yang
-  sama dalam satu retur, klaimnya dibagi PROPORSIONAL menurut berat fisik
-  masing-masing karton (tidak ada dasar lain untuk membaginya). Tetap
-  dibatasi jatah invoice/SO seperti sebelumnya (`billedWeightFor` -
-  `returnedWeightFor`). Retur TANPA plan jatuh kembali ke kredit berbasis
-  fisik apa adanya -- tidak ada regresi untuk riwayat.
+- **Scan TIDAK menolak produk yang tidak diklaim** (issue #476, membalik
+  keputusan 19 September) -- `processScan()`/`processWeigh()` menerima
+  SEMUA yang datang apa adanya, diklaim atau tidak. Dasarnya selalu ada
+  untuk kredit (lihat bullet `attachToBill()` di bawah), jadi penolakan
+  di titik scan tidak lagi diperlukan untuk menjaganya.
+- **`SalesReturn::attachToBill()`**: dasar kredit KLAIM per produk, bukan
+  berat fisik kartonnya -- *"kredit = qty klaim di plan"*, walau fisiknya
+  kurang. Kalau ada LEBIH dari satu karton untuk produk yang sama dalam
+  satu retur, klaimnya dibagi PROPORSIONAL menurut berat fisik
+  masing-masing karton. Tetap dibatasi jatah invoice/SO seperti
+  sebelumnya (`billedWeightFor` - `returnedWeightFor`). **Produk yang ada
+  plan-nya tapi TIDAK diklaim (`claimed_weight` 0 untuk produk itu)
+  mendapat kredit 0** -- fisiknya tetap masuk stok, uangnya tidak (issue
+  #476). Retur TANPA plan SAMA SEKALI (data lama, `sales_return_plan_id`
+  null) jatuh kembali ke kredit berbasis fisik apa adanya -- tidak ada
+  regresi untuk riwayat; jangan tertukar dengan "ada plan tapi produk
+  ini tidak diklaim" di atas, dua kondisi yang berbeda.
+- **`SalesReturn::claimVsPhysicalSummary()`** (baru, issue #476): satu
+  baris per produk yang muncul di salah satu sisi (diklaim ATAU
+  discan), dengan `received_without_claim = true` kalau klaim 0 tapi
+  fisik > 0. Dipakai layar `InputReturnItems` (tabel ringkasan di atas
+  tabel karton, akhirnya benar-benar dibangun -- draf 19 September
+  menyebutnya tapi tidak pernah diimplementasi) dan cetakan
+  (`print/sales-return.blade.php`, badge "DITERIMA TANPA KLAIM") supaya
+  sales/finance tahu ada yang perlu diperbaiki manual tanpa membandingkan
+  dua tabel sendiri.
 - **`SalesReturn::approve()`** menolak SELURUH approve kalau ADA produk
   yang diklaim (`claimed_weight > 0`) tapi fisiknya nol (barangnya tidak
-  pernah datang sama sekali). Produk yang di-scan tapi tidak diklaim sudah
-  ditolak lebih awal, saat scan.
+  pernah datang sama sekali) -- **DIPERTAHANKAN** oleh issue #476, tidak
+  berubah. Produk yang di-scan tapi TIDAK diklaim tidak lagi
+  mempengaruhi approve sama sekali (kreditnya sudah 0 sejak
+  `attachToBill()`, bukan kondisi yang perlu ditolak).
 - **`recordClaimVarianceLoss()`** (dipanggil `approve()` sesudah
-  `attachToBill()`): kalau klaim > fisik untuk sebuah produk, selisihnya
-  (dalam kg, dinilai harga kredit produk itu) jadi SATU `FinancialLoss`
-  (`FinancialLoss::SUMBER_RETUR = 'Sales Return'`) untuk seluruh retur --
-  bukan pengurang kredit. Fisik > klaim tidak menghasilkan kerugian sama
-  sekali (dicatat sebagai keadaan biasa, bukan galat).
+  `attachToBill()`): kalau klaim > fisik untuk sebuah produk YANG
+  DIKLAIM, selisihnya (dalam kg, dinilai harga kredit produk itu) jadi
+  SATU `FinancialLoss` (`FinancialLoss::SUMBER_RETUR = 'Sales Return'`)
+  untuk seluruh retur -- bukan pengurang kredit. Hanya menjumlah produk
+  yang ADA di `plan->items` (yang diklaim); fisik produk TANPA klaim
+  sama sekali tidak ikut hitungan ini -- bukan loss, bukan kredit, murni
+  stok fisik yang bertambah tanpa efek uang.
 - **`unlock()`** membalik `FinancialLoss` selisihnya juga (dihapus), TAPI
   plan TETAP `Received` -- retur masih ada, cuma dibuka kuncinya. Hanya
   MENGHAPUS retur (`deleting()` di `SalesReturn::boot()`) yang

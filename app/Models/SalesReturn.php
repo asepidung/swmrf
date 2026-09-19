@@ -118,6 +118,50 @@ class SalesReturn extends Model
     }
 
     /**
+     * Ringkasan klaim vs fisik per produk -- satu baris per produk yang
+     * MUNCUL di salah satu sisi (diklaim di plan ATAU benar-benar
+     * di-scan), bukan gabungan keduanya secara diam-diam.
+     *
+     * Keputusan Owner 20 September 2026 (issue #476): fisik mengikuti
+     * yang datang, uang mengikuti klaim -- produk yang di-scan tapi
+     * tidak pernah diklaim ditandai `received_without_claim` di sini,
+     * dipakai layar (`InputReturnItems`) dan cetakan supaya sales/
+     * finance tahu ada yang perlu diperbaiki manual, tanpa harus
+     * membandingkan dua tabel sendiri.
+     *
+     * @return \Illuminate\Support\Collection<int, array{product_id: int, product_name: string, claimed: float, physical: float, variance: float, received_without_claim: bool}>
+     */
+    public function claimVsPhysicalSummary(): \Illuminate\Support\Collection
+    {
+        // Retur TANPA plan sama sekali (data lama) tidak punya konsep
+        // klaim -- menampilkan "DITERIMA TANPA KLAIM" untuk SEMUA
+        // produknya cuma akan membingungkan, bukan menerangkan apa pun.
+        if (! $this->plan) {
+            return collect();
+        }
+
+        $klaimPerProduk = $this->plan->items()->selectRaw('product_id, SUM(claimed_weight) as total')->groupBy('product_id')->pluck('total', 'product_id');
+
+        $fisikPerProduk = $this->items->groupBy('product_id')->map(fn ($items) => (float) $items->sum('weight'));
+
+        $productIds = $klaimPerProduk->keys()->merge($fisikPerProduk->keys())->unique();
+
+        return $productIds->map(function ($productId) use ($klaimPerProduk, $fisikPerProduk) {
+            $klaim = (float) ($klaimPerProduk[$productId] ?? 0.0);
+            $fisik = (float) ($fisikPerProduk[$productId] ?? 0.0);
+
+            return [
+                'product_id' => (int) $productId,
+                'product_name' => Product::find($productId)?->name ?? '#'.$productId,
+                'claimed' => $klaim,
+                'physical' => $fisik,
+                'variance' => round($klaim - $fisik, 2),
+                'received_without_claim' => $klaim <= 0 && $fisik > 0,
+            ];
+        })->sortBy('product_name')->values();
+    }
+
+    /**
      * Selisih klaim - fisik, per produk, jadi SATU FinancialLoss saat
      * approve (issue #451). Kredit tetap ikut klaim penuh (attachToBill())
      * -- selisihnya kerugian TERPISAH, bukan pengurang kredit.
@@ -189,9 +233,10 @@ class SalesReturn extends Model
         }
 
         // Klaim ada tapi fisik nol -- barangnya tidak pernah datang,
-        // ditolak di sini (issue #451, keputusan Owner 17 September).
-        // Produk yang di-scan tapi tidak pernah diklaim sudah ditolak
-        // lebih awal, saat scan (lihat InputReturnItems::processScan()).
+        // ditolak di sini (issue #451, keputusan Owner 17 September;
+        // DIPERTAHANKAN oleh issue #476). Produk yang di-scan tapi TIDAK
+        // diklaim sebaliknya boleh lewat sejak issue #476 -- diterima ke
+        // stok dengan kredit 0, tidak lagi ditolak saat scan.
         if ($this->plan) {
             foreach ($this->plan->items as $planItem) {
                 if ((float) $planItem->claimed_weight > 0 && $this->physicalWeightFor($planItem->product_id) <= 0) {
@@ -385,6 +430,13 @@ class SalesReturn extends Model
         // masing-masing karton -- tidak ada dasar lain untuk membaginya.
         // Retur TANPA plan (sebelum fitur ini ada) jatuh kembali ke kredit
         // berbasis fisik apa adanya, persis seperti sebelumnya.
+        //
+        // Susulan issue #476 (20 September 2026): scan tidak lagi menolak
+        // produk di luar plan (fisik ikut yang datang), jadi sebuah
+        // produk BISA muncul di sini dengan klaim 0 padahal plan-nya ADA
+        // -- beda dari kasus "retur tanpa plan sama sekali" di atas. Kredit
+        // produk begini 0 (uang ikut klaim), bukan jatuh ke fisik --
+        // lihat percabangan `if (! $this->plan)` di bawah.
         $klaimPerProduk = $this->plan
             ? $this->plan->items()->selectRaw('product_id, SUM(claimed_weight) as total')->groupBy('product_id')->pluck('total', 'product_id')
             : collect();
@@ -398,9 +450,21 @@ class SalesReturn extends Model
             $klaimProduk = (float) ($klaimPerProduk[$item->product_id] ?? 0.0);
             $fisikProduk = (float) ($fisikPerProduk[$item->product_id] ?? 0.0);
 
-            $beratKredit = ($klaimProduk > 0 && $fisikProduk > 0)
-                ? round($klaimProduk * ($beratFisik / $fisikProduk), 2)
-                : $beratFisik;
+            if (! $this->plan) {
+                // Retur lama, sebelum fitur plan ada -- kredit berbasis
+                // fisik apa adanya, persis seperti sebelumnya.
+                $beratKredit = $beratFisik;
+            } elseif ($klaimProduk > 0 && $fisikProduk > 0) {
+                $beratKredit = round($klaimProduk * ($beratFisik / $fisikProduk), 2);
+            } else {
+                // Keputusan Owner 20 September 2026 (issue #476): ada
+                // plan, tapi produk ini TIDAK diklaim -- diterima apa
+                // adanya (fisik ikut yang datang), tapi kreditnya 0
+                // (uang ikut klaim). Ditandai "DITERIMA TANPA KLAIM" di
+                // ringkasan (lihat `claimVsPhysicalSummary()`) supaya
+                // sales/finance memperbaiki manual, bukan kredit diam-diam.
+                $beratKredit = 0.0;
+            }
 
             if ($invoice) {
                 $kunci = $invoice->getKey().':'.$item->product_id;

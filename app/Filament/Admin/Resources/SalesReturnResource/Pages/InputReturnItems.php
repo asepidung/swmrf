@@ -79,6 +79,17 @@ class InputReturnItems extends Page implements HasForms, HasTable
         return MaxWidth::Full;
     }
 
+    /**
+     * Ringkasan klaim vs fisik per produk, dibaca ULANG dari basis data
+     * (bukan cache) setiap render -- halaman ini scan barcode berulang
+     * kali lewat Livewire, dan ringkasannya harus ikut berubah begitu
+     * karton baru masuk.
+     */
+    public function claimSummary(): \Illuminate\Support\Collection
+    {
+        return $this->record->fresh(['plan.items', 'items'])->claimVsPhysicalSummary();
+    }
+
     public SalesReturn $record;
     public ?array $dataScan = [];
     public ?array $dataWeigh = [];
@@ -434,20 +445,16 @@ class InputReturnItems extends Page implements HasForms, HasTable
             $pcs = $tallyItem->qty_pcs;
             $origin = $tallyItem->origin;
 
-            // LIMA: produk ini memang diklaim di plan-nya?
-            //
-            // Kredit sekarang berbasis KLAIM per produk (issue #451), bukan
-            // berat fisik yang dipindai -- produk yang tidak pernah disebut
-            // plan-nya tidak punya dasar kredit sama sekali. Keputusan
-            // Owner, 19 September: ditolak di sini, supaya kredit selalu
-            // punya dasar. Retur lama (sebelum fitur plan ada) tidak
-            // dibatasi ini.
-            $plan = $this->record->plan;
-
-            if ($plan && $plan->claimedWeightFor($productId) <= 0) {
-                throw new \Exception(__('This product was not claimed on the plan for this return.'));
-            }
-
+            // Keputusan Owner, 20 September 2026 (issue #476): FISIK
+            // mengikuti yang datang, UANG mengikuti klaim. Sebelumnya
+            // (issue #451) produk di luar plan ditolak di sini supaya
+            // kredit selalu punya dasar -- tapi kondisi lapangan (retur
+            // campur, kadang ada produk yang lupa diklaim) membuat itu
+            // menghalangi barang fisik masuk stok sama sekali. Sekarang
+            // SEMUA yang datang diterima; produk tanpa klaim tetap masuk
+            // stok dengan kredit 0 (lihat `SalesReturn::attachToBill()`),
+            // ditandai "DITERIMA TANPA KLAIM" di ringkasan supaya
+            // sales/finance memperbaiki manual.
             DB::transaction(function () use ($barcode, $productId, $gradeId, $weight, $pcs, $origin, $tallyItem, $gudangPenerima) {
                 // Cek duplikat wajib berada di dalam transaksi dan terkunci, supaya
                 // dua scan berbarengan (klik ganda / glitch scanner) tidak sama-sama
@@ -505,12 +512,8 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 throw new \Exception(__('That weight is not valid.'));
             }
 
-            // Sama seperti scan barcode -- lihat penjelasan di processScan().
-            $plan = $this->record->plan;
-
-            if ($plan && $plan->claimedWeightFor((int) $formData['product_id']) <= 0) {
-                throw new \Exception(__('This product was not claimed on the plan for this return.'));
-            }
+            // Sama seperti scan barcode -- lihat penjelasan di
+            // processScan() (issue #476, fisik ikut yang datang).
 
             DB::transaction(function () use ($formData, $weight, $pcs) {
                 $origin = '4'; // Repack Return origin (per project rules)

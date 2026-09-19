@@ -1565,5 +1565,10 @@
     "Settle": "Selesaikan",
     "Settled": "Selesai",
     "Recap by Category": "Rekap per Kategori",
-    "Uncategorized": "Tanpa Kategori"
+    "Uncategorized": "Tanpa Kategori",
+    "Claim vs Physical Summary": "Ringkasan Klaim vs Fisik",
+    "Claimed (Kg)": "Klaim (Kg)",
+    "Physical (Kg)": "Fisik (Kg)",
+    "Received without claim": "Diterima tanpa klaim",
+    "Variance (Kg)": "Selisih (Kg)"
 }
