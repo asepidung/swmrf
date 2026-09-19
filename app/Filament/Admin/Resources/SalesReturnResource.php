@@ -193,8 +193,9 @@ class SalesReturnResource extends Resource
     public static function getPages(): array
     {
         return [
+            // Tidak ada 'create' -- issue #451: retur cuma lahir lewat
+            // "Tarik Plan" (lihat ListSalesReturns), bukan form kosong.
             'index' => Pages\ListSalesReturns::route('/'),
-            'create' => Pages\CreateSalesReturn::route('/create'),
             'detail-list' => Pages\SalesReturnDetailList::route('/detail-list'),
             'edit' => Pages\EditSalesReturn::route('/{record}/edit'),
             'view' => Pages\ViewSalesReturn::route('/{record}'),

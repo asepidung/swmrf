@@ -204,6 +204,24 @@ class SalesReturnCreditTest extends TestCase
     }
 
     /**
+     * Issue #451: retur sekarang WAJIB menarik plan yang sudah Submitted.
+     * Tes di berkas ini menguji sisi KREDIT, bukan plan-nya -- jadi plan
+     * di sini sekadar tiket masuk yang sah, isinya tidak diperiksa satu
+     * pun test di bawah.
+     */
+    private function submittedPlan(): \App\Models\SalesReturnPlan
+    {
+        $plan = \App\Models\SalesReturnPlan::create([
+            'plan_date' => now()->toDateString(),
+            'customer_id' => $this->customer->id,
+        ]);
+        $plan->items()->create(['product_id' => $this->sirloin->id, 'claimed_weight' => 1]);
+        $plan->submit();
+
+        return $plan;
+    }
+
+    /**
      * @param  array<int, array{produk: Product, berat: float}>  $baris
      */
     private function retur(array $baris): SalesReturn
@@ -211,6 +229,7 @@ class SalesReturnCreditTest extends TestCase
         $retur = SalesReturn::create([
             'return_date' => now()->toDateString(),
             'delivery_order_id' => $this->deliveryOrder->id,
+            'sales_return_plan_id' => $this->submittedPlan()->id,
             'customer_id' => $this->customer->id,
             'status' => 'Draft',
             'created_by' => $this->user->id,
@@ -627,6 +646,7 @@ class SalesReturnCreditTest extends TestCase
         $retur = SalesReturn::create([
             'return_date' => now()->toDateString(),
             'delivery_order_id' => null,
+            'sales_return_plan_id' => $this->submittedPlan()->id,
             'customer_id' => $this->customer->id,
             'status' => 'Draft',
             'created_by' => $this->user->id,
@@ -665,6 +685,7 @@ class SalesReturnCreditTest extends TestCase
 
         $retur = SalesReturn::create([
             'return_date' => now()->toDateString(),
+            'sales_return_plan_id' => $this->submittedPlan()->id,
             'customer_id' => $this->customer->id,
             'status' => 'Draft',
             'created_by' => $this->user->id,
@@ -701,6 +722,7 @@ class SalesReturnCreditTest extends TestCase
 
         $retur = SalesReturn::create([
             'return_date' => now()->toDateString(),
+            'sales_return_plan_id' => $this->submittedPlan()->id,
             'customer_id' => $this->customer->id,
             'status' => 'Draft',
             'created_by' => $this->user->id,
@@ -865,6 +887,7 @@ class SalesReturnCreditTest extends TestCase
         $retur = SalesReturn::create([
             'return_date' => now()->toDateString(),
             'delivery_order_id' => null,
+            'sales_return_plan_id' => $this->submittedPlan()->id,
             'customer_id' => $this->customer->id,
             'status' => 'Draft',
             'created_by' => $this->user->id,
@@ -904,6 +927,7 @@ class SalesReturnCreditTest extends TestCase
         $retur = SalesReturn::create([
             'return_date' => now()->toDateString(),
             'delivery_order_id' => null,
+            'sales_return_plan_id' => $this->submittedPlan()->id,
             'customer_id' => $this->customer->id,
             'status' => 'Draft',
             'created_by' => $this->user->id,
@@ -1024,6 +1048,7 @@ class SalesReturnCreditTest extends TestCase
 
         $retur = SalesReturn::create([
             'return_date' => now()->toDateString(),
+            'sales_return_plan_id' => $this->submittedPlan()->id,
             'customer_id' => $this->customer->id,
             'status' => 'Draft',
             'created_by' => $this->user->id,
