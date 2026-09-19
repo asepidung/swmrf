@@ -1310,8 +1310,9 @@ membuang waktu Project Owner.
 | **Material Usage** | 17 Sep 2026, batch 5 (#447) | `MaterialUsageHeaderPolicy` baru -- sebelumnya TANPA Policy sama sekali, Filament meloloskan siapa pun yang login |
 | Master Data (kategori/satuan Material &amp; Product) | 17 Sep 2026, batch 6 (#448) | hapus kategori/satuan tidak lagi ikut menghapus produk/materialnya diam-diam (FK cascade -&gt; restrict) |
 | Route print/export (`routes/web.php`) | 17 Sep 2026, batch 7 (#449) | 20 dari 30 route cetak/ekspor sebelumnya tanpa izin sama sekali, terbuka lewat tebak ID |
+| **Plan Sales Return** (modul baru) + rombak Sales Return | 19 Sep 2026, issue #451 (#461-#465) | retur dipecah plan (klaim, sales) + fisik (gudang); kredit ikut klaim per produk bukan fisik; sales-return.label/.pdf (sisa batch 7) akhirnya ditutup; lihat `docs/modules/sales-return.md` |
 
-**Diperbarui 17 September 2026** (baris di atas sempat berhenti di 13 Sep;
+**Diperbarui 19 September 2026** (baris di atas sempat berhenti di 13 Sep;
 jangan percaya paragraf ini tanpa mengecek tanggalnya kalau membaca versi
 lama file ini). **Material Usage yang tadinya "belum pernah disisir sama
 sekali" sudah disisir per #447** -- Policy-nya sekarang ada, meski BOM-nya
