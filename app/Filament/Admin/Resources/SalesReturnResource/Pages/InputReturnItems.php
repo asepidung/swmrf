@@ -434,6 +434,20 @@ class InputReturnItems extends Page implements HasForms, HasTable
             $pcs = $tallyItem->qty_pcs;
             $origin = $tallyItem->origin;
 
+            // LIMA: produk ini memang diklaim di plan-nya?
+            //
+            // Kredit sekarang berbasis KLAIM per produk (issue #451), bukan
+            // berat fisik yang dipindai -- produk yang tidak pernah disebut
+            // plan-nya tidak punya dasar kredit sama sekali. Keputusan
+            // Owner, 19 September: ditolak di sini, supaya kredit selalu
+            // punya dasar. Retur lama (sebelum fitur plan ada) tidak
+            // dibatasi ini.
+            $plan = $this->record->plan;
+
+            if ($plan && $plan->claimedWeightFor($productId) <= 0) {
+                throw new \Exception(__('This product was not claimed on the plan for this return.'));
+            }
+
             DB::transaction(function () use ($barcode, $productId, $gradeId, $weight, $pcs, $origin, $tallyItem, $gudangPenerima) {
                 // Cek duplikat wajib berada di dalam transaksi dan terkunci, supaya
                 // dua scan berbarengan (klik ganda / glitch scanner) tidak sama-sama
@@ -489,6 +503,13 @@ class InputReturnItems extends Page implements HasForms, HasTable
 
             if ($weight <= 0) {
                 throw new \Exception(__('That weight is not valid.'));
+            }
+
+            // Sama seperti scan barcode -- lihat penjelasan di processScan().
+            $plan = $this->record->plan;
+
+            if ($plan && $plan->claimedWeightFor((int) $formData['product_id']) <= 0) {
+                throw new \Exception(__('This product was not claimed on the plan for this return.'));
             }
 
             DB::transaction(function () use ($formData, $weight, $pcs) {

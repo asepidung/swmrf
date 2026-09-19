@@ -79,6 +79,12 @@ class SalesReturnPlan extends Model
         return $this->hasMany(SalesReturnPlanItem::class, 'plan_id');
     }
 
+    /** Total klaim untuk satu produk -- dasar kredit di `SalesReturn::attachToBill()`. */
+    public function claimedWeightFor(int $productId): float
+    {
+        return (float) $this->items()->where('product_id', $productId)->sum('claimed_weight');
+    }
+
     /**
      * @throws \RuntimeException
      */
