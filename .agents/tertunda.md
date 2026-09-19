@@ -196,6 +196,21 @@ cetak sudah otomatis punya izin itu. Yang ditutup #449 cuma jalur tebak
 URL langsung, bukan jalur normal staf memakai fiturnya, jadi tidak ada
 staf yang perlu izin baru karenanya.
 
+### Plan Sales Return, modul baru (issue #451, 19 September 2026)
+
+Lima izin baru untuk modul Plan Sales Return, dibuat lewat migrasi
+(`2026_09_19_090200_create_the_sales_return_plan_permissions.php`),
+belum dilekatkan ke siapa pun -- Owner perlu mencentangnya untuk peran
+Sales (view/create/edit) dan yang menangani retur (view_deleted, kalau
+ada yang perlu melihat plan yang sudah dihapus):
+
+`view_sales_return_plans` · `create_sales_return_plans` ·
+`edit_sales_return_plans` · `delete_sales_return_plans`
+
+(`view_deleted_sales_return_plans` menyusul di langkah 2 bersama
+Resource-nya -- lihat penjelasan di migrasi izinnya kenapa belum
+dibuat sekarang.)
+
 ---
 
 ## H. Setelah aplikasi live -- changelog dan versi

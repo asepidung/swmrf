@@ -1487,5 +1487,18 @@
     "Request a recount for the selected items?": "Request a recount for the selected items?",
     "The stock count returns to In Progress for these items only. Their previous counts are kept as history, and the input fields start empty again.": "The stock count returns to In Progress for these items only. Their previous counts are kept as history, and the input fields start empty again.",
     "Recount requested for the selected items.": "Recount requested for the selected items.",
-    "This item is locked and can no longer be edited.": "This item is locked and can no longer be edited."
+    "This item is locked and can no longer be edited.": "This item is locked and can no longer be edited.",
+    "Only a draft plan can be submitted.": "Only a draft plan can be submitted.",
+    "A plan needs at least one item before it can be submitted.": "A plan needs at least one item before it can be submitted.",
+    "Only a submitted plan can become received.": "Only a submitted plan can become received.",
+    "Only a received plan can revert to submitted.": "Only a received plan can revert to submitted.",
+    "A received plan can no longer be cancelled.": "A received plan can no longer be cancelled.",
+    "The chosen delivery order does not belong to this customer.": "The chosen delivery order does not belong to this customer.",
+    "This sales return plan can no longer be edited because it is no longer a draft.": "This sales return plan can no longer be edited because it is no longer a draft.",
+    "This sales return plan can only be deleted while it is still a draft.": "This sales return plan can only be deleted while it is still a draft.",
+    "This product was not part of the chosen delivery order.": "This product was not part of the chosen delivery order.",
+    "The claimed weight cannot exceed what was actually delivered on this delivery order.": "The claimed weight cannot exceed what was actually delivered on this delivery order.",
+    "Items can only be added to a sales return plan while it is still a draft.": "Items can only be added to a sales return plan while it is still a draft.",
+    "This plan has already been received and its items can no longer be changed.": "This plan has already been received and its items can no longer be changed.",
+    "Items can only be removed from a sales return plan while it is still a draft.": "Items can only be removed from a sales return plan while it is still a draft."
 }

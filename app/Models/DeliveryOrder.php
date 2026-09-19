@@ -80,6 +80,12 @@ class DeliveryOrder extends Model
         return $this->hasMany(DeliveryOrderItem::class);
     }
 
+    /** Berat produk ini yang benar-benar terkirim di DO ini -- lihat `Invoice::billedWeightFor()`, pola yang sama. */
+    public function deliveredWeightFor(int $productId): float
+    {
+        return round((float) $this->items()->where('product_id', $productId)->sum('weight'), 2);
+    }
+
     public function salesReturns(): HasMany
     {
         return $this->hasMany(SalesReturn::class);

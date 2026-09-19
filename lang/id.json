@@ -1487,5 +1487,18 @@
     "Request a recount for the selected items?": "Minta hitung ulang untuk item yang dipilih?",
     "The stock count returns to In Progress for these items only. Their previous counts are kept as history, and the input fields start empty again.": "Opname kembali ke In Progress khusus untuk item ini. Hitungan lama tersimpan sebagai riwayat, dan kolom isian dimulai kosong lagi.",
     "Recount requested for the selected items.": "Hitung ulang diminta untuk item yang dipilih.",
-    "This item is locked and can no longer be edited.": "Item ini sudah terkunci dan tidak bisa diubah lagi."
+    "This item is locked and can no longer be edited.": "Item ini sudah terkunci dan tidak bisa diubah lagi.",
+    "Only a draft plan can be submitted.": "Hanya plan berstatus draft yang bisa disubmit.",
+    "A plan needs at least one item before it can be submitted.": "Plan butuh minimal satu item sebelum bisa disubmit.",
+    "Only a submitted plan can become received.": "Hanya plan yang sudah disubmit yang bisa menjadi diterima.",
+    "Only a received plan can revert to submitted.": "Hanya plan yang sudah diterima yang bisa kembali ke disubmit.",
+    "A received plan can no longer be cancelled.": "Plan yang sudah diterima tidak bisa dibatalkan lagi.",
+    "The chosen delivery order does not belong to this customer.": "Surat jalan yang dipilih bukan milik pelanggan ini.",
+    "This sales return plan can no longer be edited because it is no longer a draft.": "Plan retur ini tidak bisa diubah lagi karena sudah bukan draft.",
+    "This sales return plan can only be deleted while it is still a draft.": "Plan retur ini hanya bisa dihapus selagi masih berstatus draft.",
+    "This product was not part of the chosen delivery order.": "Produk ini tidak ada di surat jalan yang dipilih.",
+    "The claimed weight cannot exceed what was actually delivered on this delivery order.": "Berat klaim tidak boleh melebihi yang benar-benar terkirim di surat jalan ini.",
+    "Items can only be added to a sales return plan while it is still a draft.": "Item hanya bisa ditambahkan ke plan retur selagi masih berstatus draft.",
+    "This plan has already been received and its items can no longer be changed.": "Plan ini sudah diterima dan item-nya tidak bisa diubah lagi.",
+    "Items can only be removed from a sales return plan while it is still a draft.": "Item hanya bisa dihapus dari plan retur selagi masih berstatus draft."
 }
