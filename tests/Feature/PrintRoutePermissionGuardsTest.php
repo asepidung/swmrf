@@ -612,6 +612,7 @@ class PrintRoutePermissionGuardsTest extends TestCase
             );
         }
 
-        $this->assertSame(30 - count($pengecualian), $diperiksa, 'Jumlah route yang benar-benar diperiksa tidak sesuai dugaan -- periksa apakah ada route baru yang perlu ditangani atau dikecualikan secara sadar.');
+        // 31 sejak issue #451 menambah sales-return-plan.print.
+        $this->assertSame(31 - count($pengecualian), $diperiksa, 'Jumlah route yang benar-benar diperiksa tidak sesuai dugaan -- periksa apakah ada route baru yang perlu ditangani atau dikecualikan secara sadar.');
     }
 }

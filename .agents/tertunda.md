@@ -205,11 +205,8 @@ Sales (view/create/edit) dan yang menangani retur (view_deleted, kalau
 ada yang perlu melihat plan yang sudah dihapus):
 
 `view_sales_return_plans` · `create_sales_return_plans` ·
-`edit_sales_return_plans` · `delete_sales_return_plans`
-
-(`view_deleted_sales_return_plans` menyusul di langkah 2 bersama
-Resource-nya -- lihat penjelasan di migrasi izinnya kenapa belum
-dibuat sekarang.)
+`edit_sales_return_plans` · `delete_sales_return_plans` ·
+`view_deleted_sales_return_plans`
 
 ---
 
