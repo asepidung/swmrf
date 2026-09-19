@@ -36,6 +36,7 @@ use App\Models\PurchaseProduct;
 use App\Models\PurchaseProductItem;
 use App\Models\SalesOrder;
 use App\Models\SalesOrderItem;
+use App\Models\SalesReturn;
 use App\Models\Supplier;
 use App\Models\Tally;
 use App\Models\TallyItem;
@@ -53,9 +54,9 @@ use Tests\TestCase;
  * stock-take.print/dkk sebelum diperbaiki di batch-batch sebelumnya. Satu tes
  * per route: pegawai tanpa izin ditolak, yang punya izin lolos.
  *
- * sales-return.label dan sales-return.pdf SENGAJA tidak disentuh (tertunda,
- * keputusan Owner terpisah) dan karena itu juga dikecualikan dari tes
- * penjaga di bawah.
+ * sales-return.label dan sales-return.pdf ditutup susulan di issue #451
+ * langkah 5, begitu keputusan Owner soal tampilan uang Sales Return ada;
+ * sebelum itu keduanya SENGAJA dikecualikan (tertunda).
  */
 class PrintRoutePermissionGuardsTest extends TestCase
 {
@@ -365,6 +366,27 @@ class PrintRoutePermissionGuardsTest extends TestCase
         return $invoice;
     }
 
+    /** Retur dengan satu item -- issue #451: harus menarik plan Submitted, tidak bisa langsung `SalesReturn::create()`. */
+    private function salesReturnItem(): \App\Models\SalesReturnItem
+    {
+        $plan = \App\Models\SalesReturnPlan::create([
+            'plan_date' => now()->toDateString(), 'customer_id' => $this->customer->id,
+        ]);
+        $plan->items()->create(['product_id' => $this->product->id, 'claimed_weight' => 10]);
+        $plan->submit();
+
+        $return = SalesReturn::create([
+            'return_date' => now()->toDateString(), 'sales_return_plan_id' => $plan->id,
+            'customer_id' => $this->customer->id,
+        ]);
+
+        return $return->items()->create([
+            'product_id' => $this->product->id, 'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id, 'barcode' => 'FIXTURE-'.uniqid(),
+            'weight' => 10, 'qty_pcs' => 1, 'pack_date' => now()->toDateString(), 'origin' => '1',
+        ]);
+    }
+
     /** @return string ID gabungan yang dipakai view `material_usage_headers` (usageable_type_usageable_id). */
     private function materialUsageHeaderId(): string
     {
@@ -530,6 +552,21 @@ class PrintRoutePermissionGuardsTest extends TestCase
         $this->assertRouteRequiresPermission('material-usage.print', ['id' => $id], 'view_material_usages');
     }
 
+    /** Issue #451 langkah 5: sales-return.label & .pdf ditutup susulan, sebelumnya tertunda. */
+    /** @test */
+    public function sales_return_label_requires_view_sales_returns(): void
+    {
+        $item = $this->salesReturnItem();
+        $this->assertRouteRequiresPermission('sales-return.label', ['id' => $item->id], 'view_sales_returns');
+    }
+
+    /** @test */
+    public function sales_return_pdf_requires_view_sales_returns(): void
+    {
+        $item = $this->salesReturnItem();
+        $this->assertRouteRequiresPermission('sales-return.pdf', ['record' => $item->sales_return_id], 'view_sales_returns');
+    }
+
     // =========================================================================
     // Penjaga: route cetak/label/pdf/ekspor baru wajib memeriksa izin
     // =========================================================================
@@ -546,8 +583,9 @@ class PrintRoutePermissionGuardsTest extends TestCase
      * kalau ada yang menambah route cetak BARU ke grup ini nanti tanpa
      * mengingat pola ini, tes ini yang menahannya, bukan tinjauan manual.
      *
-     * sales-return.label / sales-return.pdf satu-satunya pengecualian
-     * tercatat (tertunda, keputusan Owner terpisah).
+     * Tidak ada lagi pengecualian -- sales-return.label/sales-return.pdf
+     * ditutup di issue #451 langkah 5, satu-satunya yang tersisa dari
+     * sapuan batch 7.
      */
     public function test_every_print_route_in_the_web_auth_group_checks_a_permission(): void
     {
@@ -559,7 +597,7 @@ class PrintRoutePermissionGuardsTest extends TestCase
         $pushSubscriptionsStart = strpos($source, "Route::middleware('auth')->group(function () {");
         $groupBody = substr($source, $groupStart, $pushSubscriptionsStart - $groupStart);
 
-        $pengecualian = ['sales-return.label', 'sales-return.pdf'];
+        $pengecualian = [];
 
         // Peta nama pendek -> FQCN dari `use App\Http\Controllers\X;` di
         // kepala berkas, supaya `POCattlePrintController::class` di dalam
@@ -612,7 +650,9 @@ class PrintRoutePermissionGuardsTest extends TestCase
             );
         }
 
-        // 31 sejak issue #451 menambah sales-return-plan.print.
+        // 31 sejak issue #451 menambah sales-return-plan.print; tidak ada
+        // lagi pengecualian sejak sales-return.label/.pdf ditutup di
+        // langkah 5.
         $this->assertSame(31 - count($pengecualian), $diperiksa, 'Jumlah route yang benar-benar diperiksa tidak sesuai dugaan -- periksa apakah ada route baru yang perlu ditangani atau dikecualikan secara sadar.');
     }
 }

@@ -89,8 +89,10 @@
         // Nilainya baru ada sesudah returnya disetujui -- di situlah harganya
         // di-snapshot. Selama masih Draft dokumennya tetap seperti dulu:
         // barang dan berat saja, tanpa satu pun angka nol yang bisa terbaca
-        // sebagai "gratis".
-        $adaNilai = (float) $record->credit_amount > 0;
+        // sebagai "gratis". Issue #451 langkah 5: DAN hanya untuk yang
+        // punya view_invoices -- staf gudang tanpa izin itu melihat
+        // dokumen fisiknya saja, tanpa kolom uang sama sekali.
+        $adaNilai = ((float) $record->credit_amount > 0) && ($canViewMoney ?? false);
 
         // Dikelompokkan per INVOICE, bukan hanya per produk. Satu retur bisa
         // memuat barang dari beberapa kiriman -- pelanggan sebesar Lion
