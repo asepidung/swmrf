@@ -366,6 +366,14 @@ Route::middleware(['web', 'auth'])->group(function () {
 
         return $disk->response($expense->receipt_photo);
     })->name('expense.receipt-photo');
+
+    Route::get('/print/expense/{expense}', function (\App\Models\Expense $expense) {
+        abort_unless(auth()->user()?->hasPermission('view_expenses') ?? false, 403);
+
+        $expense->load(['category', 'bankAccount', 'recipientUser', 'createdBy', 'transactions']);
+
+        return view('print.expense', ['record' => $expense]);
+    })->name('expense.print');
 });
 
 /*

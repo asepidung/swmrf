@@ -16,6 +16,13 @@ class EditExpense extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('print')
+                ->label(__('Print'))
+                ->icon('heroicon-o-printer')
+                ->color('success')
+                ->url(fn () => route('expense.print', $this->record))
+                ->openUrlInNewTab(),
+
             Actions\Action::make('back')
                 ->label(__('Back'))
                 ->url(fn () => $this->getResource()::getUrl('index'))
