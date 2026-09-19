@@ -15,6 +15,7 @@ class Product extends Model
         'structure_type',
         'parent_id',
         'is_active',
+        'legacy_note',
     ];
 
     protected $casts = [
