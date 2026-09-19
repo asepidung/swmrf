@@ -12,6 +12,8 @@ use App\Models\Customer;
 use App\Models\CustomerGroup;
 use App\Models\CustomerSegment;
 use App\Models\DeliveryOrder;
+use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\Grade;
 use App\Models\GoodsReceiptMaterial;
 use App\Models\GoodsReceiptProduct;
@@ -387,6 +389,22 @@ class PrintRoutePermissionGuardsTest extends TestCase
         ]);
     }
 
+    private function expenseWithReceiptPhoto(): Expense
+    {
+        $path = 'expense-receipts/fixture-'.uniqid().'.jpg';
+        \Illuminate\Support\Facades\Storage::disk('local')->put($path, 'fixture-image-content');
+
+        $category = ExpenseCategory::create(['name' => 'FIXTURE '.uniqid()]);
+
+        return Expense::createReimburse([
+            'expense_date' => now()->toDateString(),
+            'expense_category_id' => $category->id,
+            'recipient_name' => 'fixture',
+            'receipt_amount' => 10000,
+            'receipt_photo' => $path,
+        ]);
+    }
+
     /** @return string ID gabungan yang dipakai view `material_usage_headers` (usageable_type_usageable_id). */
     private function materialUsageHeaderId(): string
     {
@@ -567,6 +585,14 @@ class PrintRoutePermissionGuardsTest extends TestCase
         $this->assertRouteRequiresPermission('sales-return.pdf', ['record' => $item->sales_return_id], 'view_sales_returns');
     }
 
+    /** Issue #453 langkah 2: rute privat untuk nota expense yang diunggah. */
+    /** @test */
+    public function expense_receipt_photo_requires_view_expenses(): void
+    {
+        $expense = $this->expenseWithReceiptPhoto();
+        $this->assertRouteRequiresPermission('expense.receipt-photo', ['expense' => $expense->id], 'view_expenses');
+    }
+
     // =========================================================================
     // Penjaga: route cetak/label/pdf/ekspor baru wajib memeriksa izin
     // =========================================================================
@@ -650,9 +676,10 @@ class PrintRoutePermissionGuardsTest extends TestCase
             );
         }
 
+        // 32 sejak issue #453 langkah 2 menambah expense.receipt-photo;
         // 31 sejak issue #451 menambah sales-return-plan.print; tidak ada
         // lagi pengecualian sejak sales-return.label/.pdf ditutup di
         // langkah 5.
-        $this->assertSame(31 - count($pengecualian), $diperiksa, 'Jumlah route yang benar-benar diperiksa tidak sesuai dugaan -- periksa apakah ada route baru yang perlu ditangani atau dikecualikan secara sadar.');
+        $this->assertSame(32 - count($pengecualian), $diperiksa, 'Jumlah route yang benar-benar diperiksa tidak sesuai dugaan -- periksa apakah ada route baru yang perlu ditangani atau dikecualikan secara sadar.');
     }
 }
