@@ -1520,5 +1520,8 @@
     "The chosen plan is not submitted, so it cannot be pulled.": "The chosen plan is not submitted, so it cannot be pulled.",
     "This plan has already been pulled into a sales return.": "This plan has already been pulled into a sales return.",
     "Pull Plan": "Pull Plan",
-    "Plan": "Plan"
+    "Plan": "Plan",
+    "This product was not claimed on the plan for this return.": "This product was not claimed on the plan for this return.",
+    "Claimed product :product never physically arrived, so this return cannot be approved.": "Claimed product :product never physically arrived, so this return cannot be approved.",
+    "Claimed but not physically received: :detail": "Claimed but not physically received: :detail"
 }

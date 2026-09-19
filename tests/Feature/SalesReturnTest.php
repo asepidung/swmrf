@@ -17,6 +17,7 @@ use App\Models\ProductCategory;
 use App\Models\SalesOrder;
 use App\Models\SalesReturn;
 use App\Models\SalesReturnItem;
+use App\Models\SalesReturnPlanItem;
 use App\Models\Tally;
 use App\Models\TallyItem;
 use App\Models\User;
@@ -180,9 +181,15 @@ class SalesReturnTest extends TestCase
     }
 
     /**
-     * Issue #451: retur sekarang WAJIB menarik plan yang sudah Submitted.
-     * Tes di berkas ini menguji stok, bukan plan-nya -- jadi plan di sini
-     * sekadar tiket masuk yang sah.
+     * Issue #451: retur sekarang WAJIB menarik plan yang sudah Submitted,
+     * dan scan menolak produk yang tidak diklaim (lihat
+     * InputReturnItems::processScan()). Tes di berkas ini menguji STOK,
+     * bukan selisih klaim-fisik -- jadi $this->product diklaim dengan
+     * jumlah yang sengaja BESAR di sini (bukan disinkronkan tepat), supaya
+     * semua tes yang men-scan barcode sungguhan lewat Livewire (bukan
+     * lewat `barang()`) tidak tertahan gerbang klaim itu. `barang()` tetap
+     * menyinkronkan tepat lewat `sinkronkanKlaim()` untuk tes yang
+     * membuat item langsung tanpa scan.
      */
     private function submittedPlan(): \App\Models\SalesReturnPlan
     {
@@ -190,7 +197,7 @@ class SalesReturnTest extends TestCase
             'plan_date' => now()->toDateString(),
             'customer_id' => $this->customer->id,
         ]);
-        $plan->items()->create(['product_id' => $this->product->id, 'claimed_weight' => 1]);
+        $plan->items()->create(['product_id' => $this->product->id, 'claimed_weight' => 9999]);
         $plan->submit();
 
         return $plan;
@@ -210,17 +217,48 @@ class SalesReturnTest extends TestCase
 
     private function barang(SalesReturn $retur, string $barcode): SalesReturnItem
     {
+        $berat = 22.5;
+
+        $this->sinkronkanKlaim($retur, $this->product, $berat);
+
         return SalesReturnItem::create([
             'sales_return_id' => $retur->id,
             'product_id' => $this->product->id,
             'warehouse_id' => $this->perum->id,
             'grade_id' => $this->grade->id,
             'barcode' => $barcode,
-            'weight' => 22.5,
+            'weight' => $berat,
             'qty_pcs' => 8,
             'pack_date' => now()->toDateString(),
             'origin' => '1',
         ]);
+    }
+
+    /**
+     * Issue #451: klaim di plan dibandingkan per produk terhadap fisik yang
+     * benar-benar di-scan. Tes di berkas ini menguji STOK, bukan selisih
+     * klaim-fisik -- jadi klaimnya disinkronkan di sini supaya selalu sama
+     * dengan fisik yang ditambahkan, tanpa perlu menyentuh tiap tes satu
+     * per satu. `withoutEvents()` melewati guard Draft-only di
+     * SalesReturnPlanItem -- ini pembukuan tes, bukan aksi pengguna nyata.
+     */
+    private function sinkronkanKlaim(SalesReturn $retur, Product $produk, float $tambahan): void
+    {
+        $plan = $retur->plan;
+
+        if (! $plan) {
+            return;
+        }
+
+        SalesReturnPlanItem::withoutEvents(function () use ($plan, $produk, $tambahan) {
+            $item = $plan->items()->where('product_id', $produk->id)->first();
+
+            if ($item) {
+                $item->update(['claimed_weight' => $item->claimed_weight + $tambahan]);
+            } else {
+                $plan->items()->create(['product_id' => $produk->id, 'claimed_weight' => $tambahan]);
+            }
+        });
     }
 
     // =====================================================================

@@ -203,22 +203,61 @@ class SalesReturnCreditTest extends TestCase
         return $invoice->fresh();
     }
 
+    private ?Product $produkTiketMasuk = null;
+
     /**
      * Issue #451: retur sekarang WAJIB menarik plan yang sudah Submitted.
-     * Tes di berkas ini menguji sisi KREDIT, bukan plan-nya -- jadi plan
-     * di sini sekadar tiket masuk yang sah, isinya tidak diperiksa satu
-     * pun test di bawah.
+     * Tes di berkas ini menguji sisi KREDIT berbasis KLAIM (bukan fisik) --
+     * jadi klaim untuk sirloin/ribeye yang sungguhan diretur harus disamakan
+     * dengan berat fisiknya lewat `sinkronkanKlaim()`, dipanggil dari
+     * `retur()`/`kartonDari()`/kedua tes relabel. Baris klaim di sini
+     * memakai produk LAIN yang sengaja tidak pernah diretur -- semata
+     * memenuhi syarat submit() (butuh minimal satu item).
      */
     private function submittedPlan(): \App\Models\SalesReturnPlan
     {
+        if (! $this->produkTiketMasuk) {
+            $this->produkTiketMasuk = Product::create([
+                'name' => 'PRODUK TIKET MASUK', 'code' => 'MT00999',
+                'category_id' => $this->sirloin->category_id, 'structure_type' => 'main', 'is_active' => true,
+            ]);
+        }
+
         $plan = \App\Models\SalesReturnPlan::create([
             'plan_date' => now()->toDateString(),
             'customer_id' => $this->customer->id,
         ]);
-        $plan->items()->create(['product_id' => $this->sirloin->id, 'claimed_weight' => 1]);
+        // claimed_weight 0 SENGAJA -- klaim > 0 tanpa fisik menolak
+        // approve() sejak langkah 4; produk tiket masuk ini memang tidak
+        // pernah difisik.
+        $plan->items()->create(['product_id' => $this->produkTiketMasuk->id, 'claimed_weight' => 0]);
         $plan->submit();
 
         return $plan;
+    }
+
+    /**
+     * Klaim di plan dibandingkan per produk terhadap fisik yang benar-benar
+     * di-scan (issue #451). `withoutEvents()` melewati guard Draft-only di
+     * SalesReturnPlanItem -- ini pembukuan tes, bukan aksi pengguna nyata.
+     */
+    private function sinkronkanKlaim(SalesReturn $retur, Product $produk, float $tambahan): void
+    {
+        $plan = $retur->plan;
+
+        if (! $plan) {
+            return;
+        }
+
+        \App\Models\SalesReturnPlanItem::withoutEvents(function () use ($plan, $produk, $tambahan) {
+            $item = $plan->items()->where('product_id', $produk->id)->first();
+
+            if ($item) {
+                $item->update(['claimed_weight' => $item->claimed_weight + $tambahan]);
+            } else {
+                $plan->items()->create(['product_id' => $produk->id, 'claimed_weight' => $tambahan]);
+            }
+        });
     }
 
     /**
@@ -254,6 +293,8 @@ class SalesReturnCreditTest extends TestCase
                 'pack_date' => now()->toDateString(),
                 'origin' => '1',
             ]);
+
+            $this->sinkronkanKlaim($retur, $b['produk'], (float) $b['berat']);
 
             SalesReturnItem::create([
                 'sales_return_id' => $retur->id,
@@ -297,6 +338,8 @@ class SalesReturnCreditTest extends TestCase
             'pack_date' => now()->toDateString(),
             'origin' => '1',
         ]);
+
+        $this->sinkronkanKlaim($retur, $produk, $berat);
 
         return SalesReturnItem::create([
             'sales_return_id' => $retur->id,
@@ -893,6 +936,8 @@ class SalesReturnCreditTest extends TestCase
             'created_by' => $this->user->id,
         ]);
 
+        $this->sinkronkanKlaim($retur, $this->sirloin, 15);
+
         // Barcode BARU, tidak ada di tally mana pun -- persis seperti barang
         // yang di-barcode ulang karena kartonnya rusak.
         SalesReturnItem::create([
@@ -932,6 +977,8 @@ class SalesReturnCreditTest extends TestCase
             'status' => 'Draft',
             'created_by' => $this->user->id,
         ]);
+
+        $this->sinkronkanKlaim($retur, $this->sirloin, 15);
 
         SalesReturnItem::create([
             'sales_return_id' => $retur->id,

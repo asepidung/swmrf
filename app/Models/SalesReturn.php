@@ -77,11 +77,100 @@ class SalesReturn extends Model
                 $model->created_by = Auth::id();
             }
         });
+
+        static::deleting(function (self $model) {
+            // Hapus retur mengembalikan plan-nya ke Submitted, SUPAYA bisa
+            // ditarik ulang -- tapi hanya kalau plan-nya sempat Received
+            // (retur pernah di-approve lalu di-unlock lalu dihapus).
+            // Retur Draft yang belum pernah di-approve tidak pernah
+            // mengubah status plan-nya sama sekali, jadi tidak ada yang
+            // perlu dibalik.
+            if ($model->plan && $model->plan->status === SalesReturnPlan::STATUS_RECEIVED) {
+                $model->plan->markSubmitted();
+            }
+        });
+
+        static::deleted(function (self $model) {
+            $model->isForceDeleting() ? $model->financialLoss()->forceDelete() : $model->financialLoss()->delete();
+        });
+
+        static::restored(function (self $model) {
+            if ($model->financialLoss()->withTrashed()->exists()) {
+                $model->financialLoss()->withTrashed()->restore();
+            }
+        });
     }
 
     public function plan(): BelongsTo
     {
         return $this->belongsTo(SalesReturnPlan::class, 'sales_return_plan_id');
+    }
+
+    public function financialLoss(): \Illuminate\Database\Eloquent\Relations\MorphOne
+    {
+        return $this->morphOne(FinancialLoss::class, 'lossable');
+    }
+
+    /** Total fisik yang benar-benar di-scan untuk satu produk di retur ini. */
+    public function physicalWeightFor(int $productId): float
+    {
+        return (float) $this->items()->where('product_id', $productId)->sum('weight');
+    }
+
+    /**
+     * Selisih klaim - fisik, per produk, jadi SATU FinancialLoss saat
+     * approve (issue #451). Kredit tetap ikut klaim penuh (attachToBill())
+     * -- selisihnya kerugian TERPISAH, bukan pengurang kredit.
+     */
+    private function recordClaimVarianceLoss(): void
+    {
+        if (! $this->plan) {
+            $this->financialLoss()->delete();
+
+            return;
+        }
+
+        $totalVarianceKg = 0.0;
+        $totalVarianceAmount = 0.0;
+        $catatan = [];
+
+        $klaimPerProduk = $this->plan->items()
+            ->selectRaw('product_id, SUM(claimed_weight) as total')
+            ->groupBy('product_id')
+            ->pluck('total', 'product_id');
+
+        foreach ($klaimPerProduk as $productId => $klaim) {
+            $selisih = round((float) $klaim - $this->physicalWeightFor((int) $productId), 2);
+
+            if ($selisih <= 0) {
+                continue;
+            }
+
+            $hargaPerKg = (float) ($this->items()->where('product_id', $productId)->value('unit_price') ?? 0);
+
+            $totalVarianceKg += $selisih;
+            $totalVarianceAmount += round($selisih * $hargaPerKg, 0);
+
+            $produkNama = Product::find($productId)?->name ?? '#'.$productId;
+            $catatan[] = "{$produkNama}: {$selisih} kg";
+        }
+
+        if ($totalVarianceKg <= 0) {
+            $this->financialLoss()->delete();
+
+            return;
+        }
+
+        $this->financialLoss()->updateOrCreate(
+            ['transaction_type' => FinancialLoss::SUMBER_RETUR, 'reference_number' => $this->return_number],
+            [
+                'date' => $this->return_date,
+                'amount' => round($totalVarianceAmount, 2),
+                'quantity' => round($totalVarianceKg, 2),
+                'unit' => 'Kg',
+                'note' => __('Claimed but not physically received: :detail', ['detail' => implode(', ', $catatan)]),
+            ],
+        );
     }
 
     /**
@@ -99,6 +188,19 @@ class SalesReturn extends Model
             throw new \RuntimeException(__('This return has no item yet.'));
         }
 
+        // Klaim ada tapi fisik nol -- barangnya tidak pernah datang,
+        // ditolak di sini (issue #451, keputusan Owner 17 September).
+        // Produk yang di-scan tapi tidak pernah diklaim sudah ditolak
+        // lebih awal, saat scan (lihat InputReturnItems::processScan()).
+        if ($this->plan) {
+            foreach ($this->plan->items as $planItem) {
+                if ((float) $planItem->claimed_weight > 0 && $this->physicalWeightFor($planItem->product_id) <= 0) {
+                    throw new \RuntimeException(__('Claimed product :product never physically arrived, so this return cannot be approved.', [
+                        'product' => $planItem->product?->name ?? '#'.$planItem->product_id,
+                    ]));
+                }
+            }
+        }
 
         DB::transaction(function (): void {
             $this->update(['status' => 'Approved']);
@@ -135,6 +237,12 @@ class SalesReturn extends Model
 
             // Barangnya sudah kembali ke gudang. Sekarang uangnya.
             $this->attachToBill();
+
+            // Selisih klaim-fisik jadi kerugian TERPISAH -- kreditnya
+            // sendiri tetap ikut klaim penuh (attachToBill() di atas).
+            $this->recordClaimVarianceLoss();
+
+            $this->plan?->markReceived();
         });
     }
 
@@ -196,7 +304,16 @@ class SalesReturn extends Model
 
             $this->detachFromBill();
 
+            // Kerugian selisih klaim-fisik ikut dibalik -- lahir saat
+            // approve, jadi tidak berlaku lagi begitu approve-nya dibuka.
+            $this->financialLoss()->delete();
+
             $this->update(['status' => 'Draft']);
+
+            // Plan TETAP `Received` -- keputusan Owner (issue #451 §2):
+            // retur masih ada, cuma dibuka kuncinya. Hanya MENGHAPUS
+            // retur yang mengembalikan plan ke `Submitted` (lihat
+            // `deleting` di boot()).
         });
     }
 
@@ -259,12 +376,31 @@ class SalesReturn extends Model
         // yang sama.
         $sisaJatah = [];
 
+        // Dasar kredit sekarang KLAIM per produk (issue #451, keputusan
+        // Owner 17 September), bukan berat fisik kartonnya -- "kredit =
+        // qty klaim di plan", walau fisiknya kurang (selisihnya jadi
+        // FinancialLoss terpisah lewat recordClaimVarianceLoss(), bukan
+        // pengurang kredit). Kalau ada LEBIH dari satu karton untuk produk
+        // yang sama, klaimnya dibagi proporsional menurut berat fisik
+        // masing-masing karton -- tidak ada dasar lain untuk membaginya.
+        // Retur TANPA plan (sebelum fitur ini ada) jatuh kembali ke kredit
+        // berbasis fisik apa adanya, persis seperti sebelumnya.
+        $klaimPerProduk = $this->plan
+            ? $this->plan->items()->selectRaw('product_id, SUM(claimed_weight) as total')->groupBy('product_id')->pluck('total', 'product_id')
+            : collect();
+        $fisikPerProduk = $this->items->groupBy('product_id')->map(fn ($items) => (float) $items->sum('weight'));
+
         foreach ($this->items as $item) {
             $invoice = $item->billItWasChargedOn();
             [$perKg, $hargaPenuh] = $this->sellingPriceFor($item, $invoice);
 
             $beratFisik = (float) $item->weight;
-            $beratKredit = $beratFisik;
+            $klaimProduk = (float) ($klaimPerProduk[$item->product_id] ?? 0.0);
+            $fisikProduk = (float) ($fisikPerProduk[$item->product_id] ?? 0.0);
+
+            $beratKredit = ($klaimProduk > 0 && $fisikProduk > 0)
+                ? round($klaimProduk * ($beratFisik / $fisikProduk), 2)
+                : $beratFisik;
 
             if ($invoice) {
                 $kunci = $invoice->getKey().':'.$item->product_id;
@@ -277,15 +413,16 @@ class SalesReturn extends Model
                     );
                 }
 
-                $beratKredit = min($beratFisik, $sisaJatah[$kunci]);
+                $beratKredit = min($beratKredit, $sisaJatah[$kunci]);
                 $sisaJatah[$kunci] = round($sisaJatah[$kunci] - $beratKredit, 2);
             }
 
             $beratKredit = round($beratKredit, 2);
 
-            // Nilainya dihitung dari berat yang DIKREDITKAN, bukan berat
-            // fisiknya. Kalau keduanya sama -- dan itu keadaan biasa --
-            // hasilnya persis sama dengan harga penuhnya.
+            // Nilainya dihitung dari berat yang DIKREDITKAN. Kalau sama
+            // persis dengan fisiknya -- keadaan biasa saat klaim dan fisik
+            // sama -- hasilnya persis harga penuhnya, menghindari selisih
+            // pembulatan.
             $jumlah = $beratKredit === round($beratFisik, 2)
                 ? $hargaPenuh
                 : round($beratKredit * $perKg, 0);
