@@ -21,6 +21,7 @@ class SalesReturn extends Model
         'return_number',
         'return_date',
         'delivery_order_id',
+        'sales_return_plan_id',
         'credit_amount',
         'customer_id',
         'note',
@@ -46,6 +47,24 @@ class SalesReturn extends Model
         parent::boot();
 
         static::creating(function ($model) {
+            // Issue #451, keputusan Owner 17 September: retur TIDAK BOLEH
+            // dibuat tanpa plan -- "Tarik Plan" satu-satunya jalur masuk,
+            // dan ini lapis kedua yang menegakkannya di server (lapis
+            // pertama tombol Create yang sudah dihilangkan dari layar).
+            if (empty($model->sales_return_plan_id)) {
+                throw new \Exception(__('A sales return can only be created by pulling a submitted plan.'));
+            }
+
+            $plan = SalesReturnPlan::find($model->sales_return_plan_id);
+
+            if (! $plan || $plan->status !== SalesReturnPlan::STATUS_SUBMITTED) {
+                throw new \Exception(__('The chosen plan is not submitted, so it cannot be pulled.'));
+            }
+
+            if ($plan->salesReturn()->exists()) {
+                throw new \Exception(__('This plan has already been pulled into a sales return.'));
+            }
+
             if (empty($model->return_number)) {
                 $model->return_number = DocumentNumber::next(
                     query: static::withTrashed(),
@@ -58,6 +77,11 @@ class SalesReturn extends Model
                 $model->created_by = Auth::id();
             }
         });
+    }
+
+    public function plan(): BelongsTo
+    {
+        return $this->belongsTo(SalesReturnPlan::class, 'sales_return_plan_id');
     }
 
     /**

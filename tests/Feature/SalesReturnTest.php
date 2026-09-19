@@ -179,11 +179,29 @@ class SalesReturnTest extends TestCase
         $this->beriIzin('view_sales_returns', 'edit_sales_returns');
     }
 
+    /**
+     * Issue #451: retur sekarang WAJIB menarik plan yang sudah Submitted.
+     * Tes di berkas ini menguji stok, bukan plan-nya -- jadi plan di sini
+     * sekadar tiket masuk yang sah.
+     */
+    private function submittedPlan(): \App\Models\SalesReturnPlan
+    {
+        $plan = \App\Models\SalesReturnPlan::create([
+            'plan_date' => now()->toDateString(),
+            'customer_id' => $this->customer->id,
+        ]);
+        $plan->items()->create(['product_id' => $this->product->id, 'claimed_weight' => 1]);
+        $plan->submit();
+
+        return $plan;
+    }
+
     private function retur(?DeliveryOrder $do = null, string $status = 'Draft'): SalesReturn
     {
         return SalesReturn::create([
             'return_date' => now()->toDateString(),
             'delivery_order_id' => $do?->id,
+            'sales_return_plan_id' => $this->submittedPlan()->id,
             'customer_id' => $this->customer->id,
             'status' => $status,
             'created_by' => $this->user->id,

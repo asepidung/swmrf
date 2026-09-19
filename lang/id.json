@@ -1515,5 +1515,10 @@
     "Manage Items for :document": "Kelola Item untuk :document",
     "Claimed Weight (Kg)": "Berat Klaim (Kg)",
     "Claimed Qty (Pcs)": "Qty Klaim (Pcs)",
-    "Item removed.": "Item dihapus."
+    "Item removed.": "Item dihapus.",
+    "A sales return can only be created by pulling a submitted plan.": "Retur hanya bisa dibuat dengan menarik plan yang sudah disubmit.",
+    "The chosen plan is not submitted, so it cannot be pulled.": "Plan yang dipilih belum disubmit, jadi tidak bisa ditarik.",
+    "This plan has already been pulled into a sales return.": "Plan ini sudah pernah ditarik menjadi retur.",
+    "Pull Plan": "Tarik Plan",
+    "Plan": "Plan"
 }

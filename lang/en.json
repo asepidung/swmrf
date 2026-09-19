@@ -1515,5 +1515,10 @@
     "Manage Items for :document": "Manage Items for :document",
     "Claimed Weight (Kg)": "Claimed Weight (Kg)",
     "Claimed Qty (Pcs)": "Claimed Qty (Pcs)",
-    "Item removed.": "Item removed."
+    "Item removed.": "Item removed.",
+    "A sales return can only be created by pulling a submitted plan.": "A sales return can only be created by pulling a submitted plan.",
+    "The chosen plan is not submitted, so it cannot be pulled.": "The chosen plan is not submitted, so it cannot be pulled.",
+    "This plan has already been pulled into a sales return.": "This plan has already been pulled into a sales return.",
+    "Pull Plan": "Pull Plan",
+    "Plan": "Plan"
 }
