@@ -24,6 +24,13 @@ class ViewCosting extends ViewRecord
                 ->color('gray')
                 ->url(fn (): string => $this->getResource()::getUrl('index')),
 
+            Actions\Action::make('print')
+                ->label(__('Print'))
+                ->icon('heroicon-o-printer')
+                ->color('success')
+                ->url(fn (): string => route('print.costing', $this->getRecord()))
+                ->openUrlInNewTab(),
+
             Actions\Action::make('unlock')
                 ->label(__('Unlock'))
                 ->icon('heroicon-o-lock-open')

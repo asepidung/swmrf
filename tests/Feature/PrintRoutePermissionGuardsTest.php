@@ -6,6 +6,7 @@ use App\Models\BeefStock;
 use App\Models\Boning;
 use App\Models\BoningItem;
 use App\Models\CattleClass;
+use App\Models\Costing;
 use App\Models\CattleReceiving;
 use App\Models\CattleWeighing;
 use App\Models\Customer;
@@ -294,6 +295,18 @@ class PrintRoutePermissionGuardsTest extends TestCase
         ]);
     }
 
+    /** Issue #480 langkah 3: cetakan costing (Mesin HPP). */
+    private function costing(): Costing
+    {
+        $boning = Boning::create(['boning_date' => now()->toDateString(), 'created_by' => User::factory()->create()->id]);
+
+        return Costing::create([
+            'costing_date' => now()->toDateString(), 'boning_id' => $boning->id,
+            'purchase_cost' => 1000000, 'total_sales_value' => 1200000,
+            'ratio_k' => 0.833333, 'overhead_per_kg' => 3000, 'total_kg' => 100, 'profit' => 50000,
+        ]);
+    }
+
     private function beefStock(): BeefStock
     {
         return BeefStock::create([
@@ -500,6 +513,14 @@ class PrintRoutePermissionGuardsTest extends TestCase
         $this->assertRouteRequiresPermission('boning.label', ['id' => $item->id], 'view_bonings');
     }
 
+    /** Issue #480 langkah 3: cetakan costing (Mesin HPP). */
+    /** @test */
+    public function print_costing_requires_view_costings(): void
+    {
+        $record = $this->costing();
+        $this->assertRouteRequiresPermission('print.costing', ['record' => $record->id], 'view_costings');
+    }
+
     /** @test */
     public function beef_stock_label_requires_view_beef_stocks(): void
     {
@@ -690,10 +711,11 @@ class PrintRoutePermissionGuardsTest extends TestCase
             );
         }
 
-        // 33 sejak issue #453 langkah 3 menambah expense.print; 32 sejak
-        // langkah 2 menambah expense.receipt-photo; 31 sejak issue #451
-        // menambah sales-return-plan.print; tidak ada lagi pengecualian
-        // sejak sales-return.label/.pdf ditutup di langkah 5.
-        $this->assertSame(33 - count($pengecualian), $diperiksa, 'Jumlah route yang benar-benar diperiksa tidak sesuai dugaan -- periksa apakah ada route baru yang perlu ditangani atau dikecualikan secara sadar.');
+        // 34 sejak issue #480 langkah 3 menambah print.costing; 33 sejak
+        // issue #453 langkah 3 menambah expense.print; 32 sejak langkah 2
+        // menambah expense.receipt-photo; 31 sejak issue #451 menambah
+        // sales-return-plan.print; tidak ada lagi pengecualian sejak
+        // sales-return.label/.pdf ditutup di langkah 5.
+        $this->assertSame(34 - count($pengecualian), $diperiksa, 'Jumlah route yang benar-benar diperiksa tidak sesuai dugaan -- periksa apakah ada route baru yang perlu ditangani atau dikecualikan secara sadar.');
     }
 }

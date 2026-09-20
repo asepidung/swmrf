@@ -56,6 +56,13 @@ class EditCosting extends EditRecord
                 ->color('gray')
                 ->url(fn (): string => $this->getResource()::getUrl('index')),
 
+            Actions\Action::make('print')
+                ->label(__('Print'))
+                ->icon('heroicon-o-printer')
+                ->color('success')
+                ->url(fn (): string => route('print.costing', $this->getRecord()))
+                ->openUrlInNewTab(),
+
             // Overhead diubah di form, tapi TIDAK terpakai sampai
             // "Hitung ulang" ditekan -- tombol Simpan biasa hanya
             // menyentuh field header polos (mis. tanggal), bukan

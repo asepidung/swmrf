@@ -194,11 +194,53 @@ class CarcassYieldTest extends TestCase
         ]);
 
         $this->assertSame(1095.00, $karkas->liveWeight());
+        $this->assertSame(1095.00, $karkas->receivedWeight());
         $this->assertSame(630.84, $karkas->carcassWeight());
         $this->assertSame(66.70, $karkas->hidesWeight());
 
         // 630,84 / 1.095,00 = 57,61%
         $this->assertSame(57.61, $karkas->yieldPercent());
+    }
+
+    /**
+     * Keputusan Project Owner, 17 September 2026 (`.agents/hpp.md` §15.1):
+     * rendemen memakai BERAT TERIMA, sama seperti laporan carcass legacy dan
+     * sama seperti dasar biaya beli HPP -- bukan berat timbang ulang seperti
+     * sebelumnya. Fixture ini sengaja membuat keduanya BERBEDA (susut
+     * perjalanan) supaya perubahan pembaginya benar-benar teruji, bukan
+     * kebetulan sama seperti test di atas.
+     */
+    public function test_yield_uses_received_weight_even_when_it_differs_from_the_reweighed_amount(): void
+    {
+        $supplier = Supplier::create([
+            'name' => 'TEGUH AMANAH '.uniqid(), 'address' => 'Bogor', 'pic' => 'Teguh', 'top_days' => 30,
+        ]);
+        $class = CattleClass::firstOrCreate(['name' => 'STEER'], ['is_active' => true]);
+        $po = PurchaseCattle::create(['supplier_id' => $supplier->id, 'shipping_date' => now()->toDateString(), 'created_by' => $this->user->id]);
+        $po->items()->create(['cattle_class_id' => $class->id, 'qty' => 1, 'price' => 55000, 'created_by' => $this->user->id]);
+        $receiving = CattleReceiving::create(['purchase_cattle_id' => $po->id, 'supplier_id' => $supplier->id, 'receive_date' => now()->toDateString(), 'created_by' => $this->user->id]);
+        $weighing = CattleWeighing::create(['cattle_receiving_id' => $receiving->id, 'weighing_date' => now()->toDateString(), 'created_by' => $this->user->id]);
+        $carcass = Carcass::create(['cattle_weighing_id' => $weighing->id, 'kill_date' => now()->toDateString(), 'created_by' => $this->user->id]);
+
+        $receivingItem = $receiving->items()->create([
+            'cattle_class_id' => $class->id, 'eartag' => 'EAR-SUSUT-1', 'initial_weight' => 550.00,
+        ]);
+        $weighingItem = $weighing->items()->create([
+            'cattle_receiving_item_id' => $receivingItem->id, 'cattle_class_id' => $class->id,
+            'eartag' => 'EAR-SUSUT-1', 'initial_weight' => 550.00, 'actual_weight' => 530.00,
+        ]);
+        CarcassItem::create([
+            'carcass_id' => $carcass->id, 'cattle_weighing_item_id' => $weighingItem->id,
+            'carcass_1' => 150.00, 'carcass_2' => 155.00, 'hides' => 30.00, 'tail' => 0.00,
+        ]);
+
+        $karkas = $carcass->fresh();
+
+        $this->assertSame(530.00, $karkas->liveWeight());
+        $this->assertSame(550.00, $karkas->receivedWeight());
+
+        // 305,00 / 550,00 = 55,45% -- BUKAN 305,00 / 530,00 = 57,55%.
+        $this->assertSame(55.45, $karkas->yieldPercent());
     }
 
     /**
@@ -233,47 +275,46 @@ class CarcassYieldTest extends TestCase
 
     /**
      * Keputusan Project Owner, 15 September 2026, untuk Boning #7 (soal ini
-     * sebenarnya ada di Carcass, bukan Boning): SATU ekor saja yang belum
-     * ditimbang ulang sudah cukup membuat rendemen ditampilkan "-", bukan
-     * dihitung dari sisa yang sudah ditimbang. Menghitung dari sisanya akan
-     * membuat rendemen tampak LEBIH TINGGI daripada sebenarnya -- karkasnya
-     * (ditimbang saat pemotongan) tetap utuh, sementara bobot hidup yang
-     * jadi penyebut diam-diam berkurang.
+     * sebenarnya ada di Carcass, bukan Boning): dulu SATU ekor saja yang
+     * belum ditimbang ulang membuat rendemen ditampilkan "-".
+     *
+     * DICABUT sengaja di sini, keputusan Owner 17 September 2026
+     * (`.agents/hpp.md` §15.1): begitu pembagi rendemen pindah ke berat
+     * TERIMA, alasan aturan itu hilang -- berat terima selalu ada sejak
+     * sapi datang, sapi yang belum ditimbang ULANG tetap punya berat terima
+     * yang lengkap. `Carcass::hasUnweighedCattle()` sendiri sudah dihapus
+     * bersama aturan ini karena tidak ada pemanggil lain yang tersisa.
      */
-    public function test_a_carcass_with_any_unweighed_cattle_has_no_yield_at_all(): void
+    public function test_yield_is_still_computed_even_when_some_cattle_are_unweighed(): void
     {
         $ekor = [];
         for ($i = 1; $i <= 8; $i++) {
             $ekor[] = ['hidup' => 500.00 + $i, 'a' => 140.00, 'b' => 145.00, 'kulit' => 30.00, 'buntut' => 5.00];
         }
-        // 2 dari 10 ekor belum ditimbang ulang.
+        // 2 dari 10 ekor belum ditimbang ulang -- TIDAK LAGI menghalangi rendemen.
         $ekor[] = ['hidup' => 510.00, 'a' => 140.00, 'b' => 145.00, 'kulit' => 30.00, 'buntut' => 5.00, 'ditimbang' => false];
         $ekor[] = ['hidup' => 512.00, 'a' => 140.00, 'b' => 145.00, 'kulit' => 30.00, 'buntut' => 5.00, 'ditimbang' => false];
 
         $karkas = $this->karkas($ekor);
 
         $this->assertSame(10, $karkas->items()->count());
-        $this->assertTrue($karkas->hasUnweighedCattle());
-        $this->assertNull($karkas->yieldPercent());
-    }
-
-    public function test_a_fully_weighed_carcass_has_no_unweighed_cattle(): void
-    {
-        $karkas = $this->karkas([
-            ['hidup' => 531.00, 'a' => 149.96, 'b' => 158.98, 'kulit' => 34.60, 'buntut' => 0.00],
-        ]);
-
-        $this->assertFalse($karkas->hasUnweighedCattle());
+        // 10 x (140 + 145) = 2.850,00 ; berat terima (SELALU ada) = 5.058,00.
+        $this->assertSame(2850.00, $karkas->carcassWeight());
+        $this->assertSame(5058.00, $karkas->receivedWeight());
+        $this->assertSame(56.35, $karkas->yieldPercent());
     }
 
     /**
      * Sama seperti model-nya, tapi dibuktikan lewat cetakan sungguhan --
      * "berlaku di layar, cetakan, dan ekspor laporan karkas" per keputusan
-     * Owner. Sebelum diperbaiki, total baris "Carcase Yield" di sini dihitung
-     * dari $tLive yang diam-diam mengabaikan sapi yang belum ditimbang
-     * (SQL SUM melompati NULL), membuat rendemen tampak lebih tinggi.
+     * Owner. Sebelum langkah 3 issue #480, kolom "Receive Wt" di sini diam-
+     * diam menampilkan `actual_weight` (timbang ulang), dan baris total
+     * "Carcase Yield" tampil "-" begitu ada satu ekor yang belum ditimbang
+     * ulang. Keduanya sudah tidak berlaku sejak rendemen pindah ke berat
+     * terima (`.agents/hpp.md` §15.1) -- berat terima selalu ada, jadi
+     * cetakannya sekarang selalu menghitung, bukan menolak.
      */
-    public function test_the_printed_report_shows_a_dash_when_any_cattle_is_unweighed(): void
+    public function test_the_printed_report_still_computes_yield_when_some_cattle_are_unweighed(): void
     {
         $karkas = $this->karkas([
             ['hidup' => 531.00, 'a' => 149.96, 'b' => 158.98, 'kulit' => 34.60, 'buntut' => 0.00],
@@ -285,10 +326,12 @@ class CarcassYieldTest extends TestCase
             ['record' => $karkas]
         )->assertSee('Carcase Yield')->html();
 
+        // 630,84 / 1.095,00 = 57,61% -- persis sama dengan test model di atas,
+        // walau salah satu ekornya belum ditimbang ulang.
         $this->assertMatchesRegularExpression(
-            '/Carcase Yield<\/th>\s*<td>-<\/td>/',
+            '/Carcase Yield<\/th>\s*<td>57,61 %<\/td>/',
             $html,
-            'Baris total "Carcase Yield" seharusnya tampil "-", bukan angka yang dihitung dari sisa sapi yang sudah ditimbang.'
+            'Baris total "Carcase Yield" seharusnya tetap menghitung dari berat terima, bukan tampil "-".'
         );
     }
 

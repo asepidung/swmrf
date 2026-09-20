@@ -120,6 +120,22 @@ class Carcass extends Model
             ->sum('cattle_weighing_items.actual_weight'), 2);
     }
 
+    /**
+     * Berat terima (surat jalan) seluruh sapi di dokumen ini -- penyebut
+     * RENDEMEN sejak keputusan Owner 17 September 2026 (`.agents/hpp.md`
+     * §15.1), menggantikan `liveWeight()` (timbang ulang) yang dipakai
+     * sebelumnya. `liveWeight()` sendiri TETAP ADA untuk urusan susut
+     * perjalanan yang memang butuh timbang ulang -- hanya rendemen yang
+     * pindah pembagi.
+     */
+    public function receivedWeight(): float
+    {
+        return round((float) $this->items()
+            ->join('cattle_weighing_items', 'carcass_items.cattle_weighing_item_id', '=', 'cattle_weighing_items.id')
+            ->join('cattle_receiving_items', 'cattle_weighing_items.cattle_receiving_item_id', '=', 'cattle_receiving_items.id')
+            ->sum('cattle_receiving_items.initial_weight'), 2);
+    }
+
     /** Berat karkasnya saja: belahan A ditambah belahan B, seluruh ekor. */
     public function carcassWeight(): float
     {
@@ -182,30 +198,6 @@ class Carcass extends Model
     }
 
     /**
-     * Ada sapi di karkas ini yang belum ditimbang ulang.
-     *
-     * Keputusan Project Owner, 15 September 2026, memperluas aturan 6
-     * September (`CattleWeighing::weighingWasSkipped()`, SELURUH baris
-     * kosong baru dianggap "penimbangan dilewati"): untuk rendemen karkas,
-     * SATU ekor saja yang belum ditimbang sudah cukup membuat angkanya
-     * tidak bisa dipercaya.
-     *
-     * `liveWeight()` memakai SQL SUM, yang diam-diam MENGABAIKAN baris
-     * NULL -- bobot hidup yang terhitung jadi lebih kecil daripada
-     * sebenarnya, sementara berat karkasnya (ditimbang di titik yang
-     * berbeda, saat pemotongan) tetap ikut utuh. Rendemen yang keluar jadi
-     * lebih BESAR daripada yang sebenarnya, bukan sekadar kurang presisi --
-     * dan satu ekor sapi bisa menggeser angkanya berpuluh kilogram.
-     */
-    public function hasUnweighedCattle(): bool
-    {
-        return $this->items()
-            ->join('cattle_weighing_items', 'carcass_items.cattle_weighing_item_id', '=', 'cattle_weighing_items.id')
-            ->whereNull('cattle_weighing_items.actual_weight')
-            ->exists();
-    }
-
-    /**
      * Rendemen karkas: berapa persen bobot hidup yang menjadi karkas.
      *
      * Angka baku di rumah potong, dan sudah ADA di aplikasi lama:
@@ -216,23 +208,28 @@ class Carcass extends Model
      * sungguhan tanggal 27 Agustus 2026: 3.943,32 / 6.856,00 = 57,52%, persis
      * angka yang tercetak di sana.
      *
-     * `null` berarti belum bisa dihitung -- bukan nol persen. Berlaku juga
-     * kalau ada sapi yang belum ditimbang ulang (lihat `hasUnweighedCattle()`),
-     * bukan hanya kalau SEMUANYA belum.
+     * Pembaginya BERAT TERIMA (`receivedWeight()`), bukan timbang ulang --
+     * keputusan Owner 17 September 2026 (`.agents/hpp.md` §15.1), sama
+     * dengan laporan carcass legacy dan sama dengan dasar biaya beli HPP.
+     * Sebelumnya memakai timbang ulang dan menolak menghitung sama sekali
+     * ("-") kalau ada satu ekor saja yang belum ditimbang ulang -- aturan
+     * itu DICABUT di sini bersamaan dengan pindahnya pembagi: berat terima
+     * selalu ada sejak sapi datang, jadi alasan penolakannya sudah tidak
+     * ada lagi. Timbang ulang tetap dipakai di tempat lain yang memang
+     * menjawab pertanyaan susut perjalanan, bukan rendemen.
+     *
+     * `null` berarti belum bisa dihitung sama sekali (belum ada sapi
+     * tercatat) -- bukan nol persen.
      */
     public function yieldPercent(): ?float
     {
-        if ($this->hasUnweighedCattle()) {
+        $terima = $this->receivedWeight();
+
+        if ($terima <= 0) {
             return null;
         }
 
-        $hidup = $this->liveWeight();
-
-        if ($hidup <= 0) {
-            return null;
-        }
-
-        return round(($this->carcassWeight() / $hidup) * 100, 2);
+        return round(($this->carcassWeight() / $terima) * 100, 2);
     }
 
     public function creator(): BelongsTo

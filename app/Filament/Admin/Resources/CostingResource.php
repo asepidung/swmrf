@@ -150,6 +150,59 @@ class CostingResource extends Resource
                         default => 'gray',
                     }),
             ])
+            ->headerActions([
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('excel')
+                        ->label(__('Excel'))
+                        ->icon('heroicon-o-document-text')
+                        ->color('success')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->with('boning')->get();
+
+                            return response()->streamDownload(function () use ($records) {
+                                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                                $writer->openToFile('php://output');
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    'Number', 'Date', 'Boning', 'Purchase Cost', 'Total Sales Value', 'Ratio (k)', 'Profit', 'Status',
+                                ]));
+
+                                foreach ($records as $record) {
+                                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                        $record->costing_number,
+                                        optional($record->costing_date)->format('Y-m-d') ?? '',
+                                        $record->boning?->doc_no ?? '',
+                                        (float) $record->purchase_cost,
+                                        (float) $record->total_sales_value,
+                                        (float) $record->ratio_k,
+                                        (float) $record->profit,
+                                        $record->status,
+                                    ]));
+                                }
+
+                                $writer->close();
+                            }, 'costings.xlsx');
+                        }),
+
+                    Tables\Actions\Action::make('pdf')
+                        ->label('PDF')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('danger')
+                        ->action(function ($livewire) {
+                            $records = $livewire->getFilteredTableQuery()->with('boning')->get();
+
+                            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.costings-pdf', [
+                                'records' => $records,
+                                'title' => __('Costings'),
+                            ]);
+
+                            return response()->streamDownload(fn () => print($pdf->output()), 'costings.pdf');
+                        }),
+                ])
+                    ->label(__('Export Data'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->button()
+                    ->color('success'),
+            ])
             ->defaultSort('created_at', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
