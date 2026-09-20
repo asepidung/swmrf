@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -86,6 +87,12 @@ class Boning extends Model
     public function qcReports(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
         return $this->morphMany(\App\Models\QcReport::class, 'reportable');
+    }
+
+    /** Costing (Mesin HPP, issue #480) untuk boning ini -- satu boning satu costing. */
+    public function costing(): HasOne
+    {
+        return $this->hasOne(Costing::class);
     }
 
     public function items(): HasMany
