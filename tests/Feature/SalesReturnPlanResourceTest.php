@@ -6,7 +6,6 @@ use App\Filament\Admin\Resources\SalesReturnPlanResource;
 use App\Filament\Admin\Resources\SalesReturnPlanResource\Pages\CreateSalesReturnPlan;
 use App\Filament\Admin\Resources\SalesReturnPlanResource\Pages\EditSalesReturnPlan;
 use App\Filament\Admin\Resources\SalesReturnPlanResource\Pages\ListSalesReturnPlans;
-use App\Filament\Admin\Resources\SalesReturnPlanResource\Pages\ManageSalesReturnPlanItems;
 use App\Filament\Admin\Resources\SalesReturnPlanResource\Pages\ViewSalesReturnPlan;
 use App\Models\Customer;
 use App\Models\CustomerSegment;
@@ -25,6 +24,10 @@ use Tests\TestCase;
  * sudah diuji tuntas di `SalesReturnPlanTest` (model) -- di sini fokus ke
  * OTORISASI dan NAVIGASI halaman, plus satu jalur end-to-end lewat
  * Livewire untuk membuktikan pengkabelannya benar.
+ *
+ * Susulan issue #478 (20 September 2026): halaman item terpisah
+ * (`ManageSalesReturnPlanItems`) dihapus -- Create dan Edit sekarang
+ * SATU halaman dengan Repeater item, samakan dengan Sales Order.
  */
 class SalesReturnPlanResourceTest extends TestCase
 {
@@ -33,6 +36,8 @@ class SalesReturnPlanResourceTest extends TestCase
     private Customer $customer;
 
     private Product $product;
+
+    private Product $productB;
 
     protected function setUp(): void
     {
@@ -47,6 +52,10 @@ class SalesReturnPlanResourceTest extends TestCase
         $category = ProductCategory::create(['name' => 'MEAT', 'prefix' => 'MT', 'is_active' => true]);
         $this->product = Product::create([
             'name' => 'SIRLOIN', 'code' => 'MT001', 'category_id' => $category->id,
+            'structure_type' => 'main', 'is_active' => true,
+        ]);
+        $this->productB = Product::create([
+            'name' => 'RIBEYE', 'code' => 'MT002', 'category_id' => $category->id,
             'structure_type' => 'main', 'is_active' => true,
         ]);
     }
@@ -100,15 +109,30 @@ class SalesReturnPlanResourceTest extends TestCase
             ->assertSuccessful();
     }
 
+    /** @test */
+    public function editing_a_plan_requires_edit_sales_return_plans_not_just_view(): void
+    {
+        $plan = $this->draftPlanWithItem();
+
+        $this->actingAs($this->employee(['view_sales_return_plans']))
+            ->get(SalesReturnPlanResource::getUrl('edit', ['record' => $plan]))
+            ->assertForbidden();
+
+        $this->actingAs($this->employee(['view_sales_return_plans', 'edit_sales_return_plans']))
+            ->get(SalesReturnPlanResource::getUrl('edit', ['record' => $plan]))
+            ->assertSuccessful();
+    }
+
     // =========================================================================
     // Navigasi status
     // =========================================================================
 
     /** @test */
-    public function editing_a_non_draft_plan_redirects_to_the_view_page(): void
+    public function editing_a_received_plan_redirects_to_the_view_page(): void
     {
         $plan = $this->draftPlanWithItem();
         $plan->submit();
+        $plan->markReceived();
 
         Livewire::actingAs($this->employee(['view_sales_return_plans', 'edit_sales_return_plans']))
             ->test(EditSalesReturnPlan::class, ['record' => $plan->getKey()])
@@ -125,6 +149,22 @@ class SalesReturnPlanResourceTest extends TestCase
             ->assertSuccessful();
     }
 
+    /**
+     * Issue #478: Submitted sekarang JUGA bisa dibuka lewat Edit
+     * (sebelumnya cuma lewat halaman item terpisah).
+     *
+     * @test
+     */
+    public function a_submitted_plan_can_also_be_opened_for_editing(): void
+    {
+        $plan = $this->draftPlanWithItem();
+        $plan->submit();
+
+        Livewire::actingAs($this->employee(['view_sales_return_plans', 'edit_sales_return_plans']))
+            ->test(EditSalesReturnPlan::class, ['record' => $plan->getKey()])
+            ->assertSuccessful();
+    }
+
     /** @test */
     public function submitting_from_the_edit_page_moves_the_plan_to_submitted(): void
     {
@@ -135,6 +175,17 @@ class SalesReturnPlanResourceTest extends TestCase
             ->callAction('submit_plan');
 
         $this->assertSame(SalesReturnPlan::STATUS_SUBMITTED, $plan->fresh()->status);
+    }
+
+    /** @test */
+    public function the_submit_action_is_hidden_once_the_plan_is_no_longer_draft(): void
+    {
+        $plan = $this->draftPlanWithItem();
+        $plan->submit();
+
+        Livewire::actingAs($this->employee(['view_sales_return_plans', 'edit_sales_return_plans']))
+            ->test(EditSalesReturnPlan::class, ['record' => $plan->getKey()])
+            ->assertActionHidden('submit_plan');
     }
 
     /**
@@ -167,80 +218,169 @@ class SalesReturnPlanResourceTest extends TestCase
 
         Livewire::actingAs($user)
             ->test(ViewSalesReturnPlan::class, ['record' => $plan->getKey()])
-            ->assertActionVisible('manage_items')
+            ->assertActionVisible('edit_plan')
             ->assertActionVisible('cancel_plan');
 
         $plan->markReceived();
 
         Livewire::actingAs($user)
             ->test(ViewSalesReturnPlan::class, ['record' => $plan->getKey()])
-            ->assertActionHidden('manage_items')
+            ->assertActionHidden('edit_plan')
             ->assertActionHidden('cancel_plan');
     }
 
     // =========================================================================
-    // Halaman item: canAccess()
+    // Jalur end-to-end: header + item dalam satu halaman (issue #478)
     // =========================================================================
 
     /** @test */
-    public function the_items_page_requires_edit_sales_return_plans_not_just_view(): void
+    public function creating_a_plan_saves_the_header_and_its_items_in_one_step(): void
     {
-        $plan = $this->draftPlanWithItem();
+        Livewire::actingAs($this->employee(['view_sales_return_plans', 'create_sales_return_plans']))
+            ->test(CreateSalesReturnPlan::class)
+            ->fillForm([
+                'customer_id' => $this->customer->id,
+                'plan_date' => now()->toDateString(),
+                'items' => [
+                    ['product_id' => $this->product->id, 'claimed_weight' => 10, 'claimed_qty_pcs' => 2],
+                    ['product_id' => $this->productB->id, 'claimed_weight' => 5],
+                ],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
 
-        $this->actingAs($this->employee(['view_sales_return_plans']))
-            ->get(SalesReturnPlanResource::getUrl('items', ['record' => $plan]))
-            ->assertForbidden();
-
-        $this->actingAs($this->employee(['view_sales_return_plans', 'edit_sales_return_plans']))
-            ->get(SalesReturnPlanResource::getUrl('items', ['record' => $plan]))
-            ->assertSuccessful();
+        $plan = SalesReturnPlan::firstOrFail();
+        $this->assertSame(2, $plan->items()->count());
+        $this->assertSame(10.0, $plan->claimedWeightFor($this->product->id));
+        $this->assertSame(5.0, $plan->claimedWeightFor($this->productB->id));
     }
 
     /** @test */
-    public function the_items_page_is_closed_once_the_plan_is_received(): void
+    public function a_plan_cannot_be_created_without_any_items(): void
     {
-        $plan = $this->draftPlanWithItem();
-        $plan->submit();
-        $plan->markReceived();
+        Livewire::actingAs($this->employee(['view_sales_return_plans', 'create_sales_return_plans']))
+            ->test(CreateSalesReturnPlan::class)
+            ->fillForm([
+                'customer_id' => $this->customer->id,
+                'plan_date' => now()->toDateString(),
+                'items' => [],
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['items']);
 
-        $this->actingAs($this->employee(['view_sales_return_plans', 'edit_sales_return_plans']))
-            ->get(SalesReturnPlanResource::getUrl('items', ['record' => $plan]))
-            ->assertForbidden();
+        $this->assertSame(0, SalesReturnPlan::count());
     }
 
-    // =========================================================================
-    // Jalur end-to-end lewat Livewire
-    // =========================================================================
-
-    /** @test */
-    public function an_item_can_be_created_and_deleted_through_the_items_page_while_draft(): void
+    /**
+     * Server tetap menolak klaim yang melebihi terkirim di DO -- bukan
+     * cuma validasi form (issue #478 eksplisit meminta ini tetap ada).
+     * Seluruh plan batal, bukan header tersimpan sendirian.
+     *
+     * @test
+     */
+    public function creating_a_plan_with_a_claim_exceeding_the_delivery_order_fails_the_whole_save(): void
     {
-        $plan = SalesReturnPlan::create(['plan_date' => now()->toDateString(), 'customer_id' => $this->customer->id]);
+        $user = $this->employee(['view_sales_return_plans', 'create_sales_return_plans']);
+        $this->actingAs($user);
 
-        $component = Livewire::actingAs($this->employee(['view_sales_return_plans', 'edit_sales_return_plans']))
-            ->test(ManageSalesReturnPlanItems::class, ['record' => $plan->getKey()])
-            ->mountTableAction('create')
-            ->setTableActionData(['product_id' => $this->product->id, 'claimed_weight' => 12])
-            ->callMountedTableAction();
+        $do = \App\Models\DeliveryOrder::create([
+            'customer_id' => $this->customer->id, 'delivery_date' => now()->toDateString(),
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'Joko'])->id,
+            'status' => 'Delivered',
+        ]);
+        \App\Models\DeliveryOrderItem::create([
+            'delivery_order_id' => $do->id, 'product_id' => $this->product->id, 'box' => 1, 'weight' => 10,
+        ]);
 
-        $this->assertSame(1, $plan->items()->count());
-        $item = $plan->items()->first();
+        Livewire::actingAs($user)
+            ->test(CreateSalesReturnPlan::class)
+            ->fillForm([
+                'customer_id' => $this->customer->id,
+                'delivery_order_id' => $do->id,
+                'plan_date' => now()->toDateString(),
+                'items' => [
+                    ['product_id' => $this->product->id, 'claimed_weight' => 999],
+                ],
+            ])
+            ->call('create');
 
-        $component->mountTableAction('delete', $item->getKey())
-            ->callMountedTableAction();
-
-        $this->assertSame(0, $plan->items()->count());
+        $this->assertSame(0, SalesReturnPlan::count());
     }
 
     /** @test */
-    public function the_create_action_on_the_items_page_is_hidden_once_submitted(): void
+    public function editing_a_draft_plan_can_add_and_remove_items(): void
     {
         $plan = $this->draftPlanWithItem();
-        $plan->submit();
+        $originalItem = $plan->items()->first();
 
         Livewire::actingAs($this->employee(['view_sales_return_plans', 'edit_sales_return_plans']))
-            ->test(ManageSalesReturnPlanItems::class, ['record' => $plan->getKey()])
-            ->assertTableActionHidden('create');
+            ->test(EditSalesReturnPlan::class, ['record' => $plan->getKey()])
+            ->fillForm([
+                'items' => [
+                    ['id' => $originalItem->id, 'product_id' => $this->product->id, 'claimed_weight' => 20],
+                    ['product_id' => $this->productB->id, 'claimed_weight' => 7],
+                ],
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $plan->refresh();
+        $this->assertSame(2, $plan->items()->count());
+        $this->assertSame(20.0, $plan->claimedWeightFor($this->product->id));
+        $this->assertSame(7.0, $plan->claimedWeightFor($this->productB->id));
+    }
+
+    /**
+     * Submitted: qty klaim baris yang sudah ada boleh dinego, tapi
+     * produk baru tidak bisa ditambahkan lewat form ini (server yang
+     * menegakkannya -- `SalesReturnPlanItem::booted()` `creating()`
+     * menolak baris baru begitu plan bukan Draft lagi, ditest langsung
+     * di sini karena form-nya sendiri sudah menyembunyikan tombol
+     * tambah, jadi ini membuktikan lapis KEDUA-nya).
+     *
+     * @test
+     */
+    public function editing_a_submitted_plan_can_negotiate_the_claimed_weight(): void
+    {
+        $plan = $this->draftPlanWithItem();
+        $plan->submit();
+        $originalItem = $plan->items()->first();
+
+        Livewire::actingAs($this->employee(['view_sales_return_plans', 'edit_sales_return_plans']))
+            ->test(EditSalesReturnPlan::class, ['record' => $plan->getKey()])
+            ->fillForm([
+                'items' => [
+                    ['id' => $originalItem->id, 'product_id' => $this->product->id, 'claimed_weight' => 15],
+                ],
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(15.0, $plan->fresh()->claimedWeightFor($this->product->id));
+    }
+
+    /** @test */
+    public function editing_a_submitted_plan_cannot_add_a_new_product(): void
+    {
+        $plan = $this->draftPlanWithItem();
+        $plan->submit();
+        $originalItem = $plan->items()->first();
+
+        Livewire::actingAs($this->employee(['view_sales_return_plans', 'edit_sales_return_plans']))
+            ->test(EditSalesReturnPlan::class, ['record' => $plan->getKey()])
+            ->fillForm([
+                'items' => [
+                    ['id' => $originalItem->id, 'product_id' => $this->product->id, 'claimed_weight' => 10],
+                    ['product_id' => $this->productB->id, 'claimed_weight' => 3],
+                ],
+            ])
+            ->call('save');
+
+        // Ditolak model (creating() guard) -- baris baru tidak pernah
+        // benar-benar tersimpan, dan baris lamanya pun tidak berubah
+        // karena semuanya dalam satu transaksi.
+        $this->assertSame(1, $plan->fresh()->items()->count());
+        $this->assertSame(10.0, $plan->fresh()->claimedWeightFor($this->product->id));
     }
 
     // =========================================================================

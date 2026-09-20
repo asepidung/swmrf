@@ -1570,5 +1570,7 @@
     "Claimed (Kg)": "Klaim (Kg)",
     "Physical (Kg)": "Fisik (Kg)",
     "Received without claim": "Diterima tanpa klaim",
-    "Variance (Kg)": "Selisih (Kg)"
+    "Variance (Kg)": "Selisih (Kg)",
+    "A plan cannot be saved without any items.": "Plan tidak bisa disimpan tanpa item.",
+    "Add Item": "Tambah Item"
 }

@@ -1570,5 +1570,7 @@
     "Claimed (Kg)": "Claimed (Kg)",
     "Physical (Kg)": "Physical (Kg)",
     "Received without claim": "Received without claim",
-    "Variance (Kg)": "Variance (Kg)"
+    "Variance (Kg)": "Variance (Kg)",
+    "A plan cannot be saved without any items.": "A plan cannot be saved without any items.",
+    "Add Item": "Add Item"
 }

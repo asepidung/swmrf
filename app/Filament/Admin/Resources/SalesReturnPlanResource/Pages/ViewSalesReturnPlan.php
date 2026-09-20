@@ -22,14 +22,16 @@ class ViewSalesReturnPlan extends ViewRecord
                 ->url(fn () => route('sales-return-plan.print', $this->record))
                 ->openUrlInNewTab(),
 
-            // Negosiasi klaim masih boleh selagi Submitted -- lihat aturan
-            // di SalesReturnPlanItem::booted(). Received/Cancelled tidak
-            // punya tombol ini sama sekali.
-            Actions\Action::make('manage_items')
+            // Issue #478: halaman item terpisah dihapus -- negosiasi
+            // klaim (dan qty) selagi Submitted sekarang lewat halaman
+            // Edit yang sama (header-nya otomatis terkunci di sana).
+            // Received/Cancelled tidak punya tombol ini sama sekali.
+            Actions\Action::make('edit_plan')
                 ->label(__('Negotiate Claim'))
                 ->icon('heroicon-o-list-bullet')
-                ->visible(fn (): bool => $this->record->status === SalesReturnPlan::STATUS_SUBMITTED)
-                ->url(fn (): string => $this->getResource()::getUrl('items', ['record' => $this->record])),
+                ->visible(fn (): bool => $this->record->status === SalesReturnPlan::STATUS_SUBMITTED
+                    && (auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('edit_sales_return_plans') ?? false)))
+                ->url(fn (): string => $this->getResource()::getUrl('edit', ['record' => $this->record])),
 
             // View hanya mensyaratkan `view_sales_return_plans` -- mengubah
             // status (batal) butuh `edit_sales_return_plans` sendiri,
