@@ -64,14 +64,35 @@ Guard di `SalesReturnPlanItem::booted()`:
   dengan `Invoice::billedWeightFor()`). Plan tanpa DO (*unidentified*)
   tidak punya batas ini.
 
-**Halaman item** (`ManageSalesReturnPlanItems`, `ManageRelatedRecords`):
-tidak ada `SalesReturnPlanItemPolicy` -- pola sama dengan
-`MaterialStockTakeItem`, gerbang sesungguhnya `canAccess()` (butuh
-`edit_sales_return_plans`, DAN status plan harus `Draft`/`Submitted`),
-diperiksa ULANG tiap request lewat `hydrate()` bawaan
-`ManageRelatedRecords`. Form penuh (termasuk pilih produk) selagi Draft,
-form sempit (cuma klaim) selagi Submitted -- menambah/menghapus baris
-tidak mungkin lagi begitu Submitted.
+**Satu halaman Create/Edit, bukan dua langkah** (issue #478, susulan UX
+Owner 20 September -- sebelumnya Create hanya menyimpan header lalu
+mengalihkan ke halaman item TERPISAH, `ManageSalesReturnPlanItems`,
+yang sekarang DIHAPUS total beserta route-nya). Header + Repeater item
+diisi dan disimpan sekaligus, pola sama dengan `SalesOrderResource`/
+`ProductRequisitionResource`: Repeater-nya BUKAN diikat lewat
+`->relationship()` (lihat `project.md` soal `$money()` di dalam
+Repeater -- tidak relevan di sini karena tidak ada field uang, tapi
+pola strukturnya tetap diikuti), item disimpan manual di
+`CreateSalesReturnPlan::handleRecordCreation()`/
+`EditSalesReturnPlan::handleRecordUpdate()`, keduanya dalam SATU
+`DB::transaction()` bersama header-nya -- supaya galat validasi server
+(klaim > terkirim di DO) membatalkan SELURUH penyimpanan, bukan header
+tersimpan sendirian sementara itemnya gagal separuh jalan.
+
+`SalesReturnPlanResource::form()` mengunci field lewat `->disabled()`
+berdasarkan status (`isNotFullyEditable()`): Draft (atau Create) bebas
+penuh; Submitted mengunci SELURUH field header (ditegakkan lagi oleh
+`SalesReturnPlan::booted()` `updating()`) dan mengunci `product_id`
+baris yang SUDAH ADA (baris baru tidak mungkin muncul karena
+`disableItemCreation()`/`disableItemDeletion()` juga aktif) -- hanya
+`claimed_weight`/`claimed_qty_pcs`/`note` yang masih bisa diubah.
+`EditSalesReturnPlan::mount()` mengalihkan ke View untuk
+Received/Cancelled sebelum form ini sempat dirender sama sekali.
+
+Tabel item sendiri tidak lagi punya halaman kelola terpisah -- cukup
+tampil di halaman View (fallback bawaan Filament: `ViewSalesReturnPlan`
+tidak mendefinisikan `infolist()`, jadi merender `form()` yang sama
+dalam keadaan nonaktif/read-only, termasuk Repeater-nya).
 
 ## 4. Klaim vs fisik: dibandingkan per PRODUK, bukan per baris
 
