@@ -16,6 +16,7 @@ class Product extends Model
         'parent_id',
         'is_active',
         'legacy_note',
+        'costing_customer_group_id',
     ];
 
     protected $casts = [
@@ -25,6 +26,32 @@ class Product extends Model
     public function setNameAttribute($value)
     {
         $this->attributes['name'] = strtoupper(trim($value));
+    }
+
+    /** Grup pelanggan yang harganya dipakai menilai produk ini saat costing (`hpp.md` §10) -- kosong = harga umum. */
+    public function costingGroup(): BelongsTo
+    {
+        return $this->belongsTo(CustomerGroup::class, 'costing_customer_group_id');
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $product) {
+            if (empty($product->costing_customer_group_id)) {
+                return;
+            }
+
+            // `costing_customer_group_id()->first()`, bukan properti
+            // `$product->costingGroup` -- relasi belongsTo yang sudah
+            // diakses ikut tercache di instance ini dan tidak menyegarkan
+            // diri walau baris grupnya berubah lewat objek lain (pola yang
+            // sama dengan SalesReturnPlanItem::booted()).
+            $group = $product->costingGroup()->first();
+
+            if (! $group || ! $group->is_costing_reference) {
+                throw new \Exception(__('This customer group is not marked as a costing reference, so it cannot be used here.'));
+            }
+        });
     }
 
     public function category(): BelongsTo

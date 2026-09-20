@@ -320,6 +320,17 @@ class DatabaseSeeder extends Seeder
             ['name' => 'view_deleted_expenses', 'module_name' => 'Expenses', 'description' => 'View deleted expenses'],
             ['name' => 'manage_expense_categories', 'module_name' => 'Expenses', 'description' => 'Manage expense categories'],
 
+            // Costings Module / Mesin HPP (issue #480) -- izin sungguhannya
+            // dibuat lewat migrasi (seeder ini tidak boleh dijalankan di
+            // server), baris ini sekadar referensi historisnya tetap satu
+            // tempat. `view_deleted_costings` dan `lock_costings` sengaja
+            // belum ada di sini, sama seperti Sales Return Plans/Expenses
+            // -- ditunda sampai ada kode yang membacanya.
+            ['name' => 'view_costings', 'module_name' => 'Costings', 'description' => 'View costings'],
+            ['name' => 'create_costings', 'module_name' => 'Costings', 'description' => 'Create costings'],
+            ['name' => 'edit_costings', 'module_name' => 'Costings', 'description' => 'Edit costings'],
+            ['name' => 'delete_costings', 'module_name' => 'Costings', 'description' => 'Delete costings'],
+
             // Beef Stock Aging Module
             ['name' => 'view_beef_stock_aging', 'module_name' => 'Beef Stock Aging', 'description' => 'View beef stock aging'],
             

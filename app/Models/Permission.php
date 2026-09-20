@@ -118,6 +118,7 @@ class Permission extends Model
                 'Boning',
                 'Repack',
                 'Material Usages',
+                'Costings',
             ],
             'WAREHOUSE' => [
                 'Mutations',

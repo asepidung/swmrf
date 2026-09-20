@@ -1572,5 +1572,12 @@
     "Received without claim": "Received without claim",
     "Variance (Kg)": "Variance (Kg)",
     "A plan cannot be saved without any items.": "A plan cannot be saved without any items.",
-    "Add Item": "Add Item"
+    "Add Item": "Add Item",
+    "Only a draft costing can be deleted.": "Only a draft costing can be deleted.",
+    "Only a draft costing can be locked.": "Only a draft costing can be locked.",
+    "Only a locked costing can be unlocked.": "Only a locked costing can be unlocked.",
+    "This boning is not locked yet, so it cannot be costed.": "This boning is not locked yet, so it cannot be costed.",
+    "This costing has a product without a price and cannot be locked.": "This costing has a product without a price and cannot be locked.",
+    "This costing is locked and can no longer be changed.": "This costing is locked and can no longer be changed.",
+    "This customer group is not marked as a costing reference, so it cannot be used here.": "This customer group is not marked as a costing reference, so it cannot be used here."
 }

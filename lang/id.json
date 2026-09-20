@@ -1572,5 +1572,12 @@
     "Received without claim": "Diterima tanpa klaim",
     "Variance (Kg)": "Selisih (Kg)",
     "A plan cannot be saved without any items.": "Plan tidak bisa disimpan tanpa item.",
-    "Add Item": "Tambah Item"
+    "Add Item": "Tambah Item",
+    "Only a draft costing can be deleted.": "Hanya costing berstatus Draft yang bisa dihapus.",
+    "Only a draft costing can be locked.": "Hanya costing berstatus Draft yang bisa dikunci.",
+    "Only a locked costing can be unlocked.": "Hanya costing yang sudah terkunci yang bisa dibuka.",
+    "This boning is not locked yet, so it cannot be costed.": "Boning ini belum dikunci, jadi belum bisa di-costing.",
+    "This costing has a product without a price and cannot be locked.": "Costing ini punya produk tanpa harga dan tidak bisa dikunci.",
+    "This costing is locked and can no longer be changed.": "Costing ini sudah terkunci dan tidak bisa diubah lagi.",
+    "This customer group is not marked as a costing reference, so it cannot be used here.": "Grup pelanggan ini tidak ditandai sebagai acuan costing, jadi tidak bisa dipakai di sini."
 }
