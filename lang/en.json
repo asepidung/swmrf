@@ -1609,5 +1609,9 @@
     "Total Kg": "Total Kg",
     "Profit": "Profit",
     "Costings": "Costings",
-    "Costing": "Costing"
+    "Costing": "Costing",
+    "Fill from BOM": "Fill from BOM",
+    "Filled from BOM": "Filled from BOM",
+    "No BOM": "No BOM",
+    "Variable quantity, filled in manually": "Variable quantity, filled in manually"
 }

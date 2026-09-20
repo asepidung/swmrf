@@ -4,10 +4,13 @@ namespace App\Filament\Admin\Resources\BoningResource\Pages;
 
 use App\Filament\Admin\Resources\BoningResource;
 use App\Models\Material;
+use App\Services\BomUsageCalculator;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Illuminate\Support\Str;
 
 class MaterialUsageBoning extends EditRecord
 {
@@ -107,6 +110,65 @@ class MaterialUsageBoning extends EditRecord
                 ->label(__('Back to List'))
                 ->color('gray')
                 ->url($this->getResource()::getUrl('index')),
+
+            // BOM MENGUSULKAN, manusia MEMUTUSKAN (issue #344 -- cerita
+            // Owner 7 September 2026: potongan stok tetap manual per
+            // box/ikat, karton per pcs tidak mungkin dihitung di lapangan).
+            // Tombol ini cuma MENGISI Repeater-nya, tidak menyimpan apa
+            // pun -- baris manual lain (materialnya beda) tidak disentuh.
+            Actions\Action::make('fill_from_bom')
+                ->label(__('Fill from BOM'))
+                ->icon('heroicon-o-clipboard-document-list')
+                ->color('warning')
+                ->action(function () {
+                    $result = BomUsageCalculator::calculate($this->getRecord()->items);
+
+                    $current = $this->data['materialUsages'] ?? [];
+
+                    $byMaterial = [];
+                    foreach ($current as $key => $row) {
+                        if (filled($row['material_id'] ?? null)) {
+                            $byMaterial[$row['material_id']] = $key;
+                        }
+                    }
+
+                    foreach ($result['usage'] as $materialId => $qty) {
+                        if (isset($byMaterial[$materialId])) {
+                            $current[$byMaterial[$materialId]]['qty'] = $qty;
+                        } else {
+                            $current[(string) Str::uuid()] = [
+                                'material_id' => $materialId,
+                                'qty' => $qty,
+                                'note' => null,
+                            ];
+                        }
+                    }
+
+                    // BUKAN $this->form->fill() -- Repeater ini terikat
+                    // ->relationship('materialUsages'), dan fill() memicu
+                    // ulang hidrasinya DARI RELASI (baris yang belum
+                    // tersimpan lenyap lagi). Menulis langsung ke $this->data
+                    // cukup untuk mengubah apa yang tampil di layar; yang
+                    // benar-benar tersimpan tetap lewat tombol Save.
+                    $this->data['materialUsages'] = $current;
+
+                    $lines = [];
+                    foreach ($result['products'] as $product) {
+                        $lines[] = "{$product['product_name']}: {$product['box']} box, {$product['pcs']} pcs";
+                    }
+                    foreach ($result['without_bom'] as $product) {
+                        $lines[] = __('No BOM').": {$product['product_name']}";
+                    }
+                    foreach ($result['skipped'] as $skip) {
+                        $lines[] = __('Variable quantity, filled in manually').": {$skip['product_name']} -- {$skip['material_name']}";
+                    }
+
+                    Notification::make()
+                        ->title(__('Filled from BOM'))
+                        ->body(implode('<br>', $lines))
+                        ->success()
+                        ->send();
+                }),
         ];
     }
 
