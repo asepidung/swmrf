@@ -4,10 +4,13 @@ namespace App\Filament\Admin\Resources\RepackResource\Pages;
 
 use App\Filament\Admin\Resources\RepackResource;
 use App\Models\Material;
+use App\Services\BomUsageCalculator;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Illuminate\Support\Str;
 
 class MaterialUsageRepack extends EditRecord
 {
@@ -109,6 +112,62 @@ class MaterialUsageRepack extends EditRecord
                 ->label(__('Back to List'))
                 ->color('gray')
                 ->url($this->getResource()::getUrl('index')),
+
+            // Sama dengan MaterialUsageBoning -- BOM MENGUSULKAN, manusia
+            // MEMUTUSKAN (issue #344). `repack_results` berbentuk sama
+            // dengan `boning_items` (satu baris = satu box, `qty_pcs`
+            // isinya), jadi kalkulatornya sama persis.
+            Actions\Action::make('fill_from_bom')
+                ->label(__('Fill from BOM'))
+                ->icon('heroicon-o-clipboard-document-list')
+                ->color('warning')
+                ->action(function () {
+                    $result = BomUsageCalculator::calculate($this->getRecord()->results);
+
+                    $current = $this->data['materialUsages'] ?? [];
+
+                    $byMaterial = [];
+                    foreach ($current as $key => $row) {
+                        if (filled($row['material_id'] ?? null)) {
+                            $byMaterial[$row['material_id']] = $key;
+                        }
+                    }
+
+                    foreach ($result['usage'] as $materialId => $qty) {
+                        if (isset($byMaterial[$materialId])) {
+                            $current[$byMaterial[$materialId]]['qty'] = $qty;
+                        } else {
+                            $current[(string) Str::uuid()] = [
+                                'material_id' => $materialId,
+                                'qty' => $qty,
+                                'note' => null,
+                            ];
+                        }
+                    }
+
+                    // BUKAN $this->form->fill() -- lihat catatan yang sama
+                    // di MaterialUsageBoning: Repeater ini terikat
+                    // ->relationship(), dan fill() memicu ulang hidrasinya
+                    // dari relasi (baris yang belum tersimpan lenyap lagi).
+                    $this->data['materialUsages'] = $current;
+
+                    $lines = [];
+                    foreach ($result['products'] as $product) {
+                        $lines[] = "{$product['product_name']}: {$product['box']} box, {$product['pcs']} pcs";
+                    }
+                    foreach ($result['without_bom'] as $product) {
+                        $lines[] = __('No BOM').": {$product['product_name']}";
+                    }
+                    foreach ($result['skipped'] as $skip) {
+                        $lines[] = __('Variable quantity, filled in manually').": {$skip['product_name']} -- {$skip['material_name']}";
+                    }
+
+                    Notification::make()
+                        ->title(__('Filled from BOM'))
+                        ->body(implode('<br>', $lines))
+                        ->success()
+                        ->send();
+                }),
         ];
     }
 

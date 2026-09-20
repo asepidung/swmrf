@@ -1609,5 +1609,9 @@
     "Total Kg": "Total Kg",
     "Profit": "Laba",
     "Costings": "Costing",
-    "Costing": "Costing"
+    "Costing": "Costing",
+    "Fill from BOM": "Isi dari BOM",
+    "Filled from BOM": "Terisi dari BOM",
+    "No BOM": "Tanpa BOM",
+    "Variable quantity, filled in manually": "Jumlah tidak tetap, diisi manual"
 }
