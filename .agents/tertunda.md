@@ -20,11 +20,18 @@ catatan kemajuan berhenti bisa dibaca sekilas, dan itu satu-satunya gunanya.
 Owner meminta hal-hal berikut TIDAK diingatkan sampai ia sendiri yang
 membukanya kembali. Dicatat di sini supaya tidak hilang, bukan untuk ditagih.
 
+**HPP sekarang SUDAH ADA** (issue #480, `docs/modules/costing.md`), jadi
+baris "susut kirim"/"susut timbang sapi" yang tadinya menunggu HPP DICABUT
+dari sini -- BUKAN karena dikerjakan, melainkan karena Owner sudah
+memutuskan (`.agents/hpp.md` §11.4/§15.5) susut TETAP di dalam HPP lewat
+berat surat jalan, dan `financial_losses` untuk keduanya SENGAJA tetap
+Rp 0 SELAMANYA -- mengisinya dengan `quantity x HPP` akan menghitung
+kerugian yang sama dua kali. Ini keputusan final, bukan pekerjaan yang
+masih tertunda.
+
 | Yang tertunda | Kenapa |
 |---|---|
-| Nilai rupiah barang retur | Butuh HPP untuk menilai barang yang kembali. Sekarang tercatat Rp 0 |
-| Nilai kerugian susut kirim | `financial_losses` menyimpan KILOGRAM-nya (sejak 4 Sep), rupiahnya nol. Menilainya dengan harga jual melebih-lebihkan: yang hilang modal ditambah margin yang tidak jadi didapat, bukan harga jualnya. Saat HPP ada, rupiahnya tinggal `quantity x HPP` |
-| Nilai kerugian susut timbang sapi | Sama; sumbernya `CattleWeighing` |
+| Nilai rupiah barang retur | HPP per lot boning sudah ada, tapi belum ada satu baris kode pun yang mengaitkan `SalesReturn` ke `Costing` untuk menilai barang yang kembali. Sekarang masih tercatat Rp 0 |
 | **Killing Lost** (Kerugian Potong) | Modulnya belum ada, dan tidak ada satu pun kode yang menulisnya |
 | **Lost Cost** (Biaya/Kerugian Lain) | Modulnya belum ada. `FinancialLossResource::canCreate()` mengembalikan `false` dan tidak punya halaman Create, jadi tidak bisa diinput manual |
 

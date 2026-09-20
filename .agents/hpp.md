@@ -795,3 +795,79 @@ Menjawab bagian 14.A dan 14.B sekaligus, lewat Hafizh.
    kasus "tanpa grup" hanya mungkin untuk produk, bukan pelanggan.
 
 Pertanyaan accounting (bagian 12) belum ditanyakan; tidak menghalangi.
+
+---
+
+## 16. Yang dibangun
+
+Issue #480, 4 langkah, PR #481-#484. Ditulis sesudah semuanya selesai --
+lihat `docs/modules/costing.md` untuk penjelasan modul yang lebih lengkap,
+di sini hanya ringkasan yang menyambungkan tiap keputusan di bagian 1-15 ke
+tempatnya di kode.
+
+**Langkah 1 (PR #481) -- `CostingCalculator` + angka lot Juni.** Mesin
+hitungnya sendiri, murni tanpa efek samping. Direproduksi terhadap angka
+lot 15 Juni di bagian 1-2 (`k = 0,948085`, Topside `132.788,76`) sampai DUA
+DESIMAL pada percobaan pertama -- tidak perlu penyesuaian apa pun, baik ke
+kode maupun ke angka acuannya. `CostingCalculator::forBoning()->calculate()`
+menerapkan tepat rumus bagian 2/6: biaya beli dijumlah PER KELAS SAPI (bukan
+satu harga dikali berat total), harga per kelas dibaca 3 lapis (PO lot ini
+sendiri -> pembelian terakhir kelas+supplier yang sama -> rata-rata PO ini),
+`k` disimpan dibulatkan 6 desimal tetapi dipakai FULL PRECISION saat
+mengalikan tiap produk (bagian 7 tentang potongan gross->net berlaku sama:
+net dibulatkan 2 desimal sebagai nilai uang, bukan nilai antara).
+
+**Skema baru dari langkah 1**, menjawab pertanyaan yang masih terbuka di
+bagian 10 dan 14.B: `customer_groups.trading_terms_percent` +
+`is_costing_reference` + `is_general_price_reference` (tepat SATU baris
+boleh `true`, jawaban desain untuk "harga umum itu grup yang mana" yang
+tidak dijawab exp-nya sendiri di bagian 10), dan
+`products.costing_customer_group_id` (kosong = harga umum, bagian 10).
+Tabel `costings`/`costing_items`/`costing_cattle` menyimpan SNAPSHOT penuh
+(harga, potongan, hasil) -- tidak pernah menunjuk balik ke `price_lists`
+yang bisa berubah (bagian 6, "harga dikunci saat costing dibuat").
+
+**Langkah 2 (PR #482) -- Resource, Create/Hitung ulang/Lock, View.**
+`CostingResource` cuma lahir dari memilih `Boning` yang sudah `kunci` dan
+belum punya costing (satu boning satu costing, unik) -- tidak ada tombol
+Create polos. Draft boleh "Hitung ulang" (mengubah `overhead_per_kg` lalu
+menjalankan ulang kalkulatornya, bagian 15.2: overhead angka PER COSTING
+yang bisa disetel, bawaannya costing terakhir -- bukan tetapan aplikasi
+seperti dugaan awal di bagian 8-9). "Lock" menolak kalau masih ada produk
+`FLAG_NO_PRICE` (bagian 10, pilihan ketiga yang diusulkan Hafizh dan
+disetujui Owner di bagian 15.5: jalan tapi ditandai, bukan ditolak maupun
+diam-diam jatuh ke harga umum tanpa jejak).
+
+**Langkah 3 (PR #483) -- cetak, ekspor, dan keputusan rendemen bagian
+15.1.** `Carcass::yieldPercent()` pembaginya dipindah dari berat TIMBANG
+ULANG ke BERAT TERIMA, persis keputusan Owner 17 September (bagian 15.1).
+Konsekuensinya ditegakkan TRANSPARAN sesuai instruksinya sendiri ("putuskan
+di PR-nya, jangan diam-diam"): aturan lama "satu ekor belum ditimbang ulang
+-> rendemen tampil '-'" (`Carcass::hasUnweighedCattle()`) DIHAPUS, karena
+alasannya hilang begitu berat terima (selalu ada sejak sapi datang) jadi
+pembagi. Ditemukan sekalian bug terkait di cetakan Carcass: kolom
+berlabel "Receive Wt" sebelumnya diam-diam mengisi berat timbang ulang,
+bukan berat terima seperti labelnya sendiri -- diperbaiki di PR yang sama.
+Cetakan costing (`print.costing`) mencantumkan flag `NO_REFERENCE`/
+`NO_PRICE` per produk secara eksplisit (bagian 10: "yang membaca laporan
+melihat asumsinya, bukan menebaknya").
+
+**Yang SENGAJA belum dijawab kode ini, dan tidak menghalangi pemakaiannya**
+(bagian 11.4/12.1, keputusan Owner bagian 15.5): susut (kirim maupun
+timbang sapi) tetap terbenam di dalam HPP lewat berat surat jalan, dan
+`financial_losses` untuk keduanya SENGAJA tetap Rp 0 selamanya, bukan
+menunggu diisi -- mengisinya dengan `quantity x HPP` akan menghitung
+kerugian yang sama dua kali. Lihat `tertunda.md` §A untuk sisa yang
+memang masih menunggu (nilai rupiah barang retur, Killing Lost, Lost
+Cost) -- baris susut sudah DICABUT dari sana karena sudah terjawab, bukan
+lagi tertunda.
+
+**Batasan metode yang TETAP ada** (bagian 11.1, 11.2, 11.3) -- bukan bug,
+tidak diperbaiki kode karena memang sifat Relative Sales Value: margin%
+selalu sama untuk SETIAP produk, HPP mengikuti harga jual (tidak bisa
+mendeteksi harga kemurahan), dan satu produk yang dinilai memakai grup
+selain LION/HYPERMART/harga umum akan menggeser HPP SELURUH produk lain
+lewat `k` yang dibagi bersama -- inilah kenapa `Product::booted()` menolak
+`costing_customer_group_id` yang menunjuk grup dengan
+`is_costing_reference = false` (bagian 9, batasan yang harus "ditegakkan
+kode, bukan diserahkan pada kebiasaan").
