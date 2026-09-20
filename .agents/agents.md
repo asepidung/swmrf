@@ -1312,6 +1312,7 @@ membuang waktu Project Owner.
 | Route print/export (`routes/web.php`) | 17 Sep 2026, batch 7 (#449) | 20 dari 30 route cetak/ekspor sebelumnya tanpa izin sama sekali, terbuka lewat tebak ID |
 | **Plan Sales Return** (modul baru) + rombak Sales Return | 19 Sep 2026, issue #451 (#461-#465) | retur dipecah plan (klaim, sales) + fisik (gudang); kredit ikut klaim per produk bukan fisik; sales-return.label/.pdf (sisa batch 7) akhirnya ditutup; lihat `docs/modules/sales-return.md` |
 | **Expense** (modul baru) | 20 Sep 2026, issue #453 (#467-#470) | pengeluaran kas kecil (advance/kasbon &amp; reimburse) TANPA approval; kontrolnya keterlihatan (tab "Open Advances") + siapa-memberi-ke-siapa tercatat, bukan persetujuan; setiap pergerakan kas adalah `BankTransaction`; lihat `docs/modules/expenses.md` |
+| **Costing / Mesin HPP** (modul baru) | 20 Sep 2026, issue #480 (#481-#484) | HPP per lot boning lewat metode Relative Sales Value (`k = biaya beli / total nilai jual`); margin% sama untuk SETIAP produk (keterbatasan metode, bukan bug); susut kirim &amp; timbang sapi tetap terbenam di dalam HPP, `financial_losses`-nya sengaja Rp 0 selamanya; rendemen karkas (`Carcass::yieldPercent()`) pindah pembagi dari timbang ulang ke berat terima, `hasUnweighedCattle()` dihapus; lihat `docs/modules/costing.md` dan `.agents/hpp.md` §16 |
 
 **Diperbarui 20 September 2026** (baris di atas sempat berhenti di 13 Sep;
 jangan percaya paragraf ini tanpa mengecek tanggalnya kalau membaca versi
