@@ -229,25 +229,24 @@
                 </thead>
                 <tbody>
                     @php
-                        $tLive = 0; $tC1 = 0; $tC2 = 0; $tH = 0; $tT = 0;
-                        $adaBelumTimbang = false;
+                        $tReceive = 0; $tC1 = 0; $tC2 = 0; $tH = 0; $tT = 0;
                     @endphp
                     @forelse($record->items as $index => $item)
                         @php
-                            $beratHidupTertimbang = optional($item->weighingItem)->actual_weight;
-                            $liveWeight = (float) $beratHidupTertimbang;
+                            // Berat terima (surat jalan), BUKAN timbang ulang -- sejak
+                            // keputusan Owner 17 September 2026 (`.agents/hpp.md` §15.1),
+                            // sama seperti `Carcass::yieldPercent()`/`receivedWeight()`.
+                            // Kolomnya memang berlabel "Receive Wt" -- sebelumnya diam-diam
+                            // menampilkan `actual_weight` (timbang ulang) di bawah label itu.
+                            $receiveWeight = (float) optional($item->weighingItem)->initial_weight;
                             $c1 = (float) $item->carcass_1;
                             $c2 = (float) $item->carcass_2;
                             $h = (float) $item->hides;
                             $t = (float) $item->tail;
                             $totCarc = $c1 + $c2;
-                            $yield = $liveWeight > 0 ? ($totCarc / $liveWeight * 100) : 0;
+                            $yield = $receiveWeight > 0 ? ($totCarc / $receiveWeight * 100) : 0;
 
-                            if ($beratHidupTertimbang === null) {
-                                $adaBelumTimbang = true;
-                            }
-
-                            $tLive += $liveWeight;
+                            $tReceive += $receiveWeight;
                             $tC1 += $c1;
                             $tC2 += $c2;
                             $tH += $h;
@@ -257,7 +256,7 @@
                             <td class="center">{{ $index + 1 }}</td>
                             <td class="center">{{ optional($item->weighingItem)->eartag }}</td>
                             <td class="center">{{ optional(optional(optional($item->weighingItem)->receivingItem)->cattleClass)->name ?? '-' }}</td>
-                            <td class="num">{{ number_format($liveWeight, 2, ',', '.') }}</td>
+                            <td class="num">{{ number_format($receiveWeight, 2, ',', '.') }}</td>
                             <td class="num">{{ number_format($c1, 2, ',', '.') }}</td>
                             <td class="num">{{ number_format($c2, 2, ',', '.') }}</td>
                             <td class="num">{{ number_format($totCarc, 2, ',', '.') }}</td>
@@ -278,12 +277,7 @@
             @php
                 $totalCarcass = $tC1 + $tC2;
                 $offal = $totalCarcass + $tT;
-                // $tLive hanya menjumlahkan baris yang SUDAH ditimbang ulang
-                // (baris yang belum menyumbang 0). Kalau ada yang belum
-                // ditimbang, memakai $tLive apa adanya sebagai penyebut akan
-                // membuat rendemen tampak lebih tinggi daripada sebenarnya --
-                // jadi rendemen totalnya ditahan sampai semua ekor ditimbang.
-                $totalYield = (! $adaBelumTimbang && $tLive > 0) ? ($totalCarcass / $tLive * 100) : 0;
+                $totalYield = $tReceive > 0 ? ($totalCarcass / $tReceive * 100) : 0;
             @endphp
 
             <!-- Totals -->
@@ -291,7 +285,7 @@
                 <table>
                     <tr>
                         <th>Total Receive</th>
-                        <td>{{ number_format($tLive, 2, ',', '.') }} Kg</td>
+                        <td>{{ number_format($tReceive, 2, ',', '.') }} Kg</td>
                     </tr>
                     <tr>
                         <th>Offal</th>
@@ -307,7 +301,7 @@
                     </tr>
                     <tr>
                         <th>Carcase Yield</th>
-                        <td>{{ (! $adaBelumTimbang && $tLive > 0) ? number_format($totalYield, 2, ',', '.') . ' %' : '-' }}</td>
+                        <td>{{ $tReceive > 0 ? number_format($totalYield, 2, ',', '.') . ' %' : '-' }}</td>
                     </tr>
                 </table>
             </div>

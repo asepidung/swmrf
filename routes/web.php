@@ -118,6 +118,17 @@ Route::middleware(['web', 'auth'])->group(function () {
     })->name('boning.label');
 
     // ------------------------------------------
+    // 3a. MODUL COSTING (Mesin HPP, issue #480 langkah 3)
+    // ------------------------------------------
+    Route::get('/print/costing/{record}', function (\App\Models\Costing $record) {
+        abort_unless(auth()->user()?->hasPermission('view_costings') ?? false, 403);
+
+        $record->load(['boning', 'items.product', 'items.referenceGroup', 'cattle.cattleClass']);
+
+        return view('print.costing', compact('record'));
+    })->name('print.costing');
+
+    // ------------------------------------------
     // 4. MODUL STOCK TAKE
     // ------------------------------------------
     // Izinnya diperiksa di sini, bukan diserahkan kepada tombolnya -- pola
