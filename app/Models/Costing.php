@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -86,6 +87,76 @@ class Costing extends Model
     public function lockedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'locked_by');
+    }
+
+    /**
+     * Buat costing baru dari hasil `CostingCalculator::calculate()` --
+     * header, `costing_items`, dan `costing_cattle` dalam SATU transaksi.
+     *
+     * @param  array<string, mixed>  $result
+     */
+    public static function createFromCalculation(Boning $boning, array $result): self
+    {
+        return DB::transaction(function () use ($boning, $result): self {
+            $costing = static::create([
+                'costing_date' => now()->toDateString(),
+                'boning_id' => $boning->id,
+                'purchase_cost' => $result['purchase_cost'],
+                'total_sales_value' => $result['total_sales_value'],
+                'ratio_k' => $result['ratio_k'],
+                'overhead_per_kg' => $result['overhead_per_kg'],
+                'total_kg' => $result['total_kg'],
+                'profit' => $result['profit'],
+            ]);
+
+            $costing->applyCalculationRows($result);
+
+            return $costing;
+        });
+    }
+
+    /**
+     * Terapkan ULANG hasil `CostingCalculator::calculate()` ke costing
+     * yang SUDAH ADA -- dipakai "Hitung ulang" (Draft saja). Baris item
+     * dan biaya sapi lama dibuang, diganti yang baru -- keduanya murni
+     * SNAPSHOT tanpa rujukan balik dari model lain, aman diganti utuh.
+     *
+     * @param  array<string, mixed>  $result
+     *
+     * @throws \RuntimeException
+     */
+    public function recalculate(array $result): void
+    {
+        if ($this->status !== self::STATUS_DRAFT) {
+            throw new \RuntimeException(__('Only a draft costing can be recalculated.'));
+        }
+
+        DB::transaction(function () use ($result): void {
+            $this->forceFill([
+                'purchase_cost' => $result['purchase_cost'],
+                'total_sales_value' => $result['total_sales_value'],
+                'ratio_k' => $result['ratio_k'],
+                'overhead_per_kg' => $result['overhead_per_kg'],
+                'total_kg' => $result['total_kg'],
+                'profit' => $result['profit'],
+            ])->save();
+
+            $this->items()->delete();
+            $this->cattle()->delete();
+            $this->applyCalculationRows($result);
+        });
+    }
+
+    /** @param array<string, mixed> $result */
+    private function applyCalculationRows(array $result): void
+    {
+        foreach ($result['cattle'] as $row) {
+            $this->cattle()->create($row);
+        }
+
+        foreach ($result['items'] as $row) {
+            $this->items()->create($row);
+        }
     }
 
     /** Margin% -- SAMA untuk seluruh produk, sifat metode ini (`hpp.md` §11.1), bukan per produk. */
