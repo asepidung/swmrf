@@ -17,6 +17,15 @@ class CustomerGroup extends Model
         'head_office_address',
         'head_office_pic',
         'top',
+        'trading_terms_percent',
+        'is_costing_reference',
+        'is_general_price_reference',
+    ];
+
+    protected $casts = [
+        'trading_terms_percent' => 'float',
+        'is_costing_reference' => 'boolean',
+        'is_general_price_reference' => 'boolean',
     ];
 
     /**
@@ -75,6 +84,25 @@ class CustomerGroup extends Model
     public function priceList()
     {
         return $this->hasOne(PriceList::class);
+    }
+
+    /** Produk yang MENUNJUK grup ini sebagai acuan costing (`products.costing_customer_group_id`). */
+    public function costingReferenceProducts()
+    {
+        return $this->hasMany(Product::class, 'costing_customer_group_id');
+    }
+
+    /**
+     * Grup yang mewakili "harga umum" untuk costing (`hpp.md` §10) --
+     * dipakai `CostingCalculator` saat `products.costing_customer_group_id`
+     * kosong. HARUS ditandai eksplisit lewat `is_general_price_reference`,
+     * bukan ditebak dari `is_costing_reference` saja (bisa ada lebih dari
+     * satu grup acuan, mis. LION dan HYPERMART, tapi cuma SATU yang
+     * mewakili harga umum).
+     */
+    public static function generalPriceReference(): ?self
+    {
+        return static::where('is_general_price_reference', true)->first();
     }
 
     public function receivables()
