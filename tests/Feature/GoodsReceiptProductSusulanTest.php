@@ -84,6 +84,7 @@ class GoodsReceiptProductSusulanTest extends TestCase
     {
         $supplier = Supplier::create(['name' => 'FIXTURE SUPPLIER', 'address' => 'X', 'pic' => 'X', 'phone' => '08', 'top_days' => 30]);
         $requisition = \App\Models\ProductRequisition::create([
+            'supplier_id' => (\App\Models\Supplier::first() ?? \App\Models\Supplier::create(['name' => 'Supplier Test ' . uniqid(), 'address' => 'Bogor', 'pic' => 'Test', 'top_days' => 30, 'is_active' => true]))->id,
             'document_number' => 'PR-FIXTURE-'.uniqid(),
             'user_id' => User::factory()->create()->id,
             'due_date' => now()->addWeek()->toDateString(),

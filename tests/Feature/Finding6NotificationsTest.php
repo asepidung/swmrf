@@ -56,6 +56,7 @@ class Finding6NotificationsTest extends TestCase
         ]);
 
         $this->mr = MaterialRequisition::create([
+            'supplier_id' => (\App\Models\Supplier::first() ?? \App\Models\Supplier::create(['name' => 'Supplier Test ' . uniqid(), 'address' => 'Bogor', 'pic' => 'Test', 'top_days' => 30, 'is_active' => true]))->id,
             'document_number' => 'MR-001',
             'user_id' => $this->programmer->id,
             'due_date' => now()->toDateString(),
@@ -63,6 +64,7 @@ class Finding6NotificationsTest extends TestCase
         ]);
 
         $this->pr = ProductRequisition::create([
+            'supplier_id' => (\App\Models\Supplier::first() ?? \App\Models\Supplier::create(['name' => 'Supplier Test ' . uniqid(), 'address' => 'Bogor', 'pic' => 'Test', 'top_days' => 30, 'is_active' => true]))->id,
             'document_number' => 'PR-001',
             'user_id' => $this->programmer->id,
             'due_date' => now()->toDateString(),

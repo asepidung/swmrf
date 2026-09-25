@@ -70,6 +70,7 @@ class RequisitionFlowGuardTest extends TestCase
     protected function makeRequisition(string $status, ?User $requester = null): ProductRequisition
     {
         $requisition = ProductRequisition::create([
+            'supplier_id' => (\App\Models\Supplier::first() ?? \App\Models\Supplier::create(['name' => 'Supplier Test ' . uniqid(), 'address' => 'Bogor', 'pic' => 'Test', 'top_days' => 30, 'is_active' => true]))->id,
             'user_id' => ($requester ?? $this->user)->id,
             'supplier_id' => $this->supplier->id,
             'due_date' => now()->toDateString(),

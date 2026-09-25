@@ -77,6 +77,7 @@ class PurchaseOrderRelationDisplayTest extends TestCase
         ]);
 
         $requisition = ProductRequisition::create([
+            'supplier_id' => (\App\Models\Supplier::first() ?? \App\Models\Supplier::create(['name' => 'Supplier Test ' . uniqid(), 'address' => 'Bogor', 'pic' => 'Test', 'top_days' => 30, 'is_active' => true]))->id,
             'user_id' => $requester->id,
             'document_number' => 'SWM-RQB#26007',
             'request_date' => now()->toDateString(),

@@ -66,6 +66,7 @@ class GoodsReceiptMaterialSusulanTest extends TestCase
     {
         $approver = User::factory()->create();
         $requisition = MaterialRequisition::create([
+            'supplier_id' => (\App\Models\Supplier::first() ?? \App\Models\Supplier::create(['name' => 'Supplier Test ' . uniqid(), 'address' => 'Bogor', 'pic' => 'Test', 'top_days' => 30, 'is_active' => true]))->id,
             'document_number' => 'MR-FIXTURE-'.uniqid(), 'user_id' => $approver->id,
             'due_date' => now()->addWeek()->toDateString(),
         ]);

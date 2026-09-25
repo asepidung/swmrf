@@ -145,6 +145,7 @@ class PrintRoutePermissionGuardsTest extends TestCase
     private function materialRequisition(): MaterialRequisition
     {
         $requisition = MaterialRequisition::create([
+            'supplier_id' => (\App\Models\Supplier::first() ?? \App\Models\Supplier::create(['name' => 'Supplier Test ' . uniqid(), 'address' => 'Bogor', 'pic' => 'Test', 'top_days' => 30, 'is_active' => true]))->id,
             'document_number' => 'MR-FIXTURE-'.uniqid(), 'user_id' => User::factory()->create()->id,
             'due_date' => now()->addWeek()->toDateString(),
         ]);
@@ -192,6 +193,7 @@ class PrintRoutePermissionGuardsTest extends TestCase
     private function productRequisition(): ProductRequisition
     {
         $requisition = ProductRequisition::create([
+            'supplier_id' => (\App\Models\Supplier::first() ?? \App\Models\Supplier::create(['name' => 'Supplier Test ' . uniqid(), 'address' => 'Bogor', 'pic' => 'Test', 'top_days' => 30, 'is_active' => true]))->id,
             'document_number' => 'PR-FIXTURE-'.uniqid(), 'user_id' => User::factory()->create()->id,
             'due_date' => now()->addWeek()->toDateString(),
         ]);

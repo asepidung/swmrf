@@ -153,6 +153,7 @@ class GradeSupplierSusulanTest extends TestCase
     {
         $supplier = $this->supplier();
         $requisition = ProductRequisition::create([
+            'supplier_id' => (\App\Models\Supplier::first() ?? \App\Models\Supplier::create(['name' => 'Supplier Test ' . uniqid(), 'address' => 'Bogor', 'pic' => 'Test', 'top_days' => 30, 'is_active' => true]))->id,
             'user_id' => $this->user->id, 'supplier_id' => $supplier->id,
             'due_date' => now()->toDateString(), 'status' => 'PO Created',
         ]);

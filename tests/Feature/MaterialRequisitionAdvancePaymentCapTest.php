@@ -65,6 +65,7 @@ class MaterialRequisitionAdvancePaymentCapTest extends TestCase
     protected function makePurchaseOrder(): PurchaseMaterial
     {
         $requisition = MaterialRequisition::create([
+            'supplier_id' => (\App\Models\Supplier::first() ?? \App\Models\Supplier::create(['name' => 'Supplier Test ' . uniqid(), 'address' => 'Bogor', 'pic' => 'Test', 'top_days' => 30, 'is_active' => true]))->id,
             'user_id' => $this->user->id,
             'supplier_id' => $this->supplier->id,
             'due_date' => now()->toDateString(),

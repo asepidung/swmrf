@@ -182,6 +182,7 @@ class ActionAuthorizationTest extends TestCase
         // -- di luar itu mount() langsung redirect, jadi butuh dua dokumen
         // dengan status berbeda, bukan satu dipakai berdua.
         $productRequisitionForApproval = ProductRequisition::create([
+            'supplier_id' => (\App\Models\Supplier::first() ?? \App\Models\Supplier::create(['name' => 'Supplier Test ' . uniqid(), 'address' => 'Bogor', 'pic' => 'Test', 'top_days' => 30, 'is_active' => true]))->id,
             'user_id' => $orang->id, 'supplier_id' => $supplier->id,
             'due_date' => now()->toDateString(), 'status' => 'Pending Finance',
         ]);
@@ -190,6 +191,7 @@ class ActionAuthorizationTest extends TestCase
         ]);
 
         $productRequisitionForReview = ProductRequisition::create([
+            'supplier_id' => (\App\Models\Supplier::first() ?? \App\Models\Supplier::create(['name' => 'Supplier Test ' . uniqid(), 'address' => 'Bogor', 'pic' => 'Test', 'top_days' => 30, 'is_active' => true]))->id,
             'user_id' => $orang->id, 'supplier_id' => $supplier->id,
             'due_date' => now()->toDateString(), 'status' => 'Requested',
         ]);
@@ -206,6 +208,7 @@ class ActionAuthorizationTest extends TestCase
         ]);
 
         $materialRequisition = MaterialRequisition::create([
+            'supplier_id' => (\App\Models\Supplier::first() ?? \App\Models\Supplier::create(['name' => 'Supplier Test ' . uniqid(), 'address' => 'Bogor', 'pic' => 'Test', 'top_days' => 30, 'is_active' => true]))->id,
             'user_id' => $orang->id, 'supplier_id' => $supplier->id,
             'due_date' => now()->toDateString(), 'status' => 'Pending',
         ]);

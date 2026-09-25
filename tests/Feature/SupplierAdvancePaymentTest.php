@@ -73,6 +73,7 @@ class SupplierAdvancePaymentTest extends TestCase
     protected function buildChain(float $subtotal): GoodsReceiptProduct
     {
         $requisition = ProductRequisition::create([
+            'supplier_id' => (\App\Models\Supplier::first() ?? \App\Models\Supplier::create(['name' => 'Supplier Test ' . uniqid(), 'address' => 'Bogor', 'pic' => 'Test', 'top_days' => 30, 'is_active' => true]))->id,
             'user_id' => $this->user->id,
             'supplier_id' => $this->supplier->id,
             'due_date' => now()->toDateString(),
@@ -147,6 +148,7 @@ class SupplierAdvancePaymentTest extends TestCase
     public function it_numbers_supplier_payments_sequentially()
     {
         $requisition = ProductRequisition::create([
+            'supplier_id' => (\App\Models\Supplier::first() ?? \App\Models\Supplier::create(['name' => 'Supplier Test ' . uniqid(), 'address' => 'Bogor', 'pic' => 'Test', 'top_days' => 30, 'is_active' => true]))->id,
             'user_id' => $this->user->id,
             'supplier_id' => $this->supplier->id,
             'due_date' => now()->toDateString(),

@@ -73,6 +73,7 @@ class RequisitionAdvancePaymentCapTest extends TestCase
     protected function makePurchaseOrder(): PurchaseProduct
     {
         $requisition = ProductRequisition::create([
+            'supplier_id' => (\App\Models\Supplier::first() ?? \App\Models\Supplier::create(['name' => 'Supplier Test ' . uniqid(), 'address' => 'Bogor', 'pic' => 'Test', 'top_days' => 30, 'is_active' => true]))->id,
             'user_id' => $this->user->id,
             'supplier_id' => $this->supplier->id,
             'due_date' => now()->toDateString(),
@@ -260,6 +261,7 @@ class RequisitionAdvancePaymentCapTest extends TestCase
     public function it_shows_only_one_toast_after_purchasing_approves()
     {
         $requisition = ProductRequisition::create([
+            'supplier_id' => (\App\Models\Supplier::first() ?? \App\Models\Supplier::create(['name' => 'Supplier Test ' . uniqid(), 'address' => 'Bogor', 'pic' => 'Test', 'top_days' => 30, 'is_active' => true]))->id,
             'user_id' => $this->user->id,
             'supplier_id' => $this->supplier->id,
             'due_date' => now()->toDateString(),
