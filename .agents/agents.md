@@ -6603,3 +6603,5 @@ pesan ke Hafizh.
 - **supplier_id di product_requisitions dan material_requisitions dibikin MANDATORY (NOT NULL)** -- sebelumnya kolom ini dibiarkan 
 ullable() dan 
 ullOnDelete(), padahal di level antarmuka (Filament) sudah wajib (equired()). Hal ini memungkinkan lolosnya dokumen Requisition tanpa *Supplier* jika dibuat melalui *backend script* atau *API*. Diperbaiki lewat migrasi 2026_09_25_111033_make_supplier_mandatory_in_requisitions yang sekaligus mengubah oreign key menjadi estrictOnDelete().
+
+- **Menyelaraskan rasio kolom Cattle Details dengan Material Requisition** -- form *Repeater* untuk input PO Cattle (PurchaseCattleResource) diubah agar ukuran *field*-nya sama persis dengan modul Requisition, menggunakan sistem 12 kolom dengan porsi pembagian: Kategori (5), Qty (2), Harga (2), Catatan (3).

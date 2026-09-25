@@ -91,7 +91,8 @@ class PurchaseCattleResource extends Resource
                                 ])
                                 ->placeholder(__('Category'))
                                 ->label('')
-                                ->hiddenLabel(),
+                                ->hiddenLabel()
+                                ->columnSpan(['default' => 1, 'lg' => 5]),
                             // Tanpa ->numeric(). Pemanggilan itu membuat input
                             // menjadi type=number lengkap dengan tombol panah,
                             // dan jumlah ekor yang tergeser tanpa disadari
@@ -103,7 +104,8 @@ class PurchaseCattleResource extends Resource
                                 ->rules(['integer', 'min:1'])
                                 ->placeholder(__('Qty / Head'))
                                 ->label('')
-                                ->hiddenLabel(),
+                                ->hiddenLabel()
+                                ->columnSpan(['default' => 1, 'lg' => 2]),
 
                             // Harga per kilo: bertombol panah DAN tanpa
                             // pemisah ribuan, sehingga 1500000 terbaca sebagai
@@ -129,13 +131,15 @@ class PurchaseCattleResource extends Resource
                                 ])
                                 ->placeholder(__('Price / Kg'))
                                 ->label('')
-                                ->hiddenLabel(),
+                                ->hiddenLabel()
+                                ->columnSpan(['default' => 1, 'lg' => 2]),
                             Forms\Components\TextInput::make('item_notes')
                                 ->placeholder(__('ITEM NOTE'))
                                 ->label('')
-                                ->hiddenLabel(),
+                                ->hiddenLabel()
+                                ->columnSpan(['default' => 1, 'lg' => 3]),
                         ])
-                        ->columns(4)
+                        ->columns(12)
                         ->defaultItems(0)
                         ->hiddenLabel()
                         ->addActionLabel(__('Add Cattle'))
