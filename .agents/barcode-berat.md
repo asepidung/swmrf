@@ -2,8 +2,8 @@
 
 Diangkat Owner 30 September 2026: label OFFAL, KULIT, dan BONE sering
 digabung sehingga beratnya jauh melampaui 99,99 kg, padahal barcode swmrf
-hanya menyediakan 4 digit untuk berat. **Status: data dan rencana dikumpulkan,
-BELUM dikerjakan** (Owner: "jangan dulu dikerjain, kita kumpulin data dulu").
+hanya menyediakan 4 digit untuk berat. **Status: DIPUTUSKAN Owner 30 Sep 2026, dikerjakan mulai 2 Okt 2026** -- lihat
+bagian "Keputusan Owner" di bawah.
 
 ## Susunan barcode swmrf (26 digit)
 
@@ -115,3 +115,25 @@ sampai < 10.000 kg per label**; barang lain tidak pernah sah melewati 100 kg.
 2. Peringatan salah ketik: dipasang atau tidak, dan batas bawaannya.
 3. Label offal/kulit yang digabung: satu label per boning (seperti sekarang)
    tetap cara kerjanya?
+
+## Keputusan Owner, 30 September 2026
+
+1. **Pilihan B, dirapikan Owner: SEMUA barcode baru 28 digit**, tidak ada
+   dua jenis pengecekan. Segmen berat 6 digit = berat x 100 (`22,14` ->
+   `002214`, maks `999999` = 9.999,99 kg); dua desimal tetap terbawa.
+   Alasan aman sekarang: aplikasi belum launching -- di hosting hanya 4
+   barcode uji 26 digit; barcode legacy (19-20 digit) formatnya lain sejak awal
+   dan diurus saat opname/import.
+2. Usulan Owner "pecah jadi beberapa barcode" **dipakai hanya di atas
+   9.999,99 kg**: label otomatis dipecah menjadi beberapa label masing-masing
+   <= 9.999,99 kg (16 ton -> 2 label). Memecah per 99,99 kg (usulan A awal)
+   ditolak karena 10 ton offal menjadi 100 label dan 100 kali scan saat kirim.
+   Legacy pun sudah begitu: 98 dari 435 boning punya lebih dari satu label
+   offal; boning terbesar 54 ekor (~16 ton offal).
+3. **Peringatan salah ketik: mengingatkan, BUKAN menolak** -- modal konfirmasi
+   bila berat per label melewati batas produk. Batas disimpan sebagai data:
+   `products.max_label_weight` (null = 100 kg); offal, kulit, bone diberi
+   batas lebih tinggi lewat master produk.
+4. `pcs` tetap 2 digit -- data: pcs >= 100 selalu salah ketik; ikut
+   peringatan (batas 99).
+
