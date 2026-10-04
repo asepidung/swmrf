@@ -72,6 +72,8 @@ class AdminPanelProvider extends PanelProvider
                 \Filament\Navigation\NavigationGroup::make('MASTER DATA')->label(fn() => __('MASTER DATA')),
                 \Filament\Navigation\NavigationGroup::make('SYSTEM')->label(fn() => __('SYSTEM')),
             ])
+            // Kolom search di topbar dimatikan (Owner, 5 Oktober 2026: "gak guna")
+            ->globalSearch(false)
             ->brandName(config('app.name', 'WijayaApps'))
             ->brandLogo(asset('img/light.png'))
             ->darkModeBrandLogo(asset('img/dark.png'))
