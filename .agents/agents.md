@@ -6839,3 +6839,30 @@ Pembuktian menggigit (#486 langkah 2): pemeriksaan konfirmasi di Boning
 dimatikan sementara, test "berat tidak wajar bertanya dulu" merah; dipulihkan,
 semua hijau. Suite penuh: 1295 lulus, 1 gagal (`ResourceHasPolicyTest`, sudah
 merah di `main` dan diperbaiki PR Policy terpisah).
+
+
+## #495 -- Label Boning memakai logo Halal Indonesia rebah, 4 Oktober 2026
+
+Permintaan Owner. Aset logo dari #493 (`halalrebah.png`, `hahaltegak.png` --
+nama berkas tegak salah ketik `haha`, belum dibetulkan karena belum dipakai).
+
+- `print/boning-label` mengganti `halal.png` dengan `halalrebah.png`. Hanya
+  SATU batas ukuran (lebar 38 mm, tinggi `auto`, `max-width:100%`): mematok
+  lebar DAN tinggi sekaligus yang menggepengkan atau melarkan gambar. Diukur di
+  browser: 38,0 x 15,6 mm, rasio 2,437 (asli 2,436), 3,1 mm dari tepi kanan
+  label.
+- Teks nomor halal lama (ID00110015321510124) dihapus karena nomor sertifikat
+  sudah ada DI DALAM gambar logo baru. **Catatan: nomor di logo baru
+  (ID003100001348**40521) berbeda dari nomor lama** -- kalau tidak disengaja,
+  perlu dicek. Baris RPHR 3201170-027 dipertahankan; NKV menyusul (Owner).
+- Hanya label Boning dulu. Enam template lain yang masih memakai `halal.png`
+  (repack, GR product, sales return, tally, stock take, beef stock) menunggu
+  hasil uji cetak Owner.
+- **Sudah ada sebelum perubahan ini, belum diperbaiki:** nama produk panjang
+  mendorong tabel label ke 79,6 mm (area cetak 69 mm), sehingga barcode bisa
+  terpotong. Dengan logo baru logo ikut mengecil (20,6 mm) sehingga nomor di
+  dalamnya sulit dibaca. Usulan: tahan lebar sel nama produk -- perubahan
+  terpisah, menunggu persetujuan.
+- Test `BoningLabelHalalLogoTest` (logo baru terpakai, logo lama tidak, nomor
+  lama tidak tercetak, rasio terjaga). Dibuktikan menggigit: template
+  dikembalikan sementara, 3 test merah; dipulihkan, hijau.

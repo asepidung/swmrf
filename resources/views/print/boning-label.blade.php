@@ -91,7 +91,10 @@
                         </span>
                     </td>
                     <td colspan="2" rowspan="5" align="center" valign="middle">
-                        <img src="{{ asset('img/halal.png') }}" alt="HALAL" height="100" align="absmiddle">
+                        {{-- Logo rebah (2200x903, rasio 2,44:1). SATU batas ukuran saja (lebar), tinggi
+                             mengikuti `auto`, supaya rasionya terjaga dan logo tidak melebihi
+                             selnya. Nomor sertifikat halal sudah ada di dalam gambar. --}}
+                        <img src="{{ asset('img/halalrebah.png') }}" alt="HALAL INDONESIA" style="display:block;width:38mm;max-width:100%;height:auto;margin:0 auto;">
                     </td>
                 </tr>
                 <tr>
@@ -140,7 +143,7 @@
                         </span>
                     </td>
                     <td style="font-size: 10px; text-align: center;">
-                        ID00110015321510124<br>RPHR 3201170-027
+                        RPHR 3201170-027
                     </td>
                 </tr>
                 <tr>
