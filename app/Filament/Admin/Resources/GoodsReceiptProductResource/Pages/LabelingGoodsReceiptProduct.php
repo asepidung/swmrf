@@ -387,8 +387,8 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                 }
 
                 $gradeId = $formData['grade_id'];
-                $weightStr = str_pad(round($weight * 100), 4, '0', STR_PAD_LEFT);
-                $pcsStr = str_pad($pcs, 2, '0', STR_PAD_LEFT);
+                $weightStr = \App\Support\BarcodeSegments::weight($weight);
+                $pcsStr = \App\Support\BarcodeSegments::pcs($pcs);
                 $phStr = isset($formData['ph_level']) ? str_pad(round($formData['ph_level'] * 10), 2, '0', STR_PAD_LEFT) : '00';
 
                 $prefix = $origin . $dateStr;

@@ -930,18 +930,18 @@ class TallyTest extends TestCase
         // Barcode relabel disusun ulang dari data item, bukan disalin dari
         // barcode lama. Susun ekspektasinya dari komponen yang sama supaya
         // strukturnya terbaca dan tidak bisa salah ketik:
-        // origin(1) + tanggal(6) + kode produk(6) + grade(1) + berat(4) +
-        // pcs(2) + pH(2) + counter(4) = 26 karakter.
+        // origin(1) + tanggal(6) + kode produk(6) + grade(1) + berat(6) +
+        // pcs(2) + pH(2) + counter(4) = 28 karakter (#486).
         $expectedNewBarcode = '6'                                              // origin: Relabel Tally
             . '150626'                                                          // pack date baru
             . substr($this->product->code, 0, 6)                                // MT00100 -> MT0010
             . $this->grade->id
-            . str_pad((string) round(22.50 * 100), 4, '0', STR_PAD_LEFT)        // 2250
+            . str_pad((string) round(22.50 * 100), 6, '0', STR_PAD_LEFT)        // 002250
             . str_pad('8', 2, '0', STR_PAD_LEFT)                                // 08
             . '00'                                                              // ph_level null
             . str_pad('1', 4, '0', STR_PAD_LEFT);                               // counter pertama
 
-        $this->assertSame(26, strlen($expectedNewBarcode));
+        $this->assertSame(28, strlen($expectedNewBarcode));
         
         $this->assertEquals($expectedNewBarcode, $item->barcode);
         $this->assertEquals($newPackDate, $item->pack_date->format('Y-m-d'));

@@ -89,18 +89,15 @@ class FoundItemScanner extends Page implements HasForms, HasTable
             return;
         }
 
-        // 2. Jika 26 digit, parse barcode dan cari riwayat
+        // 2. Jika barcode standar (28 digit), parse barcode dan cari riwayat
         $historyMessage = null;
         $foundData = [];
 
-        if (strlen($barcode) >= 26) {
-            // Parse barcode
-            $dateStr = substr($barcode, 1, 6);
-            $productCode = substr($barcode, 7, 6);
-            $gradeId = substr($barcode, 13, 1);
-            $weightStr = substr($barcode, 14, 4);
-            $pcsStr = substr($barcode, 18, 2);
-            $phStr = substr($barcode, 20, 2);
+        if ($segmen = \App\Support\BarcodeSegments::parse($barcode)) {
+            // Parse barcode -- posisinya satu rumah di `BarcodeSegments`.
+            $dateStr = $segmen['date'];
+            $productCode = $segmen['product'];
+            $gradeId = $segmen['grade'];
 
             try {
                 $productCodeTrimmed = ltrim($productCode, '0');
@@ -111,9 +108,9 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                     ->first();
 
                 $foundData['pack_date'] = Carbon::createFromFormat('dmy', $dateStr)->format('Y-m-d');
-                $foundData['weight'] = ((float) $weightStr) / 100;
-                $foundData['qty_pcs'] = (int) $pcsStr;
-                $foundData['ph_level'] = ((float) $phStr) / 10;
+                $foundData['weight'] = $segmen['weight'];
+                $foundData['qty_pcs'] = $segmen['pcs'];
+                $foundData['ph_level'] = $segmen['ph'];
                 $foundData['product_id'] = $product ? $product->id : null;
                 $foundData['grade_id'] = (int) $gradeId;
             } catch (\Exception $e) {
@@ -276,8 +273,8 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                 }
 
                 $gradeId = str_pad($data['grade_id'], 1, '0', STR_PAD_LEFT);
-                $weightStr = str_pad(round($weight * 100), 4, '0', STR_PAD_LEFT);
-                $pcsStr = str_pad($pcs, 2, '0', STR_PAD_LEFT);
+                $weightStr = \App\Support\BarcodeSegments::weight($weight);
+                $pcsStr = \App\Support\BarcodeSegments::pcs($pcs);
                 $phStr = isset($data['ph_level']) ? str_pad(round($data['ph_level'] * 10), 2, '0', STR_PAD_LEFT) : '00';
 
                 // Urutan barcode barang temuan.

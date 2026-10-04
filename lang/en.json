@@ -1613,5 +1613,7 @@
     "Fill from BOM": "Fill from BOM",
     "Filled from BOM": "Filled from BOM",
     "No BOM": "No BOM",
-    "Variable quantity, filled in manually": "Variable quantity, filled in manually"
+    "Variable quantity, filled in manually": "Variable quantity, filled in manually",
+    "Weight :weight kg does not fit in a barcode (maximum :max kg).": "Weight :weight kg does not fit in a barcode (maximum :max kg).",
+    "Quantity :qty pcs does not fit in a barcode (maximum :max pcs).": "Quantity :qty pcs does not fit in a barcode (maximum :max pcs)."
 }
