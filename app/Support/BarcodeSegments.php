@@ -119,7 +119,12 @@ class BarcodeSegments
     /**
      * Barcode standar SWM: tepat 28 karakter.
      *
-     * Bukan "semuanya angka": segmen kode produk memuat huruf (`MT0010`).
+     * Yang diperiksa HANYA panjang. Kode produk yang dibuat form produk
+     * selalu angka (prefix kategori + 3 digit urutan + `00`, mis. `100100`),
+     * jadi barcode produksi numerik penuh. Huruf di segmen produk hanya
+     * berarti kode produknya diisi di luar form (impor, tinker, data uji) --
+     * itu masalah data, bukan bentuk barcode yang sah. Pembatasan ke angka
+     * sengaja belum dipasang (menunggu keputusan Owner).
      */
     public static function isStandard(?string $barcode): bool
     {
