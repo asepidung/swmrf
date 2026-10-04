@@ -577,6 +577,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
                     'warehouse_id' => $formData['warehouse_id'] ?? $this->defaultWarehouseId(),
                     'grade_id' => $gradeId,
                     'barcode' => $barcode,
+                    'batch_no' => $this->record->return_number,
                     'weight' => $weight,
                     'qty_pcs' => $pcs,
                     'ph_level' => $formData['ph_level'] ?? null,

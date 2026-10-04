@@ -9,11 +9,12 @@ use Illuminate\Support\Facades\Auth;
 
 class MutationItem extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, \App\Models\Concerns\InheritsBatch;
 
     protected $fillable = [
         'mutation_id',
         'barcode',
+        'batch_no',
         'product_id',
         'grade_id',
         'weight',

@@ -318,6 +318,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
                     'ph_level' => $phVal > 0 ? $phVal : null,
                     'pack_date' => $defaultPackDate,
                     'barcode' => $barcode,
+                    'batch_no' => $this->record->gr_number,
                     'origin' => \App\Helpers\BarcodeHelper::getOrigin($barcode),
                     'price' => $price,
                     'subtotal' => $subtotal,
@@ -326,6 +327,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
                 // 2. Create BeefStock
                 BeefStock::create([
                     'barcode' => $barcode,
+                    'batch_no' => $this->record->gr_number,
                     'product_id' => $product->id,
                     'warehouse_id' => $this->warehouse_id,
                     'grade_id' => $gradeId,

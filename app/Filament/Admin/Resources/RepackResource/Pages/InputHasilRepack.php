@@ -380,11 +380,13 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                     'pack_date' => $formData['pack_date'],
                     'exp_date' => $formData['exp_date'],
                     'barcode' => $barcode,
+                    'batch_no' => $this->record->doc_no,
                 ]);
 
                 /* Memasukkan barang hasil repack ke dalam stok */
                 BeefStock::create([
                     'barcode' => $barcode,
+                    'batch_no' => $this->record->doc_no,
                     'product_id' => $formData['product_id'],
                     'warehouse_id' => $formData['warehouse_id'],
                     'grade_id' => $formData['grade_id'],

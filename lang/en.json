@@ -1622,5 +1622,6 @@
     "Split into :count labels": "Split into :count labels",
     "The weight was too large for one barcode, so it was split evenly into :count labels.": "The weight was too large for one barcode, so it was split evenly into :count labels.",
     "Usual maximum weight per label (kg)": "Usual maximum weight per label (kg)",
-    "Above this the operator is asked to confirm the weight. Leave empty for 100 kg.": "Above this the operator is asked to confirm the weight. Leave empty for 100 kg."
+    "Above this the operator is asked to confirm the weight. Leave empty for 100 kg.": "Above this the operator is asked to confirm the weight. Leave empty for 100 kg.",
+    "Batch": "Batch"
 }

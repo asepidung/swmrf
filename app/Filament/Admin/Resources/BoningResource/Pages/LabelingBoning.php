@@ -498,11 +498,13 @@ class LabelingBoning extends Page implements HasForms, HasTable
                         'pack_date' => $formData['pack_date'],
                         'exp_date' => $formData['exp_date'],
                         'barcode' => $barcode,
+                        'batch_no' => $this->record->doc_no,
                         'created_by' => Auth::id(),
                     ]);
 
                     BeefStock::create([
                         'barcode' => $barcode,
+                        'batch_no' => $this->record->doc_no,
                         'product_id' => $formData['product_id'],
                         'warehouse_id' => $formData['warehouse_id'],
                         'grade_id' => $formData['grade_id'],

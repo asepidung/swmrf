@@ -295,6 +295,9 @@ class ScanTally extends Page implements HasForms, HasTable
                                     $record->update([
                                         'barcode' => $newBarcode,
                                         'original_barcode' => $record->original_barcode ?? $oldBarcode,
+                                        // Barang yang sama, batch yang sama. Kalau barisnya belum
+                                        // membawa batch, dicari dari barcode lama (boning, repack, dst.).
+                                        'batch_no' => $record->batch_no ?? \App\Support\BatchLookup::forBarcode($oldBarcode),
                                         'pack_date' => $newPackDate,
                                         'exp_date' => $newExpDate,
                                     ]);

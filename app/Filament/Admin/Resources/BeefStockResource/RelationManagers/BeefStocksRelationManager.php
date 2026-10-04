@@ -98,6 +98,15 @@ class BeefStocksRelationManager extends RelationManager
                     ->badge()
                     ->color('gray'),
 
+                // Nomor dokumen induk produksi (issue #497): kosong untuk
+                // barang legacy, temuan, atau yang induknya tidak diketahui.
+                Tables\Columns\TextColumn::make('batch_no')
+                    ->label(__('Batch'))
+                    ->placeholder('-')
+                    ->alignCenter()
+                    ->toggleable()
+                    ->searchable(),
+
                 Tables\Columns\TextColumn::make('note')
                     ->label(__('Note'))
                     ->wrap()

@@ -8,11 +8,14 @@ use Illuminate\Support\Facades\Auth;
 
 class TallyItem extends Model
 {
+    use \App\Models\Concerns\InheritsBatch;
+
     protected $table = 'tally_items';
 
     protected $fillable = [
         'tally_id',
         'barcode',
+        'batch_no',
         'original_barcode',
         'product_id',
         'warehouse_id',
@@ -72,6 +75,7 @@ class TallyItem extends Model
             // Restore to beef_stocks
             BeefStock::create([
                 'barcode' => $item->barcode,
+                'batch_no' => $item->batch_no,
                 'product_id' => $item->product_id,
                 'warehouse_id' => $item->warehouse_id,
                 'grade_id' => $item->grade_id,

@@ -437,6 +437,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                     'ph_level' => $formData['ph_level'] ?? null,
                     'pack_date' => $formData['pack_date'],
                     'barcode' => $barcode,
+                    'batch_no' => $this->record->gr_number,
                     'origin' => \App\Helpers\BarcodeHelper::getOrigin($barcode),
                     'price' => $price,
                     'subtotal' => $subtotal,
@@ -444,6 +445,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
 
                 BeefStock::create([
                     'barcode' => $barcode,
+                    'batch_no' => $this->record->gr_number,
                     'product_id' => $formData['product_id'],
                     'warehouse_id' => $formData['warehouse_id'],
                     'grade_id' => $gradeId,
