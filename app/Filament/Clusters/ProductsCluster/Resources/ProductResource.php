@@ -132,6 +132,14 @@ class ProductResource extends Resource
                             ->dehydrated()
                             ->unique(ignorable: fn ($record) => $record),
 
+                        Forms\Components\TextInput::make('max_label_weight')
+                            ->label(fn() => __('Usual maximum weight per label (kg)'))
+                            ->helperText(fn() => __('Above this the operator is asked to confirm the weight. Leave empty for 100 kg.'))
+                            ->numeric()
+                            ->minValue(0.01)
+                            ->maxValue(\App\Support\BarcodeSegments::BERAT_MAKS)
+                            ->placeholder('100'),
+
                         Forms\Components\Toggle::make('is_active')
                             ->label(fn() => __('Set Active'))
                             ->default(true)

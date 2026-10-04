@@ -17,6 +17,7 @@ class Product extends Model
         'is_active',
         'legacy_note',
         'costing_customer_group_id',
+        'max_label_weight',
     ];
 
     protected $casts = [

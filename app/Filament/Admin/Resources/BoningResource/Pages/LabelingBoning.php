@@ -28,6 +28,7 @@ use Carbon\Carbon;
 class LabelingBoning extends Page implements HasForms, HasTable
 {
     use InteractsWithForms, InteractsWithTable;
+    use \App\Filament\Concerns\ConfirmsAbnormalLabelWeight;
 
     protected static string $resource = BoningResource::class;
     protected static string $view = 'filament.resources.boning-resource.pages.labeling-boning';
@@ -412,7 +413,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
             ]);
     }
 
-    public function create(): void
+    public function create(bool $confirmed = false): void
     {
         $showExp = $this->data['show_exp'] ?? false;
         $formData = $this->form->getState();
@@ -428,8 +429,14 @@ class LabelingBoning extends Page implements HasForms, HasTable
         $weight = (float) trim($parts[0]);
         $pcs = isset($parts[1]) && trim($parts[1]) !== '' ? (int) trim($parts[1]) : 1;
 
+        // Berat yang melewati batas wajar produknya diminta dikonfirmasi
+        // dulu (#486 langkah 2) -- mengingatkan, bukan menolak.
+        if ($this->abnormalLabelWeight($formData['product_id'] ?? null, $weight, $confirmed)) {
+            return;
+        }
+
         try {
-            $insertedItem = DB::transaction(function () use ($formData, $weight, $pcs) {
+            $insertedItems = DB::transaction(function () use ($formData, $weight, $pcs) {
                 // Formnya cuma disembunyikan di Blade kalau kunci=true --
                 // server-side create() ini sendiri tidak pernah memeriksa
                 // kunci sama sekali. Dibaca ULANG dari basis data (bukan
@@ -455,64 +462,86 @@ class LabelingBoning extends Page implements HasForms, HasTable
                 }
 
                 $gradeId = $formData['grade_id'];
-                $weightStr = \App\Support\BarcodeSegments::weight($weight);
-                $pcsStr = \App\Support\BarcodeSegments::pcs($pcs);
                 $phStr = isset($formData['ph_level']) ? str_pad(round($formData['ph_level'] * 10), 2, '0', STR_PAD_LEFT) : '00';
 
                 $prefix = $origin . $dateStr;
-                // Urutannya satu rumah di `BarcodeSequence`. Bentuk lamanya
-                // memakai panjang barcode sebagai penanda sah dan membaca
-                // baris TERAKHIR menurut id, bukan urutan TERBESAR.
-                $counterStr = \App\Support\BarcodeSequence::nextPadded($prefix, [
-                    BoningItem::withTrashed()->lockForUpdate(),
-                ]);
 
-                $barcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
+                // Berat di atas 9.999,99 kg tidak muat di satu barcode, jadi
+                // dipecah rata menjadi beberapa label (#486 langkah 3) --
+                // satu transaksi, jumlahnya persis sama dengan yang diketik.
+                // Yang muat tetap satu label.
+                $items = [];
 
-                $item = BoningItem::create([
-                    'boning_id' => $this->record->id,
-                    'product_id' => $formData['product_id'],
-                    'warehouse_id' => $formData['warehouse_id'],
-                    'grade_id' => $formData['grade_id'],
-                    'weight' => $weight,
-                    'qty_pcs' => $pcs,
-                    'ph_level' => $formData['ph_level'] ?? null,
-                    'pack_date' => $formData['pack_date'],
-                    'exp_date' => $formData['exp_date'],
-                    'barcode' => $barcode,
-                    'created_by' => Auth::id(),
-                ]);
+                foreach (\App\Support\BarcodeSegments::split($weight, $pcs) as $label) {
+                    $weight = $label['weight'];
+                    $pcs = $label['pcs'];
+                    $weightStr = \App\Support\BarcodeSegments::weight($weight);
+                    $pcsStr = \App\Support\BarcodeSegments::pcs($pcs);
 
-                BeefStock::create([
-                    'barcode' => $barcode,
-                    'product_id' => $formData['product_id'],
-                    'warehouse_id' => $formData['warehouse_id'],
-                    'grade_id' => $formData['grade_id'],
-                    'weight' => $weight,
-                    'qty_pcs' => $pcs,
-                    'ph_level' => $formData['ph_level'] ?? null,
-                    'pack_date' => $formData['pack_date'],
-                    'exp_date' => $formData['exp_date'],
-                    'origin' => \App\Helpers\BarcodeHelper::getOrigin($barcode),
-                    'status' => 'IN_STOCK',
-                ]);
+                    // Urutannya satu rumah di `BarcodeSequence`. Bentuk lamanya
+                    // memakai panjang barcode sebagai penanda sah dan membaca
+                    // baris TERAKHIR menurut id, bukan urutan TERBESAR.
+                    $counterStr = \App\Support\BarcodeSequence::nextPadded($prefix, [
+                        BoningItem::withTrashed()->lockForUpdate(),
+                    ]);
 
-                BeefStockMovement::create([
-                    'product_id' => $formData['product_id'],
-                    'warehouse_id' => $formData['warehouse_id'],
-                    'condition' => $formData['grade_id'],
-                    'barcode' => $barcode,
-                    'transaction_type' => 'IN_BONING',
-                    'reference_document' => $this->record->doc_no,
-                    'weight_in' => $weight,
-                    'pcs_in' => $pcs,
-                    'created_by' => Auth::id(),
-                ]);
+                    $barcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
 
-                return $item;
+                    $item = BoningItem::create([
+                        'boning_id' => $this->record->id,
+                        'product_id' => $formData['product_id'],
+                        'warehouse_id' => $formData['warehouse_id'],
+                        'grade_id' => $formData['grade_id'],
+                        'weight' => $weight,
+                        'qty_pcs' => $pcs,
+                        'ph_level' => $formData['ph_level'] ?? null,
+                        'pack_date' => $formData['pack_date'],
+                        'exp_date' => $formData['exp_date'],
+                        'barcode' => $barcode,
+                        'created_by' => Auth::id(),
+                    ]);
+
+                    BeefStock::create([
+                        'barcode' => $barcode,
+                        'product_id' => $formData['product_id'],
+                        'warehouse_id' => $formData['warehouse_id'],
+                        'grade_id' => $formData['grade_id'],
+                        'weight' => $weight,
+                        'qty_pcs' => $pcs,
+                        'ph_level' => $formData['ph_level'] ?? null,
+                        'pack_date' => $formData['pack_date'],
+                        'exp_date' => $formData['exp_date'],
+                        'origin' => \App\Helpers\BarcodeHelper::getOrigin($barcode),
+                        'status' => 'IN_STOCK',
+                    ]);
+
+                    BeefStockMovement::create([
+                        'product_id' => $formData['product_id'],
+                        'warehouse_id' => $formData['warehouse_id'],
+                        'condition' => $formData['grade_id'],
+                        'barcode' => $barcode,
+                        'transaction_type' => 'IN_BONING',
+                        'reference_document' => $this->record->doc_no,
+                        'weight_in' => $weight,
+                        'pcs_in' => $pcs,
+                        'created_by' => Auth::id(),
+                    ]);
+
+                    $items[] = $item;
+                }
+
+                return $items;
             });
 
-            Notification::make()->title(__('Successfully Added'))->success()->send();
+            if (count($insertedItems) > 1) {
+                Notification::make()
+                    ->title(__('Split into :count labels'))
+                    ->body(__('The weight was too large for one barcode, so it was split evenly into :count labels.', ['count' => count($insertedItems)]))
+                    ->warning()
+                    ->send();
+            } else {
+                Notification::make()->title(__('Successfully Added'))->success()->send();
+            }
 
             $this->form->fill([
                 'warehouse_id' => $formData['warehouse_id'],
@@ -527,7 +556,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
 
             $this->dispatch('refreshTable');
 
-            if ($insertedItem) {
+            foreach ($insertedItems as $insertedItem) {
                 $printUrl = route('boning.label', [
                     'id' => $insertedItem->id,
                     'show_exp' => $showExp ? 1 : 0

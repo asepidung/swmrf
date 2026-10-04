@@ -122,6 +122,8 @@ class BarcodeSegmentsTest extends TestCase
         $product = Product::create([
             'name' => 'OFFAL', 'code' => 'OF0001', 'category_id' => $category->id,
             'structure_type' => 'main', 'is_active' => true,
+            // Offal memang ribuan kilo; tanpa batas tinggi ia akan ditanyai konfirmasi (#486 langkah 2).
+            'max_label_weight' => 9999.99,
         ]);
         $warehouse = Warehouse::create(['code' => 'JONGGOL', 'name' => 'JONGGOL', 'is_active' => true]);
         $grade = Grade::create(['name' => 'CHILL', 'is_active' => true]);

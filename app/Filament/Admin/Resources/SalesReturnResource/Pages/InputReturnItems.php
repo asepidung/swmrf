@@ -28,6 +28,12 @@ use Filament\Actions;
 class InputReturnItems extends Page implements HasForms, HasTable
 {
     use InteractsWithForms, InteractsWithTable;
+    use \App\Filament\Concerns\ConfirmsAbnormalLabelWeight;
+
+    protected function labelMethod(): string
+    {
+        return 'processWeigh';
+    }
 
     protected static string $resource = SalesReturnResource::class;
     
@@ -497,7 +503,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
         }
     }
 
-    public function processWeigh(): void
+    public function processWeigh(bool $confirmed = false): void
     {
         $formData = $this->weighForm->getState();
         
@@ -510,6 +516,11 @@ class InputReturnItems extends Page implements HasForms, HasTable
 
             if ($weight <= 0) {
                 throw new \Exception(__('That weight is not valid.'));
+            }
+
+            // Berat di atas batas wajar produknya: konfirmasi dulu (#486).
+            if ($this->abnormalLabelWeight($formData['product_id'] ?? null, $weight, $confirmed)) {
+                return;
             }
 
             // Sama seperti scan barcode -- lihat penjelasan di

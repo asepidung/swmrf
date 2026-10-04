@@ -1615,5 +1615,12 @@
     "No BOM": "No BOM",
     "Variable quantity, filled in manually": "Variable quantity, filled in manually",
     "Weight :weight kg does not fit in a barcode (maximum :max kg).": "Weight :weight kg does not fit in a barcode (maximum :max kg).",
-    "Quantity :qty pcs does not fit in a barcode (maximum :max pcs).": "Quantity :qty pcs does not fit in a barcode (maximum :max pcs)."
+    "Quantity :qty pcs does not fit in a barcode (maximum :max pcs).": "Quantity :qty pcs does not fit in a barcode (maximum :max pcs).",
+    "Is this weight correct?": "Is this weight correct?",
+    "This label weighs :weight kg, above the usual :limit kg for this product. Check for a typing mistake before continuing.": "This label weighs :weight kg, above the usual :limit kg for this product. Check for a typing mistake before continuing.",
+    "Yes, the weight is correct": "Yes, the weight is correct",
+    "Split into :count labels": "Split into :count labels",
+    "The weight was too large for one barcode, so it was split evenly into :count labels.": "The weight was too large for one barcode, so it was split evenly into :count labels.",
+    "Usual maximum weight per label (kg)": "Usual maximum weight per label (kg)",
+    "Above this the operator is asked to confirm the weight. Leave empty for 100 kg.": "Above this the operator is asked to confirm the weight. Leave empty for 100 kg."
 }

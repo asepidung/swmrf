@@ -6704,3 +6704,66 @@ per produk (`products.max_label_weight`, null = 100 kg, konfirmasi bukan
 penolakan); langkah 3, label otomatis dipecah bila berat > 9.999,99 kg. Sampai
 langkah 3 selesai, berat di atas 9.999,99 kg DITOLAK dengan pesan jelas --
 tidak ada lagi barcode yang diam-diam meluap.
+
+
+## #486 langkah 2 dan 3 -- peringatan salah ketik dan pecah label, 4 Oktober 2026
+
+Sambungan langkah 1 (barcode 28 digit). Keputusan Owner 30 September 2026
+butir 2 dan 3.
+
+**Langkah 2 -- peringatan salah ketik per produk.**
+
+- Kolom baru `products.max_label_weight` (desimal 8,2, boleh kosong) lewat
+  migrasi. Kosong berarti batas bawaan 100 kg, BUKAN nol. Data legacy: di luar
+  offal, kulit, dan bone, berat >= 100 kg per label selalu salah ketik.
+  Batasnya data di master produk (field di form Produk Sapi), bukan daftar id
+  di kode, karena id legacy 37/49/50 tidak sama dengan id di sini.
+- `LabelWeightLimit` menyimpan batas bawaan dan aturan "melewati batas".
+- Trait `ConfirmsAbnormalLabelWeight` (folder Concerns di Filament) memasang
+  modal konfirmasi: MENGINGATKAN, bukan menolak. Dipasang di empat halaman
+  yang berat labelnya DIKETIK operator: Boning, GR Product, Repack (input
+  hasil), dan Sales Return (timbang). Sebelum dikonfirmasi tidak ada stok yang
+  lahir; setelah dikonfirmasi metode yang sama dipanggil ulang.
+- Nama metode yang dipanggil ulang datang dari halamannya sendiri
+  (`labelMethod()`), BUKAN dari argumen aksi, karena argumen datang dari klien
+  dan bisa dipakai memanggil metode apa saja.
+- Yang dinilai berat PER LABEL setelah dipecah: 16 ton offal menjadi dua label
+  8 ton, jadi tidak ditanyakan tiap kali bila batas offal diisi tinggi.
+- Operator perlu mengisi `max_label_weight` untuk OFFAL, KULIT, dan BONE di
+  master produk (disarankan 9999,99). Migrasi tidak menebak produk mana.
+  Sampai diisi, ketiganya akan ditanya konfirmasi pada setiap label besar.
+- `pcs` >= 100: tidak muat 2 digit, jadi sudah DITOLAK oleh `BarcodeSegments`
+  (langkah 1), bukan sekadar diperingatkan.
+
+**Langkah 3 -- label otomatis dipecah.**
+
+- `BarcodeSegments::split()` membagi berat RATA dalam sen; sisa dibagikan satu
+  sen ke label-label pertama. Jumlahnya persis sama dengan yang diketik: 16.000
+  kg menjadi 2 x 8.000 kg (bukan 9.999,99 + 6.000,01, supaya tiap label
+  sewajarnya). Pcs dibagi dengan cara yang sama dan jumlahnya dijaga.
+- Dipasang di LabelingBoning, satu transaksi: kalau satu label gagal, tidak ada
+  label separuh jadi. Auto-print dikirim per label. Notifikasi menyebut berapa
+  label yang lahir.
+- **Keputusan sendiri: pemecahan HANYA di Boning.** Itu satu-satunya tempat
+  data legacy menunjukkan kebutuhannya (offal ~300 kg per ekor, boning terbesar
+  ~16 ton). GR Product, Repack, Sales Return, Temuan Barang, dan Opname tetap
+  MENOLAK berat di atas 9.999,99 kg dengan pesan jelas. Kalau suatu saat ada
+  kasus nyata di sana, `split()` sudah siap dipakai.
+- **Keputusan sendiri: pcs dibagi ikut berat**, jumlah tetap. Konsekuensinya
+  untuk `pcs` 1 yang dipecah dua, label kedua bernilai 0 pcs. Kalau Owner lebih
+  suka tiap label membawa 1 pcs, itu mengubah jumlah stok -- tanya dulu.
+
+**Tidak dikerjakan (sengaja):** konfirmasi di dialog input manual Temuan Barang
+dan Opname; keduanya memakai dialog aksi, bukan form halaman, dan berat yang
+diketik di sana tetap dijaga oleh penolakan `BarcodeSegments`.
+
+**Test:** `LabelWeightWarningAndSplitTest` (batas bawaan dan per produk;
+berat wajar disimpan tanpa bertanya; berat tidak wajar bertanya dulu dan tidak
+menyimpan apa pun sebelum dikonfirmasi; pemecahan menjaga total sen dan pcs;
+16 ton menjadi dua label dengan barcode 28 digit dan asal BONING; kegagalan di
+tengah tidak meninggalkan label separuh jadi).
+
+Pembuktian menggigit (#486 langkah 2): pemeriksaan konfirmasi di Boning
+dimatikan sementara, test "berat tidak wajar bertanya dulu" merah; dipulihkan,
+semua hijau. Suite penuh: 1295 lulus, 1 gagal (`ResourceHasPolicyTest`, sudah
+merah di `main` dan diperbaiki PR Policy terpisah).

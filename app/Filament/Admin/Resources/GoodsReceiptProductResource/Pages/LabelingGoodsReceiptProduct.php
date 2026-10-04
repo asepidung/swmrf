@@ -28,6 +28,7 @@ use Carbon\Carbon;
 class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
 {
     use InteractsWithForms, InteractsWithTable;
+    use \App\Filament\Concerns\ConfirmsAbnormalLabelWeight;
 
     protected static string $resource = GoodsReceiptProductResource::class;
     protected static string $view = 'filament.admin.resources.goods-receipt-product-resource.pages.labeling-goods-receipt-product';
@@ -339,7 +340,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
             ]);
     }
 
-    public function create(): void
+    public function create(bool $confirmed = false): void
     {
         // Lapis kedua: `canAccess()` menjaga PINTU halaman, tapi
         // `create()` sendiri adalah method Livewire publik yang bisa
@@ -362,6 +363,11 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
             $parts = explode('/', $combinedInput);
             $weight = (float) trim($parts[0]);
             $pcs = isset($parts[1]) && trim($parts[1]) !== '' ? (int) trim($parts[1]) : 1;
+
+            // Berat di atas batas wajar produknya: konfirmasi dulu (#486).
+            if ($this->abnormalLabelWeight($formData['product_id'] ?? null, $weight, $confirmed)) {
+                return;
+            }
 
             $insertedItem = DB::transaction(function () use ($formData, $weight, $pcs) {
                 // Baris GR dikunci dan status kuncinya dibaca ULANG di sini
