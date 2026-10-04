@@ -932,7 +932,7 @@ class TallyTest extends TestCase
         // strukturnya terbaca dan tidak bisa salah ketik:
         // origin(1) + tanggal(6) + kode produk(6) + grade(1) + berat(6) +
         // pcs(2) + pH(2) + counter(4) = 28 karakter (#486).
-        $expectedNewBarcode = '6'                                              // origin: Relabel Tally
+        $expectedNewBarcode = '1'                                              // origin ASLI dibawa (awalan 1 barcode lama = Boning), bukan 6
             . '150626'                                                          // pack date baru
             . substr($this->product->code, 0, 6)                                // MT00100 -> MT0010
             . $this->grade->id
@@ -950,8 +950,11 @@ class TallyTest extends TestCase
         $expectedExpDate = \Carbon\Carbon::parse($newPackDate)->addMonths(3)->format('Y-m-d');
         $this->assertEquals($expectedExpDate, $item->exp_date->format('Y-m-d'));
 
-        // Movement should be updated with new barcode
-        $this->assertEquals($expectedNewBarcode, $movement->barcode);
+        // Baris movement TALLY lama TIDAK ditulis ulang ke barcode baru
+        // (issue #497) -- riwayat per barcode tetap utuh. Barcode asal
+        // tersimpan terstruktur di tally_items.original_barcode.
+        $this->assertEquals('1140626MT00100122500800001', $movement->barcode);
+        $this->assertEquals('1140626MT00100122500800001', $item->original_barcode);
 
         // Verify activity log was NOT created
         $this->assertDatabaseMissing('activity_log', [

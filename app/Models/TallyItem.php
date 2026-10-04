@@ -13,6 +13,7 @@ class TallyItem extends Model
     protected $fillable = [
         'tally_id',
         'barcode',
+        'original_barcode',
         'product_id',
         'warehouse_id',
         'grade_id',

@@ -256,8 +256,12 @@ class ScanTally extends Page implements HasForms, HasTable
                                     // padahal aturannya setahun.
                                     $newExpDate = \App\Support\ShelfLife::expiryDateFor($newPackDate, $record->grade_id);
                                     
-                                    // Generate new barcode starting with prefix '6'
-                                    $origin = '6';
+                                    // Origin ASLI barang dibawa, bukan '6' milik relabel
+                                    // (keputusan Owner 5 Oktober 2026, issue #497): relabel
+                                    // tidak melahirkan barang produksi baru, ia menandai ulang
+                                    // barang yang sama. Barcode legacy dipetakan lewat
+                                    // `BarcodeHelper::LEGACY_ORIGIN`.
+                                    $origin = \App\Helpers\BarcodeHelper::originDigitFor($oldBarcode);
                                     $dateStr = \Carbon\Carbon::parse($newPackDate)->format('dmy');
                                     $productCode = $record->product?->code ?? '000000';
                                     if (strlen($productCode) > 6) {
@@ -284,20 +288,23 @@ class ScanTally extends Page implements HasForms, HasTable
                                     
                                     $newBarcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
                                     
-                                    // Update tally item
+                                    // Update tally item. `original_barcode` mengingat
+                                    // barcode ASAL barang ini dan TIDAK ditimpa oleh
+                                    // relabel kedua, supaya yang tersimpan selalu yang
+                                    // pertama.
                                     $record->update([
                                         'barcode' => $newBarcode,
+                                        'original_barcode' => $record->original_barcode ?? $oldBarcode,
                                         'pack_date' => $newPackDate,
                                         'exp_date' => $newExpDate,
                                     ]);
                                     
-                                    // Update matching beef stock movement of type TALLY
-                                    \App\Models\BeefStockMovement::where('barcode', $oldBarcode)
-                                        ->where('transaction_type', 'TALLY')
-                                        ->update([
-                                            'barcode' => $newBarcode,
-                                        ]);
-                                        
+                                    // Baris movement TALLY lama TIDAK lagi ditulis ulang ke
+                                    // barcode baru. Menulis ulangnya memutus riwayat per
+                                    // barcode: barcode lama tampak masuk tanpa pernah
+                                    // keluar, barcode baru tampak keluar tanpa pernah masuk.
+                                    // Kedua barcode dihubungkan oleh baris TALLY_RELABEL di
+                                    // bawah dan oleh `tally_items.original_barcode`.
                                     // Log the change in beef_stock_movements
                                     \App\Models\BeefStockMovement::create([
                                         'product_id' => $record->product_id,
