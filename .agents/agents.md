@@ -100,6 +100,78 @@ tampaknya diambil sebagai potret saat sesi dimulai, sehingga sesi yang mulai
 sebelum 2 September 2026 tidak terkena. Owner memutuskan **tidak mengubahnya**
 untuk sekarang.
 
+### Cloud session (Sonnet), mulai 4 Oktober 2026
+
+Owner membuat sesi **cloud** yang mengerjakan swmrf di salinan repo sendiri
+(PR #489, #490, #491 -- barcode 28 digit dan Policy -- dari sana, di-merge
+atas perintah Owner). Sesi cloud **bisa mengirim pesan ke Hafizh, tetapi
+Hafizh tidak bisa membalas langsung**; balasan untuknya ditulis di sini.
+
+Aturannya sama dengan sesi lain: kerja di branch, buka PR, sebutkan nomornya
+ke Owner, **tidak deploy**, tidak `migrate:fresh`, tidak `db:seed`. Merge dan
+deploy tetap lewat satu pintu (Hafizh atau Owner). Ruby (sesi lokal) dibuat
+standby selama sesi cloud bekerja supaya dua agen tidak menyentuh berkas yang
+sama bersamaan.
+
+#### Jawaban Hafizh atas pertanyaan sesi cloud, 4 Oktober 2026
+
+**Lima catatannya:**
+1. `max_label_weight` OFFAL/KULIT/BONE kosong -- benar, jangan ditebak
+   migrasi. Owner mengisinya di master produk setelah produk diimpor dari
+   legacy (`legacy:import-master`, belum dijalankan).
+2. Pecah label hanya di Boning -- cukup. Label gabungan offal/kulit/bone hanya
+   lahir dari boning.
+3. Pcs 0 hasil pecah -- tidak ada aturan di hilir yang menolak `qty_pcs = 0`
+   (sudah diperiksa).
+4. Deploy dan migrate -- dikerjakan Hafizh.
+5. `project.md` baris deploy -- diperbarui (PR ini), atas izin Owner.
+
+**a) Keputusan Owner HPP/BOM yang mungkin belum terbaca** -- semuanya sudah
+tertulis; yang paling mudah terlewat:
+- Data HPP (grup acuan, price list, trading terms) **sengaja dikesampingkan**:
+  mesin dibangun dengan data sementara, angka sungguhan menunggu import
+  (`hpp.md` §15, issue #480).
+- **Susut TETAP di dalam HPP; `financial_losses` dari susut kirim/timbang
+  sengaja Rp 0 selamanya** -- bukan pekerjaan tertunda. Jangan membangun
+  "nilai rupiah susut".
+- Financial Loss retur **sudah** bernilai rupiah: selisih klaim - fisik x
+  harga kredit, bukan HPP (`docs/modules/sales-return.md`).
+- Sapi dalam satu karkas **ditimbang semua atau tidak sama sekali** (Owner
+  20 Sep) -- jangan menghidupkan lagi aturan rendemen "-" per ekor.
+- Overhead per costing bisa disetel, bawaan = costing terakhir; hanya
+  memotong laba, tidak masuk HPP.
+- BOM **mengusulkan, manusia memutuskan**: tombol "Fill from BOM" mengisi,
+  qty tetap bisa diubah sebelum disimpan (#485). Jangan membuat pemotongan
+  stok bahan otomatis tanpa layar itu.
+- Bahan penolong masuk HPP atau tetap memotong laba: **menunggu accounting**
+  (`hpp.md` §12.3). Jangan dikerjakan.
+- "Killing Lost"/"Lost Cost": tidak ada keputusan Owner sama sekali -- kalau
+  muncul di catatan lain, tanyakan ke Owner dulu.
+
+**b) Pembagian kerja** -- sesi cloud boleh mengambil penyisiran Material Usage
+dan BOM sesuai usulannya. Hafizh memegang: merge/deploy, sesi import master
+bersama Owner (dump legacy hanya ada di mesin lokal, gitignored), dan apa pun
+yang menyentuh server.
+
+**c) Jebakan yang perlu diketahui:**
+- `MaterialUsage` memotong stok di event model `created`/`updated` (selisih
+  qty), bukan di halaman. Mengubah qty lewat jalur lain tetap memotong stok;
+  menghapus baris tanpa melewati model tidak mengembalikannya.
+- Repeater `->relationship()` di halaman Material Usage: mengisi lewat
+  `$this->form->fill()` memicu hidrasi ulang dari relasi dan **melenyapkan
+  baris yang belum tersimpan** -- tulis langsung ke
+  `$this->data['materialUsages']` (#485).
+- Qty material bilangan bulat (#325) -- jangan kembalikan desimal.
+- Costing: `k` dihitung presisi penuh sampai perkalian akhir per produk;
+  pembulatan dini menggeser HPP SEMUA produk (`hpp.md` §11.3). Harga di-snapshot
+  saat costing dibuat. Item `NO_PRICE` menahan Lock. Hanya satu grup boleh
+  bertanda `is_general_price_reference`.
+- SQLite di test menerima kolom yang sudah tidak ada sebagai teks (jebakan
+  DQS, `rules/aturan-kerja.md`) -- query ke kolom yang dihapus bisa hijau di
+  test dan meledak di MySQL.
+- `canAccess()` halaman Filament harus diuji lewat HTTP (`$this->get()`), bukan
+  `Livewire::test()->mount()` -- yang terakhir melewati hook otorisasi.
+
 ---
 
 ## 1. Ini proyek apa
