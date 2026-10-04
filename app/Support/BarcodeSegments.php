@@ -79,6 +79,44 @@ class BarcodeSegments
     }
 
     /**
+     * Memecah satu berat yang terlalu besar menjadi beberapa label yang
+     * masing-masing muat (#486 langkah 3).
+     *
+     * Dibagi RATA dalam sen, sisa pembagian dibagikan satu sen ke label-label
+     * pertama, sehingga jumlahnya persis sama dengan yang diketik: 16.000 kg
+     * menjadi 2 x 8.000 kg, bukan 9.999,99 + 6.000,01. Pcs dibagi dengan cara
+     * yang sama dan jumlahnya juga dijaga. Satu label yang muat dikembalikan
+     * apa adanya.
+     *
+     * @return array<int, array{weight: float, pcs: int}>
+     */
+    public static function split(float $kg, int $pcs): array
+    {
+        $sen = (int) round($kg * 100);
+
+        if ($sen <= 0) {
+            throw new InvalidArgumentException(__('That weight is not valid.'));
+        }
+
+        $jumlah = (int) ceil($sen / (self::BERAT_MAKS * 100));
+
+        if ($jumlah === 1) {
+            return [['weight' => $sen / 100.0, 'pcs' => $pcs]];
+        }
+
+        $labels = [];
+
+        for ($i = 0; $i < $jumlah; $i++) {
+            $labels[] = [
+                'weight' => (intdiv($sen, $jumlah) + ($i < $sen % $jumlah ? 1 : 0)) / 100.0,
+                'pcs' => intdiv($pcs, $jumlah) + ($i < $pcs % $jumlah ? 1 : 0),
+            ];
+        }
+
+        return $labels;
+    }
+
+    /**
      * Barcode standar SWM: tepat 28 karakter.
      *
      * Bukan "semuanya angka": segmen kode produk memuat huruf (`MT0010`).

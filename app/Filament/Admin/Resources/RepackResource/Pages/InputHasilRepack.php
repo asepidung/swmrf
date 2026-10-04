@@ -27,6 +27,7 @@ use Carbon\Carbon;
 class InputHasilRepack extends Page implements HasForms, HasTable
 {
     use InteractsWithForms, InteractsWithTable;
+    use \App\Filament\Concerns\ConfirmsAbnormalLabelWeight;
 
     protected static string $resource = RepackResource::class;
 
@@ -293,7 +294,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
             ]);
     }
 
-    public function create(): void
+    public function create(bool $confirmed = false): void
     {
         if ($this->record->kunci == 1) {
             Notification::make()
@@ -320,6 +321,11 @@ class InputHasilRepack extends Page implements HasForms, HasTable
         $parts = explode('/', $combinedInput);
         $weight = (float) trim($parts[0]);
         $pcs = isset($parts[1]) && trim($parts[1]) !== '' ? (int) trim($parts[1]) : 1;
+
+        // Berat di atas batas wajar produknya: konfirmasi dulu (#486).
+        if ($this->abnormalLabelWeight($formData['product_id'] ?? null, $weight, $confirmed)) {
+            return;
+        }
 
         try {
             $insertedItem = DB::transaction(function () use ($formData, $weight, $pcs) {

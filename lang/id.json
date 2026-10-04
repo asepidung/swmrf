@@ -1615,5 +1615,12 @@
     "No BOM": "Tanpa BOM",
     "Variable quantity, filled in manually": "Jumlah tidak tetap, diisi manual",
     "Weight :weight kg does not fit in a barcode (maximum :max kg).": "Berat :weight kg tidak muat di barcode (maksimum :max kg).",
-    "Quantity :qty pcs does not fit in a barcode (maximum :max pcs).": "Jumlah :qty pcs tidak muat di barcode (maksimum :max pcs)."
+    "Quantity :qty pcs does not fit in a barcode (maximum :max pcs).": "Jumlah :qty pcs tidak muat di barcode (maksimum :max pcs).",
+    "Is this weight correct?": "Apakah berat ini sudah benar?",
+    "This label weighs :weight kg, above the usual :limit kg for this product. Check for a typing mistake before continuing.": "Label ini seberat :weight kg, di atas batas wajar :limit kg untuk produk ini. Periksa kemungkinan salah ketik sebelum melanjutkan.",
+    "Yes, the weight is correct": "Ya, beratnya sudah benar",
+    "Split into :count labels": "Dipecah menjadi :count label",
+    "The weight was too large for one barcode, so it was split evenly into :count labels.": "Beratnya terlalu besar untuk satu barcode, jadi dibagi rata menjadi :count label.",
+    "Usual maximum weight per label (kg)": "Berat wajar maksimum per label (kg)",
+    "Above this the operator is asked to confirm the weight. Leave empty for 100 kg.": "Di atas angka ini operator diminta mengonfirmasi beratnya. Kosongkan untuk 100 kg."
 }

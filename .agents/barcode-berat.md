@@ -2,7 +2,7 @@
 
 Diangkat Owner 30 September 2026: label OFFAL, KULIT, dan BONE sering
 digabung sehingga beratnya jauh melampaui 99,99 kg, padahal barcode swmrf
-hanya menyediakan 4 digit untuk berat. **Status: DIPUTUSKAN Owner 30 Sep 2026. Langkah 1 (28 digit, `BarcodeSegments`) SELESAI 4 Okt 2026; langkah 2 (peringatan salah ketik, `products.max_label_weight`) dan langkah 3 (pecah label di atas 9.999,99 kg) BELUM** -- lihat
+hanya menyediakan 4 digit untuk berat. **Status: DIPUTUSKAN Owner 30 Sep 2026. Langkah 1 (28 digit, `BarcodeSegments`), langkah 2 (peringatan salah ketik, `products.max_label_weight`), dan langkah 3 (pecah label di atas 9.999,99 kg, Boning) SELESAI 4 Okt 2026** -- lihat
 bagian "Keputusan Owner" di bawah.
 
 ## Susunan barcode swmrf (26 digit)
