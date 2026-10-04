@@ -6610,6 +6610,45 @@ estrictOnDelete().
 - **Menyelaraskan rasio kolom Cattle Details dengan Material Requisition** -- form *Repeater* untuk input PO Cattle (PurchaseCattleResource) diubah agar ukuran *field*-nya sama persis dengan modul Requisition, menggunakan sistem 12 kolom dengan porsi pembagian: Kategori (5), Qty (2), Harga (2), Catatan (3).
 
 
+## Policy untuk Buku Kas dan Temuan Material, 4 Oktober 2026
+
+`ResourceHasPolicyTest` merah di `main`: `CashBookResource` (model
+`BankTransaction`) dan `MaterialFindingResource` (model `MaterialFinding`)
+tidak punya Policy. Tanpa Policy, Laravel mengizinkan apa saja pada modelnya
+(fail-open), jadi satu-satunya penjaga adalah `canViewAny()` di Resource --
+jalur `authorize()` lain lolos begitu saja. Temuan ini muncul saat triase
+issue 4 Oktober 2026 (suite penuh dijalankan pertama kali di lingkungan baru).
+
+Yang ditambahkan:
+
+- `BankTransactionPolicy`: baca dijaga `view_cash_book`; tulis/hapus/pulihkan
+  SELALU `false`. Alasannya: setiap baris Buku Kas adalah jejak dokumen lain
+  (DP supplier, penerimaan piutang, Expense). Mengubahnya dari Resource
+  memutus hubungan itu dan membuat buku kas berbeda dari dokumen asalnya.
+  Izin `*_bank_accounts` sengaja TIDAK dipakai di sini -- itu milik master
+  rekening, bukan pergerakannya.
+- `MaterialFindingPolicy`: lihat/buat/hapus dijaga `record_material_findings`
+  (izin yang sama dengan `canViewAny()` di Resource); sunting, pulihkan, dan
+  hapus permanen `false`. Alasannya: temuan tidak boleh disunting karena
+  stoknya sudah terlanjur bergerak, dan memulihkan baris yang sudah dihapus
+  akan membuat stok berbeda dari dokumennya (hapus sudah menarik stok kembali).
+- Tidak perlu didaftarkan di `AppServiceProvider`: nama `ModelPolicy` di
+  folder `app/Policies` ditemukan otomatis oleh Laravel.
+- Tidak ada izin baru, tidak ada migrasi, perilaku layar tidak berubah --
+  Resource keduanya sudah menolak lewat `canViewAny()`; Policy menutup jalur
+  di luar Resource.
+
+Test baru `BankTransactionMaterialFindingPolicyTest` memakai pengguna
+`employee` (bukan `programmer`, karena `hasPermission()` selalu `true` untuk
+peran itu). Dibuktikan menggigit: `MaterialFindingPolicy` dipindahkan
+sementara, 3 test merah (termasuk `ResourceHasPolicyTest`); dipulihkan,
+hijau kembali.
+
+Catatan lingkungan: lockfile menuntut PHP 8.4.1, container sesi cloud PHP
+8.3.6, jadi `composer install` perlu `--ignore-platform-req=php`; dan
+`.env` (di-gitignore) harus dibuat dari `.env.example` + `php artisan
+key:generate`, kalau tidak 425 test gagal karena APP_KEY kosong.
+
 ## #486 langkah 1 -- barcode 28 digit, segmen berat 6 digit, 4 Oktober 2026
 
 Keputusan Owner 30 September 2026 (lihat `.agents/barcode-berat.md`): semua
