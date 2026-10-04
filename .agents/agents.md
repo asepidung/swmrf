@@ -6608,3 +6608,51 @@ equired()). Hal ini memungkinkan lolosnya dokumen Requisition tanpa *Supplier* j
 estrictOnDelete().
 
 - **Menyelaraskan rasio kolom Cattle Details dengan Material Requisition** -- form *Repeater* untuk input PO Cattle (PurchaseCattleResource) diubah agar ukuran *field*-nya sama persis dengan modul Requisition, menggunakan sistem 12 kolom dengan porsi pembagian: Kategori (5), Qty (2), Harga (2), Catatan (3).
+
+
+## #486 langkah 1 -- barcode 28 digit, segmen berat 6 digit, 4 Oktober 2026
+
+Keputusan Owner 30 September 2026 (lihat `.agents/barcode-berat.md`): semua
+barcode BARU 28 digit. Segmen berat 6 digit = berat x 100, jadi dua desimal
+tetap terbawa (`22,14` kg -> `002214`) dan batasnya 9.999,99 kg. Sebelumnya 4
+digit, maksimum 99,99 kg.
+
+**Kenapa:** label offal, kulit, dan bone sering digabung sampai ratusan-ribuan
+kilo (data legacy: offal ~300 kg per ekor, boning terbesar ~16 ton). `str_pad`
+tidak memotong, jadi berat 5.747,66 kg diam-diam menjadi barcode 28 karakter
+dengan semua posisi sesudah berat bergeser dua karakter: asal label tercatat
+`-UNIND`, dan opname menganggap label sendiri sebagai barcode supplier lalu
+mencetak barcode baru.
+
+**Yang berubah (satu rumah: `BarcodeSegments` di folder `app/Support`):**
+
+- `weight()` dan `pcs()` menyusun segmen dan MENOLAK nilai yang tidak muat
+  (melempar `InvalidArgumentException`; pesannya muncul lewat blok `catch`
+  halaman label yang sudah ada). Memotong atau membiarkan meluap sama buruknya.
+- `isStandard()` dan `parse()` menggantikan semua pembacaan menurut posisi.
+  Syaratnya HANYA panjang 28, bukan "semuanya angka": kode produk memuat huruf
+  (`MT0010`) -- versi pertama menolak barcode sah karena itu, ketahuan test.
+- Penulis yang dialihkan: LabelingBoning (Boning), InputHasilRepack (Repack),
+  LabelingGoodsReceiptProduct (GR Product), InputReturnItems (Sales Return),
+  ScanStockTake (Opname), ScanTally (relabel), FoundItemScanner (Temuan).
+- Pembaca yang dialihkan: `BarcodeHelper::getOrigin()`, ScanStockTake (parse,
+  default/disabled toggle cetak, penanda barcode legacy), FoundItemScanner.
+- Barcode 26 digit lama (4 barcode uji di hosting) dan barcode legacy 19-20
+  digit sekarang dianggap barcode ASING -- di opname masuk jalur "barcode lama
+  dikonversi + cetak label baru", persis seperti barcode legacy sebelumnya.
+  Keputusan Owner: tidak ada dua jenis pengecekan.
+- `project.md` bagian 5 diperbarui (28 karakter + larangan menyusun segmen
+  di luar `BarcodeSegments`).
+
+**Test:** `BarcodeSegmentsTest` (segmen, pembulatan, penolakan, parse, asal
+label, label Boning 5.747,66 kg lewat Livewire sungguhan, dan penjaga yang
+menyisir `app/` melarang `str_pad(round(... * 100)` serta `substr(...,14,4)`
+di luar rumahnya). Penjaga dibuktikan menggigit: satu pelanggaran disisipkan
+ke `BarcodeHelper`, test merah, dipulihkan, hijau. `TallyTest` (relabel)
+diperbarui ke 28 digit.
+
+**Belum (masih menunggu, bagian dari #486):** langkah 2, peringatan salah ketik
+per produk (`products.max_label_weight`, null = 100 kg, konfirmasi bukan
+penolakan); langkah 3, label otomatis dipecah bila berat > 9.999,99 kg. Sampai
+langkah 3 selesai, berat di atas 9.999,99 kg DITOLAK dengan pesan jelas --
+tidak ada lagi barcode yang diam-diam meluap.

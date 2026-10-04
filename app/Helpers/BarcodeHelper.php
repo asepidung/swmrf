@@ -12,10 +12,8 @@ class BarcodeHelper
      */
     public static function getOrigin($barcode)
     {
-        $length = strlen($barcode);
-        
-        // SWM standard barcode is exactly 26 digits
-        if ($length !== 26) {
+        // Barcode standar SWM: 28 digit (`BarcodeSegments`, sejak #486).
+        if (! \App\Support\BarcodeSegments::isStandard($barcode)) {
             return '-UNIND';
         }
 

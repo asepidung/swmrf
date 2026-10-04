@@ -130,16 +130,18 @@ Setiap Resource atau Cluster baru wajib:
 
 ### Struktur barcode
 
-26 karakter, tersusun dari:
+28 karakter (sebelum #486: 26), tersusun dari:
 
-`origin(1) + tanggal ddmmyy(6) + kode produk(6) + grade(1) + berat(4) + pcs(2) + pH(2) + counter(4)`
+`origin(1) + tanggal ddmmyy(6) + kode produk(6) + grade(1) + berat(6, = kg x 100, maks 9.999,99) + pcs(2) + pH(2) + counter(4)`
 
-> **Panjang 26 hanya berlaku untuk barcode yang DIBUAT sistem ini.**
+> **Posisi dan lebar segmen hanya boleh ditulis di `App\Support\BarcodeSegments`.** Menyusun berat dengan `str_pad` di tempat lain dilarang -- `str_pad` tidak memotong, jadi berat yang tidak muat meluap diam-diam dan semua pembaca berbasis posisi bergeser. Dijaga `BarcodeSegmentsTest`.
+
+> **Panjang 28 hanya berlaku untuk barcode yang DIBUAT sistem ini.**
 > Tidak semua barcode yang beredar berbentuk demikian — ditegaskan Project
 > Owner, 1 September 2026. Karena itu **jangan pernah memakai panjangnya
 > sebagai penanda sah, lengkap, atau selesai diketik.** Pernah nyaris
 > dipasang di halaman Approve Delivery Order, untuk memproses hasil pindai
-> begitu isian mencapai 26 karakter; barcode yang lebih pendek tidak akan
+> begitu isian mencapai 26 karakter (panjang format lama); barcode yang lebih pendek tidak akan
 > pernah terproses dan tidak ada error yang memberitahu.
 
 Digit pertama menandakan asal barang:

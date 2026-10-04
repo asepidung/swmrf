@@ -199,8 +199,8 @@ class ScanStockTake extends Page implements HasForms, HasTable
                     ->send();
             }
         } else {
-            // Not in snapshot. Parse if 26 digits, otherwise just open manual modal empty.
-            if (strlen($barcode) !== 26) {
+            // Not in snapshot. Parse if standard (28 digits), otherwise just open manual modal empty.
+            if (! \App\Support\BarcodeSegments::isStandard($barcode)) {
                 // Check if this legacy barcode was already converted and saved in this stock take
                 $alreadyConverted = StockTakeItem::where('stock_take_id', $this->record->id)
                     ->where('note', 'like', "%(Legacy: {$barcode})%")
@@ -225,18 +225,17 @@ class ScanStockTake extends Page implements HasForms, HasTable
             }
 
             // Parse barcode based on SWM structure
-            $dateStr = substr($barcode, 1, 6);
-            $productCode = substr($barcode, 7, 6);
-            $gradeId = substr($barcode, 13, 1);
-            $weightStr = substr($barcode, 14, 4);
-            $pcsStr = substr($barcode, 18, 2);
-            $phStr = substr($barcode, 20, 2);
+            // Posisinya satu rumah di `BarcodeSegments` (28 digit sejak #486).
+            $segmen = \App\Support\BarcodeSegments::parse($barcode);
+            $dateStr = $segmen['date'];
+            $productCode = $segmen['product'];
+            $gradeId = $segmen['grade'];
 
             try {
                 $packDate = \Carbon\Carbon::createFromFormat('dmy', $dateStr)->format('Y-m-d');
-                $weight = ((float) $weightStr) / 100;
-                $pcs = (int) $pcsStr;
-                $ph = ((float) $phStr) / 10;
+                $weight = $segmen['weight'];
+                $pcs = $segmen['pcs'];
+                $ph = $segmen['ph'];
                 
                 $productCodeTrimmed = ltrim($productCode, '0');
                 if (empty($productCodeTrimmed)) $productCodeTrimmed = $productCode; // fallback
@@ -361,11 +360,11 @@ class ScanStockTake extends Page implements HasForms, HasTable
                             ->helperText(__('Print a new barcode label for this item.'))
                             ->default(function (\Filament\Forms\Get $get) {
                                 $barcode = $get('barcode') ?? '';
-                                return strlen($barcode) !== 26;
+                                return ! \App\Support\BarcodeSegments::isStandard($barcode);
                             })
                             ->disabled(function (\Filament\Forms\Get $get) {
                                 $barcode = $get('barcode') ?? '';
-                                return strlen($barcode) !== 26;
+                                return ! \App\Support\BarcodeSegments::isStandard($barcode);
                             })
                             ->dehydrated()
                             ->columnSpanFull(),
@@ -385,7 +384,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
                 $data['qty_pcs'] = isset($parts[1]) && trim($parts[1]) !== '' ? (int) trim($parts[1]) : 1;
 
                 $barcode = $data['barcode'] ?? null;
-                $generateNew = empty($barcode) || strlen($barcode) !== 26;
+                $generateNew = empty($barcode) || ! \App\Support\BarcodeSegments::isStandard($barcode);
 
                 try {
                     $insertedItem = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $barcode, $generateNew) {
@@ -495,8 +494,8 @@ class ScanStockTake extends Page implements HasForms, HasTable
                     $data['qty_pcs'] = isset($parts[1]) && trim($parts[1]) !== '' ? (int) trim($parts[1]) : 1;
 
                     $gradeId = str_pad($data['grade_id'], 1, '0', STR_PAD_LEFT);
-                    $weightStr = str_pad(round($data['weight'] * 100), 4, '0', STR_PAD_LEFT);
-                    $pcsStr = str_pad($data['qty_pcs'], 2, '0', STR_PAD_LEFT);
+                    $weightStr = \App\Support\BarcodeSegments::weight($data['weight']);
+                    $pcsStr = \App\Support\BarcodeSegments::pcs($data['qty_pcs']);
                     $phStr = isset($data['ph_level']) ? str_pad(round($data['ph_level'] * 10), 2, '0', STR_PAD_LEFT) : '00';
 
                     // Urutan barcode temuan opname.
@@ -537,7 +536,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
                     $barcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
                     
                     // Append legacy barcode to note for tracking
-                    if (!empty($data['barcode']) && strlen($data['barcode']) !== 26) {
+                    if (!empty($data['barcode']) && ! \App\Support\BarcodeSegments::isStandard($data['barcode'])) {
                         $currentNote = $data['note'] ?? '';
                         $data['note'] = trim($currentNote . " (Legacy: " . $data['barcode'] . ")");
                     }

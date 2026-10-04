@@ -267,8 +267,8 @@ class ScanTally extends Page implements HasForms, HasTable
                                     }
                                     
                                     $gradeId = $record->grade_id;
-                                    $weightStr = str_pad(round($record->weight * 100), 4, '0', STR_PAD_LEFT);
-                                    $pcsStr = str_pad($record->qty_pcs, 2, '0', STR_PAD_LEFT);
+                                    $weightStr = \App\Support\BarcodeSegments::weight($record->weight);
+                                    $pcsStr = \App\Support\BarcodeSegments::pcs($record->qty_pcs);
                                     $phStr = isset($record->ph_level) ? str_pad(round($record->ph_level * 10), 2, '0', STR_PAD_LEFT) : '00';
                                     
                                     $prefix = $origin . $dateStr;

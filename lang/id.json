@@ -1613,5 +1613,7 @@
     "Fill from BOM": "Isi dari BOM",
     "Filled from BOM": "Terisi dari BOM",
     "No BOM": "Tanpa BOM",
-    "Variable quantity, filled in manually": "Jumlah tidak tetap, diisi manual"
+    "Variable quantity, filled in manually": "Jumlah tidak tetap, diisi manual",
+    "Weight :weight kg does not fit in a barcode (maximum :max kg).": "Berat :weight kg tidak muat di barcode (maksimum :max kg).",
+    "Quantity :qty pcs does not fit in a barcode (maximum :max pcs).": "Jumlah :qty pcs tidak muat di barcode (maksimum :max pcs)."
 }
