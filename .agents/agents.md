@@ -6630,8 +6630,17 @@ mencetak barcode baru.
   (melempar `InvalidArgumentException`; pesannya muncul lewat blok `catch`
   halaman label yang sudah ada). Memotong atau membiarkan meluap sama buruknya.
 - `isStandard()` dan `parse()` menggantikan semua pembacaan menurut posisi.
-  Syaratnya HANYA panjang 28, bukan "semuanya angka": kode produk memuat huruf
-  (`MT0010`) -- versi pertama menolak barcode sah karena itu, ketahuan test.
+  Syaratnya HANYA panjang 28; barcode sah TIDAK diperiksa "semuanya angka".
+  **Koreksi 4 Oktober 2026:** catatan awal di sini menyebut "kode produk memuat
+  huruf (`MT0010`)" sebagai alasan. Itu keliru -- contoh itu hanya fixture
+  test, bukan data asli. Kode produk yang dibuat form produk selalu angka
+  (prefix kategori + 3 digit urutan + `00`, mis. `100100`), jadi barcode
+  produksi numerik penuh. Barcode berhuruf (`TEST01` di database lokal Owner)
+  berasal dari kode produk yang diisi di luar form oleh agen lain: masalah
+  data, bukan bentuk barcode yang sah. Penjaga "wajib angka" (menolak kode
+  produk non-numerik saat label dibuat) sengaja BELUM dipasang, menunggu
+  keputusan Owner, karena menuntut puluhan fixture test diganti ke kode numerik
+  dan data berkode huruf dibetulkan lebih dulu.
 - Penulis yang dialihkan: LabelingBoning (Boning), InputHasilRepack (Repack),
   LabelingGoodsReceiptProduct (GR Product), InputReturnItems (Sales Return),
   ScanStockTake (Opname), ScanTally (relabel), FoundItemScanner (Temuan).

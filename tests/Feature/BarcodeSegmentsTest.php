@@ -77,14 +77,14 @@ class BarcodeSegmentsTest extends TestCase
 
     public function test_a_barcode_is_taken_apart_by_position_and_round_trips(): void
     {
-        $barcode = '1'.'150626'.'MT0010'.'3'.BarcodeSegments::weight(5747.66).'08'.'55'.'0007';
+        $barcode = '1'.'150626'.'100100'.'3'.BarcodeSegments::weight(5747.66).'08'.'55'.'0007';
 
         $this->assertSame(28, strlen($barcode));
 
         $this->assertSame([
             'origin' => '1',
             'date' => '150626',
-            'product' => 'MT0010',
+            'product' => '100100',
             'grade' => '3',
             'weight' => 5747.66,
             'pcs' => 8,
