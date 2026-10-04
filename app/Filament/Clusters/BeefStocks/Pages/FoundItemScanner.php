@@ -324,6 +324,9 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                 // Insert into BeefStock
                 $stock = BeefStock::create([
                     'barcode' => $finalBarcode,
+                    // Label Rusak: kalau barcode ASLI diisi dan dikenal, batchnya
+                    // dibawa (origin tetap 0, penanda temuan). Kalau tidak, kosong.
+                    'batch_no' => \App\Support\BatchLookup::forBarcode($legacyBarcode),
                     'product_id' => $data['product_id'],
                     'warehouse_id' => $data['warehouse_id'],
                     'grade_id' => $data['grade_id'],

@@ -11,7 +11,7 @@ use App\Services\WarehouseFreezeService;
 
 class BeefStock extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, LogsActivity, \App\Models\Concerns\InheritsBatch;
 
     protected static function booted()
     {
@@ -36,6 +36,7 @@ class BeefStock extends Model
 
     protected $fillable = [
         'barcode',
+        'batch_no',
         'product_id',
         'warehouse_id',
         'grade_id',

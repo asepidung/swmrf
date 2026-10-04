@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class GoodsReceiptProductItem extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, \App\Models\Concerns\InheritsBatch;
 
     protected $guarded = ['id'];
 

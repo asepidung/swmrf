@@ -25,7 +25,7 @@ class RepackResult extends Model
         static::updated($cabut);
         static::deleted($cabut);
     }
-    use HasFactory, SoftDeletes, LogsActivity;
+    use HasFactory, SoftDeletes, LogsActivity, \App\Models\Concerns\InheritsBatch;
 
     protected $table = 'repack_results';
 
@@ -35,6 +35,7 @@ class RepackResult extends Model
         'warehouse_id',
         'grade_id',
         'barcode',
+        'batch_no',
         'weight',
         'qty_pcs',
         'ph_level',

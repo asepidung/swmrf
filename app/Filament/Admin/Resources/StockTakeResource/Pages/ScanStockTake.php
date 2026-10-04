@@ -541,6 +541,9 @@ class ScanStockTake extends Page implements HasForms, HasTable
                 $insertedItem = StockTakeItem::create([
                     'stock_take_id' => $this->record->id,
                     'barcode' => $barcode,
+                    // Batch dibawa dari barcode ASAL kalau dikenal; temuan tanpa label
+                    // dan barcode legacy tidak punya batch (kosong).
+                    'batch_no' => \App\Support\BatchLookup::forBarcode($data['barcode'] ?? null),
                     'product_id' => $data['product_id'],
                     'warehouse_id' => $data['warehouse_id'],
                     'grade_id' => $data['grade_id'],

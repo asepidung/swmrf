@@ -1623,5 +1623,6 @@
     "The weight was too large for one barcode, so it was split evenly into :count labels.": "Beratnya terlalu besar untuk satu barcode, jadi dibagi rata menjadi :count label.",
     "Usual maximum weight per label (kg)": "Berat wajar maksimum per label (kg)",
     "Above this the operator is asked to confirm the weight. Leave empty for 100 kg.": "Di atas angka ini operator diminta mengonfirmasi beratnya. Kosongkan untuk 100 kg.",
+    "Batch": "Batch",
     "Required: say where and why this item was found.": "Wajib: tulis di mana dan kenapa barang ini ditemukan."
 }

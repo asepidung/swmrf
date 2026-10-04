@@ -10,11 +10,12 @@ use Spatie\Activitylog\LogOptions;
 
 class StockTakeItem extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, LogsActivity, \App\Models\Concerns\InheritsBatch;
 
     protected $fillable = [
         'stock_take_id',
         'barcode',
+        'batch_no',
         'product_id',
         'warehouse_id',
         'grade_id',

@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class BoningItem extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity;
+    use HasFactory, SoftDeletes, LogsActivity, \App\Models\Concerns\InheritsBatch;
 
     protected $table = 'boning_items';
 
@@ -26,6 +26,7 @@ class BoningItem extends Model
         'pack_date',
         'exp_date',
         'barcode',
+        'batch_no',
         'created_by'
     ];
 

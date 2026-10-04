@@ -243,6 +243,7 @@ Tables\Actions\Action::make('scan')
                             foreach ($unexpectedItems as $item) {
                                 \App\Models\BeefStock::create([
                                     'barcode' => $item->barcode,
+                                    'batch_no' => $item->batch_no,
                                     'product_id' => $item->product_id,
                                     'warehouse_id' => $item->warehouse_id,
                                     'grade_id' => $item->grade_id,

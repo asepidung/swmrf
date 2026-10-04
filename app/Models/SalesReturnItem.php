@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SalesReturnItem extends Model
 {
+    use \App\Models\Concerns\InheritsBatch;
+
     protected $fillable = [
         'sales_return_id',
         'invoice_id',
@@ -15,6 +17,7 @@ class SalesReturnItem extends Model
         'warehouse_id',
         'grade_id',
         'barcode',
+        'batch_no',
         'weight',
         'credited_weight',
         'qty_pcs',
