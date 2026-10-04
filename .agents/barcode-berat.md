@@ -137,3 +137,47 @@ sampai < 10.000 kg per label**; barang lain tidak pernah sah melewati 100 kg.
 4. `pcs` tetap 2 digit -- data: pcs >= 100 selalu salah ketik; ikut
    peringatan (batas 99).
 
+
+## Keputusan Owner, 5 Oktober 2026 (issue #497) -- batch dan relabel
+
+Dibahas panjang setelah #486 selesai. Yang diputuskan:
+
+1. **Batch barang = nomor dokumen induk produksi yang sebenarnya**: Boning
+   (`doc_no`, mis. `BN26001`), Repack (`doc_no`, `RP#26001`), penerimaan
+   produk (`gr_number`), retur (`return_number`). Tidak ada induk atau tidak
+   diketahui -> kosong ("tanpa batch").
+2. **Batch di KOLOM database (`batch_no`), BUKAN segmen barcode.** Barcode
+   tetap 28 digit. Yang sempat dipertimbangkan: `origin(1) + batch(5) +
+   ddmmyy(6) + ...` (33 digit). Ditolak karena: awalan urutan harus berubah
+   jadi `origin+batch+tanggal` di tujuh modul; batas 999 dokumen per tahun
+   untuk lebar tetap 5 digit; nomor Boning dan Repack bisa sama (`26001`)
+   sehingga hanya origin yang membedakan -- dan origin tidak lagi menunjuk
+   modul induk setelah relabel/opname; barcode lama jadi "asing"; garis
+   barcode di label makin mepet. Kolom menyimpan nomor dokumen utuh dan
+   bisa diperbaiki belakangan tanpa mengganti label yang menempel di dus.
+3. **Batch ikut barangnya.** `InheritsBatch` (di delapan model berbarcode)
+   mewarisi batch dari barcode yang sama di tabel lain saat baris dibuat
+   (`App\Support\BatchLookup`); jadi tempat yang memindahkan stok (tally,
+   unscan, mutasi, opname) tidak perlu mengingatnya. Hanya penulis dari
+   dokumen induk (Boning, Repack, penerimaan, retur repack) mengisinya sendiri.
+4. **Relabel Tally membawa origin ASLI barcode lama** (bukan `6`): relabel
+   menandai ulang barang yang sama. Barcode legacy dipetakan lewat
+   `BarcodeHelper::LEGACY_ORIGIN`. Kolom `tally_items.original_barcode`
+   menyimpan barcode asal (yang PERTAMA). Baris movement `TALLY` lama tidak
+   lagi ditulis ulang barcodenya (memutus riwayat per barcode); penghubungnya
+   `TALLY_RELABEL` + `original_barcode`. Origin `6` / `RLB-TL` tetap terbaca
+   untuk barcode lama yang sudah ada.
+5. **Konsekuensi teknis dari poin 4:** label boning dan label relabel kini
+   sama-sama berawalan `1`, jadi `BarcodeSequence` selalu melihat SEMUA tabel
+   barcode (bukan hanya tabel milik pemanggil), supaya urutan tidak kembar
+   dan `beef_stocks.barcode` (UNIK) tidak gagal jauh dari penyebabnya.
+6. **Label Rusak (Found Item)**: barcode ASLI yang dikenal -> batch dibawa;
+   origin tetap `0` (penanda temuan). **Catatan wajib diisi.** Opsi lain
+   (tampung + persetujuan orang kedua; menu dimatikan) dibahas dan tidak
+   dipilih; tidak ada batas tanggal pack. Opname Manual Input memakai
+   aturan batch yang sama.
+7. **Nomor opname** jadi `ST#26001` (tahun + 3 digit); bentuk lama
+   `ST#2610001` tidak punya alasan tertulis (diperkenalkan 7 Juli 2026).
+8. **Nomor opname/Tally BUKAN batch.** `TS#...` hanya dokumen pemuatan, dan
+   opname tidak melahirkan barang produksi; memakai nomornya sebagai batch
+   akan terbaca sebagai induk produksi yang salah.

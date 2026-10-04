@@ -50,14 +50,15 @@ class CreateStockTake extends CreateRecord
         }
 
         $date = \Carbon\Carbon::parse($data['date']);
-        $yymm = $date->format('ym');
-        
-        // Bulannya sudah terkandung di prefix (ST#yymm), jadi penyaring
-        // whereYear/whereMonth tidak lagi diperlukan.
+        // `ST#` + tahun (2 digit) + urutan 3 digit, mis. `ST#26001`. Opname
+        // sebulan sekali, jadi urutan 001-012 per tahun lebih dari cukup --
+        // keputusan Owner 5 Oktober 2026. Bentuk lamanya (`ST#2610001`,
+        // tahun+bulan+urutan, urutan mulai dari 001 lagi tiap bulan) tidak
+        // punya alasan tertulis di mana pun; bulannya mubazir.
         $data['document_number'] = DocumentNumber::next(
             query: StockTake::withTrashed(),
             column: 'document_number',
-            prefix: 'ST#'.$yymm,
+            prefix: 'ST#'.$date->format('y'),
             padding: 3,
         );
         $data['created_by'] = auth()->id();

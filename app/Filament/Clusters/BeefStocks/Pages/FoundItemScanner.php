@@ -246,8 +246,14 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                             ->label(__('Show the expiry date on the label?'))
                             ->default(false)
                             ->columnSpanFull(),
+                        // Wajib (keputusan Owner 5 Oktober 2026, issue #497):
+                        // Found Item adalah satu-satunya jalan yang menambah
+                        // persediaan tanpa dokumen asal, jadi satu-satunya
+                        // jejaknya adalah alasan yang ditulis orangnya.
                         Forms\Components\Textarea::make('note')
                             ->label(__('Note'))
+                            ->helperText(__('Required: say where and why this item was found.'))
+                            ->required()
                             ->rows(2)
                             ->columnSpanFull(),
                     ])
