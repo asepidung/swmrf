@@ -463,20 +463,9 @@ class ScanStockTake extends Page implements HasForms, HasTable
     private function buatTemuanManual(array $data, ?string $barcode, bool $generateNew): StockTakeItem
     {
         if ($generateNew) {
-                    $oldPrefix = !empty($barcode) ? substr($barcode, 0, 1) : null;
-                    
-                    // Legacy to New Origin Mapping
-                    $legacyMap = [
-                        '1' => '1', // Boning -> Boning
-                        '2' => '7', // Trading Lokal -> TRD-LC
-                        '3' => '2', // Repack Stock -> R-STCK
-                        '4' => '6', // Relabel Tally -> RLB-TL
-                        '5' => '3', // Repack Import -> R-IMPT
-                        '6' => '4', // Repack Return -> R-RTRN
-                        '7' => '5', // Repack Trading -> R-TRDG
-                    ];
-                    
-                    $origin = $legacyMap[$oldPrefix] ?? '0'; // Default '0' for manual/unknown finding without label
+                    // Origin diturunkan dari awalan barcode lama (legacy) --
+                    // satu rumah di BarcodeHelper; '0' untuk temuan tanpa label.
+                    $origin = \App\Helpers\BarcodeHelper::originDigitFor($barcode);
 
                     $dateStr = \Carbon\Carbon::parse($data['pack_date'] ?? now())->format('dmy');
                     $product = \App\Models\Product::find($data['product_id']);

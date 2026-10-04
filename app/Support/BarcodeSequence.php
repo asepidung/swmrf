@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Urutan empat digit terakhir sebuah barcode SWM.
@@ -52,6 +53,8 @@ class BarcodeSequence
     {
         $terbesar = 0;
 
+        $queries = array_merge($queries, self::semuaTabelBarcode());
+
         foreach ($queries as $query) {
             $nilai = $query
                 ->where('barcode', 'like', $prefix.'%')
@@ -73,5 +76,38 @@ class BarcodeSequence
     public static function nextPadded(string $prefix, array $queries): string
     {
         return str_pad((string) self::next($prefix, $queries), self::PANJANG, '0', STR_PAD_LEFT);
+    }
+    /**
+     * SEMUA tabel yang menyimpan barcode, termasuk yang sudah dihapus lunak.
+     *
+     * Sejak relabel Tally membawa origin ASLI barang (issue #497, bukan lagi
+     * `6` miliknya sendiri), satu awalan `origin + tanggal` bisa dilahirkan
+     * lebih dari satu tempat: label boning dan label relabel sama-sama
+     * berawalan `1`. Penghitung yang hanya melihat tabelnya sendiri bisa
+     * memberi nomor urut yang sama pada dua karton yang segalanya sama --
+     * dan `beef_stocks.barcode` UNIK, jadi yang kedua gagal di tempat yang
+     * jauh dari penyebabnya. Karena itu setiap penghitung ikut melihat
+     * semuanya, apa pun tabel yang ia sebut sendiri.
+     *
+     * @return array<int, Builder>
+     */
+    private static function semuaTabelBarcode(): array
+    {
+        $models = [
+            \App\Models\BoningItem::class,
+            \App\Models\RepackResult::class,
+            \App\Models\GoodsReceiptProductItem::class,
+            \App\Models\SalesReturnItem::class,
+            \App\Models\StockTakeItem::class,
+            \App\Models\TallyItem::class,
+            \App\Models\BeefStock::class,
+        ];
+
+        return array_map(
+            fn (string $model): Builder => in_array(SoftDeletes::class, class_uses_recursive($model), true)
+                ? $model::withTrashed()
+                : $model::query(),
+            $models,
+        );
     }
 }
