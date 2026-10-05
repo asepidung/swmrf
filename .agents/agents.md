@@ -6840,3 +6840,27 @@ Pembuktian menggigit (#486 langkah 2): pemeriksaan konfirmasi di Boning
 dimatikan sementara, test "berat tidak wajar bertanya dulu" merah; dipulihkan,
 semua hijau. Suite penuh: 1295 lulus, 1 gagal (`ResourceHasPolicyTest`, sudah
 merah di `main` dan diperbaiki PR Policy terpisah).
+
+
+## #504 -- Blok legal di tujuh label produk, 5 Oktober 2026
+
+Pekerjaan Owner (dikerjakan lokal, di-commit Hafizh atas permintaan Owner).
+**Menggantikan PR cloud #496** (#495, logo halal rebah hanya di label Boning)
+-- template di #496 tidak dimerge; PR itu ditutup dengan rujukan ke sini.
+
+- Partial `print.partials.legal-block` = logo `halalrebah.png` (lebar 100%
+  selnya, tinggi `auto`, rasio terjaga) + empat baris nomor: Halal Gudang,
+  NKV RPH, NKV Gudang, Reg Produk. Dipakai ketujuh label: boning, repack,
+  GR product, sales return, tally item, stock take, beef stock.
+- Nomornya **satu rumah: `config/label.php`** -- sertifikat ada masa
+  berlakunya; ganti di sana, jangan diketik ulang di Blade mana pun. Logo
+  rebah sendiri memuat nomor halal di dalam gambarnya -- kalau nomor itu
+  berubah, gambarnya yang diganti.
+- Teks lama `ID00110015321510124` / `RPHR 3201170-027` di label Boning
+  dihapus. Catatan dari sesi cloud (#496) yang tetap berlaku: nomor halal di
+  logo (`ID00310000134840521`) berbeda dari nomor lama yang dulu tercetak.
+- `LabelLegalBlockTest` menjaga ketujuh label memakai partial dan nomornya
+  dari config.
+- Belum ditangani (temuan sesi cloud #496): nama produk panjang mendorong
+  tabel label Boning melebihi area cetak 69 mm sehingga barcode bisa
+  terpotong. Perlu uji cetak Owner.
