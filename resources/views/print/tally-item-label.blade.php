@@ -90,8 +90,8 @@
                             {{ strtoupper($item->product->name) }}
                         </span>
                     </td>
-                    <td colspan="2" rowspan="5" align="center" valign="middle">
-                        <img src="{{ asset('img/halal.png') }}" alt="HALAL" height="100" align="absmiddle">
+                    <td colspan="2" rowspan="6" align="center" valign="middle">
+                        @include('print.partials.legal-block')
                     </td>
                 </tr>
                 <tr>
@@ -142,9 +142,6 @@
                             KEEP FROZEN -18°C
                             @endif
                         </span>
-                    </td>
-                    <td style="font-size: 10px; text-align: center;">
-                        ID00110015321510124<br>RPHR 3201170-027
                     </td>
                 </tr>
                 <tr>
