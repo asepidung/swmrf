@@ -144,7 +144,10 @@ class ProductResource extends Resource
                             ->label(fn() => __('Set Active'))
                             ->default(true)
                             ->visibleOn('edit'),
-                    ])->columns(2)
+                    ])->columns(2),
+
+                // BOM sebagai baris-baris di form ini (#507), bukan panel modal.
+                ProductResource\Forms\BillOfMaterialSection::make(),
             ]);
     }
 
@@ -208,9 +211,13 @@ class ProductResource extends Resource
                         }, 'Beefs.xlsx');
                     }),
             ])
+            ->modifyQueryUsing(fn (Builder $query) => $query->withCount('billOfMaterials'))
             ->defaultSort('name')
             ->actions([
-                // Clickable rows handles edit redirection, actions left clean per project rules
+                // Baris yang bisa diklik tetap membuka halaman Edit. Satu-satunya
+                // tombol: BOM (Owner, 7 Oktober 2026), supaya bahan produk bisa
+                // diisi dari daftar tanpa membuka tiap produk.
+                ProductResource\Forms\BillOfMaterialSection::tableAction(),
             ])
             ->recordUrl(
                 fn (Product $record): string => Pages\EditProduct::getUrl([$record->id])
@@ -233,9 +240,7 @@ class ProductResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            ProductResource\RelationManagers\BillOfMaterialsRelationManager::class,
-        ];
+        return [];
     }
 
     public static function getPages(): array

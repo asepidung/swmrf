@@ -20,6 +20,9 @@ class ProductMaterial extends Model
      * disalin ke salah satunya saja, salinan itu akan berbeda pada perubahan
      * berikutnya. Nilainya mengikuti bentuk stok daging yang sudah ada: satu
      * baris `beef_stocks` adalah satu BOX berbarcode, dan `qty_pcs` isinya.
+     * Karung (Bone) TIDAK punya dasar sendiri: satu label = satu karung, jadi
+     * karung diisi `box`. Dasar `sack` sempat ada (7 Oktober 2026) lalu dibuang
+     * atas keputusan Owner karena artinya sama dengan `box`.
      */
     public const BASIS = [
         'box' => 'Per Box',

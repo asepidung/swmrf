@@ -173,6 +173,23 @@ class BomUsageTest extends TestCase
     }
 
     /** @test */
+    public function a_sack_for_bone_is_a_per_box_row_and_counts_one_per_label(): void
+    {
+        // Bone dikemas karung, bukan box (Owner, 7 Oktober 2026): satu label
+        // satu karung, jadi karung diisi `Per Box` dan jumlahnya jumlah label.
+        $karung = Material::create([
+            'code' => 'MAT-KARUNG', 'name' => 'KARUNG', 'material_category_id' => $this->karton->material_category_id,
+            'material_unit_id' => $this->karton->material_unit_id, 'min_stock' => 0, 'is_active' => true,
+        ]);
+        ProductMaterial::create(['product_id' => $this->bone->id, 'material_id' => $karung->id, 'quantity' => 1, 'basis' => 'box']);
+
+        $result = BomUsageCalculator::calculate($this->boningWithItems()->items);
+
+        $this->assertSame(1.0, (float) $result['usage'][$karung->id]);
+        $this->assertSame([], $result['without_bom']);
+    }
+
+    /** @test */
     public function a_bom_row_with_null_quantity_is_skipped_but_reported(): void
     {
         $boning = $this->boningWithItems();
