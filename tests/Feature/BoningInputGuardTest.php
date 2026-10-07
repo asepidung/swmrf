@@ -86,16 +86,6 @@ class BoningInputGuardTest extends TestCase
         $this->assertStringContainsString("'max:5.7'", $field);
     }
 
-    /** Qty pemakaian material wajib lebih dari nol. */
-    public function test_material_usage_quantity_must_be_positive(): void
-    {
-        $source = $this->pageSource('MaterialUsageBoning.php');
-        $field = substr($source, strpos($source, "TextInput::make('qty')"), 900);
-
-        $this->assertStringNotContainsString('->numeric()', $field);
-        $this->assertStringContainsString("'gt:0'", $field);
-    }
-
     /** Helper penomoran memang dipakai, bukan sekadar ada. */
     public function test_the_shared_numbering_helper_is_used(): void
     {

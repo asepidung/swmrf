@@ -6882,3 +6882,40 @@ Pekerjaan Owner (dikerjakan lokal, di-commit Hafizh atas permintaan Owner).
 - Belum ditangani (temuan sesi cloud #496): nama produk panjang mendorong
   tabel label Boning melebihi area cetak 69 mm sehingga barcode bisa
   terpotong. Perlu uji cetak Owner.
+
+## #509 langkah 2 -- Pemakaian Material Boning/Repack jadi tampilan BOM terkunci, 7 Oktober 2026
+
+Halaman Pemakaian Material - Boning dan - Repack tidak lagi sebuah form yang
+menulis `MaterialUsage` (yang MEMOTONG STOK). Keputusan Owner 7 Oktober 2026:
+"jangan memotong stock, karena ayah masih beda prinsip sama bos".
+
+- Halaman hanya MENAMPILKAN kebutuhan bahan menurut BOM (`BomUsageCalculator`),
+  dihitung ulang dari label terkini tiap kali dibuka. Produk tanpa BOM dan
+  baris BOM "jumlah tidak tetap" tampil sebagai peringatan, tidak dihitung.
+- **Terkunci di server, bukan cuma di tampilan**: tidak ada field yang bisa
+  diubah, tombol Save dihapus, dan `handleRecordUpdate` mengembalikan record
+  tanpa menulis. Satu rumah untuk dua halaman: trait
+  `App\Filament\Concerns\ShowsBomMaterialUsage` (Boning dan Repack hanya beda
+  relasi label: `items` vs `results`).
+- Tombol "Isi dari BOM" (#485) dibuang, dan dua kunci bahasanya. Test
+  `test_material_usage_quantity_must_be_positive` (BoningInputGuardTest)
+  dilepas karena field qty-nya sudah tidak ada; penjaga serupa untuk qty bahan
+  terbuang dibuat di langkah 4.
+- **Data lama:** `material_usages` dari boning/repack dihitung di lokal DAN
+  hosting `coba.` (hanya SELECT): 0 baris, 0 pergerakan stok
+  `MATERIAL_USAGE*`. Tidak ada yang perlu dibalik.
+- **Syarat Lock dilonggarkan sementara.** Dulu tombol Lock di daftar Boning dan
+  Repack tersembunyi sampai `materialUsages()` ada isinya. Halaman ini tidak
+  lagi menulis baris itu, jadi syaratnya tidak akan pernah terpenuhi dan
+  dokumen tidak bisa dikunci. Syaratnya dicabut. **Syarat pengganti (drylog
+  wajib diisi) datang di langkah 3** -- langkah 2 dan 3 sebaiknya
+  di-deploy berdekatan; di antaranya dokumen bisa dikunci tanpa drylog.
+- Belum ada snapshot saat dikunci (langkah 3), belum ada drylog/bahan
+  terbuang (langkah 3-4), belum ada cetak/ekspor/laporan (langkah 5).
+- Tanpa migrasi dan tanpa izin baru.
+
+**Test:** `BomUsageTest` ditulis ulang: contoh Tenderloin 3 label (cryovac 15,
+linier 3, karton tutup/bawah 3), halaman Boning dan Repack menampilkan BOM +
+peringatan, aksi fill_from_bom tidak ada, menyimpan dan permintaan Livewire
+langsung tidak melahirkan `MaterialUsage`/`MaterialStockMovement` dan saldo
+tetap, dokumen terkunci tidak bisa membuka halaman.

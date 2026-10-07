@@ -10,6 +10,8 @@ use App\Models\Grade;
 use App\Models\Material;
 use App\Models\MaterialCategory;
 use App\Models\MaterialStock;
+use App\Models\MaterialStockMovement;
+use App\Models\MaterialUsage;
 use App\Models\MaterialUnit;
 use App\Models\Permission;
 use App\Models\Product;
@@ -27,12 +29,10 @@ use Tests\TestCase;
 /**
  * Issue #344 (susulan): BOM -> pemakaian bahan per Boning/Repack.
  *
- * BOM MENGUSULKAN, manusia MEMUTUSKAN -- keputusan Owner 7 September
- * 2026 (`.agents/hpp.md` §3): potongan stok tetap dilakukan manual per
- * box/ikat, bukan otomatis, karena menghitung satuan kecil (plastik,
- * lembar) di lapangan tidak mungkin. Tombol "Fill from BOM" hanya
- * MENGISI Repeater `MaterialUsage`-nya; menyimpan tetap lewat tombol
- * Save biasa, dan qty-nya masih bisa diedit lebih dulu.
+ * Sejak #509 (Owner, 7 Oktober 2026) halaman pemakaian material Boning/Repack
+ * hanya MENAMPILKAN kebutuhan bahan menurut BOM -- otomatis, terkunci, dan
+ * TIDAK memotong stok. Tombol "Fill from BOM" (#485) sudah dibuang. Potongan
+ * stok tetap manual lewat Material Usage > Create Manual Usage.
  */
 class BomUsageTest extends TestCase
 {
@@ -211,80 +211,121 @@ class BomUsageTest extends TestCase
         $this->assertSame(10, $silverside['pcs']);
     }
 
-    // =========================================================================
-    // Halaman MaterialUsageBoning
-    // =========================================================================
-
     /** @test */
-    public function fill_from_bom_populates_the_repeater_without_removing_a_manual_row(): void
+    public function a_tenderloin_with_three_labels_needs_the_expected_materials(): void
     {
-        $boning = $this->boningWithItems();
+        // Contoh dari #509: 3 label (5, 4, 6 pcs) -> cryovac per pcs = 15,
+        // linier per box = 3, karton tutup dan bawah per box = 3 masing-masing.
+        $tenderloin = Product::create([
+            'code' => '900001', 'name' => 'TENDERLOIN', 'category_id' => $this->topside->category_id,
+            'structure_type' => 'main', 'is_active' => true,
+        ]);
+        $material = fn (string $name): Material => Material::create([
+            'code' => 'M-'.$name, 'name' => $name, 'material_category_id' => $this->karton->material_category_id,
+            'material_unit_id' => $this->karton->material_unit_id, 'min_stock' => 0, 'is_active' => true,
+        ]);
+        $cryovac = $material('CRYOVAC');
+        $linier = $material('LINIER');
+        $tutup = $material('KARTON TUTUP');
+        $bawah = $material('KARTON BAWAH');
+        ProductMaterial::create(['product_id' => $tenderloin->id, 'material_id' => $cryovac->id, 'quantity' => 1, 'basis' => 'piece']);
+        ProductMaterial::create(['product_id' => $tenderloin->id, 'material_id' => $linier->id, 'quantity' => 1, 'basis' => 'box']);
+        ProductMaterial::create(['product_id' => $tenderloin->id, 'material_id' => $tutup->id, 'quantity' => 1, 'basis' => 'box']);
+        ProductMaterial::create(['product_id' => $tenderloin->id, 'material_id' => $bawah->id, 'quantity' => 1, 'basis' => 'box']);
 
-        $state = Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
-            ->fillForm([
-                'materialUsages' => [
-                    'manual-1' => ['material_id' => $this->drylog->id, 'qty' => 7, 'note' => 'manual, dari BOM tidak tetap'],
-                ],
-            ])
-            ->callAction('fill_from_bom')
-            ->assertHasNoActionErrors()
-            ->get('data.materialUsages');
+        $boning = Boning::create(['boning_date' => now()->toDateString(), 'created_by' => $this->user->id]);
+        foreach ([5, 4, 6] as $i => $pcs) {
+            BoningItem::create([
+                'boning_id' => $boning->id, 'product_id' => $tenderloin->id,
+                'warehouse_id' => $this->warehouse->id, 'grade_id' => $this->grade->id,
+                'weight' => 10, 'qty_pcs' => $pcs, 'pack_date' => now()->toDateString(),
+                'barcode' => 'BC-TEN-'.$i, 'created_by' => $this->user->id,
+            ]);
+        }
 
-        $byMaterial = collect($state)->keyBy('material_id');
+        $usage = BomUsageCalculator::calculate($boning->fresh()->items)['usage'];
 
-        // Baris manual (DRYLOG) tetap ada dengan qty aslinya.
-        $this->assertSame(7, (int) $byMaterial[$this->drylog->id]['qty']);
-        // Baris hasil BOM ditambahkan.
-        $this->assertSame(5, (int) $byMaterial[$this->karton->id]['qty']);
-        $this->assertSame(24, (int) $byMaterial[$this->plastik->id]['qty']);
+        $this->assertSame(15, (int) $usage[$cryovac->id]);
+        $this->assertSame(3, (int) $usage[$linier->id]);
+        $this->assertSame(3, (int) $usage[$tutup->id]);
+        $this->assertSame(3, (int) $usage[$bawah->id]);
+    }
+
+    // =========================================================================
+    // Halaman Pemakaian Material Boning/Repack (#509): menampilkan BOM,
+    // terkunci, TIDAK memotong stok.
+    // =========================================================================
+
+    private function assertNothingWasWritten(): void
+    {
+        $this->assertSame(0, MaterialUsage::count());
+        $this->assertSame(0, MaterialStockMovement::count());
+        $this->assertSame(1000.0, (float) MaterialStock::where('material_id', $this->karton->id)->value('qty'));
+        $this->assertSame(1000.0, (float) MaterialStock::where('material_id', $this->plastik->id)->value('qty'));
     }
 
     /** @test */
-    public function fill_from_bom_overwrites_an_existing_row_for_the_same_material_instead_of_duplicating(): void
+    public function the_boning_page_shows_the_bom_usage_and_warnings(): void
     {
         $boning = $this->boningWithItems();
 
-        $state = Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
-            ->fillForm([
-                'materialUsages' => [
-                    'existing-karton' => ['material_id' => $this->karton->id, 'qty' => 999, 'note' => null],
-                ],
-            ])
-            ->callAction('fill_from_bom')
-            ->get('data.materialUsages');
+        $page = Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
+            ->assertSuccessful()
+            ->assertSee('KARTON')
+            ->assertSee('PLASTIK')
+            // BONE tanpa BOM dan baris DRYLOG "jumlah tidak tetap" -> peringatan.
+            ->assertSee(__('No BOM').': BONE')
+            ->assertSee(__('Variable quantity, filled in manually').': TOPSIDE -- DRYLOG');
 
-        // Baris KARTON yang sudah ada DITIMPA (kunci array-nya tetap sama),
-        // bukan ditambah baris baru di sebelahnya -- totalnya 2 (karton +
-        // plastik yang baru), bukan 3.
-        $this->assertCount(2, $state);
-        $this->assertSame(5, (int) $state['existing-karton']['qty']);
+        $usage = $page->instance()->bomUsage();
+        $byMaterial = collect($usage['rows'])->keyBy('material');
+        $this->assertSame(5, (int) $byMaterial['KARTON']['qty']);
+        $this->assertSame(24, (int) $byMaterial['PLASTIK VAKUM']['qty']);
+        $this->assertFalse($byMaterial->has('DRYLOG'));
     }
 
     /** @test */
-    public function saving_after_fill_from_bom_deducts_stock_by_the_computed_amount(): void
+    public function the_fill_from_bom_action_is_gone_because_the_section_is_automatic(): void
     {
         $boning = $this->boningWithItems();
-
-        $state = Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
-            ->callAction('fill_from_bom')
-            ->get('data.materialUsages');
 
         Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
-            ->fillForm(['materialUsages' => $state])
-            ->call('save')
-            ->assertHasNoFormErrors();
-
-        $this->assertSame(1000 - 5.0, (float) MaterialStock::where('material_id', $this->karton->id)->value('qty'));
-        $this->assertSame(1000 - 24.0, (float) MaterialStock::where('material_id', $this->plastik->id)->value('qty'));
+            ->assertActionDoesNotExist('fill_from_bom');
     }
 
-    // =========================================================================
-    // Halaman MaterialUsageRepack -- struktur `repack_results` sama persis
-    // dengan `boning_items` (satu baris = satu box, `qty_pcs` isinya).
-    // =========================================================================
+    /** @test */
+    public function saving_the_boning_page_writes_nothing_and_leaves_stock_alone(): void
+    {
+        $boning = $this->boningWithItems();
+
+        Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
+            ->call('save');
+
+        $this->assertNothingWasWritten();
+    }
+
+    /**
+     * Menyembunyikan tombol Save tidak menutup permintaan langsung: baris yang
+     * dikirim lewat Livewire ke `data.materialUsages` tidak boleh melahirkan
+     * MaterialUsage -- yang memotong stok.
+     *
+     * @test
+     */
+    public function a_direct_request_cannot_create_a_usage_row_that_would_cut_stock(): void
+    {
+        $boning = $this->boningWithItems();
+
+        Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
+            ->set('data.materialUsages', [
+                'x' => ['material_id' => $this->karton->id, 'qty' => 999, 'note' => 'langsung'],
+            ])
+            ->call('save');
+
+        $this->assertNothingWasWritten();
+    }
 
     /** @test */
-    public function fill_from_bom_works_for_repack_using_repack_results(): void
+    public function the_repack_page_shows_the_bom_usage_from_repack_results_and_writes_nothing(): void
     {
         $repack = Repack::create(['repack_date' => now()->toDateString(), 'created_by' => $this->user->id]);
 
@@ -297,13 +338,25 @@ class BomUsageTest extends TestCase
             ]);
         }
 
-        $state = Livewire::test(MaterialUsageRepack::class, ['record' => $repack->getRouteKey()])
-            ->callAction('fill_from_bom')
-            ->get('data.materialUsages');
+        $page = Livewire::test(MaterialUsageRepack::class, ['record' => $repack->getRouteKey()])
+            ->assertSuccessful()
+            ->assertActionDoesNotExist('fill_from_bom');
 
-        $byMaterial = collect($state)->keyBy('material_id');
+        $byMaterial = collect($page->instance()->bomUsage()['rows'])->keyBy('material');
+        $this->assertSame(3, (int) $byMaterial['KARTON']['qty']);
+        $this->assertSame(24, (int) $byMaterial['PLASTIK VAKUM']['qty']);
 
-        $this->assertSame(3, (int) $byMaterial[$this->karton->id]['qty']);
-        $this->assertSame(24, (int) $byMaterial[$this->plastik->id]['qty']);
+        $page->set('data.materialUsages', ['x' => ['material_id' => $this->karton->id, 'qty' => 5]])->call('save');
+        $this->assertNothingWasWritten();
+    }
+
+    /** @test */
+    public function a_locked_document_cannot_open_the_page(): void
+    {
+        $boning = $this->boningWithItems();
+        $boning->forceFill(['kunci' => true])->save();
+
+        Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
+            ->assertForbidden();
     }
 }

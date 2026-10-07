@@ -1610,8 +1610,6 @@
     "Profit": "Profit",
     "Costings": "Costings",
     "Costing": "Costing",
-    "Fill from BOM": "Fill from BOM",
-    "Filled from BOM": "Filled from BOM",
     "No BOM": "No BOM",
     "Variable quantity, filled in manually": "Variable quantity, filled in manually",
     "Weight :weight kg does not fit in a barcode (maximum :max kg).": "Weight :weight kg does not fit in a barcode (maximum :max kg).",
@@ -1624,5 +1622,12 @@
     "Usual maximum weight per label (kg)": "Usual maximum weight per label (kg)",
     "Above this the operator is asked to confirm the weight. Leave empty for 100 kg.": "Above this the operator is asked to confirm the weight. Leave empty for 100 kg.",
     "Batch": "Batch",
-    "Required: say where and why this item was found.": "Required: say where and why this item was found."
+    "Required: say where and why this item was found.": "Required: say where and why this item was found.",
+    "Usage per BOM": "Usage per BOM",
+    "Calculated automatically from the BOM and the labels of this document. Read-only; it does not change material stock.": "Calculated automatically from the BOM and the labels of this document. Read-only; it does not change material stock.",
+    "No material usage according to the BOM.": "No material usage according to the BOM.",
+    "Basis of the calculation": "Basis of the calculation",
+    "Not counted in the figures above": "Not counted in the figures above",
+    "box": "box",
+    "pcs": "pcs"
 }

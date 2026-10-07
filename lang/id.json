@@ -1610,8 +1610,6 @@
     "Profit": "Laba",
     "Costings": "Costing",
     "Costing": "Costing",
-    "Fill from BOM": "Isi dari BOM",
-    "Filled from BOM": "Terisi dari BOM",
     "No BOM": "Tanpa BOM",
     "Variable quantity, filled in manually": "Jumlah tidak tetap, diisi manual",
     "Weight :weight kg does not fit in a barcode (maximum :max kg).": "Berat :weight kg tidak muat di barcode (maksimum :max kg).",
@@ -1624,5 +1622,12 @@
     "Usual maximum weight per label (kg)": "Berat wajar maksimum per label (kg)",
     "Above this the operator is asked to confirm the weight. Leave empty for 100 kg.": "Di atas angka ini operator diminta mengonfirmasi beratnya. Kosongkan untuk 100 kg.",
     "Batch": "Batch",
-    "Required: say where and why this item was found.": "Wajib: tulis di mana dan kenapa barang ini ditemukan."
+    "Required: say where and why this item was found.": "Wajib: tulis di mana dan kenapa barang ini ditemukan.",
+    "Usage per BOM": "Pemakaian menurut BOM",
+    "Calculated automatically from the BOM and the labels of this document. Read-only; it does not change material stock.": "Dihitung otomatis dari BOM dan label dokumen ini. Hanya untuk dibaca; tidak mengubah stok material.",
+    "No material usage according to the BOM.": "Tidak ada pemakaian material menurut BOM.",
+    "Basis of the calculation": "Dasar perhitungan",
+    "Not counted in the figures above": "Tidak dihitung dalam angka di atas",
+    "box": "box",
+    "pcs": "pcs"
 }
