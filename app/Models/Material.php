@@ -18,13 +18,11 @@ class Material extends Model
         'is_active',
         'show_in_stock',
         'content_per_unit',
-        'is_drylog',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'show_in_stock' => 'boolean',
-        'is_drylog' => 'boolean',
         'content_per_unit' => 'integer',
     ];
 

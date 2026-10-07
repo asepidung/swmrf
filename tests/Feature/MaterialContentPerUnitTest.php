@@ -13,7 +13,7 @@ use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
- * Issue #509, langkah 1: "Isi per satuan" dan penanda drylog di master material.
+ * Issue #509, langkah 1: "Isi per satuan" di master material.
  *
  * Material dibeli per satuan beli (1 Box @ Rp 1.000.000, isi 1.000 pcs) tetapi
  * dipakai dan dibuang per satuan pakai (pcs). Kolom `content_per_unit`
@@ -47,7 +47,7 @@ class MaterialContentPerUnitTest extends TestCase
     }
 
     /** @test */
-    public function a_material_defaults_to_one_per_unit_and_not_drylog(): void
+    public function a_material_defaults_to_one_per_unit(): void
     {
         $material = Material::create([
             'name' => 'KARTON',
@@ -58,22 +58,20 @@ class MaterialContentPerUnitTest extends TestCase
         ])->fresh();
 
         $this->assertSame(1, $material->content_per_unit);
-        $this->assertFalse($material->is_drylog);
     }
 
     /** @test */
-    public function the_content_per_unit_and_the_drylog_flag_are_saved_from_the_form(): void
+    public function the_content_per_unit_is_saved_from_the_form(): void
     {
         $this->actingAs($this->programmer());
 
         Livewire::test(CreateMaterial::class)
-            ->fillForm($this->payload(['is_drylog' => true]))
+            ->fillForm($this->payload())
             ->call('create')
             ->assertHasNoFormErrors();
 
         $material = Material::where('name', 'PLASTIK VAKUM')->firstOrFail();
         $this->assertSame(1000, $material->content_per_unit);
-        $this->assertTrue($material->is_drylog);
     }
 
     /** @test */
@@ -95,10 +93,10 @@ class MaterialContentPerUnitTest extends TestCase
     public function the_values_come_back_on_the_edit_form(): void
     {
         $this->actingAs($this->programmer());
-        $material = Material::create($this->payload(['is_active' => true, 'is_drylog' => true]));
+        $material = Material::create($this->payload(['is_active' => true]));
 
         Livewire::test(EditMaterial::class, ['record' => $material->id])
-            ->assertFormSet(['content_per_unit' => 1000, 'is_drylog' => true]);
+            ->assertFormSet(['content_per_unit' => 1000]);
     }
 
     /** @test */
@@ -149,5 +147,13 @@ class MaterialContentPerUnitTest extends TestCase
             ->assertHasNoFormErrors();
 
         $this->assertSame(0, (int) $material->fresh()->min_stock);
+    }
+
+    /** @test */
+    public function there_is_no_drylog_flag_on_a_material(): void
+    {
+        // Drylog hanya salah satu material (Owner, 7 Oktober 2026); halaman
+        // produksi memilihnya dari daftar, jadi master tidak punya penandanya.
+        $this->assertFalse(\Illuminate\Support\Facades\Schema::hasColumn('materials', 'is_drylog'));
     }
 }

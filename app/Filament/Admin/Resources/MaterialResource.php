@@ -120,11 +120,6 @@ class MaterialResource extends Resource
                             ->default(true)
                             ->live()
                             ->columnSpanFull(),
-                        Forms\Components\Toggle::make('is_drylog')
-                            ->label(fn() => __('Drylog Material'))
-                            ->helperText(__('Mark the material recorded as drylog on the boning and repack material usage pages.'))
-                            ->default(false)
-                            ->columnSpanFull(),
                         Forms\Components\Toggle::make('is_active')
                             ->label(fn() => __('Is Active'))
                             ->default(true)
@@ -163,9 +158,6 @@ class MaterialResource extends Resource
                     ->boolean(),
                 Tables\Columns\IconColumn::make('show_in_stock')
                     ->label(fn() => __('Show in Stock'))
-                    ->boolean(),
-                Tables\Columns\IconColumn::make('is_drylog')
-                    ->label(fn() => __('Drylog'))
                     ->boolean(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()

@@ -1626,8 +1626,5 @@
     "Batch": "Batch",
     "Required: say where and why this item was found.": "Wajib: tulis di mana dan kenapa barang ini ditemukan.",
     "Content per Unit": "Isi per Satuan",
-    "How many usage units (e.g. pcs) one purchase unit holds. Example: 1 Box of plastic holds 1,000 pcs, so enter 1000. Only used to value waste; purchasing and stock stay in the purchase unit.": "Berapa satuan pakai (mis. pcs) dalam satu satuan beli. Contoh: 1 Box plastik isi 1.000 pcs, maka isi 1000. Hanya dipakai untuk menilai bahan terbuang; pembelian dan stok tetap dalam satuan beli.",
-    "Drylog Material": "Material Drylog",
-    "Mark the material recorded as drylog on the boning and repack material usage pages.": "Tandai material yang dicatat sebagai drylog di halaman pemakaian material boning dan repack.",
-    "Drylog": "Drylog"
+    "How many usage units (e.g. pcs) one purchase unit holds. Example: 1 Box of plastic holds 1,000 pcs, so enter 1000. Only used to value waste; purchasing and stock stay in the purchase unit.": "Berapa satuan pakai (mis. pcs) dalam satu satuan beli. Contoh: 1 Box plastik isi 1.000 pcs, maka isi 1000. Hanya dipakai untuk menilai bahan terbuang; pembelian dan stok tetap dalam satuan beli."
 }
