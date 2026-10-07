@@ -111,29 +111,23 @@ class BillOfMaterialSection
                             // Live supaya judul baris (ringkasan) ikut berubah.
                             ->live()
                             ->selectablePlaceholder(false)
-                            ->columnSpan(['default' => 1, 'lg' => 2]),
-
-                        // Kosong BUKAN nol: kosong = "dipakai, jumlahnya tidak
-                        // tetap" (Drylog). Placeholder menyatakannya langsung
-                        // di kolomnya supaya sel kosong tidak terbaca seperti
-                        // isian yang terlupa. Satuan bahan jadi akhiran, jadi
-                        // barisnya terbaca "1 DUS per box".
-                        Forms\Components\TextInput::make('quantity')
-                            ->label('')
-                            ->hiddenLabel()
-                            ->placeholder(__('Not fixed'))
-                            ->extraInputAttributes(['inputmode' => 'numeric'])
-                            ->rules(['nullable', 'integer', 'min:1'])
-                            ->live(onBlur: true)
-                            ->suffix(__('pcs'))
                             ->columnSpan(['default' => 1, 'lg' => 3]),
+
+                        // Tidak ada isian jumlah (Owner, 7 Oktober 2026): yang menentukan
+                        // hanya bahan ini dihitung per pcs atau per box di produk ini,
+                        // jumlahnya selalu 1. Kolom `quantity` tetap ada di database dan
+                        // DIBAWA apa adanya: baris baru berisi 1, baris lama yang
+                        // jumlahnya 2/6/10 atau kosong (drylog "tidak tetap") tidak
+                        // diubah diam-diam.
+                        Forms\Components\Hidden::make('quantity')
+                            ->default(1),
 
                         Forms\Components\TextInput::make('note')
                             ->label('')
                             ->hiddenLabel()
                             ->placeholder(__('Note (optional)'))
                             ->maxLength(500)
-                            ->columnSpan(['default' => 1, 'lg' => 2]),
+                            ->columnSpan(['default' => 1, 'lg' => 4]),
                     ]);
     }
 
@@ -295,15 +289,12 @@ class BillOfMaterialSection
         $unit = __('pcs');
 
         if ($quantity === null || $quantity === '') {
-            $text = __(match ($basis) {
-                'piece' => 'amount not fixed, per pcs',
-                default => 'amount not fixed, per box',
-            });
+            // Hanya baris lama (drylog "tidak tetap" dari impor legacy).
+            $text = __($basis === 'piece' ? 'amount not fixed, per pcs' : 'amount not fixed, per box');
+        } elseif ((int) $quantity === 1) {
+            $text = __($basis === 'piece' ? 'counted per pcs' : 'counted per box');
         } else {
-            $text = __(match ($basis) {
-                'piece' => ':qty :unit per pcs',
-                default => ':qty :unit per box',
-            }, [
+            $text = __($basis === 'piece' ? ':qty :unit per pcs' : ':qty :unit per box', [
                 'qty' => number_format((int) $quantity, 0, ',', '.'),
                 'unit' => $unit,
             ]);

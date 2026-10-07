@@ -1645,5 +1645,7 @@
     "Bill of material saved": "BOM tersimpan",
     "View only here. Fill it in with the Bill of Material button on the product list.": "Hanya tampilan di sini. Isi lewat tombol Bill of Material di daftar produk.",
     "No bill of material yet.": "Belum ada BOM.",
-    "Select a source product": "Pilih produk sumber"
+    "Select a source product": "Pilih produk sumber",
+    "counted per pcs": "dihitung per pcs",
+    "counted per box": "dihitung per box"
 }

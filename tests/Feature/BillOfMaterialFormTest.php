@@ -507,4 +507,42 @@ class BillOfMaterialFormTest extends TestCase
             ->assertSee('KARTON TOP -- '.__(':qty :unit per pcs', ['qty' => 2, 'unit' => __('pcs')]))
             ->assertDontSee(__('amount not fixed, per box'));
     }
+
+    // =====================================================================
+    // Tanpa isian jumlah (Owner, 7 Oktober 2026)
+    // =====================================================================
+
+    public function test_a_row_has_no_quantity_input_and_a_new_row_counts_one(): void
+    {
+        $komponen = collect(BillOfMaterialSection::rows()->getChildComponents())->keyBy(fn ($c) => $c->getName());
+
+        $this->assertInstanceOf(\Filament\Forms\Components\Hidden::make('x')::class, $komponen['quantity'], 'Jumlah tidak boleh lagi berupa isian yang bisa diketik.');
+        $this->assertSame(1, $komponen['quantity']->getDefaultState());
+
+        $produk = $this->produk();
+        $karton = $this->bahan('KARTON TOP');
+
+        // Baris dari form baru tidak menyebut jumlah sama sekali.
+        ProductBomSync::sync($produk, ['baru-1' => ['material_id' => $karton->id, 'basis' => 'piece']], $this->semuaIzin());
+
+        $baris = $produk->billOfMaterials()->first();
+        $this->assertSame(1, $baris->quantity);
+        $this->assertSame('piece', $baris->basis);
+    }
+
+    public function test_an_old_row_with_an_unfixed_amount_is_not_turned_into_one_by_saving(): void
+    {
+        $produk = $this->produk();
+        $drylog = $this->bahan('DRYLOG', 'IKAT');
+        $lama = ProductMaterial::create(['product_id' => $produk->id, 'material_id' => $drylog->id, 'quantity' => null, 'basis' => 'box']);
+
+        $this->actingAs($this->semuaIzin());
+
+        Livewire::test(ListProducts::class)
+            ->mountTableAction('bill_of_material', $produk)
+            ->callMountedTableAction()
+            ->assertHasNoTableActionErrors();
+
+        $this->assertNull($lama->fresh()->quantity, 'Menyimpan tanpa mengubah apa pun tidak boleh mengubah jumlah lama.');
+    }
 }

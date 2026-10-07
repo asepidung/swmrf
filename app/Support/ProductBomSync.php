@@ -113,7 +113,10 @@ class ProductBomSync
                 continue;
             }
 
-            $quantity = $item['quantity'] ?? null;
+            // Baris yang tidak menyebut jumlah sama sekali (form tidak lagi
+            // punya isiannya) berarti 1. Jumlah yang disebut KOSONG tetap
+            // kosong: itu baris lama dengan jumlah "tidak tetap".
+            $quantity = array_key_exists('quantity', $item) ? $item['quantity'] : 1;
 
             $rows[] = [
                 // Form Edit produk berkunci "record-{id}"; repeater tanpa relasi

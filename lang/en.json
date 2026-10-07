@@ -1645,5 +1645,7 @@
     "Bill of material saved": "Bill of material saved",
     "View only here. Fill it in with the Bill of Material button on the product list.": "View only here. Fill it in with the Bill of Material button on the product list.",
     "No bill of material yet.": "No bill of material yet.",
-    "Select a source product": "Select a source product"
+    "Select a source product": "Select a source product",
+    "counted per pcs": "counted per pcs",
+    "counted per box": "counted per box"
 }

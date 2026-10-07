@@ -7001,3 +7001,25 @@ Mengoreksi dua baris catatan susulan di atas.
   menghitung dan hampir selalu 1 (410 dari 417 baris; sisanya 2, 6, 10). Usul:
   dasar hitung dipindah ke master material (sekali isi), baris BOM cukup memilih
   bahan, jumlah bawaan 1.
+
+**Susulan #507 -- tanpa isian jumlah di baris BOM, 7 Oktober 2026 (Ruby).**
+Keputusan Owner setelah dijelaskan: "kita udah punya parameternya, material ini
+di item ini akan dihitung per pcs atau per box. Simple kan?" Membalik usul
+sebelumnya (dasar hitung di master material) -- ditolak karena material juga
+berisi mesin, kulkas, stiker, materai yang tidak punya dasar semacam itu.
+
+- **Isian jumlah dihapus dari baris BOM.** Baris = bahan + dasar (Per Box /
+  Per Pcs) + catatan. Jumlah selalu 1. Kolom `quantity` tetap ada dan DIBAWA
+  apa adanya (field tersembunyi, bawaan 1): baris baru berisi 1; baris lama
+  yang jumlahnya 2/6/10 atau kosong tidak diubah diam-diam saat disimpan.
+  `ProductBomSync` membaca baris tanpa kunci `quantity` sebagai 1, sedangkan
+  `quantity` yang disebut KOSONG tetap kosong.
+- Baris lama berjumlah kosong (drylog "tidak tetap", dari impor legacy) masih
+  dikenali `BomUsageCalculator` (dilewati dan diperingatkan). Drylog tidak lagi
+  lewat BOM: ia dicatat di halaman produksi (langkah 3 dari #509), jadi baris
+  BOM drylog bisa dibersihkan Owner.
+- Ringkasan baris terbaca "KARTON TOP -- dihitung per box" / "per pcs".
+- **Satuan beli vs pakai:** plastik dibeli per box (isi ± 1.000), karton per
+  ikat (isi 20), karung per kg (isi berbeda-beda). `content_per_unit` (#510)
+  menjawab dua yang pertama. **Karung diabaikan dulu** (Owner): ia tidak akan
+  ikut bahan terbuang, jadi tidak perlu angka isi rata-rata.
