@@ -144,7 +144,10 @@ class ProductResource extends Resource
                             ->label(fn() => __('Set Active'))
                             ->default(true)
                             ->visibleOn('edit'),
-                    ])->columns(2)
+                    ])->columns(2),
+
+                // BOM sebagai baris-baris di form ini (#507), bukan panel modal.
+                ProductResource\Forms\BillOfMaterialSection::make(),
             ]);
     }
 
@@ -233,9 +236,7 @@ class ProductResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            ProductResource\RelationManagers\BillOfMaterialsRelationManager::class,
-        ];
+        return [];
     }
 
     public static function getPages(): array

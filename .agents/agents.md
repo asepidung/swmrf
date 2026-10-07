@@ -6882,3 +6882,54 @@ Pekerjaan Owner (dikerjakan lokal, di-commit Hafizh atas permintaan Owner).
 - Belum ditangani (temuan sesi cloud #496): nama produk panjang mendorong
   tabel label Boning melebihi area cetak 69 mm sehingga barcode bisa
   terpotong. Perlu uji cetak Owner.
+
+
+## #507 -- BOM jadi baris-baris di form Edit produk, 7 Oktober 2026
+
+Permintaan Owner (fokus UI/UX BOM): bukan modal satu per satu, melainkan satu
+form berbaris yang diisi sekaligus.
+
+**Sebelumnya:** panel RelationManager di bawah halaman Edit produk; tiap bahan
+= buka modal, isi empat kolom, simpan. Sel jumlah yang sengaja kosong (Drylog)
+tampil KOSONG, padahal kodenya dimaksudkan menampilkan lencana "Not fixed" --
+Filament tidak memanggil `formatStateUsing` untuk nilai null, dan test yang ada
+tidak menangkapnya.
+
+**Sekarang:**
+
+- Bagian "Bill of Material" di form Edit produk berupa Repeater (bahan, basis,
+  jumlah, catatan). Semua baris disimpan SEKALI lewat Save changes produk.
+  Hanya muncul di halaman Edit (produk harus ada dulu) dan bagi pemegang
+  `view_product_materials`.
+- Jumlah kosong diberi placeholder "Not fixed" LANGSUNG di kolomnya (kosong
+  bukan nol), satuan bahan menjadi akhiran kolom jumlah, dan strip di atas tiap
+  baris berisi ringkasan satu kalimat ("KARTON TOP -- 1 DUS per box", "DRYLOG --
+  amount not fixed, per box").
+- "Copy from Another Product" sekarang mengisi FORM saja (belum database), jadi
+  hasilnya bisa ditinjau dan diubah sebelum Save. Bahan yang sudah ada di form
+  tidak ditimpa.
+- RelationManager lama dihapus; `ProductResource::getRelations()` kosong.
+- `ProductBomSync` (satu rumah) menyimpan seluruh baris dalam satu transaksi
+  dan MENEGAKKAN izin di server: tambah = `create_product_materials`, ubah =
+  `edit_product_materials`, hapus = `delete_product_materials`. Menyembunyikan
+  tombol di layar tidak menutup permintaan yang dikirim langsung. Menyimpan
+  produk tanpa mengubah BOM-nya tidak butuh izin BOM apa pun (pemegang hanya
+  `view` tetap bisa mengganti nama produk).
+- Mengganti BAHAN sebuah baris dikerjakan sebagai hapus lalu buat (tetap
+  dihitung "ubah" untuk izin): dua baris yang saling bertukar bahan akan
+  bertabrakan dengan index unik (produk, bahan) di tengah jalan. Id baris BOM
+  tidak dirujuk siapa pun.
+- Tidak ada migrasi dan tidak ada izin baru.
+
+**Dicatat, belum dikerjakan (menunggu Owner):** baris dengan strip header
+membuat tiap baris cukup tinggi; bentuk yang lebih padat (satu garis per
+bahan) butuh CSS khusus atau komponen tabel-repeater dari paket lain.
+Kolom BOM di daftar produk, filter "Tanpa BOM", aksi massal ubah basis,
+laporan konflik impor, dan `docs/modules/bom.md` juga belum.
+
+**Test:** `BillOfMaterialFormTest` (14 test; menyimpan banyak baris sekali,
+tambah+ubah+hapus sekaligus, bahan kembar ditolak, tukar bahan dua baris, jumlah
+nol ditolak, matriks izin di server, bagian tersembunyi tanpa izin lihat,
+menyalin tidak menyentuh database). Dibuktikan menggigit: pemeriksaan izin
+dimatikan sementara, test izin merah; dipulihkan, hijau. Test lama yang
+bergantung pada RelationManager dilepas dari `BillOfMaterialTest`.

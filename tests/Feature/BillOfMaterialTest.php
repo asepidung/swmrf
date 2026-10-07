@@ -2,19 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Filament\Clusters\ProductsCluster\Resources\ProductResource;
-use App\Filament\Clusters\ProductsCluster\Resources\ProductResource\RelationManagers\BillOfMaterialsRelationManager;
 use App\Models\Material;
 use App\Models\MaterialCategory;
 use App\Models\MaterialUnit;
-use App\Models\Permission;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductMaterial;
-use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -58,29 +53,6 @@ class BillOfMaterialTest extends TestCase
             'is_active' => true,
             'show_in_stock' => true,
         ]);
-    }
-
-    private function pengguna(string ...$izin): User
-    {
-        $user = User::create([
-            'name' => 'Penguji',
-            'username' => 'uji_'.uniqid(),
-            'password' => 'secret-password',
-            'gender' => 'L',
-            'role' => 'employee',
-            'is_active' => true,
-        ]);
-
-        foreach ($izin as $satu) {
-            $user->permissions()->attach(
-                Permission::firstOrCreate(
-                    ['name' => $satu],
-                    ['module_name' => 'Bill of Materials', 'description' => $satu],
-                )->id
-            );
-        }
-
-        return $user->fresh();
     }
 
     /**
@@ -258,127 +230,5 @@ class BillOfMaterialTest extends TestCase
         $produk->delete();
 
         $this->assertSame(0, ProductMaterial::count(), 'BOM harus ikut terhapus bersama produknya.');
-    }
-
-    /**
-     * Panel BOM tertutup bagi yang tidak punya izin membacanya.
-     *
-     * @test
-     */
-    public function the_panel_stays_shut_without_the_permission_to_read_it()
-    {
-        $produk = $this->produk();
-
-        $this->actingAs($this->pengguna());
-
-        $this->assertFalse(
-            BillOfMaterialsRelationManager::canViewForRecord($produk, ProductResource\Pages\EditProduct::class),
-            'Panel BOM terbuka tanpa izin view_product_materials.',
-        );
-
-        $this->actingAs($this->pengguna('view_product_materials'));
-
-        $this->assertTrue(
-            BillOfMaterialsRelationManager::canViewForRecord($produk, ProductResource\Pages\EditProduct::class),
-            'Panel BOM tetap tertutup padahal izinnya sudah diberikan.',
-        );
-    }
-
-    /**
-     * Menyalin BOM dari produk lain melengkapi, bukan menimpa.
-     *
-     * Jumlah yang sudah disesuaikan tangan tidak boleh hilang karena satu
-     * klik, dan salinannya harus PUTUS dari asalnya -- data produksi
-     * memperlihatkan daftarnya memang sering berbeda sedikit antar produk
-     * yang mirip.
-     *
-     * @test
-     */
-    public function copying_from_another_product_fills_the_gaps_without_overwriting()
-    {
-        $sumber = $this->produk('BACKRIB');
-        $tujuan = $this->produk('BACKRIB CUT');
-
-        $karton = $this->bahan('KARTON TOP TULANG');
-        $linier = $this->bahan('PLASTIK LINIER');
-
-        ProductMaterial::create(['product_id' => $sumber->id, 'material_id' => $karton->id, 'quantity' => 1, 'basis' => 'box']);
-        ProductMaterial::create(['product_id' => $sumber->id, 'material_id' => $linier->id, 'quantity' => 1, 'basis' => 'box']);
-
-        // Yang sudah ada di tujuan, dengan jumlah yang sengaja berbeda.
-        ProductMaterial::create(['product_id' => $tujuan->id, 'material_id' => $linier->id, 'quantity' => 3, 'basis' => 'piece']);
-
-        $this->actingAs($this->pengguna('view_product_materials', 'create_product_materials'));
-
-        Livewire::test(BillOfMaterialsRelationManager::class, [
-            'ownerRecord' => $tujuan,
-            'pageClass' => ProductResource\Pages\EditProduct::class,
-        ])
-            ->callTableAction('salin_bom', data: ['product_id' => $sumber->id])
-            ->assertHasNoTableActionErrors();
-
-        $this->assertSame(2, $tujuan->billOfMaterials()->count(), 'Baris yang belum ada seharusnya ikut tersalin.');
-
-        $yangSudahAda = $tujuan->billOfMaterials()->where('material_id', $linier->id)->first();
-
-        $this->assertSame(3, $yangSudahAda->quantity, 'Jumlah yang sudah disesuaikan tangan tidak boleh tertimpa.');
-        $this->assertSame('piece', $yangSudahAda->basis, 'Dasar hitung yang sudah ada juga tidak boleh tertimpa.');
-
-        // Salinannya putus: mengubah asalnya tidak menyentuh tujuannya.
-        $sumber->billOfMaterials()->where('material_id', $karton->id)->update(['quantity' => 9]);
-
-        $this->assertSame(
-            1,
-            $tujuan->billOfMaterials()->where('material_id', $karton->id)->first()->quantity,
-            'Salinan seharusnya berdiri sendiri, bukan mengikuti produk asalnya.',
-        );
-    }
-
-    /**
-     * Tombol salin tidak muncul bagi yang tidak boleh menambah baris.
-     *
-     * Menyalin MEMBUAT baris, jadi izinnya harus izin membuat -- bukan izin
-     * membaca yang kebetulan sudah dipegang karena panelnya terbuka.
-     *
-     * @test
-     */
-    public function the_copy_button_needs_the_permission_to_add_rows()
-    {
-        $produk = $this->produk();
-
-        $this->actingAs($this->pengguna('view_product_materials'));
-
-        Livewire::test(BillOfMaterialsRelationManager::class, [
-            'ownerRecord' => $produk,
-            'pageClass' => ProductResource\Pages\EditProduct::class,
-        ])
-            ->assertTableActionHidden('salin_bom')
-            ->assertTableActionHidden('create');
-
-        $this->actingAs($this->pengguna('view_product_materials', 'create_product_materials'));
-
-        Livewire::test(BillOfMaterialsRelationManager::class, [
-            'ownerRecord' => $produk,
-            'pageClass' => ProductResource\Pages\EditProduct::class,
-        ])
-            ->assertTableActionVisible('salin_bom')
-            ->assertTableActionVisible('create');
-    }
-
-    /**
-     * BOM terpasang di halaman produknya.
-     *
-     * Penjaga yang menahan panel ini lepas diam-diam: menghapus satu baris di
-     * `getRelations()` tidak membuat apa pun gagal, panelnya cuma menghilang.
-     *
-     * @test
-     */
-    public function the_panel_is_wired_to_the_product_screen()
-    {
-        $this->assertContains(
-            BillOfMaterialsRelationManager::class,
-            ProductResource::getRelations(),
-            'Panel BOM tidak terdaftar di ProductResource -- ia hanya akan hilang tanpa gejala.',
-        );
     }
 }
