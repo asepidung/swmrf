@@ -34,7 +34,7 @@
     @endif
 
     @if (count($without_bom) || count($skipped))
-        <div class="rounded-lg border border-warning-300 bg-warning-50 p-3 text-warning-800 dark:border-warning-500/40 dark:bg-warning-500/10 dark:text-warning-300">
+        <div class="rounded-lg border border-warning-200 bg-warning-50 p-3 text-warning-700 dark:border-warning-800 dark:bg-warning-900 dark:text-warning-400">
             <p class="font-semibold">{{ __('Not counted in the figures above') }}</p>
             <ul class="list-disc ps-5">
                 @foreach ($without_bom as $product)
