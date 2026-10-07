@@ -100,6 +100,24 @@ tampaknya diambil sebagai potret saat sesi dimulai, sehingga sesi yang mulai
 sebelum 2 September 2026 tidak terkena. Owner memutuskan **tidak mengubahnya**
 untuk sekarang.
 
+### Ruby menjadi pintu merge dan deploy, 7 Oktober 2026
+
+**Keputusan Owner, 7 Oktober 2026.** Ruby kini menjadi pintu merge dan deploy
+swmrf, menggantikan penunjukan Hafizh pada bagian "Merge ke `main` lewat satu
+pintu" di atas. Pintunya tetap **satu**; hanya pemegangnya yang berganti.
+
+- Ruby me-merge PR ke `main` setelah suite PENUH hijau di branch tersebut,
+  lalu men-deploy sesuai `project.md` (SSH `-tt`, `git --no-pager pull`,
+  `migrate --force`, `optimize:clear`, cache warming; lokal dan hosting
+  sama-sama sudah migrate).
+- Sesi lain (termasuk sesi cloud) tetap hanya membuka PR dan menyebutkan
+  nomornya; tidak merge, tidak deploy.
+- Batasan lama tidak berubah: suite merah tidak diakali, setelan izin tidak
+  disentuh, dan apa pun yang membalik keputusan Owner atau menabrak
+  `project.md` ditanyakan dulu.
+- Hafizh tetap memegang HPP/BOM dan sesi import master bersama Owner; yang
+  berpindah hanya merge dan deploy.
+
 ### Cloud session (Sonnet), mulai 4 Oktober 2026
 
 Owner membuat sesi **cloud** yang mengerjakan swmrf di salinan repo sendiri
