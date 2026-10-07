@@ -6882,3 +6882,150 @@ Pekerjaan Owner (dikerjakan lokal, di-commit Hafizh atas permintaan Owner).
 - Belum ditangani (temuan sesi cloud #496): nama produk panjang mendorong
   tabel label Boning melebihi area cetak 69 mm sehingga barcode bisa
   terpotong. Perlu uji cetak Owner.
+
+
+## #507 -- BOM jadi baris-baris di form Edit produk, 7 Oktober 2026
+
+Permintaan Owner (fokus UI/UX BOM): bukan modal satu per satu, melainkan satu
+form berbaris yang diisi sekaligus.
+
+**Sebelumnya:** panel RelationManager di bawah halaman Edit produk; tiap bahan
+= buka modal, isi empat kolom, simpan. Sel jumlah yang sengaja kosong (Drylog)
+tampil KOSONG, padahal kodenya dimaksudkan menampilkan lencana "Not fixed" --
+Filament tidak memanggil `formatStateUsing` untuk nilai null, dan test yang ada
+tidak menangkapnya.
+
+**Sekarang:**
+
+- Bagian "Bill of Material" di form Edit produk berupa Repeater (bahan, basis,
+  jumlah, catatan). Semua baris disimpan SEKALI lewat Save changes produk.
+  Hanya muncul di halaman Edit (produk harus ada dulu) dan bagi pemegang
+  `view_product_materials`.
+- Jumlah kosong diberi placeholder "Not fixed" LANGSUNG di kolomnya (kosong
+  bukan nol), satuan bahan menjadi akhiran kolom jumlah, dan strip di atas tiap
+  baris berisi ringkasan satu kalimat ("KARTON TOP -- 1 DUS per box", "DRYLOG --
+  amount not fixed, per box").
+- "Copy from Another Product" sekarang mengisi FORM saja (belum database), jadi
+  hasilnya bisa ditinjau dan diubah sebelum Save. Bahan yang sudah ada di form
+  tidak ditimpa.
+- RelationManager lama dihapus; `ProductResource::getRelations()` kosong.
+- `ProductBomSync` (satu rumah) menyimpan seluruh baris dalam satu transaksi
+  dan MENEGAKKAN izin di server: tambah = `create_product_materials`, ubah =
+  `edit_product_materials`, hapus = `delete_product_materials`. Menyembunyikan
+  tombol di layar tidak menutup permintaan yang dikirim langsung. Menyimpan
+  produk tanpa mengubah BOM-nya tidak butuh izin BOM apa pun (pemegang hanya
+  `view` tetap bisa mengganti nama produk).
+- Mengganti BAHAN sebuah baris dikerjakan sebagai hapus lalu buat (tetap
+  dihitung "ubah" untuk izin): dua baris yang saling bertukar bahan akan
+  bertabrakan dengan index unik (produk, bahan) di tengah jalan. Id baris BOM
+  tidak dirujuk siapa pun.
+- Tidak ada migrasi dan tidak ada izin baru.
+
+**Dicatat, belum dikerjakan (menunggu Owner):** baris dengan strip header
+membuat tiap baris cukup tinggi; bentuk yang lebih padat (satu garis per
+bahan) butuh CSS khusus atau komponen tabel-repeater dari paket lain.
+Kolom BOM di daftar produk, filter "Tanpa BOM", aksi massal ubah basis,
+laporan konflik impor, dan `docs/modules/bom.md` juga belum.
+
+**Test:** `BillOfMaterialFormTest` (14 test; menyimpan banyak baris sekali,
+tambah+ubah+hapus sekaligus, bahan kembar ditolak, tukar bahan dua baris, jumlah
+nol ditolak, matriks izin di server, bagian tersembunyi tanpa izin lihat,
+menyalin tidak menyentuh database). Dibuktikan menggigit: pemeriksaan izin
+dimatikan sementara, test izin merah; dipulihkan, hijau. Test lama yang
+bergantung pada RelationManager dilepas dari `BillOfMaterialTest`.
+
+**Susulan #507 -- satuan karung, 7 Oktober 2026 (Ruby).** Owner mencoba form
+BOM dan minta satuan **karung** selain box dan pcs. `ProductMaterial::BASIS`
+(satu rumah) bertambah `'sack' => 'Per Sack'` (terjemahan "Per Karung").
+Dihitung SAMA dengan `box`: satu label = satu karung, jadi jumlahnya jumlah
+label, bukan jumlah pcs (Bone dikemas karung). Kenapa tidak cukup memakai
+`box`: BOM harus menyebut satuan kemasan yang sebenarnya, dan di layar
+tertulis "per karung". Kolom `basis` bertipe string(10) tanpa batasan nilai,
+jadi tidak ada migrasi. `BomUsageCalculator` tidak berubah perilaku (hanya
+`piece` yang memakai pcs). Test: `a_sack_basis_row_counts_one_per_label_like_box`.
+
+**Susulan #507 -- tombol BOM di daftar produk dan label pcs, 7 Oktober 2026 (Ruby).**
+Permintaan Owner setelah mencoba form BOM: tombol penambahan material jangan
+di dalam tiap produk, tetapi di daftar produk.
+
+- **Tombol BOM per baris di daftar produk** (`BillOfMaterialSection::tableAction()`).
+  Membuka baris-baris BOM yang SAMA dengan form Edit produk (satu rumah:
+  `BillOfMaterialSection::rows()`), terisi dari BOM yang ada, disimpan SEKALI
+  lewat `ProductBomSync`. Ini satu-satunya tombol aksi di tabel produk;
+  baris yang diklik tetap membuka halaman Edit. Bagian Bill of Material di form
+  Edit tetap ada. Kalau izin ditolak server, tombol menampilkan notifikasi
+  (bukan galat diam-diam).
+- **Jebakan:** repeater TANPA relasi mengganti kunci baris dengan UUID, jadi
+  kunci `record-{id}` hilang dan id baris lama lenyap -- tanpa penanganan,
+  mengubah satu jumlah dibaca "hapus + buat" dan butuh izin hapus. Id sekarang
+  dibawa di dalam data baris (`id`) dan dibaca `ProductBomSync::normalise()`.
+  Id yang bukan milik produk itu diperlakukan sebagai baris baru, jadi tidak
+  bisa dipakai menyentuh BOM produk lain (ada test).
+- **Field jumlah berakhiran "pcs"** (satuan pakai), bukan nama satuan beli
+  material; ringkasan baris ikut ("1 pcs per box"). Sejalan dengan
+  `content_per_unit` di #509: BOM dan bahan terbuang dihitung per satuan pakai.
+- **Pilihan Per Box / Per Pcs / Per Karung TETAP ada.** Owner sempat meminta
+  semuanya "dihajar rata per pcs", lalu menegaskan: hitungan tergantung produk
+  dan BOM-lah parameternya (Tenderloin: cryovac per pcs daging, linier dan
+  karton per box; Bone: hanya karung). Tanpa pilihan itu cryovac per potong
+  tidak bisa dibedakan dari karton per dus. "pcs" di field jumlah adalah
+  SATUAN material, bukan dasar perkaliannya.
+
+**Test:** `BillOfMaterialFormTest` bertambah 5 (tombol di daftar mengisi dan
+menyimpan semua baris sekali, tersembunyi tanpa izin lihat, tidak bisa
+menambah tanpa izin buat, mengubah dari daftar tidak butuh izin hapus,
+tidak bisa menyentuh baris produk lain). Dibuktikan menggigit: pembacaan `id`
+di `ProductBomSync` dimatikan sementara, test simpan-semua merah; dipulihkan,
+hijau.
+
+**Susulan #507 -- Edit produk hanya tampilan BOM, Per Karung dibuang, 7 Oktober 2026 (Ruby).**
+Mengoreksi dua baris catatan susulan di atas.
+
+- **Bagian Bill of Material di halaman Edit produk sekarang HANYA TAMPILAN**
+  (tabel bahan, dasar, jumlah, catatan). Permintaan Owner: "cukup jadikan view
+  aja". BOM diisi lewat tombol BOM di daftar produk. Tidak ada field, jadi
+  menyimpan produk tidak menyentuh BOM (ada test). `ProductBomSync` tetap
+  satu-satunya penulis dan penegak izin.
+- **"Copy from Another Product" pindah ke jendela tombol BOM** sebagai pilihan
+  produk sumber di atas baris-baris (Select biasa yang langsung mengisi baris,
+  belum database). Bukan aksi komponen: aksi di dalam jendela aksi tabel
+  menuntut `key()` dan bersarang dua tingkat.
+- **Dasar Per Karung DIBUANG** (Owner setuju): karung Bone cukup diisi
+  `Per Box` karena satu label satu karung. Tersisa dua dasar, `Per Box` dan
+  `Per Pcs`.
+- **Pelajaran dari legacy (belum diputuskan, ditanyakan ke Owner):**
+  `legacy/versi prosedural/boning/rawusage_UNUSED.php` dan `save_rawusage.php`
+  menunjukkan BOM lama hanya DAFTAR bahan per produk. Dasar hitungnya tetap
+  menurut JENIS bahan, bukan per baris: karton top/bottom, linier, karung = per
+  box; vacuum/cryovac dan tray = per pcs. `bom_rawmate.qty` diabaikan saat
+  menghitung dan hampir selalu 1 (410 dari 417 baris; sisanya 2, 6, 10). Usul:
+  dasar hitung dipindah ke master material (sekali isi), baris BOM cukup memilih
+  bahan, jumlah bawaan 1.
+
+**Susulan #507 -- tanpa isian jumlah di baris BOM, 7 Oktober 2026 (Ruby).**
+Keputusan Owner setelah dijelaskan: "kita udah punya parameternya, material ini
+di item ini akan dihitung per pcs atau per box. Simple kan?" Membalik usul
+sebelumnya (dasar hitung di master material) -- ditolak karena material juga
+berisi mesin, kulkas, stiker, materai yang tidak punya dasar semacam itu.
+
+- **Isian jumlah dihapus dari baris BOM.** Baris = bahan + dasar (Per Box /
+  Per Pcs) + catatan. Jumlah selalu 1. Kolom `quantity` tetap ada dan DIBAWA
+  apa adanya (field tersembunyi, bawaan 1): baris baru berisi 1; baris lama
+  yang jumlahnya 2/6/10 atau kosong tidak diubah diam-diam saat disimpan.
+  `ProductBomSync` membaca baris tanpa kunci `quantity` sebagai 1, sedangkan
+  `quantity` yang disebut KOSONG tetap kosong.
+- Baris lama berjumlah kosong (drylog "tidak tetap", dari impor legacy) masih
+  dikenali `BomUsageCalculator` (dilewati dan diperingatkan). Drylog tidak lagi
+  lewat BOM: ia dicatat di halaman produksi (langkah 3 dari #509), jadi baris
+  BOM drylog bisa dibersihkan Owner.
+- Ringkasan baris terbaca "KARTON TOP -- dihitung per box" / "per pcs".
+- **Satuan beli vs pakai:** plastik dibeli per box (isi ± 1.000), karton per
+  ikat (isi 20), karung per kg (isi berbeda-beda). `content_per_unit` (#510)
+  menjawab dua yang pertama. **Karung diabaikan dulu** (Owner): ia tidak akan
+  ikut bahan terbuang, jadi tidak perlu angka isi rata-rata.
+
+**Susulan #507 -- ikon tombol BOM membedakan buat dan ubah, 7 Oktober 2026 (Ruby).**
+Permintaan Owner: di daftar produk, bedakan produk yang sudah dan belum punya
+BOM. Belum punya = ikon tambah abu-abu, tooltip "Buat BOM". Sudah punya = ikon
+pensil kuning dengan angka jumlah bahan, tooltip "Ubah BOM". Jumlahnya dari
+`withCount('billOfMaterials')` pada query tabel, jadi tidak ada query per baris.
