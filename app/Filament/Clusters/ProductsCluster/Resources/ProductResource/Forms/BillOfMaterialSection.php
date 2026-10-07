@@ -142,8 +142,14 @@ class BillOfMaterialSection
     {
         return Tables\Actions\Action::make('bill_of_material')
             ->iconButton()
-            ->icon('heroicon-o-archive-box')
-            ->tooltip(__('Bill of Material'))
+            // Belum punya BOM = tombol "buat" (abu-abu, tanda tambah); sudah
+            // punya = tombol "ubah" (kuning, pensil) dengan angka jumlah bahan.
+            ->icon(fn (Product $record): string => self::bomCount($record) > 0 ? 'heroicon-o-pencil-square' : 'heroicon-o-plus-circle')
+            ->color(fn (Product $record): string => self::bomCount($record) > 0 ? 'warning' : 'gray')
+            ->badge(fn (Product $record): ?int => self::bomCount($record) ?: null)
+            ->tooltip(fn (Product $record): string => self::bomCount($record) > 0
+                ? __('Edit Bill of Material')
+                : __('Create Bill of Material'))
             ->visible(fn (): bool => self::can('view'))
             ->modalHeading(fn (Product $record): string => __('Bill of Material').' -- '.$record->name)
             ->modalDescription(__('List the packaging this product uses. Add all the rows you need, then press Save changes once.'))
@@ -301,6 +307,12 @@ class BillOfMaterialSection
         }
 
         return $material->name.' -- '.$text;
+    }
+
+    /** Jumlah baris BOM sebuah produk; memakai withCount() dari tabel bila ada (tanpa query per baris). */
+    private static function bomCount(Product $record): int
+    {
+        return (int) ($record->bill_of_materials_count ?? $record->billOfMaterials()->count());
     }
 
     /** Produk yang sedang diedit: dari halaman Edit, atau dari aksi tabel di daftar produk. */

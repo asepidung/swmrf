@@ -1647,5 +1647,7 @@
     "No bill of material yet.": "No bill of material yet.",
     "Select a source product": "Select a source product",
     "counted per pcs": "counted per pcs",
-    "counted per box": "counted per box"
+    "counted per box": "counted per box",
+    "Edit Bill of Material": "Edit Bill of Material",
+    "Create Bill of Material": "Create Bill of Material"
 }

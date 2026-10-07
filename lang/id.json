@@ -1647,5 +1647,7 @@
     "No bill of material yet.": "Belum ada BOM.",
     "Select a source product": "Pilih produk sumber",
     "counted per pcs": "dihitung per pcs",
-    "counted per box": "dihitung per box"
+    "counted per box": "dihitung per box",
+    "Edit Bill of Material": "Ubah BOM",
+    "Create Bill of Material": "Buat BOM"
 }

@@ -211,6 +211,7 @@ class ProductResource extends Resource
                         }, 'Beefs.xlsx');
                     }),
             ])
+            ->modifyQueryUsing(fn (Builder $query) => $query->withCount('billOfMaterials'))
             ->defaultSort('name')
             ->actions([
                 // Baris yang bisa diklik tetap membuka halaman Edit. Satu-satunya

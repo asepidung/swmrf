@@ -7023,3 +7023,9 @@ berisi mesin, kulkas, stiker, materai yang tidak punya dasar semacam itu.
   ikat (isi 20), karung per kg (isi berbeda-beda). `content_per_unit` (#510)
   menjawab dua yang pertama. **Karung diabaikan dulu** (Owner): ia tidak akan
   ikut bahan terbuang, jadi tidak perlu angka isi rata-rata.
+
+**Susulan #507 -- ikon tombol BOM membedakan buat dan ubah, 7 Oktober 2026 (Ruby).**
+Permintaan Owner: di daftar produk, bedakan produk yang sudah dan belum punya
+BOM. Belum punya = ikon tambah abu-abu, tooltip "Buat BOM". Sudah punya = ikon
+pensil kuning dengan angka jumlah bahan, tooltip "Ubah BOM". Jumlahnya dari
+`withCount('billOfMaterials')` pada query tabel, jadi tidak ada query per baris.

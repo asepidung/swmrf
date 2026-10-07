@@ -545,4 +545,24 @@ class BillOfMaterialFormTest extends TestCase
 
         $this->assertNull($lama->fresh()->quantity, 'Menyimpan tanpa mengubah apa pun tidak boleh mengubah jumlah lama.');
     }
+
+    public function test_the_list_button_tells_create_from_edit_and_shows_how_many_materials(): void
+    {
+        $kosong = $this->produk('KOSONG');
+        $isi = $this->produk('ISI');
+        foreach (['KARTON TOP', 'KARTON BOTTOM'] as $nama) {
+            ProductMaterial::create(['product_id' => $isi->id, 'material_id' => $this->bahan($nama)->id, 'quantity' => 1, 'basis' => 'box']);
+        }
+
+        $this->actingAs($this->semuaIzin());
+
+        Livewire::test(ListProducts::class)
+            ->assertTableActionHasIcon('bill_of_material', 'heroicon-o-plus-circle', $kosong)
+            ->assertTableActionHasColor('bill_of_material', 'gray', $kosong)
+            ->assertTableActionHasIcon('bill_of_material', 'heroicon-o-pencil-square', $isi)
+            ->assertTableActionHasColor('bill_of_material', 'warning', $isi);
+
+        $this->assertSame(0, (int) Product::withCount('billOfMaterials')->find($kosong->id)->bill_of_materials_count);
+        $this->assertSame(2, (int) Product::withCount('billOfMaterials')->find($isi->id)->bill_of_materials_count);
+    }
 }
