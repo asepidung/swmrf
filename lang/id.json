@@ -1641,5 +1641,9 @@
     "amount not fixed, per box": "jumlah tidak tetap, per box",
     "amount not fixed, per pcs": "jumlah tidak tetap, per pcs",
     "amount not fixed, per sack": "jumlah tidak tetap, per karung",
-    ":qty :unit per sack": ":qty :unit per karung"
+    ":qty :unit per sack": ":qty :unit per karung",
+    "pcs": "pcs",
+    "Save changes": "Simpan perubahan",
+    "Bill of material not saved": "BOM tidak tersimpan",
+    "Bill of material saved": "BOM tersimpan"
 }

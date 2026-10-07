@@ -6943,3 +6943,37 @@ label, bukan jumlah pcs (Bone dikemas karung). Kenapa tidak cukup memakai
 tertulis "per karung". Kolom `basis` bertipe string(10) tanpa batasan nilai,
 jadi tidak ada migrasi. `BomUsageCalculator` tidak berubah perilaku (hanya
 `piece` yang memakai pcs). Test: `a_sack_basis_row_counts_one_per_label_like_box`.
+
+**Susulan #507 -- tombol BOM di daftar produk dan label pcs, 7 Oktober 2026 (Ruby).**
+Permintaan Owner setelah mencoba form BOM: tombol penambahan material jangan
+di dalam tiap produk, tetapi di daftar produk.
+
+- **Tombol BOM per baris di daftar produk** (`BillOfMaterialSection::tableAction()`).
+  Membuka baris-baris BOM yang SAMA dengan form Edit produk (satu rumah:
+  `BillOfMaterialSection::rows()`), terisi dari BOM yang ada, disimpan SEKALI
+  lewat `ProductBomSync`. Ini satu-satunya tombol aksi di tabel produk;
+  baris yang diklik tetap membuka halaman Edit. Bagian Bill of Material di form
+  Edit tetap ada. Kalau izin ditolak server, tombol menampilkan notifikasi
+  (bukan galat diam-diam).
+- **Jebakan:** repeater TANPA relasi mengganti kunci baris dengan UUID, jadi
+  kunci `record-{id}` hilang dan id baris lama lenyap -- tanpa penanganan,
+  mengubah satu jumlah dibaca "hapus + buat" dan butuh izin hapus. Id sekarang
+  dibawa di dalam data baris (`id`) dan dibaca `ProductBomSync::normalise()`.
+  Id yang bukan milik produk itu diperlakukan sebagai baris baru, jadi tidak
+  bisa dipakai menyentuh BOM produk lain (ada test).
+- **Field jumlah berakhiran "pcs"** (satuan pakai), bukan nama satuan beli
+  material; ringkasan baris ikut ("1 pcs per box"). Sejalan dengan
+  `content_per_unit` di #509: BOM dan bahan terbuang dihitung per satuan pakai.
+- **Pilihan Per Box / Per Pcs / Per Karung TETAP ada.** Owner sempat meminta
+  semuanya "dihajar rata per pcs", lalu menegaskan: hitungan tergantung produk
+  dan BOM-lah parameternya (Tenderloin: cryovac per pcs daging, linier dan
+  karton per box; Bone: hanya karung). Tanpa pilihan itu cryovac per potong
+  tidak bisa dibedakan dari karton per dus. "pcs" di field jumlah adalah
+  SATUAN material, bukan dasar perkaliannya.
+
+**Test:** `BillOfMaterialFormTest` bertambah 5 (tombol di daftar mengisi dan
+menyimpan semua baris sekali, tersembunyi tanpa izin lihat, tidak bisa
+menambah tanpa izin buat, mengubah dari daftar tidak butuh izin hapus,
+tidak bisa menyentuh baris produk lain). Dibuktikan menggigit: pembacaan `id`
+di `ProductBomSync` dimatikan sementara, test simpan-semua merah; dipulihkan,
+hijau.

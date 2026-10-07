@@ -1641,5 +1641,9 @@
     "amount not fixed, per box": "amount not fixed, per box",
     "amount not fixed, per pcs": "amount not fixed, per pcs",
     "amount not fixed, per sack": "amount not fixed, per sack",
-    ":qty :unit per sack": ":qty :unit per sack"
+    ":qty :unit per sack": ":qty :unit per sack",
+    "pcs": "pcs",
+    "Save changes": "Save changes",
+    "Bill of material not saved": "Bill of material not saved",
+    "Bill of material saved": "Bill of material saved"
 }

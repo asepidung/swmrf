@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Clusters\ProductsCluster\Resources\ProductResource;
 use App\Filament\Clusters\ProductsCluster\Resources\ProductResource\Forms\BillOfMaterialSection;
 use App\Filament\Clusters\ProductsCluster\Resources\ProductResource\Pages\EditProduct;
+use App\Filament\Clusters\ProductsCluster\Resources\ProductResource\Pages\ListProducts;
 use App\Models\Material;
 use App\Models\MaterialCategory;
 use App\Models\MaterialUnit;
@@ -344,5 +345,96 @@ class BillOfMaterialFormTest extends TestCase
             file_get_contents((new \ReflectionClass(ProductResource::class))->getFileName()),
             'Bagian BOM tidak terpasang di form ProductResource -- ia akan hilang tanpa gejala.',
         );
+    }
+
+    // =====================================================================
+    // Tombol BOM di daftar produk (Owner, 7 Oktober 2026)
+    // =====================================================================
+
+    public function test_the_list_button_opens_the_existing_rows_and_saves_all_rows_at_once(): void
+    {
+        $produk = $this->produk();
+        $karton = $this->bahan('KARTON TOP');
+        $plastik = $this->bahan('PLASTIK VAKUM', 'LEMBAR');
+        $lama = ProductMaterial::create(['product_id' => $produk->id, 'material_id' => $karton->id, 'quantity' => 1, 'basis' => 'box']);
+
+        $this->actingAs($this->semuaIzin());
+
+        $aksi = Livewire::test(ListProducts::class)->mountTableAction('bill_of_material', $produk);
+
+        // Baris lama sudah terisi dari BOM-nya, lengkap dengan id.
+        $kunci = array_key_first($aksi->get('mountedTableActionsData.0.billOfMaterials'));
+        $this->assertSame($lama->id, $aksi->get("mountedTableActionsData.0.billOfMaterials.$kunci.id"));
+
+        $aksi
+            ->set("mountedTableActionsData.0.billOfMaterials.$kunci.quantity", 2)
+            ->set('mountedTableActionsData.0.billOfMaterials.baru-1', $this->baris($plastik, 'piece', 1, 'cryovac'))
+            ->callMountedTableAction()
+            ->assertHasNoTableActionErrors();
+
+        $this->assertSame(2, $produk->billOfMaterials()->count());
+        $this->assertSame(2, (int) $lama->fresh()->quantity);
+        $this->assertSame('piece', $produk->billOfMaterials()->where('material_id', $plastik->id)->value('basis'));
+    }
+
+    public function test_the_list_button_is_hidden_without_permission_to_view_boms(): void
+    {
+        $produk = $this->produk();
+
+        $this->actingAs($this->pengguna());
+
+        Livewire::test(ListProducts::class)->assertTableActionHidden('bill_of_material', $produk);
+    }
+
+    public function test_the_list_button_cannot_add_rows_without_the_create_permission(): void
+    {
+        $produk = $this->produk();
+        $karton = $this->bahan('KARTON TOP');
+
+        $this->actingAs($this->pengguna('view_product_materials', 'edit_product_materials'));
+
+        Livewire::test(ListProducts::class)
+            ->callTableAction('bill_of_material', $produk, ['billOfMaterials' => ['baru-1' => $this->baris($karton)]]);
+
+        $this->assertSame(0, $produk->billOfMaterials()->count());
+    }
+
+    /**
+     * Repeater tanpa relasi mengganti kunci baris dengan UUID. Kalau id baris
+     * lama hilang, mengubah satu jumlah akan dibaca sebagai hapus + buat, dan
+     * pengguna tanpa izin hapus ditolak tanpa sebab yang jelas.
+     */
+    public function test_editing_from_the_list_keeps_the_row_ids_and_needs_no_delete_permission(): void
+    {
+        $produk = $this->produk();
+        $karton = $this->bahan('KARTON TOP');
+        $lama = ProductMaterial::create(['product_id' => $produk->id, 'material_id' => $karton->id, 'quantity' => 1, 'basis' => 'box']);
+
+        $this->actingAs($this->pengguna('view_product_materials', 'create_product_materials', 'edit_product_materials'));
+
+        Livewire::test(ListProducts::class)
+            ->mountTableAction('bill_of_material', $produk)
+            ->callMountedTableAction()
+            ->assertHasNoTableActionErrors();
+
+        $this->assertSame([$lama->id], $produk->billOfMaterials()->pluck('id')->all());
+    }
+
+    public function test_the_list_button_cannot_touch_a_row_of_another_product(): void
+    {
+        $produk = $this->produk('BACKRIB');
+        $lain = $this->produk('TOPSIDE');
+        $karton = $this->bahan('KARTON TOP');
+        $milikLain = ProductMaterial::create(['product_id' => $lain->id, 'material_id' => $karton->id, 'quantity' => 5, 'basis' => 'box']);
+
+        $this->actingAs($this->semuaIzin());
+
+        Livewire::test(ListProducts::class)
+            ->callTableAction('bill_of_material', $produk, ['billOfMaterials' => [
+                'x' => ['id' => $milikLain->id] + $this->baris($karton, 'box', 99),
+            ]]);
+
+        $this->assertSame(5, (int) $milikLain->fresh()->quantity);
+        $this->assertSame(1, $produk->billOfMaterials()->count());
     }
 }

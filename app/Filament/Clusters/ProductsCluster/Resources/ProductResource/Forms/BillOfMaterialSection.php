@@ -10,6 +10,9 @@ use Filament\Forms;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Notifications\Notification;
+use Filament\Support\Exceptions\Halt;
+use Filament\Tables;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
@@ -38,11 +41,22 @@ class BillOfMaterialSection
             ->visible(fn (string $operation): bool => $operation === 'edit' && self::can('view'))
             ->headerActions([self::copyAction()])
             ->schema([
-                Forms\Components\Repeater::make('billOfMaterials')
+                self::rows()
                     ->relationship(modifyQueryUsing: fn (Builder $query): Builder => $query->orderBy('id'))
                     ->saveRelationshipsUsing(function (Forms\Components\Repeater $component, ?array $state): void {
                         ProductBomSync::sync($component->getRecord(), $state ?? []);
-                    })
+                    }),
+            ]);
+    }
+
+    /**
+     * Baris-baris BOM, dipakai bersama oleh form Edit produk (terikat ke
+     * relasi) dan tombol BOM di daftar produk (tanpa relasi, disimpan lewat
+     * `ProductBomSync`). Satu rumah supaya kedua tempat tidak berbeda diam-diam.
+     */
+    public static function rows(): Forms\Components\Repeater
+    {
+        return Forms\Components\Repeater::make('billOfMaterials')
                     ->hiddenLabel()
                     ->addActionLabel(__('Add Material'))
                     ->addable(fn (): bool => self::can('create'))
@@ -58,6 +72,8 @@ class BillOfMaterialSection
                     ->itemLabel(fn (array $state): ?string => self::summary($state))
                     ->columns(12)
                     ->schema([
+                        Forms\Components\Hidden::make('id'),
+
                         Forms\Components\Select::make('material_id')
                             ->label('')
                             ->hiddenLabel()
@@ -90,7 +106,7 @@ class BillOfMaterialSection
                             ->placeholder(__('Not fixed'))
                             ->extraInputAttributes(['inputmode' => 'numeric'])
                             ->rules(['nullable', 'integer', 'min:1'])
-                            ->suffix(fn (Get $get): ?string => self::unitName($get('material_id')))
+                            ->suffix(__('pcs'))
                             ->columnSpan(['default' => 1, 'lg' => 3]),
 
                         Forms\Components\TextInput::make('note')
@@ -99,8 +115,54 @@ class BillOfMaterialSection
                             ->placeholder(__('Note (optional)'))
                             ->maxLength(500)
                             ->columnSpan(['default' => 1, 'lg' => 2]),
-                    ]),
-            ]);
+                    ]);
+    }
+
+    /**
+     * Tombol BOM di daftar produk: membuka baris-baris BOM yang SAMA dengan
+     * form Edit produk, tanpa masuk halaman Edit (permintaan Owner, 7 Oktober
+     * 2026 -- tombolnya di daftar, bukan di dalam tiap produk). Semua baris
+     * diisi sekaligus dan disimpan SEKALI lewat `ProductBomSync`, yang juga
+     * menegakkan izin di server.
+     */
+    public static function tableAction(): Tables\Actions\Action
+    {
+        return Tables\Actions\Action::make('bill_of_material')
+            ->iconButton()
+            ->icon('heroicon-o-archive-box')
+            ->tooltip(__('Bill of Material'))
+            ->visible(fn (): bool => self::can('view'))
+            ->modalHeading(fn (Product $record): string => __('Bill of Material').' -- '.$record->name)
+            ->modalDescription(__('List the packaging this product uses. Add all the rows you need, then press Save changes once.'))
+            ->modalSubmitActionLabel(__('Save changes'))
+            ->modalWidth('5xl')
+            ->fillForm(fn (Product $record): array => [
+                'billOfMaterials' => $record->billOfMaterials()->orderBy('id')->get()
+                    ->mapWithKeys(fn (ProductMaterial $row): array => ["record-{$row->id}" => [
+                        'id' => $row->id,
+                        'material_id' => $row->material_id,
+                        'basis' => $row->basis,
+                        'quantity' => $row->quantity,
+                        'note' => $row->note,
+                    ]])
+                    ->all(),
+            ])
+            ->form([self::rows()])
+            ->action(function (array $data, Product $record): void {
+                try {
+                    ProductBomSync::sync($record, $data['billOfMaterials'] ?? []);
+                } catch (ValidationException $e) {
+                    Notification::make()
+                        ->title(__('Bill of material not saved'))
+                        ->body(collect($e->errors())->flatten()->implode(' '))
+                        ->danger()
+                        ->send();
+
+                    throw new Halt();
+                }
+
+                Notification::make()->title(__('Bill of material saved'))->success()->send();
+            });
     }
 
     /**
@@ -205,7 +267,7 @@ class BillOfMaterialSection
 
         $quantity = $state['quantity'] ?? null;
         $basis = $state['basis'] ?? 'box';
-        $unit = $material->unit?->name ?? '';
+        $unit = __('pcs');
 
         if ($quantity === null || $quantity === '') {
             $text = __(match ($basis) {
@@ -250,8 +312,4 @@ class BillOfMaterialSection
         return $material ? $material->code.' - '.$material->name : null;
     }
 
-    private static function unitName(mixed $materialId): ?string
-    {
-        return $materialId ? Material::with('unit')->find($materialId)?->unit?->name : null;
-    }
 }

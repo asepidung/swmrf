@@ -116,7 +116,14 @@ class ProductBomSync
             $quantity = $item['quantity'] ?? null;
 
             $rows[] = [
-                'id' => preg_match('/^record-(\d+)$/', (string) $key, $m) ? (int) $m[1] : null,
+                // Form Edit produk berkunci "record-{id}"; repeater tanpa relasi
+                // (tombol BOM di daftar produk) mengganti kuncinya dengan UUID,
+                // jadi id-nya dibawa di field tersembunyi `id`. Id yang bukan
+                // milik produk ini tidak ada di `$existing`, dan diperlakukan
+                // sebagai baris baru -- tidak bisa dipakai menyentuh produk lain.
+                'id' => preg_match('/^record-(\d+)$/', (string) $key, $m)
+                    ? (int) $m[1]
+                    : (filled($item['id'] ?? null) ? (int) $item['id'] : null),
                 'material_id' => $materialId,
                 'basis' => array_key_exists((string) ($item['basis'] ?? ''), ProductMaterial::BASIS) ? $item['basis'] : 'box',
                 // Kosong BUKAN nol: kosong = jumlahnya tidak tetap.

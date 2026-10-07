@@ -213,7 +213,10 @@ class ProductResource extends Resource
             ])
             ->defaultSort('name')
             ->actions([
-                // Clickable rows handles edit redirection, actions left clean per project rules
+                // Baris yang bisa diklik tetap membuka halaman Edit. Satu-satunya
+                // tombol: BOM (Owner, 7 Oktober 2026), supaya bahan produk bisa
+                // diisi dari daftar tanpa membuka tiap produk.
+                ProductResource\Forms\BillOfMaterialSection::tableAction(),
             ])
             ->recordUrl(
                 fn (Product $record): string => Pages\EditProduct::getUrl([$record->id])
