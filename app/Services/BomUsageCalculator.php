@@ -71,7 +71,7 @@ class BomUsageCalculator
                     continue;
                 }
 
-                $dasar = $bom->basis === 'piece' ? $pcs : $box;
+                $dasar = $bom->basis === 'piece' ? $pcs : $box; // 'sack' = 'box': satu label satu karung
                 $qty = $bom->quantity * $dasar;
 
                 $usage[$bom->material_id] = ($usage[$bom->material_id] ?? 0) + $qty;

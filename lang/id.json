@@ -830,6 +830,7 @@
     "Pcs Out": "Pcs Keluar",
     "Per Box": "Per Box",
     "Per Pcs": "Per Pcs",
+    "Per Sack": "Per Karung",
     "Period": "Periode",
     "Period (month/year)": "Periode (Bulan/Tahun)",
     "Period end": "Periode Akhir",
@@ -1638,5 +1639,7 @@
     ":qty :unit per box": ":qty :unit per box",
     ":qty :unit per pcs": ":qty :unit per pcs",
     "amount not fixed, per box": "jumlah tidak tetap, per box",
-    "amount not fixed, per pcs": "jumlah tidak tetap, per pcs"
+    "amount not fixed, per pcs": "jumlah tidak tetap, per pcs",
+    "amount not fixed, per sack": "jumlah tidak tetap, per karung",
+    ":qty :unit per sack": ":qty :unit per karung"
 }

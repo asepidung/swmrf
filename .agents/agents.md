@@ -6933,3 +6933,13 @@ nol ditolak, matriks izin di server, bagian tersembunyi tanpa izin lihat,
 menyalin tidak menyentuh database). Dibuktikan menggigit: pemeriksaan izin
 dimatikan sementara, test izin merah; dipulihkan, hijau. Test lama yang
 bergantung pada RelationManager dilepas dari `BillOfMaterialTest`.
+
+**Susulan #507 -- satuan karung, 7 Oktober 2026 (Ruby).** Owner mencoba form
+BOM dan minta satuan **karung** selain box dan pcs. `ProductMaterial::BASIS`
+(satu rumah) bertambah `'sack' => 'Per Sack'` (terjemahan "Per Karung").
+Dihitung SAMA dengan `box`: satu label = satu karung, jadi jumlahnya jumlah
+label, bukan jumlah pcs (Bone dikemas karung). Kenapa tidak cukup memakai
+`box`: BOM harus menyebut satuan kemasan yang sebenarnya, dan di layar
+tertulis "per karung". Kolom `basis` bertipe string(10) tanpa batasan nilai,
+jadi tidak ada migrasi. `BomUsageCalculator` tidak berubah perilaku (hanya
+`piece` yang memakai pcs). Test: `a_sack_basis_row_counts_one_per_label_like_box`.
