@@ -1624,5 +1624,10 @@
     "Usual maximum weight per label (kg)": "Usual maximum weight per label (kg)",
     "Above this the operator is asked to confirm the weight. Leave empty for 100 kg.": "Above this the operator is asked to confirm the weight. Leave empty for 100 kg.",
     "Batch": "Batch",
-    "Required: say where and why this item was found.": "Required: say where and why this item was found."
+    "Required: say where and why this item was found.": "Required: say where and why this item was found.",
+    "Content per Unit": "Content per Unit",
+    "How many usage units (e.g. pcs) one purchase unit holds. Example: 1 Box of plastic holds 1,000 pcs, so enter 1000. Only used to value waste; purchasing and stock stay in the purchase unit.": "How many usage units (e.g. pcs) one purchase unit holds. Example: 1 Box of plastic holds 1,000 pcs, so enter 1000. Only used to value waste; purchasing and stock stay in the purchase unit.",
+    "Drylog Material": "Drylog Material",
+    "Mark the material recorded as drylog on the boning and repack material usage pages.": "Mark the material recorded as drylog on the boning and repack material usage pages.",
+    "Drylog": "Drylog"
 }

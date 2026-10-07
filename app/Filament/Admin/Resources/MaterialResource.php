@@ -66,6 +66,14 @@ class MaterialResource extends Resource
                                     ->maxLength(255)
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
                             ]),
+                        Forms\Components\TextInput::make('content_per_unit')
+                            ->label(fn() => __('Content per Unit'))
+                            ->helperText(__('How many usage units (e.g. pcs) one purchase unit holds. Example: 1 Box of plastic holds 1,000 pcs, so enter 1000. Only used to value waste; purchasing and stock stay in the purchase unit.'))
+                            ->numeric()
+                            ->integer()
+                            ->minValue(1)
+                            ->default(1)
+                            ->required(),
                         Forms\Components\Select::make('material_category_id')
                             ->label(fn() => __('Category'))
                             ->relationship('category', 'name')
@@ -85,6 +93,11 @@ class MaterialResource extends Resource
                             ->label(fn() => __('Show in Stock List?'))
                             ->helperText(__('Turn OFF for non-inventory items like Office Supplies.'))
                             ->default(true)
+                            ->columnSpanFull(),
+                        Forms\Components\Toggle::make('is_drylog')
+                            ->label(fn() => __('Drylog Material'))
+                            ->helperText(__('Mark the material recorded as drylog on the boning and repack material usage pages.'))
+                            ->default(false)
                             ->columnSpanFull(),
                         Forms\Components\Toggle::make('is_active')
                             ->label(fn() => __('Is Active'))
@@ -111,6 +124,10 @@ class MaterialResource extends Resource
                 Tables\Columns\TextColumn::make('unit.name')
                     ->label(fn() => __('Unit'))
                     ->sortable(),
+                Tables\Columns\TextColumn::make('content_per_unit')
+                    ->label(fn() => __('Content per Unit'))
+                    ->numeric()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('min_stock')
                     ->label(fn() => __('Min. Stock'))
                     ->numeric()
@@ -120,6 +137,9 @@ class MaterialResource extends Resource
                     ->boolean(),
                 Tables\Columns\IconColumn::make('show_in_stock')
                     ->label(fn() => __('Show in Stock'))
+                    ->boolean(),
+                Tables\Columns\IconColumn::make('is_drylog')
+                    ->label(fn() => __('Drylog'))
                     ->boolean(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()

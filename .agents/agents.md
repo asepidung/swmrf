@@ -6882,3 +6882,28 @@ Pekerjaan Owner (dikerjakan lokal, di-commit Hafizh atas permintaan Owner).
 - Belum ditangani (temuan sesi cloud #496): nama produk panjang mendorong
   tabel label Boning melebihi area cetak 69 mm sehingga barcode bisa
   terpotong. Perlu uji cetak Owner.
+
+## #509 langkah 1 -- master material: Isi per satuan dan penanda drylog, 7 Oktober 2026
+
+Langkah pertama dari #509 (pemakaian bahan per boning/repack, tanpa memotong
+stok). Hanya master material; halaman boning/repack belum disentuh.
+
+- **`materials.content_per_unit`** (bilangan bulat >= 1, bawaan 1), label
+  "Isi per Satuan". Material dibeli per satuan beli tetapi BOM dan bahan
+  terbuang dihitung per satuan pakai (pcs); kolom ini HANYA untuk menilai:
+  harga per satuan pakai = harga beli per satuan beli / content_per_unit
+  (plastik 1 Box @ Rp 1.000.000 isi 1.000 -> Rp 1.000 per pcs). PO, GR, dan
+  stok TIDAK berubah. Keputusan Owner, 7 Oktober 2026. Form menolak 0, negatif,
+  desimal, dan kosong.
+- **`materials.is_drylog`** (boolean, bawaan false). Penanda material drylog
+  lewat DATA, bukan id yang ditulis di kode (id berbeda antara lokal dan
+  hosting). Pilihan "usulkan di PR" dari #509: dipilih flag di material karena
+  boleh ada lebih dari satu material drylog dan Owner bisa mengubahnya tanpa
+  deploy. **Tidak ada material yang ditandai otomatis** oleh migrasi -- menebak
+  dari nama "DRYLOG" bisa salah; Owner menyalakannya di master material.
+- Material lama otomatis berisi 1 dan false, jadi perilaku sekarang tidak
+  berubah sampai kolom ini dipakai langkah berikutnya.
+- Tidak ada izin baru (memakai izin Material yang ada).
+
+**Test:** `MaterialContentPerUnitTest` (bawaan 1/false, tersimpan dari form,
+validasi 0/-5/2,5/kosong ditolak, nilai kembali di form edit).
