@@ -105,14 +105,15 @@ class BillOfMaterialFormTest extends TestCase
 
         $this->actingAs($this->semuaIzin());
 
-        Livewire::test(EditProduct::class, ['record' => $produk->getKey()])
-            ->fillForm(['billOfMaterials' => [
-                $this->baris($karton),
-                $this->baris($plastik, 'piece', 2, 'cryovac'),
-                $this->baris($drylog, 'box', null),
-            ]])
-            ->call('save')
-            ->assertHasNoFormErrors();
+        Livewire::test(ListProducts::class)
+            ->mountTableAction('bill_of_material', $produk)
+            ->set('mountedTableActionsData.0.billOfMaterials', [
+                'a' => $this->baris($karton),
+                'b' => $this->baris($plastik, 'piece', 2, 'cryovac'),
+                'c' => $this->baris($drylog, 'box', null),
+            ])
+            ->callMountedTableAction()
+            ->assertHasNoTableActionErrors();
 
         $this->assertSame(3, $produk->billOfMaterials()->count(), 'Ketiga baris harus tersimpan dalam satu Save.');
 
@@ -139,16 +140,24 @@ class BillOfMaterialFormTest extends TestCase
 
         $this->actingAs($this->semuaIzin());
 
-        $form = Livewire::test(EditProduct::class, ['record' => $produk->getKey()]);
+        $aksi = Livewire::test(ListProducts::class)->mountTableAction('bill_of_material', $produk);
 
-        $state = $form->get('data.billOfMaterials');
+        $state = $aksi->get('mountedTableActionsData.0.billOfMaterials');
 
         // A diubah jumlahnya, B dihapus, C ditambah.
-        $state["record-{$barisA->id}"]['quantity'] = 4;
-        unset($state["record-{$barisB->id}"]);
+        foreach ($state as $kunci => $baris) {
+            if ($baris['id'] === $barisA->id) {
+                $state[$kunci]['quantity'] = 4;
+            }
+            if ($baris['id'] === $barisB->id) {
+                unset($state[$kunci]);
+            }
+        }
         $state['baru-1'] = $this->baris($c, 'piece', 3);
 
-        $form->set('data.billOfMaterials', $state)->call('save')->assertHasNoFormErrors();
+        $aksi->set('mountedTableActionsData.0.billOfMaterials', $state)
+            ->callMountedTableAction()
+            ->assertHasNoTableActionErrors();
 
         $this->assertSame(4, $barisA->fresh()->quantity);
         $this->assertNull(ProductMaterial::find($barisB->id), 'Baris yang dihapus dari form harus hilang dari BOM.');
@@ -164,7 +173,11 @@ class BillOfMaterialFormTest extends TestCase
 
         $this->actingAs($this->semuaIzin());
 
-        $rows = array_values(Livewire::test(EditProduct::class, ['record' => $produk->getKey()])->get('data.billOfMaterials'));
+        $rows = array_values(
+            Livewire::test(ListProducts::class)
+                ->mountTableAction('bill_of_material', $produk)
+                ->get('mountedTableActionsData.0.billOfMaterials')
+        );
 
         $this->assertCount(1, $rows);
         $this->assertSame($a->id, $rows[0]['material_id']);
@@ -182,9 +195,10 @@ class BillOfMaterialFormTest extends TestCase
 
         $this->actingAs($this->semuaIzin());
 
-        Livewire::test(EditProduct::class, ['record' => $produk->getKey()])
-            ->fillForm(['billOfMaterials' => [$this->baris($a), $this->baris($a, 'piece', 2)]])
-            ->call('save');
+        Livewire::test(ListProducts::class)
+            ->mountTableAction('bill_of_material', $produk)
+            ->set('mountedTableActionsData.0.billOfMaterials', ['x' => $this->baris($a), 'y' => $this->baris($a, 'piece', 2)])
+            ->callMountedTableAction();
 
         $this->assertSame(0, $produk->billOfMaterials()->count(), 'Bahan kembar tidak boleh tersimpan separuh.');
     }
@@ -272,19 +286,37 @@ class BillOfMaterialFormTest extends TestCase
         $this->assertTrue(true);
     }
 
-    public function test_the_section_is_hidden_without_the_view_permission_and_on_create(): void
+    public function test_the_section_on_the_edit_page_is_view_only_and_needs_the_view_permission(): void
     {
         $produk = $this->produk();
+        $karton = $this->bahan('KARTON TOP TERLIHAT');
+        ProductMaterial::create(['product_id' => $produk->id, 'material_id' => $karton->id, 'quantity' => 2, 'basis' => 'box']);
 
         $this->actingAs($this->pengguna());
 
         Livewire::test(EditProduct::class, ['record' => $produk->getKey()])
-            ->assertFormFieldIsHidden('billOfMaterials');
+            ->assertDontSee('KARTON TOP TERLIHAT');
 
         $this->actingAs($this->pengguna('view_product_materials'));
 
         Livewire::test(EditProduct::class, ['record' => $produk->getKey()])
-            ->assertFormFieldIsVisible('billOfMaterials');
+            ->assertSee('KARTON TOP TERLIHAT')
+            ->assertFormFieldDoesNotExist('billOfMaterials');
+    }
+
+    public function test_saving_the_product_form_never_touches_the_bom(): void
+    {
+        $produk = $this->produk();
+        $karton = $this->bahan('KARTON TOP');
+        $baris = ProductMaterial::create(['product_id' => $produk->id, 'material_id' => $karton->id, 'quantity' => 2, 'basis' => 'box']);
+
+        $this->actingAs($this->semuaIzin());
+
+        Livewire::test(EditProduct::class, ['record' => $produk->getKey()])
+            ->set('data.billOfMaterials', [])
+            ->call('save');
+
+        $this->assertNotNull(ProductMaterial::find($baris->id), 'Halaman Edit produk tidak boleh menghapus BOM.');
     }
 
     // =====================================================================
@@ -323,18 +355,37 @@ class BillOfMaterialFormTest extends TestCase
         $this->assertSame(1, $tujuan->billOfMaterials()->where('material_id', $karton->id)->first()->quantity);
     }
 
-    public function test_the_copy_button_needs_the_permission_to_add_rows(): void
+    public function test_picking_a_source_product_in_the_list_window_fills_the_rows_without_saving(): void
     {
-        $section = BillOfMaterialSection::make();
-        $copy = collect($section->getHeaderActions())->first(fn ($a) => $a->getName() === 'salin_bom');
-
-        $this->assertNotNull($copy, 'Tombol salin tidak ada di bagian BOM.');
-
-        $this->actingAs($this->pengguna('view_product_materials'));
-        $this->assertTrue($copy->isHidden(), 'Tombol salin terbuka tanpa izin create_product_materials.');
+        $sumber = $this->produk('BACKRIB');
+        $tujuan = $this->produk('BACKRIB CUT');
+        $karton = $this->bahan('KARTON TOP TULANG');
+        ProductMaterial::create(['product_id' => $sumber->id, 'material_id' => $karton->id, 'quantity' => 1, 'basis' => 'box']);
 
         $this->actingAs($this->semuaIzin());
-        $this->assertFalse($copy->isHidden());
+
+        $aksi = Livewire::test(ListProducts::class)
+            ->mountTableAction('bill_of_material', $tujuan)
+            ->set('mountedTableActionsData.0.copy_from', $sumber->id);
+
+        $rows = array_values($aksi->get('mountedTableActionsData.0.billOfMaterials'));
+        $this->assertCount(1, $rows);
+        $this->assertSame($karton->id, $rows[0]['material_id']);
+        $this->assertSame(0, $tujuan->billOfMaterials()->count(), 'Memilih sumber tidak boleh menulis ke database sebelum Save.');
+
+        $aksi->callMountedTableAction()->assertHasNoTableActionErrors();
+        $this->assertSame(1, $tujuan->billOfMaterials()->count());
+    }
+
+    public function test_the_copy_choice_needs_the_permission_to_add_rows(): void
+    {
+        $tujuan = $this->produk('BACKRIB CUT');
+
+        $this->actingAs($this->pengguna('view_product_materials', 'edit_product_materials'));
+
+        Livewire::test(ListProducts::class)
+            ->mountTableAction('bill_of_material', $tujuan)
+            ->assertFormFieldIsHidden('copy_from', 'mountedTableActionForm');
     }
 
     public function test_the_section_is_part_of_the_product_form(): void

@@ -13,7 +13,7 @@ use Filament\Notifications\Notification;
 use Filament\Support\Exceptions\Halt;
 use Filament\Tables;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 /**
@@ -33,26 +33,42 @@ use Illuminate\Support\Str;
  */
 class BillOfMaterialSection
 {
+    /**
+     * Bagian BOM di form Edit produk: HANYA TAMPILAN (permintaan Owner, 7
+     * Oktober 2026). BOM diisi lewat tombol BOM di daftar produk; di sini
+     * pemakai cukup melihat bahan apa saja yang dipakai produk ini. Karena
+     * tidak ada field, menyimpan produk tidak menyentuh BOM sama sekali.
+     */
     public static function make(): Forms\Components\Section
     {
         return Forms\Components\Section::make(__('Bill of Material'))
-            ->description(__('List the packaging this product uses. Add all the rows you need, then press Save changes once.'))
+            ->description(__('View only here. Fill it in with the Bill of Material button on the product list.'))
             ->icon('heroicon-o-archive-box')
             ->visible(fn (string $operation): bool => $operation === 'edit' && self::can('view'))
-            ->headerActions([self::copyAction()])
             ->schema([
-                self::rows()
-                    ->relationship(modifyQueryUsing: fn (Builder $query): Builder => $query->orderBy('id'))
-                    ->saveRelationshipsUsing(function (Forms\Components\Repeater $component, ?array $state): void {
-                        ProductBomSync::sync($component->getRecord(), $state ?? []);
-                    }),
+                Forms\Components\View::make('filament.partials.product-bom-view')
+                    ->viewData(fn (?Model $record): array => [
+                        'rows' => $record
+                            ? $record->billOfMaterials()->with('material')->orderBy('id')->get()
+                            : collect(),
+                    ]),
             ]);
     }
 
     /**
-     * Baris-baris BOM, dipakai bersama oleh form Edit produk (terikat ke
-     * relasi) dan tombol BOM di daftar produk (tanpa relasi, disimpan lewat
-     * `ProductBomSync`). Satu rumah supaya kedua tempat tidak berbeda diam-diam.
+     * Isi jendela tombol BOM di daftar produk: pilihan "Copy from Another
+     * Product" di atas, lalu baris-baris BOM.
+     *
+     * @return array<int, \Filament\Forms\Components\Component>
+     */
+    public static function modalSchema(): array
+    {
+        return [self::copyFrom(), self::rows()];
+    }
+
+    /**
+     * Baris-baris BOM di jendela tombol BOM (tanpa relasi, disimpan lewat
+     * `ProductBomSync`).
      */
     public static function rows(): Forms\Components\Repeater
     {
@@ -147,7 +163,7 @@ class BillOfMaterialSection
                     ]])
                     ->all(),
             ])
-            ->form([self::rows()])
+            ->form(self::modalSchema())
             ->action(function (array $data, Product $record): void {
                 try {
                     ProductBomSync::sync($record, $data['billOfMaterials'] ?? []);
@@ -168,35 +184,41 @@ class BillOfMaterialSection
     /**
      * Menyalin BOM produk lain KE FORM, belum ke database.
      *
-     * Bahan yang sudah ada barisnya tidak ditimpa (yang menyalin sedang
-     * melengkapi daftarnya, bukan menggantinya), dan salinannya putus dari
-     * asalnya begitu disimpan -- data produksi memperlihatkan daftar produk
-     * yang mirip memang sering berbeda sedikit (BACKRIB memakai karton top,
-     * BACKRIB CUT tidak). Karena baru mengisi form, hasilnya bisa ditinjau
-     * dan diubah sebelum Save changes.
+     * Memilih produk sumber langsung mengisi baris-barisnya di bawah. Bahan
+     * yang sudah ada barisnya tidak ditimpa (yang menyalin sedang melengkapi
+     * daftarnya, bukan menggantinya), dan salinannya putus dari asalnya begitu
+     * disimpan -- data produksi memperlihatkan daftar produk yang mirip memang
+     * sering berbeda sedikit (BACKRIB memakai karton top, BACKRIB CUT tidak).
+     * Karena baru mengisi form, hasilnya bisa ditinjau dan diubah sebelum
+     * Save changes.
+     *
+     * Berupa Select biasa, bukan aksi komponen: aksi di dalam jendela aksi
+     * tabel butuh `key()` dan bersarang dua tingkat.
      */
-    private static function copyAction(): Forms\Components\Actions\Action
+    private static function copyFrom(): Forms\Components\Select
     {
-        return Forms\Components\Actions\Action::make('salin_bom')
+        return Forms\Components\Select::make('copy_from')
             ->label(__('Copy from Another Product'))
-            ->icon('heroicon-o-document-duplicate')
-            ->color('gray')
+            ->placeholder(__('Select a source product'))
+            ->options(fn ($livewire): array => Product::query()
+                ->whereKeyNot(self::currentProduct($livewire)?->getKey())
+                ->whereHas('billOfMaterials')
+                ->orderBy('name')
+                ->pluck('name', 'id')
+                ->all())
+            ->searchable()
+            ->live()
+            ->dehydrated(false)
             ->visible(fn (): bool => self::can('create'))
-            ->form(fn ($livewire): array => [
-                Forms\Components\Select::make('product_id')
-                    ->label(__('Source Product'))
-                    ->options(fn (): array => Product::query()
-                        ->whereKeyNot($livewire->getRecord()?->getKey())
-                        ->whereHas('billOfMaterials')
-                        ->orderBy('name')
-                        ->pluck('name', 'id')
-                        ->all())
-                    ->searchable()
-                    ->required()
-                    ->helperText(__('Only products that already have a bill of material are listed.')),
-            ])
-            ->action(function (array $data, Get $get, Set $set): void {
-                [$merged, $added] = self::copyRows($get('billOfMaterials') ?? [], (int) $data['product_id']);
+            ->helperText(__('Only products that already have a bill of material are listed.'))
+            ->afterStateUpdated(function ($state, Get $get, Set $set): void {
+                if (blank($state)) {
+                    return;
+                }
+
+                [$merged, $added] = self::copyRows($get('billOfMaterials') ?? [], (int) $state);
+
+                $set('copy_from', null);
 
                 if ($added === 0) {
                     Notification::make()
@@ -285,6 +307,14 @@ class BillOfMaterialSection
         }
 
         return $material->name.' -- '.$text;
+    }
+
+    /** Produk yang sedang diedit: dari halaman Edit, atau dari aksi tabel di daftar produk. */
+    private static function currentProduct(mixed $livewire): ?Model
+    {
+        return method_exists($livewire, 'getMountedTableActionRecord')
+            ? $livewire->getMountedTableActionRecord()
+            : $livewire->getRecord();
     }
 
     private static function can(string $ability): bool

@@ -1642,5 +1642,8 @@
     "pcs": "pcs",
     "Save changes": "Simpan perubahan",
     "Bill of material not saved": "BOM tidak tersimpan",
-    "Bill of material saved": "BOM tersimpan"
+    "Bill of material saved": "BOM tersimpan",
+    "View only here. Fill it in with the Bill of Material button on the product list.": "Hanya tampilan di sini. Isi lewat tombol Bill of Material di daftar produk.",
+    "No bill of material yet.": "Belum ada BOM.",
+    "Select a source product": "Pilih produk sumber"
 }

@@ -6977,3 +6977,27 @@ menambah tanpa izin buat, mengubah dari daftar tidak butuh izin hapus,
 tidak bisa menyentuh baris produk lain). Dibuktikan menggigit: pembacaan `id`
 di `ProductBomSync` dimatikan sementara, test simpan-semua merah; dipulihkan,
 hijau.
+
+**Susulan #507 -- Edit produk hanya tampilan BOM, Per Karung dibuang, 7 Oktober 2026 (Ruby).**
+Mengoreksi dua baris catatan susulan di atas.
+
+- **Bagian Bill of Material di halaman Edit produk sekarang HANYA TAMPILAN**
+  (tabel bahan, dasar, jumlah, catatan). Permintaan Owner: "cukup jadikan view
+  aja". BOM diisi lewat tombol BOM di daftar produk. Tidak ada field, jadi
+  menyimpan produk tidak menyentuh BOM (ada test). `ProductBomSync` tetap
+  satu-satunya penulis dan penegak izin.
+- **"Copy from Another Product" pindah ke jendela tombol BOM** sebagai pilihan
+  produk sumber di atas baris-baris (Select biasa yang langsung mengisi baris,
+  belum database). Bukan aksi komponen: aksi di dalam jendela aksi tabel
+  menuntut `key()` dan bersarang dua tingkat.
+- **Dasar Per Karung DIBUANG** (Owner setuju): karung Bone cukup diisi
+  `Per Box` karena satu label satu karung. Tersisa dua dasar, `Per Box` dan
+  `Per Pcs`.
+- **Pelajaran dari legacy (belum diputuskan, ditanyakan ke Owner):**
+  `legacy/versi prosedural/boning/rawusage_UNUSED.php` dan `save_rawusage.php`
+  menunjukkan BOM lama hanya DAFTAR bahan per produk. Dasar hitungnya tetap
+  menurut JENIS bahan, bukan per baris: karton top/bottom, linier, karung = per
+  box; vacuum/cryovac dan tray = per pcs. `bom_rawmate.qty` diabaikan saat
+  menghitung dan hampir selalu 1 (410 dari 417 baris; sisanya 2, 6, 10). Usul:
+  dasar hitung dipindah ke master material (sekali isi), baris BOM cukup memilih
+  bahan, jumlah bawaan 1.
