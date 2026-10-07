@@ -272,13 +272,11 @@ class BillOfMaterialSection
         if ($quantity === null || $quantity === '') {
             $text = __(match ($basis) {
                 'piece' => 'amount not fixed, per pcs',
-                'sack' => 'amount not fixed, per sack',
                 default => 'amount not fixed, per box',
             });
         } else {
             $text = __(match ($basis) {
                 'piece' => ':qty :unit per pcs',
-                'sack' => ':qty :unit per sack',
                 default => ':qty :unit per box',
             }, [
                 'qty' => number_format((int) $quantity, 0, ',', '.'),

@@ -20,15 +20,13 @@ class ProductMaterial extends Model
      * disalin ke salah satunya saja, salinan itu akan berbeda pada perubahan
      * berikutnya. Nilainya mengikuti bentuk stok daging yang sudah ada: satu
      * baris `beef_stocks` adalah satu BOX berbarcode, dan `qty_pcs` isinya.
-     * `sack` (karung, permintaan Owner 7 Oktober 2026) dihitung SAMA dengan
-     * `box`: satu label = satu karung (mis. Bone hanya karung), jadi jumlahnya
-     * jumlah label. Dipisah dari `box` hanya supaya BOM menyebut satuan
-     * kemasan yang sebenarnya.
+     * Karung (Bone) TIDAK punya dasar sendiri: satu label = satu karung, jadi
+     * karung diisi `box`. Dasar `sack` sempat ada (7 Oktober 2026) lalu dibuang
+     * atas keputusan Owner karena artinya sama dengan `box`.
      */
     public const BASIS = [
         'box' => 'Per Box',
         'piece' => 'Per Pcs',
-        'sack' => 'Per Sack',
     ];
 
     protected $fillable = [
