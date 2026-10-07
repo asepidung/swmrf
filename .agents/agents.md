@@ -6883,6 +6883,54 @@ Pekerjaan Owner (dikerjakan lokal, di-commit Hafizh atas permintaan Owner).
   tabel label Boning melebihi area cetak 69 mm sehingga barcode bisa
   terpotong. Perlu uji cetak Owner.
 
+## #509 langkah 1 -- master material: Isi per satuan, 7 Oktober 2026
+
+Langkah pertama dari #509 (pemakaian bahan per boning/repack, tanpa memotong
+stok). Hanya master material; halaman boning/repack tidak disentuh di sini.
+
+- **`materials.content_per_unit`** (bilangan bulat >= 1, bawaan 1), label
+  "Isi per Satuan". Material dibeli per satuan beli tetapi BOM dan bahan
+  terbuang dihitung per satuan pakai (pcs); kolom ini HANYA untuk menilai:
+  harga per satuan pakai = harga beli per satuan beli / content_per_unit
+  (plastik 1 Box @ Rp 1.000.000 isi 1.000 -> Rp 1.000 per pcs). PO, GR, dan
+  stok TIDAK berubah. Keputusan Owner, 7 Oktober 2026. Form menolak 0, negatif,
+  desimal, dan kosong. Contoh dari Owner: plastik dibeli per box isi sekitar
+  1.000; karton per ikat isi 20; karung per kg dengan isi berbeda-beda --
+  karung DIABAIKAN dulu dan tidak akan ikut bahan terbuang.
+- **Penanda "material drylog" (`is_drylog`) sempat dibuat lalu DIBUANG** atas
+  keputusan Owner ("sangat tidak masuk akal ada di situ"): drylog hanya salah
+  satu material. Halaman produksi (langkah 3) memilih material drylog dari
+  daftar material, bukan dari penanda di master. Kolomnya dilepas dari migrasi
+  yang sama karena PR-nya belum di-merge dan belum di-deploy.
+- Material lama otomatis berisi 1, jadi perilaku sekarang tidak berubah sampai
+  kolom ini dipakai langkah berikutnya.
+- Tidak ada izin baru (memakai izin Material yang ada).
+
+**Test:** `MaterialContentPerUnitTest` (bawaan 1, tersimpan dari form, validasi
+0/-5/2,5/kosong ditolak, nilai kembali di form edit, kolom `is_drylog` tidak
+ada).
+
+**Susulan #509 langkah 1 -- Min. Stock hanya untuk material yang masuk daftar stok, 7 Oktober 2026 (Ruby).**
+Permintaan Owner: field Min. Stock muncul hanya bila "Show in Stock List?"
+menyala. Material non-stok (mesin, kulkas, stiker, materai) tidak punya batas
+minimum.
+
+- Toggle `show_in_stock` kini `live()`; `min_stock` terlihat dan wajib hanya
+  bila toggle menyala.
+- Bila toggle mati, `min_stock` disimpan **0** (kolom wajib terisi, dan
+  material tanpa stok memang tidak punya minimum). Satu rumah:
+  `MaterialResource::normaliseStockData()`, dipanggil dari halaman Create dan
+  Edit. Material lama yang toggle-nya sudah mati tetap berisi nilai lamanya
+  sampai disimpan ulang.
+- Yang membaca `min_stock` hanya halaman stok material (sudah menyaring
+  `show_in_stock`), filter "di bawah minimum", dan stock take, jadi tidak ada
+  pembaca yang terganggu nilai 0 pada material non-stok.
+
+**Test:** `MaterialContentPerUnitTest` +4 (field tampil/sembunyi, simpan tanpa
+min stock bila non-stok, tetap wajib bila stok, mematikan toggle me-nol-kan).
+Dibuktikan menggigit: `normaliseStockData` dimatikan sementara, test
+me-nol-kan merah; dipulihkan, hijau.
+
 
 ## #507 -- BOM jadi baris-baris di form Edit produk, 7 Oktober 2026
 

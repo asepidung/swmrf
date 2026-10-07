@@ -1649,5 +1649,7 @@
     "counted per pcs": "counted per pcs",
     "counted per box": "counted per box",
     "Edit Bill of Material": "Edit Bill of Material",
-    "Create Bill of Material": "Create Bill of Material"
+    "Create Bill of Material": "Create Bill of Material",
+    "Content per Unit": "Content per Unit",
+    "How many usage units (e.g. pcs) one purchase unit holds. Example: 1 Box of plastic holds 1,000 pcs, so enter 1000. Only used to value waste; purchasing and stock stay in the purchase unit.": "How many usage units (e.g. pcs) one purchase unit holds. Example: 1 Box of plastic holds 1,000 pcs, so enter 1000. Only used to value waste; purchasing and stock stay in the purchase unit."
 }

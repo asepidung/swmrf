@@ -1649,5 +1649,7 @@
     "counted per pcs": "dihitung per pcs",
     "counted per box": "dihitung per box",
     "Edit Bill of Material": "Ubah BOM",
-    "Create Bill of Material": "Buat BOM"
+    "Create Bill of Material": "Buat BOM",
+    "Content per Unit": "Isi per Satuan",
+    "How many usage units (e.g. pcs) one purchase unit holds. Example: 1 Box of plastic holds 1,000 pcs, so enter 1000. Only used to value waste; purchasing and stock stay in the purchase unit.": "Berapa satuan pakai (mis. pcs) dalam satu satuan beli. Contoh: 1 Box plastik isi 1.000 pcs, maka isi 1000. Hanya dipakai untuk menilai bahan terbuang; pembelian dan stok tetap dalam satuan beli."
 }
