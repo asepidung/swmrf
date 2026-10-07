@@ -108,6 +108,8 @@ class BillOfMaterialSection
                             ->options(collect(ProductMaterial::BASIS)->map(fn (string $label): string => __($label))->all())
                             ->default('box')
                             ->required()
+                            // Live supaya judul baris (ringkasan) ikut berubah.
+                            ->live()
                             ->selectablePlaceholder(false)
                             ->columnSpan(['default' => 1, 'lg' => 2]),
 
@@ -122,6 +124,7 @@ class BillOfMaterialSection
                             ->placeholder(__('Not fixed'))
                             ->extraInputAttributes(['inputmode' => 'numeric'])
                             ->rules(['nullable', 'integer', 'min:1'])
+                            ->live(onBlur: true)
                             ->suffix(__('pcs'))
                             ->columnSpan(['default' => 1, 'lg' => 3]),
 

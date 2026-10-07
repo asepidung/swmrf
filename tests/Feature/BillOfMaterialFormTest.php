@@ -488,4 +488,23 @@ class BillOfMaterialFormTest extends TestCase
         $this->assertSame(5, (int) $milikLain->fresh()->quantity);
         $this->assertSame(1, $produk->billOfMaterials()->count());
     }
+
+    /** Judul baris adalah ringkasan isiannya; ia harus ikut berubah saat isiannya berubah. */
+    public function test_the_row_title_follows_the_basis_and_quantity(): void
+    {
+        $produk = $this->produk();
+        $karton = $this->bahan('KARTON TOP');
+
+        $this->actingAs($this->semuaIzin());
+
+        $aksi = Livewire::test(ListProducts::class)
+            ->mountTableAction('bill_of_material', $produk)
+            ->set('mountedTableActionsData.0.billOfMaterials', ['x' => $this->baris($karton, 'box', null)])
+            ->assertSee('KARTON TOP -- '.__('amount not fixed, per box'));
+
+        $aksi->set('mountedTableActionsData.0.billOfMaterials.x.basis', 'piece')
+            ->set('mountedTableActionsData.0.billOfMaterials.x.quantity', 2)
+            ->assertSee('KARTON TOP -- '.__(':qty :unit per pcs', ['qty' => 2, 'unit' => __('pcs')]))
+            ->assertDontSee(__('amount not fixed, per box'));
+    }
 }
