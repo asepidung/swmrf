@@ -100,4 +100,54 @@ class MaterialContentPerUnitTest extends TestCase
         Livewire::test(EditMaterial::class, ['record' => $material->id])
             ->assertFormSet(['content_per_unit' => 1000, 'is_drylog' => true]);
     }
+
+    /** @test */
+    public function the_min_stock_field_only_shows_for_a_material_listed_in_stock(): void
+    {
+        $this->actingAs($this->programmer());
+
+        Livewire::test(CreateMaterial::class)
+            ->fillForm(['show_in_stock' => true])
+            ->assertFormFieldIsVisible('min_stock')
+            ->fillForm(['show_in_stock' => false])
+            ->assertFormFieldIsHidden('min_stock');
+    }
+
+    /** @test */
+    public function a_material_outside_the_stock_list_is_saved_with_zero_min_stock_and_needs_none(): void
+    {
+        $this->actingAs($this->programmer());
+
+        Livewire::test(CreateMaterial::class)
+            ->fillForm($this->payload(['name' => 'KULKAS', 'show_in_stock' => false, 'min_stock' => null]))
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(0, (int) Material::where('name', 'KULKAS')->value('min_stock'));
+    }
+
+    /** @test */
+    public function a_material_in_the_stock_list_still_requires_min_stock(): void
+    {
+        $this->actingAs($this->programmer());
+
+        Livewire::test(CreateMaterial::class)
+            ->fillForm($this->payload(['show_in_stock' => true, 'min_stock' => null]))
+            ->call('create')
+            ->assertHasFormErrors(['min_stock' => 'required']);
+    }
+
+    /** @test */
+    public function switching_a_saved_material_out_of_the_stock_list_resets_min_stock_to_zero(): void
+    {
+        $this->actingAs($this->programmer());
+        $material = Material::create($this->payload(['is_active' => true, 'show_in_stock' => true, 'min_stock' => 50]));
+
+        Livewire::test(EditMaterial::class, ['record' => $material->id])
+            ->fillForm(['show_in_stock' => false])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(0, (int) $material->fresh()->min_stock);
+    }
 }

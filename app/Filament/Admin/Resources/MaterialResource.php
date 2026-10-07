@@ -7,6 +7,7 @@ use App\Filament\Admin\Resources\MaterialResource\RelationManagers;
 use App\Models\Material;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -36,6 +37,23 @@ class MaterialResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+
+    /**
+     * Satu aturan, satu rumah untuk halaman Create dan Edit: material yang
+     * tidak masuk daftar stok tidak punya stok minimum, jadi disimpan 0
+     * (kolomnya wajib terisi; field-nya disembunyikan dan tidak ikut dikirim).
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public static function normaliseStockData(array $data): array
+    {
+        if (! ($data['show_in_stock'] ?? true)) {
+            $data['min_stock'] = 0;
+        }
+
+        return $data;
+    }
 
     public static function form(Form $form): Form
     {
@@ -85,14 +103,22 @@ class MaterialResource extends Resource
                                     ->extraInputAttributes(['style' => 'text-transform:uppercase'])
                                     ->dehydrateStateUsing(fn ($state) => strtoupper($state)),
                             ]),
+                        // Stok minimum hanya berarti bagi material yang masuk daftar
+                        // stok. Mesin, kulkas, stiker, materai tidak punya batas
+                        // minimum, jadi isiannya muncul hanya bila toggle di bawahnya
+                        // menyala (Owner, 7 Oktober 2026). Bila mati, nilainya
+                        // disimpan 0 -- lihat `normaliseStockData()`.
                         Forms\Components\TextInput::make('min_stock')
                             ->label(fn() => __('Min. Stock'))
                             ->numeric()
-                            ->required(),
+                            ->default(0)
+                            ->visible(fn (Get $get): bool => (bool) $get('show_in_stock'))
+                            ->required(fn (Get $get): bool => (bool) $get('show_in_stock')),
                         Forms\Components\Toggle::make('show_in_stock')
                             ->label(fn() => __('Show in Stock List?'))
                             ->helperText(__('Turn OFF for non-inventory items like Office Supplies.'))
                             ->default(true)
+                            ->live()
                             ->columnSpanFull(),
                         Forms\Components\Toggle::make('is_drylog')
                             ->label(fn() => __('Drylog Material'))
