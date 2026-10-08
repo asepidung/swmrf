@@ -77,6 +77,11 @@ class MasterSelect
     {
         $field
             ->searchable()
+            // Pilihan awal saat dropdown dibuka: LIMIT pertama (urut nama, yang
+            // aktif), supaya tidak membuka daftar kosong yang baru terisi setelah
+            // mengetik. Mengetik tetap mencari ke SERVER, jadi item yang lahir
+            // sesudah halaman dibuka tetap ketemu.
+            ->options(fn (): array => self::search($model, '', $activeOnly, $scope))
             ->getSearchResultsUsing(fn (string $search): array => self::search($model, $search, $activeOnly, $scope))
             ->getOptionLabelUsing(fn ($value): ?string => self::label($model, $value));
 

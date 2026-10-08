@@ -7404,3 +7404,14 @@ produk/supplier yang lahir SESUDAH form dibuka ditemukan, tidak ada preload saat
 halaman dibuka, material yang sama tidak bisa dipilih di dua baris (layar dan
 server). Dibuktikan menggigit: satu dropdown dikembalikan ke pola lama, penjaga
 merah dengan berkas dan barisnya; dipulihkan, hijau.
+
+**Susulan #512 kelompok 1 -- dropdown terbuka dengan 50 pilihan pertama, 8 Oktober 2026 (Ruby).**
+Owner mencoba: dropdown Pemasok dan Material terbuka KOSONG ("Ketik untuk
+mencari...") dan baru terisi setelah mengetik. Itu memenuhi bunyi spesifikasi
+(tanpa preload) tetapi tidak nyaman dipakai. `MasterSelect::server()` kini juga
+memberi `->options()` berisi `LIMIT` (50) pilihan pertama, urut nama dan hanya yang
+aktif, supaya dropdown langsung berisi saat dibuka. Mengetik tetap mencari ke
+SERVER, jadi item yang lahir sesudah halaman dibuka tetap ketemu. Pilihan di luar
+50 pertama tetap bisa dipilih lewat pencarian dan disimpan (ada test). Daftar awal
+BUKAN seluruh master; penjaga tetap melarang `->preload()` dan `->options(pluck)`
+di luar `MasterSelect`.

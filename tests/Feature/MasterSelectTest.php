@@ -196,7 +196,7 @@ class MasterSelectTest extends TestCase
     }
 
     /** @test */
-    public function the_dropdowns_no_longer_preload_everything_at_page_open(): void
+    public function the_dropdown_opens_with_the_first_choices_not_an_empty_list(): void
     {
         $this->actingAs($this->user);
         $this->material('BAHAN A');
@@ -204,7 +204,48 @@ class MasterSelectTest extends TestCase
         $test = Livewire::test(CreateMaterialRequisition::class)
             ->fillForm(['items' => [['material_id' => null, 'qty' => 1]]]);
 
-        $this->assertSame([], $this->field($test, 'material_id')->getOptions(), 'Pilihan tidak boleh dimuat sekaligus saat halaman dibuka.');
+        $this->assertContains('BAHAN A', $this->field($test, 'material_id')->getOptions(), 'Dropdown tidak boleh terbuka kosong.');
+    }
+
+    /** @test */
+    public function the_opening_list_is_capped_but_typing_still_finds_the_rest(): void
+    {
+        $this->actingAs($this->user);
+
+        foreach (range(1, MasterSelect::LIMIT + 10) as $i) {
+            $this->material(sprintf('BAHAN %03d', $i));
+        }
+
+        $test = Livewire::test(CreateMaterialRequisition::class)
+            ->fillForm(['items' => [['material_id' => null, 'qty' => 1]]]);
+
+        $field = $this->field($test, 'material_id');
+
+        $this->assertCount(MasterSelect::LIMIT, $field->getOptions(), 'Daftar awal tidak boleh memuat seluruh master.');
+        $this->assertContains(sprintf('BAHAN %03d', MasterSelect::LIMIT + 10), $field->getSearchResults('bahan 060'));
+    }
+
+    /** @test */
+    public function a_material_beyond_the_opening_list_can_be_saved_on_the_request(): void
+    {
+        $this->actingAs($this->user);
+
+        foreach (range(1, MasterSelect::LIMIT + 5) as $i) {
+            $this->material(sprintf('BAHAN %03d', $i));
+        }
+        $jauh = Material::where('name', sprintf('BAHAN %03d', MasterSelect::LIMIT + 5))->firstOrFail();
+        $supplier = $this->supplier('PEMASOK');
+
+        Livewire::test(CreateMaterialRequisition::class)
+            ->fillForm([
+                'due_date' => now()->toDateString(),
+                'supplier_id' => $supplier->id,
+                'items' => [['material_id' => $jauh->id, 'qty' => 2, 'price' => 100]],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(1, \App\Models\MaterialRequisition::count());
     }
 
     // ---------------------------------------------------------------------
