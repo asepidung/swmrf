@@ -1681,6 +1681,9 @@
     "No locked documents in this period.": "No locked documents in this period.",
     "Per document": "Per document",
     "Wasted": "Wasted",
-    "rows without a price are counted as Rp 0.": "rows without a price are counted as Rp 0."
+    "rows without a price are counted as Rp 0.": "rows without a price are counted as Rp 0.",
+    "This item is already in the list.": "This item is already in the list.",
+    "Type to search...": "Type to search...",
+    "Nothing found. If it is new, add it first, then search again here.": "Nothing found. If it is new, add it first, then search again here."
 }
 
