@@ -49,9 +49,8 @@ class DeliveryOrderResource extends Resource
                         Forms\Components\Hidden::make('tally_id')
                             ->default(fn () => request()->query('tally_id')),
                         
-                        Forms\Components\Select::make('customer_id')
+                        \App\Filament\Support\MasterSelect::customer('customer_id', activeOnly: false)
                             ->label(__('Customer'))
-                            ->relationship('customer', 'name')
                             ->disabled() // readonly
                             ->dehydrated(true)
                             ->required()
@@ -186,9 +185,8 @@ class DeliveryOrderResource extends Resource
                                 return [];
                             })
                             ->schema([
-                                Forms\Components\Select::make('product_id')
+                                \App\Filament\Support\MasterSelect::product('product_id', activeOnly: false)
                                     ->label(__('Product'))
-                                    ->relationship('product', 'name')
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                                     ->required()
                                     ->disabled()
@@ -395,11 +393,11 @@ class DeliveryOrderResource extends Resource
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_delivery_orders')),
 
-                Tables\Filters\SelectFilter::make('customer_id')
-                    ->label(__('Customer'))
-                    ->relationship('customer', 'name')
-                    ->searchable()
-                    ->preload(),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('customer_id')
+                        ->label(__('Customer')),
+                    \App\Models\Customer::class,
+                ),
 
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,

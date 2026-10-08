@@ -183,11 +183,11 @@ class DeliveryOrderReceiptResource extends Resource
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_delivery_orders')),
 
-                Tables\Filters\SelectFilter::make('customer_id')
-                    ->label(__('Customer'))
-                    ->relationship('customer', 'name')
-                    ->searchable()
-                    ->preload(),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('customer_id')
+                        ->label(__('Customer')),
+                    \App\Models\Customer::class,
+                ),
 
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,

@@ -43,11 +43,8 @@ class SalesOrderResource extends Resource
                 Forms\Components\Section::make(__('Order Information'))
                     ->compact()
                     ->schema([
-                        Forms\Components\Select::make('customer_id')
+                        \App\Filament\Support\MasterSelect::customer('customer_id')
                             ->label(__('Customer'))
-                            ->relationship('customer', 'name', fn (Builder $query) => $query->where('is_active', true))
-                            ->searchable()
-                            ->preload()
                             ->required()
                             ->live()
                             ->disabled(fn (?SalesOrder $record) => $record?->status === SalesOrder::STATUS_PROCESSING)
@@ -208,22 +205,23 @@ class SalesOrderResource extends Resource
                             ->icon('heroicon-m-plus')
                             ->visible(fn (?SalesOrder $record) => !in_array($record?->status, SalesOrder::STATUS_LOCKED_FOR_EDIT, true))
                             ->form([
-                                Forms\Components\Select::make('product_ids')
-                                    ->label(__('Select Products'))
-                                    ->multiple()
-                                    ->searchable()
-                                    ->preload()
-                                    ->extraAttributes([
-                                        'style' => 'margin-bottom: 240px;',
-                                    ])
-                                    ->options(function (Get $get, $livewire) {
+                                \App\Filament\Support\MasterSelect::server(
+                                    Forms\Components\Select::make('product_ids')
+                                        ->label(__('Select Products'))
+                                        ->multiple()
+                                        ->extraAttributes([
+                                            'style' => 'margin-bottom: 240px;',
+                                        ]),
+                                    \App\Models\Product::class,
+                                    // Produk yang sudah ada di baris item tidak ditawarkan lagi.
+                                    scope: function (\Illuminate\Database\Eloquent\Builder $query, $livewire, Get $get): void {
                                         $selectedIds = collect($livewire->data['items'] ?? $get('../../items') ?? [])
                                             ->pluck('product_id')
                                             ->filter()
                                             ->toArray();
-                                        return Product::whereNotIn('id', $selectedIds)->pluck('name', 'id');
-                                    })
-                                    ->required(),
+                                        $query->whereNotIn('id', $selectedIds);
+                                    },
+                                )->required(),
                             ])
                             ->action(function (array $data, Get $get, Set $set, $livewire) {
                                 $customerId = $livewire->data['customer_id'] ?? $get('../../customer_id') ?? null;
@@ -311,11 +309,9 @@ class SalesOrderResource extends Resource
                             ->schema([
                                 Forms\Components\Hidden::make('id'),
 
-                                Forms\Components\Select::make('product_id')
+                                \App\Filament\Support\MasterSelect::product('product_id')
                                     ->hiddenLabel()
                                     ->placeholder(__('Product'))
-                                    ->options(fn() => \App\Models\Product::pluck('name', 'id'))
-                                    ->searchable()
                                     ->required()
                                     ->disabled(fn (Get $get, ?SalesOrder $record) => $record?->status === SalesOrder::STATUS_PROCESSING && !empty($get('id')))
                                     ->dehydrated()
@@ -517,11 +513,11 @@ class SalesOrderResource extends Resource
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_sales_orders')),
 
-                Tables\Filters\SelectFilter::make('customer_id')
-                    ->label(__('Customer'))
-                    ->relationship('customer', 'name')
-                    ->searchable()
-                    ->preload(),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('customer_id')
+                        ->label(__('Customer')),
+                    \App\Models\Customer::class,
+                ),
 
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,

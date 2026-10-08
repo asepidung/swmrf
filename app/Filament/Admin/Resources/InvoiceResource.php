@@ -52,9 +52,8 @@ class InvoiceResource extends Resource
                         Forms\Components\Hidden::make('sales_order_id')
                             ->default(fn () => \App\Models\DeliveryOrderReceipt::find(request()->query('delivery_order_receipt_id'))?->sales_order_id),
 
-                        Forms\Components\Select::make('customer_id')
+                        \App\Filament\Support\MasterSelect::customer('customer_id', activeOnly: false)
                             ->label(__('Customer'))
-                            ->relationship('customer', 'name')
                             ->required()
                             ->disabled()
                             ->dehydrated(true)
@@ -132,10 +131,9 @@ class InvoiceResource extends Resource
                         Forms\Components\Repeater::make('items')
                             ->relationship()
                             ->schema([
-                                Forms\Components\Select::make('product_id')
+                                \App\Filament\Support\MasterSelect::product('product_id', activeOnly: false)
                                     ->hiddenLabel()
                                     ->placeholder(__('Product'))
-                                    ->relationship('product', 'name')
                                     ->required()
                                     ->disabled()
                                     ->dehydrated(true)
@@ -746,11 +744,11 @@ class InvoiceResource extends Resource
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_invoices')),
 
-                Tables\Filters\SelectFilter::make('customer_id')
-                    ->relationship('customer', 'name')
-                    ->label(__('Customer'))
-                    ->searchable()
-                    ->preload(),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('customer_id')
+                        ->label(__('Customer')),
+                    \App\Models\Customer::class,
+                ),
 
                 Tables\Filters\Filter::make('belum_tukar_faktur')
                     ->label(__('Invoice not exchanged yet'))

@@ -355,4 +355,128 @@ class MasterSelectTest extends TestCase
         $this->assertContains('PEMASOK SAPI BARU', $field->getSearchResults('pemasok sapi'));
         $this->assertNotContains('PEMASOK SAPI MATI', $field->getSearchResults('pemasok sapi'));
     }
+
+    // ---------------------------------------------------------------------
+    // Kelompok 3: penjualan
+    // ---------------------------------------------------------------------
+
+    /** @return array<string, array{class-string}> */
+    public static function listsWithACustomerFilter(): array
+    {
+        return [
+            'Sales Order' => [\App\Filament\Admin\Resources\SalesOrderResource\Pages\ListSalesOrders::class],
+            'Sales Return Plan' => [\App\Filament\Admin\Resources\SalesReturnPlanResource\Pages\ListSalesReturnPlans::class],
+            'Sales Return' => [\App\Filament\Admin\Resources\SalesReturnResource\Pages\ListSalesReturns::class],
+            'Delivery Order' => [\App\Filament\Admin\Resources\DeliveryOrderResource\Pages\ListDeliveryOrders::class],
+            'Delivery Order Receipt' => [\App\Filament\Admin\Resources\DeliveryOrderReceiptResource\Pages\ListDeliveryOrderReceipts::class],
+            'Delivery Plan' => [\App\Filament\Admin\Resources\DeliveryPlanResource\Pages\ListDeliveryPlans::class],
+            'Invoice' => [\App\Filament\Admin\Resources\InvoiceResource\Pages\ListInvoices::class],
+            'Tally' => [\App\Filament\Admin\Resources\TallyResource\Pages\ListTallies::class],
+        ];
+    }
+
+    private function customer(string $name, bool $active = true): Customer
+    {
+        $segmen = \App\Models\CustomerSegment::firstOrCreate(['name' => 'UMUM'], ['is_active' => true]);
+
+        return Customer::create([
+            'name' => $name,
+            'customer_segment_id' => $segmen->id,
+            'address' => 'Bogor',
+            'pic' => 'Budi',
+            'phone' => '0812345678',
+            'top' => 30,
+            'invoice_exchange' => false,
+            'is_active' => $active,
+        ]);
+    }
+
+    /**
+     * Saringan customer di daftar penjualan: customer yang lahir SESUDAH halaman
+     * dibuka tetap ditemukan, dan customer nonaktif tetap bisa dicari
+     * (dokumen lama milik customer yang kini nonaktif).
+     *
+     * @test
+     * @dataProvider listsWithACustomerFilter
+     */
+    public function the_customer_filter_of_a_sales_list_searches_the_server(string $page): void
+    {
+        $this->actingAs($this->user);
+
+        $test = Livewire::test($page);
+
+        $this->customer('LANGGANAN BARU SESUDAH BUKA');
+        $this->customer('LANGGANAN LAMA NONAKTIF', active: false);
+
+        $filter = $test->instance()->getTable()->getFilter('customer_id')->getFormField();
+
+        $this->assertContains('LANGGANAN BARU SESUDAH BUKA', $filter->getSearchResults('sesudah buka'));
+        $this->assertContains('LANGGANAN LAMA NONAKTIF', $filter->getSearchResults('lama nonaktif'));
+    }
+
+    /** @test */
+    public function a_multiple_select_reads_the_labels_of_its_chosen_values_from_the_database(): void
+    {
+        $a = $this->product('PRODUK A');
+        $b = $this->product('PRODUK B');
+
+        $this->assertSame(
+            [$a->id => 'PRODUK A', $b->id => 'PRODUK B'],
+            MasterSelect::labels(Product::class, [$a->id, $b->id]),
+        );
+    }
+
+    /** @test */
+    public function the_add_products_modal_does_not_offer_products_already_on_the_order(): void
+    {
+        $a = $this->product('PRODUK SUDAH ADA');
+        $b = $this->product('PRODUK BELUM ADA');
+
+        $hasil = MasterSelect::search(
+            Product::class,
+            'produk',
+            scope: fn ($query) => $query->whereNotIn('id', [$a->id]),
+        );
+
+        $this->assertNotContains('PRODUK SUDAH ADA', $hasil);
+        $this->assertContains('PRODUK BELUM ADA', $hasil);
+    }
+
+    /** @test */
+    public function a_sales_order_customer_dropdown_offers_only_active_customers_but_a_return_may_use_inactive_ones(): void
+    {
+        $this->actingAs($this->user);
+
+        $this->customer('LANGGANAN AKTIF');
+        $this->customer('LANGGANAN MATI', active: false);
+
+        $order = $this->field(Livewire::test(\App\Filament\Admin\Resources\SalesOrderResource\Pages\CreateSalesOrder::class), 'customer_id');
+        $retur = $this->field(Livewire::test(\App\Filament\Admin\Resources\SalesReturnPlanResource\Pages\CreateSalesReturnPlan::class), 'customer_id');
+
+        $this->assertNotContains('LANGGANAN MATI', $order->getSearchResults('langganan'));
+        $this->assertContains('LANGGANAN AKTIF', $order->getSearchResults('langganan'));
+        $this->assertContains('LANGGANAN MATI', $retur->getSearchResults('langganan'), 'Retur boleh untuk customer yang kini nonaktif.');
+    }
+
+    /** @test */
+    public function the_tally_customer_filter_narrows_tallies_through_their_sales_order(): void
+    {
+        $this->actingAs($this->user);
+
+        $a = $this->customer('LANGGANAN A');
+        $b = $this->customer('LANGGANAN B');
+
+        $pesan = fn (Customer $c): \App\Models\SalesOrder => \App\Models\SalesOrder::create([
+            'customer_id' => $c->id, 'delivery_date' => now()->addDay()->format('Y-m-d'),
+            'po_number' => 'PO-'.uniqid(), 'created_by' => $this->user->id, 'status' => 'ready',
+        ]);
+
+        $tallyA = \App\Models\Tally::create(['sales_order_id' => $pesan($a)->id, 'status' => 'locked']);
+        $tallyB = \App\Models\Tally::create(['sales_order_id' => $pesan($b)->id, 'status' => 'locked']);
+
+        Livewire::test(\App\Filament\Admin\Resources\TallyResource\Pages\ListTallies::class)
+            ->filterTable('customer_id', $a->id)
+            ->assertCanSeeTableRecords([$tallyA])
+            ->assertCanNotSeeTableRecords([$tallyB]);
+    }
 }
