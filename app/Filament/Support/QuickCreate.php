@@ -54,7 +54,7 @@ class QuickCreate
     /** Model sebuah jenis master. */
     public static function model(string $kind): string
     {
-        return self::MODELS[$kind] ?? throw new \InvalidArgumentException("Jenis master tidak dikenal: {$kind}");
+        return self::MODELS[$kind] ?? throw new \InvalidArgumentException("Unknown master kind: {$kind}");
     }
 
     /**
@@ -124,7 +124,7 @@ class QuickCreate
                     ->columnSpanFull(),
             ],
 
-            default => throw new \InvalidArgumentException("Jenis master tidak dikenal: {$kind}"),
+            default => throw new \InvalidArgumentException("Unknown master kind: {$kind}"),
         };
     }
 
