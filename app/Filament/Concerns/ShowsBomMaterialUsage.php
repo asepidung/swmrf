@@ -84,12 +84,18 @@ trait ShowsBomMaterialUsage
     protected function materialUsageSections(): array
     {
         if ($this->isLockedRecord()) {
+            $summary = fn (): array => ['summary' => ProductionMaterialSummary::for($this->getRecord()->fresh())];
+
             return [
                 Forms\Components\Section::make(__('Material Usage'))
                     ->description(__('This document is locked. The figures below are final; unlock it to change them.'))
                     ->schema([
-                        Forms\Components\View::make('filament.partials.production-material-summary')
-                            ->viewData(fn (): array => ['summary' => ProductionMaterialSummary::for($this->getRecord()->fresh())]),
+                        Forms\Components\View::make('filament.partials.production-material-usage')->viewData($summary),
+                    ]),
+
+                Forms\Components\Section::make(__('Material Waste'))
+                    ->schema([
+                        Forms\Components\View::make('filament.partials.production-material-waste')->viewData($summary),
                     ]),
             ];
         }
@@ -155,7 +161,7 @@ trait ShowsBomMaterialUsage
      */
     protected function wasteSection(): Forms\Components\Section
     {
-        return Forms\Components\Section::make(__('Wasted Material'))
+        return Forms\Components\Section::make(__('Material Waste'))
             ->description(__('Material that was thrown away, with the reason. Leave empty if nothing was wasted. Its value is recorded as a financial loss when the document is locked.'))
             ->schema([
                 Forms\Components\Repeater::make('materialWastes')

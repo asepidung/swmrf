@@ -289,4 +289,34 @@ class ProductionMaterialSummaryTest extends TestCase
         $this->get(route('production-material.print', ['kind' => 'boning', 'id' => $boning->id]))->assertForbidden();
         $this->get(route('production-material.print', ['kind' => 'cow', 'id' => $boning->id]))->assertNotFound();
     }
+
+    /** @test */
+    public function a_document_locked_before_row_values_existed_falls_back_to_its_financial_loss_rows(): void
+    {
+        $this->priceThePlastic();
+        $boning = $this->boning();
+        $boning->lock();
+
+        // Dokumen lama: nilai tidak tersimpan di barisnya, hanya di Financial Loss.
+        $boning->materialWastes()->update(['amount' => null, 'unit_price' => null]);
+
+        $summary = ProductionMaterialSummary::for($boning->fresh());
+
+        $this->assertSame(3000.0, $summary['wastes'][0]['amount']);
+        $this->assertSame(3000.0, $summary['waste_total']);
+        $this->assertSame(0, $summary['unpriced']);
+    }
+
+    /** @test */
+    public function the_locked_page_has_one_card_for_usage_with_the_drylog_and_one_for_waste(): void
+    {
+        $this->priceThePlastic();
+        $boning = $this->boning();
+        $boning->lock();
+
+        $page = Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()]);
+
+        // Kartu pertama memuat BOM dan drylog; kartu kedua memuat bahan terbuang.
+        $page->assertSeeInOrder(['Material Usage', 'KARTON TOP', 'Drylog / Pad Absorber', 'Material Waste', 'PLASTIK VAKUM', 'gagal vakum']);
+    }
 }

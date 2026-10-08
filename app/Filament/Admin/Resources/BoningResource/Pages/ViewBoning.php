@@ -69,7 +69,7 @@ class ViewBoning extends ViewRecord
 
         $csv .= "\n".$q(__('Drylog / Pad Absorber')).','.($summary['drylog'] ?? '')."\n";
 
-        $csv .= "\n".$q(__('Wasted Material'))."\n";
+        $csv .= "\n".$q(__('Material Waste'))."\n";
         $csv .= $q(__('Material')).','.$q(__('Quantity')).','.$q(__('Reason')).','.$q(__('Value'))."\n";
         foreach ($summary['wastes'] as $row) {
             $csv .= $q($row['material']).",{$row['qty']},".$q($row['reason']).','.($row['amount'] ?? '')."\n";
@@ -157,7 +157,15 @@ class ViewBoning extends ViewRecord
                     ->schema([
                         Infolists\Components\ViewEntry::make('material_usage')
                             ->hiddenLabel()
-                            ->view('filament.partials.production-material-summary')
+                            ->view('filament.partials.production-material-usage')
+                            ->viewData(fn (): array => ['summary' => ProductionMaterialSummary::for($this->getRecord())]),
+                    ]),
+
+                Infolists\Components\Section::make(__('Material Waste'))
+                    ->schema([
+                        Infolists\Components\ViewEntry::make('material_waste')
+                            ->hiddenLabel()
+                            ->view('filament.partials.production-material-waste')
                             ->viewData(fn (): array => ['summary' => ProductionMaterialSummary::for($this->getRecord())]),
                     ])
             ]);

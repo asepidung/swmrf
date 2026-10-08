@@ -1658,7 +1658,6 @@
     "Drylog": "Drylog",
     "Required before this document can be locked. Enter 0 if none was used.": "Required before this document can be locked. Enter 0 if none was used.",
     "Fill in the drylog on the Material Usage page before locking. Zero is allowed.": "Fill in the drylog on the Material Usage page before locking. Zero is allowed.",
-    "Wasted Material": "Wasted Material",
     "Material that was thrown away, with the reason. Leave empty if nothing was wasted. Its value is recorded as a financial loss when the document is locked.": "Material that was thrown away, with the reason. Leave empty if nothing was wasted. Its value is recorded as a financial loss when the document is locked.",
     "Add Wasted Material": "Add Wasted Material",
     "Reason (required)": "Reason (required)",
@@ -1674,5 +1673,7 @@
     "View Material Usage": "View Material Usage",
     "Print Material Usage": "Print Material Usage",
     "Approved by": "Approved by",
-    "Document": "Document"
+    "Document": "Document",
+    "entered manually": "entered manually"
 }
+

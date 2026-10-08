@@ -98,7 +98,7 @@
             </tbody>
         </table>
 
-        <h3>{{ __('Wasted Material') }}</h3>
+        <h3>{{ __('Material Waste') }}</h3>
         <table>
             <thead>
                 <tr>

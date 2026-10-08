@@ -63,8 +63,25 @@ class ProductionMaterialSummary
         $total = 0.0;
         $unpriced = 0;
 
+        // Dokumen yang dikunci SEBELUM nilai per baris mulai disimpan (langkah 5a)
+        // belum punya `amount` di barisnya. Cadangannya: baris Financial Loss
+        // yang ditulis saat Lock, dipasangkan lewat catatannya ("bahan: alasan")
+        // -- persis yang ditulis `writeMaterialWasteLosses()`.
+        $legacyLosses = $final
+            ? $document->materialWasteLosses()->get()->groupBy('note')
+            : collect();
+
         foreach ($document->materialWastes()->with('material.unit')->orderBy('id')->get() as $waste) {
-            $amount = $final && $waste->amount !== null ? (float) $waste->amount : null;
+            $amount = null;
+
+            if ($final) {
+                if ($waste->amount !== null) {
+                    $amount = (float) $waste->amount;
+                } else {
+                    $note = ($waste->material?->name ?? '-').': '.$waste->reason;
+                    $amount = (float) ($legacyLosses->get($note)?->first()?->amount ?? 0);
+                }
+            }
 
             if ($final) {
                 $total += (float) $amount;

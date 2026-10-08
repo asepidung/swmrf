@@ -7278,3 +7278,16 @@ berakhiran satuan ("20 pcs"), nilai tanpa harga tampil "Rp 0" dengan lencana
 (satuan pakai): sebelumnya kolom Unit memperlihatkan satuan BELI material
 ("KOLI"), padahal jumlahnya dihitung per satuan pakai dan menyesatkan. Berlaku di
 halaman terkunci, halaman belum terkunci, cetakan, dan Excel.
+
+**Susulan #509 langkah 5a -- dua kartu, 8 Oktober 2026 (Ruby).** Permintaan Owner:
+"masih belum nyaman dibaca; bikin card baru, material usage sama material waste,
+drylog gabung ke material usage". Halaman dokumen terkunci dan View Boning kini
+punya DUA kartu: **Material Usage** (tabel BOM + satu baris "Drylog / Pad
+Absorber (diisi manual)") dan **Material Waste** (bahan terbuang, nilai, total).
+Judul "Wasted Material" menjadi "Material Waste" di semua tempat. Kolom Quantity
+dan Reason diberi jarak (sebelumnya menempel).
+- **Cadangan nilai dokumen lama:** dokumen yang dikunci SEBELUM `amount` per baris
+  disimpan menampilkan "-" padahal sudah terkunci. `ProductionMaterialSummary`
+  kini memasangkan baris yang `amount`-nya NULL dengan baris Financial Loss
+  lewat catatannya ("bahan: alasan"), jadi tidak perlu Unlock/Lock ulang.
+  Dibuktikan menggigit: cadangan dimatikan, test merah.
