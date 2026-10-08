@@ -1674,6 +1674,13 @@
     "Print Material Usage": "Print Material Usage",
     "Approved by": "Approved by",
     "Document": "Document",
-    "entered manually": "entered manually"
+    "entered manually": "entered manually",
+    "Material Usage Report": "Material Usage Report",
+    "Only locked Boning and Repack documents are counted.": "Only locked Boning and Repack documents are counted.",
+    "documents": "documents",
+    "No locked documents in this period.": "No locked documents in this period.",
+    "Per document": "Per document",
+    "Wasted": "Wasted",
+    "rows without a price are counted as Rp 0.": "rows without a price are counted as Rp 0."
 }
 
