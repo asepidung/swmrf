@@ -113,9 +113,15 @@ class Repack extends Model
         return $this->belongsTo(User::class, 'yield_override_by');
     }
 
+    /**
+     * Kerugian SUSUT repack saja. Dibatasi ke jenisnya karena dokumen yang sama
+     * juga bisa punya baris kerugian bahan terbuang (`Material Waste`); tanpa
+     * batas ini `financialLoss()->delete()` ikut menghapusnya.
+     */
     public function financialLoss(): MorphOne
     {
-        return $this->morphOne(FinancialLoss::class, 'lossable');
+        return $this->morphOne(FinancialLoss::class, 'lossable')
+            ->where('transaction_type', FinancialLoss::SUMBER_REPACK);
     }
 
     // =================================================================
@@ -388,7 +394,7 @@ class Repack extends Model
                 $this->financialLoss()->delete();
             }
 
-            $locked->freezeBomUsage();
+            $locked->finaliseMaterialRecord();
 
             $this->kunci = true;
             $this->status = 'LOCKED';
@@ -469,7 +475,7 @@ class Repack extends Model
             }
 
             $this->financialLoss()->delete();
-            $locked->releaseBomUsage();
+            $locked->releaseMaterialRecord();
 
             $locked->forceFill([
                 'kunci' => false,

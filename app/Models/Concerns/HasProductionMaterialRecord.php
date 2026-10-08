@@ -2,9 +2,12 @@
 
 namespace App\Models\Concerns;
 
+use App\Models\FinancialLoss;
 use App\Models\Material;
+use App\Models\ProductionMaterialWaste;
 use App\Models\ProductionBomSnapshot;
 use App\Services\BomUsageCalculator;
+use App\Services\MaterialUnitPrice;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
@@ -49,18 +52,72 @@ trait HasProductionMaterialRecord
         }
     }
 
-    /** Membekukan hitungan BOM saat ini; menggantikan snapshot lama bila ada. */
-    protected function freezeBomUsage(): void
+    public function materialWastes(): MorphMany
+    {
+        return $this->morphMany(ProductionMaterialWaste::class, 'wasteable');
+    }
+
+    /** Kerugian rupiah dari bahan terbuang; satu baris per baris bahan terbuang. */
+    public function materialWasteLosses(): MorphMany
+    {
+        return $this->morphMany(FinancialLoss::class, 'lossable')
+            ->where('transaction_type', FinancialLoss::SUMBER_MATERIAL_WASTE);
+    }
+
+    /**
+     * Dipanggil `lock()`: membekukan hitungan BOM saat ini DAN menulis kerugian
+     * rupiah bahan terbuang. Keduanya ditulis ulang dari nol, jadi memanggilnya
+     * dua kali tidak menggandakan apa pun.
+     */
+    protected function finaliseMaterialRecord(): void
     {
         $this->bomSnapshots()->delete();
 
         foreach (BomUsageCalculator::calculate($this->bomLabels())['usage'] as $materialId => $qty) {
             $this->bomSnapshots()->create(['material_id' => $materialId, 'qty' => (int) $qty]);
         }
+
+        $this->writeMaterialWasteLosses();
     }
 
-    protected function releaseBomUsage(): void
+    /** Dipanggil `unlock()`: snapshot dan kerugian bahan terbuang dilepas. */
+    protected function releaseMaterialRecord(): void
     {
         $this->bomSnapshots()->delete();
+        $this->materialWasteLosses()->delete();
+    }
+
+    /**
+     * Satu baris Financial Loss per baris bahan terbuang.
+     *
+     * Nilai = qty x harga per satuan pakai (`MaterialUnitPrice`), di-SNAPSHOT
+     * saat dikunci: harga beli yang berubah kemudian tidak menggeser angka
+     * lama. Tanpa harga sama sekali, barisnya tetap dicatat dengan `amount` 0
+     * -- `FinancialLoss::isNotPricedYet()` menandainya "belum ada harga" --
+     * dan Lock tidak diblokir.
+     *
+     * Ditulis saat Lock dan dihapus saat Unlock, pola yang sama dengan susut
+     * repack: dokumen yang belum final tidak menerbitkan kerugian.
+     */
+    private function writeMaterialWasteLosses(): void
+    {
+        $this->materialWasteLosses()->delete();
+
+        $date = $this->boning_date ?? $this->repack_date;
+
+        foreach ($this->materialWastes()->with('material.unit')->get() as $waste) {
+            $material = $waste->material;
+            $unitPrice = $material ? MaterialUnitPrice::perUsageUnit($material) : null;
+
+            $this->materialWasteLosses()->create([
+                'date' => $date,
+                'transaction_type' => FinancialLoss::SUMBER_MATERIAL_WASTE,
+                'reference_number' => $this->doc_no,
+                'amount' => $unitPrice === null ? 0.00 : round($waste->qty * $unitPrice, 2),
+                'quantity' => $waste->qty,
+                'unit' => 'pcs',
+                'note' => ($material?->name ?? '-').': '.$waste->reason,
+            ]);
+        }
     }
 }

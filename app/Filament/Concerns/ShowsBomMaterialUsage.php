@@ -108,7 +108,52 @@ trait ShowsBomMaterialUsage
     }
 
     /**
-     * Hanya drylog yang disimpan dari halaman ini, dan hanya selama dokumennya
+     * Bahan terbuang: boleh banyak baris, boleh kosong sama sekali. Bahan bebas
+     * dipilih dari master material; jumlahnya bilangan bulat (satuan pakai,
+     * mis. pcs); ALASAN wajib. Pemakaian yang melebihi BOM dicatat di sini,
+     * bukan dengan mengubah BOM. Tidak memotong stok.
+     */
+    protected function wasteSection(): Forms\Components\Section
+    {
+        return Forms\Components\Section::make(__('Wasted Material'))
+            ->description(__('Material that was thrown away, with the reason. Leave empty if nothing was wasted. Its value is recorded as a financial loss when the document is locked.'))
+            ->schema([
+                Forms\Components\Repeater::make('materialWastes')
+                    ->relationship('materialWastes')
+                    ->hiddenLabel()
+                    ->addActionLabel(__('Add Wasted Material'))
+                    ->defaultItems(0)
+                    ->columns(['default' => 1, 'md' => 12])
+                    ->schema([
+                        Forms\Components\Select::make('material_id')
+                            ->hiddenLabel()
+                            ->placeholder(__('Select material'))
+                            ->options(fn (): array => Material::query()->where('is_active', true)->orderBy('name')->pluck('name', 'id')->all())
+                            ->searchable()
+                            ->required()
+                            ->columnSpan(['default' => 1, 'md' => 5]),
+
+                        Forms\Components\TextInput::make('qty')
+                            ->hiddenLabel()
+                            ->placeholder(__('Quantity'))
+                            ->suffix(__('pcs'))
+                            ->extraInputAttributes(['inputmode' => 'numeric'])
+                            ->rules(['required', 'integer', 'min:1'])
+                            ->required()
+                            ->columnSpan(['default' => 1, 'md' => 3]),
+
+                        Forms\Components\TextInput::make('reason')
+                            ->hiddenLabel()
+                            ->placeholder(__('Reason (required)'))
+                            ->maxLength(255)
+                            ->required()
+                            ->columnSpan(['default' => 1, 'md' => 4]),
+                    ]),
+            ]);
+    }
+
+    /**
+     * Hanya drylog (dan baris bahan terbuang lewat relasinya) yang disimpan dari halaman ini, dan hanya selama dokumennya
      * belum dikunci. Field lain (nomor dokumen, tanggal) tidak dikirim, tetapi
      * permintaan Livewire langsung tetap bisa membawa apa saja -- karena itu
      * penjaganya di sini, bukan hanya di tampilan.

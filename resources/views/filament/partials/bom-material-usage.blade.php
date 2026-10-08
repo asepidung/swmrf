@@ -22,17 +22,6 @@
         <p class="text-gray-500 dark:text-gray-400">{{ __('No material usage according to the BOM.') }}</p>
     @endif
 
-    @if (count($products))
-        <div>
-            <p class="font-semibold">{{ __('Basis of the calculation') }}</p>
-            <ul class="list-disc ps-5 text-gray-600 dark:text-gray-300">
-                @foreach ($products as $product)
-                    <li>{{ $product['product_name'] }}: {{ number_format($product['box'], 0, ',', '.') }} {{ __('box') }}, {{ number_format($product['pcs'], 0, ',', '.') }} {{ __('pcs') }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
     @if (count($without_bom) || count($skipped))
         <div class="rounded-lg border border-warning-200 bg-warning-50 p-3 text-warning-700 dark:border-warning-800 dark:bg-warning-900 dark:text-warning-400">
             <p class="font-semibold">{{ __('Not counted in the figures above') }}</p>

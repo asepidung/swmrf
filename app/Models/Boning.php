@@ -194,7 +194,7 @@ class Boning extends Model
             $locked->refuseToLockWithoutDrylog();
 
             $locked->forceFill(['kunci' => true, 'status' => 'LOCKED'])->save();
-            $locked->freezeBomUsage();
+            $locked->finaliseMaterialRecord();
             $this->kunci = true;
             $this->status = 'LOCKED';
         });
@@ -213,7 +213,7 @@ class Boning extends Model
             }
 
             $locked->forceFill(['kunci' => false, 'status' => 'OPEN'])->save();
-            $locked->releaseBomUsage();
+            $locked->releaseMaterialRecord();
             $this->kunci = false;
             $this->status = 'OPEN';
         });

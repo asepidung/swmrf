@@ -61,6 +61,8 @@ class MaterialUsageBoning extends EditRecord
                 $this->bomUsageSection(),
 
                 $this->drylogSection(),
+
+                $this->wasteSection(),
             ]);
     }
 

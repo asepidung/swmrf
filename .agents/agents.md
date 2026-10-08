@@ -7156,3 +7156,47 @@ snapshot beku lalu lepas saat unlock, Lock tidak menyentuh stok, permintaan
 langsung hanya mengubah kolom drylog, dokumen terkunci tidak bisa disimpan).
 Dibuktikan menggigit: pemeriksaan drylog di `refuseToLockWithoutDrylog`
 dimatikan sementara, test Lock merah; dipulihkan, hijau.
+
+## #509 langkah 4 -- bahan terbuang dan kerugiannya dalam rupiah, 8 Oktober 2026
+
+Halaman Pemakaian Material Boning/Repack kini punya tiga bagian: pemakaian BOM
+(otomatis, terkunci), drylog (wajib), dan **bahan terbuang** (dinamis, boleh
+kosong). Keputusan Owner: bagian "Basis of the calculation" dibuang dari halaman
+("nanti akan banyak banget, dan sudah terakomodir di halaman lain").
+
+- **Tabel `production_material_wastes`** (morph ke Boning/Repack): bahan bebas
+  dari master material, `qty` bilangan bulat >= 1 (satuan pakai), `reason`
+  WAJIB. Banyak baris, bahan yang sama boleh berulang dengan alasan berbeda.
+  Pemakaian yang melebihi BOM dicatat di sini, bukan dengan mengubah BOM.
+- **Financial Loss:** sumber baru `FinancialLoss::SUMBER_MATERIAL_WASTE`
+  ('Material Waste', ikut `SEMUA_SUMBER` sehingga muncul di saringan sumber).
+  Satu baris per baris bahan terbuang: `lossable` = boningnya/repacknya,
+  `quantity` = qty, `unit` = 'pcs', `note` = "bahan: alasan".
+- **Ditulis saat Lock, dihapus saat Unlock** (pola susut repack), bukan saat
+  halaman disimpan: dokumen yang belum final tidak menerbitkan kerugian. Ditulis
+  ulang dari nol tiap Lock, jadi tidak pernah dobel; baris yang dihapus sebelum
+  Lock berikutnya hilang dari kerugian. (#509 menyebut "saat disimpan";
+  dipilih saat Lock karena itu pola yang sudah dipakai repack dan retur.)
+- **Nilai** = qty x harga per satuan pakai, SNAPSHOT saat Lock
+  (`App\Services\MaterialUnitPrice`): rata-rata TERTIMBANG (qty x harga) item GR
+  Material yang sah (baris dan GR belum dihapus), dibagi `content_per_unit`;
+  belum ada GR -> harga PO material TERAKHIR; tidak ada harga sama sekali ->
+  `amount` 0 dan `isNotPricedYet()` menandainya, Lock tidak diblokir. Contoh uji
+  dari Owner: plastik 1 Box @ Rp 1.000.000 isi 1.000, terbuang 3 -> Rp 3.000.
+  Karung diabaikan dulu (Owner).
+- **Perbaikan jebakan:** `Repack::financialLoss()` (morphOne) tidak dibatasi
+  jenisnya, jadi `->delete()`-nya akan ikut menghapus baris `Material Waste`.
+  Kini dibatasi ke `transaction_type = Repack`.
+- `freezeBomUsage`/`releaseBomUsage` diganti `finaliseMaterialRecord`/
+  `releaseMaterialRecord` (membekukan BOM dan menulis kerugian; melepas
+  keduanya).
+- Tidak menyentuh stok. Tidak ada izin baru.
+
+**Test:** `MaterialWasteTest` (17): 1 box @ 1 jt isi 1.000 -> Rp 1.000/pcs dan 3
+terbuang = Rp 3.000, rata-rata tertimbang GR, GR terhapus tidak dihitung,
+fallback PO terakhir, GR didahulukan dari PO, isi 1, tanpa harga = 0 + ditandai
+dan Lock tetap jalan, harga snapshot, beberapa baris, tanpa terbuang tetap bisa
+Lock, Unlock membalik dan Lock ulang tidak menggandakan, baris yang dihapus
+hilang, stok tidak tersentuh, sumber ada di daftar, halaman menyimpan banyak
+baris, alasan/qty divalidasi, kosong sah. Dibuktikan menggigit: pembagian
+dengan `content_per_unit` dimatikan sementara, 8 test merah; dipulihkan, hijau.
