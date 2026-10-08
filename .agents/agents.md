@@ -7236,3 +7236,92 @@ dinonaktifkan). Dua alasan untuk satu material ditulis bersama di kolom alasan.
 Tidak ada indeks unik di database karena yang ditahan adalah masukan pengguna
 lewat halaman; baris yang dibuat langsung lewat model tidak dibatasi. Dibuktikan
 menggigit: keduanya dimatikan sementara, test material kembar merah.
+
+## #509 langkah 5a -- ringkasan pemakaian bahan di halaman dokumen, View, cetak, Excel, 8 Oktober 2026
+
+Disetujui Owner ("setuju"): ringkasan yang sama dipakai di semua tempat lewat
+`App\Services\ProductionMaterialSummary` (BOM, drylog, bahan terbuang dan
+nilainya). **Terkunci = angka beku** (BOM dari snapshot, nilai dari baris);
+**belum terkunci = hitungan terkini, ditandai "belum final"**, bahan terbuang
+belum bernilai.
+
+- **Halaman Pemakaian Material** kini boleh dibuka untuk dokumen terkunci
+  (sebelumnya 403): hanya baca, memakai ringkasan beku, tanpa tombol Save;
+  `handleRecordUpdate` tetap menolak (403) bila dokumennya keburu dikunci.
+  Tombol di daftar Boning/Repack tidak lagi hilang saat terkunci; tooltip-nya
+  "Lihat Pemakaian Material".
+- **Halaman View Boning** punya bagian "Material Usage"; **Excel** (CSV) memuat
+  blok BOM, drylog, dan bahan terbuang (+ total nilai bila final).
+- **Cetak:** `production-material.print` (`/print/production-material/{kind}/{id}`),
+  izin `view_bonings` / `view_repacks` menurut jenis; jenis lain 404. Tombol Cetak
+  ada di halaman Pemakaian Material dan di View Boning. Repack belum punya
+  halaman View, jadi tombol Cetak-nya di halaman Pemakaian Material.
+- **Migrasi:** `unit_price` dan `amount` di `production_material_wastes`. Nilai
+  tiap baris disimpan di barisnya saat Lock (NULL sebelum final, dikosongkan saat
+  Unlock) -- tidak ada kunci yang menghubungkan satu baris `financial_losses` ke
+  satu baris bahan terbuang, jadi menebak pasangannya dihindari.
+- Tanpa izin baru. Penjaga rute cetak naik ke 35 rute.
+- **Belum (5b):** laporan per periode (menu baru, filter bulan berjalan, Excel
+  dan PDF).
+
+**Test:** `ProductionMaterialSummaryTest` (10): ringkasan live vs beku, tanpa harga
+terhitung "belum ada harga", nilai di baris tersimpan lalu kosong saat Unlock,
+halaman terkunci hanya baca, tidak bisa diubah lewat halaman, View, Excel, cetak
+(izin dan jenis). Dibuktikan menggigit: ringkasan dokumen terkunci dipaksa
+memakai hitungan terkini, test merah; dipulihkan, hijau.
+
+**Susulan #509 langkah 5a -- ringkasan dirapikan, 8 Oktober 2026 (Ruby).** Permintaan
+Owner: "tolong buat lebih rapi". Tiga bagian (BOM, drylog, bahan terbuang) kini
+berjudul kecil seragam dengan garis pemisah, kolom jumlah sempit dan rata kanan
+berakhiran satuan ("20 pcs"), nilai tanpa harga tampil "Rp 0" dengan lencana
+"belum ada harga" (bukan "-"), dan total berbaris tebal. **Satuan BOM selalu pcs**
+(satuan pakai): sebelumnya kolom Unit memperlihatkan satuan BELI material
+("KOLI"), padahal jumlahnya dihitung per satuan pakai dan menyesatkan. Berlaku di
+halaman terkunci, halaman belum terkunci, cetakan, dan Excel.
+
+**Susulan #509 langkah 5a -- dua kartu, 8 Oktober 2026 (Ruby).** Permintaan Owner:
+"masih belum nyaman dibaca; bikin card baru, material usage sama material waste,
+drylog gabung ke material usage". Halaman dokumen terkunci dan View Boning kini
+punya DUA kartu: **Material Usage** (tabel BOM + satu baris "Drylog / Pad
+Absorber (diisi manual)") dan **Material Waste** (bahan terbuang, nilai, total).
+Judul "Wasted Material" menjadi "Material Waste" di semua tempat. Kolom Quantity
+dan Reason diberi jarak (sebelumnya menempel).
+- **Cadangan nilai dokumen lama:** dokumen yang dikunci SEBELUM `amount` per baris
+  disimpan menampilkan "-" padahal sudah terkunci. `ProductionMaterialSummary`
+  kini memasangkan baris yang `amount`-nya NULL dengan baris Financial Loss
+  lewat catatannya ("bahan: alasan"), jadi tidak perlu Unlock/Lock ulang.
+  Dibuktikan menggigit: cadangan dimatikan, test merah.
+
+**Susulan #509 langkah 5a -- drylog dinilai rupiah dari master material, 8 Oktober 2026 (Ruby).**
+Keputusan Owner: drylog "ditarik dari data material" dan **dengan harga**, "karena
+nanti harganya akan jadi bahan perhitungan financial loss". Isian di halaman
+tetap hanya jumlah (tanpa dropdown dan tanpa penanda di form material); materialnya
+dikenali dari NAMA di master lewat `App\Services\DrylogMaterial`: spasi, tanda
+hubung, dan huruf besar-kecil diabaikan, dan yang diterima DRYLOG, DRYLOCK, DRILOC,
+DRILOCK, PAD ABSORBER (data lama menamainya "DRY LOG", RM0005, satuan Box;
+produknya bernama dagang Dri-Loc).
+- Nilai = jumlah x harga per satuan pakai (rata-rata GR dibagi `content_per_unit`,
+  atau PO terakhir), **dibekukan saat Lock** di `drylog_unit_price` dan
+  `drylog_amount` pada `bonings`/`repacks`; dikosongkan saat Unlock. Tanpa material
+  drylog di master atau tanpa harga: 0, ditandai "belum ada harga", Lock tidak
+  diblokir.
+- Tampil di kartu Material Usage (nama dari master, nilai di bawah jumlah), cetakan,
+  dan Excel. **Belum ada baris Financial Loss untuk drylog** -- Owner menyebutnya
+  sebagai bahan perhitungan NANTI; harganya sudah dibekukan supaya siap dipakai.
+- **Yang perlu Owner siapkan:** satu material bernama DRY LOG (atau salah satu nama
+  di atas) di master, dengan **"Isi per Satuan"** diisi bila dibeli per Box
+  (pcs per box), dan satu GR/PO berharga. Tanpa itu nilainya 0.
+
+**Susulan #509 -- pengenalan nama material drylog diperlonggar, 8 Oktober 2026 (Ruby).**
+Owner menanyakan nama yang paling tepat dan mengirim gambar produknya: nama umum
+**Absorbent Pad (food grade)** / Soaker Pad; **Dri-Loc** adalah merek; "Dry Log" dan
+"Dry Lock" ejaan sebutan (data lama: "DRY LOG", RM0005). Owner: "ikut kamu aja".
+`DrylogMaterial::find()` kini mengenali material yang namanya **MEMUAT** salah
+satu dari DRYLOG, DRYLOCK, DRILOC, DRILOCK, ABSORBENTPAD, ABSORBERPAD, SOAKERPAD,
+PADABSORBER, PADABSORBENT (spasi, tanda hubung, huruf besar-kecil diabaikan),
+bukan lagi harus persis sama -- jadi "DRY LOG - ABSORBENT PAD 3000" dikenali.
+"DRYING RACK" dan "PLASTIK ABSORBENT" tidak ikut. Bila ada lebih dari satu yang
+cocok, yang berid terkecil dipakai; material lain yang namanya kebetulan memuat
+salah satu potongan itu (mis. "KARTON DRYLOG") akan ikut dikenali -- hindari
+nama semacam itu atau nonaktifkan materialnya. Saran nama di master: "DRY LOG -
+ABSORBENT PAD", dengan "Isi per Satuan" diisi (mis. 3000 untuk box isi 3.000 pcs).

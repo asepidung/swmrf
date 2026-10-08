@@ -25,7 +25,7 @@ class Repack extends Model
     protected $fillable = [
         'doc_no', 'repack_date', 'status', 'kunci', 'note', 'created_by',
         'yield_override_reason', 'yield_override_by', 'yield_override_at',
-        'drylog_qty',
+        'drylog_qty', 'drylog_unit_price', 'drylog_amount',
     ];
 
     protected $casts = [
@@ -33,6 +33,8 @@ class Repack extends Model
         'kunci' => 'boolean',
         'yield_override_at' => 'datetime',
         'drylog_qty' => 'integer',
+        'drylog_unit_price' => 'decimal:4',
+        'drylog_amount' => 'decimal:2',
     ];
 
     public function getActivitylogOptions(): LogOptions

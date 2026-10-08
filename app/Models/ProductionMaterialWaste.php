@@ -11,9 +11,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class ProductionMaterialWaste extends Model
 {
-    protected $fillable = ['wasteable_type', 'wasteable_id', 'material_id', 'qty', 'reason'];
+    protected $fillable = ['wasteable_type', 'wasteable_id', 'material_id', 'qty', 'reason', 'unit_price', 'amount'];
 
-    protected $casts = ['qty' => 'integer'];
+    protected $casts = ['qty' => 'integer', 'unit_price' => 'decimal:4', 'amount' => 'decimal:2'];
 
     public function wasteable(): MorphTo
     {

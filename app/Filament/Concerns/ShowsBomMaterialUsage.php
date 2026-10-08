@@ -4,6 +4,7 @@ namespace App\Filament\Concerns;
 
 use App\Models\Material;
 use App\Services\BomUsageCalculator;
+use App\Services\ProductionMaterialSummary;
 use Filament\Forms;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
@@ -67,6 +68,58 @@ trait ShowsBomMaterialUsage
         ];
     }
 
+    /** Dokumennya sudah dikunci: halaman hanya menampilkan angka beku. */
+    protected function isLockedRecord(): bool
+    {
+        return (bool) $this->getRecord()->fresh()?->kunci;
+    }
+
+    /**
+     * Bagian-bagian halaman. Belum dikunci: BOM (tampilan), drylog, dan bahan
+     * terbuang yang bisa diisi. Sudah dikunci: ringkasan beku yang hanya bisa
+     * dibaca -- sama dengan yang tampil di halaman View dan cetakan.
+     *
+     * @return array<int, \Filament\Forms\Components\Component>
+     */
+    protected function materialUsageSections(): array
+    {
+        if ($this->isLockedRecord()) {
+            $summary = fn (): array => ['summary' => ProductionMaterialSummary::for($this->getRecord()->fresh())];
+
+            return [
+                Forms\Components\Section::make(__('Material Usage'))
+                    ->description(__('This document is locked. The figures below are final; unlock it to change them.'))
+                    ->schema([
+                        Forms\Components\View::make('filament.partials.production-material-usage')->viewData($summary),
+                    ]),
+
+                Forms\Components\Section::make(__('Material Waste'))
+                    ->schema([
+                        Forms\Components\View::make('filament.partials.production-material-waste')->viewData($summary),
+                    ]),
+            ];
+        }
+
+        return [$this->bomUsageSection(), $this->drylogSection(), $this->wasteSection()];
+    }
+
+    /** Tombol cetak lembar pemakaian bahan dokumen ini. */
+    protected function printMaterialUsageAction(string $kind): \Filament\Actions\Action
+    {
+        return \Filament\Actions\Action::make('print')
+            ->label(__('Print'))
+            ->icon('heroicon-o-printer')
+            ->color('gray')
+            ->url(fn (): string => route('production-material.print', ['kind' => $kind, 'id' => $this->getRecord()->getKey()]))
+            ->openUrlInNewTab();
+    }
+
+    /** Tidak ada tombol Save untuk dokumen yang sudah dikunci. */
+    protected function getFormActions(): array
+    {
+        return $this->isLockedRecord() ? [] : parent::getFormActions();
+    }
+
     protected function bomUsageSection(): Forms\Components\Section
     {
         return Forms\Components\Section::make(__('Usage per BOM'))
@@ -108,7 +161,7 @@ trait ShowsBomMaterialUsage
      */
     protected function wasteSection(): Forms\Components\Section
     {
-        return Forms\Components\Section::make(__('Wasted Material'))
+        return Forms\Components\Section::make(__('Material Waste'))
             ->description(__('Material that was thrown away, with the reason. Leave empty if nothing was wasted. Its value is recorded as a financial loss when the document is locked.'))
             ->schema([
                 Forms\Components\Repeater::make('materialWastes')

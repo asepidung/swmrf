@@ -23,13 +23,15 @@ class Boning extends Model
 
     protected $fillable = [
         'doc_no', 'boning_date', 'status', 'kunci', 'note', 'created_by',
-        'drylog_qty',
+        'drylog_qty', 'drylog_unit_price', 'drylog_amount',
     ];
 
     protected $casts = [
         'boning_date' => 'date',
         'kunci' => 'boolean',
         'drylog_qty' => 'integer',
+        'drylog_unit_price' => 'decimal:4',
+        'drylog_amount' => 'decimal:2',
     ];
 
     public function getActivitylogOptions(): LogOptions

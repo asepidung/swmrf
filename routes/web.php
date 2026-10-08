@@ -365,6 +365,22 @@ Route::middleware(['web', 'auth'])->group(function () {
         return view('print.material-usage', compact('record'));
     })->name('material-usage.print');
 
+    // Pemakaian bahan sebuah Boning/Repack: BOM, drylog, dan bahan terbuang (#509).
+    Route::get('/print/production-material/{kind}/{id}', function (string $kind, int $id) {
+        abort_unless(in_array($kind, ['boning', 'repack'], true), 404);
+        abort_unless(auth()->user()?->hasPermission("view_{$kind}s") ?? false, 403);
+
+        $class = $kind === 'boning' ? \App\Models\Boning::class : \App\Models\Repack::class;
+        $document = $class::findOrFail($id);
+
+        return view('print.production-material', [
+            'document' => $document,
+            'summary' => \App\Services\ProductionMaterialSummary::for($document),
+            'process' => $kind === 'boning' ? 'Boning' : 'Repack',
+            'date' => $document->boning_date ?? $document->repack_date,
+        ]);
+    })->name('production-material.print');
+
     // ------------------------------------------
     // 13. MODUL EXPENSE
     // ------------------------------------------

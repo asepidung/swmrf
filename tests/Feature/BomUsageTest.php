@@ -373,16 +373,6 @@ class BomUsageTest extends TestCase
         $this->assertNothingWasWritten();
     }
 
-    /** @test */
-    public function a_locked_document_cannot_open_the_page(): void
-    {
-        $boning = $this->boningWithItems();
-        $boning->forceFill(['kunci' => true])->save();
-
-        Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
-            ->assertForbidden();
-    }
-
     // =====================================================================
     // Drylog wajib sebelum Lock, dan snapshot saat dikunci (#509 langkah 3)
     // =====================================================================

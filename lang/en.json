@@ -1658,11 +1658,22 @@
     "Drylog": "Drylog",
     "Required before this document can be locked. Enter 0 if none was used.": "Required before this document can be locked. Enter 0 if none was used.",
     "Fill in the drylog on the Material Usage page before locking. Zero is allowed.": "Fill in the drylog on the Material Usage page before locking. Zero is allowed.",
-    "Wasted Material": "Wasted Material",
     "Material that was thrown away, with the reason. Leave empty if nothing was wasted. Its value is recorded as a financial loss when the document is locked.": "Material that was thrown away, with the reason. Leave empty if nothing was wasted. Its value is recorded as a financial loss when the document is locked.",
     "Add Wasted Material": "Add Wasted Material",
     "Reason (required)": "Reason (required)",
     "Material Waste": "Material Waste",
     "Drylog / Pad Absorber": "Drylog / Pad Absorber",
-    "This material is already listed. Use one row per material and write all the reasons together.": "This material is already listed. Use one row per material and write all the reasons together."
+    "This material is already listed. Use one row per material and write all the reasons together.": "This material is already listed. Use one row per material and write all the reasons together.",
+    "This document is locked. The figures below are final; unlock it to change them.": "This document is locked. The figures below are final; unlock it to change them.",
+    "Not final yet. These figures are recalculated until the document is locked.": "Not final yet. These figures are recalculated until the document is locked.",
+    "Not filled in yet.": "Not filled in yet.",
+    "Nothing was wasted.": "Nothing was wasted.",
+    "Total wasted": "Total wasted",
+    "no price yet": "no price yet",
+    "View Material Usage": "View Material Usage",
+    "Print Material Usage": "Print Material Usage",
+    "Approved by": "Approved by",
+    "Document": "Document",
+    "entered manually": "entered manually"
 }
+

@@ -7,6 +7,7 @@ use App\Models\Material;
 use App\Models\ProductionMaterialWaste;
 use App\Models\ProductionBomSnapshot;
 use App\Services\BomUsageCalculator;
+use App\Services\DrylogMaterial;
 use App\Services\MaterialUnitPrice;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
@@ -71,6 +72,7 @@ trait HasProductionMaterialRecord
             $this->bomSnapshots()->create(['material_id' => $materialId, 'qty' => (int) $qty]);
         }
 
+        $this->freezeDrylogValue();
         $this->writeMaterialWasteLosses();
     }
 
@@ -79,6 +81,23 @@ trait HasProductionMaterialRecord
     {
         $this->bomSnapshots()->delete();
         $this->materialWasteLosses()->delete();
+        $this->materialWastes()->update(['unit_price' => null, 'amount' => null]);
+        $this->forceFill(['drylog_unit_price' => null, 'drylog_amount' => null])->save();
+    }
+
+    /**
+     * Nilai drylog = jumlah x harga per pcs material drylog (`DrylogMaterial`),
+     * dibekukan saat Lock. Bahan perhitungan kerugian nanti; belum ada baris
+     * Financial Loss untuknya. Tanpa material/harga: 0.
+     */
+    private function freezeDrylogValue(): void
+    {
+        $price = DrylogMaterial::unitPrice();
+
+        $this->forceFill([
+            'drylog_unit_price' => $price,
+            'drylog_amount' => $price === null ? 0.00 : round((int) $this->drylog_qty * $price, 2),
+        ])->save();
     }
 
     /**
@@ -103,11 +122,18 @@ trait HasProductionMaterialRecord
             $material = $waste->material;
             $unitPrice = $material ? MaterialUnitPrice::perUsageUnit($material) : null;
 
+            $amount = $unitPrice === null ? 0.00 : round($waste->qty * $unitPrice, 2);
+
+            // Nilai juga disimpan di barisnya sendiri, supaya halaman dokumen,
+            // cetakan, dan laporan periode menampilkan angka yang sama tanpa
+            // menebak pasangan baris Financial Loss-nya.
+            $waste->update(['unit_price' => $unitPrice, 'amount' => $amount]);
+
             $this->materialWasteLosses()->create([
                 'date' => $date,
                 'transaction_type' => FinancialLoss::SUMBER_MATERIAL_WASTE,
                 'reference_number' => $this->doc_no,
-                'amount' => $unitPrice === null ? 0.00 : round($waste->qty * $unitPrice, 2),
+                'amount' => $amount,
                 'quantity' => $waste->qty,
                 'unit' => 'pcs',
                 'note' => ($material?->name ?? '-').': '.$waste->reason,

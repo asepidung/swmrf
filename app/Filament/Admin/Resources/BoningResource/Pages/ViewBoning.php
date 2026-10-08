@@ -7,6 +7,7 @@ use Filament\Resources\Pages\ViewRecord;
 use Filament\Actions;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
+use App\Services\ProductionMaterialSummary;
 use Illuminate\Support\Facades\DB;
 
 class ViewBoning extends ViewRecord
@@ -20,6 +21,12 @@ class ViewBoning extends ViewRecord
                 ->label(__('Back'))
                 ->color('gray')
                 ->url(fn (): string => $this->getResource()::getUrl('index')),
+            Actions\Action::make('print_material_usage')
+                ->label(__('Print Material Usage'))
+                ->icon('heroicon-o-printer')
+                ->color('gray')
+                ->url(fn (): string => route('production-material.print', ['kind' => 'boning', 'id' => $this->getRecord()->getKey()]))
+                ->openUrlInNewTab(),
             Actions\Action::make('export_excel')
                 ->label(__('Excel'))
                 ->icon('heroicon-o-document-arrow-down')
@@ -48,6 +55,32 @@ class ViewBoning extends ViewRecord
             })->sortBy('product_name');
     }
 
+    /** Blok pemakaian bahan di berkas Excel: BOM, drylog, dan bahan terbuang. */
+    public function materialUsageCsv(): string
+    {
+        $summary = ProductionMaterialSummary::for($this->getRecord());
+        $q = fn (string $text): string => '"'.str_replace('"', '""', $text).'"';
+
+        $csv = "\n".$q(__('Usage per BOM')).($summary['final'] ? '' : ','.$q(__('Not final yet. These figures are recalculated until the document is locked.')))."\n";
+        $csv .= $q(__('Material')).','.$q(__('Quantity')).','.$q(__('Unit'))."\n";
+        foreach ($summary['bom'] as $row) {
+            $csv .= $q($row['material']).",{$row['qty']},".$q($row['unit'])."\n";
+        }
+
+        $csv .= "\n".$q($summary['drylog_name'] ?? __('Drylog / Pad Absorber')).','.($summary['drylog'] ?? '').','.$q(__('pcs')).','.($summary['drylog_amount'] ?? '')."\n";
+
+        $csv .= "\n".$q(__('Material Waste'))."\n";
+        $csv .= $q(__('Material')).','.$q(__('Quantity')).','.$q(__('Reason')).','.$q(__('Value'))."\n";
+        foreach ($summary['wastes'] as $row) {
+            $csv .= $q($row['material']).",{$row['qty']},".$q($row['reason']).','.($row['amount'] ?? '')."\n";
+        }
+        if ($summary['final']) {
+            $csv .= $q(__('Total wasted')).',,,'.$summary['waste_total']."\n";
+        }
+
+        return $csv;
+    }
+
     public function exportExcel()
     {
         $summary = $this->getProductionSummary();
@@ -65,6 +98,8 @@ class ViewBoning extends ViewRecord
         }
 
         $csvData .= "\"GRAND TOTAL\",{$totalBox},{$totalPcs},{$totalQty}\n";
+
+        $csvData .= $this->materialUsageCsv();
 
         return response()->streamDownload(function () use ($csvData) {
             echo $csvData;
@@ -116,6 +151,22 @@ class ViewBoning extends ViewRecord
                         Infolists\Components\ViewEntry::make('summary')
                             ->hiddenLabel()
                             ->view('filament.resources.boning-resource.summary-table')
+                    ]),
+
+                Infolists\Components\Section::make(__('Material Usage'))
+                    ->schema([
+                        Infolists\Components\ViewEntry::make('material_usage')
+                            ->hiddenLabel()
+                            ->view('filament.partials.production-material-usage')
+                            ->viewData(fn (): array => ['summary' => ProductionMaterialSummary::for($this->getRecord())]),
+                    ]),
+
+                Infolists\Components\Section::make(__('Material Waste'))
+                    ->schema([
+                        Infolists\Components\ViewEntry::make('material_waste')
+                            ->hiddenLabel()
+                            ->view('filament.partials.production-material-waste')
+                            ->viewData(fn (): array => ['summary' => ProductionMaterialSummary::for($this->getRecord())]),
                     ])
             ]);
     }
