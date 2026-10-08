@@ -63,9 +63,8 @@ class PurchaseMaterialResource extends Resource
                             ->formatStateUsing(fn ($record) => data_get($record, 'materialRequisition.user.name'))
                             ->columnSpan(['default' => 1, 'lg' => 4]),
 
-                        Forms\Components\Select::make('supplier_id')
+                        \App\Filament\Support\MasterSelect::supplier('supplier_id')
                             ->label('Supplier')
-                            ->relationship('supplier', 'name')
                             ->disabled()
                             ->columnSpan(['default' => 1, 'lg' => 4]),
 
@@ -107,8 +106,7 @@ class PurchaseMaterialResource extends Resource
                             ->addable(false)
                             ->deletable(false)
                             ->schema([
-                                Forms\Components\Select::make('material_id')
-                                    ->relationship('material', 'name')
+                                \App\Filament\Support\MasterSelect::material('material_id')
                                     ->disabled()
                                     ->hiddenLabel()
                                     ->columnSpan(['default' => 1, 'lg' => 4]),
@@ -210,11 +208,11 @@ class PurchaseMaterialResource extends Resource
                     ->money('IDR', locale: 'id'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('supplier_id')
-                    ->label('Supplier')
-                    ->relationship('supplier', 'name')
-                    ->searchable()
-                    ->preload(),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('supplier_id')
+                        ->label('Supplier'),
+                    \App\Models\Supplier::class,
+                ),
                 Tables\Filters\Filter::make('po_date')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')

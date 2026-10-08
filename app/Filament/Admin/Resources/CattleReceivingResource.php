@@ -342,9 +342,11 @@ class CattleReceivingResource extends Resource
             ->filters([
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_cattle_receivings')),
-                Tables\Filters\SelectFilter::make('supplier_id')
-                    ->relationship('supplier', 'name')
-                    ->label(__('Supplier')),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('supplier_id')
+                        ->label(__('Supplier')),
+                    \App\Models\Supplier::class,
+                ),
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,
                 // badge cuma tampil kalau user mengubahnya.

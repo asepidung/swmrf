@@ -81,8 +81,7 @@ class GoodsReceiptMaterialResource extends Resource
                             ->relationship()
                             ->hiddenLabel()
                             ->schema([
-                                Forms\Components\Select::make('material_id')
-                                    ->relationship('material', 'name')
+                                \App\Filament\Support\MasterSelect::material('material_id')
                                     ->label(__('Material'))
                                     ->hiddenLabel()
                                     ->placeholder(__('Material'))
@@ -265,9 +264,11 @@ class GoodsReceiptMaterialResource extends Resource
             ->filters([
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_gr_materials')),
-                Tables\Filters\SelectFilter::make('supplier_id')
-                    ->relationship('supplier', 'name')
-                    ->label(__('Supplier')),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('supplier_id')
+                        ->label(__('Supplier')),
+                    \App\Models\Supplier::class,
+                ),
                 Tables\Filters\Filter::make('receive_date')
                     ->form([
                         Forms\Components\DatePicker::make('from')

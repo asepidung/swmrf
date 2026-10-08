@@ -297,4 +297,62 @@ class MasterSelectTest extends TestCase
 
         $this->assertTrue($js[(string) $picked->id]['disabled'], 'Bahan yang sudah dipilih di baris lain harus dinonaktifkan.');
     }
+
+    // ---------------------------------------------------------------------
+    // Kelompok 2: PO, GR, Payable, Pembelian Sapi
+    // ---------------------------------------------------------------------
+
+    /** @return array<string, array{class-string, string}> */
+    public static function listsWithASupplierFilter(): array
+    {
+        return [
+            'PO Material' => [\App\Filament\Admin\Resources\PurchaseMaterialResource\Pages\ListPurchaseMaterials::class, 'supplier_id'],
+            'PO Product' => [\App\Filament\Admin\Resources\PurchaseProductResource\Pages\ListPurchaseProducts::class, 'supplier_id'],
+            'GR Material' => [\App\Filament\Admin\Resources\GoodsReceiptMaterialResource\Pages\ListGoodsReceiptMaterials::class, 'supplier_id'],
+            'GR Product' => [\App\Filament\Admin\Resources\GoodsReceiptProductResource\Pages\ListGoodsReceiptProducts::class, 'supplier_id'],
+            'Payable' => [\App\Filament\Admin\Resources\PayableResource\Pages\ListPayables::class, 'supplier_id'],
+            'Purchase Cattle' => [\App\Filament\Admin\Resources\PurchaseCattleResource\Pages\ListPurchaseCattle::class, 'supplier_id'],
+            'Cattle Receiving' => [\App\Filament\Admin\Resources\CattleReceivingResource\Pages\ListCattleReceivings::class, 'supplier_id'],
+        ];
+    }
+
+    /**
+     * Saringan supplier di daftar: supplier yang lahir SESUDAH halaman dibuka
+     * tetap ditemukan, dan supplier nonaktif tetap bisa dicari (menyaring
+     * dokumen lama milik supplier yang kini nonaktif).
+     *
+     * @test
+     * @dataProvider listsWithASupplierFilter
+     */
+    public function the_supplier_filter_of_a_list_searches_the_server(string $page, string $filterName): void
+    {
+        $this->actingAs($this->user);
+
+        $test = Livewire::test($page);
+
+        $baru = $this->supplier('PEMASOK BARU SESUDAH BUKA');
+        $mati = $this->supplier('PEMASOK LAMA NONAKTIF', active: false);
+
+        $filter = $test->instance()->getTable()->getFilter($filterName)->getFormField();
+
+        $this->assertContains('PEMASOK BARU SESUDAH BUKA', $filter->getSearchResults('sesudah buka'));
+        $this->assertContains('PEMASOK LAMA NONAKTIF', $filter->getSearchResults('lama nonaktif'), 'Saringan harus bisa mencari supplier nonaktif.');
+        $this->assertSame($baru->id, array_search('PEMASOK BARU SESUDAH BUKA', $filter->getSearchResults('sesudah')));
+    }
+
+    /** @test */
+    public function the_supplier_on_a_new_cattle_purchase_searches_the_server_and_only_offers_active_ones(): void
+    {
+        $this->actingAs($this->user);
+
+        $test = Livewire::test(\App\Filament\Admin\Resources\PurchaseCattleResource\Pages\CreatePurchaseCattle::class);
+
+        $this->supplier('PEMASOK SAPI BARU');
+        $this->supplier('PEMASOK SAPI MATI', active: false);
+
+        $field = $this->field($test, 'supplier_id');
+
+        $this->assertContains('PEMASOK SAPI BARU', $field->getSearchResults('pemasok sapi'));
+        $this->assertNotContains('PEMASOK SAPI MATI', $field->getSearchResults('pemasok sapi'));
+    }
 }
