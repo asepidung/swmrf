@@ -1664,5 +1664,15 @@
     "Reason (required)": "Reason (required)",
     "Material Waste": "Material Waste",
     "Drylog / Pad Absorber": "Drylog / Pad Absorber",
-    "This material is already listed. Use one row per material and write all the reasons together.": "This material is already listed. Use one row per material and write all the reasons together."
+    "This material is already listed. Use one row per material and write all the reasons together.": "This material is already listed. Use one row per material and write all the reasons together.",
+    "This document is locked. The figures below are final; unlock it to change them.": "This document is locked. The figures below are final; unlock it to change them.",
+    "Not final yet. These figures are recalculated until the document is locked.": "Not final yet. These figures are recalculated until the document is locked.",
+    "Not filled in yet.": "Not filled in yet.",
+    "Nothing was wasted.": "Nothing was wasted.",
+    "Total wasted": "Total wasted",
+    "no price yet": "no price yet",
+    "View Material Usage": "View Material Usage",
+    "Print Material Usage": "Print Material Usage",
+    "Approved by": "Approved by",
+    "Document": "Document"
 }

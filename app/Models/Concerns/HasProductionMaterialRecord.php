@@ -79,6 +79,7 @@ trait HasProductionMaterialRecord
     {
         $this->bomSnapshots()->delete();
         $this->materialWasteLosses()->delete();
+        $this->materialWastes()->update(['unit_price' => null, 'amount' => null]);
     }
 
     /**
@@ -103,11 +104,18 @@ trait HasProductionMaterialRecord
             $material = $waste->material;
             $unitPrice = $material ? MaterialUnitPrice::perUsageUnit($material) : null;
 
+            $amount = $unitPrice === null ? 0.00 : round($waste->qty * $unitPrice, 2);
+
+            // Nilai juga disimpan di barisnya sendiri, supaya halaman dokumen,
+            // cetakan, dan laporan periode menampilkan angka yang sama tanpa
+            // menebak pasangan baris Financial Loss-nya.
+            $waste->update(['unit_price' => $unitPrice, 'amount' => $amount]);
+
             $this->materialWasteLosses()->create([
                 'date' => $date,
                 'transaction_type' => FinancialLoss::SUMBER_MATERIAL_WASTE,
                 'reference_number' => $this->doc_no,
-                'amount' => $unitPrice === null ? 0.00 : round($waste->qty * $unitPrice, 2),
+                'amount' => $amount,
                 'quantity' => $waste->qty,
                 'unit' => 'pcs',
                 'note' => ($material?->name ?? '-').': '.$waste->reason,

@@ -290,9 +290,8 @@ class BoningResource extends Resource
                     ->icon('heroicon-o-square-3-stack-3d')
                     ->color('info')
                     ->iconButton()
-                    ->tooltip(__('Input Material Usage'))
-                    ->url(fn(Boning $record): string => static::getUrl('material-usage', ['record' => $record->id]))
-                    ->hidden(fn(Boning $record) => $record->kunci),
+                    ->tooltip(fn (Boning $record): string => $record->kunci ? __('View Material Usage') : __('Input Material Usage'))
+                    ->url(fn(Boning $record): string => static::getUrl('material-usage', ['record' => $record->id])),
 
                 /* 4. Tombol Custom Labeling (Detail Label/Buat Label) */
                 Tables\Actions\Action::make('labeling')

@@ -7236,3 +7236,36 @@ dinonaktifkan). Dua alasan untuk satu material ditulis bersama di kolom alasan.
 Tidak ada indeks unik di database karena yang ditahan adalah masukan pengguna
 lewat halaman; baris yang dibuat langsung lewat model tidak dibatasi. Dibuktikan
 menggigit: keduanya dimatikan sementara, test material kembar merah.
+
+## #509 langkah 5a -- ringkasan pemakaian bahan di halaman dokumen, View, cetak, Excel, 8 Oktober 2026
+
+Disetujui Owner ("setuju"): ringkasan yang sama dipakai di semua tempat lewat
+`App\Services\ProductionMaterialSummary` (BOM, drylog, bahan terbuang dan
+nilainya). **Terkunci = angka beku** (BOM dari snapshot, nilai dari baris);
+**belum terkunci = hitungan terkini, ditandai "belum final"**, bahan terbuang
+belum bernilai.
+
+- **Halaman Pemakaian Material** kini boleh dibuka untuk dokumen terkunci
+  (sebelumnya 403): hanya baca, memakai ringkasan beku, tanpa tombol Save;
+  `handleRecordUpdate` tetap menolak (403) bila dokumennya keburu dikunci.
+  Tombol di daftar Boning/Repack tidak lagi hilang saat terkunci; tooltip-nya
+  "Lihat Pemakaian Material".
+- **Halaman View Boning** punya bagian "Material Usage"; **Excel** (CSV) memuat
+  blok BOM, drylog, dan bahan terbuang (+ total nilai bila final).
+- **Cetak:** `production-material.print` (`/print/production-material/{kind}/{id}`),
+  izin `view_bonings` / `view_repacks` menurut jenis; jenis lain 404. Tombol Cetak
+  ada di halaman Pemakaian Material dan di View Boning. Repack belum punya
+  halaman View, jadi tombol Cetak-nya di halaman Pemakaian Material.
+- **Migrasi:** `unit_price` dan `amount` di `production_material_wastes`. Nilai
+  tiap baris disimpan di barisnya saat Lock (NULL sebelum final, dikosongkan saat
+  Unlock) -- tidak ada kunci yang menghubungkan satu baris `financial_losses` ke
+  satu baris bahan terbuang, jadi menebak pasangannya dihindari.
+- Tanpa izin baru. Penjaga rute cetak naik ke 35 rute.
+- **Belum (5b):** laporan per periode (menu baru, filter bulan berjalan, Excel
+  dan PDF).
+
+**Test:** `ProductionMaterialSummaryTest` (10): ringkasan live vs beku, tanpa harga
+terhitung "belum ada harga", nilai di baris tersimpan lalu kosong saat Unlock,
+halaman terkunci hanya baca, tidak bisa diubah lewat halaman, View, Excel, cetak
+(izin dan jenis). Dibuktikan menggigit: ringkasan dokumen terkunci dipaksa
+memakai hitungan terkini, test merah; dipulihkan, hijau.

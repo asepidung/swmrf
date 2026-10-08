@@ -18,12 +18,6 @@ class MaterialUsageRepack extends EditRecord
 
     public function getTitle(): string { return __('Material Usage - Repack'); }
 
-    public function mount(int | string $record): void
-    {
-        parent::mount($record);
-        abort_if($this->getRecord()->kunci, 403, 'Data has been locked.');
-    }
-
     protected function bomUsageLabels(): Collection
     {
         return $this->getRecord()->results;
@@ -52,11 +46,7 @@ class MaterialUsageRepack extends EditRecord
                             ->disabled(),
                     ])->columns(2),
 
-                $this->bomUsageSection(),
-
-                $this->drylogSection(),
-
-                $this->wasteSection(),
+                ...$this->materialUsageSections(),
             ]);
     }
 
@@ -67,6 +57,8 @@ class MaterialUsageRepack extends EditRecord
                 ->label(__('Back to List'))
                 ->color('gray')
                 ->url($this->getResource()::getUrl('index')),
+
+            $this->printMaterialUsageAction('repack'),
         ];
     }
 

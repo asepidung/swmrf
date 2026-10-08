@@ -290,9 +290,8 @@ Tables\Actions\ActionGroup::make([
                         ->label(__('Material Usage'))
                         ->icon('heroicon-o-square-3-stack-3d')
                         ->color('info')
-                        ->tooltip(__('Input Material Usage'))
-                        ->url(fn(Repack $record): string => static::getUrl('material-usage', ['record' => $record->id]))
-                        ->hidden(fn(Repack $record) => $record->kunci),
+                        ->tooltip(fn (Repack $record): string => $record->kunci ? __('View Material Usage') : __('Input Material Usage'))
+                        ->url(fn(Repack $record): string => static::getUrl('material-usage', ['record' => $record->id])),
 
                     /* Tombol Input Bahan */
                     Tables\Actions\Action::make('input_bahan')

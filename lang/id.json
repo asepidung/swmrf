@@ -1664,5 +1664,15 @@
     "Reason (required)": "Alasan (wajib)",
     "Material Waste": "Material Terbuang",
     "Drylog / Pad Absorber": "Drylog / Pad Absorber",
-    "This material is already listed. Use one row per material and write all the reasons together.": "Material ini sudah ada di daftar. Pakai satu baris per material dan tulis semua alasannya bersama."
+    "This material is already listed. Use one row per material and write all the reasons together.": "Material ini sudah ada di daftar. Pakai satu baris per material dan tulis semua alasannya bersama.",
+    "This document is locked. The figures below are final; unlock it to change them.": "Dokumen ini terkunci. Angka di bawah sudah final; buka kunci untuk mengubahnya.",
+    "Not final yet. These figures are recalculated until the document is locked.": "Belum final. Angka ini dihitung ulang sampai dokumen dikunci.",
+    "Not filled in yet.": "Belum diisi.",
+    "Nothing was wasted.": "Tidak ada yang terbuang.",
+    "Total wasted": "Total terbuang",
+    "no price yet": "belum ada harga",
+    "View Material Usage": "Lihat Pemakaian Material",
+    "Print Material Usage": "Cetak Pemakaian Material",
+    "Approved by": "Disetujui oleh",
+    "Document": "Dokumen"
 }
