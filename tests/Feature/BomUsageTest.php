@@ -316,7 +316,7 @@ class BomUsageTest extends TestCase
         $boning = $this->boningWithItems();
 
         Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
-            ->fillForm(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 3])
+            ->fillForm(['drylog_qty' => 3])
             ->call('save')
             ->assertHasNoFormErrors();
 
@@ -336,7 +336,7 @@ class BomUsageTest extends TestCase
         $boning = $this->boningWithItems();
 
         Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
-            ->fillForm(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 0])
+            ->fillForm(['drylog_qty' => 0])
             ->set('data.materialUsages', [
                 'x' => ['material_id' => $this->karton->id, 'qty' => 999, 'note' => 'langsung'],
             ])
@@ -367,7 +367,7 @@ class BomUsageTest extends TestCase
         $this->assertSame(3, (int) $byMaterial['KARTON']['qty']);
         $this->assertSame(24, (int) $byMaterial['PLASTIK VAKUM']['qty']);
 
-        $page->fillForm(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 0])
+        $page->fillForm(['drylog_qty' => 0])
             ->set('data.materialUsages', ['x' => ['material_id' => $this->karton->id, 'qty' => 5]])
             ->call('save');
         $this->assertNothingWasWritten();
@@ -411,9 +411,9 @@ class BomUsageTest extends TestCase
         $boning = $this->boningWithItems();
 
         Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
-            ->fillForm(['drylog_material_id' => null, 'drylog_qty' => null])
+            ->fillForm(['drylog_qty' => null])
             ->call('save')
-            ->assertHasFormErrors(['drylog_material_id' => 'required', 'drylog_qty' => 'required']);
+            ->assertHasFormErrors(['drylog_qty' => 'required']);
 
         $this->assertNull($boning->fresh()->drylog_qty);
     }
@@ -424,7 +424,7 @@ class BomUsageTest extends TestCase
         $boning = $this->boningWithItems();
 
         Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
-            ->fillForm(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 0])
+            ->fillForm(['drylog_qty' => 0])
             ->call('save')
             ->assertHasNoFormErrors();
 
@@ -441,7 +441,7 @@ class BomUsageTest extends TestCase
 
         foreach ([-1, 2.5] as $bad) {
             Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
-                ->fillForm(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => $bad])
+                ->fillForm(['drylog_qty' => $bad])
                 ->call('save')
                 ->assertHasFormErrors(['drylog_qty']);
         }
@@ -463,7 +463,7 @@ class BomUsageTest extends TestCase
 
         $this->assertFalse($boning->fresh()->kunci);
 
-        $boning->forceFill(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 0])->save();
+        $boning->forceFill(['drylog_qty' => 0])->save();
         $boning->lock();
 
         $this->assertTrue($boning->fresh()->kunci, 'Dengan drylog 0 yang diisi eksplisit, dokumen harus bisa dikunci.');
@@ -473,7 +473,7 @@ class BomUsageTest extends TestCase
     public function locking_freezes_the_bom_usage_and_unlocking_releases_it(): void
     {
         $boning = $this->boningReadyToLock();
-        $boning->forceFill(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 2])->save();
+        $boning->forceFill(['drylog_qty' => 2])->save();
 
         $boning->lock();
 
@@ -493,7 +493,7 @@ class BomUsageTest extends TestCase
     public function locking_a_boning_does_not_touch_material_stock(): void
     {
         $boning = $this->boningReadyToLock();
-        $boning->forceFill(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 9])->save();
+        $boning->forceFill(['drylog_qty' => 9])->save();
 
         $boning->lock();
 
@@ -507,7 +507,7 @@ class BomUsageTest extends TestCase
         $docNo = $boning->doc_no;
 
         Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
-            ->fillForm(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 1])
+            ->fillForm(['drylog_qty' => 1])
             ->set('data.doc_no', 'BN99999')
             ->set('data.status', 'LOCKED')
             ->set('data.kunci', true)
@@ -525,7 +525,7 @@ class BomUsageTest extends TestCase
         $boning = $this->boningWithItems();
 
         $page = Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
-            ->fillForm(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 4]);
+            ->fillForm(['drylog_qty' => 4]);
 
         $boning->forceFill(['kunci' => true])->save();
 

@@ -23,7 +23,7 @@ class Boning extends Model
 
     protected $fillable = [
         'doc_no', 'boning_date', 'status', 'kunci', 'note', 'created_by',
-        'drylog_material_id', 'drylog_qty',
+        'drylog_qty',
     ];
 
     protected $casts = [

@@ -25,7 +25,7 @@ class Repack extends Model
     protected $fillable = [
         'doc_no', 'repack_date', 'status', 'kunci', 'note', 'created_by',
         'yield_override_reason', 'yield_override_by', 'yield_override_at',
-        'drylog_material_id', 'drylog_qty',
+        'drylog_qty',
     ];
 
     protected $casts = [

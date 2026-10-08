@@ -7200,3 +7200,20 @@ Lock, Unlock membalik dan Lock ulang tidak menggandakan, baris yang dihapus
 hilang, stok tidak tersentuh, sumber ada di daftar, halaman menyimpan banyak
 baris, alasan/qty divalidasi, kosong sah. Dibuktikan menggigit: pembagian
 dengan `content_per_unit` dimatikan sementara, 8 test merah; dipulihkan, hijau.
+
+**Susulan #509 langkah 3 -- drylog tanpa pilihan material, 8 Oktober 2026 (Ruby).**
+Mengoreksi catatan langkah 3 dan 4 di atas. Keputusan Owner: "drylog material
+itu bukan kategori tapi itu salah satu material, jadi seharusnya bukan dropdown,
+tapi tulis secara eksplisit drylog / pad absorber".
+
+- Halaman Pemakaian Material hanya punya SATU isian drylog: jumlahnya, berlabel
+  **"Drylog / Pad Absorber"** (berakhiran pcs). Tidak ada pilihan material --
+  drylog adalah satu material yang pasti, jadi materialnya tidak perlu dipilih
+  dan tidak bisa salah pilih.
+- Kolom `drylog_material_id` di `bonings` dan `repacks` DIBUANG lewat migrasi
+  tersendiri (`drop_drylog_material_from_bonings_and_repacks`), bukan dengan
+  menyunting migrasi sebelumnya, supaya jumlah drylog yang sudah terisi tidak
+  ikut hilang. `drylog_qty` tetap: NULL = belum diisi, 0 = diisi dan nol.
+  `drylogWasFilled()` kini hanya memeriksa `drylog_qty`.
+- Drylog tidak dinilai rupiah (ia pemakaian, bukan bahan terbuang) dan tidak
+  memotong stok; laporan langkah 5 menampilkannya sebagai baris bernama tetap.

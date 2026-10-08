@@ -8,7 +8,6 @@ use App\Models\ProductionMaterialWaste;
 use App\Models\ProductionBomSnapshot;
 use App\Services\BomUsageCalculator;
 use App\Services\MaterialUnitPrice;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
 
@@ -26,11 +25,6 @@ trait HasProductionMaterialRecord
     /** Label (satu baris = satu box) yang dihitung BOM-nya. */
     abstract public function bomLabels(): Collection;
 
-    public function drylogMaterial(): BelongsTo
-    {
-        return $this->belongsTo(Material::class, 'drylog_material_id');
-    }
-
     public function bomSnapshots(): MorphMany
     {
         return $this->morphMany(ProductionBomSnapshot::class, 'snapshotable');
@@ -41,7 +35,7 @@ trait HasProductionMaterialRecord
      */
     public function drylogWasFilled(): bool
     {
-        return $this->drylog_material_id !== null && $this->drylog_qty !== null;
+        return $this->drylog_qty !== null;
     }
 
     /** Dilempar dari `lock()` bila drylog belum diisi. */

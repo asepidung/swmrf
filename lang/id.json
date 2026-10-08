@@ -1657,12 +1657,12 @@
     "Not counted in the figures above": "Tidak dihitung dalam angka di atas",
     "box": "box",
     "Drylog": "Drylog",
-    "Drylog Material": "Material Drylog",
     "Required before this document can be locked. Enter 0 if none was used.": "Wajib diisi sebelum dokumen ini bisa dikunci. Isi 0 bila tidak ada yang terpakai.",
     "Fill in the drylog on the Material Usage page before locking. Zero is allowed.": "Isi drylog di halaman Pemakaian Material sebelum mengunci. Nol diperbolehkan.",
     "Wasted Material": "Material Terbuang",
     "Material that was thrown away, with the reason. Leave empty if nothing was wasted. Its value is recorded as a financial loss when the document is locked.": "Material yang terbuang beserta alasannya. Kosongkan bila tidak ada yang terbuang. Nilainya dicatat sebagai kerugian keuangan saat dokumen dikunci.",
     "Add Wasted Material": "Tambah Material Terbuang",
     "Reason (required)": "Alasan (wajib)",
-    "Material Waste": "Material Terbuang"
+    "Material Waste": "Material Terbuang",
+    "Drylog / Pad Absorber": "Drylog / Pad Absorber"
 }

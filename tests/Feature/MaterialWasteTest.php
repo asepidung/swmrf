@@ -154,7 +154,7 @@ class MaterialWasteTest extends TestCase
         $carcass = Carcass::create(['cattle_weighing_id' => $weighing->id, 'kill_date' => now()->toDateString(), 'created_by' => $this->user->id]);
         BoningCarcass::create(['boning_id' => $boning->id, 'carcass_id' => $carcass->id]);
 
-        $boning->forceFill(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 0])->save();
+        $boning->forceFill(['drylog_qty' => 0])->save();
 
         return $boning->fresh();
     }
@@ -364,7 +364,6 @@ class MaterialWasteTest extends TestCase
 
         Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
             ->fillForm([
-                'drylog_material_id' => $this->drylog->id,
                 'drylog_qty' => 1,
                 'materialWastes' => [
                     ['material_id' => $this->plastik->id, 'qty' => 3, 'reason' => 'gagal vakum'],
@@ -391,7 +390,6 @@ class MaterialWasteTest extends TestCase
         ] as $bad) {
             Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
                 ->fillForm([
-                    'drylog_material_id' => $this->drylog->id,
                     'drylog_qty' => 0,
                     'materialWastes' => [['material_id' => $this->plastik->id] + $bad],
                 ])
@@ -408,7 +406,7 @@ class MaterialWasteTest extends TestCase
         $boning = $this->boning();
 
         Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
-            ->fillForm(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 0, 'materialWastes' => []])
+            ->fillForm(['drylog_qty' => 0, 'materialWastes' => []])
             ->call('save')
             ->assertHasNoFormErrors();
 

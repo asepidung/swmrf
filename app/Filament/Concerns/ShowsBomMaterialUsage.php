@@ -78,33 +78,26 @@ trait ShowsBomMaterialUsage
     }
 
     /**
-     * Drylog: satu-satunya bahan yang diisi manual, karena jumlahnya terlalu
-     * dinamis untuk dihitung BOM. WAJIB diisi sebelum dokumen bisa dikunci;
-     * 0 boleh (diisi, hasilnya nol), kosong tidak. Materialnya dipilih dari
-     * master material -- bukan id yang ditulis di kode.
+     * Drylog / pad absorber: satu-satunya bahan yang diisi manual, karena
+     * jumlahnya terlalu dinamis untuk dihitung BOM. Ia SATU material yang pasti,
+     * jadi cukup jumlahnya yang diisi -- tanpa pilihan material (Owner, 8
+     * Oktober 2026). WAJIB diisi sebelum dokumen bisa dikunci; 0 boleh (diisi,
+     * hasilnya nol), kosong tidak.
      */
     protected function drylogSection(): Forms\Components\Section
     {
-        return Forms\Components\Section::make(__('Drylog'))
+        return Forms\Components\Section::make(__('Drylog / Pad Absorber'))
             ->description(__('Required before this document can be locked. Enter 0 if none was used.'))
             ->schema([
-                Forms\Components\Select::make('drylog_material_id')
-                    ->label(__('Drylog Material'))
-                    ->options(fn (): array => Material::query()->where('is_active', true)->orderBy('name')->pluck('name', 'id')->all())
-                    ->searchable()
-                    ->required()
-                    ->columnSpan(['default' => 1, 'md' => 1]),
-
                 // Tanpa komponen angka bawaan (tombol panahnya gampang
                 // tertekan). Nol sah; kosong tidak.
                 Forms\Components\TextInput::make('drylog_qty')
-                    ->label(__('Quantity'))
+                    ->label(__('Drylog / Pad Absorber'))
                     ->suffix(__('pcs'))
                     ->extraInputAttributes(['inputmode' => 'numeric'])
                     ->rules(['required', 'integer', 'min:0'])
                     ->required(),
-            ])
-            ->columns(['default' => 1, 'md' => 2]);
+            ]);
     }
 
     /**
@@ -162,7 +155,7 @@ trait ShowsBomMaterialUsage
     {
         abort_if($record->fresh()->kunci, 403, 'Data has been locked.');
 
-        $record->update(Arr::only($data, ['drylog_material_id', 'drylog_qty']));
+        $record->update(Arr::only($data, ['drylog_qty']));
 
         return $record;
     }
