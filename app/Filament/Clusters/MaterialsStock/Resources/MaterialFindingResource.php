@@ -89,11 +89,8 @@ class MaterialFindingResource extends Resource
                     ->label(__('Date'))
                     ->default(now())
                     ->required(),
-                Forms\Components\Select::make('material_id')
+                \App\Filament\Support\MasterSelect::material('material_id', activeOnly: false)
                     ->label(__('Material'))
-                    ->relationship('material', 'name')
-                    ->searchable()
-                    ->preload()
                     ->required()
                     ->live(),
                 // Bilangan BULAT, sama dengan isian hitungan opname material.

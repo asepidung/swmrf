@@ -119,13 +119,10 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                             ->extraAttributes(['tabindex' => '-1'])
                             ->extraInputAttributes(['tabindex' => '-1']),
 
-                        Forms\Components\Select::make('product_id')
+                        \App\Filament\Support\MasterSelect::product('product_id')
                             ->hiddenLabel()
                             ->placeholder(__('Product'))
-                            ->options(Product::orderBy('name')->pluck('name', 'id'))
                             ->required()
-                            ->searchable()
-                            ->preload()
                             ->autofocus()
                             ->extraAttributes(['class' => 'product-select-container', 'tabindex' => '1'])
                             ->extraInputAttributes(['tabindex' => '1']),

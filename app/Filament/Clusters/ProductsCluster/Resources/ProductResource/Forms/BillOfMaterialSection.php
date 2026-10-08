@@ -90,13 +90,10 @@ class BillOfMaterialSection
                     ->schema([
                         Forms\Components\Hidden::make('id'),
 
-                        Forms\Components\Select::make('material_id')
+                        \App\Filament\Support\MasterSelect::material('material_id', withCode: true)
                             ->label('')
                             ->hiddenLabel()
                             ->placeholder(__('Select material'))
-                            ->options(fn (): array => self::materialOptions())
-                            ->getOptionLabelUsing(fn ($value): ?string => self::materialLabel($value))
-                            ->searchable()
                             ->required()
                             ->live()
                             ->disableOptionsWhenSelectedInSiblingRepeaterItems()
@@ -200,16 +197,17 @@ class BillOfMaterialSection
      */
     private static function copyFrom(): Forms\Components\Select
     {
-        return Forms\Components\Select::make('copy_from')
-            ->label(__('Copy from Another Product'))
-            ->placeholder(__('Select a source product'))
-            ->options(fn ($livewire): array => Product::query()
+        return \App\Filament\Support\MasterSelect::server(
+            Forms\Components\Select::make('copy_from')
+                ->label(__('Copy from Another Product'))
+                ->placeholder(__('Select a source product')),
+            Product::class,
+            activeOnly: false,
+            // Hanya produk yang sudah punya BOM, selain produk yang sedang diisi.
+            scope: fn ($query, $livewire) => $query
                 ->whereKeyNot(self::currentProduct($livewire)?->getKey())
-                ->whereHas('billOfMaterials')
-                ->orderBy('name')
-                ->pluck('name', 'id')
-                ->all())
-            ->searchable()
+                ->whereHas('billOfMaterials'),
+        )
             ->live()
             ->dehydrated(false)
             ->visible(fn (): bool => self::can('create'))
@@ -327,23 +325,4 @@ class BillOfMaterialSection
     {
         return auth()->user()?->hasPermission("{$ability}_product_materials") ?? false;
     }
-
-    /** @return array<int, string> */
-    private static function materialOptions(): array
-    {
-        return Material::query()
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get()
-            ->mapWithKeys(fn (Material $material): array => [$material->id => $material->code.' - '.$material->name])
-            ->all();
-    }
-
-    private static function materialLabel(mixed $id): ?string
-    {
-        $material = $id ? Material::find($id) : null;
-
-        return $material ? $material->code.' - '.$material->name : null;
-    }
-
 }

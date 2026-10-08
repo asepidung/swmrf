@@ -7474,3 +7474,30 @@ sesudah halaman dibuka ditemukan, yang nonaktif tetap bisa dicari), label piliha
 ganda, modal Add Products tidak menawarkan produk yang sudah ada, customer Sales
 Order hanya yang aktif sedangkan retur boleh nonaktif, dan saringan Tally benar-
 benar menyaring lewat Sales Order.
+
+## #512 kelompok 4 -- sisanya, 8 Oktober 2026
+
+Menutup kelompok dropdown: **daftar menunggu di `MasterDropdownGuardTest` kini
+KOSONG** -- tidak ada lagi dropdown ke Product/Material/Supplier/Customer yang
+memuat seluruh master sekali saat halaman dibuka. Dropdown baru yang memakai pola
+lama langsung ditolak test, lengkap dengan berkas dan barisnya.
+
+- **Produk** di form Labeling Boning dan saringannya, Input Hasil Repack, Scan
+  Stock Take dan Found Item (keduanya boleh produk nonaktif: barang yang ada di
+  gudang), **Material** di Manual Usage (dengan `distinct()`), Material Finding
+  (boleh nonaktif), bahan terbuang di Pemakaian Material, **Produk Induk**
+  (`parent_id`: hanya yang bukan varian, aktif), dan di BOM: material di baris
+  (label "kode - nama" seperti semula, lewat `withCode`) dan pilihan "Copy from
+  Another Product" (hanya produk yang sudah punya BOM, selain yang sedang diisi).
+- `MasterSelect` bertambah `withCode` (label "kode - nama" bila modelnya punya
+  kode). `materialOptions()`/`materialLabel()` di BOM dibuang karena tak terpakai.
+- **Pengecualian yang tetap:** Customer Group (form master Customer saja,
+  segelintir, tanpa kolom aktif/kode) dan dropdown produk di Labeling GR Product
+  (daftar milik PO). Master kecil (gudang, grade, satuan, kategori, ...) dimuat
+  sekaligus seperti semula.
+- **Belum dikerjakan dari issue #512:** poin 2, tombol "+" (`createOptionForm`)
+  untuk master berisian pendek dan penyeragaman yang sudah ada; produk dan
+  customer tidak memakainya (keputusan Owner).
+
+**Test:** `MasterSelectTest` +4: produk induk (hanya induk aktif, produk baru
+ketemu tanpa refresh), Manual Usage, label BOM "kode - nama", dan pilihan salin BOM.

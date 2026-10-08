@@ -41,14 +41,14 @@ class MasterSelect
     /** Banyak hasil maksimum per pencarian. */
     public const LIMIT = 50;
 
-    public static function material(string $name = 'material_id', bool $activeOnly = true): Select
+    public static function material(string $name = 'material_id', bool $activeOnly = true, bool $withCode = false): Select
     {
-        return self::server(Select::make($name), Material::class, $activeOnly);
+        return self::server(Select::make($name), Material::class, $activeOnly, withCode: $withCode);
     }
 
-    public static function product(string $name = 'product_id', bool $activeOnly = true): Select
+    public static function product(string $name = 'product_id', bool $activeOnly = true, bool $withCode = false): Select
     {
-        return self::server(Select::make($name), Product::class, $activeOnly);
+        return self::server(Select::make($name), Product::class, $activeOnly, withCode: $withCode);
     }
 
     public static function supplier(string $name = 'supplier_id', bool $activeOnly = true): Select
@@ -74,18 +74,19 @@ class MasterSelect
      * @param  class-string<\Illuminate\Database\Eloquent\Model>  $model
      * @param  Closure|null  $scope  tambahan batasan untuk PILIHAN BARU:
      *                               fn (Builder $query, $livewire, Get $get): void
+     * @param  bool  $withCode  label "kode - nama" (hanya bila modelnya punya kode)
      */
-    public static function server($field, string $model, bool $activeOnly = true, ?Closure $scope = null)
+    public static function server($field, string $model, bool $activeOnly = true, ?Closure $scope = null, bool $withCode = false)
     {
         // Injeksi $livewire/$get hanya bila ada batasan tambahan: keduanya butuh
         // komponen yang sudah terpasang di sebuah form.
         $initial = $scope
-            ? fn ($livewire, Get $get): array => self::search($model, '', $activeOnly, self::bind($scope, $livewire, $get))
-            : fn (): array => self::search($model, '', $activeOnly);
+            ? fn ($livewire, Get $get): array => self::search($model, '', $activeOnly, self::bind($scope, $livewire, $get), $withCode)
+            : fn (): array => self::search($model, '', $activeOnly, null, $withCode);
 
         $searching = $scope
-            ? fn (string $search, $livewire, Get $get): array => self::search($model, $search, $activeOnly, self::bind($scope, $livewire, $get))
-            : fn (string $search): array => self::search($model, $search, $activeOnly);
+            ? fn (string $search, $livewire, Get $get): array => self::search($model, $search, $activeOnly, self::bind($scope, $livewire, $get), $withCode)
+            : fn (string $search): array => self::search($model, $search, $activeOnly, null, $withCode);
 
         $field
             ->searchable()
@@ -95,9 +96,9 @@ class MasterSelect
             // sesudah halaman dibuka tetap ketemu.
             ->options($initial)
             ->getSearchResultsUsing($searching)
-            ->getOptionLabelUsing(fn ($value): ?string => self::label($model, $value))
+            ->getOptionLabelUsing(fn ($value): ?string => self::label($model, $value, $withCode))
             // Pilihan ganda (`multiple()`) membaca label nilai terpilihnya lewat sini.
-            ->getOptionLabelsUsing(fn (array $values): array => self::labels($model, $values));
+            ->getOptionLabelsUsing(fn (array $values): array => self::labels($model, $values, $withCode));
 
         // Pesan prompt hanya ada di Select, tidak di SelectFilter.
         if ($field instanceof Select) {
@@ -119,7 +120,7 @@ class MasterSelect
      * @param  class-string<\Illuminate\Database\Eloquent\Model>  $model
      * @return array<int|string, string>
      */
-    public static function search(string $model, string $search, bool $activeOnly = true, ?Closure $scope = null): array
+    public static function search(string $model, string $search, bool $activeOnly = true, ?Closure $scope = null, bool $withCode = false): array
     {
         // `!` sebagai karakter escape (ESCAPE '!'), bukan backslash: backslash
         // diperlakukan berbeda oleh MySQL dan SQLite.
@@ -138,7 +139,8 @@ class MasterSelect
             })
             ->orderBy('name')
             ->limit(self::LIMIT)
-            ->pluck('name', 'id')
+            ->get()
+            ->mapWithKeys(fn ($row): array => [$row->getKey() => self::text($row, $withCode)])
             ->all();
     }
 
@@ -149,9 +151,19 @@ class MasterSelect
      * @param  array<int, int|string>  $values
      * @return array<int|string, string>
      */
-    public static function labels(string $model, array $values): array
+    public static function labels(string $model, array $values, bool $withCode = false): array
     {
-        return $model::query()->whereKey($values)->pluck('name', 'id')->all();
+        return $model::query()->whereKey($values)->get()
+            ->mapWithKeys(fn ($row): array => [$row->getKey() => self::text($row, $withCode)])
+            ->all();
+    }
+
+    /** Teks sebuah pilihan: nama, atau "kode - nama" bila diminta dan ada kodenya. */
+    private static function text($row, bool $withCode): string
+    {
+        return $withCode && filled($row->getAttribute('code'))
+            ? $row->getAttribute('code').' - '.$row->name
+            : (string) $row->name;
     }
 
     /**
@@ -160,8 +172,10 @@ class MasterSelect
      *
      * @param  class-string<\Illuminate\Database\Eloquent\Model>  $model
      */
-    public static function label(string $model, mixed $value): ?string
+    public static function label(string $model, mixed $value, bool $withCode = false): ?string
     {
-        return filled($value) ? $model::query()->whereKey($value)->value('name') : null;
+        $row = filled($value) ? $model::query()->whereKey($value)->first() : null;
+
+        return $row ? self::text($row, $withCode) : null;
     }
 }

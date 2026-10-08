@@ -48,19 +48,7 @@ class MasterDropdownGuardTest extends TestCase
      *
      * @var array<string, string>
      */
-    private const MENUNGGU = [
-
-        // Kelompok 4: sisanya
-        'Admin/Resources/BoningResource/Pages/LabelingBoning.php' => 'kelompok 4: sisanya',
-        'Admin/Resources/RepackResource/Pages/InputHasilRepack.php' => 'kelompok 4: sisanya',
-        'Admin/Resources/StockTakeResource/Pages/ScanStockTake.php' => 'kelompok 4: sisanya',
-        'Admin/Resources/MaterialUsageResource/Pages/CreateManualUsage.php' => 'kelompok 4: sisanya',
-        'Clusters/BeefStocks/Pages/FoundItemScanner.php' => 'kelompok 4: sisanya',
-        'Clusters/MaterialsStock/Resources/MaterialFindingResource.php' => 'kelompok 4: sisanya',
-        'Clusters/ProductsCluster/Resources/ProductResource.php' => 'kelompok 4: sisanya (produk induk)',
-        'Clusters/ProductsCluster/Resources/ProductResource/Forms/BillOfMaterialSection.php' => 'kelompok 4: sisanya (BOM)',
-        'Concerns/ShowsBomMaterialUsage.php' => 'kelompok 4: sisanya (bahan terbuang di Pemakaian Material)',
-    ];
+    private const MENUNGGU = [];
 
     public function test_dropdowns_to_growing_masters_search_the_server(): void
     {
@@ -90,6 +78,9 @@ class MasterDropdownGuardTest extends TestCase
     public function test_the_waiting_list_only_holds_files_that_still_use_the_old_pattern(): void
     {
         $berkas = $this->berkas();
+
+        // Daftar kosong = semua kelompok selesai; tetap dihitung sebagai pemeriksaan.
+        $this->addToAssertionCount(1);
 
         foreach (self::MENUNGGU as $relatif => $kelompok) {
             $this->assertArrayHasKey($relatif, $berkas, "{$relatif} ada di daftar menunggu tetapi berkasnya tidak ada.");

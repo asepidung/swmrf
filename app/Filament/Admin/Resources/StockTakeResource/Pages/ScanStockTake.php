@@ -326,10 +326,9 @@ class ScanStockTake extends Page implements HasForms, HasTable
                             ->label(__('Barcode (Optional)'))
                             ->helperText(__('Leave blank to generate automatically.'))
                             ->columnSpanFull(),
-                        Forms\Components\Select::make('product_id')
+                        // Barang yang ketemu di gudang boleh produk yang kini nonaktif.
+                        \App\Filament\Support\MasterSelect::product('product_id', activeOnly: false)
                             ->label(__('Product'))
-                            ->options(\App\Models\Product::pluck('name', 'id'))
-                            ->searchable()
                             ->required(),
                         Forms\Components\Select::make('grade_id')
                             ->label(__('Grade'))
