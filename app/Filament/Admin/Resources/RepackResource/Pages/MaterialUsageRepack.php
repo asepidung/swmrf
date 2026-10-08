@@ -50,13 +50,7 @@ class MaterialUsageRepack extends EditRecord
                         Forms\Components\DatePicker::make('repack_date')
                             ->label(__('Usage Date (Repack Date)'))
                             ->disabled(),
-
-                        Forms\Components\TextInput::make('process')
-                            ->label(__('Process'))
-                            ->default('Repack')
-                            ->disabled()
-                            ->dehydrated(false),
-                    ])->columns(3),
+                    ])->columns(2),
 
                 $this->bomUsageSection(),
 

@@ -7217,3 +7217,11 @@ tapi tulis secara eksplisit drylog / pad absorber".
   `drylogWasFilled()` kini hanya memeriksa `drylog_qty`.
 - Drylog tidak dinilai rupiah (ia pemakaian, bukan bahan terbuang) dan tidak
   memotong stok; laporan langkah 5 menampilkannya sebagai baris bernama tetap.
+
+**Susulan #509 -- dua perapian kecil, 8 Oktober 2026 (Ruby).** Permintaan Owner:
+(1) field "Process" di Document Info halaman Pemakaian Material Boning/Repack
+**dihapus**: ia tidak pernah terisi pada dokumen yang sudah ada (nilai awalnya
+hanya berlaku saat membuat), tidak disimpan, dan jenis prosesnya sudah terbaca
+dari judul halaman dan nomor dokumen; (2) tombol "Export Excel" di halaman View
+Boning kini berlabel **"Excel"**, sama dengan tombol di daftar lain (kunci bahasa
+"Export Excel" yang tak terpakai ikut dibuang).

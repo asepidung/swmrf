@@ -532,4 +532,17 @@ class BomUsageTest extends TestCase
         $page->call('save')->assertForbidden();
         $this->assertNull($boning->fresh()->drylog_qty);
     }
+
+    /** @test */
+    public function the_document_info_has_no_empty_process_field(): void
+    {
+        // "Process" tidak pernah terisi pada dokumen yang sudah ada, tidak
+        // disimpan, dan jenis prosesnya sudah terbaca dari judul halaman.
+        $boning = $this->boningWithItems();
+
+        Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
+            ->assertFormFieldExists('doc_no')
+            ->assertFormFieldExists('boning_date')
+            ->assertFormFieldDoesNotExist('process');
+    }
 }
