@@ -250,7 +250,7 @@ class ProductionMaterialSummaryTest extends TestCase
             ->instance()
             ->materialUsageCsv();
 
-        $this->assertStringContainsString('"KARTON TOP",2,"PCS"', $csv);
+        $this->assertStringContainsString('"KARTON TOP",2,"pcs"', $csv);
         $this->assertStringContainsString('"Drylog / Pad Absorber",2', $csv);
         $this->assertStringContainsString('"PLASTIK VAKUM",3,"gagal vakum",3000', $csv);
         $this->assertStringContainsString('"Total wasted",,,3000', $csv);

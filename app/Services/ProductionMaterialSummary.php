@@ -52,7 +52,8 @@ class ProductionMaterialSummary
             $material = $materials->get($materialId);
             $bom[] = [
                 'material' => $material?->name ?? '-',
-                'unit' => $material?->unit?->name ?? '',
+                // BOM dihitung per satuan PAKAI (pcs), bukan satuan beli material.
+                'unit' => 'pcs',
                 'qty' => $qty,
             ];
         }

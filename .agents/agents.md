@@ -7269,3 +7269,12 @@ terhitung "belum ada harga", nilai di baris tersimpan lalu kosong saat Unlock,
 halaman terkunci hanya baca, tidak bisa diubah lewat halaman, View, Excel, cetak
 (izin dan jenis). Dibuktikan menggigit: ringkasan dokumen terkunci dipaksa
 memakai hitungan terkini, test merah; dipulihkan, hijau.
+
+**Susulan #509 langkah 5a -- ringkasan dirapikan, 8 Oktober 2026 (Ruby).** Permintaan
+Owner: "tolong buat lebih rapi". Tiga bagian (BOM, drylog, bahan terbuang) kini
+berjudul kecil seragam dengan garis pemisah, kolom jumlah sempit dan rata kanan
+berakhiran satuan ("20 pcs"), nilai tanpa harga tampil "Rp 0" dengan lencana
+"belum ada harga" (bukan "-"), dan total berbaris tebal. **Satuan BOM selalu pcs**
+(satuan pakai): sebelumnya kolom Unit memperlihatkan satuan BELI material
+("KOLI"), padahal jumlahnya dihitung per satuan pakai dan menyesatkan. Berlaku di
+halaman terkunci, halaman belum terkunci, cetakan, dan Excel.

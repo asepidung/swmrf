@@ -4,16 +4,14 @@
             <thead>
                 <tr class="border-b border-gray-200 dark:border-white/10">
                     <th class="py-2 pe-4 font-semibold">{{ __('Material') }}</th>
-                    <th class="py-2 pe-4 text-end font-semibold">{{ __('Quantity') }}</th>
-                    <th class="py-2 font-semibold">{{ __('Unit') }}</th>
+                    <th class="py-2 text-end font-semibold">{{ __('Quantity') }}</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($rows as $row)
                     <tr class="border-b border-gray-100 dark:border-white/5">
                         <td class="py-2 pe-4">{{ $row['material'] }}</td>
-                        <td class="py-2 pe-4 text-end tabular-nums">{{ number_format($row['qty'], 0, ',', '.') }}</td>
-                        <td class="py-2">{{ $row['unit'] }}</td>
+                        <td class="py-2 text-end tabular-nums">{{ number_format($row['qty'], 0, ',', '.') }} {{ __('pcs') }}</td>
                     </tr>
                 @endforeach
             </tbody>

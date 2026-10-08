@@ -1,31 +1,37 @@
 @php
-    $rupiah = fn (?float $value): string => $value === null ? '-' : 'Rp '.number_format($value, 0, ',', '.');
+    $number = fn ($value): string => number_format((float) $value, 0, ',', '.');
+    $rupiah = fn (?float $value): string => 'Rp '.number_format((float) $value, 0, ',', '.');
+    $heading = 'text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400';
+    $head = 'py-2 text-xs font-medium text-gray-500 dark:text-gray-400';
+    $row = 'border-t border-gray-100 dark:border-white/5';
 @endphp
 
-<div class="space-y-6 text-sm">
+<div class="divide-y divide-gray-200 text-sm dark:divide-white/10">
     @unless ($summary['final'])
-        <p class="rounded-lg border border-warning-200 bg-warning-50 p-3 text-warning-700 dark:border-warning-800 dark:bg-warning-900 dark:text-warning-400">
-            {{ __('Not final yet. These figures are recalculated until the document is locked.') }}
-        </p>
+        <div class="pb-4">
+            <x-filament::badge color="warning" icon="heroicon-m-clock">
+                {{ __('Not final yet. These figures are recalculated until the document is locked.') }}
+            </x-filament::badge>
+        </div>
     @endunless
 
-    <div>
-        <p class="mb-2 font-semibold">{{ __('Usage per BOM') }}</p>
+    {{-- Pemakaian menurut BOM --}}
+    <section class="py-4 first:pt-0">
+        <h4 class="{{ $heading }} mb-2">{{ __('Usage per BOM') }}</h4>
+
         @if (count($summary['bom']))
-            <table class="w-full text-left">
+            <table class="w-full table-fixed text-left">
                 <thead>
-                    <tr class="border-b border-gray-200 dark:border-white/10">
-                        <th class="py-2 pe-4 font-semibold">{{ __('Material') }}</th>
-                        <th class="py-2 pe-4 text-end font-semibold">{{ __('Quantity') }}</th>
-                        <th class="py-2 font-semibold">{{ __('Unit') }}</th>
+                    <tr>
+                        <th class="{{ $head }}">{{ __('Material') }}</th>
+                        <th class="{{ $head }} w-40 text-end">{{ __('Quantity') }}</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($summary['bom'] as $row)
-                        <tr class="border-b border-gray-100 dark:border-white/5">
-                            <td class="py-2 pe-4">{{ $row['material'] }}</td>
-                            <td class="py-2 pe-4 text-end tabular-nums">{{ number_format($row['qty'], 0, ',', '.') }}</td>
-                            <td class="py-2">{{ $row['unit'] }}</td>
+                    @foreach ($summary['bom'] as $line)
+                        <tr class="{{ $row }}">
+                            <td class="py-2 pe-4">{{ $line['material'] }}</td>
+                            <td class="py-2 text-end tabular-nums">{{ $number($line['qty']) }} {{ __('pcs') }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -33,39 +39,54 @@
         @else
             <p class="text-gray-500 dark:text-gray-400">{{ __('No material usage according to the BOM.') }}</p>
         @endif
-    </div>
+    </section>
 
-    <div>
-        <p class="mb-1 font-semibold">{{ __('Drylog / Pad Absorber') }}</p>
+    {{-- Drylog --}}
+    <section class="py-4">
+        <h4 class="{{ $heading }} mb-2">{{ __('Drylog / Pad Absorber') }}</h4>
+
         @if ($summary['drylog'] === null)
             <p class="text-gray-500 dark:text-gray-400">{{ __('Not filled in yet.') }}</p>
         @else
-            <p class="tabular-nums">{{ number_format($summary['drylog'], 0, ',', '.') }} {{ __('pcs') }}</p>
+            <table class="w-full table-fixed text-left">
+                <tbody>
+                    <tr class="{{ $row }}">
+                        <td class="py-2 pe-4">{{ __('Drylog / Pad Absorber') }}</td>
+                        <td class="w-40 py-2 text-end tabular-nums">{{ $number($summary['drylog']) }} {{ __('pcs') }}</td>
+                    </tr>
+                </tbody>
+            </table>
         @endif
-    </div>
+    </section>
 
-    <div>
-        <p class="mb-2 font-semibold">{{ __('Wasted Material') }}</p>
+    {{-- Material terbuang --}}
+    <section class="py-4 last:pb-0">
+        <h4 class="{{ $heading }} mb-2">{{ __('Wasted Material') }}</h4>
+
         @if (count($summary['wastes']))
-            <table class="w-full text-left">
+            <table class="w-full table-fixed text-left">
                 <thead>
-                    <tr class="border-b border-gray-200 dark:border-white/10">
-                        <th class="py-2 pe-4 font-semibold">{{ __('Material') }}</th>
-                        <th class="py-2 pe-4 text-end font-semibold">{{ __('Quantity') }}</th>
-                        <th class="py-2 pe-4 font-semibold">{{ __('Reason') }}</th>
-                        <th class="py-2 text-end font-semibold">{{ __('Value') }}</th>
+                    <tr>
+                        <th class="{{ $head }}">{{ __('Material') }}</th>
+                        <th class="{{ $head }} w-28 text-end">{{ __('Quantity') }}</th>
+                        <th class="{{ $head }} w-1/4 ps-6">{{ __('Reason') }}</th>
+                        <th class="{{ $head }} w-48 text-end">{{ __('Value') }}</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($summary['wastes'] as $row)
-                        <tr class="border-b border-gray-100 dark:border-white/5">
-                            <td class="py-2 pe-4">{{ $row['material'] }}</td>
-                            <td class="py-2 pe-4 text-end tabular-nums">{{ number_format($row['qty'], 0, ',', '.') }} {{ $row['unit'] }}</td>
-                            <td class="py-2 pe-4">{{ $row['reason'] }}</td>
+                    @foreach ($summary['wastes'] as $line)
+                        <tr class="{{ $row }}">
+                            <td class="py-2 pe-4">{{ $line['material'] }}</td>
+                            <td class="py-2 text-end tabular-nums">{{ $number($line['qty']) }} {{ $line['unit'] }}</td>
+                            <td class="py-2 ps-6">{{ $line['reason'] }}</td>
                             <td class="py-2 text-end tabular-nums">
-                                {{ $rupiah($row['amount']) }}
-                                @if ($summary['final'] && (float) $row['amount'] <= 0)
-                                    <span class="text-warning-600">({{ __('no price yet') }})</span>
+                                @if ($line['amount'] === null)
+                                    <span class="text-gray-400">-</span>
+                                @else
+                                    @if ($summary['final'] && (float) $line['amount'] <= 0)
+                                        <x-filament::badge color="warning" size="sm" class="me-2 inline-flex">{{ __('no price yet') }}</x-filament::badge>
+                                    @endif
+                                    {{ $rupiah($line['amount']) }}
                                 @endif
                             </td>
                         </tr>
@@ -73,7 +94,7 @@
                 </tbody>
                 @if ($summary['final'])
                     <tfoot>
-                        <tr>
+                        <tr class="border-t-2 border-gray-200 dark:border-white/10">
                             <td class="py-2 pe-4 font-semibold" colspan="3">{{ __('Total wasted') }}</td>
                             <td class="py-2 text-end font-semibold tabular-nums">{{ $rupiah($summary['waste_total']) }}</td>
                         </tr>
@@ -83,5 +104,5 @@
         @else
             <p class="text-gray-500 dark:text-gray-400">{{ __('Nothing was wasted.') }}</p>
         @endif
-    </div>
+    </section>
 </div>
