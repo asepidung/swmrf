@@ -7501,3 +7501,41 @@ lama langsung ditolak test, lengkap dengan berkas dan barisnya.
 
 **Test:** `MasterSelectTest` +4: produk induk (hanya induk aktif, produk baru
 ketemu tanpa refresh), Manual Usage, label BOM "kode - nama", dan pilihan salin BOM.
+
+## #512 poin 2 -- tombol "+" diseragamkan, 8 Oktober 2026
+
+Sebelas "+" (`createOptionForm`) ditulis sendiri-sendiri: tidak ada yang memeriksa
+izin pembuatnya, nama satuan/kelas sapi/segmen hanya TAMPAK huruf besar
+(`text-transform` CSS) tetapi tersimpan apa adanya, dan keunikannya tidak peka
+huruf besar/kecil. Semuanya kini lewat satu rumah, `App\Filament\Support\QuickCreate`
+(`schema($kind)` + `action($kind)`).
+
+- **Hanya master berisian pendek:** satuan material, kategori material, kategori
+  produk, supir, kendaraan, kelas sapi, segmen customer, grup customer. **Produk,
+  customer, supplier, dan material TIDAK** (keputusan Owner: fieldnya banyak;
+  alurnya buka tab baru, lalu cari di dropdown yang mencari ke server).
+- **Material sebagai "+" diusulkan di PR, tidak dibangun:** field wajibnya
+  (nama, satuan, kategori, isi per satuan, stok minimum bersyarat) berarti "+"
+  bertingkat (satuan dan kategori di dalam modal material) dan logika toggle
+  stok; terlalu mudah salah. Menunggu keputusan Owner bila memang diinginkan.
+- **Izin:** tombol HANYA tampil bagi yang `can('create', Model)` (policy tiap
+  master). Aksi yang tersembunyi dianggap nonaktif oleh Filament
+  (`isDisabled() || isHidden()`), jadi permintaan Livewire mentah tanpa izin
+  juga ditolak (ada test yang memanggil `mountFormComponentAction` dan
+  `callMountedFormComponentAction` langsung).
+- **Aturan sama dengan form master asli:** bentuk isian (satuan/kategori/kelas/
+  segmen: nama; kategori produk: nama + prefix berikutnya; supir: nama + aktif;
+  kendaraan: jenis + plat + aktif; grup customer: nama, TOP, PIC, alamat), nama
+  disimpan HURUF BESAR (kecuali nama supir dan plat, yang di master aslinya
+  tidak diubah), keunikan tidak peka huruf besar/kecil (dicek sendiri karena
+  SQLite membedakan, MySQL tidak). Nilai baru langsung terpilih (bawaan Filament).
+- **Penjaga:** `QuickCreateGuardTest` -- setiap `createOptionForm()` harus
+  `QuickCreate::schema()` dan dipasangkan `->createOptionAction(QuickCreate::action())`;
+  dropdown product/customer/supplier/material/parent dilarang punya "+".
+
+**Test:** `QuickCreateTest` (13): tiap jenis punya form dan tombolnya mengikuti izin
+`create` master itu, "+" satuan membuat BOX huruf besar dan memilihnya, nama kembar
+ditolak apa pun huruf besar/kecilnya, tombol segmen tersembunyi tanpa izin dan
+permintaan mentah ditolak, dengan izin berhasil. Dibuktikan menggigit: batas izin
+dilepas sementara -- 10 test merah; satu "+" dikembalikan ke bentuk lama -- penjaga
+merah dengan berkasnya.

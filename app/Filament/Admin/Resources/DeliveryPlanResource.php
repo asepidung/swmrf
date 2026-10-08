@@ -58,14 +58,8 @@ class DeliveryPlanResource extends Resource
                             ->searchable()
                             ->preload()
                             ->required()
-                            ->createOptionForm([
-                                Forms\Components\TextInput::make('name')
-                                    ->required()
-                                    ->maxLength(255)
-                                    ->unique(ignoreRecord: true),
-                                Forms\Components\Toggle::make('is_active')
-                                    ->default(true),
-                            ])
+                            ->createOptionForm(\App\Filament\Support\QuickCreate::schema('driver'))
+                            ->createOptionAction(\App\Filament\Support\QuickCreate::action('driver'))
                             ->autofocus(), // Ergonomic UI: autofocus on first editable field
                         Forms\Components\Select::make('vehicle_id')
                             ->label(__('Fleet'))
@@ -74,17 +68,8 @@ class DeliveryPlanResource extends Resource
                             ->searchable()
                             ->preload()
                             ->required()
-                            ->createOptionForm([
-                                Forms\Components\TextInput::make('vehicle_type')
-                                    ->required()
-                                    ->maxLength(255),
-                                Forms\Components\TextInput::make('police_number')
-                                    ->required()
-                                    ->maxLength(255)
-                                    ->unique(ignoreRecord: true),
-                                Forms\Components\Toggle::make('is_active')
-                                    ->default(true),
-                            ]),
+                            ->createOptionForm(\App\Filament\Support\QuickCreate::schema('vehicle'))
+                            ->createOptionAction(\App\Filament\Support\QuickCreate::action('vehicle')),
                         Forms\Components\Select::make('load_time')
                             ->label(__('Loading Time'))
                             ->options(function () {

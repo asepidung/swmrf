@@ -78,12 +78,8 @@ class MaterialResource extends Resource
                             ->label(fn() => __('Unit'))
                             ->relationship('unit', 'name')
                             ->required()
-                            ->createOptionForm([
-                                Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
-                                    ->required()
-                                    ->maxLength(255)
-                                    ->extraInputAttributes(['style' => 'text-transform:uppercase']),
-                            ]),
+                            ->createOptionForm(\App\Filament\Support\QuickCreate::schema('materialUnit'))
+                            ->createOptionAction(\App\Filament\Support\QuickCreate::action('materialUnit')),
                         Forms\Components\TextInput::make('content_per_unit')
                             ->label(fn() => __('Content per Unit'))
                             ->helperText(__('How many usage units (e.g. pcs) one purchase unit holds. Example: 1 Box of plastic holds 1,000 pcs, so enter 1000. Only used to value waste; purchasing and stock stay in the purchase unit.'))
@@ -96,13 +92,8 @@ class MaterialResource extends Resource
                             ->label(fn() => __('Category'))
                             ->relationship('category', 'name')
                             ->required()
-                            ->createOptionForm([
-                                Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
-                                    ->required()
-                                    ->maxLength(255)
-                                    ->extraInputAttributes(['style' => 'text-transform:uppercase'])
-                                    ->dehydrateStateUsing(fn ($state) => strtoupper($state)),
-                            ]),
+                            ->createOptionForm(\App\Filament\Support\QuickCreate::schema('materialCategory'))
+                            ->createOptionAction(\App\Filament\Support\QuickCreate::action('materialCategory')),
                         // Stok minimum hanya berarti bagi material yang masuk daftar
                         // stok. Mesin, kulkas, stiker, materai tidak punya batas
                         // minimum, jadi isiannya muncul hanya bila toggle di bawahnya
