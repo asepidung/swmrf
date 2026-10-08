@@ -1655,5 +1655,9 @@
     "No material usage according to the BOM.": "No material usage according to the BOM.",
     "Basis of the calculation": "Basis of the calculation",
     "Not counted in the figures above": "Not counted in the figures above",
-    "box": "box"
+    "box": "box",
+    "Drylog": "Drylog",
+    "Drylog Material": "Drylog Material",
+    "Required before this document can be locked. Enter 0 if none was used.": "Required before this document can be locked. Enter 0 if none was used.",
+    "Fill in the drylog on the Material Usage page before locking. Zero is allowed.": "Fill in the drylog on the Material Usage page before locking. Zero is allowed."
 }

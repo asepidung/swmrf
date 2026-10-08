@@ -7114,3 +7114,45 @@ Permintaan Owner: di daftar produk, bedakan produk yang sudah dan belum punya
 BOM. Belum punya = ikon tambah abu-abu, tooltip "Buat BOM". Sudah punya = ikon
 pensil kuning dengan angka jumlah bahan, tooltip "Ubah BOM". Jumlahnya dari
 `withCount('billOfMaterials')` pada query tabel, jadi tidak ada query per baris.
+
+## #509 langkah 3 -- drylog wajib sebelum Lock dan snapshot BOM saat dikunci, 8 Oktober 2026
+
+Keputusan Owner, 8 Oktober 2026: halaman Pemakaian Material Boning/Repack berisi
+(1) hitungan BOM otomatis dan terkunci, (2) **drylog WAJIB diisi**, (3) bahan
+terbuang yang dinamis (langkah 4). **Boning/Repack tidak bisa dikunci bila
+drylog belum diisi; bahan terbuang boleh kosong** ("mungkin ada keajaiban tidak
+ada material waste"). Ini menggantikan syarat lama "harus ada baris pemakaian
+material", yang sudah dicabut di langkah 2.
+
+- **Kolom di `bonings` dan `repacks`:** `drylog_material_id` (dipilih dari master
+  material -- penanda `is_drylog` di master sengaja dibuang, lihat #510) dan
+  `drylog_qty` (bilangan bulat >= 0). **NULL = belum diisi, 0 = diisi dan hasilnya
+  nol**; hanya NULL yang menahan Lock. Satu rumah untuk dua model:
+  `App\Models\Concerns\HasProductionMaterialRecord`.
+- **Syarat diperiksa di `lock()` (server)**, bukan cuma tombol: pesannya
+  "Isi drylog di halaman Pemakaian Material sebelum mengunci. Nol
+  diperbolehkan." Diletakkan SETELAH syarat lain (karkas, hasil, susut) supaya
+  pesan syarat lama tidak tertimpa. Tombol Lock tetap tampil; pesan kegagalannya
+  yang menjelaskan.
+- **Snapshot:** saat dikunci, hitungan BOM dibekukan ke `production_bom_snapshots`
+  (satu baris per material); saat di-unlock dilepas. Sebelum dikunci halaman
+  selalu menghitung ulang dari label terkini. Mengubah BOM produk sesudah
+  dikunci tidak mengubah angka dokumen itu (ada test).
+- **Halaman:** bagian BOM tetap tampilan; yang disimpan hanya dua kolom drylog
+  (`Arr::only` di `handleRecordUpdate`, jadi permintaan Livewire langsung tidak
+  bisa mengubah nomor dokumen, status, atau `kunci`). Dokumen yang keburu
+  dikunci tidak bisa disimpan (403).
+- **Tidak menyentuh stok** sama sekali.
+- **Test lama:** ~35 pemanggilan `lock()` di lima berkas test memakai helper
+  `TestCase::lockWithDrylog()` (mengisi drylog 0 bila belum ada), supaya tetap
+  fokus pada yang diuji (susut, HPP, kerugian).
+- Belum: bahan terbuang dan Financial Loss rupiah (langkah 4), ringkasan di View,
+  cetak, ekspor, dan laporan periode (langkah 5). Halaman dokumen terkunci masih
+  403; tampilannya (membaca snapshot) menyusul di langkah 5.
+
+**Test:** `BomUsageTest` +8 (drylog wajib, 0 sah dan beda dari kosong, negatif/
+pecahan ditolak, Boning tidak bisa dikunci tanpa drylog dan bisa dengan 0,
+snapshot beku lalu lepas saat unlock, Lock tidak menyentuh stok, permintaan
+langsung hanya mengubah kolom drylog, dokumen terkunci tidak bisa disimpan).
+Dibuktikan menggigit: pemeriksaan drylog di `refuseToLockWithoutDrylog`
+dimatikan sementara, test Lock merah; dipulihkan, hijau.

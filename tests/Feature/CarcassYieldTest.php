@@ -373,7 +373,7 @@ class CarcassYieldTest extends TestCase
 
         $this->expectException(\RuntimeException::class);
 
-        $boning->lock();
+        $this->lockWithDrylog($boning);
     }
 
     public function test_a_boning_without_output_cannot_be_locked(): void
@@ -383,7 +383,7 @@ class CarcassYieldTest extends TestCase
 
         $this->expectException(\RuntimeException::class);
 
-        $boning->lock();
+        $this->lockWithDrylog($boning);
     }
 
     public function test_a_locked_boning_cannot_be_locked_twice(): void
@@ -391,14 +391,14 @@ class CarcassYieldTest extends TestCase
         $karkas = $this->karkas([['hidup' => 500.00, 'a' => 150.00, 'b' => 150.00, 'kulit' => 30.00, 'buntut' => 0.00]]);
         $boning = $this->boning($karkas, [200.00]);
 
-        $boning->lock();
+        $this->lockWithDrylog($boning);
 
         $this->assertTrue($boning->fresh()->kunci);
         $this->assertSame('LOCKED', $boning->fresh()->status);
 
         $this->expectException(\RuntimeException::class);
 
-        $boning->fresh()->lock();
+        $this->lockWithDrylog($boning->fresh());
     }
 
     public function test_unlocking_reopens_the_batch(): void
@@ -406,7 +406,7 @@ class CarcassYieldTest extends TestCase
         $karkas = $this->karkas([['hidup' => 500.00, 'a' => 150.00, 'b' => 150.00, 'kulit' => 30.00, 'buntut' => 0.00]]);
         $boning = $this->boning($karkas, [200.00]);
 
-        $boning->lock();
+        $this->lockWithDrylog($boning);
         $boning->fresh()->unlock();
 
         $this->assertFalse($boning->fresh()->kunci);

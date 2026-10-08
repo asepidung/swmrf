@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasProductionMaterialRecord;
 use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,17 +17,19 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Boning extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity;
+    use HasFactory, SoftDeletes, LogsActivity, HasProductionMaterialRecord;
 
     protected $table = 'bonings';
 
     protected $fillable = [
         'doc_no', 'boning_date', 'status', 'kunci', 'note', 'created_by',
+        'drylog_material_id', 'drylog_qty',
     ];
 
     protected $casts = [
         'boning_date' => 'date',
         'kunci' => 'boolean',
+        'drylog_qty' => 'integer',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -136,6 +139,11 @@ class Boning extends Model
     // persen bobot hidup yang menjadi karkas. Ia tidak menyentuh hasil boning
     // sama sekali.
 
+    public function bomLabels(): \Illuminate\Support\Collection
+    {
+        return $this->items;
+    }
+
     /**
      * Kunci batch ini.
      *
@@ -181,7 +189,12 @@ class Boning extends Model
                 throw new \RuntimeException(__('This boning has no output goods yet.'));
             }
 
+            // Drylog WAJIB diisi (0 boleh) -- keputusan Owner, 8 Oktober 2026.
+            // Bahan terbuang boleh kosong: bisa saja memang tidak ada.
+            $locked->refuseToLockWithoutDrylog();
+
             $locked->forceFill(['kunci' => true, 'status' => 'LOCKED'])->save();
+            $locked->freezeBomUsage();
             $this->kunci = true;
             $this->status = 'LOCKED';
         });
@@ -200,6 +213,7 @@ class Boning extends Model
             }
 
             $locked->forceFill(['kunci' => false, 'status' => 'OPEN'])->save();
+            $locked->releaseBomUsage();
             $this->kunci = false;
             $this->status = 'OPEN';
         });

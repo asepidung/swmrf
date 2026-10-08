@@ -171,7 +171,7 @@ class CostingCalculatorTest extends TestCase
             'created_by' => $this->user->id,
         ]);
 
-        $boning->lock();
+        $this->lockWithDrylog($boning);
 
         $result = CostingCalculator::forBoning($boning->fresh())->calculate();
 
@@ -253,7 +253,7 @@ class CostingCalculatorTest extends TestCase
             'created_by' => $this->user->id,
         ]);
 
-        $boning->lock();
+        $this->lockWithDrylog($boning);
 
         $result = CostingCalculator::forBoning($boning->fresh())->calculate();
 
@@ -283,7 +283,7 @@ class CostingCalculatorTest extends TestCase
             'created_by' => $this->user->id,
         ]);
 
-        $boning->lock();
+        $this->lockWithDrylog($boning);
 
         $result = CostingCalculator::forBoning($boning->fresh())->calculate();
 
@@ -309,7 +309,7 @@ class CostingCalculatorTest extends TestCase
             'created_by' => $this->user->id,
         ]);
 
-        $boning->lock();
+        $this->lockWithDrylog($boning);
 
         $result = CostingCalculator::forBoning($boning->fresh())->calculate();
 

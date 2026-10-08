@@ -200,7 +200,7 @@ class RepackYieldTest extends TestCase
         $this->assertNull(Repack::shrinkLimitPercent());
         $this->assertTrue($repack->isWithinShrinkLimit());
 
-        $repack->lock();
+        $this->lockWithDrylog($repack);
 
         $this->assertTrue($repack->fresh()->kunci);
         $this->assertSame('LOCKED', $repack->fresh()->status);
@@ -215,7 +215,7 @@ class RepackYieldTest extends TestCase
 
         $this->assertTrue($repack->isWithinShrinkLimit());
 
-        $repack->lock();
+        $this->lockWithDrylog($repack);
 
         $this->assertTrue($repack->fresh()->kunci);
         $this->assertNull($repack->fresh()->yield_override_reason);
@@ -230,7 +230,7 @@ class RepackYieldTest extends TestCase
         $this->assertFalse($repack->isWithinShrinkLimit());
 
         try {
-            $repack->lock();
+            $this->lockWithDrylog($repack);
             $this->fail('Repack di luar batas seharusnya ditolak tanpa alasan.');
         } catch (\RuntimeException $e) {
             $this->assertStringContainsString('reason', $e->getMessage());
@@ -259,7 +259,7 @@ class RepackYieldTest extends TestCase
         // `Repack::grantShrinkOverride()`.
         $repack->grantShrinkOverride('Karkasnya memang berlemak tebal, dibuang banyak.', $this->user->id);
 
-        $repack->fresh()->lock();
+        $this->lockWithDrylog($repack->fresh());
 
         $tersimpan = $repack->fresh();
 
@@ -310,7 +310,7 @@ class RepackYieldTest extends TestCase
 
         $this->expectException(\RuntimeException::class);
 
-        $repack->lock();
+        $this->lockWithDrylog($repack);
     }
 
     public function test_a_repack_without_output_cannot_be_locked(): void
@@ -319,17 +319,17 @@ class RepackYieldTest extends TestCase
 
         $this->expectException(\RuntimeException::class);
 
-        $repack->lock();
+        $this->lockWithDrylog($repack);
     }
 
     public function test_a_locked_repack_cannot_be_locked_twice(): void
     {
         $repack = $this->repack([100], [95]);
-        $repack->lock();
+        $this->lockWithDrylog($repack);
 
         $this->expectException(\RuntimeException::class);
 
-        $repack->fresh()->lock();
+        $this->lockWithDrylog($repack->fresh());
     }
 
     /**
@@ -344,7 +344,7 @@ class RepackYieldTest extends TestCase
 
         $repack = $this->repack([100], [80]);
         $repack->grantShrinkOverride('Alasan lama', $this->user->id);
-        $repack->fresh()->lock();
+        $this->lockWithDrylog($repack->fresh());
 
         $repack->fresh()->unlock();
 
@@ -371,7 +371,7 @@ class RepackYieldTest extends TestCase
     public function test_unlock_is_refused_when_a_result_has_left_the_warehouse(): void
     {
         $repack = $this->repack([100], [80]);
-        $repack->fresh()->lock();
+        $this->lockWithDrylog($repack->fresh());
 
         $barcode = $repack->results()->first()->barcode;
         \App\Models\BeefStock::where('barcode', $barcode)->delete();
@@ -391,7 +391,7 @@ class RepackYieldTest extends TestCase
     public function test_unlock_is_refused_when_a_result_is_no_longer_in_stock_status(): void
     {
         $repack = $this->repack([100], [80]);
-        $repack->fresh()->lock();
+        $this->lockWithDrylog($repack->fresh());
 
         $barcode = $repack->results()->first()->barcode;
         \App\Models\BeefStock::where('barcode', $barcode)->update(['status' => 'MATCHED']);
@@ -409,7 +409,7 @@ class RepackYieldTest extends TestCase
     public function test_a_refused_unlock_leaves_the_document_still_locked(): void
     {
         $repack = $this->repack([100], [80]);
-        $repack->fresh()->lock();
+        $this->lockWithDrylog($repack->fresh());
 
         $barcode = $repack->results()->first()->barcode;
         \App\Models\BeefStock::where('barcode', $barcode)->delete();
@@ -459,7 +459,7 @@ class RepackYieldTest extends TestCase
 
         $repack = $this->repack([100], [95]);
 
-        $repack->lock();
+        $this->lockWithDrylog($repack);
 
         $this->assertTrue($repack->fresh()->kunci);
         $this->assertFalse($repack->fresh()->shrinkLimitWasOverridden());
@@ -480,7 +480,7 @@ class RepackYieldTest extends TestCase
         $repack = $this->repack([100], [80]);
 
         try {
-            $repack->lock();
+            $this->lockWithDrylog($repack);
 
             $this->fail('Repack di luar batas terkunci tanpa izin QC.');
         } catch (\RuntimeException $e) {
@@ -492,7 +492,7 @@ class RepackYieldTest extends TestCase
         // Sesudah QC mengizinkan, barulah bisa.
         $repack->grantShrinkOverride('Lemaknya tebal, banyak yang dibuang.', $this->user->id);
 
-        $repack->fresh()->lock();
+        $this->lockWithDrylog($repack->fresh());
 
         $this->assertTrue($repack->fresh()->kunci);
     }
@@ -551,7 +551,7 @@ class RepackYieldTest extends TestCase
 
         $this->expectException(\RuntimeException::class);
 
-        $repack->fresh()->lock();
+        $this->lockWithDrylog($repack->fresh());
     }
 
     /** Menambah bahan pun menggugurkan izinnya. */
@@ -578,7 +578,7 @@ class RepackYieldTest extends TestCase
         $repack = $this->repack([100], [80]);
 
         $repack->grantShrinkOverride('Alasan pertama.', $this->user->id);
-        $repack->fresh()->lock();
+        $this->lockWithDrylog($repack->fresh());
 
         $this->expectException(\RuntimeException::class);
 

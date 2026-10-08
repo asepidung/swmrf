@@ -59,6 +59,8 @@ class MaterialUsageBoning extends EditRecord
                     ])->columns(3),
 
                 $this->bomUsageSection(),
+
+                $this->drylogSection(),
             ]);
     }
 

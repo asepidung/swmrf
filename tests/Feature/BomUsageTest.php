@@ -316,8 +316,11 @@ class BomUsageTest extends TestCase
         $boning = $this->boningWithItems();
 
         Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
-            ->call('save');
+            ->fillForm(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 3])
+            ->call('save')
+            ->assertHasNoFormErrors();
 
+        $this->assertSame(3, $boning->fresh()->drylog_qty);
         $this->assertNothingWasWritten();
     }
 
@@ -333,6 +336,7 @@ class BomUsageTest extends TestCase
         $boning = $this->boningWithItems();
 
         Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
+            ->fillForm(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 0])
             ->set('data.materialUsages', [
                 'x' => ['material_id' => $this->karton->id, 'qty' => 999, 'note' => 'langsung'],
             ])
@@ -363,7 +367,9 @@ class BomUsageTest extends TestCase
         $this->assertSame(3, (int) $byMaterial['KARTON']['qty']);
         $this->assertSame(24, (int) $byMaterial['PLASTIK VAKUM']['qty']);
 
-        $page->set('data.materialUsages', ['x' => ['material_id' => $this->karton->id, 'qty' => 5]])->call('save');
+        $page->fillForm(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 0])
+            ->set('data.materialUsages', ['x' => ['material_id' => $this->karton->id, 'qty' => 5]])
+            ->call('save');
         $this->assertNothingWasWritten();
     }
 
@@ -375,5 +381,155 @@ class BomUsageTest extends TestCase
 
         Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
             ->assertForbidden();
+    }
+
+    // =====================================================================
+    // Drylog wajib sebelum Lock, dan snapshot saat dikunci (#509 langkah 3)
+    // =====================================================================
+
+    /** Dokumen yang syarat lainnya terpenuhi, kecuali drylog. */
+    private function boningReadyToLock(): Boning
+    {
+        $boning = $this->boningWithItems();
+        // Lock hanya memeriksa bahwa ada baris karkas, tetapi baris itu butuh
+        // rantai karkas yang sah (pembelian, penerimaan, penimbangan).
+        $supplier = \App\Models\Supplier::create(['name' => 'TEGUH '.uniqid(), 'address' => 'Bogor', 'pic' => 'Teguh', 'top_days' => 30]);
+        $class = \App\Models\CattleClass::firstOrCreate(['name' => 'STEER'], ['is_active' => true]);
+        $po = \App\Models\PurchaseCattle::create(['supplier_id' => $supplier->id, 'shipping_date' => now()->toDateString(), 'created_by' => $this->user->id]);
+        $po->items()->create(['cattle_class_id' => $class->id, 'qty' => 1, 'price' => 55000, 'created_by' => $this->user->id]);
+        $receiving = \App\Models\CattleReceiving::create(['purchase_cattle_id' => $po->id, 'supplier_id' => $supplier->id, 'receive_date' => now()->toDateString(), 'created_by' => $this->user->id]);
+        $weighing = \App\Models\CattleWeighing::create(['cattle_receiving_id' => $receiving->id, 'weighing_date' => now()->toDateString(), 'created_by' => $this->user->id]);
+        $carcass = \App\Models\Carcass::create(['cattle_weighing_id' => $weighing->id, 'kill_date' => now()->toDateString(), 'created_by' => $this->user->id]);
+        \App\Models\BoningCarcass::create(['boning_id' => $boning->id, 'carcass_id' => $carcass->id]);
+
+        return $boning->fresh();
+    }
+
+    /** @test */
+    public function the_drylog_fields_are_required_on_the_page(): void
+    {
+        $boning = $this->boningWithItems();
+
+        Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
+            ->fillForm(['drylog_material_id' => null, 'drylog_qty' => null])
+            ->call('save')
+            ->assertHasFormErrors(['drylog_material_id' => 'required', 'drylog_qty' => 'required']);
+
+        $this->assertNull($boning->fresh()->drylog_qty);
+    }
+
+    /** @test */
+    public function an_explicit_zero_drylog_is_valid_and_is_not_the_same_as_empty(): void
+    {
+        $boning = $this->boningWithItems();
+
+        Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
+            ->fillForm(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 0])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $fresh = $boning->fresh();
+        $this->assertSame(0, $fresh->drylog_qty);
+        $this->assertTrue($fresh->drylogWasFilled());
+        $this->assertFalse(Boning::create(['boning_date' => now()->toDateString(), 'created_by' => $this->user->id])->fresh()->drylogWasFilled());
+    }
+
+    /** @test */
+    public function a_negative_or_fractional_drylog_is_refused(): void
+    {
+        $boning = $this->boningWithItems();
+
+        foreach ([-1, 2.5] as $bad) {
+            Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
+                ->fillForm(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => $bad])
+                ->call('save')
+                ->assertHasFormErrors(['drylog_qty']);
+        }
+
+        $this->assertNull($boning->fresh()->drylog_qty);
+    }
+
+    /** @test */
+    public function a_boning_cannot_be_locked_until_the_drylog_is_filled(): void
+    {
+        $boning = $this->boningReadyToLock();
+
+        try {
+            $boning->lock();
+            $this->fail('Boning tanpa drylog seharusnya tidak bisa dikunci.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('drylog', strtolower($e->getMessage()));
+        }
+
+        $this->assertFalse($boning->fresh()->kunci);
+
+        $boning->forceFill(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 0])->save();
+        $boning->lock();
+
+        $this->assertTrue($boning->fresh()->kunci, 'Dengan drylog 0 yang diisi eksplisit, dokumen harus bisa dikunci.');
+    }
+
+    /** @test */
+    public function locking_freezes_the_bom_usage_and_unlocking_releases_it(): void
+    {
+        $boning = $this->boningReadyToLock();
+        $boning->forceFill(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 2])->save();
+
+        $boning->lock();
+
+        $snap = $boning->bomSnapshots()->pluck('qty', 'material_id');
+        $this->assertSame(5, (int) $snap[$this->karton->id]);
+        $this->assertSame(24, (int) $snap[$this->plastik->id]);
+
+        // BOM produk diubah sesudah dikunci: snapshot tidak ikut berubah.
+        ProductMaterial::where('material_id', $this->karton->id)->update(['quantity' => 50]);
+        $this->assertSame(5, (int) $boning->bomSnapshots()->where('material_id', $this->karton->id)->value('qty'));
+
+        $boning->fresh()->unlock();
+        $this->assertSame(0, $boning->bomSnapshots()->count(), 'Snapshot harus dilepas saat di-unlock.');
+    }
+
+    /** @test */
+    public function locking_a_boning_does_not_touch_material_stock(): void
+    {
+        $boning = $this->boningReadyToLock();
+        $boning->forceFill(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 9])->save();
+
+        $boning->lock();
+
+        $this->assertNothingWasWritten();
+    }
+
+    /** @test */
+    public function a_direct_request_can_only_change_the_drylog_columns(): void
+    {
+        $boning = $this->boningWithItems();
+        $docNo = $boning->doc_no;
+
+        Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
+            ->fillForm(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 1])
+            ->set('data.doc_no', 'BN99999')
+            ->set('data.status', 'LOCKED')
+            ->set('data.kunci', true)
+            ->call('save');
+
+        $fresh = $boning->fresh();
+        $this->assertSame($docNo, $fresh->doc_no);
+        $this->assertFalse($fresh->kunci);
+        $this->assertSame(1, $fresh->drylog_qty);
+    }
+
+    /** @test */
+    public function a_document_locked_in_the_meantime_cannot_be_saved(): void
+    {
+        $boning = $this->boningWithItems();
+
+        $page = Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
+            ->fillForm(['drylog_material_id' => $this->drylog->id, 'drylog_qty' => 4]);
+
+        $boning->forceFill(['kunci' => true])->save();
+
+        $page->call('save')->assertForbidden();
+        $this->assertNull($boning->fresh()->drylog_qty);
     }
 }

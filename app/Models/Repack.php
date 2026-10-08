@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasProductionMaterialRecord;
 use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,19 +18,21 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 class Repack extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity;
+    use HasFactory, SoftDeletes, LogsActivity, HasProductionMaterialRecord;
 
     protected $table = 'repacks';
 
     protected $fillable = [
         'doc_no', 'repack_date', 'status', 'kunci', 'note', 'created_by',
         'yield_override_reason', 'yield_override_by', 'yield_override_at',
+        'drylog_material_id', 'drylog_qty',
     ];
 
     protected $casts = [
         'repack_date' => 'date',
         'kunci' => 'boolean',
         'yield_override_at' => 'datetime',
+        'drylog_qty' => 'integer',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -332,6 +335,10 @@ class Repack extends Model
                 throw new \RuntimeException(__('The shrinkage of this repack is outside the reasonable limit. QC has to approve it before it can be locked.'));
             }
 
+            // Drylog WAJIB diisi (0 boleh) -- keputusan Owner, 8 Oktober 2026.
+            // Bahan terbuang boleh kosong: bisa saja memang tidak ada.
+            $locked->refuseToLockWithoutDrylog();
+
             $locked->forceFill([
                 'kunci' => true,
                 'status' => 'LOCKED',
@@ -381,12 +388,19 @@ class Repack extends Model
                 $this->financialLoss()->delete();
             }
 
+            $locked->freezeBomUsage();
+
             $this->kunci = true;
             $this->status = 'LOCKED';
             $this->yield_override_reason = $locked->yield_override_reason;
             $this->yield_override_by = $locked->yield_override_by;
             $this->yield_override_at = $locked->yield_override_at;
         });
+    }
+
+    public function bomLabels(): \Illuminate\Support\Collection
+    {
+        return $this->results;
     }
 
     /**
@@ -455,6 +469,7 @@ class Repack extends Model
             }
 
             $this->financialLoss()->delete();
+            $locked->releaseBomUsage();
 
             $locked->forceFill([
                 'kunci' => false,

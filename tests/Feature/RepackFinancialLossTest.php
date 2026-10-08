@@ -118,7 +118,7 @@ class RepackFinancialLossTest extends TestCase
     {
         $repack = $this->repack([100], [92]);
 
-        $repack->lock();
+        $this->lockWithDrylog($repack);
 
         $loss = FinancialLoss::where('lossable_type', Repack::class)
             ->where('lossable_id', $repack->id)
@@ -143,7 +143,7 @@ class RepackFinancialLossTest extends TestCase
     {
         $repack = $this->repack([100], [100]);
 
-        $repack->lock();
+        $this->lockWithDrylog($repack);
 
         $this->assertSame(0, FinancialLoss::where('lossable_type', Repack::class)
             ->where('lossable_id', $repack->id)
@@ -162,7 +162,7 @@ class RepackFinancialLossTest extends TestCase
         $repack = $this->repack([100], [105]);
         $repack->grantShrinkOverride('Ditimbang ulang, hasilnya memang lebih berat.', $this->user->id);
 
-        $repack->fresh()->lock();
+        $this->lockWithDrylog($repack->fresh());
 
         $this->assertSame(0, FinancialLoss::where('lossable_type', Repack::class)
             ->where('lossable_id', $repack->id)
@@ -176,7 +176,7 @@ class RepackFinancialLossTest extends TestCase
     public function test_relocking_after_a_correction_updates_the_existing_row_instead_of_duplicating(): void
     {
         $repack = $this->repack([100], [92]);
-        $repack->lock();
+        $this->lockWithDrylog($repack);
 
         $repack->fresh()->unlock();
         RepackMaterial::create([
@@ -192,7 +192,7 @@ class RepackFinancialLossTest extends TestCase
             'status' => 'IN_STOCK',
         ]);
 
-        $repack->fresh()->lock();
+        $this->lockWithDrylog($repack->fresh());
 
         $rows = FinancialLoss::where('lossable_type', Repack::class)
             ->where('lossable_id', $repack->id)
@@ -210,7 +210,7 @@ class RepackFinancialLossTest extends TestCase
     public function test_an_existing_loss_is_withdrawn_when_relocked_with_no_shrinkage_left(): void
     {
         $repack = $this->repack([100], [92]);
-        $repack->lock();
+        $this->lockWithDrylog($repack);
 
         $this->assertSame(1, FinancialLoss::where('lossable_type', Repack::class)
             ->where('lossable_id', $repack->id)
@@ -240,7 +240,7 @@ class RepackFinancialLossTest extends TestCase
             'status' => 'IN_STOCK',
         ]);
 
-        $repack->fresh()->lock();
+        $this->lockWithDrylog($repack->fresh());
 
         $this->assertSame(0, FinancialLoss::where('lossable_type', Repack::class)
             ->where('lossable_id', $repack->id)

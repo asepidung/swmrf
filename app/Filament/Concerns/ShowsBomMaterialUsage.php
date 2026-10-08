@@ -6,6 +6,7 @@ use App\Models\Material;
 use App\Services\BomUsageCalculator;
 use Filament\Forms;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 
 /**
@@ -17,10 +18,9 @@ use Illuminate\Support\Collection;
  *
  *  - dihitung ulang dari label terkini tiap kali halaman dibuka (belum ada
  *    snapshot sebelum dokumennya dikunci);
- *  - TERKUNCI: tidak ada field yang bisa diubah, dan `save()` yang dikirim
- *    langsung ke Livewire pun tidak menulis apa-apa (lihat
- *    `handleRecordUpdate`) -- menyembunyikan tombol saja tidak menutup
- *    permintaan langsung;
+ *  - bagian BOM-nya TERKUNCI (hanya tampilan), sedangkan DRYLOG diisi manual dan
+ *    WAJIB sebelum dokumen bisa dikunci; satu-satunya yang disimpan dari
+ *    halaman ini adalah drylog (lihat `handleRecordUpdate`);
  *  - TIDAK memotong stok, tidak melahirkan `MaterialUsage` maupun
  *    `MaterialStockMovement`. Stok tetap dikeluarkan lewat jalur manual
  *    (Material Usage > Create Manual Usage).
@@ -77,19 +77,48 @@ trait ShowsBomMaterialUsage
             ]);
     }
 
-    /** Tidak ada yang disimpan dari halaman ini -- tidak ada tombol Save. */
-    protected function getFormActions(): array
+    /**
+     * Drylog: satu-satunya bahan yang diisi manual, karena jumlahnya terlalu
+     * dinamis untuk dihitung BOM. WAJIB diisi sebelum dokumen bisa dikunci;
+     * 0 boleh (diisi, hasilnya nol), kosong tidak. Materialnya dipilih dari
+     * master material -- bukan id yang ditulis di kode.
+     */
+    protected function drylogSection(): Forms\Components\Section
     {
-        return [];
+        return Forms\Components\Section::make(__('Drylog'))
+            ->description(__('Required before this document can be locked. Enter 0 if none was used.'))
+            ->schema([
+                Forms\Components\Select::make('drylog_material_id')
+                    ->label(__('Drylog Material'))
+                    ->options(fn (): array => Material::query()->where('is_active', true)->orderBy('name')->pluck('name', 'id')->all())
+                    ->searchable()
+                    ->required()
+                    ->columnSpan(['default' => 1, 'md' => 1]),
+
+                // Tanpa komponen angka bawaan (tombol panahnya gampang
+                // tertekan). Nol sah; kosong tidak.
+                Forms\Components\TextInput::make('drylog_qty')
+                    ->label(__('Quantity'))
+                    ->suffix(__('pcs'))
+                    ->extraInputAttributes(['inputmode' => 'numeric'])
+                    ->rules(['required', 'integer', 'min:0'])
+                    ->required(),
+            ])
+            ->columns(['default' => 1, 'md' => 2]);
     }
 
     /**
-     * Penjaga di sisi server. Tombol Save sudah tidak ada, tetapi `save()`
-     * tetap bisa dipanggil lewat permintaan Livewire langsung; hasilnya harus
-     * tidak menulis apa-apa.
+     * Hanya drylog yang disimpan dari halaman ini, dan hanya selama dokumennya
+     * belum dikunci. Field lain (nomor dokumen, tanggal) tidak dikirim, tetapi
+     * permintaan Livewire langsung tetap bisa membawa apa saja -- karena itu
+     * penjaganya di sini, bukan hanya di tampilan.
      */
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
+        abort_if($record->fresh()->kunci, 403, 'Data has been locked.');
+
+        $record->update(Arr::only($data, ['drylog_material_id', 'drylog_qty']));
+
         return $record;
     }
 }
