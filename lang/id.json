@@ -1663,5 +1663,6 @@
     "Add Wasted Material": "Tambah Material Terbuang",
     "Reason (required)": "Alasan (wajib)",
     "Material Waste": "Material Terbuang",
-    "Drylog / Pad Absorber": "Drylog / Pad Absorber"
+    "Drylog / Pad Absorber": "Drylog / Pad Absorber",
+    "This material is already listed. Use one row per material and write all the reasons together.": "Material ini sudah ada di daftar. Pakai satu baris per material dan tulis semua alasannya bersama."
 }

@@ -1663,5 +1663,6 @@
     "Add Wasted Material": "Add Wasted Material",
     "Reason (required)": "Reason (required)",
     "Material Waste": "Material Waste",
-    "Drylog / Pad Absorber": "Drylog / Pad Absorber"
+    "Drylog / Pad Absorber": "Drylog / Pad Absorber",
+    "This material is already listed. Use one row per material and write all the reasons together.": "This material is already listed. Use one row per material and write all the reasons together."
 }

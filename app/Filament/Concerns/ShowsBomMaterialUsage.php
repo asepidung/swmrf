@@ -124,6 +124,14 @@ trait ShowsBomMaterialUsage
                             ->options(fn (): array => Material::query()->where('is_active', true)->orderBy('name')->pluck('name', 'id')->all())
                             ->searchable()
                             ->required()
+                            // Satu material, satu baris (Owner, 8 Oktober 2026): di layar,
+                            // pilihan yang sudah dipakai baris lain dinonaktifkan; di
+                            // server, `distinct()` menolak permintaan yang tetap
+                            // membawa material kembar. Dua alasan untuk satu material
+                            // ditulis bersama di kolom alasan.
+                            ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                            ->distinct()
+                            ->validationMessages(['distinct' => __('This material is already listed. Use one row per material and write all the reasons together.')])
                             ->columnSpan(['default' => 1, 'md' => 5]),
 
                         Forms\Components\TextInput::make('qty')

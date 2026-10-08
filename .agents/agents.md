@@ -7225,3 +7225,14 @@ hanya berlaku saat membuat), tidak disimpan, dan jenis prosesnya sudah terbaca
 dari judul halaman dan nomor dokumen; (2) tombol "Export Excel" di halaman View
 Boning kini berlabel **"Excel"**, sama dengan tombol di daftar lain (kunci bahasa
 "Export Excel" yang tak terpakai ikut dibuang).
+
+**Susulan #509 langkah 4 -- satu material satu baris di bahan terbuang, 8 Oktober 2026 (Ruby).**
+Keputusan Owner: material yang sama tidak boleh terinput dua kali. Ini MEMBALIK
+pilihan awal yang membolehkan material sama berulang dengan alasan berbeda.
+Layar menonaktifkan pilihan yang sudah dipakai baris lain
+(`disableOptionsWhenSelectedInSiblingRepeaterItems`), dan di server penyimpanan
+ditolak dengan pesan jelas (`distinct()`, ditambah penolakan dari opsi yang
+dinonaktifkan). Dua alasan untuk satu material ditulis bersama di kolom alasan.
+Tidak ada indeks unik di database karena yang ditahan adalah masukan pengguna
+lewat halaman; baris yang dibuat langsung lewat model tidak dibatasi. Dibuktikan
+menggigit: keduanya dimatikan sementara, test material kembar merah.

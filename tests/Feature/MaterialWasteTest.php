@@ -367,7 +367,7 @@ class MaterialWasteTest extends TestCase
                 'drylog_qty' => 1,
                 'materialWastes' => [
                     ['material_id' => $this->plastik->id, 'qty' => 3, 'reason' => 'gagal vakum'],
-                    ['material_id' => $this->plastik->id, 'qty' => 2, 'reason' => 'reject'],
+                    ['material_id' => $this->drylog->id, 'qty' => 2, 'reason' => 'reject'],
                 ],
             ])
             ->call('save')
@@ -411,5 +411,43 @@ class MaterialWasteTest extends TestCase
             ->assertHasNoFormErrors();
 
         $this->assertSame(0, $boning->materialWastes()->count());
+    }
+
+    /** @test */
+    public function the_same_material_cannot_be_listed_twice_as_waste(): void
+    {
+        $boning = $this->boning();
+
+        Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
+            ->fillForm([
+                'drylog_qty' => 0,
+                'materialWastes' => [
+                    ['material_id' => $this->plastik->id, 'qty' => 3, 'reason' => 'gagal vakum'],
+                    ['material_id' => $this->plastik->id, 'qty' => 2, 'reason' => 'reject'],
+                ],
+            ])
+            ->call('save')
+            ->assertHasFormErrors();
+
+        $this->assertSame(0, $boning->materialWastes()->count(), 'Material kembar tidak boleh tersimpan separuh.');
+    }
+
+    /** @test */
+    public function different_materials_are_fine_and_are_saved_together(): void
+    {
+        $boning = $this->boning();
+
+        Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
+            ->fillForm([
+                'drylog_qty' => 0,
+                'materialWastes' => [
+                    ['material_id' => $this->plastik->id, 'qty' => 3, 'reason' => 'gagal vakum'],
+                    ['material_id' => $this->drylog->id, 'qty' => 1, 'reason' => 'basah'],
+                ],
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(2, $boning->materialWastes()->count());
     }
 }
