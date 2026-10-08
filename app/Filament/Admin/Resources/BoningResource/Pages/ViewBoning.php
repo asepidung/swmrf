@@ -21,7 +21,7 @@ class ViewBoning extends ViewRecord
                 ->color('gray')
                 ->url(fn (): string => $this->getResource()::getUrl('index')),
             Actions\Action::make('export_excel')
-                ->label(__('Export Excel'))
+                ->label(__('Excel'))
                 ->icon('heroicon-o-document-arrow-down')
                 ->color('success')
                 ->action(fn () => $this->exportExcel()),

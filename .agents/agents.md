@@ -6883,6 +6883,43 @@ Pekerjaan Owner (dikerjakan lokal, di-commit Hafizh atas permintaan Owner).
   tabel label Boning melebihi area cetak 69 mm sehingga barcode bisa
   terpotong. Perlu uji cetak Owner.
 
+## #509 langkah 2 -- Pemakaian Material Boning/Repack jadi tampilan BOM terkunci, 7 Oktober 2026
+
+Halaman Pemakaian Material - Boning dan - Repack tidak lagi sebuah form yang
+menulis `MaterialUsage` (yang MEMOTONG STOK). Keputusan Owner 7 Oktober 2026:
+"jangan memotong stock, karena ayah masih beda prinsip sama bos".
+
+- Halaman hanya MENAMPILKAN kebutuhan bahan menurut BOM (`BomUsageCalculator`),
+  dihitung ulang dari label terkini tiap kali dibuka. Produk tanpa BOM dan
+  baris BOM "jumlah tidak tetap" tampil sebagai peringatan, tidak dihitung.
+- **Terkunci di server, bukan cuma di tampilan**: tidak ada field yang bisa
+  diubah, tombol Save dihapus, dan `handleRecordUpdate` mengembalikan record
+  tanpa menulis. Satu rumah untuk dua halaman: trait
+  `App\Filament\Concerns\ShowsBomMaterialUsage` (Boning dan Repack hanya beda
+  relasi label: `items` vs `results`).
+- Tombol "Isi dari BOM" (#485) dibuang, dan dua kunci bahasanya. Test
+  `test_material_usage_quantity_must_be_positive` (BoningInputGuardTest)
+  dilepas karena field qty-nya sudah tidak ada; penjaga serupa untuk qty bahan
+  terbuang dibuat di langkah 4.
+- **Data lama:** `material_usages` dari boning/repack dihitung di lokal DAN
+  hosting `coba.` (hanya SELECT): 0 baris, 0 pergerakan stok
+  `MATERIAL_USAGE*`. Tidak ada yang perlu dibalik.
+- **Syarat Lock dilonggarkan sementara.** Dulu tombol Lock di daftar Boning dan
+  Repack tersembunyi sampai `materialUsages()` ada isinya. Halaman ini tidak
+  lagi menulis baris itu, jadi syaratnya tidak akan pernah terpenuhi dan
+  dokumen tidak bisa dikunci. Syaratnya dicabut. **Syarat pengganti (drylog
+  wajib diisi) datang di langkah 3** -- langkah 2 dan 3 sebaiknya
+  di-deploy berdekatan; di antaranya dokumen bisa dikunci tanpa drylog.
+- Belum ada snapshot saat dikunci (langkah 3), belum ada drylog/bahan
+  terbuang (langkah 3-4), belum ada cetak/ekspor/laporan (langkah 5).
+- Tanpa migrasi dan tanpa izin baru.
+
+**Test:** `BomUsageTest` ditulis ulang: contoh Tenderloin 3 label (cryovac 15,
+linier 3, karton tutup/bawah 3), halaman Boning dan Repack menampilkan BOM +
+peringatan, aksi fill_from_bom tidak ada, menyimpan dan permintaan Livewire
+langsung tidak melahirkan `MaterialUsage`/`MaterialStockMovement` dan saldo
+tetap, dokumen terkunci tidak bisa membuka halaman.
+
 ## #509 langkah 1 -- master material: Isi per satuan, 7 Oktober 2026
 
 Langkah pertama dari #509 (pemakaian bahan per boning/repack, tanpa memotong
@@ -7077,3 +7114,125 @@ Permintaan Owner: di daftar produk, bedakan produk yang sudah dan belum punya
 BOM. Belum punya = ikon tambah abu-abu, tooltip "Buat BOM". Sudah punya = ikon
 pensil kuning dengan angka jumlah bahan, tooltip "Ubah BOM". Jumlahnya dari
 `withCount('billOfMaterials')` pada query tabel, jadi tidak ada query per baris.
+
+## #509 langkah 3 -- drylog wajib sebelum Lock dan snapshot BOM saat dikunci, 8 Oktober 2026
+
+Keputusan Owner, 8 Oktober 2026: halaman Pemakaian Material Boning/Repack berisi
+(1) hitungan BOM otomatis dan terkunci, (2) **drylog WAJIB diisi**, (3) bahan
+terbuang yang dinamis (langkah 4). **Boning/Repack tidak bisa dikunci bila
+drylog belum diisi; bahan terbuang boleh kosong** ("mungkin ada keajaiban tidak
+ada material waste"). Ini menggantikan syarat lama "harus ada baris pemakaian
+material", yang sudah dicabut di langkah 2.
+
+- **Kolom di `bonings` dan `repacks`:** `drylog_material_id` (dipilih dari master
+  material -- penanda `is_drylog` di master sengaja dibuang, lihat #510) dan
+  `drylog_qty` (bilangan bulat >= 0). **NULL = belum diisi, 0 = diisi dan hasilnya
+  nol**; hanya NULL yang menahan Lock. Satu rumah untuk dua model:
+  `App\Models\Concerns\HasProductionMaterialRecord`.
+- **Syarat diperiksa di `lock()` (server)**, bukan cuma tombol: pesannya
+  "Isi drylog di halaman Pemakaian Material sebelum mengunci. Nol
+  diperbolehkan." Diletakkan SETELAH syarat lain (karkas, hasil, susut) supaya
+  pesan syarat lama tidak tertimpa. Tombol Lock tetap tampil; pesan kegagalannya
+  yang menjelaskan.
+- **Snapshot:** saat dikunci, hitungan BOM dibekukan ke `production_bom_snapshots`
+  (satu baris per material); saat di-unlock dilepas. Sebelum dikunci halaman
+  selalu menghitung ulang dari label terkini. Mengubah BOM produk sesudah
+  dikunci tidak mengubah angka dokumen itu (ada test).
+- **Halaman:** bagian BOM tetap tampilan; yang disimpan hanya dua kolom drylog
+  (`Arr::only` di `handleRecordUpdate`, jadi permintaan Livewire langsung tidak
+  bisa mengubah nomor dokumen, status, atau `kunci`). Dokumen yang keburu
+  dikunci tidak bisa disimpan (403).
+- **Tidak menyentuh stok** sama sekali.
+- **Test lama:** ~35 pemanggilan `lock()` di lima berkas test memakai helper
+  `TestCase::lockWithDrylog()` (mengisi drylog 0 bila belum ada), supaya tetap
+  fokus pada yang diuji (susut, HPP, kerugian).
+- Belum: bahan terbuang dan Financial Loss rupiah (langkah 4), ringkasan di View,
+  cetak, ekspor, dan laporan periode (langkah 5). Halaman dokumen terkunci masih
+  403; tampilannya (membaca snapshot) menyusul di langkah 5.
+
+**Test:** `BomUsageTest` +8 (drylog wajib, 0 sah dan beda dari kosong, negatif/
+pecahan ditolak, Boning tidak bisa dikunci tanpa drylog dan bisa dengan 0,
+snapshot beku lalu lepas saat unlock, Lock tidak menyentuh stok, permintaan
+langsung hanya mengubah kolom drylog, dokumen terkunci tidak bisa disimpan).
+Dibuktikan menggigit: pemeriksaan drylog di `refuseToLockWithoutDrylog`
+dimatikan sementara, test Lock merah; dipulihkan, hijau.
+
+## #509 langkah 4 -- bahan terbuang dan kerugiannya dalam rupiah, 8 Oktober 2026
+
+Halaman Pemakaian Material Boning/Repack kini punya tiga bagian: pemakaian BOM
+(otomatis, terkunci), drylog (wajib), dan **bahan terbuang** (dinamis, boleh
+kosong). Keputusan Owner: bagian "Basis of the calculation" dibuang dari halaman
+("nanti akan banyak banget, dan sudah terakomodir di halaman lain").
+
+- **Tabel `production_material_wastes`** (morph ke Boning/Repack): bahan bebas
+  dari master material, `qty` bilangan bulat >= 1 (satuan pakai), `reason`
+  WAJIB. Banyak baris, bahan yang sama boleh berulang dengan alasan berbeda.
+  Pemakaian yang melebihi BOM dicatat di sini, bukan dengan mengubah BOM.
+- **Financial Loss:** sumber baru `FinancialLoss::SUMBER_MATERIAL_WASTE`
+  ('Material Waste', ikut `SEMUA_SUMBER` sehingga muncul di saringan sumber).
+  Satu baris per baris bahan terbuang: `lossable` = boningnya/repacknya,
+  `quantity` = qty, `unit` = 'pcs', `note` = "bahan: alasan".
+- **Ditulis saat Lock, dihapus saat Unlock** (pola susut repack), bukan saat
+  halaman disimpan: dokumen yang belum final tidak menerbitkan kerugian. Ditulis
+  ulang dari nol tiap Lock, jadi tidak pernah dobel; baris yang dihapus sebelum
+  Lock berikutnya hilang dari kerugian. (#509 menyebut "saat disimpan";
+  dipilih saat Lock karena itu pola yang sudah dipakai repack dan retur.)
+- **Nilai** = qty x harga per satuan pakai, SNAPSHOT saat Lock
+  (`App\Services\MaterialUnitPrice`): rata-rata TERTIMBANG (qty x harga) item GR
+  Material yang sah (baris dan GR belum dihapus), dibagi `content_per_unit`;
+  belum ada GR -> harga PO material TERAKHIR; tidak ada harga sama sekali ->
+  `amount` 0 dan `isNotPricedYet()` menandainya, Lock tidak diblokir. Contoh uji
+  dari Owner: plastik 1 Box @ Rp 1.000.000 isi 1.000, terbuang 3 -> Rp 3.000.
+  Karung diabaikan dulu (Owner).
+- **Perbaikan jebakan:** `Repack::financialLoss()` (morphOne) tidak dibatasi
+  jenisnya, jadi `->delete()`-nya akan ikut menghapus baris `Material Waste`.
+  Kini dibatasi ke `transaction_type = Repack`.
+- `freezeBomUsage`/`releaseBomUsage` diganti `finaliseMaterialRecord`/
+  `releaseMaterialRecord` (membekukan BOM dan menulis kerugian; melepas
+  keduanya).
+- Tidak menyentuh stok. Tidak ada izin baru.
+
+**Test:** `MaterialWasteTest` (17): 1 box @ 1 jt isi 1.000 -> Rp 1.000/pcs dan 3
+terbuang = Rp 3.000, rata-rata tertimbang GR, GR terhapus tidak dihitung,
+fallback PO terakhir, GR didahulukan dari PO, isi 1, tanpa harga = 0 + ditandai
+dan Lock tetap jalan, harga snapshot, beberapa baris, tanpa terbuang tetap bisa
+Lock, Unlock membalik dan Lock ulang tidak menggandakan, baris yang dihapus
+hilang, stok tidak tersentuh, sumber ada di daftar, halaman menyimpan banyak
+baris, alasan/qty divalidasi, kosong sah. Dibuktikan menggigit: pembagian
+dengan `content_per_unit` dimatikan sementara, 8 test merah; dipulihkan, hijau.
+
+**Susulan #509 langkah 3 -- drylog tanpa pilihan material, 8 Oktober 2026 (Ruby).**
+Mengoreksi catatan langkah 3 dan 4 di atas. Keputusan Owner: "drylog material
+itu bukan kategori tapi itu salah satu material, jadi seharusnya bukan dropdown,
+tapi tulis secara eksplisit drylog / pad absorber".
+
+- Halaman Pemakaian Material hanya punya SATU isian drylog: jumlahnya, berlabel
+  **"Drylog / Pad Absorber"** (berakhiran pcs). Tidak ada pilihan material --
+  drylog adalah satu material yang pasti, jadi materialnya tidak perlu dipilih
+  dan tidak bisa salah pilih.
+- Kolom `drylog_material_id` di `bonings` dan `repacks` DIBUANG lewat migrasi
+  tersendiri (`drop_drylog_material_from_bonings_and_repacks`), bukan dengan
+  menyunting migrasi sebelumnya, supaya jumlah drylog yang sudah terisi tidak
+  ikut hilang. `drylog_qty` tetap: NULL = belum diisi, 0 = diisi dan nol.
+  `drylogWasFilled()` kini hanya memeriksa `drylog_qty`.
+- Drylog tidak dinilai rupiah (ia pemakaian, bukan bahan terbuang) dan tidak
+  memotong stok; laporan langkah 5 menampilkannya sebagai baris bernama tetap.
+
+**Susulan #509 -- dua perapian kecil, 8 Oktober 2026 (Ruby).** Permintaan Owner:
+(1) field "Process" di Document Info halaman Pemakaian Material Boning/Repack
+**dihapus**: ia tidak pernah terisi pada dokumen yang sudah ada (nilai awalnya
+hanya berlaku saat membuat), tidak disimpan, dan jenis prosesnya sudah terbaca
+dari judul halaman dan nomor dokumen; (2) tombol "Export Excel" di halaman View
+Boning kini berlabel **"Excel"**, sama dengan tombol di daftar lain (kunci bahasa
+"Export Excel" yang tak terpakai ikut dibuang).
+
+**Susulan #509 langkah 4 -- satu material satu baris di bahan terbuang, 8 Oktober 2026 (Ruby).**
+Keputusan Owner: material yang sama tidak boleh terinput dua kali. Ini MEMBALIK
+pilihan awal yang membolehkan material sama berulang dengan alasan berbeda.
+Layar menonaktifkan pilihan yang sudah dipakai baris lain
+(`disableOptionsWhenSelectedInSiblingRepeaterItems`), dan di server penyimpanan
+ditolak dengan pesan jelas (`distinct()`, ditambah penolakan dari opsi yang
+dinonaktifkan). Dua alasan untuk satu material ditulis bersama di kolom alasan.
+Tidak ada indeks unik di database karena yang ditahan adalah masukan pengguna
+lewat halaman; baris yang dibuat langsung lewat model tidak dibatasi. Dibuktikan
+menggigit: keduanya dimatikan sementara, test material kembar merah.

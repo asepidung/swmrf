@@ -31,11 +31,14 @@ class FinancialLoss extends Model
 
     public const SUMBER_RETUR = 'Sales Return';
 
+    public const SUMBER_MATERIAL_WASTE = 'Material Waste';
+
     public const SEMUA_SUMBER = [
         self::SUMBER_TIMBANG_SAPI,
         self::SUMBER_SURAT_JALAN,
         self::SUMBER_REPACK,
         self::SUMBER_RETUR,
+        self::SUMBER_MATERIAL_WASTE,
     ];
 
     protected $fillable = [

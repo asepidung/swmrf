@@ -255,7 +255,7 @@ class BoningResource extends Resource
 
                         return redirect(static::getUrl('index'));
                     })
-                    ->hidden(fn(Boning $record) => !auth()->user()->hasPermission('lock_bonings') || $record->kunci || !$record->materialUsages()->exists()),
+                    ->hidden(fn(Boning $record) => !auth()->user()->hasPermission('lock_bonings') || $record->kunci),
 
                 /* 2. Tombol Unlock */
                 Tables\Actions\Action::make('unlock')

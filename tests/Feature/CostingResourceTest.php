@@ -136,7 +136,7 @@ class CostingResourceTest extends TestCase
             'created_by' => $this->user->id,
         ]);
 
-        $boning->lock();
+        $this->lockWithDrylog($boning);
 
         return $boning->fresh();
     }

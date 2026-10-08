@@ -210,7 +210,7 @@ Tables\Actions\ActionGroup::make([
 
                             return redirect(static::getUrl('index'));
                         })
-                        ->hidden(fn (Repack $record) => ! auth()->user()->hasPermission('lock_repacks') || $record->kunci || ! $record->materialUsages()->exists()),
+                        ->hidden(fn (Repack $record) => ! auth()->user()->hasPermission('lock_repacks') || $record->kunci),
 
                     /*
                      * Tombol Izinkan -- milik QC.
