@@ -103,6 +103,11 @@ class ProductionMaterialSummaryTest extends TestCase
     /** Harga plastik: 1 box @ Rp 1.000.000, isi 1.000 -> Rp 1.000 per pcs. */
     private function priceThePlastic(): void
     {
+        $this->priceMaterial($this->plastik, 1, 1000000);
+    }
+
+    private function priceMaterial(Material $material, int $qty, float $price): void
+    {
         $requisition = DB::table('material_requisitions')->insertGetId([
             'document_number' => 'MR-'.uniqid(), 'user_id' => $this->user->id, 'supplier_id' => $this->supplier->id,
             'due_date' => now()->toDateString(), 'created_at' => now(), 'updated_at' => now(),
@@ -116,8 +121,8 @@ class ProductionMaterialSummaryTest extends TestCase
             'receive_date' => now()->toDateString(), 'created_by' => $this->user->id, 'created_at' => now(), 'updated_at' => now(),
         ]);
         DB::table('goods_receipt_material_items')->insert([
-            'goods_receipt_material_id' => $gr, 'material_id' => $this->plastik->id, 'qty_received' => 1, 'price' => 1000000,
-            'subtotal' => 1000000, 'created_at' => now(), 'updated_at' => now(),
+            'goods_receipt_material_id' => $gr, 'material_id' => $material->id, 'qty_received' => $qty, 'price' => $price,
+            'subtotal' => $qty * $price, 'created_at' => now(), 'updated_at' => now(),
         ]);
     }
 
@@ -318,5 +323,104 @@ class ProductionMaterialSummaryTest extends TestCase
 
         // Kartu pertama memuat BOM dan drylog; kartu kedua memuat bahan terbuang.
         $page->assertSeeInOrder(['Material Usage', 'KARTON TOP', 'Drylog / Pad Absorber', 'Material Waste', 'PLASTIK VAKUM', 'gagal vakum']);
+    }
+
+    // ---------------------------------------------------------------------
+    // Drylog dinilai rupiah (Owner, 8 Oktober 2026)
+    // ---------------------------------------------------------------------
+
+    private function drylogMaterial(string $name = 'DRYLOG'): Material
+    {
+        return Material::create([
+            'name' => $name, 'material_category_id' => $this->karton->material_category_id,
+            'material_unit_id' => $this->karton->material_unit_id, 'min_stock' => 0, 'is_active' => true,
+        ]);
+    }
+
+    /** @test */
+    public function the_drylog_is_valued_from_the_master_material_price_and_frozen_at_lock(): void
+    {
+        $drylog = $this->drylogMaterial();
+        $this->priceMaterial($drylog, 10, 25000);
+
+        $boning = $this->boning();   // drylog 2 pcs
+        $this->assertNull($boning->drylog_amount, 'Belum dikunci: belum bernilai.');
+
+        $boning->lock();
+        $fresh = $boning->fresh();
+        $this->assertSame('50000.00', (string) $fresh->drylog_amount, '2 pcs x Rp 25.000.');
+        $this->assertSame('25000.0000', (string) $fresh->drylog_unit_price);
+
+        // Harga naik sesudah dikunci: nilai tidak bergeser.
+        $this->priceMaterial($drylog, 1, 900000);
+        $this->assertSame(50000.0, ProductionMaterialSummary::for($boning->fresh())['drylog_amount']);
+    }
+
+    /** @test */
+    public function the_drylog_material_is_recognised_by_name_among_the_accepted_names(): void
+    {
+        $this->assertNull(\App\Services\DrylogMaterial::find());
+
+        $this->drylogMaterial('PAD ABSORBER');
+
+        $this->assertSame('PAD ABSORBER', \App\Services\DrylogMaterial::find()->name);
+    }
+
+    /** @test */
+    public function spelling_variants_of_the_drylog_name_are_all_recognised(): void
+    {
+        foreach (['DRY LOG', 'dry-lock', 'Dri-Loc', 'DRYLOG'] as $name) {
+            Material::query()->whereIn('name', ['DRY LOG', 'dry-lock', 'Dri-Loc', 'DRYLOG'])->delete();
+            $this->drylogMaterial($name);
+
+            $this->assertNotNull(\App\Services\DrylogMaterial::find(), "'{$name}' seharusnya dikenali.");
+        }
+    }
+
+    /** @test */
+    public function unrelated_names_are_not_taken_for_drylog(): void
+    {
+        $this->drylogMaterial('DRYING RACK');
+        $this->drylogMaterial('PLASTIK ABSORBENT');
+
+        $this->assertNull(\App\Services\DrylogMaterial::find());
+    }
+
+    /** @test */
+    public function without_a_drylog_material_or_price_the_drylog_is_zero_and_the_lock_still_works(): void
+    {
+        $boning = $this->boning();
+        $boning->lock();
+
+        $this->assertTrue($boning->fresh()->kunci);
+        $this->assertSame(0.0, ProductionMaterialSummary::for($boning->fresh())['drylog_amount']);
+    }
+
+    /** @test */
+    public function unlocking_clears_the_drylog_value(): void
+    {
+        $drylog = $this->drylogMaterial();
+        $this->priceMaterial($drylog, 1, 1000);
+        $boning = $this->boning();
+
+        $boning->lock();
+        $this->assertNotNull($boning->fresh()->drylog_amount);
+
+        $boning->fresh()->unlock();
+        $this->assertNull($boning->fresh()->drylog_amount);
+        $this->assertNull($boning->fresh()->drylog_unit_price);
+    }
+
+    /** @test */
+    public function the_locked_page_shows_the_drylog_name_and_value(): void
+    {
+        $drylog = $this->drylogMaterial();
+        $this->priceMaterial($drylog, 10, 25000);
+        $boning = $this->boning();
+        $boning->lock();
+
+        Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
+            ->assertSee('DRYLOG')
+            ->assertSee('Rp 50.000');
     }
 }

@@ -31,7 +31,7 @@
             {{-- Drylog diisi manual; ia bagian dari pemakaian material. --}}
             <tr>
                 <td class="py-3 pe-4">
-                    {{ __('Drylog / Pad Absorber') }}
+                    {{ $summary['drylog_name'] ?? __('Drylog / Pad Absorber') }}
                     <span class="ms-1 text-xs text-gray-500 dark:text-gray-400">({{ __('entered manually') }})</span>
                 </td>
                 <td class="py-3 text-end tabular-nums">
@@ -39,6 +39,14 @@
                         <span class="text-gray-500 dark:text-gray-400">{{ __('Not filled in yet.') }}</span>
                     @else
                         {{ $number($summary['drylog']) }} {{ __('pcs') }}
+                        @if ($summary['final'] && $summary['drylog_amount'] !== null)
+                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                @if ($summary['drylog_amount'] <= 0)
+                                    <x-filament::badge color="warning" size="sm" class="inline-flex">{{ __('no price yet') }}</x-filament::badge>
+                                @endif
+                                {{ 'Rp '.number_format($summary['drylog_amount'], 0, ',', '.') }}
+                            </div>
+                        @endif
                     @endif
                 </td>
             </tr>

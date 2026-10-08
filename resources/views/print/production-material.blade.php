@@ -89,11 +89,14 @@
         <table>
             <tbody>
                 <tr>
-                    <td>{{ __('Drylog / Pad Absorber') }}</td>
+                    <td>{{ $summary['drylog_name'] ?? __('Drylog / Pad Absorber') }}</td>
                     <td class="text-right" width="18%">
                         {{ $summary['drylog'] === null ? '-' : number_format($summary['drylog'], 0, ',', '.') }}
                     </td>
                     <td width="14%">{{ __('pcs') }}</td>
+                    <td class="text-right" width="16%">
+                        {{ $summary['final'] && $summary['drylog_amount'] !== null ? $rupiah($summary['drylog_amount']) : '-' }}
+                    </td>
                 </tr>
             </tbody>
         </table>

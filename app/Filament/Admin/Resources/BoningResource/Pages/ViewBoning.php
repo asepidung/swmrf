@@ -67,7 +67,7 @@ class ViewBoning extends ViewRecord
             $csv .= $q($row['material']).",{$row['qty']},".$q($row['unit'])."\n";
         }
 
-        $csv .= "\n".$q(__('Drylog / Pad Absorber')).','.($summary['drylog'] ?? '')."\n";
+        $csv .= "\n".$q($summary['drylog_name'] ?? __('Drylog / Pad Absorber')).','.($summary['drylog'] ?? '').','.$q(__('pcs')).','.($summary['drylog_amount'] ?? '')."\n";
 
         $csv .= "\n".$q(__('Material Waste'))."\n";
         $csv .= $q(__('Material')).','.$q(__('Quantity')).','.$q(__('Reason')).','.$q(__('Value'))."\n";

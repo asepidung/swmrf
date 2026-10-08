@@ -7291,3 +7291,23 @@ dan Reason diberi jarak (sebelumnya menempel).
   kini memasangkan baris yang `amount`-nya NULL dengan baris Financial Loss
   lewat catatannya ("bahan: alasan"), jadi tidak perlu Unlock/Lock ulang.
   Dibuktikan menggigit: cadangan dimatikan, test merah.
+
+**Susulan #509 langkah 5a -- drylog dinilai rupiah dari master material, 8 Oktober 2026 (Ruby).**
+Keputusan Owner: drylog "ditarik dari data material" dan **dengan harga**, "karena
+nanti harganya akan jadi bahan perhitungan financial loss". Isian di halaman
+tetap hanya jumlah (tanpa dropdown dan tanpa penanda di form material); materialnya
+dikenali dari NAMA di master lewat `App\Services\DrylogMaterial`: spasi, tanda
+hubung, dan huruf besar-kecil diabaikan, dan yang diterima DRYLOG, DRYLOCK, DRILOC,
+DRILOCK, PAD ABSORBER (data lama menamainya "DRY LOG", RM0005, satuan Box;
+produknya bernama dagang Dri-Loc).
+- Nilai = jumlah x harga per satuan pakai (rata-rata GR dibagi `content_per_unit`,
+  atau PO terakhir), **dibekukan saat Lock** di `drylog_unit_price` dan
+  `drylog_amount` pada `bonings`/`repacks`; dikosongkan saat Unlock. Tanpa material
+  drylog di master atau tanpa harga: 0, ditandai "belum ada harga", Lock tidak
+  diblokir.
+- Tampil di kartu Material Usage (nama dari master, nilai di bawah jumlah), cetakan,
+  dan Excel. **Belum ada baris Financial Loss untuk drylog** -- Owner menyebutnya
+  sebagai bahan perhitungan NANTI; harganya sudah dibekukan supaya siap dipakai.
+- **Yang perlu Owner siapkan:** satu material bernama DRY LOG (atau salah satu nama
+  di atas) di master, dengan **"Isi per Satuan"** diisi bila dibeli per Box
+  (pcs per box), dan satu GR/PO berharga. Tanpa itu nilainya 0.

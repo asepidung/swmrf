@@ -29,6 +29,8 @@ class ProductionMaterialSummary
      *     final: bool,
      *     bom: array<int, array{material: string, unit: string, qty: int|float}>,
      *     drylog: int|null,
+     *     drylog_name: string|null,
+     *     drylog_amount: float|null,
      *     wastes: array<int, array{material: string, unit: string, qty: int, reason: string, amount: float|null}>,
      *     waste_total: float|null,
      *     unpriced: int,
@@ -104,6 +106,9 @@ class ProductionMaterialSummary
             'final' => $final,
             'bom' => $bom,
             'drylog' => $document->drylog_qty,
+            'drylog_name' => DrylogMaterial::find()?->name,
+            // Beku saat Lock; NULL = belum dikunci (atau dikunci sebelum drylog dinilai).
+            'drylog_amount' => $final && $document->drylog_amount !== null ? (float) $document->drylog_amount : null,
             'wastes' => $wastes,
             'waste_total' => $final ? $total : null,
             'unpriced' => $unpriced,
