@@ -7311,3 +7311,17 @@ produknya bernama dagang Dri-Loc).
 - **Yang perlu Owner siapkan:** satu material bernama DRY LOG (atau salah satu nama
   di atas) di master, dengan **"Isi per Satuan"** diisi bila dibeli per Box
   (pcs per box), dan satu GR/PO berharga. Tanpa itu nilainya 0.
+
+**Susulan #509 -- pengenalan nama material drylog diperlonggar, 8 Oktober 2026 (Ruby).**
+Owner menanyakan nama yang paling tepat dan mengirim gambar produknya: nama umum
+**Absorbent Pad (food grade)** / Soaker Pad; **Dri-Loc** adalah merek; "Dry Log" dan
+"Dry Lock" ejaan sebutan (data lama: "DRY LOG", RM0005). Owner: "ikut kamu aja".
+`DrylogMaterial::find()` kini mengenali material yang namanya **MEMUAT** salah
+satu dari DRYLOG, DRYLOCK, DRILOC, DRILOCK, ABSORBENTPAD, ABSORBERPAD, SOAKERPAD,
+PADABSORBER, PADABSORBENT (spasi, tanda hubung, huruf besar-kecil diabaikan),
+bukan lagi harus persis sama -- jadi "DRY LOG - ABSORBENT PAD 3000" dikenali.
+"DRYING RACK" dan "PLASTIK ABSORBENT" tidak ikut. Bila ada lebih dari satu yang
+cocok, yang berid terkecil dipakai; material lain yang namanya kebetulan memuat
+salah satu potongan itu (mis. "KARTON DRYLOG") akan ikut dikenali -- hindari
+nama semacam itu atau nonaktifkan materialnya. Saran nama di master: "DRY LOG -
+ABSORBENT PAD", dengan "Isi per Satuan" diisi (mis. 3000 untuk box isi 3.000 pcs).

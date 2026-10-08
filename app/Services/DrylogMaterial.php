@@ -11,7 +11,7 @@ use App\Models\Material;
  * menyediakan pilihan material (Owner menolak dropdown dan penanda di form
  * material), jadi materialnya dikenali dari NAMA di master: yang bernama salah
  * satu dari daftar di bawah (spasi, tanda hubung, dan huruf besar-kecil
- * diabaikan). Nama adalah data yang bisa Owner ubah; id tidak pernah ditulis
+ * diabaikan; cukup MEMUAT salah satunya). Nama adalah data yang bisa Owner ubah; id tidak pernah ditulis
  * di kode.
  *
  * Bila tidak ada yang cocok, drylog tetap dicatat jumlahnya tetapi tidak
@@ -21,24 +21,36 @@ use App\Models\Material;
 class DrylogMaterial
 {
     /**
-     * Nama yang dikenali, TANPA spasi/tanda hubung dan huruf besar. Ejaannya
-     * memang bermacam-macam: data lama menamainya "DRY LOG" (RM0005), produknya
-     * bernama dagang Dri-Loc, dan orang menyebutnya drylock atau pad absorber.
+     * Potongan nama yang dikenali, TANPA spasi/tanda hubung dan huruf besar.
+     * Sebuah material dianggap drylog bila namanya MEMUAT salah satunya, jadi
+     * "DRY LOG - ABSORBENT PAD 3000" tetap dikenali.
+     *
+     * Ejaannya memang bermacam-macam: data lama menamainya "DRY LOG" (RM0005),
+     * produknya bernama dagang Dri-Loc, orang menyebutnya drylock, dan nama
+     * umumnya absorbent pad / soaker pad / pad absorber.
      */
-    public const NAMES = ['DRYLOG', 'DRYLOCK', 'DRILOC', 'DRILOCK', 'PADABSORBER', 'PADABSORBENT'];
+    public const NAMES = [
+        'DRYLOG', 'DRYLOCK', 'DRILOC', 'DRILOCK',
+        'ABSORBENTPAD', 'ABSORBERPAD', 'SOAKERPAD', 'PADABSORBER', 'PADABSORBENT',
+    ];
 
     public static function find(): ?Material
     {
         return Material::query()
             ->where('is_active', true)
-            ->where(function ($query): void {
-                $query->whereRaw('UPPER(name) LIKE ?', ['%DRY%'])
-                    ->orWhereRaw('UPPER(name) LIKE ?', ['%DRI%'])
-                    ->orWhereRaw('UPPER(name) LIKE ?', ['%ABSORB%']);
-            })
             ->orderBy('id')
             ->get()
-            ->first(fn (Material $material): bool => in_array(self::normalise($material->name), self::NAMES, true));
+            ->first(function (Material $material): bool {
+                $name = self::normalise($material->name);
+
+                foreach (self::NAMES as $piece) {
+                    if (str_contains($name, $piece)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
     }
 
     /** Harga per satuan pakai (pcs), atau null bila materialnya/harganya tidak ada. */

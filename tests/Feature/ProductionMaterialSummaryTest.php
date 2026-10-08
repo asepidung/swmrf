@@ -369,8 +369,8 @@ class ProductionMaterialSummaryTest extends TestCase
     /** @test */
     public function spelling_variants_of_the_drylog_name_are_all_recognised(): void
     {
-        foreach (['DRY LOG', 'dry-lock', 'Dri-Loc', 'DRYLOG'] as $name) {
-            Material::query()->whereIn('name', ['DRY LOG', 'dry-lock', 'Dri-Loc', 'DRYLOG'])->delete();
+        foreach (['DRY LOG', 'dry-lock', 'Dri-Loc', 'DRYLOG', 'DRY LOG - ABSORBENT PAD 3000', 'Absorbent Pad (Food Grade)', 'SOAKER PAD', 'PAD ABSORBER'] as $name) {
+            Material::query()->whereIn('name', ['DRY LOG', 'dry-lock', 'Dri-Loc', 'DRYLOG', 'DRY LOG - ABSORBENT PAD 3000', 'Absorbent Pad (Food Grade)', 'SOAKER PAD', 'PAD ABSORBER'])->delete();
             $this->drylogMaterial($name);
 
             $this->assertNotNull(\App\Services\DrylogMaterial::find(), "'{$name}' seharusnya dikenali.");
