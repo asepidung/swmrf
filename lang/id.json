@@ -1681,6 +1681,9 @@
     "No locked documents in this period.": "Tidak ada dokumen terkunci pada periode ini.",
     "Per document": "Per dokumen",
     "Wasted": "Terbuang",
-    "rows without a price are counted as Rp 0.": "baris tanpa harga dihitung Rp 0."
+    "rows without a price are counted as Rp 0.": "baris tanpa harga dihitung Rp 0.",
+    "This item is already in the list.": "Item ini sudah ada di daftar.",
+    "Type to search...": "Ketik untuk mencari...",
+    "Nothing found. If it is new, add it first, then search again here.": "Tidak ditemukan. Bila barangnya baru, tambahkan dulu, lalu cari lagi di sini."
 }
 

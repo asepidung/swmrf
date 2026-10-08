@@ -231,7 +231,7 @@ class GradeSupplierSusulanTest extends TestCase
         return $test->instance()
             ->getForm('form')
             ->getComponent(fn ($component) => method_exists($component, 'getName') && $component->getName() === 'supplier_id')
-            ->getOptions();
+            ->getSearchResults('');
     }
 
     /** @test */

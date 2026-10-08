@@ -82,11 +82,8 @@ class MaterialRequisitionResource extends Resource
                         // sebelumnya toggle "Active/Non-Aktif" di
                         // SupplierResource tidak berfungsi sebagai dinding
                         // penahan seperti dijanjikan dokumentasi modul.
-                        Forms\Components\Select::make('supplier_id')
+                        \App\Filament\Support\MasterSelect::supplier('supplier_id')
                             ->label(fn() => __('Supplier'))
-                            ->relationship('supplier', 'name', fn ($query) => $query->where('is_active', true))
-                            ->searchable()
-                            ->preload()
                             ->required()
                             ->live()
                             ->columnSpan(['default' => 1, 'lg' => 6]),
@@ -192,13 +189,13 @@ class MaterialRequisitionResource extends Resource
                             ->hiddenLabel()
                             ->reorderableWithDragAndDrop(false)
                             ->schema([
-                                Forms\Components\Select::make('material_id')
-                                    ->options(fn() => \App\Models\Material::orderBy('name')->pluck('name', 'id'))
-                                    ->searchable()
+                                \App\Filament\Support\MasterSelect::material('material_id')
                                     ->required()
                                     ->hiddenLabel()
                                     ->placeholder(fn() => __('Pick a material...'))
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                    ->distinct()
+                                    ->validationMessages(['distinct' => __('This item is already in the list.')])
                                     ->columnSpan(['default' => 1, 'lg' => fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\CreateRecord || $livewire instanceof \Filament\Resources\Pages\EditRecord) ? 5 : 4])
                                     ->live(),
 
@@ -369,11 +366,11 @@ class MaterialRequisitionResource extends Resource
                     }),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('supplier_id')
-                    ->label(fn() => __('Supplier'))
-                    ->relationship('supplier', 'name')
-                    ->searchable()
-                    ->preload(),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('supplier_id')
+                        ->label(fn() => __('Supplier')),
+                    \App\Models\Supplier::class,
+                ),
                 Tables\Filters\SelectFilter::make('user_id')
                     ->label(fn() => __('Requester'))
                     ->relationship('user', 'name')

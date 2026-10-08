@@ -7358,3 +7358,60 @@ periode kosong, baris tanpa harga dilaporkan, izin halaman, periode bawaan bulan
 berjalan dan perubahan periode mengubah hitungan, periode terbalik, Excel dan PDF
 mengikuti periode. Dibuktikan menggigit: `whereDate` dikembalikan ke
 `whereBetween`, test hari terakhir merah.
+
+## #512 kelompok 1 -- dropdown Request Material dan Request Beef mencari ke server, 8 Oktober 2026
+
+Keluhan Owner (8 Oktober 2026): item yang dibuat di tab lain tidak muncul di
+dropdown form yang sudah terbuka tanpa me-refresh halaman, dan me-refresh berarti
+mengisi ulang form dari awal. Akar masalah: `->options(fn () => X::pluck(...))`
+dan `->preload()` memuat SELURUH master sekali saat halaman dibuka; `searchable()`
+hanya menyaring di browser. Spesifikasi lengkap di issue #512 (ditulis Hafizh).
+
+- **Satu rumah:** `App\Filament\Support\MasterSelect` -- `material()`,
+  `product()`, `supplier()`, `customer()` untuk `Select`, dan `filter()` untuk
+  `SelectFilter`. Pencarian ke SERVER tiap ketikan: tidak peka huruf besar/kecil,
+  cocok ke nama dan (bila ada) kode (Product dan Material punya kode; Supplier dan
+  Customer tidak), urut nama, dibatasi 50 hasil, pilihan BARU hanya yang aktif.
+  **Label nilai yang sudah tersimpan tetap tampil walau recordnya kini nonaktif**
+  (`getOptionLabelUsing` tidak memfilter). `%` dan `_` yang diketik pengguna bukan
+  wildcard (`ESCAPE '!'`; backslash berbeda antara MySQL dan SQLite).
+- **Repeater:** `disableOptionsWhenSelectedInSiblingRepeaterItems()` tetap dipakai;
+  hasil pencarian server ikut ditandai nonaktif (`getSearchResultsForJs`), dan
+  `distinct()` menolak item kembar di server.
+- **Diterapkan di:** `MaterialRequisitionResource` dan `ProductRequisitionResource`
+  (supplier di form, material/produk di baris item, saringan supplier di tabel).
+  Supplier di form tetap hanya yang aktif. **Perubahan perilaku kecil:** dropdown
+  material/produk di baris item sebelumnya menampilkan SEMUA termasuk yang
+  nonaktif; kini pilihan baru hanya yang aktif (nilai lama yang nonaktif tetap
+  terbaca).
+- **Penjaga:** `MasterDropdownGuardTest` memindai `app/Filament` (komentar dibuang,
+  nomor baris dijaga): field `product_id`/`material_id`/`supplier_id`/`customer_id`
+  dilarang memakai `->preload()` atau `->options(... pluck())`. **Daftar menunggu**
+  (`MENUNGGU`) memuat 21 berkas kelompok berikutnya dengan nama kelompoknya --
+  bukan izin; tiap berkas yang selesai dikeluarkan, dan test kedua memastikan
+  daftar itu tidak berisi berkas yang sudah bersih.
+- **Sisa kelompok:** 2 = PO dan GR; 3 = Sales Order, Price List, Sales Return Plan,
+  Sales Return, Invoice, Delivery Order/Plan, Tally; 4 = sisanya (Labeling Boning,
+  Input Hasil Repack, Material Finding, bahan terbuang di Pemakaian Material).
+  **Belum dikerjakan:** poin 2 issue (tombol "+" `createOptionForm` untuk master
+  berisian pendek dan penyeragaman 10 yang sudah ada), karena itu kelompok
+  tersendiri; produk dan customer tidak memakai "+" (keputusan Owner).
+
+**Test:** `MasterSelectTest` (11): pencarian tidak peka huruf besar/kecil dan cocok
+ke kode, Supplier/Customer tanpa kolom kode, batas 50 dan urutan dan nonaktif
+dikecualikan, `%`/`_` bukan wildcard, label nilai nonaktif bertahan, material/
+produk/supplier yang lahir SESUDAH form dibuka ditemukan, tidak ada preload saat
+halaman dibuka, material yang sama tidak bisa dipilih di dua baris (layar dan
+server). Dibuktikan menggigit: satu dropdown dikembalikan ke pola lama, penjaga
+merah dengan berkas dan barisnya; dipulihkan, hijau.
+
+**Susulan #512 kelompok 1 -- dropdown terbuka dengan 50 pilihan pertama, 8 Oktober 2026 (Ruby).**
+Owner mencoba: dropdown Pemasok dan Material terbuka KOSONG ("Ketik untuk
+mencari...") dan baru terisi setelah mengetik. Itu memenuhi bunyi spesifikasi
+(tanpa preload) tetapi tidak nyaman dipakai. `MasterSelect::server()` kini juga
+memberi `->options()` berisi `LIMIT` (50) pilihan pertama, urut nama dan hanya yang
+aktif, supaya dropdown langsung berisi saat dibuka. Mengetik tetap mencari ke
+SERVER, jadi item yang lahir sesudah halaman dibuka tetap ketemu. Pilihan di luar
+50 pertama tetap bisa dipilih lewat pencarian dan disimpan (ada test). Daftar awal
+BUKAN seluruh master; penjaga tetap melarang `->preload()` dan `->options(pluck)`
+di luar `MasterSelect`.
