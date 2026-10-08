@@ -143,6 +143,10 @@ class GhostPropertyTest extends TestCase
             // Bawaan Laravel: `withCount('items')`.
             'items_count',
 
+            // Alias `withCount('billOfMaterials')` di tabel produk: jumlah bahan
+            // untuk lencana ikon tombol BOM (#507), tanpa query per baris.
+            'bill_of_materials_count',
+
             // Alias `withSum` di BankAccountResource.
             'transactions_in_sum',
             'transactions_out_sum',

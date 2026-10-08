@@ -16,12 +16,14 @@ class Material extends Model
         'material_unit_id',
         'min_stock',
         'is_active',
-        'show_in_stock'
+        'show_in_stock',
+        'content_per_unit',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'show_in_stock' => 'boolean',
+        'content_per_unit' => 'integer',
     ];
 
     protected static function booted(): void

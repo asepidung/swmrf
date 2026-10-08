@@ -10,6 +10,11 @@ class CreateMaterial extends CreateRecord
 {
     protected static string $resource = MaterialResource::class;
 
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        return MaterialResource::normaliseStockData($data);
+    }
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
