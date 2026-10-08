@@ -7325,3 +7325,36 @@ cocok, yang berid terkecil dipakai; material lain yang namanya kebetulan memuat
 salah satu potongan itu (mis. "KARTON DRYLOG") akan ikut dikenali -- hindari
 nama semacam itu atau nonaktifkan materialnya. Saran nama di master: "DRY LOG -
 ABSORBENT PAD", dengan "Isi per Satuan" diisi (mis. 3000 untuk box isi 3.000 pcs).
+
+## #509 langkah 5b -- laporan pemakaian bahan per periode, 8 Oktober 2026
+
+Disetujui Owner ("setuju"): halaman **Laporan Pemakaian Material**
+(`Pages\MaterialUsageReport`) untuk atasan.
+
+- **Menu:** grup REPORTS (bersama Sales Report), bukan grup Materials seperti yang
+  sempat disebut -- grup Materials berisi data master. **Izin:**
+  `view_material_usages` (sudah ada, tidak ada izin baru).
+- **Isi:** total kebutuhan BOM per material; drylog (jumlah dan nilai); bahan
+  terbuang per material (jumlah dan rupiah) dengan total; rincian per dokumen
+  (jenis, nomor yang tertaut ke halaman Pemakaian Material, tanggal, drylog,
+  terbuang, nilai). Lencana "belum ada harga" bila ada baris bernilai 0.
+- **Hanya Boning/Repack yang TERKUNCI** dihitung, supaya angkanya final dan sama
+  dengan Financial Loss. Tanggal dokumen = tanggal boning/repack; batas awal dan
+  akhir ikut. **Periode bawaan bulan berjalan** (formulir dan hitungan memakai
+  tanggal yang sama); periode terbalik dibaca dengan urutan yang benar.
+- **Satu sumber:** `ProductionMaterialReport` menjumlahkan tiap dokumen lewat
+  `ProductionMaterialSummary` (yang juga dipakai halaman dokumen dan cetakan),
+  jadi angka laporan tidak bisa berbeda dari angka dokumennya.
+- **Excel** (satu lembar, blok-blok) dan **PDF** mengikuti periode terpilih.
+- **Jebakan yang ketemu:** tanggal dokumen di SQLite tersimpan "2026-10-31
+  00:00:00", sehingga `whereBetween` dengan batas "2026-10-31" menghilangkan hari
+  terakhir periode. Dipakai `whereDate` di kedua batas (ada test yang menggigit).
+- Properti Livewire diberi nama `periodFrom`/`periodUntil` (camelCase) supaya
+  tidak ditandai `GhostPropertyTest` sebagai properti hantu.
+
+**Test:** `MaterialUsageReportTest` (10): penjumlahan per material, Repack ikut,
+dokumen belum terkunci dan di luar periode tidak ikut, batas awal/akhir ikut,
+periode kosong, baris tanpa harga dilaporkan, izin halaman, periode bawaan bulan
+berjalan dan perubahan periode mengubah hitungan, periode terbalik, Excel dan PDF
+mengikuti periode. Dibuktikan menggigit: `whereDate` dikembalikan ke
+`whereBetween`, test hari terakhir merah.

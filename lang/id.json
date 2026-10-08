@@ -1674,6 +1674,13 @@
     "Print Material Usage": "Cetak Pemakaian Material",
     "Approved by": "Disetujui oleh",
     "Document": "Dokumen",
-    "entered manually": "diisi manual"
+    "entered manually": "diisi manual",
+    "Material Usage Report": "Laporan Pemakaian Material",
+    "Only locked Boning and Repack documents are counted.": "Hanya dokumen Boning dan Repack yang sudah terkunci yang dihitung.",
+    "documents": "dokumen",
+    "No locked documents in this period.": "Tidak ada dokumen terkunci pada periode ini.",
+    "Per document": "Per dokumen",
+    "Wasted": "Terbuang",
+    "rows without a price are counted as Rp 0.": "baris tanpa harga dihitung Rp 0."
 }
 
