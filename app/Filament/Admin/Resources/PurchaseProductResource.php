@@ -63,9 +63,8 @@ class PurchaseProductResource extends Resource
                             ->formatStateUsing(fn ($record) => data_get($record, 'productRequisition.user.name'))
                             ->columnSpan(['default' => 1, 'lg' => 4]),
 
-                        Forms\Components\Select::make('supplier_id')
+                        \App\Filament\Support\MasterSelect::supplier('supplier_id')
                             ->label('Supplier')
-                            ->relationship('supplier', 'name')
                             ->disabled()
                             ->columnSpan(['default' => 1, 'lg' => 4]),
 
@@ -107,8 +106,7 @@ class PurchaseProductResource extends Resource
                             ->addable(false)
                             ->deletable(false)
                             ->schema([
-                                Forms\Components\Select::make('product_id')
-                                    ->relationship('product', 'name')
+                                \App\Filament\Support\MasterSelect::product('product_id')
                                     ->disabled()
                                     ->hiddenLabel()
                                     ->columnSpan(['default' => 1, 'lg' => 4]),
@@ -192,11 +190,11 @@ class PurchaseProductResource extends Resource
                     ->money('IDR', locale: 'id'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('supplier_id')
-                    ->label('Supplier')
-                    ->relationship('supplier', 'name')
-                    ->searchable()
-                    ->preload(),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('supplier_id')
+                        ->label('Supplier'),
+                    \App\Models\Supplier::class,
+                ),
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,
                 // badge cuma tampil kalau user mengubahnya.

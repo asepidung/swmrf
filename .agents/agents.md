@@ -7415,3 +7415,32 @@ SERVER, jadi item yang lahir sesudah halaman dibuka tetap ketemu. Pilihan di lua
 50 pertama tetap bisa dipilih lewat pencarian dan disimpan (ada test). Daftar awal
 BUKAN seluruh master; penjaga tetap melarang `->preload()` dan `->options(pluck)`
 di luar `MasterSelect`.
+
+## #512 kelompok 2 -- PO, GR, Payable, Pembelian Sapi, 8 Oktober 2026
+
+Owner: "jangan ada yang terlewat ya, ini soalnya yang biasanya bikin user
+gerutu". Sebelum mengerjakan kelompok ini, penjaga `MasterDropdownGuardTest`
+diperluas karena pemindai awal terlalu sempit.
+
+- **Penjaga diperluas.** Dropdown dikenali dari MODEL yang disentuhnya
+  (`Product::`, `Material::`, `Supplier::`, `Customer::`, `CustomerGroup::`,
+  `relationship('product'...)`), bukan hanya dari empat nama field, dan nama field
+  bertambah (`product_ids`, `customer_group_id`, `parent_id`). Aturan baru:
+  `->relationship(...)` TANPA `->searchable()` juga dilarang (memuat seluruh
+  tabel sekaligus), dan `->options(Model::pluck(...))` tanpa `fn` ikut tertangkap.
+  Audit yang lebih luas menemukan 52 titik, bukan 24; daftar menunggu diperbarui
+  sesuai kenyataan (kelompok 3 dan 4 sekarang 21 berkas).
+- **Kelompok 2 diselesaikan:** saringan supplier di daftar PO Material, PO Product,
+  GR Material, GR Product, Payable, Pembelian Sapi, dan Penerimaan Sapi; supplier di
+  form Pembelian Sapi (hanya yang aktif); kolom supplier/material/produk yang
+  hanya-tampil di PO dan GR; saringan produk di Labeling GR Product. Saringan
+  `MasterSelect::filter()` TIDAK membatasi ke yang aktif, supaya dokumen lama
+  milik supplier/produk yang kini nonaktif tetap bisa disaring.
+- **Pengecualian yang disengaja:** dropdown produk di form Labeling GR Product
+  hanya berisi produk yang ada di PO itu (daftar milik dokumen, bukan seluruh
+  master), jadi tidak bertambah dari tab lain; `->preload()`-nya dibuang karena
+  tidak berguna bersama `->options()` tetap.
+
+**Test:** `MasterSelectTest` +8: saringan supplier tujuh daftar (supplier baru
+sesudah halaman dibuka ditemukan, yang nonaktif tetap bisa dicari) dan supplier
+di form Pembelian Sapi (hanya yang aktif).

@@ -46,8 +46,7 @@ class PurchaseCattleResource extends Resource
                 Forms\Components\Section::make(__('Header Info'))->schema([
                     // Supplier nonaktif dikeluarkan dari daftar pilihan --
                     // pola sama MaterialRequisitionResource.
-                    Forms\Components\Select::make('supplier_id')
-                        ->relationship('supplier', 'name', fn ($query) => $query->where('is_active', true))
+                    \App\Filament\Support\MasterSelect::supplier('supplier_id')
                         ->required()
                         ->autofocus()
                         ->label(__('Supplier')),
@@ -195,9 +194,11 @@ class PurchaseCattleResource extends Resource
             ->filters([
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_purchase_cattles')),
-                SelectFilter::make('supplier_id')
-                    ->relationship('supplier', 'name')
-                    ->label(__('Supplier')),
+                \App\Filament\Support\MasterSelect::filter(
+                    SelectFilter::make('supplier_id')
+                        ->label(__('Supplier')),
+                    \App\Models\Supplier::class,
+                ),
                 Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')

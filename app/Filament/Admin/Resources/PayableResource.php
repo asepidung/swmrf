@@ -205,9 +205,11 @@ class PayableResource extends Resource
                 Tables\Filters\SelectFilter::make('payableable_type')
                     ->label(__('Category'))
                     ->options(fn (): array => Payable::sourceLabels()),
-                Tables\Filters\SelectFilter::make('supplier_id')
-                    ->relationship('supplier', 'name')
-                    ->label(__('Supplier')),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('supplier_id')
+                        ->label(__('Supplier')),
+                    \App\Models\Supplier::class,
+                ),
                 Tables\Filters\Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('from')

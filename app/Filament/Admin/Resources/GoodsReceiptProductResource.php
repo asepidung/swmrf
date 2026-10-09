@@ -80,8 +80,7 @@ class GoodsReceiptProductResource extends Resource
                                     ->hiddenLabel()
                                     ->disabled()
                                     ->columnSpan(['default' => 1, 'lg' => 2]),
-                                Forms\Components\Select::make('product_id')
-                                    ->relationship('product', 'name')
+                                \App\Filament\Support\MasterSelect::product('product_id')
                                     ->label(__('Product'))
                                     ->hiddenLabel()
                                     ->disabled()
@@ -156,9 +155,11 @@ class GoodsReceiptProductResource extends Resource
             ->filters([
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_goods_receipt_products')),
-                Tables\Filters\SelectFilter::make('supplier_id')
-                    ->relationship('supplier', 'name')
-                    ->label(__('Supplier')),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('supplier_id')
+                        ->label(__('Supplier')),
+                    \App\Models\Supplier::class,
+                ),
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,
                 // badge cuma tampil kalau user mengubahnya.

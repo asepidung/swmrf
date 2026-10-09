@@ -135,10 +135,12 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                         Forms\Components\Select::make('product_id')
                             ->hiddenLabel()
                             ->placeholder(__('Product'))
+                            // Hanya produk yang ada di PO ini (daftar milik dokumen,
+                            // bukan seluruh master), jadi tidak ada yang perlu dicari
+                            // ke server dan `preload()` tidak berguna.
                             ->options($productOptions)
                             ->required()
                             ->searchable()
-                            ->preload()
                             ->autofocus()
                             ->extraAttributes(['class' => 'product-select-container', 'tabindex' => '1'])
                             ->extraInputAttributes(['tabindex' => '1']),
@@ -289,11 +291,11 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                     ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center']),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('product_id')
-                    ->label(__('Product'))
-                    ->options(Product::orderBy('name')->pluck('name', 'id'))
-                    ->searchable()
-                    ->preload(),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('product_id')
+                        ->label(__('Product')),
+                    \App\Models\Product::class,
+                ),
 
                 Tables\Filters\SelectFilter::make('grade_id')
                     ->label(__('Grade'))

@@ -6,20 +6,27 @@ use Tests\TestCase;
 
 /**
  * Penjaga issue #512: dropdown ke master yang TERUS BERTAMBAH -- Product,
- * Material, Supplier, Customer -- tidak boleh memuat seluruh pilihan sekali saat
- * halaman dibuka.
+ * Material, Supplier, Customer (dan Customer Group) -- tidak boleh memuat seluruh
+ * pilihan sekali saat halaman dibuka.
  *
- * Polanya yang dilarang untuk field `product_id` / `material_id` /
- * `supplier_id` / `customer_id`:
+ * Dropdown dikenali dari MODEL yang disentuhnya atau dari nama fieldnya
+ * (`product_id`, `material_id`, `supplier_id`, `customer_id`, ...), bukan dari
+ * nama field saja: `->options(Product::pluck(...))` pada field bernama lain tetap
+ * dropdown ke Product.
+ *
+ * Yang dilarang:
  *
  *   ->preload()                                   (memuat semuanya sekaligus)
- *   ->options(fn () => Model::...->pluck(...))    (idem; `searchable()` lalu hanya
+ *   ->options( ... pluck( ...) )                  (idem; `searchable()` lalu hanya
  *                                                  menyaring di browser)
  *
  * Akibatnya yang dirasakan Owner: item yang dibuat di tab lain tidak muncul di
  * form yang sudah terbuka tanpa me-refresh halaman, dan me-refresh berarti
  * mengisi ulang form dari awal. Gantinya `App\Filament\Support\MasterSelect`
- * (pencarian ke server).
+ * (pencarian ke server, dengan 50 pilihan pertama saat dibuka).
+ * `->relationship(...)->searchable()` TANPA preload sudah mencari ke server,
+ * jadi diizinkan; tetapi `->relationship(...)` TANPA `searchable()` memuat seluruh
+ * tabel sekaligus, jadi dilarang.
  *
  * Master KECIL yang jarang bertambah (gudang, grade, satuan, kategori, ...)
  * tidak dijaga di sini.
@@ -31,7 +38,7 @@ use Tests\TestCase;
 class MasterDropdownGuardTest extends TestCase
 {
     /** Nama field yang menunjuk ke master yang terus bertambah. */
-    private const FIELDS = ['product_id', 'material_id', 'supplier_id', 'customer_id'];
+    private const FIELDS = ['product_id', 'product_ids', 'material_id', 'supplier_id', 'customer_id', 'customer_group_id', 'parent_id'];
 
     /**
      * Berkas yang masih memakai pola lama, menunggu kelompoknya (issue #512).
@@ -41,12 +48,7 @@ class MasterDropdownGuardTest extends TestCase
      * @var array<string, string>
      */
     private const MENUNGGU = [
-        // Kelompok 2: PO dan GR
-        'Admin/Resources/PurchaseMaterialResource.php' => 'kelompok 2: PO dan GR',
-        'Admin/Resources/PurchaseProductResource.php' => 'kelompok 2: PO dan GR',
-        'Admin/Resources/GoodsReceiptProductResource/Pages/LabelingGoodsReceiptProduct.php' => 'kelompok 2: PO dan GR',
-
-        // Kelompok 3: Sales Order, Price List, Sales Return Plan, dan yang sejenis
+        // Kelompok 3: penjualan
         'Admin/Resources/SalesOrderResource.php' => 'kelompok 3: penjualan',
         'Admin/Resources/PriceListResource.php' => 'kelompok 3: penjualan',
         'Admin/Resources/SalesReturnPlanResource.php' => 'kelompok 3: penjualan',
@@ -54,15 +56,22 @@ class MasterDropdownGuardTest extends TestCase
         'Admin/Resources/SalesReturnResource/Pages/InputReturnItems.php' => 'kelompok 3: penjualan',
         'Admin/Resources/InvoiceResource.php' => 'kelompok 3: penjualan',
         'Admin/Resources/DeliveryOrderResource.php' => 'kelompok 3: penjualan',
+        'Admin/Resources/DeliveryOrderResource/Pages/ApproveDeliveryOrder.php' => 'kelompok 3: penjualan',
         'Admin/Resources/DeliveryOrderReceiptResource.php' => 'kelompok 3: penjualan',
         'Admin/Resources/DeliveryPlanResource.php' => 'kelompok 3: penjualan',
         'Admin/Resources/TallyResource.php' => 'kelompok 3: penjualan',
+        'Clusters/CustomersCluster/Resources/CustomerResource.php' => 'kelompok 3: penjualan (grup customer)',
 
         // Kelompok 4: sisanya
         'Admin/Resources/BoningResource/Pages/LabelingBoning.php' => 'kelompok 4: sisanya',
         'Admin/Resources/RepackResource/Pages/InputHasilRepack.php' => 'kelompok 4: sisanya',
+        'Admin/Resources/StockTakeResource/Pages/ScanStockTake.php' => 'kelompok 4: sisanya',
+        'Admin/Resources/MaterialUsageResource/Pages/CreateManualUsage.php' => 'kelompok 4: sisanya',
+        'Clusters/BeefStocks/Pages/FoundItemScanner.php' => 'kelompok 4: sisanya',
         'Clusters/MaterialsStock/Resources/MaterialFindingResource.php' => 'kelompok 4: sisanya',
-        'Concerns/ShowsBomMaterialUsage.php' => 'kelompok 4: sisanya (halaman Pemakaian Material, bahan terbuang)',
+        'Clusters/ProductsCluster/Resources/ProductResource.php' => 'kelompok 4: sisanya (produk induk)',
+        'Clusters/ProductsCluster/Resources/ProductResource/Forms/BillOfMaterialSection.php' => 'kelompok 4: sisanya (BOM)',
+        'Concerns/ShowsBomMaterialUsage.php' => 'kelompok 4: sisanya (bahan terbuang di Pemakaian Material)',
     ];
 
     public function test_dropdowns_to_growing_masters_search_the_server(): void
@@ -74,18 +83,8 @@ class MasterDropdownGuardTest extends TestCase
                 continue;
             }
 
-            foreach ($this->jendela($isi) as [$field, $baris, $jendela]) {
-                if (str_contains($jendela, 'MasterSelect::') || str_contains($jendela, 'getSearchResultsUsing')) {
-                    continue;
-                }
-
-                if (str_contains($jendela, '->preload()')) {
-                    $pelanggaran[] = "{$relatif}:{$baris}  {$field}: ->preload() memuat semua pilihan sekali saat halaman dibuka";
-                }
-
-                if (preg_match('/->options\(\s*(fn|function)[^;]*pluck\(/s', $jendela)) {
-                    $pelanggaran[] = "{$relatif}:{$baris}  {$field}: ->options(... pluck()) memuat semua pilihan sekali saat halaman dibuka";
-                }
+            foreach ($this->pelanggaranDi($isi) as [$field, $baris, $sebab]) {
+                $pelanggaran[] = "{$relatif}:{$baris}  {$field}: {$sebab}";
             }
         }
 
@@ -107,24 +106,46 @@ class MasterDropdownGuardTest extends TestCase
         foreach (self::MENUNGGU as $relatif => $kelompok) {
             $this->assertArrayHasKey($relatif, $berkas, "{$relatif} ada di daftar menunggu tetapi berkasnya tidak ada.");
 
-            $masihLama = false;
-
-            foreach ($this->jendela($berkas[$relatif]) as [, , $jendela]) {
-                if (str_contains($jendela, 'MasterSelect::') || str_contains($jendela, 'getSearchResultsUsing')) {
-                    continue;
-                }
-
-                if (str_contains($jendela, '->preload()') || preg_match('/->options\(\s*(fn|function)[^;]*pluck\(/s', $jendela)) {
-                    $masihLama = true;
-                }
-            }
-
-            $this->assertTrue($masihLama, "{$relatif} sudah bersih (kelompok: {$kelompok}); keluarkan dari daftar menunggu.");
+            $this->assertNotEmpty(
+                $this->pelanggaranDi($berkas[$relatif]),
+                "{$relatif} sudah bersih (kelompok: {$kelompok}); keluarkan dari daftar menunggu.",
+            );
         }
     }
 
     /**
-     * @return array<string, string>  path => isi tanpa komentar
+     * Pelanggaran dalam sebuah berkas.
+     *
+     * @return array<int, array{string, int, string}>  [nama field, nomor baris, sebab]
+     */
+    private function pelanggaranDi(string $kode): array
+    {
+        $hasil = [];
+
+        foreach ($this->jendela($kode) as [$field, $baris, $jendela]) {
+            if (str_contains($jendela, 'MasterSelect::') || str_contains($jendela, 'getSearchResultsUsing')) {
+                continue;
+            }
+
+            if (str_contains($jendela, '->preload()')) {
+                $hasil[] = [$field, $baris, '->preload() memuat semua pilihan sekali saat halaman dibuka'];
+            }
+
+            if (preg_match('/->options\(.*?pluck\(/s', $jendela)) {
+                $hasil[] = [$field, $baris, '->options(... pluck()) memuat semua pilihan sekali saat halaman dibuka'];
+            }
+
+            // Dropdown relasi TANPA searchable() memuat seluruh tabel sekaligus.
+            if (str_contains($jendela, '->relationship(') && ! str_contains($jendela, '->searchable()')) {
+                $hasil[] = [$field, $baris, '->relationship() tanpa ->searchable() memuat semua pilihan sekali saat halaman dibuka'];
+            }
+        }
+
+        return $hasil;
+    }
+
+    /**
+     * @return array<string, string>  path relatif dari app/Filament (garis miring) => isi tanpa komentar
      */
     private function berkas(): array
     {
@@ -170,18 +191,19 @@ class MasterDropdownGuardTest extends TestCase
     }
 
     /**
-     * Tiap field yang menunjuk ke master yang terus bertambah, beserta
-     * "jendela"-nya: teks dari `Select::make('xxx_id')` sampai pembuatan
-     * komponen berikutnya.
+     * Tiap Select/SelectFilter yang menyentuh master yang terus bertambah, beserta
+     * "jendela"-nya: teks dari `Select::make('xxx')` sampai pembuatan komponen
+     * berikutnya. Dikenali dari nama field ATAU dari model yang disebut di
+     * jendelanya (`Product::`, `Material::`, `Supplier::`, `Customer::`,
+     * `CustomerGroup::`, atau `relationship('product'...)`).
      *
      * @return array<int, array{string, int, string}>  [nama field, nomor baris, jendela]
      */
     private function jendela(string $kode): array
     {
-        $daftar = implode('|', self::FIELDS);
         $hasil = [];
 
-        preg_match_all("/(Select|SelectFilter)::make\('({$daftar})'\)/", $kode, $cocok, PREG_OFFSET_CAPTURE);
+        preg_match_all("/(Select|SelectFilter)::make\('([^']+)'\)/", $kode, $cocok, PREG_OFFSET_CAPTURE);
 
         foreach ($cocok[0] as $i => [$teks, $offset]) {
             $akhir = strlen($kode);
@@ -190,11 +212,17 @@ class MasterDropdownGuardTest extends TestCase
                 $akhir = $berikut[0][1];
             }
 
-            $hasil[] = [
-                $cocok[2][$i][0],
-                substr_count(substr($kode, 0, $offset), "\n") + 1,
-                substr($kode, $offset, min($akhir - $offset, 2500)),
-            ];
+            $jendela = substr($kode, $offset, min($akhir - $offset, 2500));
+            $nama = $cocok[2][$i][0];
+
+            $menyentuh = in_array($nama, self::FIELDS, true)
+                || preg_match('/\b(Product|Material|Supplier|Customer)(Group)?::|relationship\(\s*\'(product|material|supplier|customer|customerGroup)\'/', $jendela);
+
+            if (! $menyentuh) {
+                continue;
+            }
+
+            $hasil[] = [$nama, substr_count(substr($kode, 0, $offset), "\n") + 1, $jendela];
         }
 
         return $hasil;
