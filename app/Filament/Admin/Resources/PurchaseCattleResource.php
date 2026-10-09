@@ -80,14 +80,8 @@ class PurchaseCattleResource extends Resource
                                 ->preload()
                                 ->required()
                                 ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                                ->createOptionForm([
-                                    Forms\Components\TextInput::make('name')
-                                        ->required()
-                                        ->maxLength(255)
-                                        ->unique(table: 'cattle_classes', column: 'name')
-                                        ->label(__('Name'))
-                                        ->extraInputAttributes(['style' => 'text-transform:uppercase']),
-                                ])
+                                ->createOptionForm(\App\Filament\Support\QuickCreate::schema('cattleClass'))
+                            ->createOptionAction(\App\Filament\Support\QuickCreate::action('cattleClass'))
                                 ->placeholder(__('Category'))
                                 ->label('')
                                 ->hiddenLabel()

@@ -91,26 +91,8 @@ class ProductResource extends Resource
                             ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
                                 static::updateCode($set, $get);
                             })
-                            ->createOptionForm([
-                                Forms\Components\TextInput::make('name')
-                                    ->label(fn() => __('Category Name'))
-                                    ->required()
-                                    ->unique('product_categories', 'name')
-                                    ->maxLength(255)
-                                    ->extraInputAttributes(['style' => 'text-transform:uppercase']),
-                                Forms\Components\TextInput::make('prefix')
-                                    ->label(fn() => __('Prefix (Code)'))
-                                    ->required()
-                                    ->numeric()
-                                    ->unique('product_categories', 'prefix')
-                                    // Usulkan prefix berikutnya supaya operator tidak perlu
-                                    // membuka daftar kategori dulu untuk mencari yang terpakai.
-                                    ->default(fn () => \App\Models\ProductCategory::max('prefix') + 1)
-                                    ->helperText(fn () => __('Suggested from the highest existing prefix. Change it if needed.')),
-                            ])
-                            ->createOptionAction(
-                                fn (Forms\Components\Actions\Action $action) => $action->modalWidth('md')->color('warning')
-                            ),
+                            ->createOptionForm(\App\Filament\Support\QuickCreate::schema('productCategory'))
+                            ->createOptionAction(fn (Forms\Components\Actions\Action $action) => (\App\Filament\Support\QuickCreate::action('productCategory'))($action)->color('warning')),
 
                         Forms\Components\TextInput::make('name')
                             ->label(fn() => __('Product Name'))

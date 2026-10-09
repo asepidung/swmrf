@@ -141,26 +141,8 @@ class CustomerResource extends Resource
                                     }
                                 }
                             })
-                            ->createOptionForm([
-                                Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
-                                    ->label(fn() => __('Name'))
-                                    ->required()
-                                    ->extraInputAttributes(['style' => 'text-transform:uppercase']),
-                                Forms\Components\TextInput::make('top')
-                                    ->label(fn() => __('TOP'))
-                                    ->suffix(__('days'))
-                                    ->required()
-                                    ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right'])
-                                    ->rules(['integer', 'min:0']),
-                                Forms\Components\TextInput::make('head_office_pic')
-                                    ->label(fn() => __('Head Office PIC'))
-                                    ->maxLength(255)
-                                    ->extraInputAttributes(['style' => 'text-transform:uppercase']),
-                                Forms\Components\Textarea::make('head_office_address')
-                                    ->label(fn() => __('Head Office Address'))
-                                    ->extraInputAttributes(['style' => 'text-transform:uppercase'])
-                                    ->columnSpanFull(),
-                            ])
+                            ->createOptionForm(\App\Filament\Support\QuickCreate::schema('customerGroup'))
+                            ->createOptionAction(\App\Filament\Support\QuickCreate::action('customerGroup'))
                             ->columnSpan(['default' => 1, 'lg' => 4]),
 
                         Forms\Components\Select::make('customer_segment_id')
@@ -169,12 +151,8 @@ class CustomerResource extends Resource
                             ->required()
                             ->searchable()
                             ->preload()
-                            ->createOptionForm([
-                                Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
-                                    ->label(fn() => __('Name'))
-                                    ->required()
-                                    ->extraInputAttributes(['style' => 'text-transform:uppercase']),
-                            ])
+                            ->createOptionForm(\App\Filament\Support\QuickCreate::schema('customerSegment'))
+                            ->createOptionAction(\App\Filament\Support\QuickCreate::action('customerSegment'))
                             ->columnSpan(['default' => 1, 'lg' => 4]),
 
                         // Tanpa ->numeric(), yang akan membuat input menjadi

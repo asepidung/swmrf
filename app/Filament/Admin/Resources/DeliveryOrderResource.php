@@ -113,14 +113,8 @@ class DeliveryOrderResource extends Resource
                             // dibuka -- form()-nya sama dipakai ketiganya.
                             ->autofocus(fn ($livewire): bool => $livewire instanceof \Filament\Resources\Pages\CreateRecord)
                             ->required()
-                            ->createOptionForm([
-                                Forms\Components\TextInput::make('name')
-                                    ->required()
-                                    ->maxLength(255)
-                                    ->unique(ignoreRecord: true),
-                                Forms\Components\Toggle::make('is_active')
-                                    ->default(true),
-                            ])
+                            ->createOptionForm(\App\Filament\Support\QuickCreate::schema('driver'))
+                            ->createOptionAction(\App\Filament\Support\QuickCreate::action('driver'))
                             ->default(function () {
                                 $tallyId = request()->query('tally_id');
                                 return $tallyId ? \App\Models\Tally::with('salesOrder.deliveryPlan')->find($tallyId)?->salesOrder?->deliveryPlan?->driver_id : null;
@@ -132,17 +126,8 @@ class DeliveryOrderResource extends Resource
                             ->getOptionLabelFromRecordUsing(fn (\App\Models\Vehicle $record) => "{$record->vehicle_type} - {$record->police_number}")
                             ->searchable()
                             ->preload()
-                            ->createOptionForm([
-                                Forms\Components\TextInput::make('vehicle_type')
-                                    ->required()
-                                    ->maxLength(255),
-                                Forms\Components\TextInput::make('police_number')
-                                    ->required()
-                                    ->maxLength(255)
-                                    ->unique(ignoreRecord: true),
-                                Forms\Components\Toggle::make('is_active')
-                                    ->default(true),
-                            ])
+                            ->createOptionForm(\App\Filament\Support\QuickCreate::schema('vehicle'))
+                            ->createOptionAction(\App\Filament\Support\QuickCreate::action('vehicle'))
                             ->default(function () {
                                 $tallyId = request()->query('tally_id');
                                 return $tallyId ? \App\Models\Tally::with('salesOrder.deliveryPlan')->find($tallyId)?->salesOrder?->deliveryPlan?->vehicle_id : null;
