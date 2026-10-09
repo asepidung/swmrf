@@ -215,10 +215,9 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                             ->disabled()
                             ->dehydrated()
                             ->columnSpanFull(),
-                        Forms\Components\Select::make('product_id')
+                        // Barang yang ketemu boleh produk yang kini nonaktif.
+                        \App\Filament\Support\MasterSelect::product('product_id', activeOnly: false)
                             ->label(__('Product'))
-                            ->options(Product::pluck('name', 'id'))
-                            ->searchable()
                             ->required(),
                         Forms\Components\Select::make('grade_id')
                             ->label(__('Grade'))

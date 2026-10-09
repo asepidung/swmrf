@@ -171,11 +171,9 @@ trait ShowsBomMaterialUsage
                     ->defaultItems(0)
                     ->columns(['default' => 1, 'md' => 12])
                     ->schema([
-                        Forms\Components\Select::make('material_id')
+                        \App\Filament\Support\MasterSelect::material('material_id')
                             ->hiddenLabel()
                             ->placeholder(__('Select material'))
-                            ->options(fn (): array => Material::query()->where('is_active', true)->orderBy('name')->pluck('name', 'id')->all())
-                            ->searchable()
                             ->required()
                             // Satu material, satu baris (Owner, 8 Oktober 2026): di layar,
                             // pilihan yang sudah dipakai baris lain dinonaktifkan; di

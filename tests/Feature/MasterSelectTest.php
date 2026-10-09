@@ -479,4 +479,94 @@ class MasterSelectTest extends TestCase
             ->assertCanSeeTableRecords([$tallyA])
             ->assertCanNotSeeTableRecords([$tallyB]);
     }
+
+    // ---------------------------------------------------------------------
+    // Kelompok 4: sisanya
+    // ---------------------------------------------------------------------
+
+    /** @test */
+    public function the_parent_beef_dropdown_offers_only_active_parent_products_and_finds_new_ones(): void
+    {
+        $this->actingAs($this->user);
+
+        $test = Livewire::test(\App\Filament\Clusters\ProductsCluster\Resources\ProductResource\Pages\CreateProduct::class)
+            ->fillForm(['structure_type' => 'sub']);
+
+        $induk = $this->product('INDUK LAMA');
+        $varian = $this->product('VARIAN');
+        $varian->forceFill(['parent_id' => $induk->id, 'structure_type' => 'sub'])->save();
+        $this->product('INDUK BARU SESUDAH BUKA');
+        $this->product('INDUK MATI', active: false);
+
+        $field = $this->field($test, 'parent_id');
+        $hasil = $field->getSearchResults('');
+
+        $this->assertContains('INDUK LAMA', $hasil);
+        $this->assertContains('INDUK BARU SESUDAH BUKA', $hasil, 'Produk induk baru harus ketemu tanpa refresh.');
+        $this->assertNotContains('VARIAN', $hasil, 'Varian bukan produk induk.');
+        $this->assertNotContains('INDUK MATI', $hasil);
+    }
+
+    /** @test */
+    public function the_manual_usage_material_dropdown_searches_the_server_and_blocks_a_repeated_material(): void
+    {
+        $this->actingAs($this->user);
+
+        $test = Livewire::test(\App\Filament\Admin\Resources\MaterialUsageResource\Pages\CreateManualUsage::class);
+
+        $this->material('BAHAN BARU SESUDAH BUKA');
+        $this->material('BAHAN MATI', active: false);
+
+        $field = collect($test->instance()->getForm('form')->getFlatComponents())
+            ->first(fn ($component) => method_exists($component, 'getName') && $component->getName() === 'material_id');
+
+        if ($field === null) {
+            // Repeater belum punya baris: isi satu baris dulu.
+            $test->fillForm(['materialUsages' => [['material_id' => null, 'qty' => 1]]]);
+            $field = collect($test->instance()->getForm('form')->getFlatComponents())
+                ->first(fn ($component) => method_exists($component, 'getName') && $component->getName() === 'material_id');
+        }
+
+        $this->assertNotNull($field, 'Dropdown material tidak ditemukan di form Manual Usage.');
+        $this->assertContains('BAHAN BARU SESUDAH BUKA', $field->getSearchResults('baru sesudah'));
+        $this->assertNotContains('BAHAN MATI', $field->getSearchResults('mati'));
+    }
+
+    /** @test */
+    public function the_bom_material_dropdown_labels_with_code_and_the_name_search_still_matches(): void
+    {
+        $material = $this->material('PLASTIK VAKUM');
+
+        $hasil = MasterSelect::search(Material::class, 'vakum', withCode: true);
+
+        $this->assertSame([$material->id => $material->code.' - PLASTIK VAKUM'], $hasil);
+        $this->assertSame($material->code.' - PLASTIK VAKUM', MasterSelect::label(Material::class, $material->id, withCode: true));
+        $this->assertSame([$material->id => $material->code.' - PLASTIK VAKUM'], MasterSelect::labels(Material::class, [$material->id], withCode: true));
+    }
+
+    /** @test */
+    public function the_bom_copy_choice_offers_only_other_products_that_already_have_a_bom(): void
+    {
+        $this->actingAs($this->user);
+
+        $tujuan = $this->product('TUJUAN');
+        $sumber = $this->product('SUMBER BERBOM');
+        $this->product('TANPA BOM');
+        \App\Models\ProductMaterial::create(['product_id' => $sumber->id, 'material_id' => $this->material('KARTON')->id, 'quantity' => 1, 'basis' => 'box']);
+        \App\Models\ProductMaterial::create(['product_id' => $tujuan->id, 'material_id' => $this->material('KARTON 2')->id, 'quantity' => 1, 'basis' => 'box']);
+
+        $aksi = Livewire::test(\App\Filament\Clusters\ProductsCluster\Resources\ProductResource\Pages\ListProducts::class)
+            ->mountTableAction('bill_of_material', $tujuan);
+
+        $field = collect($aksi->instance()->getMountedTableActionForm()->getFlatComponents())
+            ->first(fn ($component) => method_exists($component, 'getName') && $component->getName() === 'copy_from');
+
+        $this->assertNotNull($field, 'Pilihan salin tidak ada di jendela BOM.');
+
+        $hasil = $field->getSearchResults('');
+
+        $this->assertContains('SUMBER BERBOM', $hasil);
+        $this->assertNotContains('TANPA BOM', $hasil, 'Hanya produk yang sudah punya BOM.');
+        $this->assertNotContains('TUJUAN', $hasil, 'Produk yang sedang diisi tidak ditawarkan sebagai sumber.');
+    }
 }

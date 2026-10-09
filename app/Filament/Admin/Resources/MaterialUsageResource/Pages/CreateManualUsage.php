@@ -69,12 +69,12 @@ class CreateManualUsage extends CreateRecord
                         Forms\Components\Repeater::make('materialUsages')
                             ->relationship('materialUsages')
                             ->schema([
-                                Forms\Components\Select::make('material_id')
+                                \App\Filament\Support\MasterSelect::material('material_id')
                                     ->label(__('Material'))
-                                    ->options(Material::where('is_active', true)->pluck('name', 'id'))
                                     ->required()
-                                    ->searchable()
-                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
+                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                    ->distinct()
+                                    ->validationMessages(['distinct' => __('This item is already in the list.')]),
                                 
                                 Forms\Components\TextInput::make('qty')
                                     ->label(__('Qty (Minus)'))

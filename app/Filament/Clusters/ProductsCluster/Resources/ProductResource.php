@@ -58,15 +58,13 @@ class ProductResource extends Resource
                                 static::updateCode($set, $get);
                             }),
 
-                        Forms\Components\Select::make('parent_id')
-                            ->label(fn() => __('Parent Beef'))
-                            ->relationship(
-                                name: 'parent',
-                                titleAttribute: 'name',
-                                modifyQueryUsing: fn (Builder $query) => $query->whereNull('parent_id')->where('is_active', true)
-                            )
-                            ->searchable()
-                            ->preload()
+                        \App\Filament\Support\MasterSelect::server(
+                            Forms\Components\Select::make('parent_id')
+                                ->label(fn() => __('Parent Beef')),
+                            \App\Models\Product::class,
+                            // Hanya produk induk (yang bukan varian dari produk lain).
+                            scope: fn (Builder $query) => $query->whereNull('parent_id'),
+                        )
                             ->live()
                             ->disabled(fn ($context) => $context === 'edit')
                             ->visible(fn (Forms\Get $get) => $get('structure_type') === 'sub')

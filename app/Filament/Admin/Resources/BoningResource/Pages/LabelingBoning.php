@@ -124,13 +124,10 @@ class LabelingBoning extends Page implements HasForms, HasTable
                             ->extraAttributes(['tabindex' => '-1'])
                             ->extraInputAttributes(['tabindex' => '-1']),
 
-                        Forms\Components\Select::make('product_id')
+                        \App\Filament\Support\MasterSelect::product('product_id')
                             ->hiddenLabel()
                             ->placeholder(__('Product'))
-                            ->options(Product::orderBy('name')->pluck('name', 'id'))
                             ->required()
-                            ->searchable()
-                            ->preload()
                             ->autofocus()
                             ->extraAttributes(['class' => 'product-select-container', 'tabindex' => '1'])
                             ->extraInputAttributes(['tabindex' => '1']),
@@ -312,11 +309,11 @@ class LabelingBoning extends Page implements HasForms, HasTable
                     ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center']),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('product_id')
-                    ->label(__('Product'))
-                    ->options(Product::orderBy('name')->pluck('name', 'id'))
-                    ->searchable()
-                    ->preload(),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('product_id')
+                        ->label(__('Product')),
+                    \App\Models\Product::class,
+                ),
 
                 Tables\Filters\SelectFilter::make('grade_id')
                     ->label(__('Grade'))
