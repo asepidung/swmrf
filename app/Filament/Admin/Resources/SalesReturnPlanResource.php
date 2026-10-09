@@ -52,11 +52,9 @@ class SalesReturnPlanResource extends Resource
             ->schema([
                 Forms\Components\Section::make(__('Plan Information'))
                     ->schema([
-                        Forms\Components\Select::make('customer_id')
+                        // Retur boleh untuk customer yang kini nonaktif (barangnya dijual dulu).
+                        \App\Filament\Support\MasterSelect::customer('customer_id', activeOnly: false)
                             ->label(__('Customer'))
-                            ->relationship('customer', 'name')
-                            ->searchable()
-                            ->preload()
                             ->live()
                             ->afterStateUpdated(function (callable $set) {
                                 $set('delivery_order_id', null);
@@ -120,12 +118,13 @@ class SalesReturnPlanResource extends Resource
                             ->schema([
                                 Forms\Components\Hidden::make('id'),
 
-                                Forms\Components\Select::make('product_id')
+                                // Retur boleh untuk produk yang kini nonaktif.
+                                \App\Filament\Support\MasterSelect::product('product_id', activeOnly: false)
                                     ->label(__('Product'))
-                                    ->options(fn () => Product::orderBy('name')->pluck('name', 'id'))
-                                    ->searchable()
                                     ->required()
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                    ->distinct()
+                                    ->validationMessages(['distinct' => __('This item is already in the list.')])
                                     // Produk baris yang SUDAH ADA tidak
                                     // boleh diganti begitu Submitted --
                                     // baris baru (belum punya id) selalu
@@ -216,11 +215,11 @@ class SalesReturnPlanResource extends Resource
             ->filters([
                 TrashedFilter::make()
                     ->visible(fn () => auth()->user()?->hasPermission('view_deleted_sales_return_plans') ?? false),
-                Tables\Filters\SelectFilter::make('customer_id')
-                    ->label(__('Customer'))
-                    ->relationship('customer', 'name')
-                    ->searchable()
-                    ->preload(),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('customer_id')
+                        ->label(__('Customer')),
+                    \App\Models\Customer::class,
+                ),
                 Tables\Filters\SelectFilter::make('status')
                     ->label(__('Status'))
                     ->options([

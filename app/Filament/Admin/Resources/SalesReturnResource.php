@@ -31,11 +31,9 @@ class SalesReturnResource extends Resource
             ->schema([
                 Forms\Components\Section::make(__('Return Information'))
                     ->schema([
-                        Forms\Components\Select::make('customer_id')
+                        // Retur boleh untuk customer yang kini nonaktif.
+                        \App\Filament\Support\MasterSelect::customer('customer_id', activeOnly: false)
                             ->label(__('Customer'))
-                            ->relationship('customer', 'name')
-                            ->searchable()
-                            ->preload()
                             ->live()
                             ->afterStateUpdated(function (callable $set) {
                                 $set('delivery_order_id', null);
@@ -168,11 +166,11 @@ class SalesReturnResource extends Resource
                     ->indicateUsing(function (array $data): array {
                         return [];
                     }),
-                Tables\Filters\SelectFilter::make('customer_id')
-                    ->label(__('Customer'))
-                    ->relationship('customer', 'name')
-                    ->searchable()
-                    ->preload(),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('customer_id')
+                        ->label(__('Customer')),
+                    \App\Models\Customer::class,
+                ),
             ])
             ->actions([
                 \App\Filament\Admin\Resources\QcReportResource\Actions\LihatLaporanQc::make(),

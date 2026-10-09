@@ -7444,3 +7444,33 @@ diperluas karena pemindai awal terlalu sempit.
 **Test:** `MasterSelectTest` +8: saringan supplier tujuh daftar (supplier baru
 sesudah halaman dibuka ditemukan, yang nonaktif tetap bisa dicari) dan supplier
 di form Pembelian Sapi (hanya yang aktif).
+
+## #512 kelompok 3 -- penjualan, 8 Oktober 2026
+
+- **Saringan customer** di daftar Sales Order, Sales Return Plan, Sales Return,
+  Delivery Order, Delivery Order Receipt, Delivery Plan, Invoice, dan Tally
+  (`MasterSelect::filter()`, tidak membatasi ke yang aktif -- dokumen lama milik
+  customer nonaktif tetap bisa disaring). **Tally** menyaring lewat Sales
+  Order-nya (`whereHas('salesOrder')`), bukan `relationship('salesOrder.customer')`.
+- **Form:** customer Sales Order (hanya yang aktif); customer dan produk di Sales
+  Return Plan, Sales Return, dan Input Return Items **boleh yang nonaktif**
+  (barangnya dijual dulu); produk di baris Sales Order, Price List (dengan
+  `distinct()` di server); kolom hanya-tampil di Invoice dan Delivery Order.
+- **Modal "Add Products" di Sales Order** (`product_ids`, pilihan ganda): mencari ke
+  server dan tidak menawarkan produk yang sudah ada di baris item. `MasterSelect`
+  kini mendukung pilihan ganda (`getOptionLabelsUsing`) dan batasan tambahan
+  (`scope: fn (Builder, $livewire, Get)`); injeksi `$livewire`/`$get` hanya bila
+  ada batasan, karena keduanya butuh komponen yang terpasang di form.
+- **Perubahan perilaku kecil:** pilihan baru customer/produk di Sales Order dan
+  Price List hanya yang aktif; dulu produk di baris Sales Order menampilkan semua
+  termasuk yang nonaktif.
+- **Customer Group dikecualikan dari penjaga:** hanya ada di form master
+  Customer (bukan form transaksi), isinya segelintir, dan tidak punya kolom aktif
+  maupun kode. Issue #512 menyebutnya wajib hanya "bila dipakai di form
+  transaksi". Tombol "+"-nya yang sudah ada dibiarkan sampai kelompok "+".
+
+**Test:** `MasterSelectTest` +12: saringan customer delapan daftar (customer baru
+sesudah halaman dibuka ditemukan, yang nonaktif tetap bisa dicari), label pilihan
+ganda, modal Add Products tidak menawarkan produk yang sudah ada, customer Sales
+Order hanya yang aktif sedangkan retur boleh nonaktif, dan saringan Tally benar-
+benar menyaring lewat Sales Order.

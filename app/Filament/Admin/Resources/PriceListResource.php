@@ -112,15 +112,14 @@ class PriceListResource extends Resource
                             ->relationship('items')
                             ->label('')
                             ->schema([
-                                Forms\Components\Select::make('product_id')
+                                \App\Filament\Support\MasterSelect::product('product_id')
                                     ->label('')
                                     ->hiddenLabel()
-                                    ->relationship('product', 'name')
                                     ->required()
-                                    ->searchable()
-                                    ->preload()
                                     ->placeholder(__('Select Product'))
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                    ->distinct()
+                                    ->validationMessages(['distinct' => __('This item is already in the list.')])
                                     ->extraAttributes([
                                         'class' => 'product-select-column',
                                     ])

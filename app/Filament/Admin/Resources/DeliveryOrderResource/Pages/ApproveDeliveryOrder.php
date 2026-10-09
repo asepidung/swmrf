@@ -100,9 +100,8 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                     ->schema([
                         Forms\Components\Repeater::make('receipt_items')
                             ->schema([
-                                Forms\Components\Select::make('product_id')
+                                \App\Filament\Support\MasterSelect::product('product_id', activeOnly: false)
                                     ->label(__('Product'))
-                                    ->options(\App\Models\Product::pluck('name', 'id'))
                                     ->disabled()
                                     ->dehydrated(true)
                                     ->columnSpan(['default' => 1, 'lg' => 4]),

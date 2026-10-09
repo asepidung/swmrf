@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\Supplier;
 use Closure;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Get;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Schema;
@@ -40,24 +41,24 @@ class MasterSelect
     /** Banyak hasil maksimum per pencarian. */
     public const LIMIT = 50;
 
-    public static function material(string $name = 'material_id'): Select
+    public static function material(string $name = 'material_id', bool $activeOnly = true): Select
     {
-        return self::server(Select::make($name), Material::class);
+        return self::server(Select::make($name), Material::class, $activeOnly);
     }
 
-    public static function product(string $name = 'product_id'): Select
+    public static function product(string $name = 'product_id', bool $activeOnly = true): Select
     {
-        return self::server(Select::make($name), Product::class);
+        return self::server(Select::make($name), Product::class, $activeOnly);
     }
 
-    public static function supplier(string $name = 'supplier_id'): Select
+    public static function supplier(string $name = 'supplier_id', bool $activeOnly = true): Select
     {
-        return self::server(Select::make($name), Supplier::class);
+        return self::server(Select::make($name), Supplier::class, $activeOnly);
     }
 
-    public static function customer(string $name = 'customer_id'): Select
+    public static function customer(string $name = 'customer_id', bool $activeOnly = true): Select
     {
-        return self::server(Select::make($name), Customer::class);
+        return self::server(Select::make($name), Customer::class, $activeOnly);
     }
 
     /** Saringan tabel (`SelectFilter`) yang mencari ke server. */
@@ -71,19 +72,32 @@ class MasterSelect
      *
      * @param  Select|SelectFilter  $field
      * @param  class-string<\Illuminate\Database\Eloquent\Model>  $model
-     * @param  Closure|null  $scope  tambahan batasan untuk PILIHAN BARU: fn (Builder $query): void
+     * @param  Closure|null  $scope  tambahan batasan untuk PILIHAN BARU:
+     *                               fn (Builder $query, $livewire, Get $get): void
      */
     public static function server($field, string $model, bool $activeOnly = true, ?Closure $scope = null)
     {
+        // Injeksi $livewire/$get hanya bila ada batasan tambahan: keduanya butuh
+        // komponen yang sudah terpasang di sebuah form.
+        $initial = $scope
+            ? fn ($livewire, Get $get): array => self::search($model, '', $activeOnly, self::bind($scope, $livewire, $get))
+            : fn (): array => self::search($model, '', $activeOnly);
+
+        $searching = $scope
+            ? fn (string $search, $livewire, Get $get): array => self::search($model, $search, $activeOnly, self::bind($scope, $livewire, $get))
+            : fn (string $search): array => self::search($model, $search, $activeOnly);
+
         $field
             ->searchable()
             // Pilihan awal saat dropdown dibuka: LIMIT pertama (urut nama, yang
             // aktif), supaya tidak membuka daftar kosong yang baru terisi setelah
             // mengetik. Mengetik tetap mencari ke SERVER, jadi item yang lahir
             // sesudah halaman dibuka tetap ketemu.
-            ->options(fn (): array => self::search($model, '', $activeOnly, $scope))
-            ->getSearchResultsUsing(fn (string $search): array => self::search($model, $search, $activeOnly, $scope))
-            ->getOptionLabelUsing(fn ($value): ?string => self::label($model, $value));
+            ->options($initial)
+            ->getSearchResultsUsing($searching)
+            ->getOptionLabelUsing(fn ($value): ?string => self::label($model, $value))
+            // Pilihan ganda (`multiple()`) membaca label nilai terpilihnya lewat sini.
+            ->getOptionLabelsUsing(fn (array $values): array => self::labels($model, $values));
 
         // Pesan prompt hanya ada di Select, tidak di SelectFilter.
         if ($field instanceof Select) {
@@ -93,6 +107,12 @@ class MasterSelect
         }
 
         return $field;
+    }
+
+    /** Membungkus batasan tambahan dengan $livewire dan $get dari komponennya. */
+    private static function bind(?Closure $scope, $livewire, Get $get): ?Closure
+    {
+        return $scope ? fn (Builder $query) => $scope($query, $livewire, $get) : null;
     }
 
     /**
@@ -120,6 +140,18 @@ class MasterSelect
             ->limit(self::LIMIT)
             ->pluck('name', 'id')
             ->all();
+    }
+
+    /**
+     * Label beberapa nilai sekaligus (pilihan ganda), tanpa filter aktif.
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model>  $model
+     * @param  array<int, int|string>  $values
+     * @return array<int|string, string>
+     */
+    public static function labels(string $model, array $values): array
+    {
+        return $model::query()->whereKey($values)->pluck('name', 'id')->all();
     }
 
     /**

@@ -6,7 +6,7 @@ use Tests\TestCase;
 
 /**
  * Penjaga issue #512: dropdown ke master yang TERUS BERTAMBAH -- Product,
- * Material, Supplier, Customer (dan Customer Group) -- tidak boleh memuat seluruh
+ * Material, Supplier, Customer -- tidak boleh memuat seluruh
  * pilihan sekali saat halaman dibuka.
  *
  * Dropdown dikenali dari MODEL yang disentuhnya atau dari nama fieldnya
@@ -28,8 +28,9 @@ use Tests\TestCase;
  * jadi diizinkan; tetapi `->relationship(...)` TANPA `searchable()` memuat seluruh
  * tabel sekaligus, jadi dilarang.
  *
- * Master KECIL yang jarang bertambah (gudang, grade, satuan, kategori, ...)
- * tidak dijaga di sini.
+ * Master KECIL yang jarang bertambah (gudang, grade, satuan, kategori, grup
+ * customer, ...) tidak dijaga di sini. Customer Group hanya ada di form master
+ * Customer (tidak di form transaksi) dan isinya segelintir, jadi dikecualikan.
  *
  * DAFTAR PENGECUALIAN di bawah adalah pekerjaan yang MASIH MENUNGGU, kelompok
  * demi kelompok -- bukan izin. Tiap berkas yang selesai dikeluarkan dari daftar;
@@ -38,7 +39,7 @@ use Tests\TestCase;
 class MasterDropdownGuardTest extends TestCase
 {
     /** Nama field yang menunjuk ke master yang terus bertambah. */
-    private const FIELDS = ['product_id', 'product_ids', 'material_id', 'supplier_id', 'customer_id', 'customer_group_id', 'parent_id'];
+    private const FIELDS = ['product_id', 'product_ids', 'material_id', 'supplier_id', 'customer_id', 'parent_id'];
 
     /**
      * Berkas yang masih memakai pola lama, menunggu kelompoknya (issue #512).
@@ -48,19 +49,6 @@ class MasterDropdownGuardTest extends TestCase
      * @var array<string, string>
      */
     private const MENUNGGU = [
-        // Kelompok 3: penjualan
-        'Admin/Resources/SalesOrderResource.php' => 'kelompok 3: penjualan',
-        'Admin/Resources/PriceListResource.php' => 'kelompok 3: penjualan',
-        'Admin/Resources/SalesReturnPlanResource.php' => 'kelompok 3: penjualan',
-        'Admin/Resources/SalesReturnResource.php' => 'kelompok 3: penjualan',
-        'Admin/Resources/SalesReturnResource/Pages/InputReturnItems.php' => 'kelompok 3: penjualan',
-        'Admin/Resources/InvoiceResource.php' => 'kelompok 3: penjualan',
-        'Admin/Resources/DeliveryOrderResource.php' => 'kelompok 3: penjualan',
-        'Admin/Resources/DeliveryOrderResource/Pages/ApproveDeliveryOrder.php' => 'kelompok 3: penjualan',
-        'Admin/Resources/DeliveryOrderReceiptResource.php' => 'kelompok 3: penjualan',
-        'Admin/Resources/DeliveryPlanResource.php' => 'kelompok 3: penjualan',
-        'Admin/Resources/TallyResource.php' => 'kelompok 3: penjualan',
-        'Clusters/CustomersCluster/Resources/CustomerResource.php' => 'kelompok 3: penjualan (grup customer)',
 
         // Kelompok 4: sisanya
         'Admin/Resources/BoningResource/Pages/LabelingBoning.php' => 'kelompok 4: sisanya',
@@ -216,7 +204,7 @@ class MasterDropdownGuardTest extends TestCase
             $nama = $cocok[2][$i][0];
 
             $menyentuh = in_array($nama, self::FIELDS, true)
-                || preg_match('/\b(Product|Material|Supplier|Customer)(Group)?::|relationship\(\s*\'(product|material|supplier|customer|customerGroup)\'/', $jendela);
+                || preg_match('/\b(Product|Material|Supplier|Customer)::|relationship\(\s*\'(product|material|supplier|customer)\'/', $jendela);
 
             if (! $menyentuh) {
                 continue;
