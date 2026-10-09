@@ -7539,3 +7539,24 @@ ditolak apa pun huruf besar/kecilnya, tombol segmen tersembunyi tanpa izin dan
 permintaan mentah ditolak, dengan izin berhasil. Dibuktikan menggigit: batas izin
 dilepas sementara -- 10 test merah; satu "+" dikembalikan ke bentuk lama -- penjaga
 merah dengan berkasnya.
+
+## #509 -- nilai rupiah pemakaian material (BOM + drylog), 9 Oktober 2026
+
+Owner: bahan terbuang WAJIB bernilai (bahan Financial Loss); pemakaian material
+tidak wajib, tetapi "kalau ada nilai uangnya sangat bagus" -- jadi semuanya diberi
+nilai uang.
+
+- **Pembekuan saat Lock:** `production_bom_snapshots` kini punya `unit_price` dan
+  `amount` (migrasi `2026_10_09_100000`), diisi `finaliseMaterialRecord()` dengan
+  `MaterialUnitPrice::perUsageUnit()` -- aturan harga yang sama dengan bahan
+  terbuang (GR rata-rata tertimbang / PO terakhir, dibagi `content_per_unit`).
+  Tanpa harga: disimpan 0 dan dihitung "belum ada harga". Harga yang naik
+  kemudian tidak menggeser angka lama.
+- **Tidak menerbitkan Financial Loss:** pemakaian bukan kerugian; hanya bahan
+  terbuang yang jadi baris Financial Loss.
+- **NULL vs 0:** snapshot yang dikunci SEBELUM kolom ini ada tetap NULL dan
+  tampil "-" (tidak ditebak ulang). Dokumen belum terkunci: tanpa nilai.
+- **Satu rumah:** `ProductionMaterialSummary` memberi `bom[].amount`,
+  `usage_total` (BOM + drylog), `usage_unpriced`; halaman dokumen, View, cetak,
+  laporan periode, PDF, dan Excel membacanya dari sana. Laporan periode menambah
+  `usage_total`, `usage_unpriced`, dan `usage_amount` per dokumen.

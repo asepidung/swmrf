@@ -27,7 +27,9 @@ class ProductionMaterialSummary
      * @param  Boning|Repack  $document
      * @return array{
      *     final: bool,
-     *     bom: array<int, array{material: string, unit: string, qty: int|float}>,
+     *     bom: array<int, array{material: string, unit: string, qty: int|float, amount: float|null}>,
+     *     usage_total: float|null,
+     *     usage_unpriced: int,
      *     drylog: int|null,
      *     drylog_name: string|null,
      *     drylog_amount: float|null,
@@ -40,8 +42,12 @@ class ProductionMaterialSummary
     {
         $final = (bool) $document->kunci;
 
+        // Dokumen terkunci: baris snapshot beku (qty + nilai). Belum terkunci:
+        // dihitung ulang, tanpa nilai.
+        $snapshots = $final ? $document->bomSnapshots()->get()->keyBy('material_id') : collect();
+
         $usage = $final
-            ? $document->bomSnapshots()->pluck('qty', 'material_id')->all()
+            ? $snapshots->map(fn ($row) => $row->qty)->all()
             : BomUsageCalculator::calculate($document->bomLabels())['usage'];
 
         $materials = Material::with('unit')
@@ -57,6 +63,8 @@ class ProductionMaterialSummary
                 // BOM dihitung per satuan PAKAI (pcs), bukan satuan beli material.
                 'unit' => 'pcs',
                 'qty' => $qty,
+                // NULL = belum final, atau dikunci sebelum nilai pemakaian disimpan.
+                'amount' => $final && $snapshots->get($materialId)?->amount !== null ? (float) $snapshots->get($materialId)->amount : null,
             ];
         }
         usort($bom, fn (array $a, array $b): int => strcmp($a['material'], $b['material']));
@@ -102,13 +110,33 @@ class ProductionMaterialSummary
             ];
         }
 
+        // Nilai pemakaian = BOM + drylog. Hanya ada setelah dikunci.
+        $drylogAmount = $final && $document->drylog_amount !== null ? (float) $document->drylog_amount : null;
+        $usageTotal = null;
+        $usageUnpriced = 0;
+
+        if ($final) {
+            $usageTotal = (float) $drylogAmount;
+            foreach ($bom as $line) {
+                $usageTotal += (float) $line['amount'];
+                if ($line['amount'] !== null && $line['amount'] <= 0) {
+                    $usageUnpriced++;
+                }
+            }
+            if ($drylogAmount !== null && $drylogAmount <= 0 && (int) $document->drylog_qty > 0) {
+                $usageUnpriced++;
+            }
+        }
+
         return [
             'final' => $final,
+            'usage_total' => $usageTotal,
+            'usage_unpriced' => $usageUnpriced,
             'bom' => $bom,
             'drylog' => $document->drylog_qty,
             'drylog_name' => DrylogMaterial::find()?->name,
             // Beku saat Lock; NULL = belum dikunci (atau dikunci sebelum drylog dinilai).
-            'drylog_amount' => $final && $document->drylog_amount !== null ? (float) $document->drylog_amount : null,
+            'drylog_amount' => $drylogAmount,
             'wastes' => $wastes,
             'waste_total' => $final ? $total : null,
             'unpriced' => $unpriced,

@@ -12,9 +12,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class ProductionBomSnapshot extends Model
 {
-    protected $fillable = ['snapshotable_type', 'snapshotable_id', 'material_id', 'qty'];
+    protected $fillable = ['snapshotable_type', 'snapshotable_id', 'material_id', 'qty', 'unit_price', 'amount'];
 
-    protected $casts = ['qty' => 'integer'];
+    protected $casts = ['qty' => 'integer', 'unit_price' => 'float', 'amount' => 'float'];
 
     public function snapshotable(): MorphTo
     {

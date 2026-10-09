@@ -25,8 +25,10 @@ class ProductionMaterialReport
      * @return array{
      *     from: string,
      *     until: string,
-     *     documents: array<int, array{kind: string, id: int, doc_no: string, date: string, drylog: int|null, drylog_amount: float, waste_qty: int, waste_amount: float, unpriced: int}>,
-     *     bom: array<int, array{material: string, qty: int|float}>,
+     *     documents: array<int, array{kind: string, id: int, doc_no: string, date: string, drylog: int|null, drylog_amount: float, waste_qty: int, waste_amount: float, usage_amount: float, unpriced: int}>,
+     *     bom: array<int, array{material: string, qty: int|float, amount: float}>,
+     *     usage_total: float,
+     *     usage_unpriced: int,
      *     drylog: array{qty: int, amount: float},
      *     wastes: array<int, array{material: string, qty: int, amount: float}>,
      *     waste_total: array{qty: int, amount: float},
@@ -44,6 +46,8 @@ class ProductionMaterialReport
         $drylog = ['qty' => 0, 'amount' => 0.0];
         $wasteTotal = ['qty' => 0, 'amount' => 0.0];
         $unpriced = 0;
+        $usageTotal = 0.0;
+        $usageUnpriced = 0;
 
         $collected = collect()
             ->merge(self::locked(Boning::class, 'boning_date', $from, $until)->map(fn (Boning $d): array => [$d, 'boning', $d->boning_date]))
@@ -53,8 +57,11 @@ class ProductionMaterialReport
         foreach ($collected as [$document, $kind, $date]) {
             $summary = ProductionMaterialSummary::for($document);
 
+            $documentUsageAmount = (float) ($summary['usage_total'] ?? 0);
+
             foreach ($summary['bom'] as $line) {
-                $bom[$line['material']] = ($bom[$line['material']] ?? 0) + $line['qty'];
+                $bom[$line['material']]['qty'] = ($bom[$line['material']]['qty'] ?? 0) + $line['qty'];
+                $bom[$line['material']]['amount'] = ($bom[$line['material']]['amount'] ?? 0.0) + (float) $line['amount'];
             }
 
             $documentWasteQty = 0;
@@ -73,7 +80,9 @@ class ProductionMaterialReport
             $drylog['amount'] += $drylogAmount;
             $wasteTotal['qty'] += $documentWasteQty;
             $wasteTotal['amount'] += $documentWasteAmount;
+            $usageTotal += $documentUsageAmount;
             $unpriced += $summary['unpriced'];
+            $usageUnpriced += $summary['usage_unpriced'];
 
             $documents[] = [
                 'kind' => $kind,
@@ -84,6 +93,7 @@ class ProductionMaterialReport
                 'drylog_amount' => $drylogAmount,
                 'waste_qty' => $documentWasteQty,
                 'waste_amount' => $documentWasteAmount,
+                'usage_amount' => $documentUsageAmount,
                 'unpriced' => $summary['unpriced'],
             ];
         }
@@ -95,7 +105,9 @@ class ProductionMaterialReport
             'from' => $from->toDateString(),
             'until' => $until->toDateString(),
             'documents' => $documents,
-            'bom' => collect($bom)->map(fn ($qty, $material): array => ['material' => $material, 'qty' => $qty])->values()->all(),
+            'bom' => collect($bom)->map(fn (array $row, $material): array => ['material' => $material] + $row)->values()->all(),
+            'usage_total' => $usageTotal,
+            'usage_unpriced' => $usageUnpriced,
             'drylog' => $drylog,
             'wastes' => collect($wastes)->map(fn (array $row, $material): array => ['material' => $material] + $row)->values()->all(),
             'waste_total' => $wasteTotal,
