@@ -69,6 +69,7 @@
                     <th>{{ __('Material') }}</th>
                     <th width="18%">{{ __('Quantity') }}</th>
                     <th width="14%">{{ __('Unit') }}</th>
+                    <th width="18%">{{ __('Value') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -78,11 +79,23 @@
                         <td>{{ $row['material'] }}</td>
                         <td class="text-right">{{ number_format($row['qty'], 0, ',', '.') }}</td>
                         <td>{{ $row['unit'] }}</td>
+                        <td class="text-right">
+                            {{ $summary['final'] && $row['amount'] !== null ? $rupiah($row['amount']) : '-' }}
+                            @if ($summary['final'] && $row['amount'] !== null && (float) $row['amount'] <= 0) *@endif
+                        </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4">{{ __('No material usage according to the BOM.') }}</td></tr>
+                    <tr><td colspan="5">{{ __('No material usage according to the BOM.') }}</td></tr>
                 @endforelse
             </tbody>
+            @if ($summary['final'])
+                <tfoot>
+                    <tr>
+                        <td colspan="4" class="text-right"><strong>{{ __('Total usage value') }}</strong> ({{ __('incl. drylog') }})</td>
+                        <td class="text-right"><strong>{{ $rupiah($summary['usage_total']) }}</strong></td>
+                    </tr>
+                </tfoot>
+            @endif
         </table>
 
         <h3>{{ __('Drylog / Pad Absorber') }}</h3>
@@ -137,7 +150,7 @@
                 </tfoot>
             @endif
         </table>
-        @if ($summary['unpriced'] > 0)
+        @if ($summary['unpriced'] + $summary['usage_unpriced'] > 0)
             <div class="note">* {{ __('no price yet') }}</div>
         @endif
 

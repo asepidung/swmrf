@@ -62,7 +62,7 @@ class MaterialUsageReportTest extends TestCase
         $document = $class::create([$column => $date, 'created_by' => $this->user->id]);
         $document->forceFill(['drylog_qty' => $drylog, 'drylog_amount' => $locked ? 100 * $drylog : null])->save();
 
-        ProductionBomSnapshot::create(['snapshotable_type' => $class, 'snapshotable_id' => $document->id, 'material_id' => $this->karton->id, 'qty' => $karton]);
+        ProductionBomSnapshot::create(['snapshotable_type' => $class, 'snapshotable_id' => $document->id, 'material_id' => $this->karton->id, 'qty' => $karton, 'unit_price' => $locked ? 10 : null, 'amount' => $locked ? 10 * $karton : null]);
 
         $document->materialWastes()->create([
             'material_id' => $this->plastik->id, 'qty' => $wasteQty, 'reason' => 'gagal vakum',
@@ -93,7 +93,9 @@ class MaterialUsageReportTest extends TestCase
 
         $report = $this->between('2026-10-01', '2026-10-31');
 
-        $this->assertSame([['material' => 'KARTON TOP', 'qty' => 5]], $report['bom']);
+        $this->assertSame([['material' => 'KARTON TOP', 'qty' => 5, 'amount' => 50.0]], $report['bom']);
+        $this->assertSame(550.0, $report['usage_total'], 'BOM Rp 50 + drylog Rp 500.');
+        $this->assertSame(250.0 + 300.0, $report['documents'][0]['usage_amount'] + $report['documents'][1]['usage_amount']);
         $this->assertSame(['qty' => 5, 'amount' => 500.0], $report['drylog']);
         $this->assertSame([['material' => 'PLASTIK VAKUM', 'qty' => 5, 'amount' => 5000.0]], $report['wastes']);
         $this->assertSame(['qty' => 5, 'amount' => 5000.0], $report['waste_total']);

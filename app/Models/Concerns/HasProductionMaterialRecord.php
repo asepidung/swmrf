@@ -68,8 +68,21 @@ trait HasProductionMaterialRecord
     {
         $this->bomSnapshots()->delete();
 
-        foreach (BomUsageCalculator::calculate($this->bomLabels())['usage'] as $materialId => $qty) {
-            $this->bomSnapshots()->create(['material_id' => $materialId, 'qty' => (int) $qty]);
+        $usage = BomUsageCalculator::calculate($this->bomLabels())['usage'];
+        $materials = Material::whereIn('id', array_keys($usage))->get()->keyBy('id');
+
+        foreach ($usage as $materialId => $qty) {
+            // Harga dibekukan di barisnya (null = belum ada harga -> nilai 0),
+            // seperti bahan terbuang. Tidak menerbitkan Financial Loss.
+            $material = $materials->get($materialId);
+            $unitPrice = $material ? MaterialUnitPrice::perUsageUnit($material) : null;
+
+            $this->bomSnapshots()->create([
+                'material_id' => $materialId,
+                'qty' => (int) $qty,
+                'unit_price' => $unitPrice,
+                'amount' => $unitPrice === null ? 0.00 : round((int) $qty * $unitPrice, 2),
+            ]);
         }
 
         $this->freezeDrylogValue();

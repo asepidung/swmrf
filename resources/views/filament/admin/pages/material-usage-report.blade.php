@@ -25,6 +25,7 @@
                     <tr>
                         <th class="{{ $head }}">{{ __('Material') }}</th>
                         <th class="{{ $head }} w-40 text-end">{{ __('Quantity') }}</th>
+                        <th class="{{ $head }} w-48 text-end">{{ __('Value') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -32,6 +33,7 @@
                         <tr class="{{ $row }}">
                             <td class="py-3 pe-4">{{ $line['material'] }}</td>
                             <td class="py-3 text-end tabular-nums">{{ $number($line['qty']) }} {{ __('pcs') }}</td>
+                            <td class="py-3 text-end tabular-nums">{{ $rupiah($line['amount']) }}</td>
                         </tr>
                     @endforeach
                     <tr class="{{ $row }}">
@@ -41,11 +43,23 @@
                         </td>
                         <td class="py-3 text-end tabular-nums">
                             {{ $number($report['drylog']['qty']) }} {{ __('pcs') }}
-                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ $rupiah($report['drylog']['amount']) }}</div>
                         </td>
+                        <td class="py-3 text-end tabular-nums">{{ $rupiah($report['drylog']['amount']) }}</td>
                     </tr>
                 </tbody>
+                <tfoot>
+                    <tr class="{{ $row }}">
+                        <td class="py-3 pe-4 font-semibold" colspan="2">{{ __('Total usage value') }}</td>
+                        <td class="py-3 text-end font-semibold tabular-nums">{{ $rupiah($report['usage_total']) }}</td>
+                    </tr>
+                </tfoot>
             </table>
+            @if ($report['usage_unpriced'] > 0)
+                <div class="mt-3">
+                    <x-filament::badge color="warning" size="sm" class="inline-flex">{{ __('no price yet') }}</x-filament::badge>
+                    <span class="ms-1 text-xs text-gray-500 dark:text-gray-400">{{ $report['usage_unpriced'] }} {{ __('rows without a price are counted as Rp 0.') }}</span>
+                </div>
+            @endif
         @else
             <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('No locked documents in this period.') }}</p>
         @endif
@@ -99,7 +113,8 @@
                         <th class="{{ $head }} w-28">{{ __('Date') }}</th>
                         <th class="{{ $head }} w-28 text-end">{{ __('Drylog / Pad Absorber') }}</th>
                         <th class="{{ $head }} w-28 text-end">{{ __('Wasted') }}</th>
-                        <th class="{{ $head }} w-40 text-end">{{ __('Value') }}</th>
+                        <th class="{{ $head }} w-40 text-end">{{ __('Usage value') }}</th>
+                        <th class="{{ $head }} w-40 text-end">{{ __('Waste value') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -112,6 +127,7 @@
                             <td class="py-3 pe-2 tabular-nums">{{ \Carbon\Carbon::parse($document['date'])->format('d/m/Y') }}</td>
                             <td class="py-3 text-end tabular-nums">{{ $document['drylog'] === null ? '-' : $number($document['drylog']) }}</td>
                             <td class="py-3 text-end tabular-nums">{{ $number($document['waste_qty']) }}</td>
+                            <td class="py-3 text-end tabular-nums">{{ $rupiah($document['usage_amount']) }}</td>
                             <td class="py-3 text-end tabular-nums">{{ $rupiah($document['waste_amount']) }}</td>
                         </tr>
                     @endforeach

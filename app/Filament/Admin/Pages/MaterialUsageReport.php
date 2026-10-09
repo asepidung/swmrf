@@ -140,13 +140,12 @@ class MaterialUsageReport extends Page implements HasForms
             $writer->addRow($row([]));
 
             $writer->addRow($row([__('Usage per BOM')]));
-            $writer->addRow($row([__('Material'), __('Quantity'), __('Unit')]));
+            $writer->addRow($row([__('Material'), __('Quantity'), __('Unit'), __('Value')]));
             foreach ($report['bom'] as $line) {
-                $writer->addRow($row([$line['material'], $line['qty'], 'pcs']));
+                $writer->addRow($row([$line['material'], $line['qty'], 'pcs', $line['amount']]));
             }
-            $writer->addRow($row([]));
-
             $writer->addRow($row([__('Drylog / Pad Absorber'), $report['drylog']['qty'], 'pcs', $report['drylog']['amount']]));
+            $writer->addRow($row([__('Total usage value'), '', '', $report['usage_total']]));
             $writer->addRow($row([]));
 
             $writer->addRow($row([__('Material Waste')]));
@@ -158,7 +157,7 @@ class MaterialUsageReport extends Page implements HasForms
             $writer->addRow($row([]));
 
             $writer->addRow($row([__('Per document')]));
-            $writer->addRow($row([__('Process'), __('Document'), __('Date'), __('Drylog / Pad Absorber'), __('Wasted'), __('Value')]));
+            $writer->addRow($row([__('Process'), __('Document'), __('Date'), __('Drylog / Pad Absorber'), __('Wasted'), __('Usage value'), __('Waste value')]));
             foreach ($report['documents'] as $document) {
                 $writer->addRow($row([
                     $document['kind'] === 'boning' ? 'Boning' : 'Repack',
@@ -166,6 +165,7 @@ class MaterialUsageReport extends Page implements HasForms
                     $document['date'],
                     $document['drylog'] ?? '',
                     $document['waste_qty'],
+                    $document['usage_amount'],
                     $document['waste_amount'],
                 ]));
             }

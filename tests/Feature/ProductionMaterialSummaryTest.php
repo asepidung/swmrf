@@ -423,4 +423,88 @@ class ProductionMaterialSummaryTest extends TestCase
             ->assertSee('DRYLOG')
             ->assertSee('Rp 50.000');
     }
+
+    // ---------------------------------------------------------------------
+    // Nilai rupiah pemakaian material (BOM + drylog), dibekukan saat Lock
+    // ---------------------------------------------------------------------
+
+    /** @test */
+    public function bom_usage_is_valued_at_lock_and_the_value_stays_frozen(): void
+    {
+        $this->priceMaterial($this->karton, 10, 500);              // Rp 500 per pcs
+        $drylog = $this->drylogMaterial();
+        $this->priceMaterial($drylog, 10, 25000);                  // Rp 25.000 per pcs
+
+        $boning = $this->boning();
+        $this->assertNull(ProductionMaterialSummary::for($boning)['usage_total'], 'Belum dikunci: belum bernilai.');
+        $this->assertNull(ProductionMaterialSummary::for($boning)['bom'][0]['amount']);
+
+        $boning->lock();
+
+        $row = $boning->bomSnapshots()->where('material_id', $this->karton->id)->first();
+        $this->assertSame(500.0, $row->unit_price);
+        $this->assertSame(1000.0, $row->amount, '2 pcs x Rp 500.');
+
+        // Harga naik sesudah dikunci: nilai tidak bergeser.
+        $this->priceMaterial($this->karton, 1, 900000);
+
+        $summary = ProductionMaterialSummary::for($boning->fresh());
+        $this->assertSame(1000.0, $summary['bom'][0]['amount']);
+        $this->assertSame(51000.0, $summary['usage_total'], 'BOM Rp 1.000 + drylog 2 x Rp 25.000.');
+        $this->assertSame(0, $summary['usage_unpriced']);
+    }
+
+    /** @test */
+    public function a_bom_row_without_any_price_is_zero_and_counted_as_unpriced(): void
+    {
+        $boning = $this->boning();
+        $boning->lock();
+
+        $summary = ProductionMaterialSummary::for($boning->fresh());
+
+        $this->assertSame(0.0, $summary['bom'][0]['amount']);
+        $this->assertSame(0.0, $summary['usage_total']);
+        $this->assertGreaterThanOrEqual(1, $summary['usage_unpriced']);
+        $this->assertNotNull($boning->bomSnapshots()->first()->amount, 'Tanpa harga tetap disimpan 0, bukan NULL.');
+    }
+
+    /** @test */
+    public function a_snapshot_locked_before_values_existed_shows_no_value_instead_of_a_guess(): void
+    {
+        $this->priceMaterial($this->karton, 10, 500);
+        $boning = $this->boning();
+        $boning->lock();
+        $boning->bomSnapshots()->update(['unit_price' => null, 'amount' => null]);
+
+        $line = ProductionMaterialSummary::for($boning->fresh())['bom'][0];
+
+        $this->assertNull($line['amount']);
+    }
+
+    /** @test */
+    public function unlocking_releases_the_frozen_usage_value(): void
+    {
+        $this->priceMaterial($this->karton, 10, 500);
+        $boning = $this->boning();
+        $boning->lock();
+        $boning->fresh()->unlock();
+
+        $this->assertSame(0, $boning->bomSnapshots()->count());
+    }
+
+    /** @test */
+    public function the_locked_page_and_the_print_page_show_the_usage_value_and_total(): void
+    {
+        $this->priceMaterial($this->karton, 10, 500);
+        $boning = $this->boning();
+        $boning->lock();
+
+        Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()])
+            ->assertSee('Rp 1.000')
+            ->assertSee(__('Total usage value'));
+
+        $this->get(route('production-material.print', ['kind' => 'boning', 'id' => $boning->id]))
+            ->assertOk()
+            ->assertSee('Rp 1.000');
+    }
 }

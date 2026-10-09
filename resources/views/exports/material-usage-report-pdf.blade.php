@@ -28,16 +28,21 @@
 
     <h3>{{ __('Usage per BOM') }}</h3>
     <table>
-        <thead><tr><th>{{ __('Material') }}</th><th class="r" width="22%">{{ __('Quantity') }}</th></tr></thead>
+        <thead><tr><th>{{ __('Material') }}</th><th class="r" width="18%">{{ __('Quantity') }}</th><th class="r" width="26%">{{ __('Value') }}</th></tr></thead>
         <tbody>
             @forelse ($report['bom'] as $line)
-                <tr><td>{{ $line['material'] }}</td><td class="r">{{ $number($line['qty']) }} {{ __('pcs') }}</td></tr>
+                <tr><td>{{ $line['material'] }}</td><td class="r">{{ $number($line['qty']) }} {{ __('pcs') }}</td><td class="r">{{ $rupiah($line['amount']) }}</td></tr>
             @empty
-                <tr><td colspan="2">{{ __('No locked documents in this period.') }}</td></tr>
+                <tr><td colspan="3">{{ __('No locked documents in this period.') }}</td></tr>
             @endforelse
             <tr>
-                <td>{{ __('Drylog / Pad Absorber') }} ({{ $rupiah($report['drylog']['amount']) }})</td>
+                <td>{{ __('Drylog / Pad Absorber') }}</td>
                 <td class="r">{{ $number($report['drylog']['qty']) }} {{ __('pcs') }}</td>
+                <td class="r">{{ $rupiah($report['drylog']['amount']) }}</td>
+            </tr>
+            <tr>
+                <td colspan="2"><strong>{{ __('Total usage value') }}</strong></td>
+                <td class="r"><strong>{{ $rupiah($report['usage_total']) }}</strong></td>
             </tr>
         </tbody>
     </table>
@@ -60,8 +65,8 @@
             </tr>
         </tbody>
     </table>
-    @if ($report['unpriced'] > 0)
-        <div class="note">* {{ $report['unpriced'] }} {{ __('rows without a price are counted as Rp 0.') }}</div>
+    @if ($report['unpriced'] + $report['usage_unpriced'] > 0)
+        <div class="note">* {{ $report['unpriced'] + $report['usage_unpriced'] }} {{ __('rows without a price are counted as Rp 0.') }}</div>
     @endif
 
     <h3>{{ __('Per document') }}</h3>
@@ -69,7 +74,7 @@
         <thead>
             <tr>
                 <th width="12%">{{ __('Process') }}</th><th>{{ __('Document') }}</th><th width="15%">{{ __('Date') }}</th>
-                <th class="r" width="14%">{{ __('Drylog / Pad Absorber') }}</th><th class="r" width="12%">{{ __('Wasted') }}</th><th class="r" width="20%">{{ __('Value') }}</th>
+                <th class="r" width="14%">{{ __('Drylog / Pad Absorber') }}</th><th class="r" width="10%">{{ __('Wasted') }}</th><th class="r" width="17%">{{ __('Usage value') }}</th><th class="r" width="17%">{{ __('Waste value') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -80,10 +85,11 @@
                     <td>{{ \Carbon\Carbon::parse($document['date'])->format('d/m/Y') }}</td>
                     <td class="r">{{ $document['drylog'] === null ? '-' : $number($document['drylog']) }}</td>
                     <td class="r">{{ $number($document['waste_qty']) }}</td>
+                    <td class="r">{{ $rupiah($document['usage_amount']) }}</td>
                     <td class="r">{{ $rupiah($document['waste_amount']) }}</td>
                 </tr>
             @empty
-                <tr><td colspan="6">{{ __('No locked documents in this period.') }}</td></tr>
+                <tr><td colspan="7">{{ __('No locked documents in this period.') }}</td></tr>
             @endforelse
         </tbody>
     </table>
