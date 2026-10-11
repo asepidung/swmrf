@@ -179,4 +179,123 @@ class BarcodeCosts
 
         return $changed;
     }
+
+    /**
+     * GR Beef: nilai = harga beli per kg di PO, dibekukan saat barang diterima
+     * (keputusan Owner 3). Harga tidak ada (<= 0) -> belum bernilai.
+     */
+    public static function fromGoodsReceipt(string $barcode, ?int $productId, ?float $pricePerKg, ?int $itemId = null): void
+    {
+        $price = $pricePerKg !== null && $pricePerKg > 0 ? $pricePerKg : null;
+
+        self::set($barcode, $price, BarcodeCost::SOURCE_GOODS_RECEIPT, $itemId, null, $productId);
+    }
+
+    /**
+     * Barcode kembali ke stok lewat retur jual atau temuan opname (keputusan
+     * Owner 3). Barcode yang SUDAH punya baris kembali dengan barisnya sendiri
+     * -- nilainya tidak berubah. Barcode baru (timbang manual, atau tanpa
+     * barcode yang jelas) = rata-rata tertimbang harga pokok produk itu di
+     * stok saat ini; tidak ada stok bernilai -> belum bernilai (NULL).
+     */
+    public static function fromAverage(string $barcode, ?int $productId, string $sourceType, ?int $sourceId = null): BarcodeCost
+    {
+        $existing = BarcodeCost::where('barcode', $barcode)->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        $average = $productId ? self::averageInStock($productId) : null;
+
+        return BarcodeCost::create([
+            'barcode' => $barcode,
+            'product_id' => $productId,
+            'cost_per_kg' => $average === null ? null : round($average, 2),
+            'source_type' => $sourceType,
+            'source_id' => $sourceId,
+            'valued_at' => $average === null ? null : now(),
+            'note' => $average === null ? 'no valued stock to average' : 'average cost of product in stock',
+        ]);
+    }
+
+    /**
+     * Rata-rata tertimbang (kg) `cost_per_kg` produk itu pada stok yang ada
+     * (beef_stocks IN_STOCK) dan sudah bernilai; null bila tidak ada.
+     */
+    public static function averageInStock(int $productId): ?float
+    {
+        $row = DB::table('beef_stocks as s')
+            ->join('barcode_costs as c', 'c.barcode', '=', 's.barcode')
+            ->where('s.product_id', $productId)
+            ->where('s.status', 'IN_STOCK')
+            ->where('s.weight', '>', 0)
+            ->whereNotNull('c.cost_per_kg')
+            ->selectRaw('SUM(s.weight * c.cost_per_kg) as total, SUM(s.weight) as kg')
+            ->first();
+
+        return $row && (float) $row->kg > 0 ? (float) $row->total / (float) $row->kg : null;
+    }
+
+    /**
+     * `hpp_per_kg` produk itu pada costing TERKUNCI yang terakhir; null bila
+     * produk belum pernah di-costing. Dasar nilai stok awal (keputusan Owner,
+     * 11 Oktober 2026).
+     */
+    public static function lastCostingHpp(int $productId): ?float
+    {
+        $hpp = DB::table('costing_items as i')
+            ->join('costings as c', 'c.id', '=', 'i.costing_id')
+            ->where('i.product_id', $productId)
+            ->where('c.status', Costing::STATUS_LOCKED)
+            ->whereNull('c.deleted_at')
+            ->orderByDesc('c.locked_at')
+            ->orderByDesc('c.id')
+            ->value('i.hpp_per_kg');
+
+        return $hpp === null ? null : (float) $hpp;
+    }
+
+    /**
+     * Stok awal saat go-live: setiap barcode yang ada di stok tetapi belum punya
+     * baris (stok sebelum buku ini ada) dinilai `lastCostingHpp()` produknya;
+     * produk yang belum pernah di-costing -> NULL, diisi manual accounting
+     * lewat layar Nilai Barcode. Barcode yang sudah punya baris tidak disentuh.
+     *
+     * @return array{valued: int, unvalued: int}
+     */
+    public static function valueOpeningStock(): array
+    {
+        $valued = 0;
+        $unvalued = 0;
+        $cache = [];
+
+        DB::transaction(function () use (&$valued, &$unvalued, &$cache): void {
+            // get(), bukan each(): baris baru mengubah hasil whereNull di tengah jalan.
+            DB::table('beef_stocks as s')
+                ->leftJoin('barcode_costs as c', 'c.barcode', '=', 's.barcode')
+                ->whereNull('c.id')
+                ->where('s.status', 'IN_STOCK')
+                ->select('s.barcode', 's.product_id')
+                ->orderBy('s.id')
+                ->get()
+                ->each(function ($stock) use (&$valued, &$unvalued, &$cache): void {
+                    $cache[$stock->product_id] ??= $stock->product_id ? self::lastCostingHpp($stock->product_id) : null;
+                    $hpp = $cache[$stock->product_id];
+
+                    BarcodeCost::create([
+                        'barcode' => $stock->barcode,
+                        'product_id' => $stock->product_id,
+                        'cost_per_kg' => $hpp,
+                        'source_type' => BarcodeCost::SOURCE_OPENING,
+                        'valued_at' => $hpp === null ? null : now(),
+                        'note' => $hpp === null ? 'opening stock: product never costed' : 'opening stock: last locked costing',
+                    ]);
+
+                    $hpp === null ? $unvalued++ : $valued++;
+                });
+        });
+
+        return ['valued' => $valued, 'unvalued' => $unvalued];
+    }
 }

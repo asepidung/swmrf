@@ -133,7 +133,8 @@ siapa pun. Selama belum dicentang, hanya akun programmer yang bisa memakainya.
 `edit_product_materials` · `delete_product_materials` ·
 `view_drivers` · `create_drivers` · `edit_drivers` · `delete_drivers` ·
 `view_vehicles` · `create_vehicles` · `edit_vehicles` · `delete_vehicles` ·
-`manage_user_permissions`
+`manage_user_permissions` · `manage_barcode_costs` (layar Nilai Barcode, HPP tahap 2, #522;
+melihat, mengisi manual, dan menilai stok awal -- hanya untuk accounting)
 
 ### Susulan sapuan 14-17 September 2026 (PR #390-#449)
 

@@ -320,6 +320,9 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                 // Umur simpannya satu rumah di `ShelfLife`.
                 $expDate = \App\Support\ShelfLife::expiryFor($packDate, $data['grade_id']);
 
+                // Temuan = rata-rata harga pokok produk di stok (HPP tahap 2, issue #522).
+                \App\Support\BarcodeCosts::fromAverage($finalBarcode, (int) $data['product_id'], \App\Models\BarcodeCost::SOURCE_STOCK_TAKE);
+
                 // Insert into BeefStock
                 $stock = BeefStock::create([
                     'barcode' => $finalBarcode,

@@ -251,6 +251,11 @@ class SalesReturn extends Model
             $this->update(['status' => 'Approved']);
 
             foreach ($this->items as $item) {
+                // Barcode lama kembali dengan nilainya sendiri; timbang manual
+                // (barcode baru) = rata-rata harga pokok produk di stok (HPP
+                // tahap 2, issue #522). Dihitung SEBELUM barang ini masuk stok.
+                \App\Support\BarcodeCosts::fromAverage($item->barcode, $item->product_id, \App\Models\BarcodeCost::SOURCE_SALES_RETURN, $this->id);
+
                 BeefStock::create([
                     'barcode' => $item->barcode,
                     'product_id' => $item->product_id,

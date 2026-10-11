@@ -460,6 +460,9 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                     'status' => 'IN_STOCK',
                 ]);
 
+                // Nilai barcode = harga beli per kg di PO (HPP tahap 2, issue #522).
+                \App\Support\BarcodeCosts::fromGoodsReceipt($barcode, (int) $formData['product_id'], (float) $price, $item->id);
+
                 BeefStockMovement::create([
                     'product_id' => $formData['product_id'],
                     'warehouse_id' => $formData['warehouse_id'],

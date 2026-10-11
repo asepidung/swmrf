@@ -309,7 +309,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
                 $subtotal = $price * $weightVal;
 
                 // 1. Create GoodsReceiptProductItem
-                GoodsReceiptProductItem::create([
+                $grItem = GoodsReceiptProductItem::create([
                     'goods_receipt_product_id' => $this->record->id,
                     'product_id' => $product->id,
                     'grade_id' => $gradeId,
@@ -339,6 +339,9 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
                     'origin' => \App\Helpers\BarcodeHelper::getOrigin($barcode),
                     'status' => 'IN_STOCK',
                 ]);
+
+                // Nilai barcode = harga beli per kg di PO (HPP tahap 2, issue #522).
+                \App\Support\BarcodeCosts::fromGoodsReceipt($barcode, (int) $product->id, (float) $price, $grItem->id);
 
                 // 3. Create BeefStockMovement
                 BeefStockMovement::create([
