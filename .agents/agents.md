@@ -7584,3 +7584,24 @@ rambatan relabel. Repack, laporan, GR/retur/opname menyusul di PR berikutnya.
   `source_barcode`; rambatan berantai dibatasi `MAX_DEPTH` (10) dan kebal putaran.
 - **Belum di PR ini:** rambatan ke repack (PR 3), GR Beef/retur/opname (PR 2),
   stok awal go-live (menunggu jawaban Owner), laporan (PR 4).
+
+## HPP tahap 2, PR 2 -- sumber nilai lain dan stok awal (#522), 11 Oktober 2026
+
+- **GR Beef** (`LabelingGoodsReceiptProduct`, `ScanGoodsReceiptProduct`): nilai =
+  harga PO per kg, `BarcodeCosts::fromGoodsReceipt` (harga <= 0 -> NULL, bukan 0).
+- **Retur jual** (`SalesReturn::approve`) dan **temuan** (`StockTakeResource`,
+  `FoundItemScanner`): `BarcodeCosts::fromAverage` -- barcode yang SUDAH punya baris
+  kembali dengan nilainya sendiri; barcode baru = rata-rata tertimbang (kg) harga
+  pokok produk itu di stok (IN_STOCK, hanya yang bernilai); tidak ada -> NULL +
+  catatan. Mutasi, Tally revert, dan bahan repack yang dikembalikan tidak menyentuh.
+- **Stok awal** (keputusan Owner 11 Oktober): `BarcodeCosts::valueOpeningStock()` --
+  tiap barcode IN_STOCK yang BELUM punya baris dinilai `hpp_per_kg` produknya dari
+  costing TERKUNCI terakhir (`lastCostingHpp`, urut `locked_at` lalu id); produk
+  yang belum pernah di-costing -> NULL, diisi manual. Penanda "stok awal" = belum
+  punya baris saat tombol dijalankan; tidak ada kolom khusus. Idempoten.
+- **Layar Nilai Barcode** (`BarcodeCostResource`, izin baru `manage_barcode_costs`,
+  dicatat `tertunda.md` §G): filter bawaan "belum bernilai", kolom `cost_per_kg`
+  bisa diisi (menimpa, merambat ke relabel, tercatat di log), tombol "Nilai stok awal".
+- **Penjaga:** `BarcodeCostGuardTest` -- setiap berkas yang memanggil
+  `BeefStock::create(` harus memanggil `BarcodeCosts::` atau terdaftar dengan
+  alasan; `InputHasilRepack` menunggu PR 3. Dibuktikan menggigit.

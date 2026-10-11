@@ -241,6 +241,11 @@ Tables\Actions\Action::make('scan')
                             // 3. Handle UNEXPECTED items (Insert into BeefStock)
                             $unexpectedItems = $record->items()->where('status', 'UNEXPECTED')->get();
                             foreach ($unexpectedItems as $item) {
+                                // Temuan opname = rata-rata harga pokok produk di stok,
+                                // atau nilainya sendiri bila barcode sudah dikenal (HPP
+                                // tahap 2, issue #522).
+                                \App\Support\BarcodeCosts::fromAverage($item->barcode, $item->product_id, \App\Models\BarcodeCost::SOURCE_STOCK_TAKE, $record->id);
+
                                 \App\Models\BeefStock::create([
                                     'barcode' => $item->barcode,
                                     'batch_no' => $item->batch_no,
