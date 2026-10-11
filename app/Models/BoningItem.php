@@ -46,6 +46,17 @@ class BoningItem extends Model
             ->dontSubmitEmptyLogs();
     }
 
+    protected static function booted(): void
+    {
+        // Barcode boning lahir belum bernilai; nilainya datang saat costing lot
+        // ini dikunci (HPP tahap 2, issue #522).
+        static::created(function (self $item): void {
+            if (filled($item->barcode)) {
+                \App\Support\BarcodeCosts::ensure($item->barcode, $item->product_id, \App\Models\BarcodeCost::SOURCE_BONING);
+            }
+        });
+    }
+
     public function boning(): BelongsTo
     {
         return $this->belongsTo(Boning::class, 'boning_id');
