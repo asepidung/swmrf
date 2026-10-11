@@ -401,6 +401,27 @@ class MaterialWasteTest extends TestCase
     }
 
     /** @test */
+    public function enter_moves_down_instead_of_saving_in_the_drylog_and_waste_fields(): void
+    {
+        $boning = $this->boning();
+        $boning->materialWastes()->create(['material_id' => $this->plastik->id, 'qty' => 3, 'reason' => 'gagal vakum']);
+        $boning->materialWastes()->create(['material_id' => $this->drylog->id, 'qty' => 2, 'reason' => 'reject']);
+
+        $page = Livewire::test(MaterialUsageBoning::class, ['record' => $boning->getRouteKey()]);
+
+        // Satu isian drylog dan dua baris bahan terbuang, masing-masing membawa penangan Enter.
+        $html = $page->html();
+        $onInput = fn (string $class): int => preg_match_all('/class="[^"]*'.$class.'[^"]*"/', $html);
+        $this->assertSame(1, $onInput('enter-to-next-drylog'));
+        $this->assertSame(2, $onInput('enter-to-next-waste-qty'));
+        $this->assertSame(2, $onInput('enter-to-next-waste-reason'));
+        // Atributnya tampil dengan tanda kutip ter-escape; yang dicari skripnya.
+        $decoded = html_entity_decode($html, ENT_QUOTES);
+        $this->assertStringContainsString("event.key === 'Enter'", $decoded);
+        $this->assertStringContainsString('event.preventDefault()', $decoded, 'Enter tidak boleh menyimpan form.');
+    }
+
+    /** @test */
     public function the_page_can_be_saved_with_no_waste_at_all(): void
     {
         $boning = $this->boning();

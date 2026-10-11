@@ -103,6 +103,32 @@ trait ShowsBomMaterialUsage
         return [$this->bomUsageSection(), $this->drylogSection(), $this->wasteSection()];
     }
 
+    /**
+     * Enter pindah ke isian di BAWAHNYA, bukan menyimpan form -- pola yang sama
+     * dengan `enter-to-next-*` di Carcass dan Cattle Receiving. `$ownClass` menandai
+     * isian ini; `$targetClass` kelas isian yang dituju: kelas yang sama berarti
+     * baris berikutnya di kolom yang sama (baris terakhir: tidak pindah ke mana-mana).
+     * Drylog menuju qty bahan terbuang pertama.
+     *
+     * @param  array<string, string>  $attributes
+     * @return array<string, string>
+     */
+    protected function enterMovesDown(string $ownClass, string $targetClass, array $attributes = []): array
+    {
+        return $attributes + [
+            'class' => $ownClass,
+            'onkeydown' => "
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    let inputs = Array.from(document.querySelectorAll('.{$targetClass}'));
+                    let index = inputs.indexOf(this);
+                    let next = index > -1 ? inputs[index + 1] : inputs[0];
+                    if (next) { next.focus(); }
+                }
+            ",
+        ];
+    }
+
     /** Tombol cetak lembar pemakaian bahan dokumen ini. */
     protected function printMaterialUsageAction(string $kind): \Filament\Actions\Action
     {
@@ -147,7 +173,7 @@ trait ShowsBomMaterialUsage
                 Forms\Components\TextInput::make('drylog_qty')
                     ->label(__('Drylog / Pad Absorber'))
                     ->suffix(__('pcs'))
-                    ->extraInputAttributes(['inputmode' => 'numeric'])
+                    ->extraInputAttributes($this->enterMovesDown('enter-to-next-drylog', 'enter-to-next-waste-qty', ['inputmode' => 'numeric']))
                     ->rules(['required', 'integer', 'min:0'])
                     ->required(),
             ]);
@@ -189,7 +215,7 @@ trait ShowsBomMaterialUsage
                             ->hiddenLabel()
                             ->placeholder(__('Quantity'))
                             ->suffix(__('pcs'))
-                            ->extraInputAttributes(['inputmode' => 'numeric'])
+                            ->extraInputAttributes($this->enterMovesDown('enter-to-next-waste-qty', 'enter-to-next-waste-qty', ['inputmode' => 'numeric']))
                             ->rules(['required', 'integer', 'min:1'])
                             ->required()
                             ->columnSpan(['default' => 1, 'md' => 3]),
@@ -197,6 +223,7 @@ trait ShowsBomMaterialUsage
                         Forms\Components\TextInput::make('reason')
                             ->hiddenLabel()
                             ->placeholder(__('Reason (required)'))
+                            ->extraInputAttributes($this->enterMovesDown('enter-to-next-waste-reason', 'enter-to-next-waste-reason'))
                             ->maxLength(255)
                             ->required()
                             ->columnSpan(['default' => 1, 'md' => 4]),
