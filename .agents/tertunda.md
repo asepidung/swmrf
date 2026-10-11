@@ -31,7 +31,7 @@ masih tertunda.
 
 | Yang tertunda | Kenapa |
 |---|---|
-| Nilai rupiah barang retur | HPP per lot boning sudah ada, tapi belum ada satu baris kode pun yang mengaitkan `SalesReturn` ke `Costing` untuk menilai barang yang kembali. Sekarang masih tercatat Rp 0 |
+| Nilai rupiah barang retur sebagai KERUGIAN | Barcode yang kembali sudah BERNILAI sejak HPP tahap 2 (#522, `hpp.md` §17): barcode lama membawa nilainya sendiri, timbang manual = rata-rata harga pokok produk di stok. Yang belum: menulis selisih klaim-fisik sebagai kerugian rupiah memakai nilai itu -- baris kerugian retur masih Rp 0 |
 | **Killing Lost** (Kerugian Potong) | Modulnya belum ada, dan tidak ada satu pun kode yang menulisnya |
 | **Lost Cost** (Biaya/Kerugian Lain) | Modulnya belum ada. `FinancialLossResource::canCreate()` mengembalikan `false` dan tidak punya halaman Create, jadi tidak bisa diinput manual |
 
