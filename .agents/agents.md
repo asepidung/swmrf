@@ -7560,3 +7560,27 @@ nilai uang.
   `usage_total` (BOM + drylog), `usage_unpriced`; halaman dokumen, View, cetak,
   laporan periode, PDF, dan Excel membacanya dari sana. Laporan periode menambah
   `usage_total`, `usage_unpriced`, dan `usage_amount` per dokumen.
+
+## HPP tahap 2, PR 1 -- buku nilai per barcode (#522), 11 Oktober 2026
+
+Spesifikasi Hafizh di komentar #522. PR 1 = tabel + isi saat costing dikunci +
+rambatan relabel. Repack, laporan, GR/retur/opname menyusul di PR berikutnya.
+
+- **`barcode_costs`** (satu baris per barcode, di mana pun barcode itu berada):
+  `cost_per_kg` NULLABLE -- NULL = belum bernilai, tidak pernah dihitung nol.
+  `source_type`, `source_id`, `source_barcode`, `valued_at`, `note`. LogsActivity
+  (log name `barcode_costs`).
+- **Satu rumah:** `App\Support\BarcodeCosts` (`for`, `valueOf`, `ensure`, `set`,
+  `valueBoning`, `relabel`, `propagateFrom`). Model: `App\Models\BarcodeCost`.
+  Modul lain tidak menyentuh tabelnya langsung.
+- **Lahir:** `BoningItem::created` -> baris NULL (sumber `boning`). `source_id`
+  baru terisi `costing_id` saat dinilai (sesuai spesifikasi).
+- **Costing dikunci** (`Costing::lock`, satu transaksi): tiap barcode boning lot itu
+  = `hpp_per_kg` produknya, MUNDUR termasuk yang sudah berpindah; produk yang tidak
+  ada di costing dibiarkan NULL. Dikunci ulang menimpa dan merambat; unlock
+  membiarkan nilai sampai dikunci ulang. Idempoten -- menulis nilai sama tidak
+  mengubah baris dan tidak menambah log.
+- **Relabel** (`ScanTally`): barcode baru menyalin nilai barcode asal dan mengingat
+  `source_barcode`; rambatan berantai dibatasi `MAX_DEPTH` (10) dan kebal putaran.
+- **Belum di PR ini:** rambatan ke repack (PR 3), GR Beef/retur/opname (PR 2),
+  stok awal go-live (menunggu jawaban Owner), laporan (PR 4).

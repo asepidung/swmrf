@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BarcodeCosts;
 use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -184,11 +185,18 @@ class Costing extends Model
             throw new \RuntimeException(__('This costing has a product without a price and cannot be locked.'));
         }
 
-        $this->forceFill([
-            'status' => self::STATUS_LOCKED,
-            'locked_by' => Auth::id(),
-            'locked_at' => now(),
-        ])->save();
+        DB::transaction(function (): void {
+            $this->forceFill([
+                'status' => self::STATUS_LOCKED,
+                'locked_by' => Auth::id(),
+                'locked_at' => now(),
+            ])->save();
+
+            // Barcode boning lot ini bernilai sekarang -- mundur, termasuk yang
+            // sudah terjual atau jadi bahan repack (HPP tahap 2, issue #522).
+            // Dikunci ulang sesudah unlock: nilai baru menimpa yang lama.
+            BarcodeCosts::valueBoning($this);
+        });
     }
 
     /**

@@ -302,6 +302,10 @@ class ScanTally extends Page implements HasForms, HasTable
                                         'exp_date' => $newExpDate,
                                     ]);
                                     
+                                    // Barcode baru mewarisi nilai barcode asal (HPP tahap 2,
+                                    // issue #522) dan mengingat asalnya untuk rambatan.
+                                    \App\Support\BarcodeCosts::relabel($oldBarcode, $newBarcode, $record->product_id);
+
                                     // Baris movement TALLY lama TIDAK lagi ditulis ulang ke
                                     // barcode baru. Menulis ulangnya memutus riwayat per
                                     // barcode: barcode lama tampak masuk tanpa pernah
