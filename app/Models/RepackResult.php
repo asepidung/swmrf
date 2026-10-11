@@ -24,6 +24,14 @@ class RepackResult extends Model
         static::created($cabut);
         static::updated($cabut);
         static::deleted($cabut);
+
+        // Barcode hasil lahir belum bernilai; nilainya datang saat repack dikunci
+        // (HPP tahap 2, issue #522).
+        static::created(function ($baris): void {
+            if (filled($baris->barcode)) {
+                \App\Support\BarcodeCosts::ensure($baris->barcode, $baris->product_id, \App\Models\BarcodeCost::SOURCE_REPACK, $baris->repack_id);
+            }
+        });
     }
     use HasFactory, SoftDeletes, LogsActivity, \App\Models\Concerns\InheritsBatch;
 

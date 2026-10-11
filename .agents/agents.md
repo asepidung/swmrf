@@ -7605,3 +7605,34 @@ rambatan relabel. Repack, laporan, GR/retur/opname menyusul di PR berikutnya.
 - **Penjaga:** `BarcodeCostGuardTest` -- setiap berkas yang memanggil
   `BeefStock::create(` harus memanggil `BarcodeCosts::` atau terdaftar dengan
   alasan; `InputHasilRepack` menunggu PR 3. Dibuktikan menggigit.
+
+## HPP tahap 2, PR 3 -- valuasi repack (#522), 11 Oktober 2026
+
+- **`RepackValuator`** (`lock`, `recalculate`, `release`), dipanggil dari
+  `Repack::lock()` / `unlock()`. Biaya bahan = Σ kg x `cost_per_kg` barcode bahan;
+  susut (kg bahan - kg hasil, bila > 0) x RATA-RATA harga pokok bahan = `amount`
+  baris Financial Loss repack yang sudah ada (#385); sisa biaya dibagi ke hasil
+  menurut nilai jual: `cost_per_kg` = net x k, k = sisa / Σ(net x kg hasil), presisi
+  penuh sampai perkalian akhir.
+- **Contoh Owner lulus tanpa menyesuaikan test:** TL 10 kg @100.000 + CR 10 kg @80.000,
+  hasil TL 9 / CR 9 / FQ 1, susut 1 kg -> kerugian 90.000, sisa 1.710.000, TL 104.087,
+  CR 81.783, FQ 37.174 (dibulatkan), Σ kg x harga = 1.710.000.
+- **Harga acuan DIKUNCI** di `repack_valuation_prices` saat repack dikunci; hitung ulang
+  karena bahan berubah nilai memakai harga terkunci itu (hanya biaya bahan yang berubah).
+  Repack yang dikunci SEBELUM fitur ini tidak punya harga terkunci: harga dikunci saat
+  hitung ulang pertamanya.
+- **Satu rumah harga acuan:** `ReferencePrice::forProduct` (grup acuan produk -> price
+  list -> trading terms; tanpa grup = harga umum 0%). `CostingCalculator` dipindah
+  memakainya -- tanpa perubahan angka (32 test costing tetap hijau).
+- **Hasil tanpa harga acuan:** seluruh hasil dibagi menurut berat, `needs_review = true`.
+- **Bahan belum bernilai:** `pending`, hasil NULL, kerugian susut tetap Rp 0; dihitung
+  otomatis lewat rambatan (`BarcodeCosts::propagateFrom` kini juga menghitung ulang repack
+  TERKUNCI yang memakai barcode itu, berantai, dibatasi kedalaman).
+- **`valueBoning` dua tahap:** semua barcode lot dinilai dulu, baru dirambatkan -- repack
+  tidak sempat `pending` di tengah jalan.
+- **Unlock repack:** hasilnya kembali NULL (merambat), valuasi dan kerugian dilepas;
+  repack berikutnya yang memakai hasil itu menjadi `pending`.
+- **Tampilan:** blok "Valuasi Repack" di halaman Material Usage Repack yang terkunci
+  (belum ada halaman View Repack terpisah).
+- Penjaga `BarcodeCostGuardTest`: `InputHasilRepack` sudah tidak menunggu (baris lahir lewat
+  `RepackResult::created`); daftar menunggu kosong.

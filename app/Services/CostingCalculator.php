@@ -224,38 +224,19 @@ class CostingCalculator
             $product = Product::find($row->product_id);
             $weightKg = (float) $row->total_weight;
 
-            $referenceGroupId = $product?->costing_customer_group_id;
-            $flag = null;
-            $termsPercent = 0.0;
-            $grossPrice = null;
+            // Harga acuan: satu rumah di `ReferencePrice` (dipakai juga valuasi repack).
+            $reference = ReferencePrice::forProduct($product);
+            $referenceGroupId = $reference['reference_group_id'];
+            $termsPercent = $reference['trading_terms_percent'];
+            $flag = $reference['flag'];
 
-            if ($referenceGroupId) {
-                $group = CustomerGroup::find($referenceGroupId);
-                $termsPercent = (float) ($group->trading_terms_percent ?? 0);
-                $grossPrice = $this->priceFor((int) $referenceGroupId, (int) $row->product_id);
-            } else {
-                // hpp.md §10: kosong = harga umum, keadaan paling banyak,
-                // bukan pengecualian. §9: potongan HANYA berlaku untuk
-                // LION/HYPERMART -- harga umum selalu 0% terlepas dari
-                // apa pun yang tersimpan di grup acuannya.
-                $flag = CostingItem::FLAG_NO_REFERENCE;
-                $termsPercent = 0.0;
-
-                $general = CustomerGroup::generalPriceReference();
-                $grossPrice = $general ? $this->priceFor($general->id, (int) $row->product_id) : null;
-            }
-
-            if ($grossPrice === null) {
-                $flag = CostingItem::FLAG_NO_PRICE;
+            if ($reference['gross_price'] === null) {
                 $grossPrice = 0.0;
                 $netPrice = 0.0;
                 $salesValue = 0.0;
             } else {
-                // Net dibulatkan 2 desimal DI SINI, bukan ditunda --
-                // net adalah nilai uang (persis "H = I - (I x 6%)" di
-                // sheet legacy), bukan nilai antara. `k` yang menunggu
-                // presisi penuh, bukan net-nya.
-                $netPrice = round($grossPrice * (1 - $termsPercent / 100), 2);
+                $grossPrice = $reference['gross_price'];
+                $netPrice = $reference['net_price'];
                 $salesValue = $netPrice * $weightKg;
             }
 
@@ -274,20 +255,5 @@ class CostingCalculator
         }
 
         return $rows;
-    }
-
-    private function priceFor(int $groupId, int $productId): ?float
-    {
-        $priceList = PriceList::where('customer_group_id', $groupId)->first();
-
-        if (! $priceList) {
-            return null;
-        }
-
-        $item = PriceListItem::where('price_list_id', $priceList->id)
-            ->where('product_id', $productId)
-            ->first();
-
-        return $item ? (float) $item->price : null;
     }
 }

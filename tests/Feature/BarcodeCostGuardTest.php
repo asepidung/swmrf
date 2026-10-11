@@ -22,12 +22,11 @@ class BarcodeCostGuardTest extends TestCase
         'Models/MutationItem.php' => 'mutasi tidak menyentuh nilai (barcode sama)',
         'Filament/Admin/Resources/MutationResource/Pages/ReceiveMutation.php' => 'mutasi tidak menyentuh nilai (barcode sama)',
         'Models/TallyItem.php' => 'barang dikembalikan ke stok dengan barcodenya sendiri; barisnya tetap ada',
+        'Filament/Admin/Resources/RepackResource/Pages/InputHasilRepack.php' => 'baris dibuat otomatis oleh RepackResult::created; nilainya datang saat repack dikunci',
     ];
 
-    /** Menunggu PR berikutnya (valuasi repack); bukan izin. */
-    private const MENUNGGU = [
-        'Filament/Admin/Resources/RepackResource/Pages/InputHasilRepack.php' => 'PR 3: valuasi repack',
-    ];
+    /** Menunggu PR berikutnya; bukan izin. Kosong = semuanya selesai. */
+    private const MENUNGGU = [];
 
     public function test_every_place_that_creates_stock_says_where_the_value_comes_from(): void
     {
