@@ -5,6 +5,9 @@ namespace App\Support;
 use App\Models\BarcodeCost;
 use App\Models\BoningItem;
 use App\Models\Costing;
+use App\Models\Repack;
+use App\Models\RepackMaterial;
+use App\Services\RepackValuator;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -105,11 +108,15 @@ class BarcodeCosts
         return DB::transaction(function () use ($costing): int {
             $hpp = $costing->items()->pluck('hpp_per_kg', 'product_id')->map(fn ($v) => (float) $v);
             $changed = 0;
+            $valued = [];
 
+            // Tahap 1: nilai SEMUA barcode lot ini dulu. Tahap 2: baru rambatkan --
+            // repack yang memakai banyak barcode lot ini cukup dihitung sekali per
+            // barcode, dan tidak sempat `pending` di tengah jalan.
             BoningItem::where('boning_id', $costing->boning_id)
                 ->whereNotNull('barcode')
                 ->get(['id', 'barcode', 'product_id'])
-                ->each(function (BoningItem $item) use ($costing, $hpp, &$changed): void {
+                ->each(function (BoningItem $item) use ($costing, $hpp, &$changed, &$valued): void {
                     if (! $hpp->has($item->product_id)) {
                         self::ensure($item->barcode, $item->product_id, BarcodeCost::SOURCE_BONING);
 
@@ -120,8 +127,12 @@ class BarcodeCosts
                         $changed++;
                     }
 
-                    $changed += self::propagateFrom($item->barcode);
+                    $valued[] = $item->barcode;
                 });
+
+            foreach ($valued as $barcode) {
+                $changed += self::propagateFrom($barcode);
+            }
 
             return $changed;
         });
@@ -175,6 +186,15 @@ class BarcodeCosts
             }
 
             $changed += self::propagateFrom($child->barcode, $depth + 1, $visited);
+        }
+
+        // Repack TERKUNCI yang memakai barcode ini sebagai bahan dihitung ulang
+        // (harga acuannya sudah terkunci; hanya biaya bahannya yang berubah), dan
+        // hasilnya merambat lagi ke repack berikutnya.
+        $repackIds = RepackMaterial::where('barcode', $barcode)->pluck('repack_id')->unique();
+
+        foreach (Repack::whereIn('id', $repackIds)->where('kunci', true)->get() as $repack) {
+            $changed += RepackValuator::recalculate($repack, $depth, $visited);
         }
 
         return $changed;

@@ -120,6 +120,12 @@ class Repack extends Model
      * juga bisa punya baris kerugian bahan terbuang (`Material Waste`); tanpa
      * batas ini `financialLoss()->delete()` ikut menghapusnya.
      */
+    /** Snapshot valuasi (HPP tahap 2, issue #522); ada sejak repack dikunci. */
+    public function valuation(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(RepackValuation::class);
+    }
+
     public function financialLoss(): MorphOne
     {
         return $this->morphOne(FinancialLoss::class, 'lossable')
@@ -362,12 +368,13 @@ class Repack extends Model
             // ulang setiap kali dibaca -- pola yang sama dengan susut kirim
             // (DeliveryOrder) dan susut timbang sapi (CattleWeighing).
             //
-            // `amount` MASIH nol, dan itu disengaja. Menilai susut repack
-            // dengan harga jual melebih-lebihkan: perusahaan tidak kehilangan
-            // sebesar harga jual, melainkan sebesar modalnya ditambah margin
-            // yang tidak jadi didapat. Angka yang benar HPP, dan HPP menunggu
-            // B.O.M. Saat itu tiba, rupiahnya tinggal `quantity x HPP` dari
-            // kolom ini -- tanpa menggali ulang catatan lama.
+            // `amount` ditulis nol di sini; nilai rupiahnya diisi oleh
+            // `RepackValuator::lock()` di bawah (HPP tahap 2, issue #522): susut
+            // x rata-rata harga pokok bahan. Selama ada bahan yang belum bernilai
+            // `amount` tetap nol dan baris ini ditandai "belum ada harga"
+            // (`isNotPricedYet()`); dihitung otomatis begitu semua bahan bernilai.
+            // Menilai dengan harga jual melebih-lebihkan kerugian, jadi yang
+            // dipakai harga pokok.
             //
             // Syaratnya berat susut (`shrinkWeight() > 0`), bukan rupiah --
             // rupiahnya memang akan selalu nol sampai HPP ada, jadi memakai
@@ -397,6 +404,10 @@ class Repack extends Model
             }
 
             $locked->finaliseMaterialRecord();
+
+            // Menilai hasilnya, dan mengisi `amount` kerugian susut (HPP tahap 2,
+            // issue #522). Bahan yang belum bernilai: hasilnya menunggu.
+            \App\Services\RepackValuator::lock($locked);
 
             $this->kunci = true;
             $this->status = 'LOCKED';
@@ -477,6 +488,7 @@ class Repack extends Model
             }
 
             $this->financialLoss()->delete();
+            \App\Services\RepackValuator::release($locked);
             $locked->releaseMaterialRecord();
 
             $locked->forceFill([
