@@ -192,3 +192,40 @@ Dicatat supaya tidak ditemukan ulang dan dikira cacat implementasi (lihat
 (langkah 1); `lock_costings` (langkah 2, sengaja ditunda migrasinya sampai
 ada UI yang membacanya -- pola `view_deleted_*` yang sudah ada di modul
 lain).
+
+## 12. Tahap 2: nilai per barcode, repack, laporan (issue #522)
+
+Ditulis 11 Oktober 2026 (PR #523-#526). Penjelasan lengkap dan keputusan Owner ada
+di `.agents/hpp.md` §17; ini ringkasan modulnya.
+
+- **`barcode_costs`**: satu baris per barcode di mana pun ia berada -- `barcode`
+  (unik), `product_id`, `cost_per_kg` (**nullable**, NULL = belum bernilai),
+  `source_type` (`boning`, `goods_receipt`, `repack`, `relabel`, `sales_return`,
+  `stock_take`, `opening`), `source_id`, `source_barcode` (asal relabel, dipakai
+  rambatan), `valued_at`, `note`. LogsActivity (`barcode_costs`). Dibaca dan ditulis
+  HANYA lewat `App\Support\BarcodeCosts`.
+- **Costing dikunci** (`Costing::lock`, satu transaksi) mengisi semua barcode boning
+  lot itu dengan `hpp_per_kg` produknya -- mundur, termasuk yang sudah terjual atau
+  jadi bahan repack. Dikunci ulang menimpa dan merambat; unlock membiarkan nilai
+  sampai dikunci ulang.
+- **Sumber lain:** GR Beef = harga PO per kg; retur dan temuan opname = nilai barcode
+  itu sendiri bila sudah dikenal, selain itu rata-rata tertimbang harga pokok produk
+  di stok (NULL bila tidak ada stok bernilai); relabel menyalin barcode asal;
+  mutasi tidak menyentuh. Stok awal: `BarcodeCosts::valueOpeningStock()`.
+- **Repack** (`RepackValuator`, dijalankan `Repack::lock`): biaya bahan, susut x
+  rata-rata harga pokok bahan menjadi `amount` Financial Loss repack, sisa biaya
+  dibagi ke hasil menurut nilai jual acuan (`ReferencePrice`, harga dikunci di
+  `repack_valuation_prices`). Hasil tanpa harga acuan -> dibagi menurut berat,
+  `needs_review`. Bahan belum bernilai -> `pending`, dihitung otomatis lewat rambatan.
+  Blok "Valuasi Repack" tampil di halaman Material Usage Repack yang terkunci.
+- **Layar Nilai Barcode** (izin `manage_barcode_costs`): isi manual barcode yang belum
+  bernilai, dan tombol "Nilai stok awal".
+- **Laporan** (izin `view_cost_reports`, grup REPORTS): Nilai Stok (per gudang x produk;
+  barcode belum bernilai dipisah) dan HPP Penjualan (per periode, surat jalan, invoice,
+  customer, produk; HPP dibaca saat laporan dibuat; margin hanya bila ditagih dan
+  semua barcode bernilai). Excel dan PDF mengikuti filter.
+- **Penjaga:** `BarcodeCostGuardTest` -- setiap berkas yang memanggil `BeefStock::create(`
+  harus memanggil `BarcodeCosts::` atau terdaftar dengan alasannya.
+
+Catatan atas §10 di atas: butir "nilai rupiah barang retur" sebagian terjawab -- barcode
+yang kembali kini bernilai. Yang belum: kerugian retur (selisih klaim-fisik) dalam rupiah.

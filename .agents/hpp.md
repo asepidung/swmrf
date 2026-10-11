@@ -871,3 +871,79 @@ lewat `k` yang dibagi bersama -- inilah kenapa `Product::booted()` menolak
 `costing_customer_group_id` yang menunjuk grup dengan
 `is_costing_reference = false` (bagian 9, batasan yang harus "ditegakkan
 kode, bukan diserahkan pada kebiasaan").
+
+---
+
+## 17. Tahap 2: nilai per barcode dan harga pokok repack (issue #522)
+
+Keputusan Owner 7-11 Oktober 2026 (lewat Hafizh), dibangun dalam lima PR
+(#523-#526 kode, PR ini dokumentasi). Tahap 1 (§16) menghitung HPP per LOT
+boning; tahap 2 membawa nilai itu ke setiap BARCODE yang lahir dari lot itu,
+sampai ke stok, repack, dan penjualan.
+
+**Keputusan Owner (butir 1-6 di body #522), ringkas:**
+
+1. Tiap barcode punya harga pokok per kg. Barcode boning bernilai saat costing
+   dikunci -- MUNDUR, termasuk yang sudah terjual atau jadi bahan repack.
+   Sebelum itu barcode boleh belum bernilai (NULL, bukan 0).
+2. Costing di-unlock lalu dikunci ulang: nilai baru menimpa barcode lot itu dan
+   semua turunannya (relabel, repack, penjualan); tercatat di activity log.
+3. GR Beef = harga beli per kg di PO. Retur jual = nilai barcode asal; tanpa
+   barcode jelas = rata-rata harga pokok produk di stok. Temuan opname =
+   rata-rata produk. Mutasi dan relabel mengikuti barcode.
+4. Harga pokok penjualan per barcode (identifikasi khusus), bukan rata-rata.
+5. Repack: susut = Financial Loss rupiah dinilai rata-rata harga pokok bahan;
+   sisa biaya dibagi ke hasil menurut nilai jual (harga acuan produk). Harga
+   dikunci saat repack dikunci; hasil tanpa harga dibagi menurut berat dan
+   ditandai; bahan belum bernilai -> nilai repack menunggu, dihitung otomatis.
+6. BOM belum masuk HPP; overhead hanya memotong laba.
+7. Stok awal saat go-live (11 Okt): barcode di stok yang belum punya baris
+   dinilai `hpp_per_kg` produknya dari costing TERKUNCI terakhir; produk yang
+   belum pernah di-costing -> NULL, diisi manual accounting lewat layar kecil.
+
+**Di mana di kode:**
+
+| Hal | Tempat |
+|---|---|
+| Tabel `barcode_costs` (satu baris per barcode), model `BarcodeCost` | PR #523 |
+| Satu rumah baca/tulis nilai: `App\Support\BarcodeCosts` | PR #523, #524 |
+| Isi saat costing dikunci (`Costing::lock`), rambatan relabel | PR #523 |
+| GR Beef, retur, temuan opname, stok awal; layar Nilai Barcode | PR #524 |
+| `RepackValuator`, `repack_valuations`, `repack_valuation_prices` | PR #525 |
+| `ReferencePrice` (harga acuan; dipakai costing dan repack) | PR #525 |
+| `CostReports`, laporan Nilai Stok dan HPP Penjualan | PR #526 |
+
+**Aturan yang gampang terlewat:**
+
+- **NULL tidak pernah dianggap nol.** `BarcodeCosts::for()` mengembalikan null untuk
+  barcode yang belum bernilai atau tidak dikenal; laporan memisahkannya
+  (jumlah barcode dan kg), dan margin baris yang HPP-nya belum lengkap tidak dihitung.
+- **Repack:** biaya bahan = Σ kg x nilai barcode bahan. Susut (kg bahan - kg hasil,
+  bila > 0) x rata-rata harga pokok bahan = `amount` baris Financial Loss repack
+  (#385). Sisa biaya dibagi menurut nilai jual: nilai hasil = net x k, k = sisa biaya /
+  Σ(net x kg hasil), presisi penuh sampai perkalian akhir (§11.3). Contoh Owner:
+  TL 10 kg @100.000 + CR 10 kg @80.000 = 1.800.000; hasil TL 9, CR 9, FQ 1; susut 1 kg
+  -> kerugian 90.000, sisa 1.710.000, net 140.000/110.000/50.000 -> TL 104.087,
+  CR 81.783, FQ 37.174 (dibulatkan), Σ kg x nilai = 1.710.000. Angka ini lulus tanpa
+  menyesuaikan test.
+- **Harga acuan repack dikunci** saat repack dikunci (`repack_valuation_prices`); hitung
+  ulang karena bahan berubah nilai memakai harga terkunci itu.
+- **Rambatan:** `BarcodeCosts::propagateFrom` menyebarkan nilai ke turunan relabel DAN
+  menghitung ulang repack terkunci yang memakai barcode itu, berantai, dibatasi
+  `MAX_DEPTH` (10) dan kebal putaran. Idempoten: menulis nilai yang sama tidak
+  mengubah baris dan tidak menambah log.
+- **Repack yang dikunci sebelum tahap 2** belum punya valuasi; valuasinya (dengan harga
+  acuan saat itu) baru lahir ketika salah satu bahannya mendapat nilai.
+- **Penanda "stok awal"** tidak ada di data: stok awal = barcode IN_STOCK yang belum
+  punya baris saat tombol "Nilai stok awal" dijalankan di layar Nilai Barcode.
+- **HPP penjualan dibaca saat laporan dibuat**, tidak di-snapshot di DO/Invoice -- supaya
+  pengisian mundur langsung tercermin. Retur belum memengaruhi laporan.
+
+**Yang SENGAJA belum:** kerugian retur dalam rupiah (selisih klaim-fisik), BOM masuk
+HPP (§12.3, menunggu accounting), dan data grup/price list/trading terms yang menunggu
+import -- tanpa itu produk bertanda `NO_PRICE`/`NO_REFERENCE` dan repack
+`needs_review`.
+
+**Izin baru** (dibuat lewat migrasi, belum dilekatkan; `tertunda.md` §G):
+`manage_barcode_costs` (layar Nilai Barcode: isi manual, nilai stok awal) dan
+`view_cost_reports` (dua laporan).
