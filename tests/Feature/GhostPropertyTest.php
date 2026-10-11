@@ -147,6 +147,12 @@ class GhostPropertyTest extends TestCase
             // untuk lencana ikon tombol BOM (#507), tanpa query per baris.
             'bill_of_materials_count',
 
+            // Alias `selectRaw` di `CostReports::stockValue()` (laporan Nilai Stok,
+            // HPP tahap 2): kg dan barcode yang bernilai / belum bernilai.
+            'valued_kg',
+            'unvalued_kg',
+            'unvalued_barcodes',
+
             // Alias `withSum` di BankAccountResource.
             'transactions_in_sum',
             'transactions_out_sum',

@@ -7636,3 +7636,20 @@ rambatan relabel. Repack, laporan, GR/retur/opname menyusul di PR berikutnya.
   (belum ada halaman View Repack terpisah).
 - Penjaga `BarcodeCostGuardTest`: `InputHasilRepack` sudah tidak menunggu (baris lahir lewat
   `RepackResult::created`); daftar menunggu kosong.
+
+## HPP tahap 2, PR 4 -- laporan Nilai Stok dan HPP Penjualan (#522), 11 Oktober 2026
+
+- **Satu rumah angka:** `App\Services\CostReports` (`stockValue`, `salesCost`); halaman
+  `StockValueReport` dan `SalesCostReport` hanya menggambar. Izin baru `view_cost_reports`
+  (migrasi; `tertunda.md` §G). Excel dan PDF mengikuti filter.
+- **Nilai Stok:** `beef_stocks` IN_STOCK per gudang x produk: barcode, kg, nilai (Σ kg x
+  `cost_per_kg`), serta barcode dan kg yang BELUM bernilai -- dipisah, tidak pernah dihitung
+  nol. Barcode tanpa baris sama sekali ikut dihitung "belum bernilai".
+- **HPP Penjualan:** per periode (tanggal surat jalan, batas ikut; bawaan bulan berjalan)
+  per surat jalan x produk. HPP = Σ kg barcode di tally surat jalan x harga pokok barcode
+  itu (identifikasi khusus), DIBACA SAAT LAPORAN DIBUAT -- tidak ada snapshot di DO/Invoice,
+  jadi pengisian mundur langsung tercermin. Penjualan = jumlah `invoice_items.amount` produk
+  itu pada invoice surat jalan tersebut (DO -> bukti terima -> invoice).
+- **Margin:** hanya bila surat jalan sudah ditagih DAN semua barcode-nya bernilai; selain itu
+  NULL ("-"). Ringkasan menghitung berapa baris tanpa margin. Retur belum memengaruhi laporan.
+- **Per customer dan per produk:** ringkasan dari baris yang sama (jumlahnya sama dengan total).
