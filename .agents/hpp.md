@@ -897,9 +897,13 @@ sampai ke stok, repack, dan penjualan.
    dikunci saat repack dikunci; hasil tanpa harga dibagi menurut berat dan
    ditandai; bahan belum bernilai -> nilai repack menunggu, dihitung otomatis.
 6. BOM belum masuk HPP; overhead hanya memotong laba.
-7. Stok awal saat go-live (11 Okt): barcode di stok yang belum punya baris
-   dinilai `hpp_per_kg` produknya dari costing TERKUNCI terakhir; produk yang
-   belum pernah di-costing -> NULL, diisi manual accounting lewat layar kecil.
+7. Stok lama yang belum bernilai ("hajar semua", 12 Okt -- MENGGANTIKAN aturan 11 Okt
+   yang memakai tombol dan layar isian manual): begitu sebuah costing dikunci, stok
+   produk-produk costing itu yang masih belum bernilai (belum punya baris, atau baris
+   NULL) otomatis diberi `hpp_per_kg` costing itu. Hanya yang masih ADA DI STOK; yang
+   sudah terjual tidak disentuh. Yang sudah punya nilai tidak ditimpa costing berikutnya;
+   hasil repack dibiarkan (milik valuasi repack). Sementara, sampai data migrasi dan
+   costing lain melengkapi. Tidak ada layar isian manual.
 
 **Di mana di kode:**
 
@@ -908,7 +912,7 @@ sampai ke stok, repack, dan penjualan.
 | Tabel `barcode_costs` (satu baris per barcode), model `BarcodeCost` | PR #523 |
 | Satu rumah baca/tulis nilai: `App\Support\BarcodeCosts` | PR #523, #524 |
 | Isi saat costing dikunci (`Costing::lock`), rambatan relabel | PR #523 |
-| GR Beef, retur, temuan opname, stok awal; layar Nilai Barcode | PR #524 |
+| GR Beef, retur, temuan opname; stok lama dinilai saat costing dikunci (`valueUnvaluedStock`) | PR #524, disempurnakan 12 Okt |
 | `RepackValuator`, `repack_valuations`, `repack_valuation_prices` | PR #525 |
 | `ReferencePrice` (harga acuan; dipakai costing dan repack) | PR #525 |
 | `CostReports`, laporan Nilai Stok dan HPP Penjualan | PR #526 |
@@ -934,8 +938,11 @@ sampai ke stok, repack, dan penjualan.
   mengubah baris dan tidak menambah log.
 - **Repack yang dikunci sebelum tahap 2** belum punya valuasi; valuasinya (dengan harga
   acuan saat itu) baru lahir ketika salah satu bahannya mendapat nilai.
-- **Penanda "stok awal"** tidak ada di data: stok awal = barcode IN_STOCK yang belum
-  punya baris saat tombol "Nilai stok awal" dijalankan di layar Nilai Barcode.
+- **Stok lama yang belum bernilai** dinilai OTOMATIS oleh `Costing::lock()` lewat
+  `BarcodeCosts::valueUnvaluedStock` (sumber `opening`, `source_id` = costing itu). Dikunci
+  ulang, nilai yang diisi costing itu sendiri ikut diperbarui; yang diisi costing lain tidak.
+  Layar "Nilai Barcode" dan izin `manage_barcode_costs` sempat ada (PR #524) lalu DIBUANG
+  12 Okt -- Owner: nilai cukup datang dari costing, tanpa layar isian manual.
 - **HPP penjualan dibaca saat laporan dibuat**, tidak di-snapshot di DO/Invoice -- supaya
   pengisian mundur langsung tercermin. Retur belum memengaruhi laporan.
 
@@ -945,5 +952,4 @@ import -- tanpa itu produk bertanda `NO_PRICE`/`NO_REFERENCE` dan repack
 `needs_review`.
 
 **Izin baru** (dibuat lewat migrasi, belum dilekatkan; `tertunda.md` §G):
-`manage_barcode_costs` (layar Nilai Barcode: isi manual, nilai stok awal) dan
-`view_cost_reports` (dua laporan).
+`view_cost_reports` (dua laporan). (`manage_barcode_costs` dibuang 12 Okt bersama layarnya.)

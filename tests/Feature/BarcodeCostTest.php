@@ -290,4 +290,123 @@ class BarcodeCostTest extends TestCase
 
         $this->assertNull($this->cost('TL-1'));
     }
+
+    // ---------------------------------------------------------------------
+    // "Hajar semua": stok produk yang sama yang belum bernilai ikut diberi
+    // HPP costing yang dikunci (keputusan Owner, 12 Oktober 2026)
+    // ---------------------------------------------------------------------
+
+    /** Stok di tangan; $cost false = barcode belum punya baris sama sekali. */
+    private function stock(string $barcode, \App\Models\Product $product, float|false|null $cost, string $source = 'boning', string $status = 'IN_STOCK'): void
+    {
+        $warehouse = \App\Models\Warehouse::firstOrCreate(['code' => 'JGL'], ['name' => 'JONGGOL', 'is_active' => true]);
+        $grade = \App\Models\Grade::firstOrCreate(['name' => 'CHILL'], ['is_active' => true]);
+
+        \App\Models\BeefStock::create([
+            'barcode' => $barcode, 'product_id' => $product->id, 'warehouse_id' => $warehouse->id, 'grade_id' => $grade->id,
+            'weight' => 10, 'qty_pcs' => 1, 'pack_date' => now()->toDateString(), 'origin' => '1', 'status' => $status,
+        ]);
+
+        if ($cost !== false) {
+            BarcodeCost::updateOrCreate(['barcode' => $barcode], ['product_id' => $product->id, 'cost_per_kg' => $cost, 'source_type' => $source]);
+        }
+    }
+
+    /** @test */
+    public function locking_a_costing_also_values_unvalued_stock_of_the_same_product(): void
+    {
+        $this->stock('OLD-1', $this->tenderloin, null);     // ada baris, belum bernilai
+        $this->stock('OLD-2', $this->tenderloin, false);    // stok migrasi, belum punya baris
+        $boning = $this->boning();
+        $this->label($boning, $this->tenderloin, 'TL-1');
+
+        $this->costing($boning, [$this->tenderloin->id => 90000.0])->lock();
+
+        $this->assertSame(90000.0, $this->cost('OLD-1'));
+        $this->assertSame(90000.0, $this->cost('OLD-2'));
+        $this->assertSame(BarcodeCost::SOURCE_OPENING, BarcodeCost::where('barcode', 'OLD-2')->value('source_type'));
+    }
+
+    /** @test */
+    public function stock_that_already_has_a_value_is_not_overwritten(): void
+    {
+        $this->stock('KNOWN', $this->tenderloin, 70000.0);
+        $boning = $this->boning();
+        $this->label($boning, $this->tenderloin, 'TL-1');
+
+        $this->costing($boning, [$this->tenderloin->id => 90000.0])->lock();
+
+        $this->assertSame(70000.0, $this->cost('KNOWN'));
+    }
+
+    /** @test */
+    public function only_stock_still_in_the_warehouse_and_only_products_of_the_costing_are_valued(): void
+    {
+        $this->stock('SOLD', $this->tenderloin, null, 'boning', 'SHIPPED');
+        $this->stock('OTHER-PRODUCT', $this->cube, null);
+        $boning = $this->boning();
+        $this->label($boning, $this->tenderloin, 'TL-1');
+
+        $this->costing($boning, [$this->tenderloin->id => 90000.0])->lock();
+
+        $this->assertNull($this->cost('SOLD'), 'Yang sudah keluar dari stok tidak disentuh.');
+        $this->assertNull($this->cost('OTHER-PRODUCT'), 'Produk lain tidak disentuh.');
+    }
+
+    /** @test */
+    public function an_unvalued_repack_result_is_left_to_the_repack_valuation(): void
+    {
+        $this->stock('REPACK-OUT', $this->tenderloin, null, BarcodeCost::SOURCE_REPACK);
+        $boning = $this->boning();
+        $this->label($boning, $this->tenderloin, 'TL-1');
+
+        $this->costing($boning, [$this->tenderloin->id => 90000.0])->lock();
+
+        $this->assertNull($this->cost('REPACK-OUT'), 'Nilai hasil repack milik valuasi repack, yang menunggu bahannya.');
+    }
+
+    /** @test */
+    public function the_unvalued_stock_follows_the_costing_when_it_is_locked_again(): void
+    {
+        $this->stock('OLD-1', $this->tenderloin, false);
+        $boning = $this->boning();
+        $this->label($boning, $this->tenderloin, 'TL-1');
+        $costing = $this->costing($boning, [$this->tenderloin->id => 90000.0]);
+        $costing->lock();
+
+        $costing->unlock();
+        $costing->items()->update(['hpp_per_kg' => 100000]);
+        $costing->fresh()->lock();
+
+        $this->assertSame(100000.0, $this->cost('OLD-1'), 'Nilai yang diisi costing ini sendiri ikut diperbarui.');
+    }
+
+    /** @test */
+    public function a_newer_costing_does_not_overwrite_stock_valued_by_an_older_one(): void
+    {
+        $this->stock('OLD-1', $this->tenderloin, false);
+        $first = $this->boning();
+        $this->label($first, $this->tenderloin, 'TL-A');
+        $this->costing($first, [$this->tenderloin->id => 90000.0])->lock();
+
+        $second = $this->boning();
+        $this->label($second, $this->tenderloin, 'TL-B');
+        $this->costing($second, [$this->tenderloin->id => 120000.0])->lock();
+
+        $this->assertSame(90000.0, $this->cost('OLD-1'), 'Sudah punya nilai: tidak ditimpa costing berikutnya.');
+        $this->assertSame(120000.0, $this->cost('TL-B'));
+    }
+
+    /** @test */
+    public function the_stock_valued_this_way_spreads_to_its_relabels(): void
+    {
+        $this->stock('OLD-1', $this->tenderloin, null);
+        BarcodeCosts::relabel('OLD-1', 'OLD-1-R', $this->tenderloin->id);
+        $boning = $this->boning();
+        $this->label($boning, $this->tenderloin, 'TL-1');
+
+        $this->costing($boning, [$this->tenderloin->id => 90000.0])->lock();
+
+        $this->assertSame(90000.0, $this->cost('OLD-1-R'));
+    }
 }
