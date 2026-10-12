@@ -7674,3 +7674,16 @@ dipakai ke produk-produk boning itu; barang lama yang belum punya harga untuk se
 - **Data migrasi:** stok impor tanpa baris `barcode_costs` dihitung "belum bernilai" di
   laporan, lalu dinilai otomatis begitu costing pertama produknya dikunci.
 - Tabel `barcode_costs` dan laporan Nilai Stok / HPP Penjualan tetap ada -- laporan membacanya.
+
+## Valuasi repack: aturan final "ikut-produk", 12 Oktober 2026 (menggantikan bagi-nilai-jual #525)
+
+Keputusan Owner (komentar "ATURAN FINAL" di #522). `RepackValuator` ditulis ulang; skema:
+`repack_valuation_prices` kini hanya snapshot nilai stok produk baru/kelebihan
+(`stock_cost_per_kg`), `repack_valuations` kehilangan `ratio_k` dan mendapat
+`new_product_value` dan `difference_value` (migrasi `2026_10_12_110000`). Aturan lengkap:
+`hpp.md` §17 butir 8. `ReferencePrice` tinggal dipakai `CostingCalculator`.
+
+- **Selisih satu sen pada contoh Owner:** TDR 105.697,38 (presisi penuh) vs 105.697,39 di komentar #522. Hafizh: angka di komentar salah 1 sen karena share dibulatkan terlalu dini; yang benar presisi penuh sampai cost per kg akhir (sama seperti `CostingCalculator`, hpp.md §11.3) -> 105.697,38.
+- **Satu produk hasil = satu cost per kg** untuk semua barcodenya (nilai produk / `out_i`).
+- **Pemeriksaan wajib** (Σ nilai hasil + susut = biaya bahan): dikerjakan di test dan di kode
+  (meleset di atas toleransi pembulatan -> `needs_review`).

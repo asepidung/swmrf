@@ -66,7 +66,7 @@ class MaterialUsageRepack extends EditRecord
 
         return [
             Forms\Components\Section::make(__('Repack Valuation'))
-                ->description(__('Cost of the input goods, the shrinkage loss, and how the remaining cost is split over the results by their reference sales value.'))
+                ->description(__('Cost of the input goods, the shrinkage loss, and the value carried by each result.'))
                 ->schema([
                     Forms\Components\View::make('filament.partials.repack-valuation')
                         ->viewData(fn (): array => $this->valuationData()),
@@ -79,11 +79,9 @@ class MaterialUsageRepack extends EditRecord
     {
         $repack = $this->getRecord()->fresh();
         $valuation = $repack->valuation;
-        $net = $valuation ? $valuation->prices->pluck('net_price', 'product_id') : collect();
-
         $lines = $repack->results()->with('product')->get()
             ->groupBy('product_id')
-            ->map(function ($group) use ($net): array {
+            ->map(function ($group): array {
                 $kg = (float) $group->sum('weight');
                 $values = $group->map(fn ($result) => \App\Support\BarcodeCosts::valueOf($result->barcode, (float) $result->weight));
                 $valued = $values->every(fn ($value) => $value !== null);
@@ -91,7 +89,6 @@ class MaterialUsageRepack extends EditRecord
                 return [
                     'product' => $group->first()->product?->name ?? '-',
                     'kg' => $kg,
-                    'net' => $net->get($group->first()->product_id),
                     'cost_per_kg' => $valued && $kg > 0 ? $values->sum() / $kg : null,
                     'value' => $valued ? $values->sum() : null,
                 ];

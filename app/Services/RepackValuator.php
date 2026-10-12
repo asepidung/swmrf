@@ -4,57 +4,69 @@ namespace App\Services;
 
 use App\Models\BarcodeCost;
 use App\Models\FinancialLoss;
-use App\Models\Product;
 use App\Models\Repack;
 use App\Models\RepackValuation;
 use App\Support\BarcodeCosts;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Menilai sebuah repack yang dikunci (HPP tahap 2, issue #522, keputusan Owner 5).
+ * Menilai sebuah repack yang dikunci -- ATURAN FINAL (keputusan Owner, 12 Oktober
+ * 2026, issue #522; menggantikan bagi-nilai-jual). Prinsip: hasil akhir harus
+ * cocok dengan bahan, kilo DAN rupiah.
  *
- *  1. Biaya bahan = jumlah (kg bahan x harga pokok per kg barcodenya).
- *  2. Susut = kg bahan - kg hasil (bila > 0), dinilai dengan RATA-RATA harga
- *     pokok bahan (biaya bahan / kg bahan). Nilainya menjadi `amount` baris
- *     Financial Loss repack yang sudah ada.
- *  3. Sisa biaya (biaya bahan - nilai susut) dibagi ke hasil menurut NILAI JUAL
- *     (`ReferencePrice`, harga acuan DIKUNCI di `repack_valuation_prices`):
- *     `cost_per_kg` hasil = net x k, k = sisa biaya / jumlah(net x kg hasil).
- *     Presisi penuh sampai perkalian akhir (hpp.md §11.3); yang dibulatkan hanya
- *     nilai tersimpan per barcode.
- *  4. Ada hasil tanpa harga acuan -> seluruh hasil dibagi menurut BERAT (satu
- *     `cost_per_kg` untuk semua), repack ditandai `needs_review`.
- *  5. Ada bahan yang belum bernilai -> repack `pending`, hasilnya NULL; dihitung
- *     otomatis begitu semua bahannya bernilai (`recalculate`, dipanggil
- *     rambatan `BarcodeCosts::propagateFrom`).
+ * Per produk i: `in_i` kg bahan, `out_i` kg hasil produk yang sama, `c_i` rata-rata
+ * tertimbang `cost_per_kg` barcode bahan produk i.
  *
- * Harga acuan dikunci saat repack dikunci (`lock`); penghitungan ulang karena
- * bahannya berubah nilai memakai harga yang sudah terkunci itu -- hanya biaya
- * bahannya yang berubah.
+ *  1. IKUT PRODUK: `pass_i = min(in_i, out_i)` kg hasil membawa `c_i`.
+ *  2. SUSUT = jumlah in - jumlah out (bila > 0) -> `amount` Financial Loss repack
+ *     (#385) = susut x rata-rata harga pokok SELURUH bahan.
+ *  3. PRODUK BARU / KILO KELEBIHAN (`out_i - pass_i`, termasuk produk yang tidak ada
+ *     di bahan) -> nilainya rata-rata tertimbang `cost_per_kg` produk itu di stok
+ *     (barcode bernilai) saat repack dikunci, DI-SNAPSHOT. Tidak ada -> rata-rata
+ *     harga pokok bahan + `needs_review`.
+ *  4. SELISIH = jumlah (in_i - pass_i) x c_i (biaya kilo bahan yang terpakai/berubah)
+ *     - nilai produk baru - nilai susut. TIDAK jadi Financial Loss. Dibagi ke produk
+ *     bahan menurut porsi biaya terpakainya: `share_i = selisih x terpakai_i / jumlah
+ *     terpakai`.
+ *       - produk i masih punya hasil (`pass_i > 0`): `share_i` ditambahkan ke nilai
+ *         produk itu ("ditanggung produk yang disesetan");
+ *       - produk i habis terpakai (`pass_i = 0`): `share_i` dibagi ke produk baru /
+ *         kelebihan menurut kg.
+ *     Cost per kg hasil = nilai produk / `out_i`, sama untuk semua barcode produk itu.
+ *  5. PEMERIKSAAN: jumlah nilai hasil + nilai susut = jumlah biaya bahan (toleransi
+ *     pembulatan); kalau meleset, `needs_review`.
+ *
+ * `needs_review` juga bila: ada nilai stok produk baru yang tidak ada (memakai
+ * rata-rata bahan), ada cost per kg yang jadi <= 0, atau selisih tidak punya tempat
+ * (tidak ada produk baru/kelebihan untuk menampung bagian produk yang habis -- dibagi
+ * ke semua hasil menurut kg).
+ *
+ * Bahan yang belum bernilai -> `pending`, hasilnya NULL; dihitung otomatis begitu
+ * semua bahannya bernilai (`recalculate`, dipanggil rambatan `BarcodeCosts::propagateFrom`).
+ * Nilai stok produk baru dikunci saat repack dikunci (`lock`); hitung ulang karena
+ * bahan berubah nilai memakai snapshot itu.
  *
  * Idempoten, dan tidak menyentuh stok.
  */
 class RepackValuator
 {
-    /**
-     * Repack baru dikunci: kunci harga acuan, lalu nilai.
-     */
+    /** Repack baru dikunci: snapshot nilai stok produk baru, lalu nilai. */
     public static function lock(Repack $repack): void
     {
         DB::transaction(function () use ($repack): void {
             $valuation = $repack->valuation()->firstOrNew();
             $valuation->fill(['total_input_kg' => 0, 'status' => RepackValuation::STATUS_PENDING])->save();
 
-            self::lockPrices($valuation, $repack);
+            self::snapshotStockCosts($valuation, $repack->fresh());
 
-            self::compute($repack->fresh(), $valuation, 0, []);
+            self::compute($repack->fresh(), $valuation->fresh(), 0, []);
         });
     }
 
     /**
-     * Bahannya berubah nilai: hitung ulang dengan harga acuan yang sudah
-     * terkunci. Repack yang dikunci SEBELUM valuasi ada belum punya harga
-     * terkunci -- harga dikunci sekarang.
+     * Bahannya berubah nilai: hitung ulang dengan snapshot nilai stok yang sudah
+     * terkunci. Repack yang dikunci SEBELUM valuasi ada belum punya snapshot --
+     * dibuat sekarang.
      *
      * @param  array<int, string>  $visited
      * @return int jumlah barcode yang nilainya berubah
@@ -70,7 +82,7 @@ class RepackValuator
 
             if (! $valuation) {
                 $valuation = $repack->valuation()->create(['total_input_kg' => 0, 'status' => RepackValuation::STATUS_PENDING]);
-                self::lockPrices($valuation, $repack);
+                self::snapshotStockCosts($valuation, $repack);
             }
 
             return self::compute($repack, $valuation, $depth, $visited);
@@ -93,23 +105,42 @@ class RepackValuator
         });
     }
 
-    /** Kunci harga acuan setiap produk hasil. */
-    private static function lockPrices(RepackValuation $valuation, Repack $repack): void
+    /**
+     * Kilo hasil per produk yang melebihi kilo bahannya produk itu (produk baru, atau
+     * kelebihan) -- hanya soal kilo, tidak butuh nilai.
+     *
+     * @return array<int, float> product_id => kg kelebihan
+     */
+    private static function excessKg(Repack $repack): array
+    {
+        $in = $repack->materials()->get(['product_id', 'weight'])->groupBy('product_id')->map(fn ($g) => (float) $g->sum('weight'));
+        $excess = [];
+
+        foreach ($repack->results()->get(['product_id', 'weight'])->groupBy('product_id') as $productId => $group) {
+            $over = round((float) $group->sum('weight') - min((float) ($in[$productId] ?? 0), (float) $group->sum('weight')), 4);
+
+            if ($over > 0) {
+                $excess[(int) $productId] = $over;
+            }
+        }
+
+        return $excess;
+    }
+
+    /**
+     * Snapshot nilai stok tiap produk baru / kelebihan: rata-rata tertimbang
+     * `cost_per_kg` produk itu di stok saat ini, TANPA hasil repack ini sendiri.
+     */
+    private static function snapshotStockCosts(RepackValuation $valuation, Repack $repack): void
     {
         $valuation->prices()->delete();
 
-        $productIds = $repack->results()->pluck('product_id')->unique();
+        $ownBarcodes = $repack->results()->pluck('barcode')->all();
 
-        foreach (Product::whereIn('id', $productIds)->get() as $product) {
-            $reference = ReferencePrice::forProduct($product);
-
+        foreach (array_keys(self::excessKg($repack)) as $productId) {
             $valuation->prices()->create([
-                'product_id' => $product->id,
-                'reference_group_id' => $reference['reference_group_id'],
-                'gross_price' => $reference['gross_price'],
-                'trading_terms_percent' => $reference['trading_terms_percent'],
-                'net_price' => $reference['net_price'],
-                'flag' => $reference['flag'],
+                'product_id' => $productId,
+                'stock_cost_per_kg' => ($average = BarcodeCosts::averageInStock($productId, $ownBarcodes)) === null ? null : round($average, 2),
             ]);
         }
     }
@@ -120,17 +151,17 @@ class RepackValuator
      */
     private static function compute(Repack $repack, RepackValuation $valuation, int $depth, array $visited): int
     {
-        $materials = $repack->materials()->get(['barcode', 'weight']);
-        $results = $repack->results()->get(['barcode', 'product_id', 'weight']);
+        $materials = $repack->materials()->get(['barcode', 'weight', 'product_id']);
+        $results = $repack->results()->get(['barcode', 'weight', 'product_id']);
 
-        $inputKg = round((float) $materials->sum('weight'), 2);
-        $outputKg = round((float) $results->sum('weight'), 2);
-        $shrinkKg = max(0.0, round($inputKg - $outputKg, 2));
-
-        $cost = 0.0;
+        $inKg = [];
+        $inCost = [];
         $unvalued = false;
+
         foreach ($materials as $material) {
             $perKg = BarcodeCosts::for($material->barcode);
+            $pid = (int) $material->product_id;
+            $inKg[$pid] = ($inKg[$pid] ?? 0.0) + (float) $material->weight;
 
             if ($perKg === null) {
                 $unvalued = true;
@@ -138,16 +169,24 @@ class RepackValuator
                 continue;
             }
 
-            $cost += (float) $material->weight * $perKg;
+            $inCost[$pid] = ($inCost[$pid] ?? 0.0) + (float) $material->weight * $perKg;
         }
 
+        $outKg = [];
+        foreach ($results as $result) {
+            $outKg[(int) $result->product_id] = ($outKg[(int) $result->product_id] ?? 0.0) + (float) $result->weight;
+        }
+
+        $totalIn = round(array_sum($inKg), 2);
+        $totalOut = round(array_sum($outKg), 2);
+        $shrinkKg = max(0.0, round($totalIn - $totalOut, 2));
         $changed = 0;
 
         if ($unvalued) {
             $valuation->fill([
-                'total_input_kg' => $inputKg, 'total_input_cost' => null, 'shrink_kg' => $shrinkKg,
-                'shrink_value' => null, 'ratio_k' => null, 'status' => RepackValuation::STATUS_PENDING,
-                'needs_review' => false, 'valued_at' => null,
+                'total_input_kg' => $totalIn, 'total_input_cost' => null, 'shrink_kg' => $shrinkKg,
+                'shrink_value' => null, 'new_product_value' => null, 'difference_value' => null,
+                'status' => RepackValuation::STATUS_PENDING, 'needs_review' => false, 'valued_at' => null,
             ])->save();
 
             foreach ($results as $result) {
@@ -159,49 +198,107 @@ class RepackValuator
             return $changed;
         }
 
-        $averageCost = $inputKg > 0 ? $cost / $inputKg : 0.0;
-        $shrinkValueRaw = $shrinkKg * $averageCost;
-        $remaining = $cost - $shrinkValueRaw;
+        $totalCost = array_sum($inCost);
+        $averageAll = $totalIn > 0 ? $totalCost / $totalIn : 0.0;
+        $needsReview = false;
 
-        $net = $valuation->prices()->pluck('net_price', 'product_id');
-        $needsReview = $results->contains(fn ($result) => $net->get($result->product_id) === null || (float) $net->get($result->product_id) <= 0);
+        // 1. ikut produk, 3. nilai produk baru / kelebihan
+        $pass = [];
+        $excess = [];
+        $value = [];
+        $newValue = 0.0;
+        $snapshot = $valuation->prices->pluck('stock_cost_per_kg', 'product_id');
 
-        $ratioK = null;
-        $byValue = ! $needsReview;
-        $denominator = 0.0;
+        foreach ($outKg as $pid => $out) {
+            $in = $inKg[$pid] ?? 0.0;
+            $c = $in > 0 ? ($inCost[$pid] ?? 0.0) / $in : 0.0;
+            $pass[$pid] = min($in, $out);
+            $excess[$pid] = max(0.0, $out - $pass[$pid]);
 
-        if ($byValue) {
-            foreach ($results as $result) {
-                $denominator += (float) $net->get($result->product_id) * (float) $result->weight;
+            $stockCost = $snapshot->get($pid);
+            if ($excess[$pid] > 0 && $stockCost === null) {
+                $stockCost = $averageAll;
+                $needsReview = true;
             }
 
-            $byValue = $denominator > 0;
+            $excessValue = $excess[$pid] > 0 ? $excess[$pid] * (float) $stockCost : 0.0;
+            $newValue += $excessValue;
+            $value[$pid] = $pass[$pid] * $c + $excessValue;
         }
 
-        $ratioK = $byValue ? $remaining / $denominator : null;
+        // 2. susut
+        $shrinkValue = $shrinkKg * $averageAll;
 
+        // 4. selisih dan porsinya
+        $used = [];
+        foreach ($inKg as $pid => $in) {
+            $c = $in > 0 ? ($inCost[$pid] ?? 0.0) / $in : 0.0;
+            $used[$pid] = ($in - ($pass[$pid] ?? 0.0)) * $c;
+        }
+        $usedTotal = array_sum($used);
+        $difference = $usedTotal - $newValue - $shrinkValue;
+
+        $pool = 0.0;
+        if ($usedTotal > 0) {
+            foreach ($used as $pid => $usedValue) {
+                $share = $difference * $usedValue / $usedTotal;
+
+                if (($pass[$pid] ?? 0.0) > 0) {
+                    $value[$pid] += $share;
+                } else {
+                    $pool += $share;
+                }
+            }
+        } else {
+            $pool = $difference;
+        }
+
+        if (abs($pool) > 0.000001) {
+            $targets = array_filter($excess, fn ($kg) => $kg > 0);
+
+            if ($targets === []) {
+                $targets = $outKg;
+                $needsReview = true;
+            }
+
+            $targetKg = array_sum($targets);
+            foreach ($targets as $pid => $kg) {
+                $value[$pid] += $targetKg > 0 ? $pool * $kg / $targetKg : 0.0;
+            }
+        }
+
+        // nilai per kg tiap produk hasil, lalu tulis ke barcodenya
+        $reconciled = round($shrinkValue, 2);
         foreach ($results as $result) {
-            $perKg = match (true) {
-                $byValue => (float) $net->get($result->product_id) * $ratioK,
-                $outputKg > 0 => $remaining / $outputKg,
-                default => 0.0,
-            };
+            $pid = (int) $result->product_id;
+            $perKg = $outKg[$pid] > 0 ? $value[$pid] / $outKg[$pid] : 0.0;
 
+            if ($perKg <= 0) {
+                $needsReview = true;
+            }
+
+            $reconciled += (float) $result->weight * round($perKg, 2);
             $changed += self::setResult($repack, $result, $perKg, $depth, $visited);
         }
 
+        // 5. pemeriksaan: nilai hasil + susut = biaya bahan (toleransi pembulatan sen per kg)
+        if (abs($reconciled - $totalCost) > 1 + 0.005 * $totalOut) {
+            $needsReview = true;
+        }
+
         $valuation->fill([
-            'total_input_kg' => $inputKg,
-            'total_input_cost' => round($cost, 2),
+            'total_input_kg' => $totalIn,
+            'total_input_cost' => round($totalCost, 2),
             'shrink_kg' => $shrinkKg,
-            'shrink_value' => round($shrinkValueRaw, 2),
-            'ratio_k' => $ratioK === null ? null : round($ratioK, 6),
+            'shrink_value' => round($shrinkValue, 2),
+            'new_product_value' => round($newValue, 2),
+            'difference_value' => round($difference, 2),
             'status' => RepackValuation::STATUS_VALUED,
-            'needs_review' => ! $byValue,
+            'needs_review' => $needsReview,
             'valued_at' => now(),
         ])->save();
 
-        self::writeShrinkLoss($repack, round($shrinkValueRaw, 2));
+        self::writeShrinkLoss($repack, round($shrinkValue, 2));
 
         return $changed;
     }

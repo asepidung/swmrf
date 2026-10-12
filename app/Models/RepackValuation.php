@@ -22,7 +22,7 @@ class RepackValuation extends Model
 
     protected $fillable = [
         'repack_id', 'total_input_kg', 'total_input_cost', 'shrink_kg', 'shrink_value',
-        'ratio_k', 'status', 'needs_review', 'valued_at',
+        'new_product_value', 'difference_value', 'status', 'needs_review', 'valued_at',
     ];
 
     protected $casts = [
@@ -30,7 +30,8 @@ class RepackValuation extends Model
         'total_input_cost' => 'float',
         'shrink_kg' => 'float',
         'shrink_value' => 'float',
-        'ratio_k' => 'float',
+        'new_product_value' => 'float',
+        'difference_value' => 'float',
         'needs_review' => 'boolean',
         'valued_at' => 'datetime',
     ];

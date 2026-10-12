@@ -6,21 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Harga acuan per produk hasil yang dikunci saat sebuah repack dikunci
- * (HPP tahap 2, issue #522). Lihat `RepackValuation`.
+ * Snapshot nilai stok sebuah produk baru / kilo kelebihan pada saat sebuah repack
+ * dikunci (HPP tahap 2, aturan final 12 Oktober 2026). `stock_cost_per_kg` null =
+ * tidak ada stok bernilai saat itu. Lihat `RepackValuation`.
  */
 class RepackValuationPrice extends Model
 {
-    protected $fillable = [
-        'repack_valuation_id', 'product_id', 'reference_group_id', 'gross_price',
-        'trading_terms_percent', 'net_price', 'flag',
-    ];
+    protected $fillable = ['repack_valuation_id', 'product_id', 'stock_cost_per_kg'];
 
-    protected $casts = [
-        'gross_price' => 'float',
-        'trading_terms_percent' => 'float',
-        'net_price' => 'float',
-    ];
+    protected $casts = ['stock_cost_per_kg' => 'float'];
 
     public function valuation(): BelongsTo
     {
@@ -30,10 +24,5 @@ class RepackValuationPrice extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
-    }
-
-    public function referenceGroup(): BelongsTo
-    {
-        return $this->belongsTo(CustomerGroup::class, 'reference_group_id');
     }
 }

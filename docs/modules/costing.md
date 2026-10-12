@@ -212,12 +212,13 @@ di `.agents/hpp.md` §17; ini ringkasan modulnya.
   itu sendiri bila sudah dikenal, selain itu rata-rata tertimbang harga pokok produk
   di stok (NULL bila tidak ada stok bernilai); relabel menyalin barcode asal;
   mutasi tidak menyentuh. Stok lama yang belum bernilai: lihat butir berikutnya.
-- **Repack** (`RepackValuator`, dijalankan `Repack::lock`): biaya bahan, susut x
-  rata-rata harga pokok bahan menjadi `amount` Financial Loss repack, sisa biaya
-  dibagi ke hasil menurut nilai jual acuan (`ReferencePrice`, harga dikunci di
-  `repack_valuation_prices`). Hasil tanpa harga acuan -> dibagi menurut berat,
-  `needs_review`. Bahan belum bernilai -> `pending`, dihitung otomatis lewat rambatan.
-  Blok "Valuasi Repack" tampil di halaman Material Usage Repack yang terkunci.
+- **Repack** (`RepackValuator`, dijalankan `Repack::lock`; ATURAN FINAL 12 Okt, `hpp.md` §17
+  butir 8): ikut-produk (`min(in, out)` kg hasil membawa harga pokok bahan produk itu);
+  susut x rata-rata seluruh bahan = `amount` Financial Loss repack; produk baru / kilo
+  kelebihan = rata-rata stok produk itu saat dikunci (snapshot); selisih dibagi ke produk
+  bahan menurut porsi biaya terpakai (yang habis terpakai menitipkan ke produk baru).
+  Bahan belum bernilai -> `pending`, dihitung otomatis lewat rambatan. Blok "Valuasi
+  Repack" tampil di halaman Material Usage Repack yang terkunci.
 - **"Hajar semua"** (keputusan Owner 12 Okt): saat costing dikunci, stok (IN_STOCK)
   produk-produk costing itu yang masih belum bernilai ikut diberi `hpp_per_kg` costing
   itu (`BarcodeCosts::valueUnvaluedStock`). Yang sudah terjual tidak disentuh, yang sudah

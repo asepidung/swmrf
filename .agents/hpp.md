@@ -892,10 +892,23 @@ sampai ke stok, repack, dan penjualan.
    barcode jelas = rata-rata harga pokok produk di stok. Temuan opname =
    rata-rata produk. Mutasi dan relabel mengikuti barcode.
 4. Harga pokok penjualan per barcode (identifikasi khusus), bukan rata-rata.
-5. Repack: susut = Financial Loss rupiah dinilai rata-rata harga pokok bahan;
-   sisa biaya dibagi ke hasil menurut nilai jual (harga acuan produk). Harga
-   dikunci saat repack dikunci; hasil tanpa harga dibagi menurut berat dan
-   ditandai; bahan belum bernilai -> nilai repack menunggu, dihitung otomatis.
+5. Repack: susut = Financial Loss rupiah dinilai rata-rata harga pokok bahan; bahan belum
+   bernilai -> nilai repack menunggu, dihitung otomatis. Cara membagi biaya ke hasil:
+   semula menurut nilai jual (PR #525), DIGANTI 12 Okt oleh ATURAN FINAL "ikut-produk"
+   di bawah (butir 8).
+8. ATURAN FINAL valuasi repack (12 Okt; komentar "ATURAN FINAL" di #522). Prinsip: hasil
+   akhir cocok dengan bahan, kilo DAN rupiah. Per produk i: `in_i` kg bahan, `out_i` kg
+   hasil produk yang sama, `c_i` rata-rata tertimbang harga pokok barcode bahan produk i.
+   (1) Ikut produk: `pass_i = min(in_i, out_i)` kg hasil membawa `c_i`. (2) Susut = Σin -
+   Σout (bila > 0) -> `amount` Financial Loss = susut x rata-rata SELURUH bahan. (3) Produk
+   baru / kilo kelebihan (`out_i - pass_i`, termasuk produk yang tidak ada di bahan) =
+   rata-rata tertimbang harga pokok produk itu di stok saat dikunci, di-snapshot; tidak ada
+   -> rata-rata bahan + `needs_review`. (4) Selisih = Σ(in_i - pass_i) x c_i - nilai produk
+   baru - nilai susut; BUKAN Financial Loss; dibagi ke produk bahan menurut porsi biaya
+   terpakai: yang masih punya hasil (`pass_i > 0`) menanggungnya di hasilnya sendiri, yang
+   habis terpakai menitipkan bagiannya ke produk baru/kelebihan menurut kg. Selisih
+   negatif (naik kelas) diperlakukan sama; cost per kg <= 0 -> `needs_review`. (5) Pemeriksaan:
+   Σ nilai hasil + nilai susut = Σ biaya bahan (toleransi pembulatan sen).
 6. BOM belum masuk HPP; overhead hanya memotong laba.
 7. Stok lama yang belum bernilai ("hajar semua", 12 Okt -- MENGGANTIKAN aturan 11 Okt
    yang memakai tombol dan layar isian manual): begitu sebuah costing dikunci, stok
@@ -913,8 +926,8 @@ sampai ke stok, repack, dan penjualan.
 | Satu rumah baca/tulis nilai: `App\Support\BarcodeCosts` | PR #523, #524 |
 | Isi saat costing dikunci (`Costing::lock`), rambatan relabel | PR #523 |
 | GR Beef, retur, temuan opname; stok lama dinilai saat costing dikunci (`valueUnvaluedStock`) | PR #524, disempurnakan 12 Okt |
-| `RepackValuator`, `repack_valuations`, `repack_valuation_prices` | PR #525 |
-| `ReferencePrice` (harga acuan; dipakai costing dan repack) | PR #525 |
+| `RepackValuator`, `repack_valuations`, `repack_valuation_prices` | PR #525; diganti aturan final 12 Okt (migrasi `2026_10_12_110000`) |
+| `ReferencePrice` (harga acuan costing; tidak lagi dipakai repack) | PR #525 |
 | `CostReports`, laporan Nilai Stok dan HPP Penjualan | PR #526 |
 
 **Aturan yang gampang terlewat:**
@@ -922,16 +935,15 @@ sampai ke stok, repack, dan penjualan.
 - **NULL tidak pernah dianggap nol.** `BarcodeCosts::for()` mengembalikan null untuk
   barcode yang belum bernilai atau tidak dikenal; laporan memisahkannya
   (jumlah barcode dan kg), dan margin baris yang HPP-nya belum lengkap tidak dihitung.
-- **Repack:** biaya bahan = Σ kg x nilai barcode bahan. Susut (kg bahan - kg hasil,
-  bila > 0) x rata-rata harga pokok bahan = `amount` baris Financial Loss repack
-  (#385). Sisa biaya dibagi menurut nilai jual: nilai hasil = net x k, k = sisa biaya /
-  Σ(net x kg hasil), presisi penuh sampai perkalian akhir (§11.3). Contoh Owner:
-  TL 10 kg @100.000 + CR 10 kg @80.000 = 1.800.000; hasil TL 9, CR 9, FQ 1; susut 1 kg
-  -> kerugian 90.000, sisa 1.710.000, net 140.000/110.000/50.000 -> TL 104.087,
-  CR 81.783, FQ 37.174 (dibulatkan), Σ kg x nilai = 1.710.000. Angka ini lulus tanpa
-  menyesuaikan test.
-- **Harga acuan repack dikunci** saat repack dikunci (`repack_valuation_prices`); hitung
-  ulang karena bahan berubah nilai memakai harga terkunci itu.
+- **Repack (aturan final, butir 8):** contoh Owner -- bahan TDR 10 @100.000, CBR 10 @80.000,
+  STR 10 @90.000 (2.700.000); hasil TDR 8,8, CBR 10, STR 8,9, FQ 1,5 (stok FQ 37.000); susut
+  0,8 -> Financial Loss 72.000; FQ 55.500; selisih 91.500 -> TDR 105.697,38/kg, STR
+  94.647,53/kg, CBR 80.000; total 2.700.000. Contoh kedua: RUMP 10 @120.000 habis terpakai
+  -> PAHA DEPAN 9,5 kg (stok 70.000), susut 0,5 -> selisih 475.000 ditanggung PAHA DEPAN.
+  Satu produk hasil = satu cost per kg untuk semua barcodenya (nilai produk / `out_i`).
+- **Nilai stok produk baru dikunci** saat repack dikunci (`repack_valuation_prices`,
+  tanpa hasil repack itu sendiri); hitung ulang karena bahan berubah nilai memakai
+  snapshot itu. Harga acuan / bagi-nilai-jual TIDAK dipakai lagi untuk repack.
 - **Rambatan:** `BarcodeCosts::propagateFrom` menyebarkan nilai ke turunan relabel DAN
   menghitung ulang repack terkunci yang memakai barcode itu, berantai, dibatasi
   `MAX_DEPTH` (10) dan kebal putaran. Idempoten: menulis nilai yang sama tidak
