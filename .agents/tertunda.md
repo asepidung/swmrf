@@ -32,6 +32,7 @@ masih tertunda.
 | Yang tertunda | Kenapa |
 |---|---|
 | Nilai rupiah barang retur sebagai KERUGIAN | Barcode yang kembali sudah BERNILAI sejak HPP tahap 2 (#522, `hpp.md` §17): barcode lama membawa nilainya sendiri, timbang manual = rata-rata harga pokok produk di stok. Yang belum: menulis selisih klaim-fisik sebagai kerugian rupiah memakai nilai itu -- baris kerugian retur masih Rp 0 |
+| **Aturan bagi biaya repack (#525) BELUM FINAL** | #525 membagi sisa biaya ke SEMUA hasil menurut nilai jual; aturan final menunggu Owner (#522, komentar 12 Okt). Usulan Hafizh "ikut-produk dulu" (produk yang ada di bahan dan hasil membawa harga pokoknya sendiri; hanya sisa yang berubah bentuk dibagi menurut nilai jual) belum diputuskan. Jangan menganggap `RepackValuator` final; setelah diputuskan, ubah lalu Unlock/Lock ulang repack uji |
 | **Killing Lost** (Kerugian Potong) | Modulnya belum ada, dan tidak ada satu pun kode yang menulisnya |
 | **Lost Cost** (Biaya/Kerugian Lain) | Modulnya belum ada. `FinancialLossResource::canCreate()` mengembalikan `false` dan tidak punya halaman Create, jadi tidak bisa diinput manual |
 
