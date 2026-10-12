@@ -301,12 +301,16 @@ class BarcodeCosts
     /**
      * Rata-rata tertimbang (kg) `cost_per_kg` produk itu pada stok yang ada
      * (beef_stocks IN_STOCK) dan sudah bernilai; null bila tidak ada.
+     * `$exceptBarcodes`: barcode yang dikecualikan (mis. hasil repack yang sedang dinilai).
+     *
+     * @param  array<int, string>  $exceptBarcodes
      */
-    public static function averageInStock(int $productId): ?float
+    public static function averageInStock(int $productId, array $exceptBarcodes = []): ?float
     {
         $row = DB::table('beef_stocks as s')
             ->join('barcode_costs as c', 'c.barcode', '=', 's.barcode')
             ->where('s.product_id', $productId)
+            ->when($exceptBarcodes !== [], fn ($q) => $q->whereNotIn('s.barcode', $exceptBarcodes))
             ->where('s.status', 'IN_STOCK')
             ->where('s.weight', '>', 0)
             ->whereNotNull('c.cost_per_kg')
