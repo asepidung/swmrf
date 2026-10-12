@@ -7654,3 +7654,23 @@ rambatan relabel. Repack, laporan, GR/retur/opname menyusul di PR berikutnya.
 - **Margin:** hanya bila surat jalan sudah ditagih DAN semua barcode-nya bernilai; selain itu
   NULL ("-"). Ringkasan menghitung berapa baris tanpa margin. Retur belum memengaruhi laporan.
 - **Per customer dan per produk:** ringkasan dari baris yang sama (jumlahnya sama dengan total).
+
+## HPP tahap 2 -- stok lama dinilai saat costing dikunci; layar Nilai Barcode dibuang, 12 Oktober 2026
+
+Owner menilai layar "Barcode Costs" tidak perlu. Yang ia mau: costing dikunci -> HPP-nya
+dipakai ke produk-produk boning itu; barang lama yang belum punya harga untuk sementara
+"dihajar" costing terbaru.
+
+- **`Costing::lock()` -> `BarcodeCosts::valueBoning`:** selain barcode boning lot itu, stok
+  (beef_stocks IN_STOCK) produk-produk costing itu yang belum bernilai (tanpa baris, atau
+  baris NULL selain hasil repack) diberi `hpp_per_kg` costing itu (`valueUnvaluedStock`,
+  sumber `opening`). HANYA stok; yang sudah terjual tidak disentuh (jawaban Owner). Nilai
+  yang sudah ada tidak ditimpa costing lain; nilai yang diisi costing ini sendiri ikut
+  diperbarui saat dikunci ulang. Merambat ke relabel dan repack seperti biasa.
+- **Dibuang:** `BarcodeCostResource` (+ halamannya), `BarcodeCostPolicy`, tombol "Nilai stok
+  awal" (`valueOpeningStock`), `lastCostingHpp`, izin `manage_barcode_costs` (migrasi
+  `2026_10_12_100000`). Aturan 11 Okt (stok awal = costing terkunci terakhir, sisanya diisi
+  manual) digantikan aturan ini.
+- **Data migrasi:** stok impor tanpa baris `barcode_costs` dihitung "belum bernilai" di
+  laporan, lalu dinilai otomatis begitu costing pertama produknya dikunci.
+- Tabel `barcode_costs` dan laporan Nilai Stok / HPP Penjualan tetap ada -- laporan membacanya.

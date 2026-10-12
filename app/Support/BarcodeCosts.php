@@ -130,12 +130,71 @@ class BarcodeCosts
                     $valued[] = $item->barcode;
                 });
 
+            // Stok produk yang sama yang BELUM bernilai ikut diberi HPP costing ini
+            // ("hajar semua", keputusan Owner 12 Oktober 2026) -- sementara, sampai
+            // data migrasi dan costing lain melengkapi.
+            foreach (self::valueUnvaluedStock($costing, $hpp) as $barcode) {
+                $valued[] = $barcode;
+                $changed++;
+            }
+
             foreach ($valued as $barcode) {
                 $changed += self::propagateFrom($barcode);
             }
 
             return $changed;
         });
+    }
+
+    /**
+     * Stok (beef_stocks IN_STOCK) produk-produk costing ini yang masih belum
+     * bernilai diberi `hpp_per_kg` costing ini (keputusan Owner, 12 Oktober
+     * 2026: "hajar semua" -- barang lama yang belum punya harga memakai costing
+     * terbaru, sementara). Hanya yang masih ada di stok; yang sudah terjual tidak
+     * disentuh.
+     *
+     * - Barcode yang sudah punya nilai tidak ditimpa. Pengecualian: yang nilainya
+     *   dulu diisi OLEH costing ini sendiri (`opening`, `source_id` = costing ini) --
+     *   dikunci ulang berarti nilainya ikut diperbarui.
+     * - Hasil repack (`repack`) tidak disentuh: nilainya milik valuasi repack, yang
+     *   menunggu bahannya.
+     * - Barcode tanpa baris sama sekali (stok lama/migrasi) dibuatkan barisnya.
+     *
+     * @param  \Illuminate\Support\Collection<int, float>  $hppPerProduct
+     * @return array<int, string> barcode yang nilainya berubah
+     */
+    private static function valueUnvaluedStock(Costing $costing, $hppPerProduct): array
+    {
+        $changed = [];
+
+        foreach ($hppPerProduct as $productId => $hpp) {
+            if ($hpp <= 0) {
+                continue;
+            }
+
+            DB::table('beef_stocks as s')
+                ->leftJoin('barcode_costs as c', 'c.barcode', '=', 's.barcode')
+                ->where('s.product_id', $productId)
+                ->where('s.status', 'IN_STOCK')
+                ->where(function ($q) use ($costing) {
+                    $q->whereNull('c.id')
+                        ->orWhere(function ($q) {
+                            $q->whereNull('c.cost_per_kg')->where('c.source_type', '!=', BarcodeCost::SOURCE_REPACK);
+                        })
+                        ->orWhere(function ($q) use ($costing) {
+                            $q->where('c.source_type', BarcodeCost::SOURCE_OPENING)->where('c.source_id', $costing->id);
+                        });
+                })
+                ->orderBy('s.id')
+                ->pluck('s.barcode')
+                ->each(function (string $barcode) use ($costing, $productId, $hpp, &$changed): void {
+                    if (self::set($barcode, (float) $hpp, BarcodeCost::SOURCE_OPENING, $costing->id, $costing->costing_number, (int) $productId)) {
+                        $changed[] = $barcode;
+                    }
+                });
+        }
+
+        return $changed;
     }
 
     /**
@@ -255,67 +314,5 @@ class BarcodeCosts
             ->first();
 
         return $row && (float) $row->kg > 0 ? (float) $row->total / (float) $row->kg : null;
-    }
-
-    /**
-     * `hpp_per_kg` produk itu pada costing TERKUNCI yang terakhir; null bila
-     * produk belum pernah di-costing. Dasar nilai stok awal (keputusan Owner,
-     * 11 Oktober 2026).
-     */
-    public static function lastCostingHpp(int $productId): ?float
-    {
-        $hpp = DB::table('costing_items as i')
-            ->join('costings as c', 'c.id', '=', 'i.costing_id')
-            ->where('i.product_id', $productId)
-            ->where('c.status', Costing::STATUS_LOCKED)
-            ->whereNull('c.deleted_at')
-            ->orderByDesc('c.locked_at')
-            ->orderByDesc('c.id')
-            ->value('i.hpp_per_kg');
-
-        return $hpp === null ? null : (float) $hpp;
-    }
-
-    /**
-     * Stok awal saat go-live: setiap barcode yang ada di stok tetapi belum punya
-     * baris (stok sebelum buku ini ada) dinilai `lastCostingHpp()` produknya;
-     * produk yang belum pernah di-costing -> NULL, diisi manual accounting
-     * lewat layar Nilai Barcode. Barcode yang sudah punya baris tidak disentuh.
-     *
-     * @return array{valued: int, unvalued: int}
-     */
-    public static function valueOpeningStock(): array
-    {
-        $valued = 0;
-        $unvalued = 0;
-        $cache = [];
-
-        DB::transaction(function () use (&$valued, &$unvalued, &$cache): void {
-            // get(), bukan each(): baris baru mengubah hasil whereNull di tengah jalan.
-            DB::table('beef_stocks as s')
-                ->leftJoin('barcode_costs as c', 'c.barcode', '=', 's.barcode')
-                ->whereNull('c.id')
-                ->where('s.status', 'IN_STOCK')
-                ->select('s.barcode', 's.product_id')
-                ->orderBy('s.id')
-                ->get()
-                ->each(function ($stock) use (&$valued, &$unvalued, &$cache): void {
-                    $cache[$stock->product_id] ??= $stock->product_id ? self::lastCostingHpp($stock->product_id) : null;
-                    $hpp = $cache[$stock->product_id];
-
-                    BarcodeCost::create([
-                        'barcode' => $stock->barcode,
-                        'product_id' => $stock->product_id,
-                        'cost_per_kg' => $hpp,
-                        'source_type' => BarcodeCost::SOURCE_OPENING,
-                        'valued_at' => $hpp === null ? null : now(),
-                        'note' => $hpp === null ? 'opening stock: product never costed' : 'opening stock: last locked costing',
-                    ]);
-
-                    $hpp === null ? $unvalued++ : $valued++;
-                });
-        });
-
-        return ['valued' => $valued, 'unvalued' => $unvalued];
     }
 }
