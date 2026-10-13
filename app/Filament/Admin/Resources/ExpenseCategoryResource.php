@@ -21,6 +21,8 @@ class ExpenseCategoryResource extends Resource
 {
     protected static ?string $model = ExpenseCategory::class;
 
+    protected static ?string $cluster = \App\Filament\Clusters\ExpensesCluster::class;
+
     protected static ?string $navigationIcon = 'heroicon-o-tag';
 
     protected static ?int $navigationSort = 21;
