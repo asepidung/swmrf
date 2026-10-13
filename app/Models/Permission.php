@@ -118,7 +118,6 @@ class Permission extends Model
                 'Boning',
                 'Repack',
                 'Material Usages',
-                'Costings',
             ],
             'WAREHOUSE' => [
                 'Mutations',
@@ -158,6 +157,7 @@ class Permission extends Model
                 'Bank Accounts',
                 'Cash Book',
                 'Financial Loss',
+                'Costings',
             ],
             'QC' => [
                 'QC Reports',

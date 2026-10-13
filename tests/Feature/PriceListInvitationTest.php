@@ -181,12 +181,13 @@ class PriceListInvitationTest extends TestCase
         ));
 
         // Kalimat lama berbunyi "Leave empty if Customer does not have a
-        // Group", padahal mengosongkannya dulu justru MEMBUAT grup baru --
-        // dan sejak 15 September 2026 field ini `->required()` (keputusan
-        // Ayah: Customer tanpa grup lenyap dari modul Piutang), jadi
-        // "leave it empty" sendiri sudah tidak berlaku lagi.
+        // Group", padahal mengosongkannya MEMBUAT grup baru -- menyesatkan.
+        // 15 September 2026 field ini dibuat wajib; 13 Oktober 2026 (keputusan
+        // Ayah) opsional lagi, dengan keterangan yang jujur: kosong = dibuatkan
+        // grup bernama sama dengan customer.
         $this->assertStringNotContainsString('does not have a Group', $source);
         $this->assertStringNotContainsString('Leave it empty to create a group', $source);
-        $this->assertStringContainsString('Pick an existing one or create a new one', $source);
+        $this->assertStringContainsString('Leave it empty and a group named after the customer is created for you', $source);
+        $this->assertStringNotContainsString('Pick an existing one or create a new one', $source);
     }
 }
