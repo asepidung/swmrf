@@ -7687,3 +7687,50 @@ Keputusan Owner (komentar "ATURAN FINAL" di #522). `RepackValuator` ditulis ulan
 - **Satu produk hasil = satu cost per kg** untuk semua barcodenya (nilai produk / `out_i`).
 - **Pemeriksaan wajib** (Σ nilai hasil + susut = biaya bahan): dikerjakan di test dan di kode
   (meleset di atas toleransi pembulatan -> `needs_review`).
+
+## Import master dengan ID LEGACY + prosedur DATABASE BARU yang bersih, 13 Oktober 2026
+
+Keputusan Ayah (lewat Hafizh): import master WAJIB mempertahankan id legacy (mis. grup LION tetap id
+15 di legacy -- di snapshot 19 Sep LION id 15, HPM id 12). Alasannya: kunci asing legacy, impor customer
+dan transaksi berikutnya, dan penelusuran balik ke legacy tetap memakai id yang sama.
+
+**`legacy:import-master`** (ditulis ulang): setiap baris masuk dengan `id` = id legacy (cuts ->
+product_categories, grade, supplier, cattle_class, groupcs -> customer_groups, barang -> products,
+rawcategory -> material_categories, rawmate -> materials, bom_rawmate -> product_materials). FK antartabel
+memakai id legacy apa adanya. Auto-increment lanjut dari max(id) (diuji: supplier legacy sampai 47, baris
+baru 48). Mode aman: id yang sudah ada dengan isi BERBEDA -> DITOLAK dan SELURUH `--apply` dibatalkan (exit
+1; dry-run juga gagal dan menyebutnya); isi sama -> dilewati (idempoten). Nama hanya untuk melaporkan
+duplikat: duplikat beda spasi KEDUANYA diimpor dan dilaporkan sebagai konflik (Ayah memutuskan yang mana
+dinonaktifkan); nama/kode/prefix kembar PERSIS tidak bisa dimasukkan dua kali (indeks unik) dan dilaporkan.
+Baris yang dilewati (kategori bahan operasional, kode "-", satuan kosong, ...) meninggalkan lubang id.
+Customer dan segment belum diimpor (snapshot memuat `segment` dan `customers`; sesi berikutnya, memakai
+mekanisme `place()` yang sama).
+
+**Gladi resik lokal (13 Okt, database `swm_gladi` yang kosong, snapshot `SWM-master-2026-09-19.sql`):**
+migrate -> import-master dry-run lalu `--apply`: 7 kategori, 6 grade, 43 supplier, 7 kelas sapi, 54 grup
+pelanggan, 149 produk, 10 kategori bahan, 91 bahan, 417 baris BOM; jalan kedua semuanya "sama (dilewati)".
+Konflik yang dilaporkan: 4 supplier (NPWP tak punya kolom; 1 pasangan beda spasi id 41/46), 9 produk
+(kode "-"), 59 bahan (satuan kosong). `access:export` dari DB kerja -> `access:import` ke `swm_gladi`: 1 user,
+160 izin yang hanya ada di DB lama, 1 langganan push; jalan kedua "sama".
+
+**Prosedur membuat DATABASE BARU yang bersih** (untuk coba./app. dan gladi DB produksi VPS). Bukan
+`migrate:fresh` -- database baru yang KOSONG, migrate biasa. Eksekusi hanya setelah sesi import Ayah dan
+dengan persetujuan Ayah.
+1. Buat database kosong (panel Hostinger; `utf8mb4_unicode_ci`). Database lama TIDAK disentuh dan
+   dipertahankan sebagai arsip.
+2. Arahkan `DB_DATABASE` (dan `DB_USERNAME`/`DB_PASSWORD` bila beda) ke database baru -- sementara lewat
+   variabel lingkungan, mis. `DB_DATABASE=swm_baru php artisan ...`, supaya `.env` produksi belum berubah.
+3. `php artisan migrate --force`. Izin yang lahir lewat migrasi (83) otomatis ada; 160 izin awal berasal
+   dari `DatabaseSeeder` (jangan jalankan `db:seed`: ia menyetel ulang password superuser) dan dibawa lewat
+   langkah 6.
+4. `php artisan legacy:import-master --source="<snapshot>.sql"` (dry-run) -- baca laporannya; bila ada
+   "DITOLAK", berhenti (database tidak bersih). Lalu `--apply`.
+5. `php artisan legacy:import-prices` (dry-run, tampilkan ke Ayah) lalu `--apply` (PR #534; butuh grup dari
+   langkah 4).
+6. Pindahkan akses: di database LAMA `php artisan access:export` (menulis `storage/app/access-export.json`,
+   berisi hash password dan kunci push -- jangan masuk git, jangan dikirim lewat chat); salin berkas ke mesin
+   tujuan bila beda server (scp); di database BARU `php artisan access:import` (dry-run) lalu `--apply`;
+   HAPUS berkasnya.
+7. Verifikasi: masuk dengan akun nyata, izin sesuai, daftar produk/grup/price list, notifikasi push.
+8. Alihkan `.env` coba./app. ke database baru, `php artisan config:cache`. Untuk produksi VPS: langkah sama
+   di server baru (VAPID dan APP_KEY sama dengan coba.; lihat issue #533).
