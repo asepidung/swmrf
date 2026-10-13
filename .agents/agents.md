@@ -7695,3 +7695,21 @@ Perintah baru `App\Console\Commands\ImportLegacyPrices` (dry-run bawaan, `--appl
 harga dan di-gitignore -- jangan masuk repositori; test memakai berkas karangan kecil. Perintah ini juga
 mengisi acuan costing per produk dari pemetaan warna sel Costing Juni (bukan dari sheet). Aturan lengkap:
 `hpp.md` §17.1.
+
+## Menu Costing ke ACCOUNTING, cluster Expenses, grup customer opsional, 13 Oktober 2026
+
+Tiga keputusan Ayah sekaligus:
+
+1. **Costing pindah dari PRODUCTION ke ACCOUNTING** (Ayah: costing itu urusan accounting, bukan boning).
+   `CostingResource::getNavigationGroup()` dan tab izin (`Permission::moduleGroups()`: `Costings` dari
+   PRODUCTION ke ACCOUNTING) berubah bersama -- `NavigationGroupConsistencyTest` menjaga ketiga daftar
+   tetap sepakat.
+2. **Expenses dan Expense Categories jadi satu cluster** (`App\Filament\Clusters\ExpensesCluster`, grup
+   FINANCE, sub-menu di atas), mengikuti pola FleetCluster: resource tetap di `Admin/Resources` dengan
+   `$cluster`. URL-nya kini berprefiks cluster; kode memakai `getUrl()`, jadi tidak ada yang rusak.
+3. **Grup customer OPSIONAL lagi, tetapi customer tetap selalu berakhir di sebuah grup.** 15 September:
+   customer tanpa grup lenyap dari Piutang, jadi isian dibuat wajib. 13 Oktober: mewajibkan memilih membuat
+   user asal memilih, dan grup yang salah memasukkan customer ke price list orang lain (paling berbahaya di
+   form itu). Sekarang isian boleh kosong; `KeepsCustomerInAGroup` (Create dan Edit) membuatkan grup bernama
+   sama dengan customer (TOP, PIC, alamat dibawa; bila grup bernama sama sudah ada, customer bergabung ke
+   situ). Grup yang dipilih tidak pernah diganti.

@@ -33,7 +33,7 @@ class CostingResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('PRODUCTION');
+        return __('ACCOUNTING');
     }
 
     public static function getModelLabel(): string

@@ -106,7 +106,7 @@ class CustomerResource extends Resource
                 // Invoice Exchange yang sejenis dengannya. Di bawah sendiri,
                 // hilangnya tidak menggeser apa pun.
                 Forms\Components\Section::make(__('Basic Information'))
-                    ->description(__('The group decides which price list applies. Pick an existing one or create a new one from the field below.'))
+                    ->description(__('The group decides which price list applies. Leave it empty and a group named after the customer is created for you.'))
                     ->compact()
                     ->columns(12)
                     ->schema([
@@ -121,15 +121,20 @@ class CustomerResource extends Resource
                         // Tanpa helperText: keterangannya sudah ada di
                         // deskripsi kartu, satu baris untuk seluruh form,
                         // sehingga tidak menambah tinggi barisnya sendiri.
-                        // Keputusan Ayah, 15 September 2026: customer TANPA
-                        // grup lenyap total dari modul Piutang (piutangnya
-                        // tidak pernah muncul di daftar, tidak pernah bisa
-                        // dibayar lewat alur resminya) -- lihat migrasi
-                        // backfill `2026_09_15_130000_...`.
+                        // Customer TANPA grup lenyap total dari modul Piutang
+                        // (keputusan Ayah, 15 September 2026; migrasi backfill
+                        // `2026_09_15_130000_...`) -- jadi setiap customer HARUS
+                        // berakhir di sebuah grup. Tetapi isian ini sengaja
+                        // OPSIONAL (keputusan Ayah, 13 Oktober 2026): mewajibkan
+                        // memilih membuat user asal memilih grup, dan memilih
+                        // grup yang salah memasukkan customer ke price list
+                        // orang lain -- hal paling berbahaya di form ini. Bila
+                        // dikosongkan, `KeepsCustomerInAGroup` membuatkan grup
+                        // bernama sama dengan customer.
                         Forms\Components\Select::make('customer_group_id')
                             ->relationship('group', 'name')
                             ->label(fn() => __('Customer Group'))
-                            ->required()
+                            ->placeholder(__('Create a group named after the customer'))
                             ->searchable()
                             ->preload()
                             ->live()
