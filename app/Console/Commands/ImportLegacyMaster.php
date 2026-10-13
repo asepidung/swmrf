@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\CattleClass;
+use App\Models\CustomerGroup;
 use App\Models\Grade;
 use App\Models\Material;
 use App\Models\MaterialCategory;
@@ -13,26 +14,45 @@ use App\Models\ProductMaterial;
 use App\Models\Supplier;
 use App\Support\LegacySqlDump;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Impor master data MEKANIS dari snapshot legacy (issue #471).
+ * Impor master data MEKANIS dari snapshot legacy (issue #471), dengan ID LEGACY
+ * DIPERTAHANKAN (keputusan Ayah, 13 Oktober 2026).
  *
- * "Mekanis" berarti: memindahkan apa yang sudah jelas artinya (kategori,
- * grade, produk, bahan, supplier, kelas sapi), BUKAN transaksi maupun
- * data yang masih butuh keputusan Owner (customer, grup pelanggan,
- * segment -- sesi terpisah, lihat `.agents/legacy-db.md`).
+ * "Mekanis" berarti: memindahkan apa yang sudah jelas artinya (kategori, grade,
+ * produk, bahan, supplier, kelas sapi, grup pelanggan), BUKAN transaksi maupun
+ * data yang masih butuh keputusan Owner (customer, segment -- sesi terpisah, lihat
+ * `.agents/legacy-db.md`).
  *
- * Sumbernya TEKS dump SQL (`--source`), dibaca lewat `LegacySqlDump` --
- * TIDAK PERNAH dieksekusi sebagai query terhadap koneksi mana pun.
- * Perintah ini sendiri menulis lewat koneksi DEFAULT aplikasi (Eloquent
- * biasa), TIDAK PERNAH membuka koneksi ke basis data legacy -- dump-nya
- * sudah berupa berkas lepas, bukan koneksi hidup ke produksi.
+ * ATURAN ID: setiap baris dimasukkan dengan `id` = id legacy-nya (cuts ->
+ * product_categories, grade, barang -> products, rawcategory -> material_categories,
+ * rawmate -> materials, supplier, cattle_class, groupcs -> customer_groups,
+ * bom_rawmate -> product_materials). Kunci asing antartabel memakai id legacy apa
+ * adanya (products.category_id = idcut, materials.material_category_id =
+ * idrawcategory, dst). Auto-increment MySQL/SQLite sendiri melanjutkan dari
+ * max(id). Pencocokan menurut NAMA hanya untuk melaporkan duplikat -- bukan
+ * penentu id.
  *
- * Default-nya laporan saja (`dry-run`) -- tidak menulis apa pun sampai
- * `--apply` diberikan. Idempoten: setiap baris dicocokkan lewat nama/kode
- * yang SUDAH ADA sebelum diputuskan dibuat, jadi menjalankannya dua kali
- * tidak pernah menggandakan.
+ * MODE AMAN: kalau tabel tujuan sudah berisi id yang sama dengan isi BERBEDA, baris
+ * itu DITOLAK dan dilaporkan -- tidak pernah menimpa diam-diam. Satu saja penolakan
+ * membatalkan seluruh `--apply` (tidak ada yang ditulis), karena baris lain yang
+ * bergantung padanya akan menunjuk ke id yang salah. Isi yang SAMA persis dilewati
+ * (idempoten). Karena itu perintah ini dijalankan pada basis data yang bersih
+ * (lihat prosedur database baru di `.agents/agents.md`).
+ *
+ * Baris legacy yang dilewati (kategori bahan operasional, nama kosong, kode produk
+ * "-", dst) cukup tidak diimpor -- lubang id dibiarkan. Duplikat yang hanya beda
+ * spasi/format: KEDUANYA diimpor dan dilaporkan sebagai konflik (Ayah memutuskan
+ * yang mana dinonaktifkan). Nama kembar PERSIS tidak bisa diimpor dua kali (indeks
+ * unik) dan dilaporkan.
+ *
+ * Sumbernya TEKS dump SQL (`--source`), dibaca lewat `LegacySqlDump` -- TIDAK PERNAH
+ * dieksekusi sebagai query terhadap koneksi mana pun. Perintah ini sendiri menulis
+ * lewat koneksi DEFAULT aplikasi, TIDAK PERNAH membuka koneksi ke basis data legacy.
+ *
+ * Default-nya laporan saja (`dry-run`) -- tidak menulis apa pun sampai `--apply`.
  */
 class ImportLegacyMaster extends Command
 {
@@ -40,7 +60,26 @@ class ImportLegacyMaster extends Command
                             {--source= : Path ke berkas dump SQL legacy}
                             {--apply : Benar-benar menulis perubahan (default hanya laporan dry-run)}';
 
-    protected $description = 'Impor master data (kategori, grade, produk, bahan, supplier, kelas sapi) dari snapshot legacy';
+    protected $description = 'Impor master data (kategori, grade, produk, bahan, supplier, kelas sapi, grup pelanggan) dari snapshot legacy, DENGAN id legacy';
+
+    /** Kategori bahan yang benar-benar produksi/kemasan -- lihat `.agents/legacy-db.md`. */
+    private const MATERIAL_CATEGORY_WHITELIST = [
+        'KARTON', 'PLASTIK', 'LABEL', 'MIKA', 'STYROFOAM', 'TRAY',
+        'PACKAGING SUPPORT', 'MEAT PROCESSING', 'LAKBAN', 'PRODUKSI',
+    ];
+
+    /** Kolom bermakna "baris yang sama" per tabel, dan kolom beraturan unik di basis data. */
+    private const TABLES = [
+        'product_categories' => ['model' => ProductCategory::class, 'identity' => ['name', 'prefix'], 'unique' => ['name', 'prefix']],
+        'grades' => ['model' => Grade::class, 'identity' => ['name'], 'unique' => ['name']],
+        'suppliers' => ['model' => Supplier::class, 'identity' => ['name'], 'unique' => ['name']],
+        'cattle_classes' => ['model' => CattleClass::class, 'identity' => ['name'], 'unique' => ['name']],
+        'customer_groups' => ['model' => CustomerGroup::class, 'identity' => ['name'], 'unique' => ['name']],
+        'products' => ['model' => Product::class, 'identity' => ['code', 'name'], 'unique' => ['code', 'name']],
+        'material_categories' => ['model' => MaterialCategory::class, 'identity' => ['name'], 'unique' => ['name']],
+        'materials' => ['model' => Material::class, 'identity' => ['name'], 'unique' => ['name']],
+        'product_materials' => ['model' => ProductMaterial::class, 'identity' => ['product_id', 'material_id'], 'unique' => []],
+    ];
 
     /** @var array<string, array<int, string>> */
     private array $created = [];
@@ -51,25 +90,39 @@ class ImportLegacyMaster extends Command
     /** @var array<string, array<int, string>> */
     private array $conflicts = [];
 
+    /** @var array<string, array<int, string>> id bentrok: sudah ada dengan isi berbeda */
+    private array $refusals = [];
+
     /** @var array<int, string> */
     private array $notes = [];
 
-    /**
-     * Nama yang sudah ada di basis data, per tabel, kunci-nya lewat
-     * `matchKey()` -- dimuat SEKALI per tabel per jalan (lihat `existingKeysFor()`).
-     *
-     * @var array<string, array<string, string>>
-     */
-    private array $existingKeysCache = [];
+    /** @var array<int, string> id legacy => nama, untuk label laporan dan penilaian baris BOM */
+    private array $materialCategoryNames = [];
+
+    /** @var array<int, string> */
+    private array $materialNames = [];
 
     /**
-     * Nama yang SUDAH DIPUTUSKAN "baru" dalam jalan ini sendiri, per
-     * tabel -- menangkap duplikat DI DALAM sumbernya sendiri (mis. dua
-     * baris supplier beda spasi/format untuk perusahaan yang sama).
+     * Id legacy yang SETELAH jalan ini benar-benar ada di tabelnya (dibuat, atau sudah
+     * ada dengan isi sama) -- tempat baris lain memeriksa kunci asingnya.
      *
-     * @var array<string, array<string, string>>
+     * @var array<string, array<int, true>>
      */
-    private array $seenInBatch = [];
+    private array $valid = [];
+
+    /**
+     * Nilai kolom unik yang sudah diklaim dalam jalan ini: tabel => kolom => nilai => id.
+     *
+     * @var array<string, array<string, array<string, int>>>
+     */
+    private array $claimed = [];
+
+    /**
+     * Kunci pencocokan longgar yang sudah terlihat (basis data + sumber): tabel => kunci => [id, nama].
+     *
+     * @var array<string, array<string, array{0: int, 1: string}>>
+     */
+    private array $looseSeen = [];
 
     public function handle(): int
     {
@@ -90,84 +143,58 @@ class ImportLegacyMaster extends Command
         $sql = file_get_contents($path);
         $apply = (bool) $this->option('apply');
 
-        $run = function () use ($sql): void {
-            $categoryNameByLegacyId = $this->importProductCategories($sql);
+        $run = function () use ($sql, $apply): void {
+            $this->importProductCategories($sql);
             $this->importGrades($sql);
             $this->importSuppliers($sql);
             $this->importCattleClasses($sql);
+            $this->importCustomerGroups($sql);
+            $this->importProducts($sql);
+            $this->importMaterialCategoriesAndMaterials($sql);
+            $this->importProductMaterials($sql);
 
-            $productMapByLegacyId = $this->importProducts($sql, $categoryNameByLegacyId);
-            $materialMapByLegacyId = $this->importMaterialCategoriesAndMaterials($sql);
-            $this->importProductMaterials($sql, $productMapByLegacyId, $materialMapByLegacyId);
+            // Satu penolakan saja membatalkan seluruh penulisan.
+            if ($apply && $this->refusals !== []) {
+                throw new \RuntimeException('refused');
+            }
         };
 
-        if ($apply) {
-            DB::transaction($run);
-        } else {
-            $run();
+        try {
+            $apply ? DB::transaction($run) : $run();
+        } catch (\RuntimeException $e) {
+            if ($e->getMessage() !== 'refused') {
+                throw $e;
+            }
         }
 
-        $this->printReport($apply);
+        $refused = $this->refusals !== [];
 
-        return self::SUCCESS;
+        $this->printReport($apply, $refused);
+
+        return $refused ? self::FAILURE : self::SUCCESS;
     }
 
     // =========================================================================
     // cuts -> product_categories
     // =========================================================================
 
-    /**
-     * @return array<string, string> idcut legacy => nama kategori, HANYA
-     *                                untuk baris yang berhasil dipetakan
-     *                                (tanpa konflik) -- dipakai
-     *                                `importProducts()` untuk tahu kategori
-     *                                mana yang sungguhan bisa dirujuk,
-     *                                baik dry-run maupun `--apply`.
-     */
-    private function importProductCategories(string $sql): array
+    private function importProductCategories(string $sql): void
     {
-        $resolved = [];
-
         foreach (LegacySqlDump::parseTable($sql, 'cuts') as $row) {
-            $name = strtoupper(trim((string) $row['nmcut']));
+            $id = (int) $row['idcut'];
+            $name = $this->clean($row['nmcut']);
 
             if ($name === '') {
-                $this->conflicts['product_categories'][] = "idcut={$row['idcut']}: nama kosong, dilewati.";
+                $this->conflicts['product_categories'][] = "idcut={$id}: nama kosong, dilewati.";
 
                 continue;
             }
 
-            if (ProductCategory::where('name', $name)->exists()) {
-                $this->skipped['product_categories'][] = "{$name}: sudah ada.";
-                $resolved[$row['idcut']] = $name;
-
-                continue;
-            }
-
-            // `prefix` tidak ada padanan LANGSUNG di `cuts` -- tapi
-            // `ProductResource::generateNextCode()` menyusun kode produk
-            // dari `prefix.sprintf('%03d').00` (mis. prefix 1 -> "100100"),
-            // PERSIS pola `kdbarang` legacy (100100=PRIME CUT,
-            // 200100=SECONDARY CUT, dst -- digit pertamanya adalah
-            // `idcut`). Bukan tebakan: `idcut` DIPAKAI sebagai prefix
-            // karena angkanya sudah cocok dengan skema yang ada.
-            $prefix = (int) $row['idcut'];
-
-            if (ProductCategory::where('prefix', $prefix)->exists()) {
-                $this->conflicts['product_categories'][] = "{$name}: prefix {$prefix} (dari idcut) sudah dipakai kategori lain, dilewati.";
-
-                continue;
-            }
-
-            $this->created['product_categories'][] = "{$name} (prefix {$prefix})";
-            $resolved[$row['idcut']] = $name;
-
-            if ($this->option('apply')) {
-                ProductCategory::create(['name' => $name, 'prefix' => $prefix]);
-            }
+            // `prefix` tidak ada padanan LANGSUNG di `cuts` -- tapi `ProductResource::generateNextCode()`
+            // menyusun kode produk dari `prefix.sprintf('%03d').00` (mis. prefix 1 -> "100100"), PERSIS
+            // pola `kdbarang` legacy (digit pertamanya `idcut`). `idcut` DIPAKAI sebagai prefix.
+            $this->place('product_categories', $id, ['name' => $name, 'prefix' => $id], "{$name} (prefix {$id})", $name);
         }
-
-        return $resolved;
     }
 
     // =========================================================================
@@ -177,15 +204,16 @@ class ImportLegacyMaster extends Command
     private function importGrades(string $sql): void
     {
         foreach (LegacySqlDump::parseTable($sql, 'grade') as $row) {
-            $name = strtoupper(trim((string) $row['nmgrade']));
+            $id = (int) $row['idgrade'];
+            $name = $this->clean($row['nmgrade']);
 
             if ($name === '') {
-                $this->conflicts['grades'][] = "idgrade={$row['idgrade']}: nama kosong, dilewati.";
+                $this->conflicts['grades'][] = "idgrade={$id}: nama kosong, dilewati.";
 
                 continue;
             }
 
-            $this->upsert('grades', $name, fn () => Grade::firstOrCreate(['name' => $name], ['is_active' => true]));
+            $this->place('grades', $id, ['name' => $name], $name, $name, ['is_active' => true]);
         }
     }
 
@@ -203,15 +231,12 @@ class ImportLegacyMaster extends Command
         }
 
         foreach ($rows as $row) {
-            $name = strtoupper(trim((string) $row['nmsupplier']));
+            $id = (int) $row['idsupplier'];
+            $name = $this->clean($row['nmsupplier']);
 
             if ($name === '') {
-                $this->conflicts['suppliers'][] = "idsupplier={$row['idsupplier']}: nama kosong, dilewati.";
+                $this->conflicts['suppliers'][] = "idsupplier={$id}: nama kosong, dilewati.";
 
-                continue;
-            }
-
-            if ($this->classifyByName('suppliers', Supplier::class, $name, "idsupplier={$row['idsupplier']}") !== 'new') {
                 continue;
             }
 
@@ -220,18 +245,13 @@ class ImportLegacyMaster extends Command
                 $this->conflicts['suppliers'][] = "{$name}: NPWP legacy \"{$npwp}\" tidak diimpor -- Supplier swmrf tidak punya kolom NPWP.";
             }
 
-            $this->created['suppliers'][] = $name;
-
-            if ($this->option('apply')) {
-                Supplier::create([
-                    'name' => $name,
-                    'address' => trim((string) ($row['alamat'] ?? '')) ?: '-',
-                    'pic' => '-',
-                    'phone' => trim((string) ($row['telepon'] ?? '')) ?: null,
-                    'top_days' => 0,
-                    'supplied_goods' => trim((string) ($row['jenis_usaha'] ?? '')) ?: null,
-                ]);
-            }
+            $this->place('suppliers', $id, ['name' => $name], $name, $name, [
+                'address' => trim((string) ($row['alamat'] ?? '')) ?: '-',
+                'pic' => '-',
+                'phone' => trim((string) ($row['telepon'] ?? '')) ?: null,
+                'top_days' => 0,
+                'supplied_goods' => trim((string) ($row['jenis_usaha'] ?? '')) ?: null,
+            ]);
         }
     }
 
@@ -242,15 +262,38 @@ class ImportLegacyMaster extends Command
     private function importCattleClasses(string $sql): void
     {
         foreach (LegacySqlDump::parseTable($sql, 'cattle_class') as $row) {
-            $name = strtoupper(trim((string) $row['class_name']));
+            $id = (int) $row['idclass'];
+            $name = $this->clean($row['class_name']);
 
             if ($name === '') {
-                $this->conflicts['cattle_classes'][] = "idclass={$row['idclass']}: nama kosong, dilewati.";
+                $this->conflicts['cattle_classes'][] = "idclass={$id}: nama kosong, dilewati.";
 
                 continue;
             }
 
-            $this->upsert('cattle_classes', $name, fn () => CattleClass::firstOrCreate(['name' => $name]));
+            $this->place('cattle_classes', $id, ['name' => $name], $name, $name);
+        }
+    }
+
+    // =========================================================================
+    // groupcs -> customer_groups
+    // =========================================================================
+
+    private function importCustomerGroups(string $sql): void
+    {
+        foreach (LegacySqlDump::parseTable($sql, 'groupcs') as $row) {
+            $id = (int) $row['idgroup'];
+            $name = $this->clean($row['nmgroup']);
+
+            if ($name === '') {
+                $this->conflicts['customer_groups'][] = "idgroup={$id}: nama kosong, dilewati.";
+
+                continue;
+            }
+
+            // `trading_terms_percent` dan penanda acuan costing TIDAK datang dari legacy
+            // (kolom `terms` kosong di legacy); diisi `legacy:import-prices`.
+            $this->place('customer_groups', $id, ['name' => $name], $name, $name);
         }
     }
 
@@ -258,296 +301,171 @@ class ImportLegacyMaster extends Command
     // barang -> products
     // =========================================================================
 
-    /**
-     * @param  array<string, string>  $categoryNameByLegacyId  dari importProductCategories()
-     * @return array<string, array{valid: bool, name?: string, code?: string}> idbarang legacy => hasil,
-     *              dipakai `importProductMaterials()` untuk tahu produk mana yang sungguhan bisa dirujuk BOM-nya.
-     */
-    private function importProducts(string $sql, array $categoryNameByLegacyId): array
+    private function importProducts(string $sql): void
     {
-        $legacyMap = [];
-
         foreach (LegacySqlDump::parseTable($sql, 'barang') as $row) {
-            $idbarang = $row['idbarang'];
-            $name = strtoupper(trim((string) $row['nmbarang']));
+            $id = (int) $row['idbarang'];
+            $name = $this->clean($row['nmbarang']);
             $code = trim((string) ($row['kdbarang'] ?? ''));
+            $categoryId = (int) $row['idcut'];
 
             if ($name === '') {
-                $this->conflicts['products'][] = "idbarang={$idbarang}: nama kosong, dilewati.";
-                $legacyMap[$idbarang] = ['valid' => false];
+                $this->conflicts['products'][] = "idbarang={$id}: nama kosong, dilewati.";
 
                 continue;
             }
 
-            // Beberapa baris legacy memakai '-' sebagai kode -- bukan
-            // kode yang sungguhan, dan `products.code` UNIK: membiarkan
-            // beberapa baris berbagi '-' akan menabrak constraint itu di
-            // baris KEDUA dan seterusnya. Tidak ada dasar untuk menebak
-            // kode yang benar, jadi dilaporkan sebagai konflik.
+            // Beberapa baris legacy memakai '-' sebagai kode -- bukan kode yang sungguhan, dan
+            // `products.code` UNIK. Tidak ada dasar menebak kode yang benar: dilaporkan.
             if ($code === '' || $code === '-') {
-                $this->conflicts['products'][] = "{$name} (idbarang={$idbarang}): kode legacy kosong/\"-\", dilewati -- perlu kode manual.";
-                $legacyMap[$idbarang] = ['valid' => false];
+                $this->conflicts['products'][] = "{$name} (idbarang={$id}): kode legacy kosong/\"-\", dilewati -- perlu kode manual.";
 
                 continue;
             }
 
-            if (Product::where('code', $code)->exists()) {
-                $this->skipped['products'][] = "{$name} ({$code}): sudah ada (kode).";
-                $legacyMap[$idbarang] = ['valid' => true, 'name' => $name, 'code' => $code];
+            if (! isset($this->valid['product_categories'][$categoryId])) {
+                $this->conflicts['products'][] = "{$name} ({$code}): kategori (idcut={$categoryId}) tidak ada/tidak diimpor, produk dilewati.";
 
                 continue;
             }
 
-            $status = $this->classifyByName('products', Product::class, $name, "idbarang={$idbarang}");
-
-            if ($status === 'exists') {
-                $legacyMap[$idbarang] = ['valid' => true, 'name' => $name, 'code' => $code];
-
-                continue;
-            }
-
-            if ($status === 'conflict') {
-                $legacyMap[$idbarang] = ['valid' => false];
-
-                continue;
-            }
-
-            $categoryName = $categoryNameByLegacyId[$row['idcut']] ?? null;
-
-            if ($categoryName === null) {
-                $this->conflicts['products'][] = "{$name} ({$code}): kategori (idcut={$row['idcut']}) tidak berhasil dipetakan, produk dilewati.";
-                $legacyMap[$idbarang] = ['valid' => false];
-
-                continue;
-            }
-
-            // Hafizh eksplisit: kodeinduk & karton/drylog/plastik dicatat
-            // ke CATATAN produk, bukan diresolusi ke parent_id/
-            // structure_type -- itu hierarki BOM lama yang beririsan
-            // dengan `product_materials` (langkah ini juga), dan
-            // menyatukan keduanya otomatis butuh keputusan Owner
-            // tersendiri di luar cakupan mekanis.
+            // kodeinduk & karton/drylog/plastik dicatat ke CATATAN produk, bukan diresolusi ke
+            // parent_id/structure_type (hierarki BOM lama yang butuh keputusan Owner tersendiri).
             $noteParts = [];
-            if (! empty($row['kodeinduk'])) {
-                $noteParts[] = "kodeinduk legacy: {$row['kodeinduk']}";
+            foreach (['kodeinduk' => 'kodeinduk legacy', 'karton' => 'karton', 'drylog' => 'drylog', 'plastik' => 'plastik'] as $column => $label) {
+                if (! empty($row[$column])) {
+                    $noteParts[] = "{$label}: {$row[$column]}";
+                }
             }
-            if (! empty($row['karton'])) {
-                $noteParts[] = "karton: {$row['karton']}";
-            }
-            if (! empty($row['drylog'])) {
-                $noteParts[] = "drylog: {$row['drylog']}";
-            }
-            if (! empty($row['plastik'])) {
-                $noteParts[] = "plastik: {$row['plastik']}";
-            }
-            $note = $noteParts === [] ? null : ('Legacy -- '.implode('; ', $noteParts));
 
-            $this->created['products'][] = "{$name} ({$code})";
-            $legacyMap[$idbarang] = ['valid' => true, 'name' => $name, 'code' => $code];
-
-            if ($this->option('apply')) {
-                $category = ProductCategory::where('name', $categoryName)->first();
-                Product::create([
-                    'code' => $code,
-                    'name' => $name,
-                    'category_id' => $category->id,
-                    'structure_type' => 'main',
-                    'is_active' => true,
-                    'legacy_note' => $note,
-                ]);
-            }
+            $this->place('products', $id, ['code' => $code, 'name' => $name], "{$name} ({$code})", $name, [
+                'category_id' => $categoryId,
+                'structure_type' => 'main',
+                'is_active' => true,
+                'legacy_note' => $noteParts === [] ? null : ('Legacy -- '.implode('; ', $noteParts)),
+            ]);
         }
-
-        return $legacyMap;
     }
 
     // =========================================================================
     // rawcategory -> material_categories, rawmate -> materials
     // =========================================================================
 
-    /** Kategori bahan yang benar-benar produksi/kemasan -- lihat `.agents/legacy-db.md`. */
-    private const MATERIAL_CATEGORY_WHITELIST = [
-        'KARTON', 'PLASTIK', 'LABEL', 'MIKA', 'STYROFOAM', 'TRAY',
-        'PACKAGING SUPPORT', 'MEAT PROCESSING', 'LAKBAN', 'PRODUKSI',
-    ];
-
-    /**
-     * @return array<string, array{valid: bool, name?: string}> idrawmate legacy => hasil,
-     *              dipakai `importProductMaterials()`.
-     */
-    private function importMaterialCategoriesAndMaterials(string $sql): array
+    private function importMaterialCategoriesAndMaterials(string $sql): void
     {
-        $categoryNameByLegacyId = [];
-
         foreach (LegacySqlDump::parseTable($sql, 'rawcategory') as $row) {
-            $name = strtoupper(trim((string) $row['nmcategory']));
+            $id = (int) $row['idrawcategory'];
+            $name = $this->clean($row['nmcategory']);
 
+            // Kategori operasional (ATK, INTERNET, dll) SENGAJA tidak diimpor -- bukan konflik, melainkan cakupan.
             if (! in_array($name, self::MATERIAL_CATEGORY_WHITELIST, true)) {
                 continue;
             }
 
-            $categoryNameByLegacyId[$row['idrawcategory']] = $name;
-
-            if (MaterialCategory::where('name', $name)->exists()) {
-                $this->skipped['material_categories'][] = "{$name}: sudah ada.";
-
-                continue;
-            }
-
-            $this->created['material_categories'][] = $name;
-
-            if ($this->option('apply')) {
-                MaterialCategory::create(['name' => $name]);
+            if ($this->place('material_categories', $id, ['name' => $name], $name, $name) !== 'refused') {
+                $this->materialCategoryNames[$id] = $name;
             }
         }
 
-        $legacyMap = [];
-
         foreach (LegacySqlDump::parseTable($sql, 'rawmate') as $row) {
-            $idrawmate = $row['idrawmate'];
-            $name = strtoupper(trim((string) $row['nmrawmate']));
-            $categoryName = $categoryNameByLegacyId[$row['idrawcategory']] ?? null;
+            $id = (int) $row['idrawmate'];
+            $name = $this->clean($row['nmrawmate']);
+            $categoryId = (int) $row['idrawcategory'];
 
-            // Bahan di kategori operasional (ATK, INTERNET, dll) SENGAJA
-            // tidak diimpor -- instruksi eksplisit "HANYA kategori
-            // produksi/kemasan". Ini bukan konflik, melainkan cakupan.
-            if ($categoryName === null) {
-                $legacyMap[$idrawmate] = ['valid' => false];
-
+            // Bahan di kategori yang tidak diimpor tidak ikut -- cakupan, bukan konflik.
+            if (! isset($this->valid['material_categories'][$categoryId])) {
                 continue;
             }
 
             if ($name === '') {
-                $this->conflicts['materials'][] = "idrawmate={$idrawmate}: nama kosong, dilewati.";
-                $legacyMap[$idrawmate] = ['valid' => false];
+                $this->conflicts['materials'][] = "idrawmate={$id}: nama kosong, dilewati.";
 
                 continue;
             }
 
-            $status = $this->classifyByName('materials', Material::class, $name, "idrawmate={$idrawmate}");
-
-            if ($status === 'exists') {
-                $legacyMap[$idrawmate] = ['valid' => true, 'name' => $name];
-
-                continue;
-            }
-
-            if ($status === 'conflict') {
-                $legacyMap[$idrawmate] = ['valid' => false];
-
-                continue;
-            }
-
-            $unit = strtoupper(trim((string) ($row['unit'] ?? '')));
+            $unit = $this->clean($row['unit'] ?? '');
 
             if ($unit === '') {
-                $this->conflicts['materials'][] = "{$name} (idrawmate={$idrawmate}): satuan kosong di legacy, dilewati -- material_unit_id wajib diisi.";
-                $legacyMap[$idrawmate] = ['valid' => false];
+                $this->conflicts['materials'][] = "{$name} (idrawmate={$id}): satuan kosong di legacy, dilewati -- material_unit_id wajib diisi.";
 
                 continue;
             }
 
-            $this->created['materials'][] = "{$name} ({$categoryName}, {$unit})";
-            $legacyMap[$idrawmate] = ['valid' => true, 'name' => $name];
+            $category = $this->materialCategoryNames[$categoryId] ?? '';
 
-            if ($this->option('apply')) {
-                $category = MaterialCategory::where('name', $categoryName)->first();
-                $materialUnit = MaterialUnit::firstOrCreate(['name' => $unit]);
+            // `code` TIDAK diisi dari `kdrawmate` legacy -- Material punya penomoran sendiri (MTR001, ...)
+            // lewat `Material::booted()`. Satuan dicocokkan menurut nama (tabel satuan tidak punya id legacy).
+            $status = $this->place('materials', $id, ['name' => $name], "{$name} ({$category}, {$unit})", $name, [
+                'material_category_id' => $categoryId,
+                'min_stock' => (int) ($row['barmin'] ?? 0),
+                'is_active' => true,
+            ], fn (): array => ['material_unit_id' => MaterialUnit::firstOrCreate(['name' => $unit])->id]);
 
-                // `code` TIDAK diisi dari `kdrawmate` legacy -- Material
-                // sudah punya penomoran sendiri (MTR001, ...) lewat
-                // `Material::booted()`, dan instruksi impor tidak meminta
-                // kode legacy dipertahankan (beda dari `barang.kdbarang`
-                // yang eksplisit diminta jadi `products.code`).
-                Material::create([
-                    'name' => $name,
-                    'material_category_id' => $category->id,
-                    'material_unit_id' => $materialUnit->id,
-                    'min_stock' => (int) ($row['barmin'] ?? 0),
-                    'is_active' => true,
-                ]);
+            if (in_array($status, ['created', 'same'], true)) {
+                $this->materialNames[$id] = $name;
             }
         }
-
-        return $legacyMap;
     }
 
     // =========================================================================
     // bom_rawmate (is_active=1) -> product_materials
     // =========================================================================
 
-    /**
-     * @param  array<string, array{valid: bool, name?: string, code?: string}>  $productMapByLegacyId
-     * @param  array<string, array{valid: bool, name?: string}>  $materialMapByLegacyId
-     */
-    private function importProductMaterials(string $sql, array $productMapByLegacyId, array $materialMapByLegacyId): void
+    private function importProductMaterials(string $sql): void
     {
         foreach (LegacySqlDump::parseTable($sql, 'bom_rawmate') as $row) {
             if ($row['is_active'] !== '1') {
                 continue;
             }
 
-            $idbom = $row['idbom'];
-            $product = $productMapByLegacyId[$row['idbarang']] ?? ['valid' => false];
-            $material = $materialMapByLegacyId[$row['idrawmate']] ?? ['valid' => false];
+            $id = (int) $row['idbom'];
+            $productId = (int) $row['idbarang'];
+            $materialId = (int) $row['idrawmate'];
 
-            if (! $product['valid']) {
-                $this->conflicts['product_materials'][] = "idbom={$idbom}: idbarang={$row['idbarang']} tidak berhasil dipetakan ke produk, baris BOM dilewati.";
-
-                continue;
-            }
-
-            if (! $material['valid']) {
-                $this->conflicts['product_materials'][] = "idbom={$idbom}: idrawmate={$row['idrawmate']} tidak berhasil dipetakan ke material (kategori bukan produksi/kemasan?), baris BOM dilewati.";
+            if (! isset($this->valid['products'][$productId])) {
+                $this->conflicts['product_materials'][] = "idbom={$id}: idbarang={$productId} tidak ada/tidak diimpor sebagai produk, baris BOM dilewati.";
 
                 continue;
             }
 
-            $productName = $product['name'];
-            $materialName = $material['name'];
-
-            if ($this->option('apply')) {
-                $productModel = Product::where('name', $productName)->first();
-                $materialModel = Material::where('name', $materialName)->first();
-
-                if (! $productModel || ! $materialModel) {
-                    $this->conflicts['product_materials'][] = "idbom={$idbom}: {$productName} / {$materialName} tidak ditemukan saat --apply (kemungkinan gagal dibuat di langkah sebelumnya), baris BOM dilewati.";
-
-                    continue;
-                }
-
-                if (ProductMaterial::where('product_id', $productModel->id)->where('material_id', $materialModel->id)->exists()) {
-                    $this->skipped['product_materials'][] = "{$productName} + {$materialName}: sudah ada.";
-
-                    continue;
-                }
-            } elseif (ProductMaterial::whereHas('product', fn ($q) => $q->where('name', $productName))
-                ->whereHas('material', fn ($q) => $q->where('name', $materialName))
-                ->exists()) {
-                $this->skipped['product_materials'][] = "{$productName} + {$materialName}: sudah ada.";
+            if (! isset($this->valid['materials'][$materialId])) {
+                $this->conflicts['product_materials'][] = "idbom={$id}: idrawmate={$materialId} tidak ada/tidak diimpor sebagai material (kategori bukan produksi/kemasan?), baris BOM dilewati.";
 
                 continue;
             }
 
-            // `basis` DEFAULT 'box' sesuai instruksi -- `bom_rawmate` tidak
-            // pernah menyatakan dasar hitungnya sendiri. PLASTIK/LABEL/MIKA
-            // biasanya membungkus per POTONG, bukan per box, jadi baris
-            // dengan kategori itu ditandai untuk ditinjau -- TETAP diimpor
-            // dengan basis 'box', bukan ditebak jadi 'piece' diam-diam.
+            // Pasangan produk + material harus unik (`product_materials`); pasangan kembar di legacy dilaporkan.
+            $pair = "{$productId}+{$materialId}";
+            if (isset($this->claimed['product_materials']['pair'][$pair]) && $this->claimed['product_materials']['pair'][$pair] !== $id) {
+                $this->conflicts['product_materials'][] = "idbom={$id}: pasangan produk {$productId} + material {$materialId} sudah ada di idbom={$this->claimed['product_materials']['pair'][$pair]}, dilewati.";
+
+                continue;
+            }
+
+            // Pasangan yang sudah dipakai baris BOM lain di basis data (id berbeda) juga tidak bisa dimasukkan.
+            if (ProductMaterial::query()->where('product_id', $productId)->where('material_id', $materialId)->where('id', '!=', $id)->exists()) {
+                $this->conflicts['product_materials'][] = "idbom={$id}: pasangan produk {$productId} + material {$materialId} sudah ada di basis data dengan id lain, dilewati.";
+
+                continue;
+            }
+
+            // `basis` DEFAULT 'box' -- `bom_rawmate` tidak pernah menyatakan dasar hitungnya sendiri.
+            // PLASTIK/LABEL/MIKA biasanya membungkus per POTONG, jadi baris itu ditandai untuk ditinjau --
+            // TETAP diimpor dengan basis 'box', bukan ditebak jadi 'piece' diam-diam.
+            $materialName = $this->materialNames[$materialId] ?? '';
             $needsReview = str_contains($materialName, 'PLASTIK')
                 || str_contains($materialName, 'LABEL')
                 || str_contains($materialName, 'MIKA');
 
-            $this->created['product_materials'][] = "{$productName} + {$materialName} (qty {$row['qty']}, basis box)"
-                .($needsReview ? ' -- TINJAU: mungkin per-pcs, bukan per-box' : '');
+            $label = "produk {$productId} + material {$materialId} (qty {$row['qty']}, basis box)".($needsReview ? ' -- TINJAU: mungkin per-pcs, bukan per-box' : '');
 
-            if ($this->option('apply')) {
-                ProductMaterial::create([
-                    'product_id' => $productModel->id,
-                    'material_id' => $materialModel->id,
-                    'quantity' => (int) $row['qty'],
-                    'basis' => 'box',
-                ]);
+            $status = $this->place('product_materials', $id, ['product_id' => $productId, 'material_id' => $materialId], $label, null, [
+                'quantity' => (int) $row['qty'],
+                'basis' => 'box',
+            ]);
+
+            if ($status !== 'refused') {
+                $this->claimed['product_materials']['pair'][$pair] = $id;
             }
         }
     }
@@ -556,123 +474,155 @@ class ImportLegacyMaster extends Command
     // Bantuan
     // =========================================================================
 
+    /** Nama/teks legacy: huruf besar, rapikan ujung. Spasi di dalam TIDAK diubah (duplikat beda spasi dilaporkan). */
+    private function clean(mixed $value): string
+    {
+        return strtoupper(trim((string) $value));
+    }
+
     /**
-     * Buat-atau-lewati satu baris master sederhana (nama unik saja).
-     *
-     * Selalu memutuskan LEBIH DULU lewat exists(), baik dry-run maupun
-     * `--apply` -- supaya laporan dry-run persis meramalkan apa yang akan
-     * terjadi, bukan menebak dari sisi lain.
-     */
-    /**
-     * Kunci pencocokan longgar -- BUKAN nama yang disimpan.
-     *
-     * Susulan Hafizh 20 September 2026: legacy punya "CV. SAMUDERA
-     * KARUNIA RIZKY" dan "CV.SAMUDERA KARUNIA RIZKY" (NPWP sama, jelas
-     * perusahaan yang sama) sebagai DUA baris supplier -- beda spasi
-     * saja sudah cukup untuk lolos dari `where('name', $name)->exists()`
-     * yang sebelumnya dipakai di sini, dan keduanya akan terimpor sebagai
-     * dua supplier terpisah.
-     *
-     * Menyeragamkan spasi ganda dan spasi sesudah titik ("CV. X" jadi
-     * sama dengan "CV.X") cukup untuk menangkap kasus ini tanpa
-     * pencocokan fuzzy yang lebih berat -- dan tetap dalam semangat
-     * "cocokkan lewat nama", bukan menebak kesamaan dari isinya.
+     * Kunci pencocokan longgar -- BUKAN nama yang disimpan. Spasi ganda dan spasi sesudah titik
+     * diseragamkan ("CV. X" = "CV.X") supaya duplikat beda spasi/format TERLAPOR. Hanya untuk laporan.
      */
     private function matchKey(string $name): string
     {
-        $key = strtoupper(trim($name));
-        $key = (string) preg_replace('/\s+/', ' ', $key);
-        $key = (string) preg_replace('/\.\s+/', '.', $key);
+        $key = (string) preg_replace('/\s+/', ' ', strtoupper(trim($name)));
 
-        return $key;
-    }
-
-    /** @return array<string, string> matchKey() => nama asli, untuk satu tabel. */
-    private function existingKeysFor(string $table, string $model): array
-    {
-        if (! isset($this->existingKeysCache[$table])) {
-            $this->existingKeysCache[$table] = $model::query()
-                ->pluck('name')
-                ->mapWithKeys(fn (string $existingName): array => [$this->matchKey($existingName) => $existingName])
-                ->all();
-        }
-
-        return $this->existingKeysCache[$table];
+        return (string) preg_replace('/\.\s+/', '.', $key);
     }
 
     /**
-     * Putuskan apakah sebuah nama sudah ada, mirip baris lain di sumber
-     * yang sama (konflik, tidak dibuat otomatis), atau sungguhan baru --
-     * dipakai `importProducts()`, `importMaterialCategoriesAndMaterials()`,
-     * dan `importSuppliers()` supaya ketiganya menegakkan aturan yang
-     * SAMA (Hafizh: "berlaku untuk semua master: barang, material,
-     * supplier").
+     * Tempatkan satu baris legacy di tabelnya DENGAN id legacy.
      *
-     * @return 'exists'|'conflict'|'new'
+     * - id sudah ada, isi sama -> dilewati (idempoten), id tercatat valid;
+     * - id sudah ada, isi BERBEDA -> DITOLAK (dilaporkan; seluruh --apply dibatalkan);
+     * - id kosong -> dibuat (hanya bila --apply). Nilai kolom unik yang sudah terpakai di id lain
+     *   (nama kembar persis) -> dilewati dan dilaporkan; yang hanya mirip -> tetap dibuat, dilaporkan.
+     *
+     * @param  array<string, mixed>  $identity  kolom yang menentukan "baris yang sama"
+     * @param  array<string, mixed>  $extra  kolom lain saat membuat
+     * @param  (\Closure(): array<string, mixed>)|null  $lazy  kolom yang baru dihitung saat menulis
+     * @return 'created'|'same'|'refused'|'conflict'
      */
-    private function classifyByName(string $table, string $model, string $name, string $legacyRef): string
+    private function place(string $table, int $id, array $identity, string $label, ?string $looseName, array $extra = [], ?\Closure $lazy = null): string
     {
-        $key = $this->matchKey($name);
-        $existing = $this->existingKeysFor($table, $model);
+        $config = self::TABLES[$table];
+        /** @var class-string<Model> $model */
+        $model = $config['model'];
 
-        if (isset($existing[$key])) {
-            $suffix = $existing[$key] === $name ? '' : " (cocok dengan \"{$existing[$key]}\" yang sudah ada)";
-            $this->skipped[$table][] = "{$name}{$suffix}: sudah ada.";
+        $existing = $model::query()->find($id);
 
-            return 'exists';
+        if ($existing) {
+            foreach ($identity as $column => $value) {
+                if ($this->clean($existing->getAttribute($column)) !== $this->clean($value)) {
+                    $theirs = collect($identity)->map(fn ($v, $c) => $c.'='.$existing->getAttribute($c))->implode(', ');
+                    $this->refusals[$table][] = "id {$id}: sudah berisi [{$theirs}], legacy [{$label}] -- DITOLAK (tidak ditimpa).";
+
+                    return 'refused';
+                }
+            }
+
+            $this->skipped[$table][] = "id {$id}: {$label} sudah ada.";
+            $this->valid[$table][$id] = true;
+            $this->claimBatch($table, $identity, $id);
+
+            return 'same';
         }
 
-        if (isset($this->seenInBatch[$table][$key])) {
-            $lain = $this->seenInBatch[$table][$key];
-            $this->conflicts[$table][] = "{$name} ({$legacyRef}): mirip \"{$lain}\" di baris lain sumber ini (beda spasi/format) -- "
-                .'kemungkinan duplikat, TIDAK dibuat otomatis, putuskan manual mana yang benar.';
+        // Kolom unik yang sudah dipakai id lain (basis data atau baris sebelumnya di sumber ini).
+        foreach ($config['unique'] as $column) {
+            $value = (string) ($identity[$column] ?? $extra[$column] ?? '');
+            $owner = $this->claimed[$table][$column][$this->clean($value)] ?? null;
 
-            return 'conflict';
+            if ($owner === null && $value !== '' && $model::query()->where($column, $value)->where('id', '!=', $id)->exists()) {
+                $owner = (int) $model::query()->where($column, $value)->value('id');
+            }
+
+            if ($owner !== null && $owner !== $id) {
+                $this->conflicts[$table][] = "{$label} (id {$id}): {$column} \"{$value}\" sama persis dengan id {$owner}, tidak diimpor (nilai unik).";
+
+                return 'conflict';
+            }
         }
 
-        $this->seenInBatch[$table][$key] = $name;
+        // Duplikat yang hanya mirip (beda spasi/format): tetap diimpor, dilaporkan.
+        if ($looseName !== null) {
+            $key = $this->matchKey($looseName);
+            $this->seedLoose($table, $model);
 
-        return 'new';
+            if (isset($this->looseSeen[$table][$key]) && $this->looseSeen[$table][$key][0] !== $id) {
+                [$otherId, $otherName] = $this->looseSeen[$table][$key];
+                $this->conflicts[$table][] = "{$label} (id {$id}): mirip \"{$otherName}\" (id {$otherId}) -- beda spasi/format, kemungkinan duplikat. "
+                    .'KEDUANYA diimpor (id legacy dipertahankan); putuskan mana yang dinonaktifkan.';
+            }
+
+            $this->looseSeen[$table][$key] ??= [$id, $looseName];
+        }
+
+        $this->created[$table][] = "id {$id}: {$label}";
+        $this->valid[$table][$id] = true;
+        $this->claimBatch($table, $identity + $extra, $id);
+
+        if ($this->option('apply')) {
+            $attributes = $identity + $extra + ($lazy ? $lazy() : []);
+            $model::unguarded(fn () => $model::create(['id' => $id] + $attributes));
+        }
+
+        return 'created';
     }
 
-    private function upsert(string $table, string $name, \Closure $create): void
+    /** Catat nilai kolom unik baris ini sebagai milik $id. */
+    private function claimBatch(string $table, array $values, int $id): void
     {
-        $model = match ($table) {
-            'product_categories' => ProductCategory::class,
-            'grades' => Grade::class,
-            'cattle_classes' => CattleClass::class,
-            default => throw new \InvalidArgumentException("Tabel tidak dikenal: {$table}"),
-        };
+        foreach (self::TABLES[$table]['unique'] as $column) {
+            if (isset($values[$column])) {
+                $this->claimed[$table][$column][$this->clean($values[$column])] = $id;
+            }
+        }
+    }
 
-        if ($model::where('name', $name)->exists()) {
-            $this->skipped[$table][] = "{$name}: sudah ada.";
-
+    /** Isi kunci longgar dengan baris yang SUDAH ada di basis data (sekali per tabel). */
+    private function seedLoose(string $table, string $model): void
+    {
+        if (isset($this->looseSeen[$table])) {
             return;
         }
 
-        $this->created[$table][] = $name;
+        $this->looseSeen[$table] = [];
 
-        if ($this->option('apply')) {
-            $create();
+        if (! in_array('name', self::TABLES[$table]['identity'], true)) {
+            return;
+        }
+
+        foreach ($model::query()->orderBy('id')->get(['id', 'name']) as $row) {
+            $this->looseSeen[$table][$this->matchKey((string) $row->name)] ??= [(int) $row->id, (string) $row->name];
         }
     }
 
-    private function printReport(bool $apply): void
+    private function printReport(bool $apply, bool $refused): void
     {
         $this->newLine();
-        $this->info($apply ? 'Diterapkan (--apply):' : 'Dry-run -- tidak ada yang ditulis. Tambahkan --apply untuk benar-benar menulis.');
+
+        if ($refused) {
+            $this->error($apply
+                ? 'DIBATALKAN -- ada id legacy yang bentrok dengan isi berbeda; TIDAK ADA yang ditulis. Pakai basis data yang bersih.'
+                : 'Dry-run -- ada id legacy yang bentrok dengan isi berbeda; --apply akan DIBATALKAN. Pakai basis data yang bersih.');
+        } else {
+            $this->info($apply ? 'Diterapkan (--apply), id legacy dipertahankan:' : 'Dry-run -- tidak ada yang ditulis. Tambahkan --apply untuk benar-benar menulis.');
+        }
         $this->newLine();
 
-        foreach ([
-            'product_categories', 'grades', 'suppliers', 'cattle_classes',
-            'products', 'material_categories', 'materials', 'product_materials',
-        ] as $table) {
+        foreach (array_keys(self::TABLES) as $table) {
             $dibuat = $this->created[$table] ?? [];
             $dilewati = $this->skipped[$table] ?? [];
             $konflik = $this->conflicts[$table] ?? [];
+            $ditolak = $this->refusals[$table] ?? [];
 
-            $this->line("<fg=cyan>{$table}</> -- dibuat: ".count($dibuat).', dilewati: '.count($dilewati).', konflik: '.count($konflik));
+            $this->line("<fg=cyan>{$table}</> -- dibuat: ".count($dibuat).', sama (dilewati): '.count($dilewati).', konflik: '.count($konflik).', DITOLAK: '.count($ditolak));
 
+            foreach ($ditolak as $item) {
+                $this->line("  <fg=red>x {$item}</>");
+            }
             foreach ($dibuat as $item) {
                 $this->line("  <fg=green>+ {$item}</>");
             }
@@ -684,12 +634,11 @@ class ImportLegacyMaster extends Command
             }
         }
 
-        if ($this->notes !== []) {
-            $this->newLine();
-            $this->info('Catatan:');
-            foreach ($this->notes as $note) {
-                $this->line("  - {$note}");
-            }
+        $this->newLine();
+        $this->info('Catatan:');
+        foreach ($this->notes as $note) {
+            $this->line("  - {$note}");
         }
+        $this->line('  - Id legacy dipertahankan; auto-increment melanjutkan dari max(id). Baris yang dilewati meninggalkan lubang id.');
     }
 }
