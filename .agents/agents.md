@@ -7728,3 +7728,12 @@ Tiga keputusan Ayah sekaligus:
    form itu). Sekarang isian boleh kosong; `KeepsCustomerInAGroup` (Create dan Edit) membuatkan grup bernama
    sama dengan customer (TOP, PIC, alamat dibawa; bila grup bernama sama sudah ada, customer bergabung ke
    situ). Grup yang dipilih tidak pernah diganti.
+
+## Costing: harga dari costing sebelumnya, potongan per produk, overhead masuk HPP, 14 Oktober 2026 (#541)
+
+Keputusan Owner lewat Hafizh. Detail dan angka uji di `.agents/hpp.md` §18. Yang perlu diingat saat menyentuh
+costing: (1) `CostingPrices` adalah satu-satunya sumber harga costing -- jangan kembali ke `ReferencePrice`/price
+list; (2) harga yang diketik di Draft dibawa `Costing::currentPrices()` ke `CostingCalculator::forBoning(..., $typedPrices)`;
+(3) `Costing::recalculate()` memperbarui baris item di tempat (id tetap); (4) mengunci costing memperbarui
+`costing_price_defaults` lewat `CostingPrices::rememberFrom()`; (5) offal borong/kulit ditandai kolom
+`products.excluded_from_overhead` (bukan nama, bukan kategori) -- tidak dibebani overhead; nama hanya pengisi awal; (6) `#532` (import price list dari harga SO) ditunda.

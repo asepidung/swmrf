@@ -125,9 +125,10 @@ class CostingResourceTest extends TestCase
         ]);
         BoningCarcass::create(['boning_id' => $boning->id, 'carcass_id' => $carcass->id]);
 
-        $general = CustomerGroup::firstOrCreate(['name' => 'UMUM'], ['is_general_price_reference' => true]);
-        $priceList = PriceList::firstOrCreate(['customer_group_id' => $general->id], ['created_by' => $this->user->id]);
-        PriceListItem::create(['price_list_id' => $priceList->id, 'product_id' => $this->product->id, 'price' => 149000]);
+        \App\Models\CostingPriceDefault::updateOrCreate(
+            ['product_id' => $this->product->id],
+            ['gross_price' => 149000, 'net_price' => 149000, 'source' => 'import'],
+        );
 
         BoningItem::create([
             'boning_id' => $boning->id, 'product_id' => $this->product->id,
@@ -243,6 +244,53 @@ class CostingResourceTest extends TestCase
 
         $this->assertSame(1, Costing::where('boning_id', $boning->id)->count(), 'Costing baru dibuat.');
         $this->assertSame(0, Costing::onlyTrashed()->where('boning_id', $boning->id)->count(), 'Yang terhapus dibuang sungguhan, tidak menghalangi.');
+    }
+
+    // =========================================================================
+    // Harga costing (#541)
+    // =========================================================================
+
+    /** @test */
+    public function typing_the_gross_in_a_draft_fills_the_net_with_the_last_discount_and_recalculates(): void
+    {
+        $boning = $this->lockedBoningWithCostableProduct();
+        // Potongan terakhir produk ini 6,25%: 160.000 -> 150.000.
+        \App\Models\CostingPriceDefault::where('product_id', $this->product->id)->update(['gross_price' => 160000, 'net_price' => 150000]);
+        $costing = Costing::createFromCalculation($boning, \App\Services\CostingCalculator::forBoning($boning, 0)->calculate());
+        $item = $costing->items()->firstOrFail();
+
+        Livewire::actingAs($this->employee(['view_costings', 'edit_costings']))
+            ->test(\App\Filament\Admin\Resources\CostingResource\RelationManagers\ItemsRelationManager::class, [
+                'ownerRecord' => $costing, 'pageClass' => EditCosting::class,
+            ])
+            ->call('updateTableColumnState', 'gross_price', $item->getKey(), 200000);
+
+        $item = $costing->items()->firstOrFail();
+        $this->assertSame(200000.0, (float) $item->gross_price);
+        $this->assertSame(187500.0, (float) $item->net_price);
+        $this->assertSame(6.25, (float) $item->trading_terms_percent);
+        $this->assertSame(187500.0 * 100, (float) $costing->fresh()->total_sales_value);
+    }
+
+    /** @test */
+    public function typed_prices_survive_recalculate_and_locking_makes_them_the_next_costings_price(): void
+    {
+        $boning = $this->lockedBoningWithCostableProduct();
+        $costing = Costing::createFromCalculation($boning, \App\Services\CostingCalculator::forBoning($boning, 0)->calculate());
+        $costing->items()->firstOrFail()->update(['gross_price' => 170000, 'net_price' => 165000]);
+
+        Livewire::actingAs($this->employee(['view_costings', 'edit_costings']))
+            ->test(EditCosting::class, ['record' => $costing->getRouteKey()])
+            ->fillForm(['overhead_per_kg' => 0])
+            ->callAction('recalculate');
+
+        $this->assertSame(165000.0, (float) $costing->items()->firstOrFail()->net_price, 'Yang diketik tidak tertimpa.');
+
+        $costing->fresh()->lock();
+
+        $default = \App\Models\CostingPriceDefault::where('product_id', $this->product->id)->firstOrFail();
+        $this->assertSame(165000.0, (float) $default->net_price);
+        $this->assertSame('costing', $default->source);
     }
 
     // =========================================================================

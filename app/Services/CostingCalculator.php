@@ -6,9 +6,6 @@ use App\Models\Boning;
 use App\Models\CarcassItem;
 use App\Models\Costing;
 use App\Models\CostingItem;
-use App\Models\CustomerGroup;
-use App\Models\PriceList;
-use App\Models\PriceListItem;
 use App\Models\Product;
 use App\Models\PurchaseCattle;
 use App\Models\PurchaseCattleItem;
@@ -21,11 +18,12 @@ use App\Models\PurchaseCattleItem;
  *
  * ```
  * biaya_beli       = Σ per kelas sapi (berat terima kelas x harga/kg kelas)
- * net_i            = gross_i x (1 - trading_terms grup acuan produk i)
+ * net_i            = harga net produk i (costing terkunci terakhir, atau diketik) -- #541
  * total_nilai_jual = Σ net_i x kg_i
- * k                = biaya_beli / total_nilai_jual
+ * overhead_total   = overhead_per_kg x Σ kg daging (tanpa offal dan kulit)
+ * k                = (biaya_beli + overhead_total) / total_nilai_jual
  * HPP_i / kg       = net_i x k
- * laba lot         = total_nilai_jual - biaya_beli - overhead_per_kg x Σ kg
+ * laba lot         = total_nilai_jual - biaya_beli - overhead_total
  * ```
  *
  * Pembulatan: dihitung PENUH (float PHP biasa, tanpa pembulatan antara),
@@ -40,12 +38,17 @@ class CostingCalculator
     private function __construct(
         private readonly Boning $boning,
         private readonly float $overheadPerKg,
+        private readonly array $typedPrices = [],
     ) {
     }
 
-    public static function forBoning(Boning $boning, ?float $overheadPerKg = null): self
+    /**
+     * @param  array<int, array{gross: float, net: float}>  $typedPrices  harga yang diketik di Draft
+     *                                                                   (product_id => gross+net); menang atas costing terakhir.
+     */
+    public static function forBoning(Boning $boning, ?float $overheadPerKg = null, array $typedPrices = []): self
     {
-        return new self($boning, $overheadPerKg ?? Costing::defaultOverheadPerKg());
+        return new self($boning, $overheadPerKg ?? Costing::defaultOverheadPerKg(), $typedPrices);
     }
 
     /**
@@ -75,18 +78,24 @@ class CostingCalculator
         $items = $this->productItems();
         $totalSalesValueRaw = 0.0;
         $totalKgRaw = 0.0;
+        $meatKgRaw = 0.0;
         foreach ($items as $item) {
             $totalSalesValueRaw += $item['sales_value_raw'];
             $totalKgRaw += $item['weight_kg'];
+            $meatKgRaw += $item['is_meat'] ? $item['weight_kg'] : 0.0;
         }
 
-        $ratioKRaw = $totalSalesValueRaw > 0 ? $purchaseCostRaw / $totalSalesValueRaw : 0.0;
+        // Overhead MASUK HPP (#541): overhead per kg x kg daging (tanpa offal dan kulit), dibagi
+        // menurut nilai jual lewat k -- bukan rata per kg, yang membuat offal dinilai di atas harga jualnya.
+        $overheadTotalRaw = $this->overheadPerKg * $meatKgRaw;
+
+        $ratioKRaw = $totalSalesValueRaw > 0 ? ($purchaseCostRaw + $overheadTotalRaw) / $totalSalesValueRaw : 0.0;
 
         foreach ($items as &$item) {
             $item['hpp_per_kg'] = $item['flag'] === CostingItem::FLAG_NO_PRICE
                 ? 0.0
                 : round($item['net_price'] * $ratioKRaw, 2);
-            unset($item['sales_value_raw']);
+            unset($item['sales_value_raw'], $item['is_meat']);
         }
         unset($item);
 
@@ -95,7 +104,7 @@ class CostingCalculator
         }
         unset($row);
 
-        $profit = round($totalSalesValueRaw - $purchaseCostRaw - ($this->overheadPerKg * $totalKgRaw), 2);
+        $profit = round($totalSalesValueRaw - $purchaseCostRaw - $overheadTotalRaw, 2);
 
         return [
             'purchase_cost' => round($purchaseCostRaw, 2),
@@ -105,6 +114,7 @@ class CostingCalculator
             'ratio_k' => round($ratioKRaw, 6),
             'total_kg' => round($totalKgRaw, 2),
             'overhead_per_kg' => round($this->overheadPerKg, 2),
+            'overhead_total' => round($overheadTotalRaw, 2),
             'profit' => $profit,
         ];
     }
@@ -224,33 +234,33 @@ class CostingCalculator
             $product = Product::find($row->product_id);
             $weightKg = (float) $row->total_weight;
 
-            // Harga acuan: satu rumah di `ReferencePrice` (dipakai juga valuasi repack).
-            $reference = ReferencePrice::forProduct($product);
-            $referenceGroupId = $reference['reference_group_id'];
-            $termsPercent = $reference['trading_terms_percent'];
-            $flag = $reference['flag'];
+            // Harga: yang diketik di Draft, kalau tidak dari costing terkunci terakhir (#541).
+            $price = $this->typedPrices[(int) $row->product_id] ?? CostingPrices::lastFor((int) $row->product_id);
 
-            if ($reference['gross_price'] === null) {
+            if ($price === null || $price['net'] <= 0) {
                 $grossPrice = 0.0;
                 $netPrice = 0.0;
-                $salesValue = 0.0;
+                $flag = CostingItem::FLAG_NO_PRICE;
             } else {
-                $grossPrice = $reference['gross_price'];
-                $netPrice = $reference['net_price'];
-                $salesValue = $netPrice * $weightKg;
+                $grossPrice = $price['gross'];
+                $netPrice = round($price['net'], 2);
+                $flag = null;
             }
+
+            $salesValue = $netPrice * $weightKg;
 
             $rows[] = [
                 'product_id' => (int) $row->product_id,
                 'weight_kg' => $weightKg,
-                'reference_group_id' => $referenceGroupId,
+                'reference_group_id' => null,
                 'gross_price' => round($grossPrice, 2),
-                'trading_terms_percent' => $termsPercent,
+                'trading_terms_percent' => CostingPrices::discountPercent($grossPrice, $netPrice),
                 'net_price' => $netPrice,
                 'sales_value' => round($salesValue, 2),
                 'sales_value_raw' => $salesValue,
                 'hpp_per_kg' => 0.0,
                 'flag' => $flag,
+                'is_meat' => CostingPrices::isMeat($product),
             ];
         }
 

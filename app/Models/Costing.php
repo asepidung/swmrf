@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\CostingPrices;
 use App\Support\BarcodeCosts;
 use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
@@ -37,6 +38,7 @@ class Costing extends Model
         'total_sales_value',
         'ratio_k',
         'overhead_per_kg',
+        'overhead_total',
         'total_kg',
         'profit',
         'status',
@@ -52,6 +54,7 @@ class Costing extends Model
         'total_sales_value' => 'float',
         'ratio_k' => 'float',
         'overhead_per_kg' => 'float',
+        'overhead_total' => 'float',
         'total_kg' => 'float',
         'profit' => 'float',
         'locked_at' => 'datetime',
@@ -112,6 +115,7 @@ class Costing extends Model
                 'total_sales_value' => $result['total_sales_value'],
                 'ratio_k' => $result['ratio_k'],
                 'overhead_per_kg' => $result['overhead_per_kg'],
+                'overhead_total' => $result['overhead_total'],
                 'total_kg' => $result['total_kg'],
                 'profit' => $result['profit'],
             ]);
@@ -125,8 +129,8 @@ class Costing extends Model
     /**
      * Terapkan ULANG hasil `CostingCalculator::calculate()` ke costing
      * yang SUDAH ADA -- dipakai "Hitung ulang" (Draft saja). Baris item
-     * dan biaya sapi lama dibuang, diganti yang baru -- keduanya murni
-     * SNAPSHOT tanpa rujukan balik dari model lain, aman diganti utuh.
+     * diperbarui di tempat, biaya sapi lama diganti yang baru -- keduanya murni
+     * SNAPSHOT tanpa rujukan balik dari model lain.
      *
      * @param  array<string, mixed>  $result
      *
@@ -144,13 +148,22 @@ class Costing extends Model
                 'total_sales_value' => $result['total_sales_value'],
                 'ratio_k' => $result['ratio_k'],
                 'overhead_per_kg' => $result['overhead_per_kg'],
+                'overhead_total' => $result['overhead_total'],
                 'total_kg' => $result['total_kg'],
                 'profit' => $result['profit'],
             ])->save();
 
-            $this->items()->delete();
+            // Baris produk diperbarui di tempat (id-nya tetap, supaya sel yang sedang diketik di layar
+            // tidak kehilangan barisnya); yang sudah tidak ada di boning dibuang.
+            $this->items()->whereNotIn('product_id', collect($result['items'])->pluck('product_id'))->delete();
+            foreach ($result['items'] as $row) {
+                $this->items()->updateOrCreate(['product_id' => $row['product_id']], $row);
+            }
+
             $this->cattle()->delete();
-            $this->applyCalculationRows($result);
+            foreach ($result['cattle'] as $row) {
+                $this->cattle()->create($row);
+            }
         });
     }
 
@@ -164,6 +177,19 @@ class Costing extends Model
         foreach ($result['items'] as $row) {
             $this->items()->create($row);
         }
+    }
+
+    /**
+     * Harga yang sedang tertera di Draft ini (product_id => gross+net), dipakai sebagai harga ketikan
+     * saat dihitung ulang -- supaya yang diketik tidak tertimpa harga costing terakhir (#541).
+     *
+     * @return array<int, array{gross: float, net: float}>
+     */
+    public function currentPrices(): array
+    {
+        return $this->items()->where('net_price', '>', 0)->get()
+            ->mapWithKeys(fn (CostingItem $i) => [$i->product_id => ['gross' => (float) $i->gross_price, 'net' => (float) $i->net_price]])
+            ->all();
     }
 
     /** Margin% -- SAMA untuk seluruh produk, sifat metode ini (`hpp.md` §11.1), bukan per produk. */
@@ -202,6 +228,9 @@ class Costing extends Model
             // sudah terjual atau jadi bahan repack (HPP tahap 2, issue #522).
             // Dikunci ulang sesudah unlock: nilai baru menimpa yang lama.
             BarcodeCosts::valueBoning($this);
+
+            // Harga costing berikutnya mengikuti costing yang terkunci terakhir (#541).
+            CostingPrices::rememberFrom($this);
         });
     }
 

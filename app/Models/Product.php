@@ -15,6 +15,7 @@ class Product extends Model
         'structure_type',
         'parent_id',
         'is_active',
+        'excluded_from_overhead',
         'legacy_note',
         'costing_customer_group_id',
         'max_label_weight',
@@ -22,6 +23,7 @@ class Product extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'excluded_from_overhead' => 'boolean',
     ];
 
     public function setNameAttribute($value)

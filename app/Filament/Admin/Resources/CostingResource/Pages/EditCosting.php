@@ -76,7 +76,7 @@ class EditCosting extends EditRecord
                     $overhead = (float) ($this->form->getState()['overhead_per_kg'] ?? 0);
 
                     try {
-                        $result = CostingCalculator::forBoning($this->getRecord()->boning, $overhead)->calculate();
+                        $result = CostingCalculator::forBoning($this->getRecord()->boning, $overhead, $this->getRecord()->currentPrices())->calculate();
                         $this->getRecord()->recalculate($result);
                     } catch (\Exception $e) {
                         report($e);

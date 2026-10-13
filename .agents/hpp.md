@@ -1004,3 +1004,38 @@ produk per grup; sheet LION (19), HPM (14), UMUM (67; = REGULER + UNGROUP legacy
   menurut nama ternormalisasi; yang tidak ketemu dilaporkan. Acuan yang sudah diisi manual tidak ditimpa
   kecuali `--overwrite`. Baris 5% di Excel (Brisket PEDO, RIBS, Fat Brisket) belum punya grup: dibiarkan
   kosong dan hanya dilaporkan.
+
+## 18. Harga dari costing sebelumnya dan overhead masuk HPP (issue #541, 14 Oktober 2026)
+
+Keputusan Owner (lewat Hafizh), menggantikan sumber harga §9-10 dan cara overhead di §6.
+
+**Sumber harga.** Saat costing dibuat, tiap produk mendapat gross dan net dari **costing terkunci
+terakhir** yang memuat produk itu (urut `locked_at`); bila belum pernah ada, dari
+`costing_price_defaults` (diisi sekali oleh `costing:import-prices` dari sheet `LJP 15 - 8 OKT`, dan
+diperbarui tiap costing dikunci); bila tidak ada juga, `NO_PRICE`. Gross dan net bisa **diketik langsung**
+di baris produk selagi Draft; setiap ketikan menghitung ulang costing, dan "Hitung ulang" tidak menimpa
+yang diketik. Mengetik gross saja: net = gross dikurangi potongan terakhir produk itu (atau = gross bila belum
+pernah punya harga). Potongan adalah milik **produk** (1 - net/gross), disimpan sebagai snapshot di
+`costing_items`; bukan lagi milik grup pelanggan. LION 6,25% (bukan 6%).
+
+Costing **tidak lagi membaca** price list, `products.costing_customer_group_id`, maupun trading terms grup.
+Kolomnya dibiarkan, tidak dipakai. `ReferencePrice` tetap ada hanya untuk `legacy:import-prices` (#532, ditunda;
+nanti dipakai untuk price list penjualan). Flag `NO_REFERENCE` tidak lagi dihasilkan.
+
+**Overhead masuk HPP.** `overhead_total = overhead_per_kg x kg daging` (semua produk **kecuali** yang bertanda
+`products.excluded_from_overhead` -- F88 di Excel: hanya "Offal borong" dan Kulit/Hides; Liver, Sweetbread dll. ikut). Lalu
+
+```
+k      = (biaya beli + overhead_total) / total nilai jual
+HPP/kg = net x k                 (presisi penuh)
+laba   = total nilai jual - biaya beli - overhead_total
+```
+
+Bukan +3.000 rata per kg: itu membuat Offal dinilai di atas harga jualnya. Angka uji wajib lot LJP 15 - 7 Okt
+(biaya beli 490.847.989,74; kg daging 4.737,44; overhead 3.000 -> 14.212.320; nilai jual 559.212.720,18;
+k = 0,903163) ada di `CostingCalculatorTest`: Topside 124.890,53, Tenderloin 183.737,25, Cuberoll 125.262,40,
+Offal 7.225,31, laba 54.152.410,44 -- semuanya cocok.
+
+Penanda adalah DATA (form Produk: "Tidak ikut kg overhead"), bukan nama dan bukan kategori OFFAL. Nama
+(OFFAL, KULIT, HIDES) hanya pengisi awal: migrasi dan `costing:import-prices` (dengan laporan). Setelah import
+master baru, jalankan `costing:import-prices` lagi atau centang manual produk yang perlu.

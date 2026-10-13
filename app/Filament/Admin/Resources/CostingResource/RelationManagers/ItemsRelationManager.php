@@ -2,15 +2,18 @@
 
 namespace App\Filament\Admin\Resources\CostingResource\RelationManagers;
 
+use App\Filament\Admin\Resources\CostingResource;
+use App\Models\Costing;
 use App\Models\CostingItem;
+use App\Services\CostingCalculator;
+use App\Services\CostingPrices;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 
 /**
- * Baris produk sebuah costing -- READ-ONLY. Seluruh angkanya snapshot
- * dari `CostingCalculator` saat dibuat/dihitung ulang; mengubahnya lewat
- * sini akan membuat tabel ini berbeda dari yang sungguhan dihitung.
+ * Baris produk sebuah costing. Angkanya snapshot dari `CostingCalculator`; satu-satunya yang boleh
+ * diketik adalah gross dan net (selagi Draft, #541) -- setiap ketikan langsung menghitung ulang.
  */
 class ItemsRelationManager extends RelationManager
 {
@@ -23,6 +26,40 @@ class ItemsRelationManager extends RelationManager
         return __('Products');
     }
 
+    private function isDraft(): bool
+    {
+        return $this->getOwnerRecord()->status === Costing::STATUS_DRAFT;
+    }
+
+    /**
+     * Simpan harga yang diketik lalu hitung ulang costing. Hanya gross diketik: net = gross dikurangi
+     * potongan terakhir produk itu. Hanya net diketik: gross dibiarkan (potongan dihitung ulang darinya).
+     */
+    private function typePrice(CostingItem $item, ?float $gross = null, ?float $net = null): float
+    {
+        $costing = $this->getOwnerRecord();
+
+        if ($costing->status !== Costing::STATUS_DRAFT) {
+            throw new \RuntimeException(__('This costing is locked and can no longer be changed.'));
+        }
+
+        $prices = $costing->currentPrices();
+        $current = $prices[$item->product_id] ?? ['gross' => 0.0, 'net' => 0.0];
+
+        if ($gross !== null) {
+            $prices[$item->product_id] = ['gross' => $gross, 'net' => CostingPrices::netForGross($item->product_id, $gross)];
+        } else {
+            $prices[$item->product_id] = ['gross' => $current['gross'], 'net' => $net];
+        }
+
+        $result = CostingCalculator::forBoning($costing->boning, (float) $costing->overhead_per_kg, $prices)->calculate();
+        $costing->recalculate($result);
+
+        $this->redirect(CostingResource::getUrl('edit', ['record' => $costing]));
+
+        return $gross ?? $net;
+    }
+
     public function table(Table $table): Table
     {
         return $table
@@ -33,18 +70,23 @@ class ItemsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('weight_kg')
                     ->label(__('Weight (Kg)'))
                     ->numeric(decimalPlaces: 2),
-                Tables\Columns\TextColumn::make('referenceGroup.name')
-                    ->label(__('Reference Group'))
-                    ->placeholder(__('General price')),
-                Tables\Columns\TextColumn::make('gross_price')
+                // Gross dan net bisa diketik langsung selagi Draft (#541); mengetik gross saja mengisi
+                // net dengan potongan terakhir produk itu. Setiap ketikan langsung menghitung ulang costing.
+                Tables\Columns\TextInputColumn::make('gross_price')
                     ->label(__('Gross'))
-                    ->money('IDR', locale: 'id'),
+                    ->type('number')
+                    ->step('0.01')
+                    ->disabled(fn (): bool => ! $this->isDraft())
+                    ->updateStateUsing(fn (CostingItem $record, $state) => $this->typePrice($record, gross: (float) $state)),
                 Tables\Columns\TextColumn::make('trading_terms_percent')
                     ->label(__('Terms %'))
                     ->suffix('%'),
-                Tables\Columns\TextColumn::make('net_price')
+                Tables\Columns\TextInputColumn::make('net_price')
                     ->label(__('Net'))
-                    ->money('IDR', locale: 'id'),
+                    ->type('number')
+                    ->step('0.01')
+                    ->disabled(fn (): bool => ! $this->isDraft())
+                    ->updateStateUsing(fn (CostingItem $record, $state) => $this->typePrice($record, net: (float) $state)),
                 Tables\Columns\TextColumn::make('sales_value')
                     ->label(__('Sales Value'))
                     ->money('IDR', locale: 'id'),
@@ -58,7 +100,7 @@ class ItemsRelationManager extends RelationManager
                     ->placeholder('-')
                     ->formatStateUsing(fn (?string $state): string => match ($state) {
                         CostingItem::FLAG_NO_REFERENCE => __('No reference group -- valued using general price'),
-                        CostingItem::FLAG_NO_PRICE => __('No price found'),
+                        CostingItem::FLAG_NO_PRICE => __('No price yet -- type the gross and net price'),
                         default => '-',
                     })
                     ->color(fn (?string $state): string => match ($state) {

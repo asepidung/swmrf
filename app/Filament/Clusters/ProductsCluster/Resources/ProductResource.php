@@ -120,6 +120,10 @@ class ProductResource extends Resource
                             ->maxValue(\App\Support\BarcodeSegments::BERAT_MAKS)
                             ->placeholder('100'),
 
+                        Forms\Components\Toggle::make('excluded_from_overhead')
+                            ->label(fn() => __('Not part of the overhead kg (offal borong, hides)'))
+                            ->helperText(fn() => __('Costing: this product is left out of the kg that overhead is charged on.')),
+
                         Forms\Components\Toggle::make('is_active')
                             ->label(fn() => __('Set Active'))
                             ->default(true)

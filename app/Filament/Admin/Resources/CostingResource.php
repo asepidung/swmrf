@@ -17,8 +17,8 @@ use Illuminate\Database\Eloquent\Builder;
  * Mesin HPP (issue #480) -- lihat `.agents/hpp.md` dan
  * `App\Services\CostingCalculator` untuk metodenya. Seluruh angka di sini
  * adalah SNAPSHOT (harga dikunci saat costing dibuat, `hpp.md` §6) --
- * tidak ada satu field pun yang diketik bebas kecuali `overhead_per_kg`,
- * dan hanya selagi `Draft`.
+ * tidak ada satu field pun yang diketik bebas kecuali `overhead_per_kg` dan
+ * gross/net per produk (#541), dan hanya selagi `Draft`.
  */
 class CostingResource extends Resource
 {
@@ -103,6 +103,10 @@ class CostingResource extends Resource
                         Forms\Components\Placeholder::make('total_kg')
                             ->label(__('Total Kg'))
                             ->content(fn (?Costing $record): string => number_format((float) ($record?->total_kg ?? 0), 2).' Kg'),
+
+                        Forms\Components\Placeholder::make('overhead_total')
+                            ->label(__('Total Overhead'))
+                            ->content(fn (?Costing $record): string => 'Rp '.number_format((float) ($record?->overhead_total ?? 0), 0, ',', '.')),
 
                         Forms\Components\Placeholder::make('profit')
                             ->label(__('Profit'))

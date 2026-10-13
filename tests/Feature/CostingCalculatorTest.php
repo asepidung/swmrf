@@ -12,6 +12,7 @@ use App\Models\CattleReceivingItem;
 use App\Models\CattleWeighing;
 use App\Models\CattleWeighingItem;
 use App\Models\CostingItem;
+use App\Models\CostingPriceDefault;
 use App\Models\CustomerGroup;
 use App\Models\PriceList;
 use App\Models\PriceListItem;
@@ -115,19 +116,22 @@ class CostingCalculatorTest extends TestCase
         return ['boning' => $boning, 'cattleClass' => $cattleClass];
     }
 
-    private function lionGroup(): CustomerGroup
+    /** Harga patokan costing (#541): sumber harga bila produk belum pernah ada di costing terkunci. */
+    private function defaultPrice(Product $product, float $gross, float $net): CostingPriceDefault
     {
-        return CustomerGroup::create([
-            'name' => 'LION', 'top' => 30, 'trading_terms_percent' => 6, 'is_costing_reference' => true,
+        return CostingPriceDefault::create([
+            'product_id' => $product->id, 'gross_price' => $gross, 'net_price' => $net, 'source' => 'import',
         ]);
     }
 
-    private function priceListItem(CustomerGroup $group, Product $product, float $grossPrice): PriceListItem
+    private function boningItem(Boning $boning, Product $product, float $weight, string $barcode): void
     {
-        $priceList = PriceList::firstOrCreate(['customer_group_id' => $group->id], ['created_by' => $this->user->id]);
-
-        return PriceListItem::create([
-            'price_list_id' => $priceList->id, 'product_id' => $product->id, 'price' => $grossPrice,
+        \App\Models\BoningItem::create([
+            'boning_id' => $boning->id, 'product_id' => $product->id,
+            'warehouse_id' => $this->warehouse->id,
+            'grade_id' => (\App\Models\Grade::first() ?? \App\Models\Grade::create(['name' => 'CHILL']))->id,
+            'weight' => $weight, 'qty_pcs' => 1, 'pack_date' => '2026-06-16', 'barcode' => $barcode,
+            'created_by' => $this->user->id,
         ]);
     }
 
@@ -136,10 +140,8 @@ class CostingCalculatorTest extends TestCase
     {
         ['boning' => $boning] = $this->juneLotCattleChain();
 
-        $lion = $this->lionGroup();
-        $this->topside->update(['costing_customer_group_id' => $lion->id]);
         // GROSS 149.000 x (1 - 6%) = NET 140.060,00 -- persis hpp.md §1-2.
-        $this->priceListItem($lion, $this->topside, 149000);
+        $this->defaultPrice($this->topside, 149000, 140060);
 
         \App\Models\BoningItem::create([
             'boning_id' => $boning->id, 'product_id' => $this->topside->id,
@@ -161,9 +163,8 @@ class CostingCalculatorTest extends TestCase
             'name' => 'FILLER (SISA LOT)', 'code' => 'MT999', 'category_id' => $this->topside->category_id,
             'structure_type' => 'main', 'is_active' => true,
         ]);
-        $general = CustomerGroup::create(['name' => 'UMUM', 'is_general_price_reference' => true]);
         $fillerNet = 717762805.70 - (140060.00 * 100);
-        $this->priceListItem($general, $filler, $fillerNet);
+        $this->defaultPrice($filler, $fillerNet, $fillerNet);
         \App\Models\BoningItem::create([
             'boning_id' => $boning->id, 'product_id' => $filler->id,
             'warehouse_id' => $this->warehouse->id, 'grade_id' => \App\Models\Grade::first()->id,
@@ -243,9 +244,7 @@ class CostingCalculatorTest extends TestCase
         $boning = Boning::create(['doc_no' => 'BN26-0002', 'boning_date' => '2026-08-20', 'created_by' => $this->user->id]);
         BoningCarcass::create(['boning_id' => $boning->id, 'carcass_id' => $carcass->id]);
 
-        $group = $this->lionGroup();
-        $this->topside->update(['costing_customer_group_id' => $group->id]);
-        $this->priceListItem($group, $this->topside, 100000);
+        $this->defaultPrice($this->topside, 100000, 94000);
         \App\Models\BoningItem::create([
             'boning_id' => $boning->id, 'product_id' => $this->topside->id,
             'warehouse_id' => $this->warehouse->id, 'grade_id' => \App\Models\Grade::create(['name' => 'CHILL'])->id,
@@ -268,31 +267,148 @@ class CostingCalculatorTest extends TestCase
     }
 
     /** @test */
-    public function a_product_without_a_reference_group_is_flagged_no_reference_and_uses_general_price(): void
+    public function a_price_comes_from_the_last_locked_costing_before_the_default(): void
     {
         ['boning' => $boning] = $this->juneLotCattleChain();
-
-        $general = CustomerGroup::create(['name' => 'UMUM', 'is_general_price_reference' => true]);
-        $this->priceListItem($general, $this->topside, 50000);
-        // costing_customer_group_id TIDAK diisi -- kosong = harga umum.
-
-        \App\Models\BoningItem::create([
-            'boning_id' => $boning->id, 'product_id' => $this->topside->id,
-            'warehouse_id' => $this->warehouse->id, 'grade_id' => \App\Models\Grade::create(['name' => 'CHILL'])->id,
-            'weight' => 100, 'qty_pcs' => 39, 'pack_date' => '2026-06-16', 'barcode' => 'BC-TOPSIDE-003',
-            'created_by' => $this->user->id,
-        ]);
-
+        $this->defaultPrice($this->topside, 100000, 94000);
+        $this->boningItem($boning, $this->topside, 100, 'BC-TOPSIDE-003');
         $this->lockWithDrylog($boning);
 
-        $result = CostingCalculator::forBoning($boning->fresh())->calculate();
+        // Dua costing terkunci untuk produk yang sama: yang TERAKHIR terkunci menang.
+        foreach ([['2026-06-01 10:00:00', 150000, 140000, 'BN-OLD'], ['2026-06-10 10:00:00', 160000, 150400, 'BN-NEW']] as [$lockedAt, $gross, $net, $doc]) {
+            $old = Boning::create(['doc_no' => $doc, 'boning_date' => '2026-06-01', 'created_by' => $this->user->id]);
+            $costing = \App\Models\Costing::create(['boning_id' => $old->id, 'costing_date' => '2026-06-01']);
+            $costing->items()->create(['product_id' => $this->topside->id, 'weight_kg' => 1, 'gross_price' => $gross, 'net_price' => $net]);
+            $costing->forceFill(['status' => 'Locked', 'locked_at' => $lockedAt])->saveQuietly();
+        }
 
-        $item = collect($result['items'])->firstWhere('product_id', $this->topside->id);
-        $this->assertSame(CostingItem::FLAG_NO_REFERENCE, $item['flag']);
-        // Harga umum TIDAK dipotong trading terms -- hanya LION/HYPERMART yang begitu.
-        $this->assertSame(0.0, $item['trading_terms_percent']);
-        $this->assertSame(50000.0, $item['net_price']);
-        $this->assertGreaterThan(0, $item['hpp_per_kg']);
+        $item = collect(CostingCalculator::forBoning($boning->fresh())->calculate()['items'])->firstWhere('product_id', $this->topside->id);
+
+        $this->assertSame(160000.0, $item['gross_price']);
+        $this->assertSame(150400.0, $item['net_price']);
+        $this->assertSame(6.0, $item['trading_terms_percent']);
+        $this->assertNull($item['flag']);
+    }
+
+    /** @test */
+    public function typed_prices_win_over_the_last_costing_and_the_discount_is_per_product(): void
+    {
+        ['boning' => $boning] = $this->juneLotCattleChain();
+        $this->defaultPrice($this->topside, 100000, 94000);
+        $this->boningItem($boning, $this->topside, 100, 'BC-TOPSIDE-005');
+        $this->lockWithDrylog($boning);
+
+        $item = collect(CostingCalculator::forBoning($boning->fresh(), 0, [$this->topside->id => ['gross' => 200000, 'net' => 166666.67]])->calculate()['items'])
+            ->firstWhere('product_id', $this->topside->id);
+
+        $this->assertSame(166666.67, $item['net_price']);
+        $this->assertSame(16.67, $item['trading_terms_percent']);
+    }
+
+    /** @test */
+    public function typing_only_the_gross_uses_the_last_discount_of_that_product_or_none(): void
+    {
+        $this->assertSame(200000.0, \App\Services\CostingPrices::netForGross($this->topside->id, 200000), 'Belum pernah punya harga: net = gross.');
+
+        $this->defaultPrice($this->topside, 100000, 93750);
+
+        $this->assertSame(187500.0, \App\Services\CostingPrices::netForGross($this->topside->id, 200000), 'Potongan terakhir 6,25%.');
+    }
+
+    /**
+     * Angka wajib issue #541 (lot LJP 15 - 7 Okt): overhead ikut HPP lewat k, bukan +3.000 rata.
+     * Offal tidak ikut dasar overhead (kg daging 4.737,44).
+     *
+     * @test
+     */
+    public function overhead_enters_hpp_through_k_with_the_ljp_7_october_numbers(): void
+    {
+        // Harga per kg bilangan bulat, jadi biaya beli 490.847.989,74 dibentuk dari dua kelas:
+        // 8.180 kg x 60.000 + 15.996,58 kg x 3.
+        ['boning' => $boning, 'cattleClass' => $classOne] = $this->juneLotCattleChain(pricePerKg: 60000, receivedWeight: 8180);
+        $classTwo = CattleClass::create(['name' => 'COW']);
+        $carcass = Carcass::first();
+        $weighing = CattleWeighing::find($carcass->cattle_weighing_id);
+        PurchaseCattleItem::create([
+            'purchase_cattle_id' => CattleReceiving::find($weighing->cattle_receiving_id)->purchase_cattle_id,
+            'cattle_class_id' => $classTwo->id, 'qty' => 1, 'price' => 3, 'created_by' => $this->user->id,
+        ]);
+        $receivingItem = CattleReceivingItem::create([
+            'cattle_receiving_id' => $weighing->cattle_receiving_id, 'cattle_class_id' => $classTwo->id,
+            'eartag' => 'EARTAG-002', 'initial_weight' => 15996.58,
+        ]);
+        $weighingItem = CattleWeighingItem::create([
+            'cattle_weighing_id' => $weighing->id, 'cattle_receiving_item_id' => $receivingItem->id, 'actual_weight' => 15996.58,
+        ]);
+        CarcassItem::create([
+            'carcass_id' => $carcass->id, 'cattle_weighing_item_id' => $weighingItem->id,
+            'carcass_1' => 1, 'carcass_2' => 1, 'hides' => 1, 'tail' => 0,
+        ]);
+
+        $category = $this->topside->category_id;
+        $make = fn (string $name, string $code) => Product::create(['name' => $name, 'code' => $code, 'category_id' => $category, 'structure_type' => 'main', 'is_active' => true]);
+        $tenderloin = $make('TENDERLOIN', 'MT002');
+        $cuberoll = $make('CUBEROLL', 'MT003');
+        $offal = $make('OFFAL', 'MT004');
+        $offal->update(['excluded_from_overhead' => true]);
+        $fillerA = $make('FILLER A', 'MT998');
+        $fillerB = $make('FILLER B', 'MT999');
+
+        $kg = [$this->topside->id => 309.88, $tenderloin->id => 15.26, $cuberoll->id => 32.48, $offal->id => 4795.3];
+        $net = [$this->topside->id => 138281.25, $tenderloin->id => 203437.50, $cuberoll->id => 138693.00, $offal->id => 8000.00];
+
+        // Sisa daging 4.737,44 - 357,62 = 4.379,82 kg: 4.378,82 kg @ 1,00 + 1 kg yang menggenapkan total nilai jual.
+        $kg[$fillerA->id] = 4378.82;
+        $net[$fillerA->id] = 1.00;
+        $kg[$fillerB->id] = 1.0;
+        $net[$fillerB->id] = 0.0;
+        $knownSales = 0.0;
+        foreach ($kg as $id => $weight) {
+            $knownSales += $weight * $net[$id];
+        }
+        $net[$fillerB->id] = round(559212720.18 - $knownSales, 2);
+
+        $typed = [];
+        $n = 0;
+        foreach ($kg as $id => $weight) {
+            $this->boningItem($boning, Product::find($id), $weight, 'BC-LJP-'.(++$n));
+            $typed[$id] = ['gross' => $net[$id], 'net' => $net[$id]];
+        }
+        $this->lockWithDrylog($boning);
+
+        $result = CostingCalculator::forBoning($boning->fresh(), 3000, $typed)->calculate();
+
+        $this->assertSame(490847989.74, $result['purchase_cost']);
+        $this->assertSame(559212720.18, $result['total_sales_value']);
+        $this->assertSame(14212320.0, $result['overhead_total']);
+        $this->assertSame(0.903163, $result['ratio_k']);
+        $this->assertSame(54152410.44, $result['profit']);
+
+        $hpp = fn (Product $p) => collect($result['items'])->firstWhere('product_id', $p->id)['hpp_per_kg'];
+        $this->assertSame(124890.53, $hpp($this->topside));
+        $this->assertSame(183737.25, $hpp($tenderloin));
+        $this->assertSame(125262.40, $hpp($cuberoll));
+        $this->assertSame(7225.31, $hpp($offal));
+    }
+
+    /** @test */
+    public function only_the_flag_decides_the_overhead_kg_not_the_product_name(): void
+    {
+        ['boning' => $boning] = $this->juneLotCattleChain();
+        $this->boningItem($boning, $this->topside, 100, 'BC-FLAG-1');
+        $hides = Product::create(['name' => 'KULIT', 'code' => 'MT050', 'category_id' => $this->topside->category_id, 'structure_type' => 'main', 'is_active' => true]);
+        $this->boningItem($boning, $hides, 50, 'BC-FLAG-2');
+        $this->lockWithDrylog($boning);
+        $typed = [$this->topside->id => ['gross' => 100000, 'net' => 100000], $hides->id => ['gross' => 0, 'net' => 20000]];
+
+        // Bernama KULIT tetapi tanpa flag: ikut kg overhead (150 kg).
+        $this->assertSame(150 * 1000.0, CostingCalculator::forBoning($boning->fresh(), 1000, $typed)->calculate()['overhead_total']);
+
+        // Diberi flag: tidak ikut (100 kg) -- lalu diganti nama, hasilnya tetap.
+        $hides->update(['excluded_from_overhead' => true]);
+        $this->assertSame(100 * 1000.0, CostingCalculator::forBoning($boning->fresh(), 1000, $typed)->calculate()['overhead_total']);
+        $hides->update(['name' => 'LAIN-LAIN']);
+        $this->assertSame(100 * 1000.0, CostingCalculator::forBoning($boning->fresh(), 1000, $typed)->calculate()['overhead_total']);
     }
 
     /** @test */

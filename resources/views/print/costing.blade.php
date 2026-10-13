@@ -154,9 +154,8 @@
     <table class="items-table">
         <thead>
             <tr>
-                <th width="20%">Produk</th>
+                <th width="30%">Produk</th>
                 <th width="10%">Berat (Kg)</th>
-                <th width="16%">Acuan Harga</th>
                 <th width="10%">Gross</th>
                 <th width="8%">Terms</th>
                 <th width="10%">Net</th>
@@ -169,14 +168,11 @@
                 <tr>
                     <td class="left-align">
                         {{ $item->product?->name }}
-                        @if ($item->flag === \App\Models\CostingItem::FLAG_NO_REFERENCE)
-                            <span class="flag-note">{{ __('No reference group -- valued using general price') }}</span>
-                        @elseif ($item->flag === \App\Models\CostingItem::FLAG_NO_PRICE)
+                        @if ($item->flag === \App\Models\CostingItem::FLAG_NO_PRICE)
                             <span class="flag-note danger">{{ __('No price found') }}</span>
                         @endif
                     </td>
                     <td class="right-align">{{ number_format((float) $item->weight_kg, 2, ',', '.') }}</td>
-                    <td>{{ $item->referenceGroup?->name ?? __('General price') }}</td>
                     <td class="right-align">Rp {{ number_format((float) $item->gross_price, 0, ',', '.') }}</td>
                     <td class="right-align">{{ number_format((float) $item->trading_terms_percent, 2, ',', '.') }}%</td>
                     <td class="right-align">Rp {{ number_format((float) $item->net_price, 0, ',', '.') }}</td>
@@ -184,14 +180,14 @@
                     <td class="right-align">Rp {{ number_format((float) $item->hpp_per_kg, 0, ',', '.') }}</td>
                 </tr>
             @empty
-                <tr><td colspan="8">Belum ada data.</td></tr>
+                <tr><td colspan="7">Belum ada data.</td></tr>
             @endforelse
         </tbody>
         <tfoot>
             <tr>
                 <td class="right-align">Total</td>
                 <td class="right-align">{{ number_format((float) $record->total_kg, 2, ',', '.') }}</td>
-                <td colspan="4"></td>
+                <td colspan="3"></td>
                 <td class="right-align">Rp {{ number_format((float) $record->total_sales_value, 0, ',', '.') }}</td>
                 <td></td>
             </tr>
@@ -218,6 +214,10 @@
         <tr>
             <td class="label">Overhead / Kg</td>
             <td class="value">Rp {{ number_format((float) $record->overhead_per_kg, 0, ',', '.') }}</td>
+        </tr>
+        <tr>
+            <td class="label">Total Overhead</td>
+            <td class="value">Rp {{ number_format((float) $record->overhead_total, 0, ',', '.') }}</td>
         </tr>
         <tr class="total">
             <td class="label">Laba</td>
