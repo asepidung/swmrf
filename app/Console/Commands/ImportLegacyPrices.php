@@ -233,6 +233,28 @@ class ImportLegacyPrices extends Command
         return $sheets;
     }
 
+    /**
+     * Semua produk master yang namanya salah satu ejaan ini. Beberapa ejaan di master bisa jadi
+     * produk TERPISAH (mis. FQ 85 CL dan FQ 85 CL CUT) -- semuanya diperlakukan sebagai produk
+     * yang sama menurut namanya.
+     *
+     * @param  array<int, string>  $spellings
+     * @param  array<string, int>  $products
+     * @return array<int, int>
+     */
+    private function productsFor(array $spellings, array $products): array
+    {
+        $ids = [];
+
+        foreach ($spellings as $spelling) {
+            if (isset($products[$spelling])) {
+                $ids[$products[$spelling]] = $products[$spelling];
+            }
+        }
+
+        return array_values($ids);
+    }
+
     /** Huruf besar dan spasi dirapikan -- satu-satunya normalisasi (tidak menebak ejaan lain). */
     private function normalize(string $value): string
     {
@@ -353,22 +375,21 @@ class ImportLegacyPrices extends Command
             $average = (int) $this->option('lion-average');
 
             foreach (self::LION_AVERAGE_PRODUCTS as $spellings) {
-                $productId = null;
-                foreach ($spellings as $spelling) {
-                    $productId ??= $products[$spelling] ?? null;
-                }
+                $found = $this->productsFor($spellings, $products);
 
-                if ($productId === null) {
+                if ($found === []) {
                     $this->unmatched['LION (harga rata)'][] = $spellings[0].' -- belum ada di master; jalankan ulang setelah legacy:import-master';
 
                     continue;
                 }
 
-                if (isset($fromSheet[$productId]) && $fromSheet[$productId]['price'] !== $average) {
-                    $this->notes[] = "LION {$fromSheet[$productId]['name']}: berkas Rp ".number_format($fromSheet[$productId]['price'], 0, ',', '.')." tgl {$fromSheet[$productId]['date']} diganti harga rata LION Rp ".number_format($average, 0, ',', '.').'.';
-                }
+                foreach ($found as $productId) {
+                    if (isset($fromSheet[$productId]) && $fromSheet[$productId]['price'] !== $average) {
+                        $this->notes[] = "LION {$fromSheet[$productId]['name']}: berkas Rp ".number_format($fromSheet[$productId]['price'], 0, ',', '.')." tgl {$fromSheet[$productId]['date']} diganti harga rata LION Rp ".number_format($average, 0, ',', '.').'.';
+                    }
 
-                $desired[$productId] = ['price' => $average, 'note' => 'Harga rata LION (keputusan Owner 13 Okt 2026)'];
+                    $desired[$productId] = ['price' => $average, 'note' => 'Harga rata LION (keputusan Owner 13 Okt 2026)'];
+                }
             }
         }
 
@@ -435,34 +456,33 @@ class ImportLegacyPrices extends Command
             $group = $groups[$key] ?? null;
 
             foreach ($list as $spellings) {
-                $productId = null;
-                foreach ($spellings as $spelling) {
-                    $productId ??= $products[$spelling] ?? null;
-                }
+                $found = $this->productsFor($spellings, $products);
 
-                if ($productId === null) {
+                if ($found === []) {
                     $this->unmatched["Acuan costing {$key}"][] = $spellings[0].' -- belum ada di master; jalankan ulang setelah legacy:import-master';
 
                     continue;
                 }
 
-                $product = Product::find($productId);
+                foreach ($found as $productId) {
+                    $product = Product::find($productId);
 
-                if ((int) $product->costing_customer_group_id === (int) $group?->id && $group) {
-                    $this->referenceLines[] = "= {$product->name}: acuan {$key} sudah terisi.";
+                    if ((int) $product->costing_customer_group_id === (int) $group?->id && $group) {
+                        $this->referenceLines[] = "= {$product->name}: acuan {$key} sudah terisi.";
 
-                    continue;
+                        continue;
+                    }
+
+                    if ($product->costing_customer_group_id && ! $this->option('overwrite')) {
+                        $current = CustomerGroup::find($product->costing_customer_group_id)?->name ?? "#{$product->costing_customer_group_id}";
+                        $this->referenceLines[] = "! {$product->name}: acuan sudah {$current}, tidak ditimpa (pakai --overwrite) -- seharusnya {$key}.";
+
+                        continue;
+                    }
+
+                    $this->referenceLines[] = "+ {$product->name}: acuan costing {$key}.";
+                    $product->update(['costing_customer_group_id' => $group->id]);
                 }
-
-                if ($product->costing_customer_group_id && ! $this->option('overwrite')) {
-                    $current = CustomerGroup::find($product->costing_customer_group_id)?->name ?? "#{$product->costing_customer_group_id}";
-                    $this->referenceLines[] = "! {$product->name}: acuan sudah {$current}, tidak ditimpa (pakai --overwrite) -- seharusnya {$key}.";
-
-                    continue;
-                }
-
-                $this->referenceLines[] = "+ {$product->name}: acuan costing {$key}.";
-                $product->update(['costing_customer_group_id' => $group->id]);
             }
         }
 

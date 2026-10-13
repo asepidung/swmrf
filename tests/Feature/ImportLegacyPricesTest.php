@@ -374,6 +374,25 @@ class ImportLegacyPricesTest extends TestCase
     }
 
     /** @test */
+    public function every_spelling_present_in_the_master_gets_the_reference_and_the_average_price(): void
+    {
+        // FQ 85 CL dan FQ 85 CL CUT sama-sama ada di master sebagai produk terpisah; CHUCK TENDER dan CHUCKTENDER juga.
+        foreach (['FQ 85 CL', 'FQ 85 CL CUT', 'CHUCK TENDER', 'CHUCKTENDER'] as $name) {
+            $this->product($name);
+        }
+        $this->standardWorkbook();
+
+        $this->importPrices(['--apply' => true])->assertExitCode(0);
+
+        $this->assertSame('LION', $this->referenceOf('FQ 85 CL'));
+        $this->assertSame('LION', $this->referenceOf('FQ 85 CL CUT'));
+        $this->assertSame('LION', $this->referenceOf('CHUCK TENDER'));
+        $this->assertSame('LION', $this->referenceOf('CHUCKTENDER'));
+        $this->assertSame(147500, $this->priceOf('LION', 'CHUCK TENDER'));
+        $this->assertSame(147500, $this->priceOf('LION', 'CHUCKTENDER'));
+    }
+
+    /** @test */
     public function a_reference_filled_by_hand_is_kept_unless_overwrite_is_given(): void
     {
         $manual = CustomerGroup::create(['name' => 'LAIN', 'is_costing_reference' => true]);
