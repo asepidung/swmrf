@@ -965,3 +965,42 @@ import -- tanpa itu produk bertanda `NO_PRICE`/`NO_REFERENCE` dan repack
 
 **Izin baru** (dibuat lewat migrasi, belum dilekatkan; `tertunda.md` §G):
 `view_cost_reports` (dua laporan). (`manage_barcode_costs` dibuang 12 Okt bersama layarnya.)
+
+### 17.1 Import grup dan harga: `legacy:import-prices` (issue #532, 13 Oktober 2026)
+
+Supaya costing boning bisa dicoba dengan angka sungguhan. Sumber: `legacy/harga-terbaru-per-grup-2026-10-13.xlsx`
+(di-gitignore, berisi harga, JANGAN masuk repositori) -- SO legacy Okt 2025 - Okt 2026, harga TERBARU per
+produk per grup; sheet LION (19), HPM (14), UMUM (67; = REGULER + UNGROUP legacy).
+
+- **Grup dan trading terms:** LION 6% (2% di invoice + 4% potongan tahunan, `is_costing_reference`),
+  HYPERMART 16,45% (sheet HPM, `is_costing_reference`), UMUM = harga umum (`is_general_price_reference`,
+  potongan 0%). Dicocokkan menurut nama (huruf besar, spasi dirapikan); dibuat bila belum ada; perbedaan
+  terms/penanda pada grup yang sudah ada dilaporkan dan diperbaiki. Grup lain yang sudah ditandai harga umum
+  dilaporkan dan penandanya TIDAK dipindahkan.
+- **Id legacy dipertahankan (keputusan Ayah 13 Okt):** LION dan HYPERMART datang dari master legacy
+  (`legacy:import-master`, grup `groupcs` dengan id legacy -- di snapshot 19 Sep LION id 15, HPM id 12).
+  Perintah ini mencocokkan grup yang sudah ada menurut nama atau alias (legacy menamai HYPERMART "HPM") dan
+  TIDAK membuat LION/HYPERMART dengan id sembarang: bila belum ada, berhenti dengan pesan; `--create-groups`
+  membuatnya dengan id baru. UMUM bukan grup legacy -- dibuat di id berikutnya. Urutan: import-master
+  (termasuk grup) dulu, baru perintah ini.
+- **Price list:** satu per grup; item = harga terbaru per produk. Produk dicocokkan ke master menurut nama
+  ternormalisasi; yang tidak ketemu DILAPORKAN, tidak ditebak dan tidak dibuat.
+- **LION harga rata 147.500** (keputusan Owner): Silverside, Rump, Chuck, Blade, Chuck Tender (ejaan
+  CHUCKTENDER juga diterima) memakai harga rata LION terbaru -- LION memberi harga rata untuk hampir semua
+  potongan, nama di SO berubah-ubah sesuai permintaan LION. Menimpa harga berkas produk itu (mis. SILVERSIDE
+  134.000 tgl 18 Des 2025), dilaporkan di dry-run, dan ditandai di catatan item. Bisa diubah lewat
+  `--lion-average=`.
+- **Idempoten:** dijalankan ulang (mis. sesudah `legacy:import-master` mengisi produk yang tadinya belum ada)
+  hanya menambah yang belum ada. Item yang sudah ada dengan harga BERBEDA dilaporkan dan tidak ditimpa
+  (harga yang diubah lewat layar tidak hilang), kecuali `--overwrite`.
+- **Dry-run bawaan:** `php artisan legacy:import-prices` memakai kode yang sama dengan `--apply` di dalam satu
+  transaksi lalu membatalkannya, jadi laporannya persis meramalkan apa yang akan ditulis.
+- **Acuan costing per produk** (`products.costing_customer_group_id`): sumbernya BUKAN produk yang muncul
+  di sheet (dijual ke LION != dinilai memakai harga LION), melainkan warna sel Costing Juni (§7): 6% ->
+  LION (Topside, Silverside, Knuckle, Tenderloin, Striploin Cut, Rump, Chuck, Blade, Chuck Tender, Shank,
+  Brisket, FQ 85 CL, Short Rib, Marrow Bone, Oxtail); 16,45% -> HYPERMART (Striploin Whole, Striploin Gold,
+  Striploin Less Fat, Cuberoll, Cuberoll TS); sisanya kosong (harga umum). Pemetaan itu DATA di perintah
+  (`REFERENCE_PRODUCTS`, dengan ejaan alternatif seperti SHORTRIB / CHUCKTENDER / CUBE ROLL), dicocokkan
+  menurut nama ternormalisasi; yang tidak ketemu dilaporkan. Acuan yang sudah diisi manual tidak ditimpa
+  kecuali `--overwrite`. Baris 5% di Excel (Brisket PEDO, RIBS, Fat Brisket) belum punya grup: dibiarkan
+  kosong dan hanya dilaporkan.
