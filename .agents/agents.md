@@ -7696,6 +7696,21 @@ harga dan di-gitignore -- jangan masuk repositori; test memakai berkas karangan 
 mengisi acuan costing per produk dari pemetaan warna sel Costing Juni (bukan dari sheet). Aturan lengkap:
 `hpp.md` §17.1.
 
+## Form hak akses: label ganda dan centang hapus di master data, 13 Oktober 2026
+
+- **Label ganda:** label centang dipendekkan ke kata kerjanya ("View"), sehingga dua izin di satu modul
+  bisa sama-sama "View" -- ditemukan di Costings (costing dan laporan), Surat Jalan (surat jalan dan bukti
+  terima), dan Reports (laporan penjualan dan produk fast moving). `UserResource::permissionLabels()` kini
+  memakai deskripsi LENGKAP untuk izin yang bertabrakan; test `no_module_shows_two_checkboxes_with_the_same_label`
+  menjaga semua modul.
+- **Master data tidak punya Hapus** (keputusan Ayah: hanya aktif/nonaktif): centang `delete_*` dan
+  `view_deleted_*` untuk 13 modul MASTER DATA tidak ditampilkan (`Permission::groupedByModuleGroup()`).
+  Form pengguna kini hanya membawa izin yang TAMPIL di state-nya, jadi menyimpan pengguna mencabut hak hapus
+  master data yang lama (tidak ada hak tak terlihat yang tersisa).
+- **YANG BELUM:** resource master data masih punya aksi Hapus (dibungkus `MasterDataDeletion`, menolak yang
+  masih dipakai) dan policy-nya masih membaca `delete_*`; hanya programmer yang kini bisa menghapus. Menghapus
+  aksinya sama sekali (policy selalu menolak, seperti `UserPolicy`) adalah keputusan terpisah.
+
 ## Menu Costing ke ACCOUNTING, cluster Expenses, grup customer opsional, 13 Oktober 2026
 
 Tiga keputusan Ayah sekaligus:
