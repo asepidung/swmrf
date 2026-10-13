@@ -228,6 +228,23 @@ class CostingResourceTest extends TestCase
         $this->assertSame(1, Costing::where('boning_id', $boning->id)->count());
     }
 
+    /** @test */
+    public function a_boning_can_be_costed_again_after_its_draft_costing_was_deleted(): void
+    {
+        $boning = $this->lockedBoningWithCostableProduct();
+        $first = Costing::createFromCalculation($boning, \App\Services\CostingCalculator::forBoning($boning)->calculate());
+        $first->delete();   // hapus lunak; barisnya masih memegang boning_id yang unik
+
+        Livewire::actingAs($this->employee(['view_costings', 'create_costings']))
+            ->test(ListCostings::class)
+            ->mountAction('create_costing')
+            ->setActionData(['boning_id' => $boning->id])
+            ->callMountedAction();
+
+        $this->assertSame(1, Costing::where('boning_id', $boning->id)->count(), 'Costing baru dibuat.');
+        $this->assertSame(0, Costing::onlyTrashed()->where('boning_id', $boning->id)->count(), 'Yang terhapus dibuang sungguhan, tidak menghalangi.');
+    }
+
     // =========================================================================
     // Recalculate
     // =========================================================================

@@ -99,6 +99,12 @@ class Costing extends Model
     public static function createFromCalculation(Boning $boning, array $result): self
     {
         return DB::transaction(function () use ($boning, $result): self {
+            // Costing Draft yang dihapus hanya "dibuang" (hapus lunak) tetapi barisnya tetap memegang
+            // `boning_id` yang UNIK -- membuat costing baru untuk boning yang sama lalu gagal dengan
+            // "Duplicate entry". Yang terhapus selalu Draft (hanya Draft yang boleh dihapus), tanpa
+            // nilai yang dipakai pihak lain, jadi dibuang sungguhan sebelum yang baru dibuat.
+            static::onlyTrashed()->where('boning_id', $boning->id)->get()->each->forceDelete();
+
             $costing = static::create([
                 'costing_date' => now()->toDateString(),
                 'boning_id' => $boning->id,
