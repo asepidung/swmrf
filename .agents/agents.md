@@ -7687,3 +7687,11 @@ Keputusan Owner (komentar "ATURAN FINAL" di #522). `RepackValuator` ditulis ulan
 - **Satu produk hasil = satu cost per kg** untuk semua barcodenya (nilai produk / `out_i`).
 - **Pemeriksaan wajib** (Σ nilai hasil + susut = biaya bahan): dikerjakan di test dan di kode
   (meleset di atas toleransi pembulatan -> `needs_review`).
+
+## `legacy:import-prices` -- grup LION/HYPERMART/UMUM dan price list dari xlsx, 13 Oktober 2026 (#532)
+
+Perintah baru `App\Console\Commands\ImportLegacyPrices` (dry-run bawaan, `--apply`, `--overwrite`,
+`--lion-average=147500`, `--source=`). Berkas sumber `legacy/harga-terbaru-per-grup-2026-10-13.xlsx` berisi
+harga dan di-gitignore -- jangan masuk repositori; test memakai berkas karangan kecil. Perintah ini juga
+mengisi acuan costing per produk dari pemetaan warna sel Costing Juni (bukan dari sheet). Aturan lengkap:
+`hpp.md` §17.1.
