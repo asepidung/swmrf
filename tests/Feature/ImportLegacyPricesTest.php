@@ -393,6 +393,25 @@ class ImportLegacyPricesTest extends TestCase
     }
 
     /** @test */
+    public function a_product_spelled_differently_follows_the_price_of_its_other_spelling_when_the_sheet_has_only_one(): void
+    {
+        $this->product('FQ 85 CL');
+        $this->product('FQ 85 CL CUT');
+        $this->workbook([
+            'LION' => [['FQ 85 CL CUT', 86000]],      // LION hanya menyebut CUT
+            'HPM' => [['BRISKET', 160000]],
+            'UMUM' => [['FQ 85 CL', 97000], ['FQ 85 CL CUT', 97500]],   // UMUM menyebut keduanya
+        ]);
+
+        $this->importPrices(['--apply' => true])->assertExitCode(0);
+
+        $this->assertSame(86000, $this->priceOf('LION', 'FQ 85 CL CUT'));
+        $this->assertSame(86000, $this->priceOf('LION', 'FQ 85 CL'), 'FQ 85 CL mengikuti FQ 85 CL CUT (satu produk).');
+        $this->assertSame(97000, $this->priceOf('UMUM', 'FQ 85 CL'), 'Yang punya baris sendiri tetap menang.');
+        $this->assertSame(97500, $this->priceOf('UMUM', 'FQ 85 CL CUT'));
+    }
+
+    /** @test */
     public function a_reference_filled_by_hand_is_kept_unless_overwrite_is_given(): void
     {
         $manual = CustomerGroup::create(['name' => 'LAIN', 'is_costing_reference' => true]);

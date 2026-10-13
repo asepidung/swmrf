@@ -110,6 +110,23 @@ class ImportLegacyPrices extends Command
      */
     public const UNMAPPED_5_PERCENT = ['BRISKET PEDO', 'RIBS', 'FAT BRISKET'];
 
+    /**
+     * Ejaan yang menyebut produk yang SAMA. Bila berkas hanya memuat salah satu ejaan di sebuah grup
+     * (mis. LION hanya "FQ 85 CL CUT"), harganya dipakai juga untuk produk master berejaan lain di
+     * grup itu yang belum punya baris sendiri -- baris berkas yang menyebut produk itu dengan namanya
+     * sendiri tetap menang. FQ 85 CL CUT selalu digabung ke FQ 85 CL (`hpp.md` §6).
+     *
+     * @var array<int, array<int, string>>
+     */
+    public const SAME_PRODUCT_SPELLINGS = [
+        ['FQ 85 CL', 'FQ 85 CL CUT'],
+        ['CHUCK TENDER', 'CHUCKTENDER'],
+        ['SHORT RIB', 'SHORTRIB'],
+        ['MARROW BONE', 'MARROWBONE'],
+        ['CUBEROLL', 'CUBE ROLL'],
+        ['CUBEROLL TS', 'CUBE ROLL TS'],
+    ];
+
     /** @var array<int, string> */
     private array $referenceLines = [];
 
@@ -369,6 +386,34 @@ class ImportLegacyPrices extends Command
                 'price' => $row['price'],
                 'note' => "Import harga SO terbaru {$row['date']}".($row['customer'] !== '' ? " ({$row['customer']})" : ''),
             ];
+        }
+
+        // Ejaan lain dari produk yang sama mengikuti harga yang ada di berkas (yang punya baris sendiri tetap menang).
+        foreach (self::SAME_PRODUCT_SPELLINGS as $spellings) {
+            $members = $this->productsFor($spellings, $products);
+            $source = null;
+
+            foreach ($members as $memberId) {
+                if (isset($fromSheet[$memberId])) {
+                    $source = $fromSheet[$memberId];
+
+                    break;
+                }
+            }
+
+            if ($source === null) {
+                continue;
+            }
+
+            foreach ($members as $memberId) {
+                if (! isset($desired[$memberId])) {
+                    $desired[$memberId] = [
+                        'price' => $source['price'],
+                        'note' => "Mengikuti {$source['name']} (ejaan lain, produk yang sama) -- import harga SO terbaru {$source['date']}",
+                    ];
+                    $this->notes[] = "{$key}: produk master berejaan lain mengikuti harga {$source['name']} Rp ".number_format($source['price'], 0, ',', '.').'.';
+                }
+            }
         }
 
         if ($key === 'LION') {
