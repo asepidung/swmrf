@@ -214,9 +214,12 @@ class AdminPanelProvider extends PanelProvider
             // Posisi scroll halaman edit Costing dipulihkan setelah tiap harga diketik (lihat view-nya).
             ->renderHook(
                 \Filament\View\PanelsRenderHook::BODY_END,
-                fn (): string => request()->routeIs('filament.admin.resources.costings.edit')
-                    ? view('filament.admin.costing-scroll-restore')->render()
-                    : '',
+                fn (): string => (request()->routeIs('filament.admin.resources.costings.edit', 'filament.admin.resources.costings.view')
+                        ? view('filament.admin.costing-summary-style')->render()
+                        : '')
+                    .(request()->routeIs('filament.admin.resources.costings.edit')
+                        ? view('filament.admin.costing-scroll-restore')->render()
+                        : ''),
             )
             ->renderHook(
                 \Filament\View\PanelsRenderHook::FOOTER,
