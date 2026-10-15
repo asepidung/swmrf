@@ -14,7 +14,8 @@
             font-family: 'Poppins', sans-serif;
             font-size: 11px;
             color: #000;
-            margin: 0;
+            /* Sisa 3px di kanan: garis kanan tabel tepat di tepi area cetak ikut terpotong tanpa ini. */
+            margin: 0 3px 0 1px;
         }
         /* Angka tidak boleh patah baris ("Rp" di satu baris, nilainya di baris lain). */
         .items-table td.right-align, .items-table th {
