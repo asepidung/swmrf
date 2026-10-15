@@ -268,6 +268,7 @@ class CostingResource extends Resource
             ->actions([
                 // Costing yang belum dikunci boleh dihapus; yang terkunci tidak (hapus ditolak model).
                 Tables\Actions\DeleteAction::make()
+                    ->authorize(fn (Costing $record): bool => auth()->user()?->can('delete', $record) ?? false)
                     ->visible(fn (Costing $record): bool => $record->status === Costing::STATUS_DRAFT),
             ])
             ->bulkActions([])
