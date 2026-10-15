@@ -231,6 +231,12 @@ class Costing extends Model
             ->whereDoesntHave('costing', fn ($q) => $q->whereNotNull('saved_at'));
     }
 
+    /** Laba sebelum overhead (setara "Gross Profit" di Excel akunting): nilai jual net - biaya beli. */
+    public function profitBeforeOverhead(): float
+    {
+        return round((float) $this->total_sales_value - (float) $this->purchase_cost, 2);
+    }
+
     /** Total nilai jual pada harga GROSS (sebelum potongan); produk tanpa gross memakai net-nya. */
     public function grossSalesValue(): float
     {

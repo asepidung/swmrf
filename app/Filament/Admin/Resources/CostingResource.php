@@ -126,6 +126,11 @@ class CostingResource extends Resource
                             ->label(__('Total Overhead'))
                             ->content(fn (?Costing $record): string => 'Rp '.number_format((float) ($record?->overhead_total ?? 0), 0, ',', '.')),
 
+                        Forms\Components\Placeholder::make('profit_before_overhead')
+                            ->label(__('Profit before overhead'))
+                            ->helperText(__('Net sales value minus purchase cost.'))
+                            ->content(fn (?Costing $record): string => 'Rp '.number_format($record?->profitBeforeOverhead() ?? 0, 0, ',', '.')),
+
                         Forms\Components\Placeholder::make('profit')
                             ->label(__('Profit'))
                             ->content(fn (?Costing $record): string => 'Rp '.number_format((float) ($record?->profit ?? 0), 0, ',', '.')),

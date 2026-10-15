@@ -184,7 +184,7 @@ class CostingCalculatorTest extends TestCase
 
         $topsideItem = collect($result['items'])->firstWhere('product_id', $this->topside->id);
         $this->assertSame(140060.0, $topsideItem['net_price']);
-        $this->assertSame(132788.76, $topsideItem['hpp_per_kg']);
+        $this->assertSame(132789.0, $topsideItem['hpp_per_kg'], 'HPP dibulatkan ke rupiah penuh (hpp.md: 132.788,76).');
         $this->assertNull($topsideItem['flag']);
 
         $cattleRow = $result['cattle'][0];
@@ -388,10 +388,10 @@ class CostingCalculatorTest extends TestCase
         $this->assertSame(54152410.76, $result['profit']);
 
         $hpp = fn (Product $p) => collect($result['items'])->firstWhere('product_id', $p->id)['hpp_per_kg'];
-        $this->assertSame(124891.2, $hpp($this->topside));
-        $this->assertSame(183737.7, $hpp($tenderloin));
-        $this->assertSame(125262.40, $hpp($cuberoll));
-        $this->assertSame(7225.31, $hpp($offal));
+        $this->assertSame(124891.0, $hpp($this->topside));
+        $this->assertSame(183738.0, $hpp($tenderloin));
+        $this->assertSame(125262.0, $hpp($cuberoll));
+        $this->assertSame(7225.0, $hpp($offal));
     }
 
     /** @test */

@@ -113,7 +113,7 @@ class ItemsRelationManager extends RelationManager
                     ->money('IDR', locale: 'id'),
                 Tables\Columns\TextColumn::make('hpp_per_kg')
                     ->label(__('HPP / Kg'))
-                    ->money('IDR', locale: 'id')
+                    ->formatStateUsing(fn ($state): string => 'Rp '.number_format((float) $state, 0, ',', '.'))
                     ->weight('bold'),
                 Tables\Columns\TextColumn::make('flag')
                     ->label(__('Flag'))

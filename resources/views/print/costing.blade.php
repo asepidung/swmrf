@@ -242,6 +242,10 @@
             <td class="label">Total Overhead</td>
             <td class="value">Rp {{ number_format((float) $record->overhead_total, 0, ',', '.') }}</td>
         </tr>
+        <tr>
+            <td class="label">Laba sebelum overhead</td>
+            <td class="value">Rp {{ number_format($record->profitBeforeOverhead(), 0, ',', '.') }}</td>
+        </tr>
         <tr class="total">
             <td class="label">Laba</td>
             <td class="value">Rp {{ number_format((float) $record->profit, 0, ',', '.') }}</td>

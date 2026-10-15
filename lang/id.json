@@ -1594,6 +1594,8 @@
     "General price": "Harga umum",
     "No reference group -- valued using general price": "Tanpa grup acuan -- dinilai memakai harga umum",
     "No price found": "Harga tidak ditemukan",
+    "Profit before overhead": "Laba sebelum overhead",
+    "Net sales value minus purchase cost.": "Nilai jual net dikurangi biaya beli.",
     "Lock the boning first: the costing can only be locked after the boning is locked.": "Kunci boning dulu: costing baru bisa dikunci setelah boning terkunci.",
     "Boning status": "Status boning",
     "No boning is waiting for a costing.": "Tidak ada boning yang menunggu costing.",

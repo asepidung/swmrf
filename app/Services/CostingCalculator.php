@@ -90,7 +90,7 @@ class CostingCalculator
         foreach ($items as &$item) {
             $item['hpp_per_kg'] = $item['flag'] === CostingItem::FLAG_NO_PRICE
                 ? 0.0
-                : round($item['net_price'] * $ratioKRaw, 2);
+                : round($item['net_price'] * $ratioKRaw);
             unset($item['sales_value_raw'], $item['is_meat']);
         }
         unset($item);

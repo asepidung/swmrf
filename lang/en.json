@@ -1594,6 +1594,8 @@
     "General price": "General price",
     "No reference group -- valued using general price": "No reference group -- valued using general price",
     "No price found": "No price found",
+    "Profit before overhead": "Profit before overhead",
+    "Net sales value minus purchase cost.": "Net sales value minus purchase cost.",
     "Lock the boning first: the costing can only be locked after the boning is locked.": "Lock the boning first: the costing can only be locked after the boning is locked.",
     "Boning status": "Boning status",
     "No boning is waiting for a costing.": "No boning is waiting for a costing.",
