@@ -392,6 +392,39 @@ class CostingResourceTest extends TestCase
     }
 
     /** @test */
+    public function the_summary_explains_each_figure_in_a_tooltip_with_the_costings_own_numbers(): void
+    {
+        $boning = $this->lockedBoningWithCostableProduct();
+        $costing = Costing::createFromBoning($boning);
+
+        Livewire::actingAs($this->employee(['view_costings', 'edit_costings']))
+            ->test(EditCosting::class, ['record' => $costing->getRouteKey()])
+            ->assertSeeHtml('x-tooltip')
+            ->assertSeeHtml('Purchase cost Rp 680.500.000')
+            ->assertSee('Profit before overhead')
+            ->assertDontSee('Cost against the sales value');
+    }
+
+    /** @test */
+    public function the_products_table_is_in_alphabetical_order(): void
+    {
+        $boning = $this->lockedBoningWithCostableProduct();
+        $costing = Costing::createFromBoning($boning);
+        $other = Product::create(['name' => 'AAA FIRST', 'code' => 'MT777', 'category_id' => $this->product->category_id, 'structure_type' => 'main', 'is_active' => true]);
+        $costing->items()->create(['product_id' => $other->id, 'weight_kg' => 1, 'gross_price' => 1, 'net_price' => 1]);
+
+        $items = $costing->items()->with('product')->get()->sortBy(fn ($i) => $i->product->name)->values();
+
+        Livewire::actingAs($this->employee(['view_costings', 'edit_costings']))
+            ->test(\App\Filament\Admin\Resources\CostingResource\RelationManagers\ItemsRelationManager::class, [
+                'ownerRecord' => $costing, 'pageClass' => EditCosting::class,
+            ])
+            ->assertCanSeeTableRecords($items, inOrder: true);
+
+        $this->assertSame('AAA FIRST', $items->first()->product->name);
+    }
+
+    /** @test */
     public function typed_prices_survive_recalculate_and_locking_makes_them_the_next_costings_price(): void
     {
         $boning = $this->lockedBoningWithCostableProduct();

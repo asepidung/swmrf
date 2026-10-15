@@ -53,11 +53,31 @@ class CostingResource extends Resource
         return ! ($livewire instanceof CreateRecord) && $livewire->getRecord()->status !== Costing::STATUS_DRAFT;
     }
 
+    private static function rp(mixed $value): string
+    {
+        return 'Rp '.number_format((float) $value, 0, ',', '.');
+    }
+
+    /** Satu angka ringkasan; bila ada $tooltip, ikon tanda tanya menjelaskan perhitungannya dengan angka costing itu. */
+    private static function figure(string $name, string $label, \Closure $content, ?\Closure $tooltip = null): Forms\Components\Placeholder
+    {
+        $field = Forms\Components\Placeholder::make($name)
+            ->label($label)
+            ->content(fn (?Costing $record): string => $record ? $content($record) : '-');
+
+        if ($tooltip) {
+            $field->hintIcon('heroicon-m-question-mark-circle', fn (?Costing $record): ?string => $record ? $tooltip($record) : null);
+        }
+
+        return $field;
+    }
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\Section::make(__('Costing'))
+                    ->compact()
                     ->schema([
                         Forms\Components\TextInput::make('costing_number')
                             ->label(__('Costing Number'))
@@ -91,51 +111,48 @@ class CostingResource extends Resource
                             ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'decimal', 'x-on:focus' => 'if ($el.value === "0") $el.select()'])
                             ->required()
                             ->disabled(fn ($livewire): bool => static::isNotEditable($livewire)),
-                    ])->columns(2),
+                    ])->columns(['default' => 2, 'lg' => 4]),
 
                 Forms\Components\Section::make(__('Summary'))
+                    ->compact()
                     ->schema([
-                        Forms\Components\Placeholder::make('purchase_cost')
-                            ->label(__('Purchase Cost'))
-                            ->content(fn (?Costing $record): string => 'Rp '.number_format((float) ($record?->purchase_cost ?? 0), 0, ',', '.')),
+                        static::figure('purchase_cost', __('Purchase Cost'), fn (Costing $c): string => static::rp($c->purchase_cost)),
 
-                        Forms\Components\Placeholder::make('total_sales_value')
-                            ->label(__('Total Sales Value'))
-                            ->content(fn (?Costing $record): string => 'Rp '.number_format((float) ($record?->total_sales_value ?? 0), 0, ',', '.')),
+                        static::figure('total_sales_value', __('Total Sales Value'), fn (Costing $c): string => static::rp($c->total_sales_value)),
 
-                        Forms\Components\Placeholder::make('ratio_k')
-                            ->label(__('Purchase cost factor (k)'))
-                            ->helperText(__('Purchase cost per Rp 1 of net sales value. HPP per kg = net price x k + overhead per kg (meat only).'))
-                            ->content(fn (?Costing $record): string => number_format((float) ($record?->ratio_k ?? 0), 6)),
+                        static::figure('ratio_k', __('Purchase cost factor (k)'), fn (Costing $c): string => number_format((float) $c->ratio_k, 6),
+                            fn (Costing $c): string => __('Purchase cost :cost / net sales value :sales = :k. Buying price per kg = net price x k.', [
+                                'cost' => static::rp($c->purchase_cost), 'sales' => static::rp($c->total_sales_value), 'k' => number_format((float) $c->ratio_k, 6),
+                            ])),
 
-                        Forms\Components\Placeholder::make('margin_gross_percent')
-                            ->label(__('Margin % (Gross)'))
-                            ->helperText(__('Cost against the sales value at gross prices, before discounts.'))
-                            ->content(fn (?Costing $record): string => number_format($record?->marginGrossPercent() ?? 0, 2).'%'),
+                        static::figure('total_kg', __('Total Kg'), fn (Costing $c): string => number_format((float) $c->total_kg, 2).' Kg'),
 
-                        Forms\Components\Placeholder::make('margin_percent')
-                            ->label(__('Margin % (Net)'))
-                            ->helperText(__('Cost against the sales value at net prices, after discounts.'))
-                            ->content(fn (?Costing $record): string => number_format($record?->marginPercent() ?? 0, 2).'%'),
+                        static::figure('overhead_total', __('Total Overhead'), fn (Costing $c): string => static::rp($c->overhead_total),
+                            fn (Costing $c): string => __('Overhead :oh per kg x meat weight (without offal and hides) = :total.', [
+                                'oh' => static::rp($c->overhead_per_kg), 'total' => static::rp($c->overhead_total),
+                            ])),
 
-                        Forms\Components\Placeholder::make('total_kg')
-                            ->label(__('Total Kg'))
-                            ->content(fn (?Costing $record): string => number_format((float) ($record?->total_kg ?? 0), 2).' Kg'),
+                        static::figure('profit_before_overhead', __('Profit before overhead'), fn (Costing $c): string => static::rp($c->profitBeforeOverhead()),
+                            fn (Costing $c): string => __('Net sales value :sales - purchase cost :cost = :value.', [
+                                'sales' => static::rp($c->total_sales_value), 'cost' => static::rp($c->purchase_cost), 'value' => static::rp($c->profitBeforeOverhead()),
+                            ])),
 
-                        Forms\Components\Placeholder::make('overhead_total')
-                            ->label(__('Total Overhead'))
-                            ->content(fn (?Costing $record): string => 'Rp '.number_format((float) ($record?->overhead_total ?? 0), 0, ',', '.')),
+                        static::figure('profit', __('Profit'), fn (Costing $c): string => static::rp($c->profit),
+                            fn (Costing $c): string => __('Profit before overhead :before - total overhead :oh = :profit.', [
+                                'before' => static::rp($c->profitBeforeOverhead()), 'oh' => static::rp($c->overhead_total), 'profit' => static::rp($c->profit),
+                            ])),
 
-                        Forms\Components\Placeholder::make('profit_before_overhead')
-                            ->label(__('Profit before overhead'))
-                            ->helperText(__('Net sales value minus purchase cost.'))
-                            ->content(fn (?Costing $record): string => 'Rp '.number_format($record?->profitBeforeOverhead() ?? 0, 0, ',', '.')),
+                        static::figure('margin_percent', __('Margin % (Net)'), fn (Costing $c): string => number_format($c->marginPercent(), 2).'%',
+                            fn (Costing $c): string => __('Profit :profit / net sales value :sales = :margin.', [
+                                'profit' => static::rp($c->profit), 'sales' => static::rp($c->total_sales_value), 'margin' => number_format($c->marginPercent(), 2).'%',
+                            ])),
 
-                        Forms\Components\Placeholder::make('profit')
-                            ->label(__('Profit'))
-                            ->content(fn (?Costing $record): string => 'Rp '.number_format((float) ($record?->profit ?? 0), 0, ',', '.')),
+                        static::figure('margin_gross_percent', __('Margin % (Gross)'), fn (Costing $c): string => number_format($c->marginGrossPercent(), 2).'%',
+                            fn (Costing $c): string => __('1 - (purchase cost + overhead) / sales value at gross prices :gross = :margin.', [
+                                'gross' => static::rp($c->grossSalesValue()), 'margin' => number_format($c->marginGrossPercent(), 2).'%',
+                            ])),
                     ])
-                    ->columns(3)
+                    ->columns(['default' => 2, 'sm' => 3, 'xl' => 5])
                     ->visible(fn (?Costing $record): bool => $record !== null),
             ]);
     }

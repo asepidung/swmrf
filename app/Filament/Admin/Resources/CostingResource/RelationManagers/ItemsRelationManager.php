@@ -138,6 +138,11 @@ class ItemsRelationManager extends RelationManager
                     }),
             ])
             ->paginated(false)
+            // Produk diurutkan alfabet.
+            ->modifyQueryUsing(fn (\Illuminate\Database\Eloquent\Builder $query) => $query
+                ->join('products', 'products.id', '=', 'costing_items.product_id')
+                ->select('costing_items.*')
+                ->orderBy('products.name'))
             ->headerActions([])
             ->actions([])
             ->bulkActions([]);

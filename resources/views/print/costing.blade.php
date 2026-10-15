@@ -186,7 +186,7 @@
             </tr>
         </thead>
         <tbody>
-            @forelse ($record->items as $item)
+            @forelse ($record->items->sortBy(fn ($row) => $row->product?->name) as $item)
                 <tr>
                     <td class="left-align">
                         {{ $item->product?->name }}
