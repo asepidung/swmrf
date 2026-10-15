@@ -231,7 +231,23 @@ class Costing extends Model
             ->whereDoesntHave('costing', fn ($q) => $q->whereNotNull('saved_at'));
     }
 
-    /** Margin% -- SAMA untuk seluruh produk, sifat metode ini (`hpp.md` §11.1), bukan per produk. */
+    /** Total nilai jual pada harga GROSS (sebelum potongan); produk tanpa gross memakai net-nya. */
+    public function grossSalesValue(): float
+    {
+        return (float) $this->items()->get()->sum(
+            fn (CostingItem $item): float => (float) ($item->gross_price > 0 ? $item->gross_price : $item->net_price) * (float) $item->weight_kg
+        );
+    }
+
+    /** Margin % terhadap nilai jual GROSS: (1 - (biaya beli + overhead) / nilai jual gross). */
+    public function marginGrossPercent(): float
+    {
+        $gross = $this->grossSalesValue();
+
+        return $gross > 0 ? round((1 - ((float) $this->purchase_cost + (float) $this->overhead_total) / $gross) * 100, 2) : 0.0;
+    }
+
+    /** Margin% (NET) -- SAMA untuk seluruh produk, sifat metode ini (`hpp.md` §11.1), bukan per produk. */
     public function marginPercent(): float
     {
         return round((1 - $this->ratio_k) * 100, 2);

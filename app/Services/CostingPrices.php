@@ -41,6 +41,12 @@ class CostingPrices
         return $default ? ['gross' => (float) $default->gross_price, 'net' => (float) $default->net_price] : null;
     }
 
+    /** Net dibulatkan ke atas ke rupiah penuh (permintaan akunting, 15 Oktober 2026): 203.437,5 -> 203.438. */
+    public static function roundNet(float $net): float
+    {
+        return ceil(round($net, 6));
+    }
+
     /**
      * Net untuk gross yang diketik: gross dikurangi potongan terakhir produk itu, atau = gross
      * bila produk belum pernah punya harga (potongan 0).
@@ -50,10 +56,10 @@ class CostingPrices
         $last = self::lastFor($productId);
 
         if (! $last || $last['gross'] <= 0) {
-            return round($gross, 2);
+            return self::roundNet($gross);
         }
 
-        return round($gross * ($last['net'] / $last['gross']), 2);
+        return self::roundNet($gross * ($last['net'] / $last['gross']));
     }
 
     /** "203.437,5" (titik ribuan, koma desimal, dari mask di form) -> 203437.5. Angka polos tetap angka. */

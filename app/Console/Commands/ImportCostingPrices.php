@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\CostingPriceDefault;
 use App\Models\Product;
+use App\Services\CostingPrices;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use OpenSpout\Common\Entity\Cell\FormulaCell;
@@ -166,7 +167,7 @@ class ImportCostingPrices extends Command
                 }
                 $seen[$name] = $number;
 
-                $rows[$name] = ['name' => $name, 'gross' => round($gross, 2), 'net' => round((float) $net, 2)];
+                $rows[$name] = ['name' => $name, 'gross' => round($gross, 2), 'net' => CostingPrices::roundNet((float) $net)];
             }
         }
 

@@ -404,6 +404,19 @@ class CostingResourceTest extends TestCase
     }
 
     /** @test */
+    public function the_costing_shows_a_margin_on_net_and_on_gross_sales_value(): void
+    {
+        $boning = $this->lockedBoningWithCostableProduct();
+        $costing = Costing::createFromBoning($boning);
+        $costing->items()->update(['gross_price' => 120, 'net_price' => 100, 'weight_kg' => 10]);
+        $costing->forceFill(['purchase_cost' => 600, 'overhead_total' => 0, 'ratio_k' => 0.6])->save();
+
+        $this->assertSame(1200.0, $costing->grossSalesValue());
+        $this->assertSame(50.0, $costing->marginGrossPercent(), '(1 - 600/1200)');
+        $this->assertSame(40.0, $costing->marginPercent(), '(1 - k) dengan k = 600/1000');
+    }
+
+    /** @test */
     public function typed_prices_survive_recalculate_and_locking_makes_them_the_next_costings_price(): void
     {
         $boning = $this->lockedBoningWithCostableProduct();

@@ -57,11 +57,11 @@ class ItemsRelationManager extends RelationManager
 
             $prices[$item->product_id] = [
                 'gross' => $gross,
-                'net' => $ratio !== null ? round($gross * $ratio, 2) : CostingPrices::netForGross($item->product_id, $gross),
+                'net' => $ratio !== null ? CostingPrices::roundNet($gross * $ratio) : CostingPrices::netForGross($item->product_id, $gross),
             ];
         } elseif ($terms !== null) {
             $terms = min(max($terms, 0.0), 100.0);
-            $prices[$item->product_id] = ['gross' => $current['gross'], 'net' => round($current['gross'] * (1 - $terms / 100), 2)];
+            $prices[$item->product_id] = ['gross' => $current['gross'], 'net' => CostingPrices::roundNet($current['gross'] * (1 - $terms / 100))];
         } else {
             $prices[$item->product_id] = ['gross' => $current['gross'], 'net' => $net];
         }

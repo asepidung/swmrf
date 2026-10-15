@@ -223,12 +223,16 @@
             <td class="value">Rp {{ number_format((float) $record->total_sales_value, 0, ',', '.') }}</td>
         </tr>
         <tr>
-            <td class="label">Rasio (k)</td>
+            <td class="label">Rasio biaya (k)<br><span style="font-size: 9px;">biaya per Rp 1 nilai jual net</span></td>
             <td class="value">{{ number_format((float) $record->ratio_k, 6) }}</td>
         </tr>
         <tr>
-            <td class="label">Margin %</td>
+            <td class="label">Margin % (Net)</td>
             <td class="value">{{ number_format($record->marginPercent(), 2) }}%</td>
+        </tr>
+        <tr>
+            <td class="label">Margin % (Gross)</td>
+            <td class="value">{{ number_format($record->marginGrossPercent(), 2) }}%</td>
         </tr>
         <tr>
             <td class="label">Overhead / Kg</td>

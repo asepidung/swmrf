@@ -104,11 +104,18 @@ class CostingResource extends Resource
                             ->content(fn (?Costing $record): string => 'Rp '.number_format((float) ($record?->total_sales_value ?? 0), 0, ',', '.')),
 
                         Forms\Components\Placeholder::make('ratio_k')
-                            ->label(__('Ratio (k)'))
+                            ->label(__('Cost ratio (k)'))
+                            ->helperText(__('Cost per Rp 1 of net sales value. HPP per kg = net price x k.'))
                             ->content(fn (?Costing $record): string => number_format((float) ($record?->ratio_k ?? 0), 6)),
 
+                        Forms\Components\Placeholder::make('margin_gross_percent')
+                            ->label(__('Margin % (Gross)'))
+                            ->helperText(__('Cost against the sales value at gross prices, before discounts.'))
+                            ->content(fn (?Costing $record): string => number_format($record?->marginGrossPercent() ?? 0, 2).'%'),
+
                         Forms\Components\Placeholder::make('margin_percent')
-                            ->label(__('Margin %'))
+                            ->label(__('Margin % (Net)'))
+                            ->helperText(__('Cost against the sales value at net prices, after discounts.'))
                             ->content(fn (?Costing $record): string => number_format($record?->marginPercent() ?? 0, 2).'%'),
 
                         Forms\Components\Placeholder::make('total_kg')
@@ -154,7 +161,7 @@ class CostingResource extends Resource
                     ->money('IDR', locale: 'id')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('ratio_k')
-                    ->label(__('Ratio (k)'))
+                    ->label(__('Cost ratio (k)'))
                     ->numeric(decimalPlaces: 6),
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('Status'))

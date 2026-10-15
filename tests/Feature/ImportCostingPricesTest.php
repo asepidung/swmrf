@@ -79,11 +79,11 @@ class ImportCostingPricesTest extends TestCase
 
         $topside = CostingPriceDefault::where('product_id', Product::where('name', 'TOPSIDE')->value('id'))->firstOrFail();
         $this->assertSame(147500.0, $topside->gross_price);
-        $this->assertSame(138281.25, $topside->net_price);
+        $this->assertSame(138282.0, $topside->net_price, 'Net dibulatkan ke atas: 138.281,25 -> 138.282.');
         $this->assertSame('import', $topside->source);
 
         $tenderloin = CostingPriceDefault::where('product_id', Product::where('name', 'TENDERLOIN')->value('id'))->firstOrFail();
-        $this->assertSame(203437.5, $tenderloin->net_price);
+        $this->assertSame(203438.0, $tenderloin->net_price, '203.437,5 -> 203.438.');
 
         // Offal: hanya net diketik (gross 0).
         $offal = CostingPriceDefault::where('product_id', Product::where('name', 'OFFAL')->value('id'))->firstOrFail();

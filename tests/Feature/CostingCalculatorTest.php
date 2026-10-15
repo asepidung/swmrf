@@ -428,6 +428,22 @@ class CostingCalculatorTest extends TestCase
     }
 
     /** @test */
+    public function a_derived_net_is_rounded_up_to_a_whole_rupiah_and_both_margins_are_shown(): void
+    {
+        $this->defaultPrice($this->topside, 217000, 203437.5);
+
+        // 203.437,5 dari potongan: dibulatkan ke atas.
+        $this->assertSame(203438.0, \App\Services\CostingPrices::roundNet(203437.5));
+        $this->assertSame(138282.0, \App\Services\CostingPrices::roundNet(138281.25));
+        $this->assertSame(100000.0, \App\Services\CostingPrices::roundNet(100000.0), 'Bulat tetap bulat.');
+        $this->assertSame(187500.0, \App\Services\CostingPrices::netForGross($this->topside->id, 200000) , 'Potongan 6,25% dari harga terakhir.');
+
+        // Margin gross dan net dari costing: biaya 600, overhead 0; nilai jual net 1.000, gross 1.200.
+        $costing = new \App\Models\Costing(['purchase_cost' => 600, 'overhead_total' => 0, 'ratio_k' => 0.6]);
+        $this->assertSame(40.0, $costing->marginPercent());
+    }
+
+    /** @test */
     public function a_product_with_no_price_anywhere_is_flagged_no_price_with_zero_value(): void
     {
         ['boning' => $boning] = $this->juneLotCattleChain();
