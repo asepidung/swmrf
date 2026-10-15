@@ -8,6 +8,7 @@ use App\Models\CostingItem;
 use App\Services\CostingCalculator;
 use App\Services\CostingPrices;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\RawJs;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -74,19 +75,21 @@ class ItemsRelationManager extends RelationManager
                 // net dengan potongan terakhir produk itu. Setiap ketikan langsung menghitung ulang costing.
                 Tables\Columns\TextInputColumn::make('gross_price')
                     ->label(__('Gross'))
-                    ->type('number')
-                    ->step('0.01')
+                    ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
+                    ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'decimal'])
+                    ->getStateUsing(fn (CostingItem $record): string => CostingPrices::formatMoney($record->gross_price))
                     ->disabled(fn (): bool => ! $this->isDraft())
-                    ->updateStateUsing(fn (CostingItem $record, $state) => $this->typePrice($record, gross: (float) $state)),
+                    ->updateStateUsing(fn (CostingItem $record, $state) => $this->typePrice($record, gross: CostingPrices::parseMoney($state))),
                 Tables\Columns\TextColumn::make('trading_terms_percent')
                     ->label(__('Terms %'))
                     ->suffix('%'),
                 Tables\Columns\TextInputColumn::make('net_price')
                     ->label(__('Net'))
-                    ->type('number')
-                    ->step('0.01')
+                    ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
+                    ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'decimal'])
+                    ->getStateUsing(fn (CostingItem $record): string => CostingPrices::formatMoney($record->net_price))
                     ->disabled(fn (): bool => ! $this->isDraft())
-                    ->updateStateUsing(fn (CostingItem $record, $state) => $this->typePrice($record, net: (float) $state)),
+                    ->updateStateUsing(fn (CostingItem $record, $state) => $this->typePrice($record, net: CostingPrices::parseMoney($state))),
                 Tables\Columns\TextColumn::make('sales_value')
                     ->label(__('Sales Value'))
                     ->money('IDR', locale: 'id'),

@@ -56,6 +56,32 @@ class CostingPrices
         return round($gross * ($last['net'] / $last['gross']), 2);
     }
 
+    /** "203.437,5" (titik ribuan, koma desimal, dari mask di form) -> 203437.5. Angka polos tetap angka. */
+    public static function parseMoney(mixed $value): float
+    {
+        if (is_int($value) || is_float($value)) {
+            return max(0.0, (float) $value);
+        }
+
+        $text = trim((string) $value);
+
+        if (str_contains($text, ',')) {
+            $text = str_replace(',', '.', str_replace('.', '', $text));
+        } elseif (substr_count($text, '.') > 1 || preg_match('/^\d{1,3}(\.\d{3})+$/', $text)) {
+            $text = str_replace('.', '', $text);
+        }
+
+        return is_numeric($text) ? max(0.0, (float) $text) : 0.0;
+    }
+
+    /** 203437.5 -> "203.437,5"; 217000 -> "217.000" (maksimal dua desimal, nol di belakang dibuang). */
+    public static function formatMoney(mixed $value): string
+    {
+        $text = number_format((float) $value, 2, ',', '.');
+
+        return str_contains($text, ',') ? rtrim(rtrim($text, '0'), ',') : $text;
+    }
+
     /** Potongan % = 1 - net/gross (0 bila gross kosong). */
     public static function discountPercent(float $gross, float $net): float
     {

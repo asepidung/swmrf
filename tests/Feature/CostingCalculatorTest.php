@@ -412,6 +412,21 @@ class CostingCalculatorTest extends TestCase
     }
 
     /** @test */
+    public function money_typed_with_thousand_separators_is_read_and_shown_back_the_same(): void
+    {
+        $this->assertSame(203437.5, \App\Services\CostingPrices::parseMoney('203.437,5'));
+        $this->assertSame(217000.0, \App\Services\CostingPrices::parseMoney('217.000'));
+        $this->assertSame(1234567.0, \App\Services\CostingPrices::parseMoney('1.234.567'));
+        $this->assertSame(138281.25, \App\Services\CostingPrices::parseMoney('138.281,25'));
+        $this->assertSame(3000.0, \App\Services\CostingPrices::parseMoney(3000));
+        $this->assertSame(0.0, \App\Services\CostingPrices::parseMoney(''));
+
+        $this->assertSame('203.437,5', \App\Services\CostingPrices::formatMoney(203437.5));
+        $this->assertSame('217.000', \App\Services\CostingPrices::formatMoney('217000.00'));
+        $this->assertSame('0', \App\Services\CostingPrices::formatMoney(0));
+    }
+
+    /** @test */
     public function a_product_with_no_price_anywhere_is_flagged_no_price_with_zero_value(): void
     {
         ['boning' => $boning] = $this->juneLotCattleChain();

@@ -5,10 +5,12 @@ namespace App\Filament\Admin\Resources;
 use App\Filament\Admin\Resources\CostingResource\Pages;
 use App\Filament\Admin\Resources\CostingResource\RelationManagers;
 use App\Models\Costing;
+use App\Services\CostingPrices;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Resources\Resource;
+use Filament\Support\RawJs;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -76,8 +78,11 @@ class CostingResource extends Resource
 
                         Forms\Components\TextInput::make('overhead_per_kg')
                             ->label(__('Overhead per Kg'))
-                            ->numeric()
-                            ->minValue(0)
+                            ->prefix('Rp')
+                            ->formatStateUsing(fn ($state): string => CostingPrices::formatMoney($state ?? 0))
+                            ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
+                            ->dehydrateStateUsing(fn ($state): float => CostingPrices::parseMoney($state))
+                            ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'decimal'])
                             ->required()
                             ->disabled(fn ($livewire): bool => static::isNotEditable($livewire)),
                     ])->columns(2),
