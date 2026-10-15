@@ -86,14 +86,14 @@ class LabelWeightWarningAndSplitTest extends TestCase
     // Batas per produk
     // =====================================================================
 
-    public function test_the_default_limit_is_100_kg_and_a_product_can_raise_it(): void
+    public function test_the_default_limit_is_30_kg_and_a_product_can_raise_it(): void
     {
-        $this->assertSame(100.0, LabelWeightLimit::forProduct($this->meat));
+        $this->assertSame(30.0, LabelWeightLimit::forProduct($this->meat));
         $this->assertSame(9999.99, LabelWeightLimit::forProduct($this->offal));
-        $this->assertSame(100.0, LabelWeightLimit::forProduct(null));
+        $this->assertSame(30.0, LabelWeightLimit::forProduct(null));
 
-        $this->assertFalse(LabelWeightLimit::exceeds($this->meat, 100.0), 'tepat di batas tidak diperingatkan');
-        $this->assertTrue(LabelWeightLimit::exceeds($this->meat, 100.01));
+        $this->assertFalse(LabelWeightLimit::exceeds($this->meat, 30.0), 'tepat di batas tidak diperingatkan');
+        $this->assertTrue(LabelWeightLimit::exceeds($this->meat, 30.01));
         $this->assertFalse(LabelWeightLimit::exceeds($this->offal, 5747.66));
     }
 
