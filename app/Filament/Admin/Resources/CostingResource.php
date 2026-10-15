@@ -282,6 +282,7 @@ class CostingResource extends Resource
     {
         return [
             'index' => Pages\ListCostings::route('/'),
+            'draft' => Pages\DraftCosting::route('/draft'),
             'edit' => Pages\EditCosting::route('/{record}/edit'),
             'view' => Pages\ViewCosting::route('/{record}'),
         ];

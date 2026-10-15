@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Admin\Resources\CostingResource\Pages\DraftCosting;
 use App\Filament\Admin\Resources\CostingResource\Pages\EditCosting;
 use App\Filament\Admin\Resources\CostingResource\Pages\ListCostings;
 use App\Filament\Admin\Resources\CostingResource\Pages\ViewCosting;
@@ -163,20 +164,27 @@ class CostingResourceTest extends TestCase
     }
 
     /** @test */
-    public function the_create_costing_action_requires_create_costings(): void
+    public function the_draft_costing_page_requires_create_costings(): void
     {
         $boning = $this->lockedBoningWithCostableProduct();
 
         Livewire::actingAs($this->employee(['view_costings']))
             ->test(ListCostings::class)
-            ->assertActionHidden('create_costing');
+            ->assertActionHidden('draft');
+
+        Livewire::actingAs($this->employee(['view_costings']))
+            ->test(DraftCosting::class)
+            ->assertForbidden();
 
         Livewire::actingAs($this->employee(['view_costings', 'create_costings']))
             ->test(ListCostings::class)
-            ->assertActionVisible('create_costing')
-            ->mountAction('create_costing')
-            ->setActionData(['boning_id' => $boning->id])
-            ->callMountedAction();
+            ->assertActionVisible('draft');
+
+        Livewire::actingAs($this->employee(['view_costings', 'create_costings']))
+            ->test(DraftCosting::class)
+            ->assertSuccessful()
+            ->assertCanSeeTableRecords([$boning])
+            ->callTableAction('process', $boning);
 
         $this->assertTrue(Costing::where('boning_id', $boning->id)->exists());
     }
@@ -206,10 +214,8 @@ class CostingResourceTest extends TestCase
         $boning = $this->lockedBoningWithCostableProduct();
 
         Livewire::actingAs($this->employee(['view_costings', 'create_costings']))
-            ->test(ListCostings::class)
-            ->mountAction('create_costing')
-            ->setActionData(['boning_id' => $boning->id])
-            ->callMountedAction();
+            ->test(DraftCosting::class)
+            ->callTableAction('process', $boning);
 
         $costing = Costing::where('boning_id', $boning->id)->firstOrFail();
 
@@ -219,16 +225,15 @@ class CostingResourceTest extends TestCase
     }
 
     /** @test */
-    public function creating_a_second_costing_for_an_already_costed_boning_fails_without_a_duplicate(): void
+    public function an_already_costed_boning_is_not_offered_again_in_the_draft_list(): void
     {
         $boning = $this->lockedBoningWithCostableProduct();
         Costing::createFromCalculation($boning, \App\Services\CostingCalculator::forBoning($boning)->calculate());
 
+        // Boning yang sudah punya costing tidak muncul lagi di Draft Costing.
         Livewire::actingAs($this->employee(['view_costings', 'create_costings']))
-            ->test(ListCostings::class)
-            ->mountAction('create_costing')
-            ->setActionData(['boning_id' => $boning->id])
-            ->callMountedAction();
+            ->test(DraftCosting::class)
+            ->assertCanNotSeeTableRecords([$boning]);
 
         $this->assertSame(1, Costing::where('boning_id', $boning->id)->count());
     }
@@ -241,38 +246,39 @@ class CostingResourceTest extends TestCase
         $first->delete();   // hapus lunak; barisnya masih memegang boning_id yang unik
 
         Livewire::actingAs($this->employee(['view_costings', 'create_costings']))
-            ->test(ListCostings::class)
-            ->mountAction('create_costing')
-            ->setActionData(['boning_id' => $boning->id])
-            ->callMountedAction();
+            ->test(DraftCosting::class)
+            ->callTableAction('process', $boning);
 
         $this->assertSame(1, Costing::where('boning_id', $boning->id)->count(), 'Costing baru dibuat.');
         $this->assertSame(0, Costing::onlyTrashed()->where('boning_id', $boning->id)->count(), 'Yang terhapus dibuang sungguhan, tidak menghalangi.');
     }
 
     // =========================================================================
-    // Draft otomatis saat boning dikunci
+    // Draft Costing: boning terkunci yang belum di-costing
     // =========================================================================
 
     /** @test */
-    public function locking_a_boning_creates_its_draft_costing_and_unlocking_discards_a_draft(): void
+    public function a_locked_boning_waits_in_draft_costing_and_unlocking_discards_its_draft(): void
     {
         $boning = $this->lockedBoningWithCostableProduct();
-        $boning->unlock();
 
-        $boning->lock();
+        $this->assertNull(Costing::where('boning_id', $boning->id)->first(), 'Mengunci boning tidak membuat costing sendiri.');
 
-        $draft = Costing::where('boning_id', $boning->id)->first();
-        $this->assertNotNull($draft, 'Draft costing dibuat otomatis.');
-        $this->assertSame(Costing::STATUS_DRAFT, $draft->status);
-        $this->assertCount(1, $draft->items);
+        Livewire::actingAs($this->employee(['view_costings', 'create_costings']))
+            ->test(DraftCosting::class)
+            ->assertCanSeeTableRecords([$boning]);
 
-        // Boning yang di-unlock membuang Draft-nya; dikunci lagi, Draft baru dibuat.
+        $costing = Costing::createFromBoning($boning);
+        $this->assertSame(Costing::STATUS_DRAFT, $costing->status);
+
+        // Boning di-unlock: Draft costing dibuang; dikunci lagi, boning muncul lagi di daftar.
         $boning->fresh()->unlock();
         $this->assertSame(0, Costing::withTrashed()->where('boning_id', $boning->id)->count());
 
         $boning->fresh()->lock();
-        $this->assertSame(1, Costing::where('boning_id', $boning->id)->count());
+        Livewire::actingAs($this->employee(['view_costings', 'create_costings']))
+            ->test(DraftCosting::class)
+            ->assertCanSeeTableRecords([$boning]);
     }
 
     /** @test */

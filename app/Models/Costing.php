@@ -195,36 +195,29 @@ class Costing extends Model
             ->all();
     }
 
+    /** Buat costing (Draft) untuk sebuah boning terkunci: harga dan overhead dari costing terakhir. */
+    public static function createFromBoning(Boning $boning): self
+    {
+        return static::createFromCalculation($boning, CostingCalculator::forBoning($boning)->calculate());
+    }
+
     /**
-     * Draft costing untuk boning yang baru dikunci: dibuat otomatis (harga dan overhead dari costing
-     * terakhir), lalu semua pemegang izin membuat costing diberi tahu. Tidak pernah melempar --
-     * mengunci boning tidak boleh gagal karena costing-nya.
+     * Boning baru saja dikunci: pemegang izin membuat costing diberi tahu, dengan tautan ke Draft
+     * Costing. Tidak pernah melempar -- mengunci boning tidak boleh gagal karena pemberitahuan.
      */
-    public static function ensureDraftFor(Boning $boning): ?self
+    public static function notifyBoningLocked(Boning $boning): void
     {
         try {
-            $existing = static::where('boning_id', $boning->id)->first();
-
-            if ($existing) {
-                return $existing;
-            }
-
-            $costing = static::createFromCalculation($boning, CostingCalculator::forBoning($boning->fresh())->calculate());
+            TaskNotifier::notifyPermissionHolders(
+                ['create_costings'],
+                __('Boning ready for costing'),
+                __('Boning :doc is locked and ready for costing.', ['doc' => $boning->doc_no]),
+                CostingResource::getUrl('draft'),
+                'costing-boning-'.$boning->id,
+            );
         } catch (\Throwable $e) {
             report($e);
-
-            return null;
         }
-
-        TaskNotifier::notifyPermissionHolders(
-            ['create_costings'],
-            __('Costing ready to process'),
-            __('Boning :doc is locked. Its draft costing is ready.', ['doc' => $boning->doc_no]),
-            CostingResource::getUrl('edit', ['record' => $costing]),
-            'costing-'.$costing->id,
-        );
-
-        return $costing;
     }
 
     /** Margin% -- SAMA untuk seluruh produk, sifat metode ini (`hpp.md` §11.1), bukan per produk. */

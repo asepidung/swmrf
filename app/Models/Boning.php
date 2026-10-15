@@ -201,8 +201,8 @@ class Boning extends Model
             $this->status = 'LOCKED';
         });
 
-        // Costing-nya langsung disiapkan sebagai Draft dan tukang costing diberi tahu.
-        Costing::ensureDraftFor($this);
+        // Tukang costing diberi tahu; boning ini muncul di Draft Costing.
+        Costing::notifyBoningLocked($this);
     }
 
     public function unlock(): void
