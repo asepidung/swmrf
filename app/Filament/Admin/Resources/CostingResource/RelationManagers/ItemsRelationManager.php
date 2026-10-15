@@ -76,7 +76,7 @@ class ItemsRelationManager extends RelationManager
                 Tables\Columns\TextInputColumn::make('gross_price')
                     ->label(__('Gross'))
                     ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
-                    ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'decimal'])
+                    ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'decimal', 'x-on:focus' => 'if ($el.value === "0") $el.select()'])
                     ->getStateUsing(fn (CostingItem $record): string => CostingPrices::formatMoney($record->gross_price))
                     ->disabled(fn (): bool => ! $this->isDraft())
                     ->updateStateUsing(fn (CostingItem $record, $state) => $this->typePrice($record, gross: CostingPrices::parseMoney($state))),
@@ -86,7 +86,7 @@ class ItemsRelationManager extends RelationManager
                 Tables\Columns\TextInputColumn::make('net_price')
                     ->label(__('Net'))
                     ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
-                    ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'decimal'])
+                    ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'decimal', 'x-on:focus' => 'if ($el.value === "0") $el.select()'])
                     ->getStateUsing(fn (CostingItem $record): string => CostingPrices::formatMoney($record->net_price))
                     ->disabled(fn (): bool => ! $this->isDraft())
                     ->updateStateUsing(fn (CostingItem $record, $state) => $this->typePrice($record, net: CostingPrices::parseMoney($state))),

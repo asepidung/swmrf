@@ -169,9 +169,9 @@ class CostingTest extends TestCase
     }
 
     /** @test */
-    public function default_overhead_is_zero_when_no_costing_exists_yet(): void
+    public function default_overhead_is_3000_when_no_costing_exists_yet(): void
     {
-        $this->assertSame(0.0, Costing::defaultOverheadPerKg());
+        $this->assertSame(3000.0, Costing::defaultOverheadPerKg());
     }
 
     /** @test */

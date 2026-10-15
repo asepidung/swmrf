@@ -174,7 +174,8 @@ class CostingCalculatorTest extends TestCase
 
         $this->lockWithDrylog($boning);
 
-        $result = CostingCalculator::forBoning($boning->fresh())->calculate();
+        // hpp.md §1-2 tanpa overhead (angka lot Juni dihitung sebelum overhead ikut HPP).
+        $result = CostingCalculator::forBoning($boning->fresh(), 0)->calculate();
 
         $this->assertSame(680500000.0, $result['purchase_cost']);
         $this->assertSame(717762805.70, $result['total_sales_value']);

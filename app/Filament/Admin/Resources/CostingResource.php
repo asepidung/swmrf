@@ -82,7 +82,7 @@ class CostingResource extends Resource
                             ->formatStateUsing(fn ($state): string => CostingPrices::formatMoney($state ?? 0))
                             ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
                             ->dehydrateStateUsing(fn ($state): float => CostingPrices::parseMoney($state))
-                            ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'decimal'])
+                            ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'decimal', 'x-on:focus' => 'if ($el.value === "0") $el.select()'])
                             ->required()
                             ->disabled(fn ($livewire): bool => static::isNotEditable($livewire)),
                     ])->columns(2),

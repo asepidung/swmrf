@@ -198,10 +198,13 @@ class Costing extends Model
         return round((1 - $this->ratio_k) * 100, 2);
     }
 
-    /** Overhead default costing baru: dari costing terakhir, atau 0 kalau belum ada satu pun. */
+    /** Overhead per kg bila belum ada costing sama sekali (Owner, 14 Oktober 2026). */
+    public const OVERHEAD_AWAL = 3000.0;
+
+    /** Overhead default costing baru: dari costing terakhir, atau OVERHEAD_AWAL kalau belum ada satu pun. */
     public static function defaultOverheadPerKg(): float
     {
-        return (float) (static::query()->latest('id')->value('overhead_per_kg') ?? 0);
+        return (float) (static::query()->latest('id')->value('overhead_per_kg') ?? self::OVERHEAD_AWAL);
     }
 
     /**
