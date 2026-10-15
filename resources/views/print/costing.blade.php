@@ -18,7 +18,7 @@
             margin: 0 3px 0 1px;
         }
         /* Angka tidak boleh patah baris ("Rp" di satu baris, nilainya di baris lain). */
-        .items-table td.right-align, .items-table th {
+        .items-table td.right-align {
             white-space: nowrap;
         }
         .items-table thead {
@@ -72,7 +72,7 @@
         }
         .summary-box {
             margin-top: 16px;
-            width: 320px;
+            width: 360px;
             margin-left: auto;
             border: 1px solid black;
         }
@@ -83,6 +83,7 @@
             color: #555;
         }
         .summary-box td.value {
+            white-space: nowrap;
             text-align: right;
             font-weight: bold;
         }
@@ -173,13 +174,15 @@
     <table class="items-table">
         <thead>
             <tr>
-                <th width="28%">Produk</th>
-                <th width="9%">Berat (Kg)</th>
-                <th width="14%">Gross (Rp)</th>
-                <th width="8%">Terms</th>
-                <th width="14%">Net (Rp)</th>
-                <th width="14%">Nilai Jual (Rp)</th>
-                <th width="13%">HPP / Kg (Rp)</th>
+                <th width="21%">Produk</th>
+                <th width="8%">Berat (Kg)</th>
+                <th width="11%">Gross (Rp)</th>
+                <th width="7%">Terms</th>
+                <th width="10%">Net (Rp)</th>
+                <th width="12%">Nilai Jual (Rp)</th>
+                <th width="10%">Harga Beli / Kg (Rp)</th>
+                <th width="9%">Overhead / Kg (Rp)</th>
+                <th width="10%">HPP / Kg (Rp)</th>
             </tr>
         </thead>
         <tbody>
@@ -196,10 +199,12 @@
                     <td class="right-align">{{ number_format((float) $item->trading_terms_percent, 2, ',', '.') }}%</td>
                     <td class="right-align">{{ number_format((float) $item->net_price, 0, ',', '.') }}</td>
                     <td class="right-align">{{ number_format((float) $item->sales_value, 0, ',', '.') }}</td>
+                    <td class="right-align">{{ number_format((float) $item->buying_price_per_kg, 0, ',', '.') }}</td>
+                    <td class="right-align">{{ number_format(max(0, (float) $item->hpp_per_kg - (float) $item->buying_price_per_kg), 0, ',', '.') }}</td>
                     <td class="right-align">{{ number_format((float) $item->hpp_per_kg, 0, ',', '.') }}</td>
                 </tr>
             @empty
-                <tr><td colspan="7">Belum ada data.</td></tr>
+                <tr><td colspan="9">Belum ada data.</td></tr>
             @endforelse
         </tbody>
         <tfoot>
@@ -208,7 +213,7 @@
                 <td class="right-align">{{ number_format((float) $record->total_kg, 2, ',', '.') }}</td>
                 <td colspan="3"></td>
                 <td class="right-align">{{ number_format((float) $record->total_sales_value, 0, ',', '.') }}</td>
-                <td></td>
+                <td colspan="3"></td>
             </tr>
         </tfoot>
     </table>
@@ -223,7 +228,7 @@
             <td class="value">Rp {{ number_format((float) $record->total_sales_value, 0, ',', '.') }}</td>
         </tr>
         <tr>
-            <td class="label">Rasio biaya (k)<br><span style="font-size: 9px;">biaya beli per Rp 1 nilai jual net; HPP = net x k + overhead/kg</span></td>
+            <td class="label">Faktor modal sapi (k)<br><span style="font-size: 9px;">modal sapi per Rp 1 nilai jual net. Harga beli/kg = net x k; HPP = harga beli + overhead/kg</span></td>
             <td class="value">{{ number_format((float) $record->ratio_k, 6) }}</td>
         </tr>
         <tr>

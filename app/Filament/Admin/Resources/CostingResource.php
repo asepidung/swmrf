@@ -104,7 +104,7 @@ class CostingResource extends Resource
                             ->content(fn (?Costing $record): string => 'Rp '.number_format((float) ($record?->total_sales_value ?? 0), 0, ',', '.')),
 
                         Forms\Components\Placeholder::make('ratio_k')
-                            ->label(__('Cost ratio (k)'))
+                            ->label(__('Purchase cost factor (k)'))
                             ->helperText(__('Purchase cost per Rp 1 of net sales value. HPP per kg = net price x k + overhead per kg (meat only).'))
                             ->content(fn (?Costing $record): string => number_format((float) ($record?->ratio_k ?? 0), 6)),
 
@@ -166,7 +166,7 @@ class CostingResource extends Resource
                     ->money('IDR', locale: 'id')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('ratio_k')
-                    ->label(__('Cost ratio (k)'))
+                    ->label(__('Purchase cost factor (k)'))
                     ->numeric(decimalPlaces: 6),
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('Status'))

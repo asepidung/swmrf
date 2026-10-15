@@ -111,6 +111,13 @@ class ItemsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('sales_value')
                     ->label(__('Sales Value'))
                     ->money('IDR', locale: 'id'),
+                Tables\Columns\TextColumn::make('buying_price_per_kg')
+                    ->label(__('Buying price / Kg'))
+                    ->formatStateUsing(fn ($state): string => 'Rp '.number_format((float) $state, 0, ',', '.')),
+                Tables\Columns\TextColumn::make('overhead_per_kg_applied')
+                    ->label(__('Overhead / Kg'))
+                    ->getStateUsing(fn (CostingItem $record): float => max(0.0, (float) $record->hpp_per_kg - (float) $record->buying_price_per_kg))
+                    ->formatStateUsing(fn ($state): string => 'Rp '.number_format((float) $state, 0, ',', '.')),
                 Tables\Columns\TextColumn::make('hpp_per_kg')
                     ->label(__('HPP / Kg'))
                     ->formatStateUsing(fn ($state): string => 'Rp '.number_format((float) $state, 0, ',', '.'))

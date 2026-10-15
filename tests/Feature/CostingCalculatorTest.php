@@ -462,6 +462,8 @@ class CostingCalculatorTest extends TestCase
 
         $this->assertSame($low[$this->topside->id]['hpp_per_kg'] + 3000, $high[$this->topside->id]['hpp_per_kg'], 'Daging: tepat +3.000.');
         $this->assertSame($low[$offal->id]['hpp_per_kg'], $high[$offal->id]['hpp_per_kg'], 'Offal tidak menanggung overhead.');
+        $this->assertSame($low[$this->topside->id]['buying_price_per_kg'] + 3000, $low[$this->topside->id]['hpp_per_kg'], 'HPP = harga beli + overhead.');
+        $this->assertSame($low[$offal->id]['buying_price_per_kg'], $low[$offal->id]['hpp_per_kg'], 'Offal: HPP = harga beli.');
     }
 
     /** @test */

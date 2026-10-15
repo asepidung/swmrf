@@ -22,7 +22,8 @@ use App\Models\PurchaseCattleItem;
  * total_nilai_jual = Σ net_i x kg_i
  * overhead_total   = overhead_per_kg x Σ kg daging (tanpa offal dan kulit)
  * k                = biaya_beli / total_nilai_jual
- * HPP_i / kg       = net_i x k + overhead_per_kg   (overhead rata, hanya produk daging)
+ * harga_beli_i/kg  = net_i x k                      (= "Buying Price" di Excel akunting)
+ * HPP_i / kg       = harga_beli_i + overhead_per_kg  (overhead rata, hanya produk daging)
  * laba lot         = total_nilai_jual - biaya_beli - overhead_total
  * ```
  *
@@ -55,7 +56,7 @@ class CostingCalculator
      * @return array{
      *     purchase_cost: float,
      *     cattle: array<int, array{cattle_class_id: int, head_count: int, received_weight: float, price_per_kg: float, amount: float}>,
-     *     items: array<int, array{product_id: int, weight_kg: float, reference_group_id: ?int, gross_price: float, trading_terms_percent: float, net_price: float, sales_value: float, hpp_per_kg: float, flag: ?string}>,
+     *     items: array<int, array{product_id: int, weight_kg: float, reference_group_id: ?int, gross_price: float, trading_terms_percent: float, net_price: float, sales_value: float, buying_price_per_kg: float, hpp_per_kg: float, flag: ?string}>,
      *     total_sales_value: float,
      *     ratio_k: float,
      *     total_kg: float,
@@ -88,9 +89,11 @@ class CostingCalculator
         $ratioKRaw = $totalSalesValueRaw > 0 ? $purchaseCostRaw / $totalSalesValueRaw : 0.0;
 
         foreach ($items as &$item) {
-            $item['hpp_per_kg'] = $item['flag'] === CostingItem::FLAG_NO_PRICE
-                ? 0.0
-                : round($item['net_price'] * $ratioKRaw + ($item['is_meat'] ? $this->overheadPerKg : 0.0));
+            // Harga beli/kg (net x k, tanpa overhead) lalu HPP = harga beli + overhead rata per kg
+            // (produk daging saja). Keduanya rupiah penuh, jadi kolom di layar dan cetakan menjumlah persis.
+            $noPrice = $item['flag'] === CostingItem::FLAG_NO_PRICE;
+            $item['buying_price_per_kg'] = $noPrice ? 0.0 : round($item['net_price'] * $ratioKRaw);
+            $item['hpp_per_kg'] = $noPrice ? 0.0 : $item['buying_price_per_kg'] + ($item['is_meat'] ? round($this->overheadPerKg) : 0.0);
             unset($item['sales_value_raw'], $item['is_meat']);
         }
         unset($item);
