@@ -5,11 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Costing : {{ $record->costing_number }}</title>
     <style>
+        /* A4 portrait: margin diatur halaman, bukan body, supaya tiap halaman (ratusan produk) rapi. */
+        @page {
+            size: A4 portrait;
+            margin: 12mm;
+        }
         body {
             font-family: 'Poppins', sans-serif;
-            font-size: 12px;
+            font-size: 11px;
             color: #000;
-            margin: 20px;
+            margin: 0;
+        }
+        /* Angka tidak boleh patah baris ("Rp" di satu baris, nilainya di baris lain). */
+        .items-table td.right-align, .items-table th {
+            white-space: nowrap;
+        }
+        .items-table thead {
+            display: table-header-group;   /* judul kolom diulang di tiap halaman */
+        }
+        .items-table tr {
+            page-break-inside: avoid;
+        }
+        .summary-box {
+            page-break-inside: avoid;
         }
         table {
             width: 100%;
@@ -29,7 +47,7 @@
         }
         .items-table th, .items-table td {
             border: 1px solid black;
-            padding: 6px;
+            padding: 4px 5px;
             text-align: center;
         }
         .items-table td.left-align {
@@ -154,13 +172,13 @@
     <table class="items-table">
         <thead>
             <tr>
-                <th width="30%">Produk</th>
-                <th width="10%">Berat (Kg)</th>
-                <th width="10%">Gross</th>
+                <th width="28%">Produk</th>
+                <th width="9%">Berat (Kg)</th>
+                <th width="14%">Gross (Rp)</th>
                 <th width="8%">Terms</th>
-                <th width="10%">Net</th>
-                <th width="12%">Nilai Jual</th>
-                <th width="14%">HPP / Kg</th>
+                <th width="14%">Net (Rp)</th>
+                <th width="14%">Nilai Jual (Rp)</th>
+                <th width="13%">HPP / Kg (Rp)</th>
             </tr>
         </thead>
         <tbody>
@@ -173,11 +191,11 @@
                         @endif
                     </td>
                     <td class="right-align">{{ number_format((float) $item->weight_kg, 2, ',', '.') }}</td>
-                    <td class="right-align">Rp {{ number_format((float) $item->gross_price, 0, ',', '.') }}</td>
+                    <td class="right-align">{{ number_format((float) $item->gross_price, 0, ',', '.') }}</td>
                     <td class="right-align">{{ number_format((float) $item->trading_terms_percent, 2, ',', '.') }}%</td>
-                    <td class="right-align">Rp {{ number_format((float) $item->net_price, 0, ',', '.') }}</td>
-                    <td class="right-align">Rp {{ number_format((float) $item->sales_value, 0, ',', '.') }}</td>
-                    <td class="right-align">Rp {{ number_format((float) $item->hpp_per_kg, 0, ',', '.') }}</td>
+                    <td class="right-align">{{ number_format((float) $item->net_price, 0, ',', '.') }}</td>
+                    <td class="right-align">{{ number_format((float) $item->sales_value, 0, ',', '.') }}</td>
+                    <td class="right-align">{{ number_format((float) $item->hpp_per_kg, 0, ',', '.') }}</td>
                 </tr>
             @empty
                 <tr><td colspan="7">Belum ada data.</td></tr>
@@ -188,7 +206,7 @@
                 <td class="right-align">Total</td>
                 <td class="right-align">{{ number_format((float) $record->total_kg, 2, ',', '.') }}</td>
                 <td colspan="3"></td>
-                <td class="right-align">Rp {{ number_format((float) $record->total_sales_value, 0, ',', '.') }}</td>
+                <td class="right-align">{{ number_format((float) $record->total_sales_value, 0, ',', '.') }}</td>
                 <td></td>
             </tr>
         </tfoot>
