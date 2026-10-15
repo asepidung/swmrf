@@ -112,6 +112,7 @@ class ItemsRelationManager extends RelationManager
                         default => 'gray',
                     }),
             ])
+            ->paginated(false)
             ->headerActions([])
             ->actions([])
             ->bulkActions([]);
