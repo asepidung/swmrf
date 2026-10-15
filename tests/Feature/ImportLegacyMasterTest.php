@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\CattleClass;
+use App\Models\CustomerGroup;
 use App\Models\Grade;
 use App\Models\Material;
 use App\Models\MaterialCategory;
@@ -132,6 +133,16 @@ INSERT INTO `bom_rawmate` (`idbom`,`idbarang`,`idrawmate`,`qty`,`is_active`,`idu
 INSERT INTO `bom_rawmate` (`idbom`,`idbarang`,`idrawmate`,`qty`,`is_active`,`iduser`,`createtime`,`updatetime`) VALUES ('3','3','1','1','1','1','2025-10-20 09:38:23','2025-10-20 09:38:23');
 INSERT INTO `bom_rawmate` (`idbom`,`idbarang`,`idrawmate`,`qty`,`is_active`,`iduser`,`createtime`,`updatetime`) VALUES ('4','1','3','1','1','1','2025-10-20 09:38:23','2025-10-20 09:38:23');
 INSERT INTO `bom_rawmate` (`idbom`,`idbarang`,`idrawmate`,`qty`,`is_active`,`iduser`,`createtime`,`updatetime`) VALUES ('5','2','1','3','0','1','2025-10-20 09:38:23','2025-10-20 09:38:23');
+DROP TABLE IF EXISTS `groupcs`;
+CREATE TABLE `groupcs` (
+  `idgroup` int(11) NOT NULL AUTO_INCREMENT,
+  `nmgroup` varchar(20) DEFAULT NULL,
+  `terms` char(3) DEFAULT NULL,
+  PRIMARY KEY (`idgroup`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+INSERT INTO `groupcs` (`idgroup`,`nmgroup`,`terms`) VALUES ('12','HPM',NULL);
+INSERT INTO `groupcs` (`idgroup`,`nmgroup`,`terms`) VALUES ('15','LION',NULL);
+INSERT INTO `groupcs` (`idgroup`,`nmgroup`,`terms`) VALUES ('20','',NULL);
 SQL;
 
     private string $sourcePath;
@@ -167,23 +178,31 @@ SQL;
             ->assertExitCode(1);
     }
 
+    private function apply(): \Illuminate\Testing\PendingCommand
+    {
+        return $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true]);
+    }
+
     /** @test */
     public function dry_run_reports_without_writing_anything(): void
     {
         $this->artisan('legacy:import-master', ['--source' => $this->sourcePath])
+            ->expectsOutputToContain('Dry-run')
             ->assertExitCode(0);
 
         $this->assertSame(0, ProductCategory::count());
         $this->assertSame(0, Grade::count());
         $this->assertSame(0, Supplier::count());
         $this->assertSame(0, CattleClass::count());
+        $this->assertSame(0, CustomerGroup::count());
+        $this->assertSame(0, Product::count());
+        $this->assertSame(0, Material::count());
     }
 
     /** @test */
-    public function apply_actually_creates_the_records(): void
+    public function apply_creates_the_records(): void
     {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->assertExitCode(0);
+        $this->apply()->assertExitCode(0);
 
         $this->assertDatabaseHas('product_categories', ['name' => 'PRIME CUT', 'prefix' => 1]);
         $this->assertDatabaseHas('product_categories', ['name' => 'SECONDARY CUT', 'prefix' => 2]);
@@ -192,49 +211,162 @@ SQL;
         $this->assertDatabaseHas('suppliers', ['name' => 'UNGGUL HARAPAN PANGAN']);
         $this->assertDatabaseHas('cattle_classes', ['name' => 'STEER']);
         $this->assertDatabaseHas('cattle_classes', ['name' => 'BULL']);
+        $this->assertDatabaseHas('customer_groups', ['name' => 'LION']);
+    }
+
+    // =========================================================================
+    // ID LEGACY DIPERTAHANKAN (keputusan Ayah, 13 Oktober 2026)
+    // =========================================================================
+
+    /** @test */
+    public function every_row_keeps_its_legacy_id(): void
+    {
+        $this->apply()->assertExitCode(0);
+
+        $this->assertSame('PRIME CUT', ProductCategory::find(1)->name);
+        $this->assertSame('SECONDARY CUT', ProductCategory::find(2)->name);
+        $this->assertSame('J01', Grade::find(1)->name);
+        $this->assertSame('H. DONI', Supplier::find(1)->name);
+        $this->assertSame('UNGGUL HARAPAN PANGAN', Supplier::find(2)->name);
+        $this->assertSame('STEER', CattleClass::find(1)->name);
+        $this->assertSame('BULL', CattleClass::find(2)->name);
+        $this->assertSame(15, (int) CustomerGroup::where('name', 'LION')->value('id'));
+        $this->assertSame(12, (int) CustomerGroup::where('name', 'HPM')->value('id'));
+
+        $this->assertSame('TENDERLOIN', Product::find(1)->name);
+        $this->assertSame('TENDERLOIN BUTT', Product::find(2)->name);
+        $this->assertSame('KARTON TOP TEST', Material::find(1)->name);
+        $this->assertSame('KARTON', MaterialCategory::find(2)->name);
+        $this->assertSame('PLASTIK', MaterialCategory::find(3)->name);
+    }
+
+    /** @test */
+    public function foreign_keys_use_the_legacy_ids_as_they_are(): void
+    {
+        $this->apply()->assertExitCode(0);
+
+        $this->assertSame(1, (int) Product::find(1)->category_id, 'products.category_id = idcut.');
+        $this->assertSame(2, (int) Material::find(1)->material_category_id, 'materials.material_category_id = idrawcategory.');
+        $this->assertSame(3, (int) Material::find(2)->material_category_id);
+
+        $bom = ProductMaterial::find(1);
+        $this->assertSame([1, 1], [(int) $bom->product_id, (int) $bom->material_id], 'product_materials: idbom, idbarang, idrawmate.');
+        $this->assertSame([1, 2], [(int) ProductMaterial::find(2)->product_id, (int) ProductMaterial::find(2)->material_id]);
+    }
+
+    /** @test */
+    public function the_auto_increment_continues_after_the_highest_legacy_id(): void
+    {
+        $this->apply()->assertExitCode(0);
+
+        $supplier = Supplier::create(['name' => 'SUPPLIER BARU', 'address' => '-', 'pic' => '-', 'top_days' => 0]);
+        $group = CustomerGroup::create(['name' => 'GRUP BARU']);
+
+        $this->assertSame(5, $supplier->id, 'Suppliers legacy 1..4, berikutnya 5.');
+        $this->assertSame(16, $group->id, 'Grup legacy sampai 15, berikutnya 16.');
+    }
+
+    /** @test */
+    public function skipped_legacy_rows_leave_a_gap_in_the_ids_and_nothing_else(): void
+    {
+        $this->apply()->assertExitCode(0);
+
+        $this->assertNull(Product::find(3), 'idbarang 3 (kode "-") dilewati.');
+        $this->assertNull(Product::find(5), 'idbarang 5 (kategori tidak ada) dilewati.');
+        $this->assertNotNull(Product::find(6));
+        $this->assertNull(Material::find(3), 'ATK di luar cakupan.');
+        $this->assertNull(Material::find(4), 'Tanpa satuan.');
+        $this->assertNull(MaterialCategory::find(1));
+        $this->assertNull(MaterialCategory::find(26));
+    }
+
+    /** @test */
+    public function an_id_already_used_with_different_content_is_refused_and_nothing_at_all_is_written(): void
+    {
+        Supplier::unguarded(fn () => Supplier::create(['id' => 1, 'name' => 'ORANG LAIN', 'address' => '-', 'pic' => '-', 'top_days' => 0]));
+
+        $this->apply()
+            ->expectsOutputToContain('DIBATALKAN')
+            ->expectsOutputToContain('id 1: sudah berisi [name=ORANG LAIN], legacy [H. DONI] -- DITOLAK')
+            ->assertExitCode(1);
+
+        $this->assertSame('ORANG LAIN', Supplier::find(1)->name, 'Tidak ditimpa.');
+        $this->assertSame(0, ProductCategory::count(), 'Tabel lain pun tidak ditulis.');
+        $this->assertSame(0, Product::count());
+        $this->assertSame(0, CustomerGroup::count());
+    }
+
+    /** @test */
+    public function the_dry_run_also_reports_the_refusal_and_fails(): void
+    {
+        ProductCategory::unguarded(fn () => ProductCategory::create(['id' => 1, 'name' => 'KATEGORI LAIN', 'prefix' => 77]));
+
+        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath])
+            ->expectsOutputToContain('--apply akan DIBATALKAN')
+            ->assertExitCode(1);
+
+        $this->assertSame(1, ProductCategory::count());
+    }
+
+    /** @test */
+    public function an_id_already_used_with_the_same_content_is_skipped_not_refused(): void
+    {
+        ProductCategory::unguarded(fn () => ProductCategory::create(['id' => 1, 'name' => 'PRIME CUT', 'prefix' => 1]));
+
+        $this->apply()->assertExitCode(0);
+
+        $this->assertSame(2, ProductCategory::count());
+        $this->assertSame('SECONDARY CUT', ProductCategory::find(2)->name);
+    }
+
+    /** @test */
+    public function matching_by_name_never_decides_the_id(): void
+    {
+        // Nama yang sama di id LAIN: tidak dipakai sebagai id; nilai unik yang sama persis tidak bisa dimasukkan dua kali.
+        ProductCategory::unguarded(fn () => ProductCategory::create(['id' => 9, 'name' => 'PRIME CUT', 'prefix' => 90]));
+
+        $this->apply()
+            ->expectsOutputToContain('name "PRIME CUT" sama persis dengan id 9, tidak diimpor')
+            ->assertExitCode(0);
+
+        $this->assertNull(ProductCategory::find(1), 'Id 1 tidak diisi dengan baris yang namanya sudah dipakai id lain.');
+        $this->assertSame('PRIME CUT', ProductCategory::find(9)->name);
     }
 
     /** @test */
     public function running_apply_twice_does_not_duplicate_anything(): void
     {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->assertExitCode(0);
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->assertExitCode(0);
+        $this->apply()->assertExitCode(0);
+        $this->apply()->expectsOutputToContain('sama (dilewati)')->assertExitCode(0);
 
         $this->assertSame(2, ProductCategory::count());
         $this->assertSame(1, Grade::count()); // baris kedua namanya kosong, dilewati sebagai konflik
-        $this->assertSame(3, Supplier::count()); // H. DONI, UNGGUL HARAPAN PANGAN, + satu dari pasangan mirip spasi
+        $this->assertSame(4, Supplier::count()); // keempat diimpor; yang beda spasi dilaporkan sebagai konflik
         $this->assertSame(2, CattleClass::count());
+        $this->assertSame(2, CustomerGroup::count());
+        $this->assertSame(4, Product::count()); // idbarang 1,2,6,7
+        $this->assertSame(4, Material::count()); // idrawmate 1,2,5,6
+        $this->assertSame(2, ProductMaterial::count()); // idbom 1 dan 2
     }
 
-    /** @test */
-    public function an_existing_record_is_matched_by_name_and_skipped(): void
-    {
-        ProductCategory::create(['name' => 'PRIME CUT', 'prefix' => 99]);
-
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->assertExitCode(0);
-
-        $this->assertSame(2, ProductCategory::count());
-    }
+    // =========================================================================
+    // Konflik yang sudah dikenal
+    // =========================================================================
 
     /** @test */
     public function a_blank_name_is_reported_as_a_conflict_not_guessed(): void
     {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->expectsOutputToContain('idgrade=2: nama kosong, dilewati.');
+        $this->apply()->expectsOutputToContain('idgrade=2: nama kosong, dilewati.');
 
         $this->assertSame(1, Grade::count());
     }
 
     /** @test */
-    public function a_prefix_already_used_by_a_different_category_is_reported_as_a_conflict(): void
+    public function a_prefix_already_used_by_another_category_id_is_reported_as_a_conflict(): void
     {
-        ProductCategory::create(['name' => 'SOMETHING ELSE', 'prefix' => 1]);
+        ProductCategory::unguarded(fn () => ProductCategory::create(['id' => 5, 'name' => 'SOMETHING ELSE', 'prefix' => 1]));
 
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->expectsOutputToContain('PRIME CUT: prefix 1 (dari idcut) sudah dipakai kategori lain, dilewati.');
+        $this->apply()->expectsOutputToContain('prefix "1" sama persis dengan id 5');
 
         $this->assertDatabaseMissing('product_categories', ['name' => 'PRIME CUT']);
     }
@@ -242,63 +374,59 @@ SQL;
     /** @test */
     public function a_supplier_npwp_is_reported_as_a_conflict_since_there_is_no_destination_column(): void
     {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->expectsOutputToContain('NPWP legacy "95.150.770.6-436.000" tidak diimpor');
+        $this->apply()->expectsOutputToContain('NPWP legacy "95.150.770.6-436.000" tidak diimpor');
+    }
+
+    /** @test */
+    public function a_customer_group_with_a_blank_name_is_reported(): void
+    {
+        $this->apply()->expectsOutputToContain('idgroup=20: nama kosong, dilewati.');
+
+        $this->assertNull(CustomerGroup::find(20));
     }
 
     // =========================================================================
-    // Susulan Hafizh 20 Sep 2026: duplikat beda spasi/format
+    // Duplikat beda spasi/format: KEDUANYA diimpor, dilaporkan (keputusan Ayah)
     // =========================================================================
 
     /** @test */
-    public function a_supplier_that_only_differs_by_spacing_is_a_conflict_not_a_second_row(): void
+    public function a_supplier_that_only_differs_by_spacing_is_imported_twice_and_reported(): void
     {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->expectsOutputToContain('mirip "CV. GARI SETIAWAN MAKMUR" di baris lain sumber ini');
+        $this->apply()
+            ->expectsOutputToContain('mirip "CV. GARI SETIAWAN MAKMUR" (id 3)')
+            ->expectsOutputToContain('KEDUANYA diimpor')
+            ->assertExitCode(0);
 
-        $this->assertSame(1, Supplier::where('name', 'like', 'CV.%GARI SETIAWAN MAKMUR')->count());
+        $this->assertSame('CV. GARI SETIAWAN MAKMUR', Supplier::find(3)->name);
+        $this->assertSame('CV.GARI SETIAWAN MAKMUR', Supplier::find(4)->name);
     }
 
     /** @test */
-    public function a_product_that_only_differs_by_spacing_is_a_conflict_not_a_second_row(): void
+    public function a_product_that_only_differs_by_spacing_is_imported_twice_and_reported(): void
     {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->expectsOutputToContain('mirip "STRIPLOIN CUT A" di baris lain sumber ini');
+        $this->apply()->expectsOutputToContain('mirip "STRIPLOIN CUT A" (id 6)');
 
-        $this->assertSame(1, Product::where('name', 'like', 'STRIPLOIN%CUT A')->count());
+        $this->assertSame('STRIPLOIN CUT A', Product::find(6)->name);
+        $this->assertSame('STRIPLOIN  CUT A', Product::find(7)->name);
     }
 
     /** @test */
-    public function a_material_that_only_differs_by_spacing_is_a_conflict_not_a_second_row(): void
+    public function a_material_that_only_differs_by_spacing_is_imported_twice_and_reported(): void
     {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->expectsOutputToContain('mirip "KARTON EXTRA TEST" di baris lain sumber ini');
+        $this->apply()->expectsOutputToContain('mirip "KARTON EXTRA TEST" (id 5)');
 
-        $this->assertSame(1, Material::where('name', 'like', 'KARTON%EXTRA TEST')->count());
-    }
-
-    /** @test */
-    public function an_existing_supplier_with_slightly_different_spacing_is_still_matched_and_skipped(): void
-    {
-        Supplier::create([
-            'name' => 'CV.GARI SETIAWAN MAKMUR', 'address' => 'X', 'pic' => '-', 'top_days' => 0,
-        ]);
-
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->expectsOutputToContain('CV. GARI SETIAWAN MAKMUR (cocok dengan "CV.GARI SETIAWAN MAKMUR" yang sudah ada): sudah ada.');
-
-        $this->assertSame(1, Supplier::where('name', 'like', '%GARI SETIAWAN MAKMUR')->count());
+        $this->assertSame('KARTON EXTRA TEST', Material::find(5)->name);
+        $this->assertSame('KARTON  EXTRA TEST', Material::find(6)->name);
     }
 
     // =========================================================================
-    // Langkah 2: barang -> products
+    // barang -> products
     // =========================================================================
 
     /** @test */
     public function apply_creates_valid_products_with_their_legacy_note(): void
     {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->assertExitCode(0);
+        $this->apply()->assertExitCode(0);
 
         $this->assertDatabaseHas('products', ['code' => '100100', 'name' => 'TENDERLOIN']);
 
@@ -310,30 +438,27 @@ SQL;
     /** @test */
     public function a_product_with_a_dash_code_is_a_conflict_not_a_guess(): void
     {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->expectsOutputToContain('ICE GELL (idbarang=3): kode legacy kosong/"-", dilewati');
+        $this->apply()->expectsOutputToContain('ICE GELL (idbarang=3): kode legacy kosong/"-", dilewati');
 
         $this->assertDatabaseMissing('products', ['name' => 'ICE GELL']);
     }
 
     /** @test */
-    public function a_product_whose_category_cannot_be_resolved_is_a_conflict(): void
+    public function a_product_whose_category_is_not_imported_is_a_conflict(): void
     {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->expectsOutputToContain('idcut=99');
+        $this->apply()->expectsOutputToContain('idcut=99');
 
         $this->assertDatabaseMissing('products', ['name' => 'ORPHAN CUT ITEM']);
     }
 
     // =========================================================================
-    // Langkah 2: rawcategory/rawmate -> material_categories/materials
+    // rawcategory/rawmate -> material_categories/materials
     // =========================================================================
 
     /** @test */
     public function only_the_whitelisted_material_categories_are_imported(): void
     {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->assertExitCode(0);
+        $this->apply()->assertExitCode(0);
 
         $this->assertDatabaseHas('material_categories', ['name' => 'KARTON']);
         $this->assertDatabaseHas('material_categories', ['name' => 'PLASTIK']);
@@ -344,8 +469,7 @@ SQL;
     /** @test */
     public function a_material_in_a_non_whitelisted_category_is_silently_out_of_scope_not_a_conflict(): void
     {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->assertExitCode(0);
+        $this->apply()->assertExitCode(0);
 
         $this->assertDatabaseMissing('materials', ['name' => 'ATK PULPEN']);
     }
@@ -353,8 +477,7 @@ SQL;
     /** @test */
     public function a_material_without_a_unit_is_a_conflict_not_a_guess(): void
     {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->expectsOutputToContain('KARTON NO UNIT (idrawmate=4): satuan kosong di legacy');
+        $this->apply()->expectsOutputToContain('KARTON NO UNIT (idrawmate=4): satuan kosong di legacy');
 
         $this->assertDatabaseMissing('materials', ['name' => 'KARTON NO UNIT']);
     }
@@ -362,33 +485,27 @@ SQL;
     /** @test */
     public function a_valid_material_is_created_with_its_unit_and_min_stock(): void
     {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->assertExitCode(0);
+        $this->apply()->assertExitCode(0);
 
         $material = Material::where('name', 'KARTON TOP TEST')->first();
         $this->assertNotNull($material);
         $this->assertSame(20, $material->min_stock);
         $this->assertSame('IKAT', $material->unit->name);
         $this->assertSame('KARTON', $material->category->name);
-        // Kode legacy (RM0001) TIDAK dipertahankan -- Material sudah
-        // punya penomoran sendiri.
+        // Kode legacy (RM0001) TIDAK dipertahankan -- Material sudah punya penomoran sendiri.
         $this->assertStringStartsWith('MTR', $material->code);
     }
 
     // =========================================================================
-    // Langkah 2: bom_rawmate -> product_materials
+    // bom_rawmate -> product_materials
     // =========================================================================
 
     /** @test */
     public function an_active_bom_row_becomes_a_product_material_with_box_basis(): void
     {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->assertExitCode(0);
+        $this->apply()->assertExitCode(0);
 
-        $product = Product::where('code', '100100')->first();
-        $material = Material::where('name', 'KARTON TOP TEST')->first();
-
-        $link = ProductMaterial::where('product_id', $product->id)->where('material_id', $material->id)->first();
+        $link = ProductMaterial::where('product_id', 1)->where('material_id', 1)->first();
         $this->assertNotNull($link);
         $this->assertSame(2, $link->quantity);
         $this->assertSame('box', $link->basis);
@@ -397,55 +514,32 @@ SQL;
     /** @test */
     public function an_inactive_bom_row_is_never_imported(): void
     {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->assertExitCode(0);
+        $this->apply()->assertExitCode(0);
 
-        // idbom=5 (idbarang=2, idrawmate=1, is_active=0) tidak boleh
-        // menghasilkan apa pun -- baik baris maupun konflik.
-        $product = Product::where('code', '100101')->first();
-        $material = Material::where('name', 'KARTON TOP TEST')->first();
-        $this->assertFalse(
-            ProductMaterial::where('product_id', $product->id)->where('material_id', $material->id)->exists()
-        );
+        // idbom=5 (idbarang=2, idrawmate=1, is_active=0) tidak boleh menghasilkan apa pun.
+        $this->assertNull(ProductMaterial::find(5));
+        $this->assertFalse(ProductMaterial::where('product_id', 2)->where('material_id', 1)->exists());
     }
 
     /** @test */
     public function a_bom_row_pointing_to_an_unimported_product_is_a_conflict(): void
     {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->expectsOutputToContain('idbom=3: idbarang=3 tidak berhasil dipetakan ke produk');
+        $this->apply()->expectsOutputToContain('idbom=3: idbarang=3 tidak ada/tidak diimpor sebagai produk');
     }
 
     /** @test */
     public function a_bom_row_pointing_to_an_out_of_scope_material_is_a_conflict(): void
     {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->expectsOutputToContain('idbom=4: idrawmate=3 tidak berhasil dipetakan ke material');
+        $this->apply()->expectsOutputToContain('idbom=4: idrawmate=3 tidak ada/tidak diimpor sebagai material');
     }
 
     /** @test */
     public function a_plastic_material_bom_row_is_flagged_for_review_but_still_imported_as_box(): void
     {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->expectsOutputToContain('TINJAU: mungkin per-pcs, bukan per-box');
+        $this->apply()->expectsOutputToContain('TINJAU: mungkin per-pcs, bukan per-box');
 
-        $product = Product::where('code', '100100')->first();
-        $material = Material::where('name', 'PLASTIK WRAP TEST')->first();
-        $link = ProductMaterial::where('product_id', $product->id)->where('material_id', $material->id)->first();
+        $link = ProductMaterial::where('product_id', 1)->where('material_id', 2)->first();
         $this->assertNotNull($link);
         $this->assertSame('box', $link->basis);
-    }
-
-    /** @test */
-    public function running_apply_twice_does_not_duplicate_products_materials_or_bom(): void
-    {
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->assertExitCode(0);
-        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true])
-            ->assertExitCode(0);
-
-        $this->assertSame(3, Product::count()); // idbarang 1,2,6 valid; 3,5,7 konflik
-        $this->assertSame(3, Material::count()); // idrawmate 1,2,5 valid; 3 di luar cakupan, 4,6 konflik
-        $this->assertSame(2, ProductMaterial::count()); // idbom 1 dan 2 (3,4 konflik; 5 tidak aktif)
     }
 }
