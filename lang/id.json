@@ -1606,7 +1606,7 @@
     "Cost against the sales value at gross prices, before discounts.": "Biaya terhadap nilai jual pada harga gross, sebelum potongan.",
     "Cost against the sales value at net prices, after discounts.": "Biaya terhadap nilai jual pada harga net, sesudah potongan.",
     "Cost ratio (k)": "Rasio biaya (k)",
-    "Cost per Rp 1 of net sales value. HPP per kg = net price x k.": "Biaya untuk setiap Rp 1 nilai jual net. HPP per kg = harga net x k.",
+    "Purchase cost per Rp 1 of net sales value. HPP per kg = net price x k + overhead per kg (meat only).": "Biaya beli untuk setiap Rp 1 nilai jual net. HPP per kg = harga net x k + overhead per kg (hanya produk daging).",
     "Draft Costing": "Draft Costing",
     "Boning ready for costing": "Boning siap di-costing",
     "Boning :doc is locked and ready for costing.": "Boning :doc sudah terkunci dan siap di-costing.",

@@ -183,9 +183,9 @@ class CostingTest extends TestCase
     }
 
     /** @test */
-    public function margin_percent_is_derived_from_the_ratio_and_is_the_same_for_every_product(): void
+    public function margin_percent_is_the_profit_over_the_net_sales_value(): void
     {
-        $costing = $this->costing(['ratio_k' => 0.948085]);
+        $costing = $this->costing(['total_sales_value' => 717762805.70, 'profit' => 37262805.70]);
 
         $this->assertSame(5.19, $costing->marginPercent());
     }

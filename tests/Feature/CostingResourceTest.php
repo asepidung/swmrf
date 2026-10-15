@@ -384,11 +384,11 @@ class CostingResourceTest extends TestCase
         $boning = $this->lockedBoningWithCostableProduct();
         $costing = Costing::createFromBoning($boning);
         $costing->items()->update(['gross_price' => 120, 'net_price' => 100, 'weight_kg' => 10]);
-        $costing->forceFill(['purchase_cost' => 600, 'overhead_total' => 0, 'ratio_k' => 0.6])->save();
+        $costing->forceFill(['purchase_cost' => 600, 'overhead_total' => 0, 'total_sales_value' => 1000, 'profit' => 400, 'ratio_k' => 0.6])->save();
 
         $this->assertSame(1200.0, $costing->grossSalesValue());
         $this->assertSame(50.0, $costing->marginGrossPercent(), '(1 - 600/1200)');
-        $this->assertSame(40.0, $costing->marginPercent(), '(1 - k) dengan k = 600/1000');
+        $this->assertSame(40.0, $costing->marginPercent(), 'laba 400 / nilai jual net 1.000');
     }
 
     /** @test */

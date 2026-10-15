@@ -384,14 +384,14 @@ class CostingCalculatorTest extends TestCase
         $this->assertSame(490847989.74, $result['purchase_cost']);
         $this->assertSame(559212720.5, $result['total_sales_value']);
         $this->assertSame(14212320.0, $result['overhead_total']);
-        $this->assertSame(0.903163, $result['ratio_k']);
+        $this->assertSame(0.877748, $result['ratio_k'], 'k = biaya beli / nilai jual (overhead tidak lagi masuk k).');
         $this->assertSame(54152410.76, $result['profit']);
 
         $hpp = fn (Product $p) => collect($result['items'])->firstWhere('product_id', $p->id)['hpp_per_kg'];
-        $this->assertSame(124891.0, $hpp($this->topside));
-        $this->assertSame(183738.0, $hpp($tenderloin));
-        $this->assertSame(125262.0, $hpp($cuberoll));
-        $this->assertSame(7225.0, $hpp($offal));
+        $this->assertSame(124377.0, $hpp($this->topside), '138.282 x k + 3.000 (overhead rata).');
+        $this->assertSame(181567.0, $hpp($tenderloin));
+        $this->assertSame(124738.0, $hpp($cuberoll));
+        $this->assertSame(7022.0, $hpp($offal), 'Offal tidak menanggung overhead: 8.000 x k.');
     }
 
     /** @test */
@@ -441,8 +441,27 @@ class CostingCalculatorTest extends TestCase
         $this->assertSame(187500.0, \App\Services\CostingPrices::netForGross($this->topside->id, 200000) , 'Potongan 6,25% dari harga terakhir.');
 
         // Margin gross dan net dari costing: biaya 600, overhead 0; nilai jual net 1.000, gross 1.200.
-        $costing = new \App\Models\Costing(['purchase_cost' => 600, 'overhead_total' => 0, 'ratio_k' => 0.6]);
+        $costing = new \App\Models\Costing(['purchase_cost' => 600, 'overhead_total' => 0, 'total_sales_value' => 1000, 'profit' => 400, 'ratio_k' => 0.6]);
         $this->assertSame(40.0, $costing->marginPercent());
+    }
+
+    /** @test */
+    public function raising_the_overhead_by_3000_raises_every_meat_hpp_by_exactly_3000_and_leaves_offal_alone(): void
+    {
+        ['boning' => $boning] = $this->juneLotCattleChain();
+        $offal = Product::create(['name' => 'OFFAL', 'code' => 'MT060', 'category_id' => $this->topside->category_id, 'structure_type' => 'main', 'is_active' => true, 'excluded_from_overhead' => true]);
+        $this->boningItem($boning, $this->topside, 100, 'BC-FLAT-1');
+        $this->boningItem($boning, $offal, 500, 'BC-FLAT-2');
+        $this->lockWithDrylog($boning);
+        $typed = [$this->topside->id => ['gross' => 150000, 'net' => 140000], $offal->id => ['gross' => 0, 'net' => 8000]];
+
+        $at = fn (float $overhead) => collect(CostingCalculator::forBoning($boning->fresh(), $overhead, $typed)->calculate()['items'])->keyBy('product_id');
+
+        $low = $at(3000);
+        $high = $at(6000);
+
+        $this->assertSame($low[$this->topside->id]['hpp_per_kg'] + 3000, $high[$this->topside->id]['hpp_per_kg'], 'Daging: tepat +3.000.');
+        $this->assertSame($low[$offal->id]['hpp_per_kg'], $high[$offal->id]['hpp_per_kg'], 'Offal tidak menanggung overhead.');
     }
 
     /** @test */

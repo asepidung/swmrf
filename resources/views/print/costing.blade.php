@@ -223,7 +223,7 @@
             <td class="value">Rp {{ number_format((float) $record->total_sales_value, 0, ',', '.') }}</td>
         </tr>
         <tr>
-            <td class="label">Rasio biaya (k)<br><span style="font-size: 9px;">biaya per Rp 1 nilai jual net</span></td>
+            <td class="label">Rasio biaya (k)<br><span style="font-size: 9px;">biaya beli per Rp 1 nilai jual net; HPP = net x k + overhead/kg</span></td>
             <td class="value">{{ number_format((float) $record->ratio_k, 6) }}</td>
         </tr>
         <tr>

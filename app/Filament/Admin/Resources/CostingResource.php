@@ -105,7 +105,7 @@ class CostingResource extends Resource
 
                         Forms\Components\Placeholder::make('ratio_k')
                             ->label(__('Cost ratio (k)'))
-                            ->helperText(__('Cost per Rp 1 of net sales value. HPP per kg = net price x k.'))
+                            ->helperText(__('Purchase cost per Rp 1 of net sales value. HPP per kg = net price x k + overhead per kg (meat only).'))
                             ->content(fn (?Costing $record): string => number_format((float) ($record?->ratio_k ?? 0), 6)),
 
                         Forms\Components\Placeholder::make('margin_gross_percent')

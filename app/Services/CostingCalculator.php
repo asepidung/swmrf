@@ -21,8 +21,8 @@ use App\Models\PurchaseCattleItem;
  * net_i            = harga net produk i (costing terkunci terakhir, atau diketik) -- #541
  * total_nilai_jual = Σ net_i x kg_i
  * overhead_total   = overhead_per_kg x Σ kg daging (tanpa offal dan kulit)
- * k                = (biaya_beli + overhead_total) / total_nilai_jual
- * HPP_i / kg       = net_i x k
+ * k                = biaya_beli / total_nilai_jual
+ * HPP_i / kg       = net_i x k + overhead_per_kg   (overhead rata, hanya produk daging)
  * laba lot         = total_nilai_jual - biaya_beli - overhead_total
  * ```
  *
@@ -81,16 +81,16 @@ class CostingCalculator
             $meatKgRaw += $item['is_meat'] ? $item['weight_kg'] : 0.0;
         }
 
-        // Overhead MASUK HPP (#541): overhead per kg x kg daging (tanpa offal dan kulit), dibagi
-        // menurut nilai jual lewat k -- bukan rata per kg, yang membuat offal dinilai di atas harga jualnya.
+        // Overhead MASUK HPP, RATA per kg (Owner, 15 Okt 2026): overhead per kg ditambahkan ke HPP tiap
+        // produk daging; offal dan kulit tidak ikut menanggung. Biaya beli dibagi menurut nilai jual lewat k.
         $overheadTotalRaw = $this->overheadPerKg * $meatKgRaw;
 
-        $ratioKRaw = $totalSalesValueRaw > 0 ? ($purchaseCostRaw + $overheadTotalRaw) / $totalSalesValueRaw : 0.0;
+        $ratioKRaw = $totalSalesValueRaw > 0 ? $purchaseCostRaw / $totalSalesValueRaw : 0.0;
 
         foreach ($items as &$item) {
             $item['hpp_per_kg'] = $item['flag'] === CostingItem::FLAG_NO_PRICE
                 ? 0.0
-                : round($item['net_price'] * $ratioKRaw);
+                : round($item['net_price'] * $ratioKRaw + ($item['is_meat'] ? $this->overheadPerKg : 0.0));
             unset($item['sales_value_raw'], $item['is_meat']);
         }
         unset($item);

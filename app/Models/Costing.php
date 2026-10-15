@@ -253,10 +253,10 @@ class Costing extends Model
         return $gross > 0 ? round((1 - ((float) $this->purchase_cost + (float) $this->overhead_total) / $gross) * 100, 2) : 0.0;
     }
 
-    /** Margin% (NET) -- SAMA untuk seluruh produk, sifat metode ini (`hpp.md` §11.1), bukan per produk. */
+    /** Margin % (NET): laba (sesudah overhead) terhadap total nilai jual net. */
     public function marginPercent(): float
     {
-        return round((1 - $this->ratio_k) * 100, 2);
+        return (float) $this->total_sales_value > 0 ? round((float) $this->profit / (float) $this->total_sales_value * 100, 2) : 0.0;
     }
 
     /** Overhead per kg bila belum ada costing sama sekali (Owner, 14 Oktober 2026). */

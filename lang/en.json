@@ -1606,7 +1606,7 @@
     "Cost against the sales value at gross prices, before discounts.": "Cost against the sales value at gross prices, before discounts.",
     "Cost against the sales value at net prices, after discounts.": "Cost against the sales value at net prices, after discounts.",
     "Cost ratio (k)": "Cost ratio (k)",
-    "Cost per Rp 1 of net sales value. HPP per kg = net price x k.": "Cost per Rp 1 of net sales value. HPP per kg = net price x k.",
+    "Purchase cost per Rp 1 of net sales value. HPP per kg = net price x k + overhead per kg (meat only).": "Purchase cost per Rp 1 of net sales value. HPP per kg = net price x k + overhead per kg (meat only).",
     "Draft Costing": "Draft Costing",
     "Boning ready for costing": "Boning ready for costing",
     "Boning :doc is locked and ready for costing.": "Boning :doc is locked and ready for costing.",
