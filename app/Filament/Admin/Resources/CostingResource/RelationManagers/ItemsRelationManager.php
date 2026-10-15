@@ -33,10 +33,15 @@ class ItemsRelationManager extends RelationManager
     }
 
     /**
-     * Simpan harga yang diketik lalu hitung ulang costing. Hanya gross diketik: net = gross dikurangi
-     * potongan terakhir produk itu. Hanya net diketik: gross dibiarkan (potongan dihitung ulang darinya).
+     * Simpan harga yang diketik lalu hitung ulang costing. Net SELALU turunan, kecuali produk tanpa gross
+     * (offal, tulang: hanya net yang dikenal) -- di sana net diketik langsung.
+     *
+     * - Gross diketik: net = gross x (net lama / gross lama); produk yang belum punya harga memakai
+     *   potongan costing terakhirnya, atau tanpa potongan.
+     * - Terms % diketik: net = gross x (1 - terms/100).
+     * - Net diketik (hanya bila gross 0): net apa adanya.
      */
-    private function typePrice(CostingItem $item, ?float $gross = null, ?float $net = null): float
+    private function typePrice(CostingItem $item, ?float $gross = null, ?float $net = null, ?float $terms = null): float
     {
         $costing = $this->getOwnerRecord();
 
@@ -48,7 +53,15 @@ class ItemsRelationManager extends RelationManager
         $current = $prices[$item->product_id] ?? ['gross' => 0.0, 'net' => 0.0];
 
         if ($gross !== null) {
-            $prices[$item->product_id] = ['gross' => $gross, 'net' => CostingPrices::netForGross($item->product_id, $gross)];
+            $ratio = $current['gross'] > 0 && $current['net'] > 0 ? $current['net'] / $current['gross'] : null;
+
+            $prices[$item->product_id] = [
+                'gross' => $gross,
+                'net' => $ratio !== null ? round($gross * $ratio, 2) : CostingPrices::netForGross($item->product_id, $gross),
+            ];
+        } elseif ($terms !== null) {
+            $terms = min(max($terms, 0.0), 100.0);
+            $prices[$item->product_id] = ['gross' => $current['gross'], 'net' => round($current['gross'] * (1 - $terms / 100), 2)];
         } else {
             $prices[$item->product_id] = ['gross' => $current['gross'], 'net' => $net];
         }
@@ -58,7 +71,7 @@ class ItemsRelationManager extends RelationManager
 
         $this->redirect(CostingResource::getUrl('edit', ['record' => $costing]));
 
-        return $gross ?? $net;
+        return $gross ?? $terms ?? $net;
     }
 
     public function table(Table $table): Table
@@ -80,15 +93,20 @@ class ItemsRelationManager extends RelationManager
                     ->getStateUsing(fn (CostingItem $record): string => CostingPrices::formatMoney($record->gross_price))
                     ->disabled(fn (): bool => ! $this->isDraft())
                     ->updateStateUsing(fn (CostingItem $record, $state) => $this->typePrice($record, gross: CostingPrices::parseMoney($state))),
-                Tables\Columns\TextColumn::make('trading_terms_percent')
+                // Terms % bisa diketik (net mengikuti); costing berikutnya mengikuti potongan costing sebelumnya.
+                Tables\Columns\TextInputColumn::make('trading_terms_percent')
                     ->label(__('Terms %'))
-                    ->suffix('%'),
+                    ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
+                    ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'decimal', 'x-on:focus' => 'if ($el.value === "0") $el.select()'])
+                    ->getStateUsing(fn (CostingItem $record): string => CostingPrices::formatMoney($record->trading_terms_percent))
+                    ->disabled(fn (CostingItem $record): bool => ! $this->isDraft() || (float) $record->gross_price <= 0)
+                    ->updateStateUsing(fn (CostingItem $record, $state) => $this->typePrice($record, terms: CostingPrices::parseMoney($state))),
                 Tables\Columns\TextInputColumn::make('net_price')
                     ->label(__('Net'))
                     ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
                     ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'decimal', 'x-on:focus' => 'if ($el.value === "0") $el.select()'])
                     ->getStateUsing(fn (CostingItem $record): string => CostingPrices::formatMoney($record->net_price))
-                    ->disabled(fn (): bool => ! $this->isDraft())
+                    ->disabled(fn (CostingItem $record): bool => ! $this->isDraft() || (float) $record->gross_price > 0)
                     ->updateStateUsing(fn (CostingItem $record, $state) => $this->typePrice($record, net: CostingPrices::parseMoney($state))),
                 Tables\Columns\TextColumn::make('sales_value')
                     ->label(__('Sales Value'))

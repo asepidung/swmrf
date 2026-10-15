@@ -383,6 +383,27 @@ class CostingResourceTest extends TestCase
     }
 
     /** @test */
+    public function typing_the_terms_percent_sets_the_net_and_the_net_is_not_editable_when_there_is_a_gross(): void
+    {
+        $boning = $this->lockedBoningWithCostableProduct();
+        $costing = Costing::createFromCalculation($boning, \App\Services\CostingCalculator::forBoning($boning, 0)->calculate());
+        $item = $costing->items()->firstOrFail();
+        $user = $this->employee(['view_costings', 'edit_costings']);
+
+        $table = Livewire::actingAs($user)
+            ->test(\App\Filament\Admin\Resources\CostingResource\RelationManagers\ItemsRelationManager::class, [
+                'ownerRecord' => $costing, 'pageClass' => EditCosting::class,
+            ]);
+
+        $table->call('updateTableColumnState', 'trading_terms_percent', $item->getKey(), '10');
+
+        $item = $costing->items()->firstOrFail();
+        $this->assertSame(149000.0, (float) $item->gross_price);
+        $this->assertSame(134100.0, (float) $item->net_price, '149.000 x (1 - 10%)');
+        $this->assertSame(10.0, (float) $item->trading_terms_percent);
+    }
+
+    /** @test */
     public function typed_prices_survive_recalculate_and_locking_makes_them_the_next_costings_price(): void
     {
         $boning = $this->lockedBoningWithCostableProduct();
