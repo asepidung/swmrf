@@ -14,7 +14,7 @@ use App\Models\Product;
 class LabelWeightLimit
 {
     /** Kg. Berlaku bila `products.max_label_weight` kosong. */
-    public const BAWAAN = 100.0;
+    public const BAWAAN = 30.0;
 
     public static function forProduct(Product|int|null $product): float
     {

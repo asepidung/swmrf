@@ -148,34 +148,60 @@ class UserResource extends Resource
      * Edit, ...) karena nama modulnya sudah menjadi judul seksi -- menulis
      * "View sales orders" di dalam seksi "Sales Orders" hanya mengulang.
      */
+    /**
+     * Label tiap centang dalam satu modul: id izin => teks.
+     *
+     * Dipendekkan menjadi kata kerjanya saja; tetapi bila DUA izin dalam modul yang sama
+     * memendek ke kata yang sama (mis. Costings: "View costings" dan "View cost reports"
+     * sama-sama "View"), keduanya memakai deskripsi LENGKAP -- dua centang berlabel sama tidak
+     * bisa dibedakan siapa pun yang mengisi form.
+     *
+     * @param  \Illuminate\Support\Collection<int, Permission>  $permissions
+     * @return array<int, string>
+     */
+    public static function permissionLabels($permissions): array
+    {
+        $short = $permissions->mapWithKeys(function ($p) {
+            $desc = $p->description;
+            $label = __($desc);
+            $prefixes = ['View deleted', 'View', 'Create', 'Edit', 'Delete', 'Review', 'Approve', 'Print', 'Lock/Unlock', 'Lock', 'Reset password'];
+            foreach ($prefixes as $prefix) {
+                if (str_starts_with($desc, $prefix)) {
+                    $label = __($prefix);
+                    break;
+                }
+            }
+            if (str_starts_with($desc, 'Perform invoice exchange')) {
+                $label = __('Invoice exchange');
+            }
+
+            return [$p->id => $label];
+        });
+
+        $counts = $short->countBy();
+
+        return $permissions->mapWithKeys(fn ($p) => [
+            $p->id => $counts[$short[$p->id]] > 1 ? __($p->description) : $short[$p->id],
+        ])->toArray();
+    }
+
     protected static function permissionCheckboxList(string $moduleName, $permissions): Forms\Components\CheckboxList
     {
         return Forms\Components\CheckboxList::make('permissions_' . $moduleName)
             ->hiddenLabel()
-            ->options($permissions->mapWithKeys(function ($p) {
-                $desc = $p->description;
-                $label = __($desc);
-                $prefixes = ['View deleted', 'View', 'Create', 'Edit', 'Delete', 'Review', 'Approve', 'Print', 'Lock/Unlock', 'Lock', 'Reset password'];
-                foreach ($prefixes as $prefix) {
-                    if (str_starts_with($desc, $prefix)) {
-                        $label = __($prefix);
-                        break;
-                    }
-                }
-                if (str_starts_with($desc, 'Perform invoice exchange')) {
-                    $label = __('Invoice exchange');
-                }
-
-                return [$p->id => $label];
-            })->toArray())
+            ->options(static::permissionLabels($permissions))
             ->bulkToggleable()
             ->columns(4)
             ->dehydrated(false)
-            ->afterStateHydrated(function (Forms\Components\CheckboxList $component, ?User $record) use ($moduleName) {
+            ->afterStateHydrated(function (Forms\Components\CheckboxList $component, ?User $record) use ($moduleName, $permissions) {
                 if ($record) {
+                    // Hanya izin yang TAMPIL di daftar ini: yang disembunyikan (mis. hapus di master
+                    // data) tidak ikut terbawa di state, sehingga menyimpan form tidak menyisakan hak
+                    // yang tidak terlihat dan tidak bisa dicabut siapa pun.
                     $component->state(
                         $record->permissions()
                             ->where('module_name', $moduleName)
+                            ->whereIn('permissions.id', $permissions->pluck('id'))
                             ->pluck('permissions.id')
                             ->toArray()
                     );

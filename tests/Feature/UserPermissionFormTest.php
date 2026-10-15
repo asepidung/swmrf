@@ -602,4 +602,88 @@ class UserPermissionFormTest extends TestCase
 
         return $hasil;
     }
+
+    // =====================================================================
+    // Label ganda dan centang hapus di master data (Ayah, 13 Oktober 2026)
+    // =====================================================================
+
+    /**
+     * Dua centang berlabel sama dalam satu modul tidak bisa dibedakan siapa pun: Costings punya
+     * dua "View" (costing dan laporan), Surat Jalan punya dua "View" (surat jalan dan bukti terima).
+     *
+     * @test
+     */
+    public function no_module_shows_two_checkboxes_with_the_same_label()
+    {
+        $kembar = [];
+
+        foreach (Permission::groupedByModuleGroup() as $modules) {
+            foreach ($modules as $moduleName => $permissions) {
+                $labels = \App\Filament\Admin\Resources\UserResource::permissionLabels($permissions);
+
+                foreach (array_count_values($labels) as $label => $jumlah) {
+                    if ($jumlah > 1) {
+                        $kembar[] = "{$moduleName}: \"{$label}\" x{$jumlah}";
+                    }
+                }
+            }
+        }
+
+        $this->assertSame([], $kembar, "Centang berlabel sama:\n".implode("\n", $kembar));
+    }
+
+    /** @test */
+    public function the_two_view_checkboxes_of_costings_and_delivery_orders_say_what_they_open()
+    {
+        $costings = collect(Permission::groupedByModuleGroup())->first(fn ($modules) => isset($modules['Costings']))['Costings'];
+        $costing = \App\Filament\Admin\Resources\UserResource::permissionLabels($costings);
+
+        $this->assertContains(__('View costings'), $costing);
+        $this->assertContains(__('View cost reports (stock value, sales cost)'), $costing);
+
+        // Izin surat jalan datang dari seeder (bukan migrasi), jadi dibuat di sini dengan deskripsi aslinya.
+        foreach (['view_delivery_orders' => 'View delivery orders', 'delete_delivery_orders' => 'Delete delivery orders', 'view_delivery_receipts' => 'View delivery receipts'] as $name => $description) {
+            Permission::firstOrCreate(['name' => $name], ['module_name' => 'Delivery Orders', 'description' => $description]);
+        }
+
+        $suratJalan = \App\Filament\Admin\Resources\UserResource::permissionLabels(
+            Permission::groupedByModuleGroup()['DISTRIBUTION']['Delivery Orders']
+        );
+
+        $this->assertContains(__('View delivery orders'), $suratJalan);
+        $this->assertContains(__('View delivery receipts'), $suratJalan);
+        $this->assertContains(__('Delete'), $suratJalan, 'Dokumen transaksi tetap punya Hapus.');
+    }
+
+    /** @test */
+    public function master_data_modules_have_no_delete_or_view_deleted_checkbox()
+    {
+        $grup = Permission::groupedByModuleGroup()['MASTER DATA'];
+
+        $this->assertNotEmpty($grup);
+
+        foreach ($grup as $moduleName => $permissions) {
+            foreach ($permissions as $permission) {
+                $this->assertStringStartsNotWith('delete_', $permission->name, "{$moduleName}: master data tidak dihapus, hanya diaktifkan/dinonaktifkan.");
+                $this->assertStringStartsNotWith('view_deleted_', $permission->name);
+            }
+
+            $this->assertTrue($permissions->contains(fn ($p) => str_starts_with($p->name, 'view_')), "{$moduleName} tetap punya View.");
+        }
+    }
+
+    /** @test */
+    public function saving_a_user_does_not_hand_out_the_hidden_master_data_delete_permissions()
+    {
+        $admin = User::factory()->create(['role' => 'programmer', 'is_active' => true]);
+        $target = User::factory()->create(['role' => 'employee', 'is_active' => true]);
+        $hapus = Permission::where('name', 'delete_grades')->firstOrFail();
+        $target->permissions()->attach($hapus->id);
+
+        Livewire::actingAs($admin)
+            ->test(EditUser::class, ['record' => $target->getRouteKey()])
+            ->call('save');
+
+        $this->assertFalse($target->fresh()->permissions()->where('permissions.id', $hapus->id)->exists(), 'Hapus master data tidak lagi diberikan lewat form.');
+    }
 }

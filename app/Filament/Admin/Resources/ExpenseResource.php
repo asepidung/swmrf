@@ -24,6 +24,8 @@ class ExpenseResource extends Resource
 {
     protected static ?string $model = Expense::class;
 
+    protected static ?string $cluster = \App\Filament\Clusters\ExpensesCluster::class;
+
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
 
     protected static ?int $navigationSort = 20;

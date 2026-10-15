@@ -7734,3 +7734,57 @@ dengan persetujuan Ayah.
 7. Verifikasi: masuk dengan akun nyata, izin sesuai, daftar produk/grup/price list, notifikasi push.
 8. Alihkan `.env` coba./app. ke database baru, `php artisan config:cache`. Untuk produksi VPS: langkah sama
    di server baru (VAPID dan APP_KEY sama dengan coba.; lihat issue #533).
+
+## `legacy:import-prices` -- grup LION/HYPERMART/UMUM dan price list dari xlsx, 13 Oktober 2026 (#532)
+
+Perintah baru `App\Console\Commands\ImportLegacyPrices` (dry-run bawaan, `--apply`, `--overwrite`,
+`--lion-average=147500`, `--source=`). Berkas sumber `legacy/harga-terbaru-per-grup-2026-10-13.xlsx` berisi
+harga dan di-gitignore -- jangan masuk repositori; test memakai berkas karangan kecil. Perintah ini juga
+mengisi acuan costing per produk dari pemetaan warna sel Costing Juni (bukan dari sheet). Aturan lengkap:
+`hpp.md` §17.1.
+
+## Form hak akses: label ganda dan centang hapus di master data, 13 Oktober 2026
+
+- **Label ganda:** label centang dipendekkan ke kata kerjanya ("View"), sehingga dua izin di satu modul
+  bisa sama-sama "View" -- ditemukan di Costings (costing dan laporan), Surat Jalan (surat jalan dan bukti
+  terima), dan Reports (laporan penjualan dan produk fast moving). `UserResource::permissionLabels()` kini
+  memakai deskripsi LENGKAP untuk izin yang bertabrakan; test `no_module_shows_two_checkboxes_with_the_same_label`
+  menjaga semua modul.
+- **Master data tidak punya Hapus** (keputusan Ayah: hanya aktif/nonaktif): centang `delete_*` dan
+  `view_deleted_*` untuk 13 modul MASTER DATA tidak ditampilkan (`Permission::groupedByModuleGroup()`).
+  Form pengguna kini hanya membawa izin yang TAMPIL di state-nya, jadi menyimpan pengguna mencabut hak hapus
+  master data yang lama (tidak ada hak tak terlihat yang tersisa).
+- **YANG BELUM:** resource master data masih punya aksi Hapus (dibungkus `MasterDataDeletion`, menolak yang
+  masih dipakai) dan policy-nya masih membaca `delete_*`; hanya programmer yang kini bisa menghapus. Menghapus
+  aksinya sama sekali (policy selalu menolak, seperti `UserPolicy`) adalah keputusan terpisah.
+
+## Menu Costing ke ACCOUNTING, cluster Expenses, grup customer opsional, 13 Oktober 2026
+
+Tiga keputusan Ayah sekaligus:
+
+1. **Costing pindah dari PRODUCTION ke ACCOUNTING** (Ayah: costing itu urusan accounting, bukan boning).
+   `CostingResource::getNavigationGroup()` dan tab izin (`Permission::moduleGroups()`: `Costings` dari
+   PRODUCTION ke ACCOUNTING) berubah bersama -- `NavigationGroupConsistencyTest` menjaga ketiga daftar
+   tetap sepakat.
+2. **Expenses dan Expense Categories jadi satu cluster** (`App\Filament\Clusters\ExpensesCluster`, grup
+   FINANCE, sub-menu di atas), mengikuti pola FleetCluster: resource tetap di `Admin/Resources` dengan
+   `$cluster`. URL-nya kini berprefiks cluster; kode memakai `getUrl()`, jadi tidak ada yang rusak.
+3. **Grup customer OPSIONAL lagi, tetapi customer tetap selalu berakhir di sebuah grup.** 15 September:
+   customer tanpa grup lenyap dari Piutang, jadi isian dibuat wajib. 13 Oktober: mewajibkan memilih membuat
+   user asal memilih, dan grup yang salah memasukkan customer ke price list orang lain (paling berbahaya di
+   form itu). Sekarang isian boleh kosong; `KeepsCustomerInAGroup` (Create dan Edit) membuatkan grup bernama
+   sama dengan customer (TOP, PIC, alamat dibawa; bila grup bernama sama sudah ada, customer bergabung ke
+   situ). Grup yang dipilih tidak pernah diganti.
+
+## Costing: harga dari costing sebelumnya, potongan per produk, overhead masuk HPP, 14 Oktober 2026 (#541)
+
+Keputusan Owner lewat Hafizh. Detail dan angka uji di `.agents/hpp.md` §18. Yang perlu diingat saat menyentuh
+costing: (1) `CostingPrices` adalah satu-satunya sumber harga costing -- jangan kembali ke `ReferencePrice`/price
+list; (2) harga yang diketik di Draft dibawa `Costing::currentPrices()` ke `CostingCalculator::forBoning(..., $typedPrices)`;
+(3) `Costing::recalculate()` memperbarui baris item di tempat (id tetap); (4) mengunci costing memperbarui
+`costing_price_defaults` lewat `CostingPrices::rememberFrom()`; (5) offal borong/kulit ditandai kolom
+`products.excluded_from_overhead` (bukan nama, bukan kategori) -- tidak dibebani overhead; nama hanya pengisi awal; (6) `#532` (import price list dari harga SO) ditunda.
+
+## Costing: halaman Draft Costing (boning terkunci yang menunggu), 15 Oktober 2026
+Keputusan Owner, pola "Draft" modul lain (Draft Carcass). Mengunci boning TIDAK membuat costing sendiri: `Boning::lock()` hanya memanggil `Costing::notifyBoningLocked()` (tidak pernah melempar; memberi tahu pemegang `create_costings`, tautan ke Draft Costing). Daftar Costing punya tombol **Draft Costing** (badge jumlah) ke halaman `DraftCosting`: boning `kunci` tanpa costing, tanpa pagination (baris terlewat = boning tak pernah dicosting); aksi "Create Costing" per baris membuat costing Draft (`Costing::createFromBoning`) lalu membuka edit. `Boning::unlock()` membuang Draft costing dan MENOLAK bila costing-nya Locked (unlock costing dulu; unlock costing sengaja tetap ada "untuk jaga-jaga" sampai ada penanda proses yang menutupnya). Halaman edit costing: hanya Back, Print, Lock; overhead menghitung ulang otomatis (`EditCosting::applyOverhead`); tabel produk/sapi tanpa pagination; posisi scroll dipulihkan oleh `filament/admin/costing-scroll-restore`. Overhead awal 3.000/kg bila belum ada costing.
+**Tersimpan:** costing baru MUNCUL di daftar Costings hanya setelah disimpan (`costings.saved_at`, diisi tombol Simpan di halaman edit atau saat dikunci); sebelum itu ia hanya hasil "Create Costing" dan boning-nya tetap di Draft Costing (`Costing::boningsWaiting()`). Status tampil "Saved" (nilai kolom tetap `Draft`) atau "Locked". Costing belum terkunci bisa dihapus (aksi hapus di daftar dan di halaman edit).

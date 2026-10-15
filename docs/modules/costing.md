@@ -233,3 +233,11 @@ di `.agents/hpp.md` §17; ini ringkasan modulnya.
 
 Catatan atas §10 di atas: butir "nilai rupiah barang retur" sebagian terjawab -- barcode
 yang kembali kini bernilai. Yang belum: kerugian retur (selisih klaim-fisik) dalam rupiah.
+
+## 13. Harga dari costing sebelumnya, overhead masuk HPP (issue #541)
+
+Lihat `.agents/hpp.md` §18. Ringkas: harga (gross + net per produk) disalin dari costing terkunci terakhir,
+lalu `costing_price_defaults` (isi awal: `php artisan costing:import-prices`, tanpa `--apply` hanya laporan),
+lalu bisa diketik di Draft. Potongan per produk. Price list dan grup acuan tidak dipakai lagi (§5 dan bagian
+"Reference Group" di atas sudah tidak berlaku; flag `NO_REFERENCE` tidak dihasilkan lagi). Overhead =
+`overhead_per_kg x kg daging` (tanpa offal/kulit), masuk ke `k`; kolom baru `costings.overhead_total`.

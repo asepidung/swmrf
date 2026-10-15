@@ -241,27 +241,72 @@ class CustomerClusterSusulanTest extends TestCase
     }
 
     // =====================================================================
-    // customer_group_id wajib -- keputusan Ayah, 15 September 2026
+    // Grup customer OPSIONAL tetapi selalu ada -- Ayah, 13 Oktober 2026
+    // (15 September: customer tanpa grup lenyap dari Piutang; 13 Oktober:
+    // jangan paksa memilih -- grup yang salah memindahkan customer ke price
+    // list orang lain. Kosong -> dibuatkan grup bernama sama dengan customer.)
     // =====================================================================
 
-    /** @test */
-    public function customer_group_id_is_required_to_create_a_customer(): void
+    private function createCustomer(array $data)
     {
-        $segment = CustomerSegment::create(['name' => 'RETAIL']);
+        $segment = CustomerSegment::firstOrCreate(['name' => 'RETAIL']);
 
-        Livewire::actingAs($this->user)
+        return Livewire::actingAs($this->user)
             ->test(CreateCustomer::class)
-            ->fillForm([
-                'name' => 'TOKO TANPA GRUP',
+            ->fillForm($data + [
                 'customer_segment_id' => $segment->id,
                 'top' => 30,
                 'invoice_exchange' => '0',
                 'address' => 'Bogor',
             ])
-            ->call('create')
-            ->assertHasFormErrors(['customer_group_id' => 'required']);
+            ->call('create');
+    }
 
-        $this->assertDatabaseMissing('customers', ['name' => 'TOKO TANPA GRUP']);
+    /** @test */
+    public function the_group_field_is_optional_on_the_form(): void
+    {
+        $this->createCustomer(['name' => 'TOKO TANPA GRUP'])->assertHasNoFormErrors();
+
+        $this->assertDatabaseHas('customers', ['name' => 'TOKO TANPA GRUP']);
+    }
+
+    /** @test */
+    public function a_customer_left_without_a_group_gets_one_named_after_itself(): void
+    {
+        $this->createCustomer(['name' => 'Toko Tanpa Grup', 'pic' => 'Budi'])->assertHasNoFormErrors();
+
+        $customer = Customer::where('name', 'TOKO TANPA GRUP')->firstOrFail();
+        $group = CustomerGroup::find($customer->customer_group_id);
+
+        $this->assertNotNull($group, 'Customer tidak boleh berakhir tanpa grup.');
+        $this->assertSame('TOKO TANPA GRUP', $group->name);
+        $this->assertSame(30, (int) $group->top, 'TOP customer dibawa ke grupnya.');
+        $this->assertSame(1, CustomerGroup::where('name', 'TOKO TANPA GRUP')->count());
+    }
+
+    /** @test */
+    public function a_chosen_group_is_never_replaced_by_an_automatic_one(): void
+    {
+        $group = CustomerGroup::create(['name' => 'BIDADARI', 'top' => 30]);
+
+        $this->createCustomer(['name' => 'BIDADARI CABANG', 'customer_group_id' => $group->id])->assertHasNoFormErrors();
+
+        $this->assertSame($group->id, (int) Customer::where('name', 'BIDADARI CABANG')->value('customer_group_id'));
+        $this->assertSame(0, CustomerGroup::where('name', 'BIDADARI CABANG')->count(), 'Tidak ada grup tambahan.');
+    }
+
+    /** @test */
+    public function two_customers_left_without_a_group_each_get_their_own_group(): void
+    {
+        $this->createCustomer(['name' => 'TOKO SATU'])->assertHasNoFormErrors();
+        $this->createCustomer(['name' => 'TOKO DUA'])->assertHasNoFormErrors();
+
+        $one = Customer::where('name', 'TOKO SATU')->value('customer_group_id');
+        $two = Customer::where('name', 'TOKO DUA')->value('customer_group_id');
+
+        $this->assertNotNull($one);
+        $this->assertNotNull($two);
+        $this->assertNotSame($one, $two, 'Customer yang tidak memilih grup tidak boleh tercampur dalam satu grup.');
     }
 
     /** @test */

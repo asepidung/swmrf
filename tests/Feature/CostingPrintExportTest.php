@@ -21,7 +21,7 @@ use Tests\TestCase;
  * Langkah 3 dari issue #480 (Mesin HPP): cetak dokumen costing dan ekspor
  * daftarnya. Otorisasi ROUTE-nya sendiri sudah diuji tuntas di
  * `PrintRoutePermissionGuardsTest` -- di sini fokus ke ISI cetakannya
- * (termasuk tanda NO_REFERENCE/NO_PRICE) dan pengkabelan tombolnya.
+ * (termasuk tanda NO_PRICE) dan pengkabelan tombolnya.
  */
 class CostingPrintExportTest extends TestCase
 {
@@ -58,7 +58,7 @@ class CostingPrintExportTest extends TestCase
         return $user->fresh();
     }
 
-    /** Costing lengkap dengan satu baris sapi dan dua baris produk (satu NO_REFERENCE, satu NO_PRICE). */
+    /** Costing lengkap dengan satu baris sapi dan dua baris produk (satu berharga, satu NO_PRICE). */
     private function costingWithFlaggedItems(): Costing
     {
         $boning = Boning::create(['boning_date' => '2026-06-16', 'created_by' => $this->user->id]);
@@ -79,7 +79,7 @@ class CostingPrintExportTest extends TestCase
             'product_id' => $this->product->id, 'weight_kg' => 100,
             'reference_group_id' => null, 'gross_price' => 149000, 'trading_terms_percent' => 0,
             'net_price' => 149000, 'sales_value' => 14900000, 'hpp_per_kg' => 141315.61,
-            'flag' => CostingItem::FLAG_NO_REFERENCE,
+            'flag' => null,
         ]);
 
         $noPriceProduct = Product::create([
@@ -109,7 +109,6 @@ class CostingPrintExportTest extends TestCase
         $response->assertSee('STEER');
         $response->assertSee('TOPSIDE');
         $response->assertSee('PRODUK TANPA HARGA');
-        $response->assertSee('No reference group -- valued using general price');
         $response->assertSee('No price found');
     }
 
@@ -126,7 +125,8 @@ class CostingPrintExportTest extends TestCase
         // fixture ini bisa dikunci, tanpa mengganggu test cetakan di atas
         // yang justru butuh baris NO_PRICE itu ada.
         $costing->items()->where('flag', CostingItem::FLAG_NO_PRICE)->delete();
-        $costing->lock();
+        $costing->boning->forceFill(['kunci' => true])->save();
+        $costing->fresh()->lock();
 
         Livewire::actingAs($this->employee(['view_costings']))
             ->test(ViewCosting::class, ['record' => $costing->getRouteKey()])

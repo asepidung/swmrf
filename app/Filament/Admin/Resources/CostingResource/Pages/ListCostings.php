@@ -3,18 +3,13 @@
 namespace App\Filament\Admin\Resources\CostingResource\Pages;
 
 use App\Filament\Admin\Resources\CostingResource;
-use App\Models\Boning;
 use App\Models\Costing;
-use App\Services\CostingCalculator;
-use Filament\Forms;
-use Filament\Notifications\Notification;
+use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
 /**
- * Tidak ada tombol Create polos -- costing hanya lahir dari memilih
- * sebuah `Boning` yang sudah `kunci` dan belum punya costing, lalu
- * langsung dihitung (issue #480). Pola sama dengan "Tarik Plan" di
- * `ListSalesReturns` (issue #451).
+ * Tidak ada tombol Create polos -- costing hanya lahir dari Draft Costing: boning yang sudah
+ * `kunci` dan belum punya costing (issue #480). Pola sama dengan Draft Carcass.
  */
 class ListCostings extends ListRecords
 {
@@ -23,38 +18,14 @@ class ListCostings extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\Action::make('create_costing')
-                ->label(__('Create Costing'))
-                ->icon('heroicon-o-calculator')
+            // Boning terkunci yang belum di-costing: pola "Draft" modul lain (mis. Draft Carcass).
+            Actions\Action::make('draft')
+                ->label(__('Draft Costing'))
+                ->icon('heroicon-o-document-plus')
+                ->color('warning')
+                ->badge(fn (): int => Costing::boningsWaiting()->count())
                 ->authorize(fn (): bool => auth()->user()?->can('create', Costing::class) ?? false)
-                ->form([
-                    Forms\Components\Select::make('boning_id')
-                        ->label(__('Boning'))
-                        ->options(fn () => Boning::query()
-                            ->where('kunci', true)
-                            ->whereDoesntHave('costing')
-                            ->get()
-                            ->mapWithKeys(fn (Boning $boning) => [
-                                $boning->id => $boning->doc_no.' -- '.$boning->boning_date?->format('d M Y'),
-                            ]))
-                        ->searchable()
-                        ->required(),
-                ])
-                ->action(function (array $data) {
-                    $boning = Boning::findOrFail($data['boning_id']);
-
-                    try {
-                        $result = CostingCalculator::forBoning($boning)->calculate();
-                        $costing = Costing::createFromCalculation($boning, $result);
-                    } catch (\Exception $e) {
-                        report($e);
-                        Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
-
-                        return;
-                    }
-
-                    $this->redirect($this->getResource()::getUrl('edit', ['record' => $costing]));
-                }),
+                ->url(fn (): string => CostingResource::getUrl('draft')),
         ];
     }
 }

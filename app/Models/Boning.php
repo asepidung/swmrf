@@ -200,6 +200,9 @@ class Boning extends Model
             $this->kunci = true;
             $this->status = 'LOCKED';
         });
+
+        // Tukang costing diberi tahu; boning ini muncul di Draft Costing.
+        Costing::notifyBoningLocked($this);
     }
 
     public function unlock(): void
@@ -212,6 +215,12 @@ class Boning extends Model
 
             if (! $locked || ! $locked->kunci) {
                 throw new \RuntimeException(__('This boning is not locked.'));
+            }
+
+            // Costing yang sudah dikunci menahan boning-nya; unlock costing-nya dulu. Costing yang masih
+            // Draft dibiarkan: accounting boleh menyiapkannya sebelum boning dikunci.
+            if (Costing::where('boning_id', $locked->id)->where('status', Costing::STATUS_LOCKED)->exists()) {
+                throw new \RuntimeException(__('This boning has a locked costing. Unlock the costing first.'));
             }
 
             $locked->forceFill(['kunci' => false, 'status' => 'OPEN'])->save();

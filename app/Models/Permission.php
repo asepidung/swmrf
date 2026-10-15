@@ -118,7 +118,6 @@ class Permission extends Model
                 'Boning',
                 'Repack',
                 'Material Usages',
-                'Costings',
             ],
             'WAREHOUSE' => [
                 'Mutations',
@@ -158,6 +157,7 @@ class Permission extends Model
                 'Bank Accounts',
                 'Cash Book',
                 'Financial Loss',
+                'Costings',
             ],
             'QC' => [
                 'QC Reports',
@@ -212,9 +212,17 @@ class Permission extends Model
     {
         // Yang tidak berakibat apa-apa tidak ikut tampil. Alasan tiap
         // namanya ada di `TIDAK_DITAMPILKAN`.
+        $masterData = static::moduleGroups()['MASTER DATA'];
+
         $byModule = static::query()
             ->whereNotIn('name', array_keys(static::TIDAK_DITAMPILKAN))
             ->get()
+            // Master data tidak dihapus, hanya diaktifkan atau dinonaktifkan (keputusan Ayah,
+            // 13 Oktober 2026) -- jadi centang "Hapus" dan "View deleted"-nya tidak ditampilkan.
+            // Izinnya tetap ada di basis data (policy masih membacanya, jadi hanya programmer yang
+            // bisa menghapus); menyimpan form pengguna tidak lagi memberikannya kepada siapa pun.
+            ->reject(fn ($permission) => in_array($permission->module_name, $masterData, true)
+                && (str_starts_with($permission->name, 'delete_') || str_starts_with($permission->name, 'view_deleted_')))
             ->groupBy('module_name');
 
         $result = [];
