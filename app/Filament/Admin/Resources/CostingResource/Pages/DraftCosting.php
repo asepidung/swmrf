@@ -14,7 +14,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 
 /**
- * Draft Costing: boning yang sudah terkunci tetapi belum punya costing -- pola "Draft" modul lain
+ * Draft Costing: boning yang sudah ada hasilnya (terbuka atau terkunci) tetapi belum punya costing tersimpan -- pola "Draft" modul lain
  * (mis. Draft Carcass). Memilih satu boning membuat costing-nya (Draft) lalu membuka halaman edit.
  * Tanpa pagination: baris yang terlewat berarti boning yang tidak pernah dicosting.
  */
@@ -51,6 +51,11 @@ class DraftCosting extends Page implements HasTable
                     ->label(__('Date'))
                     ->date('d M Y')
                     ->sortable(),
+                TextColumn::make('kunci')
+                    ->label(__('Boning status'))
+                    ->badge()
+                    ->formatStateUsing(fn ($state): string => $state ? __('Locked') : __('Open'))
+                    ->color(fn ($state): string => $state ? 'success' : 'warning'),
                 TextColumn::make('items_sum_weight')
                     ->label(__('Total Kg'))
                     ->numeric(decimalPlaces: 2),
@@ -73,6 +78,6 @@ class DraftCosting extends Page implements HasTable
                         $this->redirect(CostingResource::getUrl('edit', ['record' => $costing]));
                     }),
             ])
-            ->emptyStateHeading(__('No locked boning is waiting for a costing.'));
+            ->emptyStateHeading(__('No boning is waiting for a costing.'));
     }
 }

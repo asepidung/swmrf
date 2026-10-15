@@ -81,6 +81,12 @@ class EditCosting extends EditRecord
         $this->redirect($this->getResource()::getUrl('edit', ['record' => $record]));
     }
 
+    /** Tarik ulang hasil boning (produk dan berat) selagi costing masih Draft; harga yang sudah diisi dipertahankan. */
+    public function refreshFromBoning(): void
+    {
+        $this->applyOverhead((float) $this->getRecord()->overhead_per_kg);
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -96,6 +102,15 @@ class EditCosting extends EditRecord
                 ->url(fn (): string => route('print.costing', $this->getRecord()))
                 ->openUrlInNewTab(),
 
+            Actions\Action::make('refresh_from_boning')
+                ->label(__('Refresh from boning'))
+                ->icon('heroicon-o-arrow-path')
+                ->color('gray')
+                ->requiresConfirmation()
+                ->modalDescription(__('Re-read the products and weights from the boning. Prices already filled in are kept.'))
+                ->visible(fn (): bool => ! $this->getRecord()->boning?->kunci)
+                ->action(fn () => $this->refreshFromBoning()),
+
             Actions\DeleteAction::make(),
 
             Actions\Action::make('lock')
@@ -103,6 +118,8 @@ class EditCosting extends EditRecord
                 ->icon('heroicon-o-lock-closed')
                 ->color('success')
                 ->requiresConfirmation()
+                ->disabled(fn (): bool => ! $this->getRecord()->boning?->kunci)
+                ->tooltip(fn (): ?string => $this->getRecord()->boning?->kunci ? null : __('Lock the boning first: the costing can only be locked after the boning is locked.'))
                 ->visible(fn (): bool => auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('lock_costings') ?? false))
                 ->action(function () {
                     if (! (auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('lock_costings') ?? false))) {

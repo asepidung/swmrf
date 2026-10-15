@@ -65,10 +65,6 @@ class CostingCalculator
      */
     public function calculate(): array
     {
-        if (! $this->boning->kunci) {
-            throw new \RuntimeException(__('This boning is not locked yet, so it cannot be costed.'));
-        }
-
         $cattle = $this->cattleCost();
         $purchaseCostRaw = 0.0;
         foreach ($cattle as $row) {
@@ -243,7 +239,7 @@ class CostingCalculator
                 $flag = CostingItem::FLAG_NO_PRICE;
             } else {
                 $grossPrice = $price['gross'];
-                $netPrice = round($price['net'], 2);
+                $netPrice = CostingPrices::roundNet($price['net']);
                 $flag = null;
             }
 

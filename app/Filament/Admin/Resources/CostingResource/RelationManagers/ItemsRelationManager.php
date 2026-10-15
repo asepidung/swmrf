@@ -63,7 +63,7 @@ class ItemsRelationManager extends RelationManager
             $terms = min(max($terms, 0.0), 100.0);
             $prices[$item->product_id] = ['gross' => $current['gross'], 'net' => CostingPrices::roundNet($current['gross'] * (1 - $terms / 100))];
         } else {
-            $prices[$item->product_id] = ['gross' => $current['gross'], 'net' => $net];
+            $prices[$item->product_id] = ['gross' => $current['gross'], 'net' => CostingPrices::roundNet((float) $net)];
         }
 
         $result = CostingCalculator::forBoning($costing->boning, (float) $costing->overhead_per_kg, $prices)->calculate();

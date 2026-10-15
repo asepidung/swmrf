@@ -1039,3 +1039,10 @@ Offal 7.225,31, laba 54.152.410,44 -- semuanya cocok.
 Penanda adalah DATA (form Produk: "Tidak ikut kg overhead"), bukan nama dan bukan kategori OFFAL. Nama
 (OFFAL, KULIT, HIDES) hanya pengisi awal: migrasi dan `costing:import-prices` (dengan laporan). Setelah import
 master baru, jalankan `costing:import-prices` lagi atau centang manual produk yang perlu.
+
+### 18.1 Penyesuaian akunting, 15 Oktober 2026
+- **Net selalu bilangan bulat, dibulatkan KE ATAS** (203.437,5 -> 203.438), di semua jalur: dari gross, dari Terms %, diketik, dan import. Net tidak lagi bisa diedit bila produk punya gross (diturunkan dari gross dan Terms %, yang bisa diketik); produk tanpa gross (offal, tulang) net-nya diketik.
+- Karena itu angka uji LJP 7 Okt di bagian atas bergeser beberapa rupiah: Topside 124.891,20; Tenderloin 183.737,70; Cuberoll 125.262,40; Offal 7.225,31; laba 54.152.410,76 (k tetap 0,903163). Yang tertulis di atas adalah angka sebelum pembulatan.
+- Margin ditampilkan dua: Net (1 - k) dan Gross (1 - (biaya beli + overhead) / nilai jual gross).
+- k dilabeli "Rasio biaya (k)": biaya untuk setiap Rp 1 nilai jual net.
+- **Costing boleh dibuat SEBELUM boning dikunci** (gudang bisa mengunci tengah malam): Draft Costing memuat semua boning yang sudah ada hasilnya; "Tarik ulang dari boning" menyegarkan produk dan berat; **costing baru bisa dikunci setelah boning terkunci**. Unlock boning tidak membuang Draft costing; ditolak bila costing-nya Locked.

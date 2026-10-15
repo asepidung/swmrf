@@ -223,11 +223,11 @@ class Costing extends Model
         }
     }
 
-    /** Boning terkunci yang masih menunggu costing yang DISIMPAN (belum ada costing, atau barulah draf yang belum disimpan). */
+    /** Boning yang sudah ada hasilnya (terbuka atau terkunci) dan belum punya costing yang DISIMPAN. */
     public static function boningsWaiting(): \Illuminate\Database\Eloquent\Builder
     {
         return Boning::query()
-            ->where('kunci', true)
+            ->whereHas('items')
             ->whereDoesntHave('costing', fn ($q) => $q->whereNotNull('saved_at'));
     }
 
@@ -269,6 +269,12 @@ class Costing extends Model
     {
         if ($this->status !== self::STATUS_DRAFT) {
             throw new \RuntimeException(__('Only a draft costing can be locked.'));
+        }
+
+        // Costing boleh disiapkan selagi boning masih terbuka, tetapi baru bisa dikunci setelah berat
+        // finalnya pasti, yaitu setelah boning dikunci.
+        if (! $this->boning?->kunci) {
+            throw new \RuntimeException(__('Lock the boning first: the costing can only be locked after the boning is locked.'));
         }
 
         if ($this->items()->where('flag', CostingItem::FLAG_NO_PRICE)->exists()) {

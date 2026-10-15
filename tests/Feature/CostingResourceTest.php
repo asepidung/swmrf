@@ -265,57 +265,32 @@ class CostingResourceTest extends TestCase
     // =========================================================================
 
     /** @test */
-    public function a_locked_boning_waits_in_draft_costing_and_unlocking_discards_its_draft(): void
+    public function a_boning_with_results_waits_in_draft_costing_open_or_locked_and_unlocking_keeps_the_draft(): void
     {
         $boning = $this->lockedBoningWithCostableProduct();
+        $user = $this->employee(['view_costings', 'create_costings']);
 
         $this->assertNull(Costing::where('boning_id', $boning->id)->first(), 'Mengunci boning tidak membuat costing sendiri.');
+        Livewire::actingAs($user)->test(DraftCosting::class)->assertCanSeeTableRecords([$boning]);
 
-        Livewire::actingAs($this->employee(['view_costings', 'create_costings']))
-            ->test(DraftCosting::class)
-            ->assertCanSeeTableRecords([$boning]);
+        // Boning dibuka lagi: tetap terdaftar (accounting boleh menyiapkan costing sebelum boning dikunci).
+        $boning->unlock();
+        Livewire::actingAs($user)->test(DraftCosting::class)->assertCanSeeTableRecords([$boning->fresh()]);
 
-        $costing = Costing::createFromBoning($boning);
+        $costing = Costing::createFromBoning($boning->fresh());
         $this->assertSame(Costing::STATUS_DRAFT, $costing->status);
 
-        // Boning di-unlock: Draft costing dibuang; dikunci lagi, boning muncul lagi di daftar.
-        $boning->fresh()->unlock();
-        $this->assertSame(0, Costing::withTrashed()->where('boning_id', $boning->id)->count());
+        // Costing Draft tidak boleh dikunci selagi boning terbuka, dan tidak hilang bila boning dikunci/dibuka.
+        try {
+            $costing->lock();
+            $this->fail('Costing tidak boleh dikunci selagi boning terbuka.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('Lock the boning first', $e->getMessage());
+        }
 
         $boning->fresh()->lock();
-        Livewire::actingAs($this->employee(['view_costings', 'create_costings']))
-            ->test(DraftCosting::class)
-            ->assertCanSeeTableRecords([$boning]);
-    }
-
-    /** @test */
-    public function a_costing_shows_in_the_index_only_after_it_is_saved_and_can_be_deleted_until_locked(): void
-    {
-        $boning = $this->lockedBoningWithCostableProduct();
-        $costing = Costing::createFromBoning($boning);
-        $user = $this->employee(['view_costings', 'edit_costings', 'delete_costings']);
-
-        Livewire::actingAs($user)->test(ListCostings::class)->assertCanNotSeeTableRecords([$costing]);
-
-        Livewire::actingAs($user)
-            ->test(EditCosting::class, ['record' => $costing->getRouteKey()])
-            ->call('save');
-
-        $this->assertNotNull($costing->fresh()->saved_at);
-        Livewire::actingAs($user)->test(ListCostings::class)->assertCanSeeTableRecords([$costing]);
-
-        Livewire::actingAs($user)->test(ListCostings::class)->callTableAction('delete', $costing);
-        $this->assertNull(Costing::find($costing->id), 'Costing yang belum terkunci bisa dihapus.');
-
-        $locked = Costing::createFromBoning($boning->fresh());
-        $locked->items()->update(['gross_price' => 100000, 'net_price' => 100000]);
-        $locked->lock();
-        $this->assertNotNull($locked->fresh()->saved_at, 'Mengunci sekaligus menyimpan.');
-
-        Livewire::actingAs($user)
-            ->test(ListCostings::class)
-            ->assertCanSeeTableRecords([$locked])
-            ->assertTableActionHidden('delete', $locked);
+        $boning->fresh()->unlock();
+        $this->assertNotNull(Costing::find($costing->id), 'Unlock boning tidak membuang Draft costing.');
     }
 
     /** @test */

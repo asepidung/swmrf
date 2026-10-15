@@ -163,7 +163,8 @@ class CostingCalculatorTest extends TestCase
             'name' => 'FILLER (SISA LOT)', 'code' => 'MT999', 'category_id' => $this->topside->category_id,
             'structure_type' => 'main', 'is_active' => true,
         ]);
-        $fillerNet = 717762805.70 - (140060.00 * 100);
+        // Net selalu bilangan bulat (dibulatkan ke atas): sisa nilai jual dibulatkan, selisih 0,30 dari angka hpp.md.
+        $fillerNet = ceil(717762805.70 - (140060.00 * 100));
         $this->defaultPrice($filler, $fillerNet, $fillerNet);
         \App\Models\BoningItem::create([
             'boning_id' => $boning->id, 'product_id' => $filler->id,
@@ -178,7 +179,7 @@ class CostingCalculatorTest extends TestCase
         $result = CostingCalculator::forBoning($boning->fresh(), 0)->calculate();
 
         $this->assertSame(680500000.0, $result['purchase_cost']);
-        $this->assertSame(717762805.70, $result['total_sales_value']);
+        $this->assertSame(717762806.0, $result['total_sales_value']);
         $this->assertSame(0.948085, $result['ratio_k']);
 
         $topsideItem = collect($result['items'])->firstWhere('product_id', $this->topside->id);
@@ -302,7 +303,7 @@ class CostingCalculatorTest extends TestCase
         $item = collect(CostingCalculator::forBoning($boning->fresh(), 0, [$this->topside->id => ['gross' => 200000, 'net' => 166666.67]])->calculate()['items'])
             ->firstWhere('product_id', $this->topside->id);
 
-        $this->assertSame(166666.67, $item['net_price']);
+        $this->assertSame(166667.0, $item['net_price'], 'Net diketik dibulatkan ke atas: 166.666,67 -> 166.667.');
         $this->assertSame(16.67, $item['trading_terms_percent']);
     }
 
@@ -356,7 +357,8 @@ class CostingCalculatorTest extends TestCase
         $fillerB = $make('FILLER B', 'MT999');
 
         $kg = [$this->topside->id => 309.88, $tenderloin->id => 15.26, $cuberoll->id => 32.48, $offal->id => 4795.3];
-        $net = [$this->topside->id => 138281.25, $tenderloin->id => 203437.50, $cuberoll->id => 138693.00, $offal->id => 8000.00];
+        // Net sheet 138.281,25 dan 203.437,5 dibulatkan ke atas (akunting, 15 Okt): 138.282 dan 203.438.
+        $net = [$this->topside->id => 138282.00, $tenderloin->id => 203438.00, $cuberoll->id => 138693.00, $offal->id => 8000.00];
 
         // Sisa daging 4.737,44 - 357,62 = 4.379,82 kg: 4.378,82 kg @ 1,00 + 1 kg yang menggenapkan total nilai jual.
         $kg[$fillerA->id] = 4378.82;
@@ -367,7 +369,7 @@ class CostingCalculatorTest extends TestCase
         foreach ($kg as $id => $weight) {
             $knownSales += $weight * $net[$id];
         }
-        $net[$fillerB->id] = round(559212720.18 - $knownSales, 2);
+        $net[$fillerB->id] = ceil(559212720.18 - $knownSales);
 
         $typed = [];
         $n = 0;
@@ -380,14 +382,14 @@ class CostingCalculatorTest extends TestCase
         $result = CostingCalculator::forBoning($boning->fresh(), 3000, $typed)->calculate();
 
         $this->assertSame(490847989.74, $result['purchase_cost']);
-        $this->assertSame(559212720.18, $result['total_sales_value']);
+        $this->assertSame(559212720.5, $result['total_sales_value']);
         $this->assertSame(14212320.0, $result['overhead_total']);
         $this->assertSame(0.903163, $result['ratio_k']);
-        $this->assertSame(54152410.44, $result['profit']);
+        $this->assertSame(54152410.76, $result['profit']);
 
         $hpp = fn (Product $p) => collect($result['items'])->firstWhere('product_id', $p->id)['hpp_per_kg'];
-        $this->assertSame(124890.53, $hpp($this->topside));
-        $this->assertSame(183737.25, $hpp($tenderloin));
+        $this->assertSame(124891.2, $hpp($this->topside));
+        $this->assertSame(183737.7, $hpp($tenderloin));
         $this->assertSame(125262.40, $hpp($cuberoll));
         $this->assertSame(7225.31, $hpp($offal));
     }
@@ -469,12 +471,17 @@ class CostingCalculatorTest extends TestCase
     }
 
     /** @test */
-    public function an_unlocked_boning_cannot_be_costed(): void
+    public function an_open_boning_can_be_costed_but_its_costing_cannot_be_locked_yet(): void
     {
         ['boning' => $boning] = $this->juneLotCattleChain();
+        $this->defaultPrice($this->topside, 100000, 94000);
+        $this->boningItem($boning, $this->topside, 100, 'BC-OPEN-1');
 
+        $result = CostingCalculator::forBoning($boning, 0)->calculate();
+        $this->assertSame(9400000.0, $result['total_sales_value']);
+
+        $costing = \App\Models\Costing::createFromCalculation($boning, $result);
         $this->expectException(\RuntimeException::class);
-
-        CostingCalculator::forBoning($boning)->calculate();
+        $costing->lock();
     }
 }

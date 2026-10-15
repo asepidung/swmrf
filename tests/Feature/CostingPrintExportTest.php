@@ -125,7 +125,8 @@ class CostingPrintExportTest extends TestCase
         // fixture ini bisa dikunci, tanpa mengganggu test cetakan di atas
         // yang justru butuh baris NO_PRICE itu ada.
         $costing->items()->where('flag', CostingItem::FLAG_NO_PRICE)->delete();
-        $costing->lock();
+        $costing->boning->forceFill(['kunci' => true])->save();
+        $costing->fresh()->lock();
 
         Livewire::actingAs($this->employee(['view_costings']))
             ->test(ViewCosting::class, ['record' => $costing->getRouteKey()])
