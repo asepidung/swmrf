@@ -3,7 +3,6 @@
 namespace App\Filament\Admin\Resources\CostingResource\Pages;
 
 use App\Filament\Admin\Resources\CostingResource;
-use App\Models\Boning;
 use App\Models\Costing;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
@@ -24,7 +23,7 @@ class ListCostings extends ListRecords
                 ->label(__('Draft Costing'))
                 ->icon('heroicon-o-document-plus')
                 ->color('warning')
-                ->badge(fn (): int => Boning::where('kunci', true)->whereDoesntHave('costing')->count())
+                ->badge(fn (): int => Costing::boningsWaiting()->count())
                 ->authorize(fn (): bool => auth()->user()?->can('create', Costing::class) ?? false)
                 ->url(fn (): string => CostingResource::getUrl('draft')),
         ];

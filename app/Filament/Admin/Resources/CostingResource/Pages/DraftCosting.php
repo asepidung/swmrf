@@ -39,7 +39,7 @@ class DraftCosting extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(Boning::query()->where('kunci', true)->whereDoesntHave('costing')->withSum('items', 'weight'))
+            ->query(Costing::boningsWaiting()->withSum('items', 'weight'))
             ->defaultSort('boning_date', 'desc')
             ->paginated(false)
             ->columns([

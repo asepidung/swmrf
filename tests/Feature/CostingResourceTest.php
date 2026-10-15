@@ -230,7 +230,14 @@ class CostingResourceTest extends TestCase
         $boning = $this->lockedBoningWithCostableProduct();
         Costing::createFromCalculation($boning, \App\Services\CostingCalculator::forBoning($boning)->calculate());
 
-        // Boning yang sudah punya costing tidak muncul lagi di Draft Costing.
+        // Boning yang sudah punya costing TERSIMPAN tidak muncul lagi di Draft Costing; costing yang
+        // belum disimpan tidak menutupnya.
+        Livewire::actingAs($this->employee(['view_costings', 'create_costings']))
+            ->test(DraftCosting::class)
+            ->assertCanSeeTableRecords([$boning]);
+
+        Costing::where('boning_id', $boning->id)->update(['saved_at' => now()]);
+
         Livewire::actingAs($this->employee(['view_costings', 'create_costings']))
             ->test(DraftCosting::class)
             ->assertCanNotSeeTableRecords([$boning]);
@@ -282,6 +289,36 @@ class CostingResourceTest extends TestCase
     }
 
     /** @test */
+    public function a_costing_shows_in_the_index_only_after_it_is_saved_and_can_be_deleted_until_locked(): void
+    {
+        $boning = $this->lockedBoningWithCostableProduct();
+        $costing = Costing::createFromBoning($boning);
+        $user = $this->employee(['view_costings', 'edit_costings', 'delete_costings']);
+
+        Livewire::actingAs($user)->test(ListCostings::class)->assertCanNotSeeTableRecords([$costing]);
+
+        Livewire::actingAs($user)
+            ->test(EditCosting::class, ['record' => $costing->getRouteKey()])
+            ->call('save');
+
+        $this->assertNotNull($costing->fresh()->saved_at);
+        Livewire::actingAs($user)->test(ListCostings::class)->assertCanSeeTableRecords([$costing]);
+
+        Livewire::actingAs($user)->test(ListCostings::class)->callTableAction('delete', $costing);
+        $this->assertNull(Costing::find($costing->id), 'Costing yang belum terkunci bisa dihapus.');
+
+        $locked = Costing::createFromBoning($boning->fresh());
+        $locked->items()->update(['gross_price' => 100000, 'net_price' => 100000]);
+        $locked->lock();
+        $this->assertNotNull($locked->fresh()->saved_at, 'Mengunci sekaligus menyimpan.');
+
+        Livewire::actingAs($user)
+            ->test(ListCostings::class)
+            ->assertCanSeeTableRecords([$locked])
+            ->assertTableActionHidden('delete', $locked);
+    }
+
+    /** @test */
     public function a_boning_with_a_locked_costing_cannot_be_unlocked_until_the_costing_is(): void
     {
         $boning = $this->lockedBoningWithCostableProduct();
@@ -303,7 +340,7 @@ class CostingResourceTest extends TestCase
     }
 
     /** @test */
-    public function changing_the_overhead_recalculates_the_draft_and_the_recalculate_and_delete_buttons_are_gone(): void
+    public function changing_the_overhead_recalculates_the_draft_and_the_recalculate_button_is_gone(): void
     {
         $boning = $this->lockedBoningWithCostableProduct();
         $costing = Costing::createFromCalculation($boning, \App\Services\CostingCalculator::forBoning($boning, 0)->calculate());
@@ -311,7 +348,7 @@ class CostingResourceTest extends TestCase
         Livewire::actingAs($this->employee(['view_costings', 'edit_costings']))
             ->test(EditCosting::class, ['record' => $costing->getRouteKey()])
             ->assertActionDoesNotExist('recalculate')
-            ->assertActionDoesNotExist('delete')
+            ->assertActionExists('delete')
             ->fillForm(['overhead_per_kg' => '5.000'])
             ->assertHasNoFormErrors();
 

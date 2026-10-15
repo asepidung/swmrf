@@ -34,6 +34,14 @@ class EditCosting extends EditRecord
         }
     }
 
+    /** Menyimpan = costing mulai tampil di daftar Costings. */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $data['saved_at'] = $this->getRecord()->saved_at ?? now();
+
+        return $data;
+    }
+
     protected function beforeSave(): void
     {
         $locked = Costing::whereKey($this->record->id)->lockForUpdate()->first();
@@ -87,6 +95,8 @@ class EditCosting extends EditRecord
                 ->color('success')
                 ->url(fn (): string => route('print.costing', $this->getRecord()))
                 ->openUrlInNewTab(),
+
+            Actions\DeleteAction::make(),
 
             Actions\Action::make('lock')
                 ->label(__('Lock'))

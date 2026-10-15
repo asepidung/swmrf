@@ -159,6 +159,7 @@ class CostingResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('Status'))
                     ->badge()
+                    ->formatStateUsing(fn (string $state): string => $state === Costing::STATUS_DRAFT ? __('Saved') : $state)
                     ->color(fn (string $state): string => match ($state) {
                         Costing::STATUS_DRAFT => 'warning',
                         Costing::STATUS_LOCKED => 'success',
@@ -218,12 +219,13 @@ class CostingResource extends Resource
                     ->button()
                     ->color('success'),
             ])
+            ->modifyQueryUsing(fn (Builder $query) => $query->whereNotNull('saved_at'))
             ->defaultSort('created_at', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->label(__('Status'))
                     ->options([
-                        Costing::STATUS_DRAFT => Costing::STATUS_DRAFT,
+                        Costing::STATUS_DRAFT => __('Saved'),
                         Costing::STATUS_LOCKED => Costing::STATUS_LOCKED,
                     ]),
 
@@ -263,7 +265,11 @@ class CostingResource extends Resource
                         return $indicators;
                     }),
             ])
-            ->actions([])
+            ->actions([
+                // Costing yang belum dikunci boleh dihapus; yang terkunci tidak (hapus ditolak model).
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn (Costing $record): bool => $record->status === Costing::STATUS_DRAFT),
+            ])
             ->bulkActions([])
             ->recordUrl(fn (Costing $record): string => $record->status === Costing::STATUS_DRAFT
                 ? static::getUrl('edit', ['record' => $record])

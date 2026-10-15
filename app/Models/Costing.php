@@ -49,6 +49,7 @@ class Costing extends Model
         'created_by',
         'locked_by',
         'locked_at',
+        'saved_at',
     ];
 
     protected $casts = [
@@ -61,6 +62,7 @@ class Costing extends Model
         'total_kg' => 'float',
         'profit' => 'float',
         'locked_at' => 'datetime',
+        'saved_at' => 'datetime',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -198,7 +200,8 @@ class Costing extends Model
     /** Buat costing (Draft) untuk sebuah boning terkunci: harga dan overhead dari costing terakhir. */
     public static function createFromBoning(Boning $boning): self
     {
-        return static::createFromCalculation($boning, CostingCalculator::forBoning($boning)->calculate());
+        // Costing yang belum disimpan dari kunjungan sebelumnya dipakai lagi, bukan dibuat dobel.
+        return static::where('boning_id', $boning->id)->first() ?? static::createFromCalculation($boning, CostingCalculator::forBoning($boning)->calculate());
     }
 
     /**
@@ -218,6 +221,14 @@ class Costing extends Model
         } catch (\Throwable $e) {
             report($e);
         }
+    }
+
+    /** Boning terkunci yang masih menunggu costing yang DISIMPAN (belum ada costing, atau barulah draf yang belum disimpan). */
+    public static function boningsWaiting(): \Illuminate\Database\Eloquent\Builder
+    {
+        return Boning::query()
+            ->where('kunci', true)
+            ->whereDoesntHave('costing', fn ($q) => $q->whereNotNull('saved_at'));
     }
 
     /** Margin% -- SAMA untuk seluruh produk, sifat metode ini (`hpp.md` §11.1), bukan per produk. */
@@ -253,6 +264,8 @@ class Costing extends Model
                 'status' => self::STATUS_LOCKED,
                 'locked_by' => Auth::id(),
                 'locked_at' => now(),
+                // Mengunci sekaligus menyimpan: costing terkunci selalu tampil di daftar.
+                'saved_at' => $this->saved_at ?? now(),
             ])->save();
 
             // Barcode boning lot ini bernilai sekarang -- mundur, termasuk yang
@@ -304,7 +317,7 @@ class Costing extends Model
             if ($costing->getOriginal('status') === self::STATUS_LOCKED) {
                 $changed = array_diff(
                     array_keys($costing->getDirty()),
-                    ['status', 'locked_by', 'locked_at', 'updated_at'],
+                    ['status', 'locked_by', 'locked_at', 'saved_at', 'updated_at'],
                 );
 
                 if ($changed !== []) {
