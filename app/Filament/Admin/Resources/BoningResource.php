@@ -283,7 +283,7 @@ class BoningResource extends Resource
 
                         return redirect(static::getUrl('index'));
                     })
-                    ->hidden(fn(Boning $record) => !auth()->user()->hasPermission('lock_bonings') || !$record->kunci),
+                    ->hidden(fn(Boning $record) => !auth()->user()->hasPermission('lock_bonings') || !$record->kunci || $record->costing?->status === \App\Models\Costing::STATUS_LOCKED),
 
                 /* 3. Tombol Input Material Usage */
                 Tables\Actions\Action::make('materialUsage')

@@ -7728,3 +7728,16 @@ Tiga keputusan Ayah sekaligus:
    form itu). Sekarang isian boleh kosong; `KeepsCustomerInAGroup` (Create dan Edit) membuatkan grup bernama
    sama dengan customer (TOP, PIC, alamat dibawa; bila grup bernama sama sudah ada, customer bergabung ke
    situ). Grup yang dipilih tidak pernah diganti.
+
+## Costing: harga dari costing sebelumnya, potongan per produk, overhead masuk HPP, 14 Oktober 2026 (#541)
+
+Keputusan Owner lewat Hafizh. Detail dan angka uji di `.agents/hpp.md` §18. Yang perlu diingat saat menyentuh
+costing: (1) `CostingPrices` adalah satu-satunya sumber harga costing -- jangan kembali ke `ReferencePrice`/price
+list; (2) harga yang diketik di Draft dibawa `Costing::currentPrices()` ke `CostingCalculator::forBoning(..., $typedPrices)`;
+(3) `Costing::recalculate()` memperbarui baris item di tempat (id tetap); (4) mengunci costing memperbarui
+`costing_price_defaults` lewat `CostingPrices::rememberFrom()`; (5) offal borong/kulit ditandai kolom
+`products.excluded_from_overhead` (bukan nama, bukan kategori) -- tidak dibebani overhead; nama hanya pengisi awal; (6) `#532` (import price list dari harga SO) ditunda.
+
+## Costing: halaman Draft Costing (boning terkunci yang menunggu), 15 Oktober 2026
+Keputusan Owner, pola "Draft" modul lain (Draft Carcass). Mengunci boning TIDAK membuat costing sendiri: `Boning::lock()` hanya memanggil `Costing::notifyBoningLocked()` (tidak pernah melempar; memberi tahu pemegang `create_costings`, tautan ke Draft Costing). Daftar Costing punya tombol **Draft Costing** (badge jumlah) ke halaman `DraftCosting`: boning `kunci` tanpa costing, tanpa pagination (baris terlewat = boning tak pernah dicosting); aksi "Create Costing" per baris membuat costing Draft (`Costing::createFromBoning`) lalu membuka edit. `Boning::unlock()` membuang Draft costing dan MENOLAK bila costing-nya Locked (unlock costing dulu; unlock costing sengaja tetap ada "untuk jaga-jaga" sampai ada penanda proses yang menutupnya). Halaman edit costing: hanya Back, Print, Lock; overhead menghitung ulang otomatis (`EditCosting::applyOverhead`); tabel produk/sapi tanpa pagination; posisi scroll dipulihkan oleh `filament/admin/costing-scroll-restore`. Overhead awal 3.000/kg bila belum ada costing.
+**Tersimpan:** costing baru MUNCUL di daftar Costings hanya setelah disimpan (`costings.saved_at`, diisi tombol Simpan di halaman edit atau saat dikunci); sebelum itu ia hanya hasil "Create Costing" dan boning-nya tetap di Draft Costing (`Costing::boningsWaiting()`). Status tampil "Saved" (nilai kolom tetap `Draft`) atau "Locked". Costing belum terkunci bisa dihapus (aksi hapus di daftar dan di halaman edit).

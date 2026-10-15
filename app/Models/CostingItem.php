@@ -26,6 +26,7 @@ class CostingItem extends Model
         'trading_terms_percent',
         'net_price',
         'sales_value',
+        'buying_price_per_kg',
         'hpp_per_kg',
         'flag',
     ];
@@ -36,6 +37,7 @@ class CostingItem extends Model
         'trading_terms_percent' => 'float',
         'net_price' => 'float',
         'sales_value' => 'float',
+        'buying_price_per_kg' => 'float',
         'hpp_per_kg' => 'float',
     ];
 

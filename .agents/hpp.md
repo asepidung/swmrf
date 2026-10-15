@@ -1004,3 +1004,51 @@ produk per grup; sheet LION (19), HPM (14), UMUM (67; = REGULER + UNGROUP legacy
   menurut nama ternormalisasi; yang tidak ketemu dilaporkan. Acuan yang sudah diisi manual tidak ditimpa
   kecuali `--overwrite`. Baris 5% di Excel (Brisket PEDO, RIBS, Fat Brisket) belum punya grup: dibiarkan
   kosong dan hanya dilaporkan.
+
+## 18. Harga dari costing sebelumnya dan overhead masuk HPP (issue #541, 14 Oktober 2026)
+
+Keputusan Owner (lewat Hafizh), menggantikan sumber harga §9-10 dan cara overhead di §6.
+
+**Sumber harga.** Saat costing dibuat, tiap produk mendapat gross dan net dari **costing terkunci
+terakhir** yang memuat produk itu (urut `locked_at`); bila belum pernah ada, dari
+`costing_price_defaults` (diisi sekali oleh `costing:import-prices` dari sheet `LJP 15 - 8 OKT`, dan
+diperbarui tiap costing dikunci); bila tidak ada juga, `NO_PRICE`. Gross dan net bisa **diketik langsung**
+di baris produk selagi Draft; setiap ketikan menghitung ulang costing, dan "Hitung ulang" tidak menimpa
+yang diketik. Mengetik gross saja: net = gross dikurangi potongan terakhir produk itu (atau = gross bila belum
+pernah punya harga). Potongan adalah milik **produk** (1 - net/gross), disimpan sebagai snapshot di
+`costing_items`; bukan lagi milik grup pelanggan. LION 6,25% (bukan 6%).
+
+Costing **tidak lagi membaca** price list, `products.costing_customer_group_id`, maupun trading terms grup.
+Kolomnya dibiarkan, tidak dipakai. `ReferencePrice` tetap ada hanya untuk `legacy:import-prices` (#532, ditunda;
+nanti dipakai untuk price list penjualan). Flag `NO_REFERENCE` tidak lagi dihasilkan.
+
+**Overhead masuk HPP.** `overhead_total = overhead_per_kg x kg daging` (semua produk **kecuali** yang bertanda
+`products.excluded_from_overhead` -- F88 di Excel: hanya "Offal borong" dan Kulit/Hides; Liver, Sweetbread dll. ikut). Lalu
+
+```
+k      = (biaya beli + overhead_total) / total nilai jual
+HPP/kg = net x k                 (presisi penuh)
+laba   = total nilai jual - biaya beli - overhead_total
+```
+
+Bukan +3.000 rata per kg: itu membuat Offal dinilai di atas harga jualnya. Angka uji wajib lot LJP 15 - 7 Okt
+(biaya beli 490.847.989,74; kg daging 4.737,44; overhead 3.000 -> 14.212.320; nilai jual 559.212.720,18;
+k = 0,903163) ada di `CostingCalculatorTest`: Topside 124.890,53, Tenderloin 183.737,25, Cuberoll 125.262,40,
+Offal 7.225,31, laba 54.152.410,44 -- semuanya cocok.
+
+Penanda adalah DATA (form Produk: "Tidak ikut kg overhead"), bukan nama dan bukan kategori OFFAL. Nama
+(OFFAL, KULIT, HIDES) hanya pengisi awal: migrasi dan `costing:import-prices` (dengan laporan). Setelah import
+master baru, jalankan `costing:import-prices` lagi atau centang manual produk yang perlu.
+
+### 18.1 Penyesuaian akunting, 15 Oktober 2026
+- **Net selalu bilangan bulat, dibulatkan KE ATAS** (203.437,5 -> 203.438), di semua jalur: dari gross, dari Terms %, diketik, dan import. Net tidak lagi bisa diedit bila produk punya gross (diturunkan dari gross dan Terms %, yang bisa diketik); produk tanpa gross (offal, tulang) net-nya diketik.
+- Karena itu angka uji LJP 7 Okt di bagian atas bergeser beberapa rupiah: Topside 124.891,20; Tenderloin 183.737,70; Cuberoll 125.262,40; Offal 7.225,31; laba 54.152.410,76 (k tetap 0,903163). Yang tertulis di atas adalah angka sebelum pembulatan.
+- Margin ditampilkan dua: Net (1 - k) dan Gross (1 - (biaya beli + overhead) / nilai jual gross).
+- k dilabeli "Rasio biaya (k)": biaya untuk setiap Rp 1 nilai jual net.
+- **Costing boleh dibuat SEBELUM boning dikunci** (gudang bisa mengunci tengah malam): Draft Costing memuat semua boning yang sudah ada hasilnya; "Tarik ulang dari boning" menyegarkan produk dan berat; **costing baru bisa dikunci setelah boning terkunci**. Unlock boning tidak membuang Draft costing; ditolak bila costing-nya Locked.
+- **HPP per kg dibulatkan ke rupiah penuh** (Owner, 15 Oktober 2026, pembulatan biasa): ini menggantikan "presisi penuh" di §11.3 untuk angka yang disimpan; k tetap dihitung penuh. Angka uji: Topside 124.891; Tenderloin 183.738; Cuberoll 125.262; Offal 7.225. Nilai barcode ikut HPP yang sudah bulat (selisih paling jauh Rp 0,5/kg).
+- **Laba sebelum overhead** (nilai jual net - biaya beli, setara "Gross Profit" Excel) ditampilkan di atas Laba. Overhead per kg TIDAK menambah HPP tiap produk persis sebesar selisihnya: overhead dibagi menurut nilai jual lewat k, jadi kenaikan HPP sebuah produk sebanding dengan net-nya.
+
+### 18.2 Overhead RATA per kg (Owner, 15 Oktober 2026) -- menggantikan pembagian lewat k di §18
+`k = biaya beli / total nilai jual` (overhead TIDAK lagi masuk k). `HPP per kg = net x k + overhead per kg` untuk produk daging; offal dan kulit (`excluded_from_overhead`) tidak menanggung overhead: HPP-nya `net x k`. Menaikkan overhead Rp 3.000 menaikkan HPP tiap produk daging tepat Rp 3.000. `total overhead` dan laba tetap: laba = nilai jual net - biaya beli - overhead per kg x kg daging. Margin net = laba / nilai jual net. Angka uji LJP 7 Okt (net dibulatkan ke atas, HPP dibulatkan): k 0,877748; Topside 124.377; Tenderloin 181.567; Cuberoll 124.738; Offal 7.022; laba 54.152.410,76. Angka di §18 dan §18.1 sebelum baris ini sudah tidak berlaku untuk HPP per produk.
+- **Kolom "Harga beli / kg"** (= net x k, rupiah penuh; setara "BUYING PRICE" di Excel akunting) ditampilkan di depan HPP, lalu "Overhead / kg", lalu HPP = harga beli + overhead (produk daging). Akunting tidak melihat k di Excel mereka karena k hanya tersirat di kolom BUYING PRICE (= total jual produk / total jual semua x Purchase cost / kg); di aplikasi k dilabeli "Faktor modal sapi (k)".

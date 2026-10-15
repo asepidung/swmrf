@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use App\Filament\Admin\Resources\CostingResource;
+use App\Services\CostingCalculator;
+use App\Services\CostingPrices;
+use App\Support\TaskNotifier;
 use App\Support\BarcodeCosts;
 use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
@@ -37,6 +41,7 @@ class Costing extends Model
         'total_sales_value',
         'ratio_k',
         'overhead_per_kg',
+        'overhead_total',
         'total_kg',
         'profit',
         'status',
@@ -44,6 +49,7 @@ class Costing extends Model
         'created_by',
         'locked_by',
         'locked_at',
+        'saved_at',
     ];
 
     protected $casts = [
@@ -52,9 +58,11 @@ class Costing extends Model
         'total_sales_value' => 'float',
         'ratio_k' => 'float',
         'overhead_per_kg' => 'float',
+        'overhead_total' => 'float',
         'total_kg' => 'float',
         'profit' => 'float',
         'locked_at' => 'datetime',
+        'saved_at' => 'datetime',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -112,6 +120,7 @@ class Costing extends Model
                 'total_sales_value' => $result['total_sales_value'],
                 'ratio_k' => $result['ratio_k'],
                 'overhead_per_kg' => $result['overhead_per_kg'],
+                'overhead_total' => $result['overhead_total'],
                 'total_kg' => $result['total_kg'],
                 'profit' => $result['profit'],
             ]);
@@ -125,8 +134,8 @@ class Costing extends Model
     /**
      * Terapkan ULANG hasil `CostingCalculator::calculate()` ke costing
      * yang SUDAH ADA -- dipakai "Hitung ulang" (Draft saja). Baris item
-     * dan biaya sapi lama dibuang, diganti yang baru -- keduanya murni
-     * SNAPSHOT tanpa rujukan balik dari model lain, aman diganti utuh.
+     * diperbarui di tempat, biaya sapi lama diganti yang baru -- keduanya murni
+     * SNAPSHOT tanpa rujukan balik dari model lain.
      *
      * @param  array<string, mixed>  $result
      *
@@ -144,13 +153,22 @@ class Costing extends Model
                 'total_sales_value' => $result['total_sales_value'],
                 'ratio_k' => $result['ratio_k'],
                 'overhead_per_kg' => $result['overhead_per_kg'],
+                'overhead_total' => $result['overhead_total'],
                 'total_kg' => $result['total_kg'],
                 'profit' => $result['profit'],
             ])->save();
 
-            $this->items()->delete();
+            // Baris produk diperbarui di tempat (id-nya tetap, supaya sel yang sedang diketik di layar
+            // tidak kehilangan barisnya); yang sudah tidak ada di boning dibuang.
+            $this->items()->whereNotIn('product_id', collect($result['items'])->pluck('product_id'))->delete();
+            foreach ($result['items'] as $row) {
+                $this->items()->updateOrCreate(['product_id' => $row['product_id']], $row);
+            }
+
             $this->cattle()->delete();
-            $this->applyCalculationRows($result);
+            foreach ($result['cattle'] as $row) {
+                $this->cattle()->create($row);
+            }
         });
     }
 
@@ -166,16 +184,88 @@ class Costing extends Model
         }
     }
 
-    /** Margin% -- SAMA untuk seluruh produk, sifat metode ini (`hpp.md` §11.1), bukan per produk. */
-    public function marginPercent(): float
+    /**
+     * Harga yang sedang tertera di Draft ini (product_id => gross+net), dipakai sebagai harga ketikan
+     * saat dihitung ulang -- supaya yang diketik tidak tertimpa harga costing terakhir (#541).
+     *
+     * @return array<int, array{gross: float, net: float}>
+     */
+    public function currentPrices(): array
     {
-        return round((1 - $this->ratio_k) * 100, 2);
+        return $this->items()->where('net_price', '>', 0)->get()
+            ->mapWithKeys(fn (CostingItem $i) => [$i->product_id => ['gross' => (float) $i->gross_price, 'net' => (float) $i->net_price]])
+            ->all();
     }
 
-    /** Overhead default costing baru: dari costing terakhir, atau 0 kalau belum ada satu pun. */
+    /** Buat costing (Draft) untuk sebuah boning terkunci: harga dan overhead dari costing terakhir. */
+    public static function createFromBoning(Boning $boning): self
+    {
+        // Costing yang belum disimpan dari kunjungan sebelumnya dipakai lagi, bukan dibuat dobel.
+        return static::where('boning_id', $boning->id)->first() ?? static::createFromCalculation($boning, CostingCalculator::forBoning($boning)->calculate());
+    }
+
+    /**
+     * Boning baru saja dikunci: pemegang izin membuat costing diberi tahu, dengan tautan ke Draft
+     * Costing. Tidak pernah melempar -- mengunci boning tidak boleh gagal karena pemberitahuan.
+     */
+    public static function notifyBoningLocked(Boning $boning): void
+    {
+        try {
+            TaskNotifier::notifyPermissionHolders(
+                ['create_costings'],
+                __('Boning ready for costing'),
+                __('Boning :doc is locked and ready for costing.', ['doc' => $boning->doc_no]),
+                CostingResource::getUrl('draft'),
+                'costing-boning-'.$boning->id,
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    /** Boning yang sudah ada hasilnya (terbuka atau terkunci) dan belum punya costing yang DISIMPAN. */
+    public static function boningsWaiting(): \Illuminate\Database\Eloquent\Builder
+    {
+        return Boning::query()
+            ->whereHas('items')
+            ->whereDoesntHave('costing', fn ($q) => $q->whereNotNull('saved_at'));
+    }
+
+    /** Laba sebelum overhead (setara "Gross Profit" di Excel akunting): nilai jual net - biaya beli. */
+    public function profitBeforeOverhead(): float
+    {
+        return round((float) $this->total_sales_value - (float) $this->purchase_cost, 2);
+    }
+
+    /** Total nilai jual pada harga GROSS (sebelum potongan); produk tanpa gross memakai net-nya. */
+    public function grossSalesValue(): float
+    {
+        return (float) $this->items()->get()->sum(
+            fn (CostingItem $item): float => (float) ($item->gross_price > 0 ? $item->gross_price : $item->net_price) * (float) $item->weight_kg
+        );
+    }
+
+    /** Margin % terhadap nilai jual GROSS: (1 - (biaya beli + overhead) / nilai jual gross). */
+    public function marginGrossPercent(): float
+    {
+        $gross = $this->grossSalesValue();
+
+        return $gross > 0 ? round((1 - ((float) $this->purchase_cost + (float) $this->overhead_total) / $gross) * 100, 2) : 0.0;
+    }
+
+    /** Margin % (NET): laba (sesudah overhead) terhadap total nilai jual net. */
+    public function marginPercent(): float
+    {
+        return (float) $this->total_sales_value > 0 ? round((float) $this->profit / (float) $this->total_sales_value * 100, 2) : 0.0;
+    }
+
+    /** Overhead per kg bila belum ada costing sama sekali (Owner, 14 Oktober 2026). */
+    public const OVERHEAD_AWAL = 3000.0;
+
+    /** Overhead default costing baru: dari costing terakhir, atau OVERHEAD_AWAL kalau belum ada satu pun. */
     public static function defaultOverheadPerKg(): float
     {
-        return (float) (static::query()->latest('id')->value('overhead_per_kg') ?? 0);
+        return (float) (static::query()->latest('id')->value('overhead_per_kg') ?? self::OVERHEAD_AWAL);
     }
 
     /**
@@ -187,6 +277,12 @@ class Costing extends Model
             throw new \RuntimeException(__('Only a draft costing can be locked.'));
         }
 
+        // Costing boleh disiapkan selagi boning masih terbuka, tetapi baru bisa dikunci setelah berat
+        // finalnya pasti, yaitu setelah boning dikunci.
+        if (! $this->boning?->kunci) {
+            throw new \RuntimeException(__('Lock the boning first: the costing can only be locked after the boning is locked.'));
+        }
+
         if ($this->items()->where('flag', CostingItem::FLAG_NO_PRICE)->exists()) {
             throw new \RuntimeException(__('This costing has a product without a price and cannot be locked.'));
         }
@@ -196,12 +292,17 @@ class Costing extends Model
                 'status' => self::STATUS_LOCKED,
                 'locked_by' => Auth::id(),
                 'locked_at' => now(),
+                // Mengunci sekaligus menyimpan: costing terkunci selalu tampil di daftar.
+                'saved_at' => $this->saved_at ?? now(),
             ])->save();
 
             // Barcode boning lot ini bernilai sekarang -- mundur, termasuk yang
             // sudah terjual atau jadi bahan repack (HPP tahap 2, issue #522).
             // Dikunci ulang sesudah unlock: nilai baru menimpa yang lama.
             BarcodeCosts::valueBoning($this);
+
+            // Harga costing berikutnya mengikuti costing yang terkunci terakhir (#541).
+            CostingPrices::rememberFrom($this);
         });
     }
 
@@ -244,7 +345,7 @@ class Costing extends Model
             if ($costing->getOriginal('status') === self::STATUS_LOCKED) {
                 $changed = array_diff(
                     array_keys($costing->getDirty()),
-                    ['status', 'locked_by', 'locked_at', 'updated_at'],
+                    ['status', 'locked_by', 'locked_at', 'saved_at', 'updated_at'],
                 );
 
                 if ($changed !== []) {

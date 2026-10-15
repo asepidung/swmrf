@@ -42,6 +42,7 @@ class CattleRelationManager extends RelationManager
                     ->money('IDR', locale: 'id')
                     ->weight('bold'),
             ])
+            ->paginated(false)
             ->headerActions([])
             ->actions([])
             ->bulkActions([]);

@@ -5,11 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Costing : {{ $record->costing_number }}</title>
     <style>
+        /* A4 portrait: margin diatur halaman, bukan body, supaya tiap halaman (ratusan produk) rapi. */
+        @page {
+            size: A4 portrait;
+            margin: 12mm;
+        }
         body {
             font-family: 'Poppins', sans-serif;
-            font-size: 12px;
+            font-size: 11px;
             color: #000;
-            margin: 20px;
+            /* Sisa 3px di kanan: garis kanan tabel tepat di tepi area cetak ikut terpotong tanpa ini. */
+            margin: 0 3px 0 1px;
+        }
+        /* Angka tidak boleh patah baris ("Rp" di satu baris, nilainya di baris lain). */
+        .items-table td.right-align {
+            white-space: nowrap;
+        }
+        .items-table thead {
+            display: table-header-group;   /* judul kolom diulang di tiap halaman */
+        }
+        .items-table tr {
+            page-break-inside: avoid;
+        }
+        .summary-box {
+            page-break-inside: avoid;
         }
         table {
             width: 100%;
@@ -29,7 +48,7 @@
         }
         .items-table th, .items-table td {
             border: 1px solid black;
-            padding: 6px;
+            padding: 4px 5px;
             text-align: center;
         }
         .items-table td.left-align {
@@ -53,7 +72,7 @@
         }
         .summary-box {
             margin-top: 16px;
-            width: 320px;
+            width: 360px;
             margin-left: auto;
             border: 1px solid black;
         }
@@ -64,6 +83,7 @@
             color: #555;
         }
         .summary-box td.value {
+            white-space: nowrap;
             text-align: right;
             font-weight: bold;
         }
@@ -154,46 +174,46 @@
     <table class="items-table">
         <thead>
             <tr>
-                <th width="20%">Produk</th>
-                <th width="10%">Berat (Kg)</th>
-                <th width="16%">Acuan Harga</th>
-                <th width="10%">Gross</th>
-                <th width="8%">Terms</th>
-                <th width="10%">Net</th>
-                <th width="12%">Nilai Jual</th>
-                <th width="14%">HPP / Kg</th>
+                <th width="21%">Produk</th>
+                <th width="8%">Berat (Kg)</th>
+                <th width="11%">Gross (Rp)</th>
+                <th width="7%">Terms</th>
+                <th width="10%">Net (Rp)</th>
+                <th width="12%">Nilai Jual (Rp)</th>
+                <th width="10%">Harga Beli / Kg (Rp)</th>
+                <th width="9%">Overhead / Kg (Rp)</th>
+                <th width="10%">HPP / Kg (Rp)</th>
             </tr>
         </thead>
         <tbody>
-            @forelse ($record->items as $item)
+            @forelse ($record->items->sortBy(fn ($row) => $row->product?->name) as $item)
                 <tr>
                     <td class="left-align">
                         {{ $item->product?->name }}
-                        @if ($item->flag === \App\Models\CostingItem::FLAG_NO_REFERENCE)
-                            <span class="flag-note">{{ __('No reference group -- valued using general price') }}</span>
-                        @elseif ($item->flag === \App\Models\CostingItem::FLAG_NO_PRICE)
+                        @if ($item->flag === \App\Models\CostingItem::FLAG_NO_PRICE)
                             <span class="flag-note danger">{{ __('No price found') }}</span>
                         @endif
                     </td>
                     <td class="right-align">{{ number_format((float) $item->weight_kg, 2, ',', '.') }}</td>
-                    <td>{{ $item->referenceGroup?->name ?? __('General price') }}</td>
-                    <td class="right-align">Rp {{ number_format((float) $item->gross_price, 0, ',', '.') }}</td>
+                    <td class="right-align">{{ number_format((float) $item->gross_price, 0, ',', '.') }}</td>
                     <td class="right-align">{{ number_format((float) $item->trading_terms_percent, 2, ',', '.') }}%</td>
-                    <td class="right-align">Rp {{ number_format((float) $item->net_price, 0, ',', '.') }}</td>
-                    <td class="right-align">Rp {{ number_format((float) $item->sales_value, 0, ',', '.') }}</td>
-                    <td class="right-align">Rp {{ number_format((float) $item->hpp_per_kg, 0, ',', '.') }}</td>
+                    <td class="right-align">{{ number_format((float) $item->net_price, 0, ',', '.') }}</td>
+                    <td class="right-align">{{ number_format((float) $item->sales_value, 0, ',', '.') }}</td>
+                    <td class="right-align">{{ number_format((float) $item->buying_price_per_kg, 0, ',', '.') }}</td>
+                    <td class="right-align">{{ number_format(max(0, (float) $item->hpp_per_kg - (float) $item->buying_price_per_kg), 0, ',', '.') }}</td>
+                    <td class="right-align">{{ number_format((float) $item->hpp_per_kg, 0, ',', '.') }}</td>
                 </tr>
             @empty
-                <tr><td colspan="8">Belum ada data.</td></tr>
+                <tr><td colspan="9">Belum ada data.</td></tr>
             @endforelse
         </tbody>
         <tfoot>
             <tr>
                 <td class="right-align">Total</td>
                 <td class="right-align">{{ number_format((float) $record->total_kg, 2, ',', '.') }}</td>
-                <td colspan="4"></td>
-                <td class="right-align">Rp {{ number_format((float) $record->total_sales_value, 0, ',', '.') }}</td>
-                <td></td>
+                <td colspan="3"></td>
+                <td class="right-align">{{ number_format((float) $record->total_sales_value, 0, ',', '.') }}</td>
+                <td colspan="3"></td>
             </tr>
         </tfoot>
     </table>
@@ -208,16 +228,28 @@
             <td class="value">Rp {{ number_format((float) $record->total_sales_value, 0, ',', '.') }}</td>
         </tr>
         <tr>
-            <td class="label">Rasio (k)</td>
+            <td class="label">Faktor modal sapi (k)<br><span style="font-size: 9px;">modal sapi per Rp 1 nilai jual net. Harga beli/kg = net x k; HPP = harga beli + overhead/kg</span></td>
             <td class="value">{{ number_format((float) $record->ratio_k, 6) }}</td>
         </tr>
         <tr>
-            <td class="label">Margin %</td>
+            <td class="label">Margin % (Net)</td>
             <td class="value">{{ number_format($record->marginPercent(), 2) }}%</td>
+        </tr>
+        <tr>
+            <td class="label">Margin % (Gross)</td>
+            <td class="value">{{ number_format($record->marginGrossPercent(), 2) }}%</td>
         </tr>
         <tr>
             <td class="label">Overhead / Kg</td>
             <td class="value">Rp {{ number_format((float) $record->overhead_per_kg, 0, ',', '.') }}</td>
+        </tr>
+        <tr>
+            <td class="label">Total Overhead</td>
+            <td class="value">Rp {{ number_format((float) $record->overhead_total, 0, ',', '.') }}</td>
+        </tr>
+        <tr>
+            <td class="label">Laba sebelum overhead</td>
+            <td class="value">Rp {{ number_format($record->profitBeforeOverhead(), 0, ',', '.') }}</td>
         </tr>
         <tr class="total">
             <td class="label">Laba</td>
