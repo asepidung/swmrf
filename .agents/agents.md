@@ -7737,3 +7737,6 @@ list; (2) harga yang diketik di Draft dibawa `Costing::currentPrices()` ke `Cost
 (3) `Costing::recalculate()` memperbarui baris item di tempat (id tetap); (4) mengunci costing memperbarui
 `costing_price_defaults` lewat `CostingPrices::rememberFrom()`; (5) offal borong/kulit ditandai kolom
 `products.excluded_from_overhead` (bukan nama, bukan kategori) -- tidak dibebani overhead; nama hanya pengisi awal; (6) `#532` (import price list dari harga SO) ditunda.
+
+## Costing: draft otomatis saat boning dikunci, 15 Oktober 2026
+Keputusan Owner. `Boning::lock()` memanggil `Costing::ensureDraftFor()` (tidak pernah melempar) lalu `TaskNotifier` memberi tahu pemegang `create_costings`. `Boning::unlock()` membuang Draft costing dan MENOLAK bila costing-nya Locked (unlock costing dulu; unlock costing sengaja tetap ada "untuk jaga-jaga" sampai ada penanda proses yang menutupnya). Halaman edit costing: hanya Back, Print, Lock; overhead menghitung ulang otomatis (`EditCosting::applyOverhead`); tabel produk/sapi tanpa pagination; posisi scroll dipulihkan oleh `filament/admin/costing-scroll-restore`. Tombol Create Costing di daftar tetap untuk boning lama. Overhead awal 3.000/kg bila belum ada costing.

@@ -48,6 +48,31 @@ class EditCosting extends EditRecord
         }
     }
 
+    /**
+     * Overhead per kg diubah di form: hitung ulang costing dengan harga yang sedang tertera, simpan,
+     * lalu muat ulang halaman (supaya HPP tiap baris ikut berubah).
+     */
+    public function applyOverhead(float $overheadPerKg): void
+    {
+        $record = $this->getRecord();
+
+        if ($record->status !== Costing::STATUS_DRAFT) {
+            return;
+        }
+
+        try {
+            $result = CostingCalculator::forBoning($record->boning, $overheadPerKg, $record->currentPrices())->calculate();
+            $record->recalculate($result);
+        } catch (\Exception $e) {
+            report($e);
+            Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
+
+            return;
+        }
+
+        $this->redirect($this->getResource()::getUrl('edit', ['record' => $record]));
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -62,32 +87,6 @@ class EditCosting extends EditRecord
                 ->color('success')
                 ->url(fn (): string => route('print.costing', $this->getRecord()))
                 ->openUrlInNewTab(),
-
-            // Overhead diubah di form, tapi TIDAK terpakai sampai
-            // "Hitung ulang" ditekan -- tombol Simpan biasa hanya
-            // menyentuh field header polos (mis. tanggal), bukan
-            // menjalankan CostingCalculator lagi.
-            Actions\Action::make('recalculate')
-                ->label(__('Recalculate'))
-                ->icon('heroicon-o-arrow-path')
-                ->color('warning')
-                ->requiresConfirmation()
-                ->action(function () {
-                    $overhead = (float) ($this->form->getState()['overhead_per_kg'] ?? 0);
-
-                    try {
-                        $result = CostingCalculator::forBoning($this->getRecord()->boning, $overhead, $this->getRecord()->currentPrices())->calculate();
-                        $this->getRecord()->recalculate($result);
-                    } catch (\Exception $e) {
-                        report($e);
-                        Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
-
-                        return;
-                    }
-
-                    Notification::make()->title(__('Costing recalculated.'))->success()->send();
-                    $this->redirect($this->getResource()::getUrl('edit', ['record' => $this->getRecord()]));
-                }),
 
             Actions\Action::make('lock')
                 ->label(__('Lock'))
@@ -115,7 +114,6 @@ class EditCosting extends EditRecord
                     $this->redirect($this->getResource()::getUrl('view', ['record' => $this->getRecord()]));
                 }),
 
-            Actions\DeleteAction::make(),
         ];
     }
 

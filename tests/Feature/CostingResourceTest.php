@@ -139,6 +139,10 @@ class CostingResourceTest extends TestCase
 
         $this->lockWithDrylog($boning);
 
+        // Mengunci boning kini langsung membuat Draft costing-nya; tes-tes di bawah menyiapkan costing
+        // sendiri, jadi Draft otomatis itu dibuang dulu (perilakunya diuji di bagian "Draft otomatis").
+        Costing::where('boning_id', $boning->id)->forceDelete();
+
         return $boning->fresh();
     }
 
@@ -247,6 +251,69 @@ class CostingResourceTest extends TestCase
     }
 
     // =========================================================================
+    // Draft otomatis saat boning dikunci
+    // =========================================================================
+
+    /** @test */
+    public function locking_a_boning_creates_its_draft_costing_and_unlocking_discards_a_draft(): void
+    {
+        $boning = $this->lockedBoningWithCostableProduct();
+        $boning->unlock();
+
+        $boning->lock();
+
+        $draft = Costing::where('boning_id', $boning->id)->first();
+        $this->assertNotNull($draft, 'Draft costing dibuat otomatis.');
+        $this->assertSame(Costing::STATUS_DRAFT, $draft->status);
+        $this->assertCount(1, $draft->items);
+
+        // Boning yang di-unlock membuang Draft-nya; dikunci lagi, Draft baru dibuat.
+        $boning->fresh()->unlock();
+        $this->assertSame(0, Costing::withTrashed()->where('boning_id', $boning->id)->count());
+
+        $boning->fresh()->lock();
+        $this->assertSame(1, Costing::where('boning_id', $boning->id)->count());
+    }
+
+    /** @test */
+    public function a_boning_with_a_locked_costing_cannot_be_unlocked_until_the_costing_is(): void
+    {
+        $boning = $this->lockedBoningWithCostableProduct();
+        $costing = Costing::createFromCalculation($boning, \App\Services\CostingCalculator::forBoning($boning, 0)->calculate());
+        $costing->items()->update(['gross_price' => 100000, 'net_price' => 100000]);
+        $costing->lock();
+
+        try {
+            $boning->fresh()->unlock();
+            $this->fail('Boning dengan costing terkunci tidak boleh di-unlock.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('locked costing', $e->getMessage());
+        }
+
+        $costing->fresh()->unlock();
+        $boning->fresh()->unlock();
+
+        $this->assertFalse((bool) $boning->fresh()->kunci);
+    }
+
+    /** @test */
+    public function changing_the_overhead_recalculates_the_draft_and_the_recalculate_and_delete_buttons_are_gone(): void
+    {
+        $boning = $this->lockedBoningWithCostableProduct();
+        $costing = Costing::createFromCalculation($boning, \App\Services\CostingCalculator::forBoning($boning, 0)->calculate());
+
+        Livewire::actingAs($this->employee(['view_costings', 'edit_costings']))
+            ->test(EditCosting::class, ['record' => $costing->getRouteKey()])
+            ->assertActionDoesNotExist('recalculate')
+            ->assertActionDoesNotExist('delete')
+            ->fillForm(['overhead_per_kg' => '5.000'])
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(5000.0, (float) $costing->fresh()->overhead_per_kg);
+        $this->assertSame(500000.0, (float) $costing->fresh()->overhead_total, '100 kg x 5.000');
+    }
+
+    // =========================================================================
     // Harga costing (#541)
     // =========================================================================
 
@@ -281,8 +348,7 @@ class CostingResourceTest extends TestCase
 
         Livewire::actingAs($this->employee(['view_costings', 'edit_costings']))
             ->test(EditCosting::class, ['record' => $costing->getRouteKey()])
-            ->fillForm(['overhead_per_kg' => 0])
-            ->callAction('recalculate');
+            ->fillForm(['overhead_per_kg' => '1.000']);
 
         $this->assertSame(165000.0, (float) $costing->items()->firstOrFail()->net_price, 'Yang diketik tidak tertimpa.');
 
@@ -305,8 +371,7 @@ class CostingResourceTest extends TestCase
 
         Livewire::actingAs($this->employee(['view_costings', 'edit_costings']))
             ->test(EditCosting::class, ['record' => $costing->getRouteKey()])
-            ->fillForm(['overhead_per_kg' => 5000])
-            ->callAction('recalculate');
+            ->fillForm(['overhead_per_kg' => '5.000']);
 
         $costing->refresh();
         $this->assertSame(5000.0, $costing->overhead_per_kg);

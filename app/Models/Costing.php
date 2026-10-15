@@ -2,7 +2,10 @@
 
 namespace App\Models;
 
+use App\Filament\Admin\Resources\CostingResource;
+use App\Services\CostingCalculator;
 use App\Services\CostingPrices;
+use App\Support\TaskNotifier;
 use App\Support\BarcodeCosts;
 use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
@@ -190,6 +193,38 @@ class Costing extends Model
         return $this->items()->where('net_price', '>', 0)->get()
             ->mapWithKeys(fn (CostingItem $i) => [$i->product_id => ['gross' => (float) $i->gross_price, 'net' => (float) $i->net_price]])
             ->all();
+    }
+
+    /**
+     * Draft costing untuk boning yang baru dikunci: dibuat otomatis (harga dan overhead dari costing
+     * terakhir), lalu semua pemegang izin membuat costing diberi tahu. Tidak pernah melempar --
+     * mengunci boning tidak boleh gagal karena costing-nya.
+     */
+    public static function ensureDraftFor(Boning $boning): ?self
+    {
+        try {
+            $existing = static::where('boning_id', $boning->id)->first();
+
+            if ($existing) {
+                return $existing;
+            }
+
+            $costing = static::createFromCalculation($boning, CostingCalculator::forBoning($boning->fresh())->calculate());
+        } catch (\Throwable $e) {
+            report($e);
+
+            return null;
+        }
+
+        TaskNotifier::notifyPermissionHolders(
+            ['create_costings'],
+            __('Costing ready to process'),
+            __('Boning :doc is locked. Its draft costing is ready.', ['doc' => $boning->doc_no]),
+            CostingResource::getUrl('edit', ['record' => $costing]),
+            'costing-'.$costing->id,
+        );
+
+        return $costing;
     }
 
     /** Margin% -- SAMA untuk seluruh produk, sifat metode ini (`hpp.md` §11.1), bukan per produk. */
