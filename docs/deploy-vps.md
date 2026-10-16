@@ -94,9 +94,18 @@ Setelah `.env` selesai:
 php artisan config:clear
 php artisan storage:link
 php artisan migrate --force          # database KOSONG; bukan migrate:fresh
+php artisan livewire:publish --assets  # cadangan manual; biasanya sudah jalan otomatis lewat composer (lihat di bawah)
 php artisan optimize                 # config, route, view, event cache
 php artisan filament:optimize        # cache komponen dan ikon Filament
 ```
+
+**Aset Livewire (wajib di nginx/CloudPanel).** nginx CloudPanel menjawab `/livewire/livewire.min.js` dengan 404
+(location statis `try_files =404`), sehingga JS Livewire tidak termuat dan form login jatuh ke POST biasa
+(**405 Method Not Allowed**). Di hosting `coba.` (Apache) masalah ini tidak muncul. Penangkalnya: aset dipublikasikan
+ke `public/vendor/livewire` dan dilayani sebagai berkas statis. Langkah itu **otomatis** lewat `composer install`
+(`post-autoload-dump` menjalankan `php artisan livewire:publish --assets`), jadi versi JS selalu cocok dengan versi
+PHP. Folder `public/vendor/livewire` tidak masuk git (di-ignore); `git status` di server boleh menampilkannya
+sebagai berkas yang tidak dilacak. Perintah manual di atas hanya cadangan bila composer dilewati.
 
 Pastikan `storage` dan `bootstrap/cache` bisa ditulis user `swmapp`:
 
@@ -214,9 +223,16 @@ cd $SITE
 git --no-pager pull origin main
 composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 php artisan migrate --force
+php artisan livewire:publish --assets   # cadangan; composer install sudah menjalankannya otomatis
 php artisan optimize:clear
 php artisan optimize
 php artisan filament:optimize
+```
+
+Satu baris dari komputer tim (dijalankan tim aplikasi lewat `ssh swmapp-vps`, user `swmapp` SAJA, tidak pernah root):
+
+```bash
+ssh swmapp-vps 'cd ~/htdocs/app.wijayameat.co.id && git --no-pager pull --ff-only && composer install --no-dev --no-interaction && php8.4 artisan livewire:publish --assets && php8.4 artisan migrate --force && php8.4 artisan optimize && php8.4 artisan filament:optimize'
 ```
 
 Pembaruan **tidak** memerlukan restart layanan apa pun. Bila `git pull` menolak karena perubahan lokal di server,
@@ -254,6 +270,8 @@ Dilakukan di perangkat yang akan dipakai pengguna, mis. satu laptop dan satu pon
   saat berjalan tanpa permintaan web (cron). Karena itu `APP_URL` HARUS `https://app.wijayameat.co.id`.
 - `public/manifest.json` memakai `start_url` relatif (`/admin`) dan `public/sw.js` diregistrasi di `/sw.js`
   (lingkup seluruh domain), jadi keduanya otomatis mengikuti domain tempat aplikasi dipasang.
+- Alur deploy tim aplikasi ke VPS: setelah Ayah menyetujui merge, urutannya suite, merge, deploy `coba.`, lalu deploy
+  `app.` dengan satu baris di bagian 6. Yang butuh root (cron, nginx, SSL, database baru) tetap lewat IT Lead.
 - Pendaftaran ulang langganan push saat login: `resources/views/push/subscribe.blade.php` menjalankan
   `ensureSubscription()` setiap halaman admin dibuka bila izin notifikasi sudah ada. Fungsi itu membuat ulang
   langganan bila kunci VAPID berubah, dan mengirim ulang ke server setiap kali (endpoint idempoten).
