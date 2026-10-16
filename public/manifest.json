@@ -1,7 +1,9 @@
 {
     "name": "SWM ERP",
     "short_name": "SWM ERP",
+    "id": "/admin",
     "start_url": "/admin",
+    "scope": "/",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#000080",
@@ -31,5 +33,6 @@
             "type": "image/png",
             "purpose": "maskable"
         }
-    ]
+    ],
+    "lang": "id"
 }

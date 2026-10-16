@@ -143,7 +143,17 @@ class AppServiceProvider extends ServiceProvider
             \Filament\View\PanelsRenderHook::HEAD_END,
             fn (): string => '<link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#000080">
-<link rel="apple-touch-icon" href="/img/pwalogo-maskable-192.png">'
+<link rel="apple-touch-icon" href="/img/pwalogo-maskable-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SWM ERP">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">'
+        );
+
+        // Ajakan memasang aplikasi: tombol "Pasang" di Chrome/Android, petunjuk "Tambahkan ke Layar Utama" di Safari iPhone.
+        \Filament\Support\Facades\FilamentView::registerRenderHook(
+            \Filament\View\PanelsRenderHook::BODY_END,
+            fn (): string => view('pwa.install-banner')->render()
         );
 
         \Filament\Support\Facades\FilamentView::registerRenderHook(
