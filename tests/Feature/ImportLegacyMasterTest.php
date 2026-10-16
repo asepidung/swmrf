@@ -43,7 +43,7 @@ CREATE TABLE `grade` (
   PRIMARY KEY (`idgrade`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 INSERT INTO `grade` (`idgrade`,`nmgrade`) VALUES ('1','J01');
-INSERT INTO `grade` (`idgrade`,`nmgrade`) VALUES ('2','');
+INSERT INTO `grade` (`idgrade`,`nmgrade`) VALUES ('2','J02');
 DROP TABLE IF EXISTS `supplier`;
 CREATE TABLE `supplier` (
   `idsupplier` int(11) NOT NULL AUTO_INCREMENT,
@@ -191,7 +191,6 @@ SQL;
             ->assertExitCode(0);
 
         $this->assertSame(0, ProductCategory::count());
-        $this->assertSame(0, Grade::count());
         $this->assertSame(0, Supplier::count());
         $this->assertSame(0, CattleClass::count());
         $this->assertSame(0, CustomerGroup::count());
@@ -206,7 +205,6 @@ SQL;
 
         $this->assertDatabaseHas('product_categories', ['name' => 'PRIME CUT', 'prefix' => 1]);
         $this->assertDatabaseHas('product_categories', ['name' => 'SECONDARY CUT', 'prefix' => 2]);
-        $this->assertDatabaseHas('grades', ['name' => 'J01']);
         $this->assertDatabaseHas('suppliers', ['name' => 'H. DONI', 'pic' => '-', 'top_days' => 0]);
         $this->assertDatabaseHas('suppliers', ['name' => 'UNGGUL HARAPAN PANGAN']);
         $this->assertDatabaseHas('cattle_classes', ['name' => 'STEER']);
@@ -225,7 +223,6 @@ SQL;
 
         $this->assertSame('PRIME CUT', ProductCategory::find(1)->name);
         $this->assertSame('SECONDARY CUT', ProductCategory::find(2)->name);
-        $this->assertSame('J01', Grade::find(1)->name);
         $this->assertSame('H. DONI', Supplier::find(1)->name);
         $this->assertSame('UNGGUL HARAPAN PANGAN', Supplier::find(2)->name);
         $this->assertSame('STEER', CattleClass::find(1)->name);
@@ -340,7 +337,7 @@ SQL;
         $this->apply()->expectsOutputToContain('sama (dilewati)')->assertExitCode(0);
 
         $this->assertSame(2, ProductCategory::count());
-        $this->assertSame(1, Grade::count()); // baris kedua namanya kosong, dilewati sebagai konflik
+        $this->assertSame(0, Grade::count()); // grade legacy tidak diimpor sebagai baris
         $this->assertSame(4, Supplier::count()); // keempat diimpor; yang beda spasi dilaporkan sebagai konflik
         $this->assertSame(2, CattleClass::count());
         $this->assertSame(2, CustomerGroup::count());
@@ -354,11 +351,24 @@ SQL;
     // =========================================================================
 
     /** @test */
-    public function a_blank_name_is_reported_as_a_conflict_not_guessed(): void
+    public function legacy_grades_are_not_imported_as_rows_but_verified_against_the_translation_table(): void
     {
-        $this->apply()->expectsOutputToContain('idgrade=2: nama kosong, dilewati.');
+        $this->apply()
+            ->expectsOutputToContain('J01 (idgrade 1) -> gudang JONGGOL + grade CHILL')
+            ->expectsOutputToContain('J02 (idgrade 2) -> gudang JONGGOL + grade FROZEN')
+            ->assertExitCode(0);
 
-        $this->assertSame(1, Grade::count());
+        $this->assertSame(0, Grade::count(), 'Grade legacy menggabungkan gudang + kondisi; tidak diimpor sebagai baris.');
+    }
+
+    /** @test */
+    public function a_legacy_grade_outside_the_translation_table_is_refused_and_nothing_is_written(): void
+    {
+        file_put_contents($this->sourcePath, self::FIXTURE."\nINSERT INTO `grade` (`idgrade`,`nmgrade`) VALUES ('9','X99');");
+
+        $this->apply()->expectsOutputToContain('idgrade=9 (X99): di luar tabel terjemahan')->assertExitCode(1);
+
+        $this->assertSame(0, Supplier::count(), 'Satu penolakan membatalkan seluruh penulisan.');
     }
 
     /** @test */

@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Models\CattleClass;
 use App\Models\CustomerGroup;
-use App\Models\Grade;
 use App\Models\Material;
 use App\Models\MaterialCategory;
 use App\Models\MaterialUnit;
@@ -12,6 +11,7 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductMaterial;
 use App\Models\Supplier;
+use App\Support\LegacyGradeMap;
 use App\Support\LegacySqlDump;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
@@ -71,7 +71,6 @@ class ImportLegacyMaster extends Command
     /** Kolom bermakna "baris yang sama" per tabel, dan kolom beraturan unik di basis data. */
     private const TABLES = [
         'product_categories' => ['model' => ProductCategory::class, 'identity' => ['name', 'prefix'], 'unique' => ['name', 'prefix']],
-        'grades' => ['model' => Grade::class, 'identity' => ['name'], 'unique' => ['name']],
         'suppliers' => ['model' => Supplier::class, 'identity' => ['name'], 'unique' => ['name']],
         'cattle_classes' => ['model' => CattleClass::class, 'identity' => ['name'], 'unique' => ['name']],
         'customer_groups' => ['model' => CustomerGroup::class, 'identity' => ['name'], 'unique' => ['name']],
@@ -101,6 +100,9 @@ class ImportLegacyMaster extends Command
 
     /** @var array<int, string> */
     private array $materialNames = [];
+
+    /** @var array<int, string> baris laporan terjemahan grade legacy */
+    private array $gradeLines = [];
 
     /**
      * Id legacy yang SETELAH jalan ini benar-benar ada di tabelnya (dibuat, atau sudah
@@ -145,7 +147,7 @@ class ImportLegacyMaster extends Command
 
         $run = function () use ($sql, $apply): void {
             $this->importProductCategories($sql);
-            $this->importGrades($sql);
+            $this->verifyGradeMap($sql);
             $this->importSuppliers($sql);
             $this->importCattleClasses($sql);
             $this->importCustomerGroups($sql);
@@ -198,22 +200,38 @@ class ImportLegacyMaster extends Command
     }
 
     // =========================================================================
-    // grade -> grades
+    // grade -> TIDAK diimpor; diverifikasi terhadap tabel terjemahan (gudang, grade)
     // =========================================================================
 
-    private function importGrades(string $sql): void
+    /**
+     * Grade legacy menggabungkan gudang dan kondisi, jadi TIDAK diimpor sebagai baris (keputusan Owner,
+     * 16 Okt 2026, #535). Di sini hanya diperiksa: setiap grade legacy harus ada di `LegacyGradeMap` dengan
+     * nama yang diharapkan (selain itu DITOLAK), dan gudang/grade baru yang dituju harus ada di aplikasi.
+     */
+    private function verifyGradeMap(string $sql): void
     {
         foreach (LegacySqlDump::parseTable($sql, 'grade') as $row) {
             $id = (int) $row['idgrade'];
             $name = $this->clean($row['nmgrade']);
 
-            if ($name === '') {
-                $this->conflicts['grades'][] = "idgrade={$id}: nama kosong, dilewati.";
+            if (! LegacyGradeMap::knows($id)) {
+                $this->refusals['grades'][] = "idgrade={$id} ({$name}): di luar tabel terjemahan -- DITOLAK.";
 
                 continue;
             }
 
-            $this->place('grades', $id, ['name' => $name], $name, $name, ['is_active' => true]);
+            if ($name !== LegacyGradeMap::legacyName($id)) {
+                $this->refusals['grades'][] = "idgrade={$id}: bernama \"{$name}\", tabel terjemahan mengharapkan \"".LegacyGradeMap::legacyName($id).'" -- DITOLAK.';
+
+                continue;
+            }
+
+            [, $warehouse, $grade] = LegacyGradeMap::MAP[$id];
+            $this->gradeLines[] = "{$name} (idgrade {$id}) -> gudang {$warehouse} + grade {$grade}";
+        }
+
+        foreach (LegacyGradeMap::appSideProblems() as $problem) {
+            $this->notes[] = "Grade: {$problem}; terjemahan grade legacy belum bisa dipakai untuk stok awal/dokumen.";
         }
     }
 
@@ -632,6 +650,14 @@ class ImportLegacyMaster extends Command
             foreach ($konflik as $item) {
                 $this->line("  <fg=yellow>! {$item}</>");
             }
+        }
+
+        $this->line('<fg=cyan>grades</> -- TIDAK diimpor sebagai baris; diterjemahkan ke (gudang, grade): '.count($this->gradeLines).' terpetakan, DITOLAK: '.count($this->refusals['grades'] ?? []));
+        foreach ($this->refusals['grades'] ?? [] as $item) {
+            $this->line("  <fg=red>x {$item}</>");
+        }
+        foreach ($this->gradeLines as $item) {
+            $this->line("  <fg=gray>= {$item}</>");
         }
 
         $this->newLine();
