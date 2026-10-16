@@ -55,7 +55,7 @@ class LegacyGradeMap
     public static function resolve(int $legacyGradeId): array
     {
         if (! self::knows($legacyGradeId)) {
-            throw new \InvalidArgumentException("Grade legacy {$legacyGradeId} di luar tabel terjemahan (1-6).");
+            throw new \InvalidArgumentException(__('Legacy grade :id is outside the translation table (1-6).', ['id' => $legacyGradeId]));
         }
 
         [, $warehouseCode, $gradeName] = self::MAP[$legacyGradeId];
@@ -64,11 +64,11 @@ class LegacyGradeMap
         $gradeId = Grade::where('name', $gradeName)->value('id');
 
         if (! $warehouseId) {
-            throw new \InvalidArgumentException("Gudang dengan kode {$warehouseCode} belum ada (dibutuhkan grade legacy {$legacyGradeId}).");
+            throw new \InvalidArgumentException(__('Warehouse with code :code does not exist yet (needed by legacy grade :id).', ['code' => $warehouseCode, 'id' => $legacyGradeId]));
         }
 
         if (! $gradeId) {
-            throw new \InvalidArgumentException("Grade {$gradeName} belum ada (dibutuhkan grade legacy {$legacyGradeId}).");
+            throw new \InvalidArgumentException(__('Grade :name does not exist yet (needed by legacy grade :id).', ['name' => $gradeName, 'id' => $legacyGradeId]));
         }
 
         return ['warehouse_id' => (int) $warehouseId, 'grade_id' => (int) $gradeId];
@@ -86,7 +86,7 @@ class LegacyGradeMap
 
         foreach (array_unique(array_column(self::MAP, 1)) as $code) {
             if (! Warehouse::where('code', $code)->exists()) {
-                $problems[] = "gudang kode {$code} belum ada";
+                $problems[] = __('warehouse code :code does not exist yet', ['code' => $code]);
             }
         }
 
@@ -94,9 +94,9 @@ class LegacyGradeMap
             $id = Grade::where('name', $name)->value('id');
 
             if (! $id) {
-                $problems[] = "grade {$name} belum ada";
+                $problems[] = __('grade :name does not exist yet', ['name' => $name]);
             } elseif ((int) $id !== self::APP_GRADE_IDS[$name]) {
-                $problems[] = "grade {$name} berid {$id}, seharusnya ".self::APP_GRADE_IDS[$name].' (id terkunci)';
+                $problems[] = __('grade :name has id :id, should be :expected (locked id)', ['name' => $name, 'id' => $id, 'expected' => self::APP_GRADE_IDS[$name]]);
             }
         }
 
