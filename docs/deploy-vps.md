@@ -120,9 +120,28 @@ Tidak ada queue worker yang perlu dipasang (`QUEUE_CONNECTION=sync`).
 ## 3. Import master data dengan ID legacy (#536)
 
 Snapshot legacy dan berkas harga **tidak ada di git** (folder `legacy/` di-ignore). Salin dari komputer tim
-(Ayah/Hafizh) ke server lewat `scp`/SFTP ke `$SITE/legacy/`, mis. `legacy/<snapshot>.sql`,
-`legacy/harga-terbaru-per-grup-2026-10-13.xlsx`, `legacy/costing-oktober-2026.xlsx`. **Hapus berkas-berkas ini
+(Ayah/Hafizh) ke server lewat `scp`/SFTP ke `$SITE/legacy/`: snapshot master **`SWM-master-2026-10-16.sql`**
+(16 Okt 2026; groupcs 56, customers 306, barang 158, rawmate 226, bom_rawmate 417), ditaruh di
+`$SITE/legacy/versi prosedural/konak/` (path berspasi, selalu pakai tanda kutip), serta
+`legacy/harga-terbaru-per-grup-2026-10-13.xlsx` dan `legacy/costing-oktober-2026.xlsx`. **Hapus berkas-berkas ini
 dari server setelah selesai** (berisi harga dan data bisnis).
+
+**Hasil gladi dry-run (lokal, database kosong, snapshot 16 Okt)** supaya IT Lead tahu apa yang diharapkan:
+
+| Tabel | Dibuat | Catatan |
+|---|---|---|
+| product_categories | 7 | |
+| grades | 6 | |
+| suppliers | 43 | 4 peringatan: 3 NPWP tidak diimpor (tidak ada kolomnya), 1 kemungkinan duplikat (CV. SAMUDERA KARUNIA RIZKY id 41 dan 46, keduanya masuk) |
+| cattle_classes | 7 | |
+| customer_groups | 56 | |
+| products | 149 dari 158 | 9 dilewati: kode legacy kosong |
+| material_categories | 10 | hanya kategori produksi/kemasan |
+| materials | 93 | 58 dilewati: satuan kosong; sisanya di luar kategori produksi/kemasan |
+| product_materials (BOM) | 417 | 197 bertanda "TINJAU" (qty 1 per box, mungkin per pcs) |
+
+Tidak ada baris **DITOLAK**. **Tidak ikut** perintah ini: customers (306) dan segment (4) belum punya perintah
+import (pekerjaan #535), begitu pula dokumen terbuka dan stok awal. Daftar lengkap ada di keluaran dry-run.
 
 Urutan, **selalu dry-run dulu** (tanpa `--apply`, tidak ada yang ditulis), baca laporannya, baru `--apply`:
 
@@ -130,9 +149,9 @@ Urutan, **selalu dry-run dulu** (tanpa `--apply`, tidak ada yang ditulis), baca 
 cd $SITE
 
 # 1. Master: kategori, grade, produk, bahan, supplier, kelas sapi, grup pelanggan -- ID legacy dipertahankan
-php artisan legacy:import-master --source="legacy/<snapshot>.sql"
+php artisan legacy:import-master --source="legacy/versi prosedural/konak/SWM-master-2026-10-16.sql"
 #   Bila laporan memuat "DITOLAK", BERHENTI: database tidak bersih. Jangan --apply; hubungi tim aplikasi.
-php artisan legacy:import-master --source="legacy/<snapshot>.sql" --apply
+php artisan legacy:import-master --source="legacy/versi prosedural/konak/SWM-master-2026-10-16.sql" --apply
 
 # 2. Grup LION/HYPERMART/UMUM dan price list penjualan (butuh grup dari langkah 1)
 php artisan legacy:import-prices
