@@ -149,12 +149,51 @@ class UserResource extends Resource
      * "View sales orders" di dalam seksi "Sales Orders" hanya mengulang.
      */
     /**
+     * Label khusus untuk izin di luar kosakata baku (View, Create, Edit, Delete, View deleted, Approve, Review,
+     * Print, Lock/Unlock). Satu tempat, supaya semua modul memakai kata yang sama: nama modulnya sudah menjadi judul
+     * seksi, jadi label cukup kata kerjanya (+ objek bila perlu). Izin baru yang tidak baku WAJIB didaftarkan di sini
+     * (dijaga tes).
+     *
+     * @var array<string, string>
+     */
+    public const SPECIFIC_LABELS = [
+        'pay_purchase_products' => 'Pay down payment',
+        'pay_purchase_materials' => 'Pay down payment',
+        'cancel_purchase_products' => 'Cancel PO',
+        'cancel_purchase_materials' => 'Cancel PO',
+        'set_repack_yield_limit' => 'Set shrinkage limit',
+        'override_repack_yield' => 'Lock above shrinkage limit',
+        'finish_stock_takes' => 'Finish and apply to stock',
+        'finish_material_stock_takes' => 'Finish and apply to stock',
+        'record_found_items' => 'Record found goods',
+        'record_material_findings' => 'Record findings',
+        'view_delivery_receipts' => 'View receipts',
+        'unlock_sales_returns' => 'Unlock approved',
+        'tukar_faktur' => 'Invoice exchange',
+        'manage_expense_categories' => 'Manage categories',
+        'pay_payables' => 'Pay',
+        'record_payable_compensations' => 'Record compensation',
+        'cancel_receivable_payments' => 'Cancel payment',
+        'receive_receivables' => 'Receive payment',
+        'set_opening_balance' => 'Set opening balance',
+        'adjust_cash_balance' => 'Cash adjustment',
+        'view_cost_reports' => 'View reports',
+        'view_sales_report' => 'View sales report',
+        'view_fast_moving_products' => 'View fast moving products',
+        'manage_user_permissions' => 'Manage permissions',
+        'reset_password' => 'Reset password',
+    ];
+
+    /** Kosakata baku: label yang boleh muncul tanpa didaftarkan di SPECIFIC_LABELS. */
+    public const STANDARD_LABELS = ['View deleted', 'View', 'Create', 'Edit', 'Delete', 'Review', 'Approve', 'Print', 'Lock/Unlock'];
+
+    /**
      * Label tiap centang dalam satu modul: id izin => teks.
      *
-     * Dipendekkan menjadi kata kerjanya saja; tetapi bila DUA izin dalam modul yang sama
-     * memendek ke kata yang sama (mis. Costings: "View costings" dan "View cost reports"
-     * sama-sama "View"), keduanya memakai deskripsi LENGKAP -- dua centang berlabel sama tidak
-     * bisa dibedakan siapa pun yang mengisi form.
+     * Urutan: (1) SPECIFIC_LABELS menurut NAMA izin; (1b) semua `lock_*` = Lock/Unlock; (2) kosakata baku dari awal deskripsi (View deleted, View,
+     * Create, Edit, Delete, Review, Approve, Print, Lock/Unlock -- tanpa membedakan huruf besar/kecil, jadi
+     * "Lock/unlock" dan "Lock/Unlock" sama); (3) deskripsi lengkap sebagai cadangan. Bila dua izin dalam modul yang
+     * sama tetap berlabel sama, keduanya memakai deskripsi LENGKAP (dua centang berlabel sama tidak bisa dibedakan).
      *
      * @param  \Illuminate\Support\Collection<int, Permission>  $permissions
      * @return array<int, string>
@@ -162,20 +201,24 @@ class UserResource extends Resource
     public static function permissionLabels($permissions): array
     {
         $short = $permissions->mapWithKeys(function ($p) {
-            $desc = $p->description;
-            $label = __($desc);
-            $prefixes = ['View deleted', 'View', 'Create', 'Edit', 'Delete', 'Review', 'Approve', 'Print', 'Lock/Unlock', 'Lock', 'Reset password'];
-            foreach ($prefixes as $prefix) {
-                if (str_starts_with($desc, $prefix)) {
-                    $label = __($prefix);
-                    break;
-                }
-            }
-            if (str_starts_with($desc, 'Perform invoice exchange')) {
-                $label = __('Invoice exchange');
+            if (isset(self::SPECIFIC_LABELS[$p->name])) {
+                return [$p->id => __(self::SPECIFIC_LABELS[$p->name])];
             }
 
-            return [$p->id => $label];
+            // Setiap izin `lock_*` menahan Lock DAN Unlock (satu izin untuk keduanya), apa pun deskripsinya.
+            if (str_starts_with($p->name, 'lock_')) {
+                return [$p->id => __('Lock/Unlock')];
+            }
+
+            $desc = (string) $p->description;
+
+            foreach (self::STANDARD_LABELS as $label) {
+                if (stripos($desc, $label) === 0) {
+                    return [$p->id => __($label)];
+                }
+            }
+
+            return [$p->id => __($desc)];
         });
 
         $counts = $short->countBy();
