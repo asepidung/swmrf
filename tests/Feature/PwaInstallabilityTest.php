@@ -69,6 +69,8 @@ class PwaInstallabilityTest extends TestCase
         $this->assertStringContainsString('pwaInstall()', $html);
         $this->assertStringContainsString('beforeinstallprompt', $html, 'Chrome/Android: tombol Pasang.');
         $this->assertStringContainsString('Add to Home Screen', $html, 'Safari iPhone: petunjuk Tambahkan ke Layar Utama.');
+        $this->assertStringContainsString('three dots', $html, 'Android tanpa peristiwa install: langkah manual titik tiga.');
+        $this->assertStringContainsString('role="dialog"', $html, 'Dicegat di layar penuh.');
         $this->assertStringContainsString('display-mode: standalone', $html, 'Tidak tampil bila sudah terpasang.');
     }
 }
