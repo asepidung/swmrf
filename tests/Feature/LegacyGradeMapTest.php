@@ -78,7 +78,7 @@ class LegacyGradeMapTest extends TestCase
         $this->seedAppSide();
         Warehouse::where('code', 'PERUM')->delete();
 
-        $this->assertContains('gudang kode PERUM belum ada', LegacyGradeMap::appSideProblems());
+        $this->assertContains('warehouse code PERUM does not exist yet', LegacyGradeMap::appSideProblems());
 
         $this->expectException(\InvalidArgumentException::class);
         LegacyGradeMap::resolve(3);
@@ -91,6 +91,6 @@ class LegacyGradeMapTest extends TestCase
         Grade::where('name', 'A')->update(['name' => 'X']);
         Grade::unguarded(fn () => Grade::create(['id' => 9, 'name' => 'A', 'is_active' => true]));
 
-        $this->assertContains('grade A berid 9, seharusnya 3 (id terkunci)', LegacyGradeMap::appSideProblems());
+        $this->assertContains('grade A has id 9, should be 3 (locked id)', LegacyGradeMap::appSideProblems());
     }
 }
