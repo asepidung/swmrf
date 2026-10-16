@@ -31,7 +31,10 @@ class LegacySqlDump
         }
 
         $rows = [];
-        $pattern = '/INSERT INTO `'.preg_quote($table, '/').'`\s*\(([^)]*)\)\s*VALUES\s*(.*?);/s';
+        // Pernyataan berakhir pada ");" di ujung BARIS, bukan sembarang ";": alamat dan catatan sering
+        // memuat titik koma di dalam tanda kutip, dan pola lama memotong pernyataannya di sana (enam
+        // pelanggan hilang diam-diam dari snapshot 16 Okt 2026).
+        $pattern = '/INSERT INTO `'.preg_quote($table, '/').'`\s*\(([^)]*)\)\s*VALUES\s*(.*?\))\s*;[ \t]*(?:\r?\n|\z)/s';
         preg_match_all($pattern, $sql, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $match) {
@@ -108,6 +111,15 @@ class LegacySqlDump
             $char = $blob[$i];
 
             if ($inQuote) {
+                // MySQL juga meng-escape dengan backslash (D\'GUNUNGAN, \\): karakter sesudahnya
+                // bagian dari string, bukan penutup kutip.
+                if ($char === '\\' && $i + 1 < $length) {
+                    $current .= $char.$blob[$i + 1];
+                    $i++;
+
+                    continue;
+                }
+
                 if ($char === "'") {
                     // mysqldump menggandakan kutip untuk meng-escape-nya
                     // di dalam string ('' -> satu tanda kutip literal).
@@ -173,7 +185,7 @@ class LegacySqlDump
         $fields = str_getcsv($tuple, ',', "'", '\\');
 
         return array_map(
-            fn ($field) => $field === $sentinel ? null : $field,
+            fn ($field) => $field === $sentinel ? null : strtr((string) $field, ["\\'" => "'", '\\\\' => '\\']),
             $fields
         );
     }
