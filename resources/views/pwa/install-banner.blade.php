@@ -1,56 +1,80 @@
 {{--
-    Ajakan memasang aplikasi (PWA) di Chrome Android dan Safari iPhone.
+    Ajakan memasang aplikasi (PWA) -- DICEGAT di layar penuh pada perangkat seluler (Android dan iPhone/iPad) yang
+    belum memasangnya: di halaman login dan di dashboard setelah masuk.
 
-    - Chrome/Android (dan Chrome desktop): browser mengirim `beforeinstallprompt` bila aplikasi layak dipasang
-      (HTTPS, manifest dengan ikon 192/512, service worker ber-handler fetch). Peristiwa itu DITAHAN lalu dipakai
-      tombol "Pasang"; tanpa ini browser hanya menaruh "Instal aplikasi" di dalam menu titik tiga.
-    - Safari/iPhone: tidak ada peristiwa itu dan tidak ada prompt dari kode; satu-satunya jalan adalah
-      Bagikan -> Tambahkan ke Layar Utama, jadi yang bisa dilakukan hanya menunjukkan caranya.
-    - Tidak tampil bila sudah terpasang (mode standalone), dan bila ditutup tidak muncul lagi selama 7 hari
-      (disimpan di localStorage; bila localStorage tidak tersedia, banner tetap berfungsi tanpa mengingat).
-    Gaya inline, tidak bergantung pada kelas Tailwind yang mungkin tidak ikut terkompilasi.
+    Tidak bergantung pada `beforeinstallprompt`, yang tidak selalu dikirim Chrome (sudah pernah ditutup, sudah
+    dipasang sebagai pintasan, atau browser lain). Tiga mode:
+    - 'prompt'  : Chrome mengirim `beforeinstallprompt` -> tombol "Pasang" memanggil dialog install bawaan.
+    - 'android' : tidak ada peristiwa itu (atau browser lain) -> langkah manual: menu titik tiga -> Instal aplikasi
+                  / Tambahkan ke layar utama.
+    - 'ios'     : Safari iPhone/iPad tidak punya prompt dari kode -> Bagikan -> Tambahkan ke Layar Utama
+                  (hanya Safari asli; Chrome/Firefox di iOS tidak punya fitur itu).
+    Tidak tampil bila sudah terpasang (mode standalone) dan tidak di desktop. "Nanti saja" menyembunyikannya 3 hari
+    (localStorage; bila tidak tersedia tetap berfungsi tanpa mengingat). Gaya inline.
 --}}
 <div
     x-data="pwaInstall()"
     x-init="init()"
     x-show="visible"
     x-cloak
-    style="position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 60; display: none;"
-    x-bind:style="visible ? 'position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 60; display: block;' : 'display: none;'"
+    style="display: none;"
+    x-bind:style="visible ? 'position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center; background: rgba(0,0,0,.6); padding: 16px;' : 'display: none;'"
     role="dialog"
-    aria-live="polite"
+    aria-modal="true"
+    aria-labelledby="pwa-install-title"
 >
-    <div style="max-width: 480px; margin: 0 auto; background: #ffffff; color: #111827; border: 1px solid #d1d5db; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,.25); padding: 12px 14px; display: flex; gap: 12px; align-items: center; font-size: 14px; line-height: 1.35;">
-        <img src="/img/pwalogo-192.png" alt="" width="40" height="40" style="border-radius: 8px; flex: none;">
-
-        <div style="flex: 1; min-width: 0;">
-            <div style="font-weight: 600;">{{ __('Install SWM ERP') }}</div>
-
-            <template x-if="mode === 'prompt'">
-                <div style="color: #4b5563;">{{ __('Add the app to your home screen for quick access.') }}</div>
-            </template>
-
-            <template x-if="mode === 'ios'">
-                <div style="color: #4b5563;">
-                    {{ __('Tap the Share button, then choose "Add to Home Screen".') }}
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -3px;" aria-hidden="true"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
-                </div>
-            </template>
+    <div style="width: 100%; max-width: 440px; background: #ffffff; color: #111827; border-radius: 16px; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,.35); font-size: 15px; line-height: 1.45;">
+        <div style="display: flex; gap: 14px; align-items: center; margin-bottom: 12px;">
+            <img src="/img/pwalogo-192.png" alt="" width="52" height="52" style="border-radius: 12px; flex: none;">
+            <div>
+                <div id="pwa-install-title" style="font-weight: 700; font-size: 18px;">{{ __('Install SWM ERP') }}</div>
+                <div style="color: #4b5563; font-size: 14px;">{{ __('Open it straight from your home screen, like any other app.') }}</div>
+            </div>
         </div>
 
-        <button
-            type="button"
-            x-show="mode === 'prompt'"
-            x-on:click="install()"
-            style="flex: none; background: #000080; color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; font-weight: 600; cursor: pointer;"
-        >{{ __('Install') }}</button>
+        <template x-if="mode === 'prompt'">
+            <button
+                type="button"
+                x-on:click="install()"
+                style="width: 100%; background: #000080; color: #fff; border: 0; border-radius: 10px; padding: 13px; font-weight: 700; font-size: 16px; cursor: pointer;"
+            >{{ __('Install') }}</button>
+        </template>
+
+        <template x-if="mode === 'android'">
+            <div style="background: #f3f4f6; border-radius: 10px; padding: 12px 14px;">
+                <div style="font-weight: 600; margin-bottom: 4px;">{{ __('How to install') }}</div>
+                <ol style="margin: 0; padding-left: 20px;">
+                    <li>
+                        {{ __('Tap the browser menu') }}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="#374151" style="display: inline-block; vertical-align: -3px;" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                        {{ __('(three dots, top right).') }}
+                    </li>
+                    <li>{{ __('Choose "Install app" or "Add to Home screen".') }}</li>
+                    <li>{{ __('Confirm with "Install".') }}</li>
+                </ol>
+            </div>
+        </template>
+
+        <template x-if="mode === 'ios'">
+            <div style="background: #f3f4f6; border-radius: 10px; padding: 12px 14px;">
+                <div style="font-weight: 600; margin-bottom: 4px;">{{ __('How to install') }}</div>
+                <ol style="margin: 0; padding-left: 20px;">
+                    <li>
+                        {{ __('Tap the Share button') }}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -3px;" aria-hidden="true"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
+                        {{ __('at the bottom of Safari.') }}
+                    </li>
+                    <li>{{ __('Choose "Add to Home Screen".') }}</li>
+                    <li>{{ __('Tap "Add".') }}</li>
+                </ol>
+            </div>
+        </template>
 
         <button
             type="button"
             x-on:click="dismiss()"
-            aria-label="{{ __('Close') }}"
-            style="flex: none; background: transparent; border: 0; color: #6b7280; font-size: 20px; line-height: 1; padding: 4px; cursor: pointer;"
-        >&times;</button>
+            style="width: 100%; margin-top: 10px; background: transparent; color: #6b7280; border: 0; padding: 10px; font-size: 14px; cursor: pointer;"
+        >{{ __('Not now') }}</button>
     </div>
 </div>
 
@@ -58,7 +82,7 @@
     function pwaInstall() {
         return {
             visible: false,
-            mode: null,          // 'prompt' (Chrome/Android) | 'ios' (Safari iPhone/iPad)
+            mode: null,          // 'prompt' | 'android' | 'ios'
             deferred: null,
             storageKey: 'swm.pwa.install-dismissed',
 
@@ -70,23 +94,36 @@
                 try {
                     const at = parseInt(window.localStorage.getItem(this.storageKey) || '0', 10);
 
-                    return at > 0 && (Date.now() - at) < 7 * 24 * 60 * 60 * 1000;
+                    return at > 0 && (Date.now() - at) < 3 * 24 * 60 * 60 * 1000;
                 } catch (error) {
                     return false;
                 }
             },
 
+            isIos() {
+                const ua = window.navigator.userAgent;
+
+                return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            },
+
             isIosSafari() {
                 const ua = window.navigator.userAgent;
-                const ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-                // Chrome/Firefox/Edge di iOS memakai mesin Safari tetapi tidak punya "Tambahkan ke Layar Utama" yang sama.
-                const safari = /Safari/.test(ua) && ! /CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
 
-                return ios && safari;
+                // Chrome/Firefox/Edge di iOS memakai mesin Safari tetapi tidak punya "Tambahkan ke Layar Utama" yang sama.
+                return this.isIos() && /Safari/.test(ua) && ! /CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+            },
+
+            isAndroid() {
+                return /Android/.test(window.navigator.userAgent);
             },
 
             init() {
                 if (this.standalone() || this.dismissedRecently()) {
+                    return;
+                }
+
+                // Hanya perangkat seluler dicegat; di desktop tidak mengganggu.
+                if (! this.isAndroid() && ! this.isIos()) {
                     return;
                 }
 
@@ -105,6 +142,18 @@
                 if (this.isIosSafari()) {
                     this.mode = 'ios';
                     this.visible = true;
+
+                    return;
+                }
+
+                // Android tanpa peristiwa install (atau browser lain): tunjukkan langkah manual setelah sejenak.
+                if (this.isAndroid()) {
+                    setTimeout(() => {
+                        if (! this.visible) {
+                            this.mode = 'android';
+                            this.visible = true;
+                        }
+                    }, 1500);
                 }
             },
 
@@ -125,7 +174,7 @@
                 try {
                     window.localStorage.setItem(this.storageKey, String(Date.now()));
                 } catch (error) {
-                    // Diabaikan: banner hanya akan muncul lagi di kunjungan berikutnya.
+                    // Diabaikan: ajakan hanya akan muncul lagi di kunjungan berikutnya.
                 }
             },
         };
