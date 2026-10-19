@@ -69,6 +69,17 @@ class ImportLegacyMaster extends Command
         'PACKAGING SUPPORT', 'MEAT PROCESSING', 'LAKBAN', 'PRODUKSI',
     ];
 
+    /**
+     * Supplier legacy yang DIGABUNG (keputusan Ayah, 19 Oktober 2026): id lama => id yang dipakai. Importer riwayat
+     * WAJIB memakai peta ini supaya transaksi lama menempel ke supplier yang selamat.
+     */
+    public const SUPPLIER_MERGES = [
+        41 => 46, // CV. SAMUDERA KARUNIA RIZKY (alamat dan NPWP sama persis)
+        14 => 26, // SINERGY INDOPACK MAKMUR
+        9 => 32,  // INDOGUNA PT -> PT INDOGUNA UTAMA
+        18 => 19, // E - COMMERCE -> MARKETPLACE
+    ];
+
     /** Kolom bermakna "baris yang sama" per tabel, dan kolom beraturan unik di basis data. */
     private const TABLES = [
         'product_categories' => ['model' => ProductCategory::class, 'identity' => ['name', 'prefix'], 'unique' => ['name', 'prefix']],
@@ -266,9 +277,25 @@ class ImportLegacyMaster extends Command
                 .'`top_days` diisi 0 (tidak ada padanan) -- sesuaikan manual bila relevan untuk jatuh tempo hutang.';
         }
 
+        $extraGoods = [];
+        foreach ($rows as $row) {
+            $to = self::SUPPLIER_MERGES[(int) $row['idsupplier']] ?? null;
+            $goods = trim((string) ($row['jenis_usaha'] ?? ''));
+
+            if ($to !== null && $goods !== '') {
+                $extraGoods[$to][] = $goods;
+            }
+        }
+
         foreach ($rows as $row) {
             $id = (int) $row['idsupplier'];
             $name = $this->clean($row['nmsupplier']);
+
+            if (isset(self::SUPPLIER_MERGES[$id])) {
+                $this->notes[] = "Supplier digabung: idsupplier={$id} ({$name}) -> id ".self::SUPPLIER_MERGES[$id].' (tidak dibuat sendiri).';
+
+                continue;
+            }
 
             if ($name === '') {
                 $this->conflicts['suppliers'][] = "idsupplier={$id}: nama kosong, dilewati.";
@@ -286,7 +313,8 @@ class ImportLegacyMaster extends Command
                 'pic' => '-',
                 'phone' => trim((string) ($row['telepon'] ?? '')) ?: null,
                 'top_days' => 0,
-                'supplied_goods' => trim((string) ($row['jenis_usaha'] ?? '')) ?: null,
+                'supplied_goods' => collect([trim((string) ($row['jenis_usaha'] ?? '')), ...($extraGoods[$id] ?? [])])
+                    ->filter()->unique(fn ($g) => strtoupper($g))->implode('; ') ?: null,
             ]);
         }
     }
