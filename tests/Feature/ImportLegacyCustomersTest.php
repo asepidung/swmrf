@@ -103,7 +103,7 @@ SQL;
         $this->assertEqualsCanonicalizing(['Invoice', 'Sertifikat Halal', 'Uji Lab'], $carrefour->required_documents);
 
         $lion = Customer::findOrFail(6);
-        $this->assertSame(2, $lion->default_discount, 'Grup LION (dikenali dari namanya) -> diskon 2%.');
+        $this->assertSame(2, $lion->default_discount, 'LION DCA -> diskon 2%.');
         $this->assertNull($lion->phone, '"-" bukan telepon.');
         $this->assertNull($lion->required_documents);
         $this->assertFalse($lion->invoice_exchange);
@@ -157,15 +157,21 @@ SQL;
             .$row(204, 'HPM CYBERPARK KRWC', '2024-05-01 00:00:00')
             .$row(218, 'ABUBA - CIPETE', '2024-05-01 00:00:00')
             .$row(219, 'ABUBA - CIPETE', '2024-05-01 00:00:00')
+            .$row(54, 'FREE / SAMPLE', '2023-09-19 10:01:14')
+            .$row(127, 'Free Sample', '2024-03-07 15:59:09')
             .$row(135, 'CIPTA BOGA PRIMA PT', '2023-01-01 00:00:00')
             .$row(182, 'CIPTA BOGA PRIMA PT', '2023-01-01 00:00:00')
             .$row(188, 'CIPTA BOGA PRIMA PT', '2023-01-01 00:00:00');
         file_put_contents($this->sourcePath, $sql);
 
-        $this->assertSame([121 => 204, 218 => 219], \App\Console\Commands\ImportLegacyMaster::customerIdMap($sql));
+        $map = \App\Console\Commands\ImportLegacyMaster::customerIdMap($sql);
+        ksort($map);
+        $this->assertSame([54 => 127, 121 => 204, 218 => 219], $map);
 
         $this->importer(true)->assertExitCode(0);
 
+        $this->assertNull(Customer::find(54), 'FREE / SAMPLE digabung ke Free Sample (keputusan Ayah).');
+        $this->assertSame('FREE SAMPLE', Customer::find(127)->name);
         $this->assertNull(Customer::find(121), 'Yang lama digabung.');
         $this->assertSame('HPM CYBERPARK KRWC', Customer::find(204)->name);
         $this->assertNull(Customer::find(218), 'Tanggal sama -> id terbesar dipakai.');

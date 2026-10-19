@@ -112,6 +112,12 @@ class ImportLegacyMaster extends Command
         188 => 'CIPTA BOGA PRIMA PT (VIA EKSPEDISI ELVANO)',
     ];
 
+    /** Digabung atas keputusan Ayah di luar aturan nama persis: id lama => id yang dipakai (FREE / SAMPLE -> Free Sample). */
+    private const CUSTOMER_MERGES = [54 => 127];
+
+    /** Diskon bawaan 2% HANYA untuk LION DCA, DCB, DCC (bukan seluruh grup LION), keputusan Ayah 19 Oktober 2026. */
+    private const DISCOUNT_2_IDS = [6, 28, 214];
+
     /** Segmen bila grup pelanggan tidak ada di GROUP_SEGMENTS (diperbaiki Ayah di aplikasi). */
     private const DEFAULT_SEGMENT = 'RETAIL';
 
@@ -449,14 +455,14 @@ class ImportLegacyMaster extends Command
      */
     public static function customerIdMap(string $sql): array
     {
-        $map = [];
+        $map = self::CUSTOMER_MERGES;
         $byName = [];
 
         foreach (LegacySqlDump::parseTable($sql, 'customers') as $row) {
             $id = (int) $row['idcustomer'];
             $name = self::CUSTOMER_RENAMES[$id] ?? strtoupper(trim((string) $row['nama_customer']));
 
-            if ($name !== '') {
+            if ($name !== '' && ! isset(self::CUSTOMER_MERGES[$id])) {
                 $byName[$name][] = ['id' => $id, 'updated' => (string) ($row['tanggal_update'] ?? '')];
             }
         }
@@ -515,8 +521,8 @@ class ImportLegacyMaster extends Command
                 $top = 0;
             }
 
-            // Diskon bawaan: 2% untuk grup LION (dikenali dari NAMA grup, bukan angkanya), 0 untuk lainnya.
-            $discount = ($groupId > 0 && ($this->groupNames[$groupId] ?? '') === 'LION') ? 2 : 0;
+            // Diskon bawaan: 2% hanya untuk LION DCA, DCB, DCC; 0 untuk lainnya.
+            $discount = in_array($id, self::DISCOUNT_2_IDS, true) ? 2 : 0;
 
             $documents = [];
             foreach (self::DOCUMENT_FLAGS as $column => $label) {
