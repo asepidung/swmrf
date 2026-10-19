@@ -29,6 +29,10 @@ class Material extends Model
     protected static function booted(): void
     {
         static::creating(function (Material $material) {
+            if (filled($material->code)) {
+                return;
+            }
+
             $latest = static::latest('id')->first();
             $nextId = $latest ? $latest->id + 1 : 1;
             $material->code = 'MTR' . str_pad($nextId, 3, '0', STR_PAD_LEFT);
