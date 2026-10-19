@@ -58,7 +58,7 @@ CREATE TABLE `supplier` (
 INSERT INTO `supplier` (`idsupplier`,`nmsupplier`,`jenis_usaha`,`alamat`,`telepon`,`npwp`,`iduser`) VALUES ('1','H. DONI','SAPI','RPH TAPOS, DEPOK','081225834627',NULL,NULL);
 INSERT INTO `supplier` (`idsupplier`,`nmsupplier`,`jenis_usaha`,`alamat`,`telepon`,`npwp`,`iduser`) VALUES ('2','UNGGUL HARAPAN PANGAN','DAGING','BOGOR','','95.150.770.6-436.000',NULL);
 INSERT INTO `supplier` (`idsupplier`,`nmsupplier`,`jenis_usaha`,`alamat`,`telepon`,`npwp`,`iduser`) VALUES ('3','CV. GARI SETIAWAN MAKMUR','SAPI','PANDEGLANG','','',NULL);
-INSERT INTO `supplier` (`idsupplier`,`nmsupplier`,`jenis_usaha`,`alamat`,`telepon`,`npwp`,`iduser`) VALUES ('4','CV.GARI SETIAWAN MAKMUR','SAPI','PANDEGLANG','','',NULL);
+INSERT INTO `supplier` (`idsupplier`,`nmsupplier`,`jenis_usaha`,`alamat`,`telepon`,`npwp`,`iduser`) VALUES ('4','CV.GARI-SETIAWAN MAKMUR','SAPI','PANDEGLANG','','',NULL);
 DROP TABLE IF EXISTS `cattle_class`;
 CREATE TABLE `cattle_class` (
   `idclass` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -420,12 +420,12 @@ SQL;
     public function a_supplier_that_only_differs_by_spacing_is_imported_twice_and_reported(): void
     {
         $this->apply()
-            ->expectsOutputToContain('mirip "CV. GARI SETIAWAN MAKMUR" (id 3)')
+            ->expectsOutputToContain('mirip "GARI SETIAWAN MAKMUR CV" (id 3)')
             ->expectsOutputToContain('KEDUANYA diimpor')
             ->assertExitCode(0);
 
-        $this->assertSame('CV. GARI SETIAWAN MAKMUR', Supplier::find(3)->name);
-        $this->assertSame('CV.GARI SETIAWAN MAKMUR', Supplier::find(4)->name);
+        $this->assertSame('GARI SETIAWAN MAKMUR CV', Supplier::find(3)->name);
+        $this->assertSame('GARI-SETIAWAN MAKMUR CV', Supplier::find(4)->name);
     }
 
     /** @test */

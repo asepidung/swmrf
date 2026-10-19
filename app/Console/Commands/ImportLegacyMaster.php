@@ -80,6 +80,9 @@ class ImportLegacyMaster extends Command
         18 => 19, // E - COMMERCE -> MARKETPLACE
     ];
 
+    /** Nama supplier yang selamat dari penggabungan: memakai nama lengkap dengan badan usahanya. */
+    private const SUPPLIER_RENAMES = [26 => 'SINERGY INDOPACK MAKMUR PT'];
+
     /** Kolom bermakna "baris yang sama" per tabel, dan kolom beraturan unik di basis data. */
     private const TABLES = [
         'product_categories' => ['model' => ProductCategory::class, 'identity' => ['name', 'prefix'], 'unique' => ['name', 'prefix']],
@@ -289,7 +292,7 @@ class ImportLegacyMaster extends Command
 
         foreach ($rows as $row) {
             $id = (int) $row['idsupplier'];
-            $name = $this->clean($row['nmsupplier']);
+            $name = self::SUPPLIER_RENAMES[$id] ?? \App\Support\TidyName::company($row['nmsupplier']);
 
             if (isset(self::SUPPLIER_MERGES[$id])) {
                 $this->notes[] = "Supplier digabung: idsupplier={$id} ({$name}) -> id ".self::SUPPLIER_MERGES[$id].' (tidak dibuat sendiri).';
@@ -550,9 +553,7 @@ class ImportLegacyMaster extends Command
      */
     private function matchKey(string $name): string
     {
-        $key = (string) preg_replace('/\s+/', ' ', strtoupper(trim($name)));
-
-        return (string) preg_replace('/\.\s+/', '.', $key);
+        return \App\Support\LooseName::key($name);
     }
 
     /**

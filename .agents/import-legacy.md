@@ -302,3 +302,11 @@ Langkah: kategori, grade, supplier, kelas-sapi, grup, produk, material, bom. Sna
   9 -> 32 (INDOGUNA PT -> PT INDOGUNA UTAMA, kata Ayah satu perusahaan), 18 -> 19 (E - COMMERCE -> MARKETPLACE).
   Jenis usaha supplier yang digabung dipindah ke yang selamat. Hasil yang harus cocok: 39 supplier.
 - NPWP (5 terisi) tidak dibawa: aplikasi tidak punya kolomnya.
+
+### Aturan penulisan nama (keputusan Ayah, 19 Oktober 2026) -- `App\Support\TidyName::company()`
+
+Huruf besar semua; PT dan CV tanpa titik dan SELALU di belakang nama ("PT. ARDANA PERMATA ANUGERAH" -> "ARDANA PERMATA ANUGERAH PT")
+supaya daftar urut menurut nama inti (pola yang sama dengan "ASEP BPK"); satu spasi sesudah tanda baca; tanpa spasi di dalam
+kurung. "H. DONI" dan BPK/IBU dibiarkan. Dipakai di supplier; DIPAKAI JUGA untuk pelanggan, produk, material saat gilirannya.
+Supplier 26 memakai nama lengkap "SINERGY INDOPACK MAKMUR PT" (hasil gabungan 14 dan 26).
+Pelanggan baru yang diketik manual di aplikasi belum dirapikan otomatis (hanya diperingatkan bila mirip).
