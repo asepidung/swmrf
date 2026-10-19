@@ -337,3 +337,11 @@ lewat `php artisan master:seed-segments` (dry-run bawaan, `--apply`, aman diulan
 INDUSTRI. Hasil yang harus cocok: 5 segmen.
 Masih terbuka untuk impor pelanggan: tiap pelanggan WAJIB punya segmen; legacy tidak punya datanya, jadi Ayah menentukan
 pemetaannya (per pelanggan atau per grup) sebelum pelanggan diimpor.
+
+## Grup pelanggan (19 Oktober 2026)
+
+`--only=grup`, ID = idgroup legacy (56 grup, ID 34 tidak ada di legacy). Dibawa semua, termasuk 3 grup tanpa pelanggan (OUR BAR,
+YADI, CULAS); TOP dan potongan 0 (dibiarkan sampai price list masuk). Nama dirapikan dengan `TidyName` (mis. CV BERKAH -> BERKAH CV).
+Nama grup di legacy TERPOTONG 20 huruf; dipulihkan dari nama pelanggan di grup itu (`ImportLegacyMaster::GROUP_RENAMES`):
+43 REPUBLIK MANOR PROPERTINDO PT, 45 SWISSOTEL LIVING JAKARTA, 50 ANUGERAH DIRGA CIPTA PT, 56 MITLOIN GLOBAL GROUP PT.
+Grup baru tambahan Ayah (di luar legacy, ID sesudah 57): KARYAWAN, WARGA +62, dan satu grup untuk gratisan/tamu (nama menunggu Ayah).

@@ -505,6 +505,28 @@ CREATE TABLE `supplier` (
     }
 
     /** @test */
+    public function truncated_group_names_are_restored_and_company_names_are_tidied(): void
+    {
+        $ddl = "CREATE TABLE `groupcs` (
+  `idgroup` int(11) NOT NULL AUTO_INCREMENT,
+  `nmgroup` varchar(20) DEFAULT NULL,
+  `terms` int(11) DEFAULT NULL,
+  PRIMARY KEY (`idgroup`)
+);
+";
+        file_put_contents($this->sourcePath, $ddl
+            ."INSERT INTO `groupcs` (`idgroup`,`nmgroup`,`terms`) VALUES ('43','PT. REPUBLIK MANOR P',NULL);
+"
+            ."INSERT INTO `groupcs` (`idgroup`,`nmgroup`,`terms`) VALUES ('5','CV BERKAH',NULL);
+");
+
+        $this->apply()->assertExitCode(0);
+
+        $this->assertSame('REPUBLIK MANOR PROPERTINDO PT', CustomerGroup::find(43)->name);
+        $this->assertSame('BERKAH CV', CustomerGroup::find(5)->name);
+    }
+
+    /** @test */
     public function a_product_that_only_differs_by_spacing_is_imported_twice_and_reported(): void
     {
         $this->apply()->expectsOutputToContain('mirip "STRIPLOIN CUT A" (id 6)');
