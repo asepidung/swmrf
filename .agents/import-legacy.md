@@ -320,3 +320,11 @@ Pelanggan baru yang diketik manual di aplikasi belum dirapikan otomatis (hanya d
 - Kode material: **MTR + id** (kdrawmate RMxxxx legacy selalu sama dengan id-nya: RM0001 -> MTR001). Kode RM tidak
   disimpan. `Material::booted()` kini menghormati kode yang sudah diisi (importer mengisinya).
 - Langkah importer: `--only=kategori-material` (hanya kategori) lalu `--only=material` (kategori + material).
+
+### Material: satuan kosong (keputusan Ayah, 19 Oktober 2026)
+
+- 6 barang yang bukan bahan produksi tetapi sudah ada transaksinya (FOOT SWITCH 56, PULPEN 66, PADMAN 74, BOX CONTAINER 3003/2002
+  176/177, BROSUR 178): tetap diimpor, satuan PCS, **nonaktif**. Pemilahan per item (operasional/aset/hapus) dibahas Ayah dengan
+  Hafizh; material "kotor" itu dirapikan setelahnya (nonaktifkan/pindah ke Expense), bukan lewat importer.
+- Bahan MEAT PROCESSING tanpa satuan: LITER untuk KECAP/SAUS/MINYAK, selain itu KG. TALI KASUR (180): PCS. Food colour: KG.
+- Satuan kosong di kategori lain tetap dilewati dan dilaporkan.
