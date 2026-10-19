@@ -7834,3 +7834,9 @@ Keputusan Ayah: nama master data yang persis sama sudah ditolak (aturan unik for
 Suite penuh berurutan butuh sekitar 15 menit (1650+ tes di satu jalur). `brianium/paratest` dipasang sebagai paket PENGEMBANGAN (tidak ikut `composer install --no-dev` di VPS). Jalankan: `php artisan test --parallel` -> sekitar 1 menit 46 detik dengan hasil yang sama (1655 tes lulus). Tes memakai SQLite di memori, jadi tiap proses punya basis data sendiri. Berurutan (`php artisan test`) tetap boleh untuk satu berkas tes.
 ## Kode gudang JGL dan PRM, 19 Oktober 2026
 Keputusan Ayah: kode gudang diperpendek: JONGGOL -> **JGL**, PERUM -> **PRM** (nama gudang tetap). Migrasi `2026_10_19_200000_rename_warehouse_codes_to_jgl_and_prm` mengganti kode di basis data yang sudah ada (aman diulang; tidak mengambil kode yang sudah dipakai gudang lain; ada `down()`). Kode TIDAK dipakai di nomor dokumen maupun barcode (hanya nama dan id), jadi hanya dua tempat yang bergantung padanya dan keduanya sudah disesuaikan: `LegacyGradeMap` (menerjemahkan grade legacy ke gudang menurut KODE) dan `DatabaseSeeder` (kini mencocokkan gudang menurut NAMA yang unik, supaya menjalankan seeder pada basis data berkode lama atau baru tidak membuat gudang kembar). Gudang baru: beri kode singkat tiga huruf.
+
+## Antrean: pemilih material di Request Material (diminta Ayah, 19 Oktober 2026; dikerjakan NANTI, bukan sekarang)
+
+Saat membuat Request Material, daftar material terlalu panjang. Permintaan: pilihan material dikelompokkan per kategori (dropdown
+menampilkan kategori dulu, klik kategori mengeluarkan materialnya), ATAU, bila lebih baik, dua langkah (pilih kategori lalu
+material) dengan pemilih material seperti saat membuat Sales Order. Pilih yang paling nyaman dipakai; tunjukkan ke Ayah sebelum jadi.
