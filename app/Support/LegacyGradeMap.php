@@ -23,12 +23,12 @@ class LegacyGradeMap
      * @var array<int, array{0: string, 1: string, 2: string}>
      */
     public const MAP = [
-        1 => ['J01', 'JONGGOL', 'CHILL'],
-        2 => ['J02', 'JONGGOL', 'FROZEN'],
-        3 => ['P01', 'PERUM', 'CHILL'],
-        4 => ['P02', 'PERUM', 'FROZEN'],
-        5 => ['J03', 'JONGGOL', 'A'],
-        6 => ['P03', 'PERUM', 'A'],
+        1 => ['J01', 'JGL', 'CHILL'],
+        2 => ['J02', 'JGL', 'FROZEN'],
+        3 => ['P01', 'PRM', 'CHILL'],
+        4 => ['P02', 'PRM', 'FROZEN'],
+        5 => ['J03', 'JGL', 'A'],
+        6 => ['P03', 'PRM', 'A'],
     ];
 
     /** Id grade baru yang terkunci (masuk barcode): nama => id. */

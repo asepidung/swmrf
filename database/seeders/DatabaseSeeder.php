@@ -391,8 +391,10 @@ class DatabaseSeeder extends Seeder
 
 
         // Seed Warehouses
-        \App\Models\Warehouse::updateOrCreate(['code' => 'JONGGOL'], ['name' => 'JONGGOL', 'is_active' => true]);
-        \App\Models\Warehouse::updateOrCreate(['code' => 'PERUM'], ['name' => 'PERUM', 'is_active' => true]);
+        // Dicocokkan menurut NAMA (unik), bukan kode: kode diperpendek 19 Okt 2026 (JGL, PRM), dan mencocokkan menurut
+        // kode akan membuat gudang kembar di basis data yang belum/sudah memakai kode baru.
+        \App\Models\Warehouse::updateOrCreate(['name' => 'JONGGOL'], ['code' => 'JGL', 'is_active' => true]);
+        \App\Models\Warehouse::updateOrCreate(['name' => 'PERUM'], ['code' => 'PRM', 'is_active' => true]);
 
         // Seed Grades.
         //

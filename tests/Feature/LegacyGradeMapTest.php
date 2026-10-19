@@ -21,16 +21,16 @@ class LegacyGradeMapTest extends TestCase
             Grade::unguarded(fn () => Grade::create(['id' => LegacyGradeMap::APP_GRADE_IDS[$name], 'name' => $name, 'is_active' => true]));
         }
 
-        Warehouse::create(['code' => 'JONGGOL', 'name' => 'JONGGOL', 'is_active' => true]);
-        Warehouse::create(['code' => 'PERUM', 'name' => 'PERUM', 'is_active' => true]);
+        Warehouse::create(['code' => 'JGL', 'name' => 'JONGGOL', 'is_active' => true]);
+        Warehouse::create(['code' => 'PRM', 'name' => 'PERUM', 'is_active' => true]);
     }
 
     /** @test */
     public function all_six_legacy_grades_translate_to_their_warehouse_and_grade(): void
     {
         $this->seedAppSide();
-        $jonggol = Warehouse::where('code', 'JONGGOL')->value('id');
-        $perum = Warehouse::where('code', 'PERUM')->value('id');
+        $jonggol = Warehouse::where('code', 'JGL')->value('id');
+        $perum = Warehouse::where('code', 'PRM')->value('id');
 
         $expected = [
             1 => [$jonggol, 1],   // J01 -> JONGGOL + CHILL
@@ -76,9 +76,9 @@ class LegacyGradeMapTest extends TestCase
     public function a_missing_warehouse_or_grade_is_reported_not_guessed(): void
     {
         $this->seedAppSide();
-        Warehouse::where('code', 'PERUM')->delete();
+        Warehouse::where('code', 'PRM')->delete();
 
-        $this->assertContains('warehouse code PERUM does not exist yet', LegacyGradeMap::appSideProblems());
+        $this->assertContains('warehouse code PRM does not exist yet', LegacyGradeMap::appSideProblems());
 
         $this->expectException(\InvalidArgumentException::class);
         LegacyGradeMap::resolve(3);
