@@ -633,26 +633,71 @@ class UserPermissionFormTest extends TestCase
     }
 
     /** @test */
-    public function the_two_view_checkboxes_of_costings_and_delivery_orders_say_what_they_open()
+    public function the_second_view_checkbox_of_costings_and_delivery_orders_has_a_short_distinct_label()
     {
+        $this->seed(\Database\Seeders\DatabaseSeeder::class);
+
         $costings = collect(Permission::groupedByModuleGroup())->first(fn ($modules) => isset($modules['Costings']))['Costings'];
         $costing = \App\Filament\Admin\Resources\UserResource::permissionLabels($costings);
 
-        $this->assertContains(__('View costings'), $costing);
-        $this->assertContains(__('View cost reports (stock value, sales cost)'), $costing);
-
-        // Izin surat jalan datang dari seeder (bukan migrasi), jadi dibuat di sini dengan deskripsi aslinya.
-        foreach (['view_delivery_orders' => 'View delivery orders', 'delete_delivery_orders' => 'Delete delivery orders', 'view_delivery_receipts' => 'View delivery receipts'] as $name => $description) {
-            Permission::firstOrCreate(['name' => $name], ['module_name' => 'Delivery Orders', 'description' => $description]);
-        }
+        $this->assertContains('View', $costing);
+        $this->assertContains('View reports', $costing, 'Laporan biaya: label pendek, bukan deskripsi panjang.');
+        $this->assertContains('Lock/Unlock', $costing, 'Lock/unlock costings seragam dengan modul lain.');
 
         $suratJalan = \App\Filament\Admin\Resources\UserResource::permissionLabels(
             Permission::groupedByModuleGroup()['DISTRIBUTION']['Delivery Orders']
         );
 
-        $this->assertContains(__('View delivery orders'), $suratJalan);
-        $this->assertContains(__('View delivery receipts'), $suratJalan);
-        $this->assertContains(__('Delete'), $suratJalan, 'Dokumen transaksi tetap punya Hapus.');
+        $this->assertContains('View', $suratJalan);
+        $this->assertContains('View receipts', $suratJalan);
+        $this->assertContains('Delete', $suratJalan, 'Dokumen transaksi tetap punya Hapus.');
+    }
+
+    /** @test */
+    public function every_label_in_every_module_comes_from_the_standard_vocabulary_or_the_specific_list()
+    {
+        $this->seed(\Database\Seeders\DatabaseSeeder::class);
+
+        $diluarKosakata = [];
+
+        foreach (Permission::groupedByModuleGroup() as $modules) {
+            foreach ($modules as $moduleName => $permissions) {
+                $labels = \App\Filament\Admin\Resources\UserResource::permissionLabels($permissions);
+
+                foreach ($permissions as $p) {
+                    $label = $labels[$p->id];
+                    $baku = in_array($label, \App\Filament\Admin\Resources\UserResource::STANDARD_LABELS, true);
+                    $khusus = isset(\App\Filament\Admin\Resources\UserResource::SPECIFIC_LABELS[$p->name])
+                        && $label === \App\Filament\Admin\Resources\UserResource::SPECIFIC_LABELS[$p->name];
+
+                    if (! $baku && ! $khusus) {
+                        $diluarKosakata[] = "{$moduleName}: {$p->name} => \"{$label}\"";
+                    }
+                }
+            }
+        }
+
+        $this->assertSame([], $diluarKosakata, "Label di luar kosakata baku; daftarkan di UserResource::SPECIFIC_LABELS:\n".implode("\n", $diluarKosakata));
+    }
+
+    /** @test */
+    public function every_lock_permission_reads_lock_unlock_and_no_module_has_two_plain_lock_checkboxes()
+    {
+        $this->seed(\Database\Seeders\DatabaseSeeder::class);
+
+        foreach (Permission::groupedByModuleGroup() as $modules) {
+            foreach ($modules as $moduleName => $permissions) {
+                $labels = \App\Filament\Admin\Resources\UserResource::permissionLabels($permissions);
+
+                foreach ($permissions as $p) {
+                    if (str_starts_with($p->name, 'lock_')) {
+                        $this->assertSame('Lock/Unlock', $labels[$p->id], "{$moduleName}: {$p->name}");
+                    }
+                }
+
+                $this->assertLessThanOrEqual(1, collect($labels)->filter(fn ($l) => $l === 'Lock/Unlock')->count(), "{$moduleName}: dua centang Lock/Unlock");
+            }
+        }
     }
 
     /** @test */
