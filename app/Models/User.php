@@ -75,6 +75,12 @@ class User extends Authenticatable implements FilamentUser
             ->dontSubmitEmptyLogs();
     }
 
+    protected static function booted(): void
+    {
+        // Akun programmer tertutup bagi semua penonton kecuali dirinya sendiri (lihat kelasnya).
+        static::addGlobalScope(new \App\Models\Scopes\HideProgrammerAccounts());
+    }
+
     /**
      * Determine if the user can access the Filament panel.
      */
