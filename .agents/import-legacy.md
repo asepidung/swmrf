@@ -345,3 +345,5 @@ YADI, CULAS); TOP dan potongan 0 (dibiarkan sampai price list masuk). Nama dirap
 Nama grup di legacy TERPOTONG 20 huruf; dipulihkan dari nama pelanggan di grup itu (`ImportLegacyMaster::GROUP_RENAMES`):
 43 REPUBLIK MANOR PROPERTINDO PT, 45 SWISSOTEL LIVING JAKARTA, 50 ANUGERAH DIRGA CIPTA PT, 56 MITLOIN GLOBAL GROUP PT.
 Grup baru tambahan Ayah (di luar legacy, ID sesudah 57): KARYAWAN, WARGA +62, dan satu grup untuk gratisan/tamu (nama menunggu Ayah).
+Grup tambahan Ayah: `php artisan master:seed-groups` (dry-run bawaan, `--apply`, aman diulang): KARYAWAN, WARGA +62, GRATISAN.
+WAJIB dijalankan SESUDAH `legacy:import-master --only=grup` supaya ID grup legacy tidak tergeser (hasil: ID 58, 59, 60).
