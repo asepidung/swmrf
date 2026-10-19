@@ -60,6 +60,9 @@ class TaskAlert extends Notification
                 // yang sebenarnya sama.
                 'tag' => $this->tag,
             ])
-            ->options(['TTL' => 3600]);
+            // urgency high: tanpa ini layanan push memperlakukannya sebagai "normal" dan Android yang layarnya mati
+            // (mode hemat daya / Doze) boleh menundanya sampai perangkat aktif lagi -- terlalu lambat untuk tugas yang
+            // menunggu persetujuan seseorang.
+            ->options(['TTL' => 3600, 'urgency' => 'high']);
     }
 }
