@@ -557,15 +557,47 @@ CREATE TABLE `supplier` (
 
         $withKodeinduk = Product::where('code', '100101')->first();
         $this->assertNotNull($withKodeinduk);
-        $this->assertStringContainsString('kodeinduk legacy: 100100', $withKodeinduk->legacy_note);
+        $this->assertSame('sub', $withKodeinduk->structure_type);
+        $this->assertSame(Product::where('code', '100100')->value('id'), $withKodeinduk->parent_id);
     }
 
     /** @test */
-    public function a_product_with_a_dash_code_is_a_conflict_not_a_guess(): void
+    public function a_non_meat_item_is_not_imported_and_a_dash_code_item_is_a_conflict_or_inactive(): void
     {
-        $this->apply()->expectsOutputToContain('ICE GELL (idbarang=3): kode legacy kosong/"-", dilewati');
+        $ddl = "CREATE TABLE `cuts` (
+  `idcut` int(11) NOT NULL AUTO_INCREMENT,
+  `nmcut` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`idcut`)
+);
+INSERT INTO `cuts` (`idcut`,`nmcut`) VALUES ('2','SECONDARY CUT');
+"
+            ."CREATE TABLE `barang` (
+  `idbarang` int(11) NOT NULL AUTO_INCREMENT,
+  `kdbarang` varchar(10) DEFAULT NULL,
+  `kodeinduk` varchar(10) DEFAULT NULL,
+  `nmbarang` varchar(50) DEFAULT NULL,
+  `iduser` int(11) DEFAULT NULL,
+  `idcut` int(11) DEFAULT NULL,
+  `karton` varchar(20) DEFAULT NULL,
+  `drylog` varchar(20) DEFAULT NULL,
+  `plastik` varchar(20) DEFAULT NULL,
+  PRIMARY KEY (`idbarang`)
+);
+";
+        $row = fn (int $id, string $code, string $name) => "INSERT INTO `barang` (`idbarang`,`kdbarang`,`kodeinduk`,`nmbarang`,`iduser`,`idcut`,`karton`,`drylog`,`plastik`) VALUES ('{$id}','{$code}',NULL,'{$name}',NULL,'2',NULL,NULL,NULL);
+";
+        file_put_contents($this->sourcePath, $ddl.$row(3, '-', 'ICE GELL').$row(4, '-', 'LUNG').$row(8, '-', 'BARANG ANEH').$row(9, '200100', 'TOPSIDE'));
+
+        $this->apply()
+            ->expectsOutputToContain('BARANG ANEH (idbarang=8): kode legacy kosong')
+            ->assertExitCode(0);
 
         $this->assertDatabaseMissing('products', ['name' => 'ICE GELL']);
+        $this->assertDatabaseMissing('products', ['name' => 'BARANG ANEH']);
+        $lung = Product::where('name', 'LUNG')->first();
+        $this->assertSame('TMP-004', $lung->code);
+        $this->assertFalse((bool) $lung->is_active);
+        $this->assertTrue((bool) Product::where('code', '200100')->first()->is_active);
     }
 
     /** @test */

@@ -577,13 +577,33 @@ class ImportLegacyMaster extends Command
     // barang -> products
     // =========================================================================
 
+    /** Barang non-daging di tabel produk legacy: dipakai sebagai Biaya Tambahan invoice, TIDAK diimpor (keputusan Ayah, 20 Oktober 2026). */
+    private const NON_MEAT_PRODUCT_NAMES = ['STYROFOAM BESAR GARUDA', 'STYROFOAM BESAR', 'STYROFOAM KECIL', 'ICE GELL', 'DELIVERY COST'];
+
+    /** Salah input / nama ganda yang kemungkinan sudah punya transaksi: diimpor NONAKTIF dengan kode sementara TMP-<id>. */
+    private const INACTIVE_PRODUCT_NAMES = ['LUNG', 'FAT ETC', 'SODAS BUFFALO', 'ZZZ X PAHA DEPAN S'];
+
     private function importProducts(string $sql): void
     {
-        foreach (LegacySqlDump::parseTable($sql, 'barang') as $row) {
+        $rows = LegacySqlDump::parseTable($sql, 'barang');
+        $idByCode = [];
+
+        foreach ($rows as $row) {
+            $c = trim((string) ($row['kdbarang'] ?? ''));
+
+            if ($c !== '' && $c !== '-') {
+                $idByCode[$c] = (int) $row['idbarang'];
+            }
+        }
+
+        $links = [];
+
+        foreach ($rows as $row) {
             $id = (int) $row['idbarang'];
             $name = $this->clean($row['nmbarang']);
             $code = trim((string) ($row['kdbarang'] ?? ''));
             $categoryId = (int) $row['idcut'];
+            $active = true;
 
             if ($name === '') {
                 $this->conflicts['products'][] = "idbarang={$id}: nama kosong, dilewati.";
@@ -591,12 +611,24 @@ class ImportLegacyMaster extends Command
                 continue;
             }
 
-            // Beberapa baris legacy memakai '-' sebagai kode -- bukan kode yang sungguhan, dan
-            // `products.code` UNIK. Tidak ada dasar menebak kode yang benar: dilaporkan.
-            if ($code === '' || $code === '-') {
-                $this->conflicts['products'][] = "{$name} (idbarang={$id}): kode legacy kosong/\"-\", dilewati -- perlu kode manual.";
+            if (in_array($name, self::NON_MEAT_PRODUCT_NAMES, true)) {
+                $this->notes[] = "Produk tidak diimpor: {$name} (idbarang={$id}) -- non-daging, dipakai sebagai Biaya Tambahan invoice.";
 
                 continue;
+            }
+
+            if ($code === '' || $code === '-') {
+                if (! in_array($name, self::INACTIVE_PRODUCT_NAMES, true)) {
+                    $this->conflicts['products'][] = "{$name} (idbarang={$id}): kode legacy kosong/\"-\", dilewati -- perlu kode manual.";
+
+                    continue;
+                }
+
+                $code = 'TMP-'.str_pad((string) $id, 3, '0', STR_PAD_LEFT);
+                $active = false;
+                $this->notes[] = "Produk nonaktif dengan kode sementara: {$name} (idbarang={$id}) -> {$code}; ganti kode dari aplikasi bila perlu.";
+            } elseif (in_array($name, self::INACTIVE_PRODUCT_NAMES, true)) {
+                $active = false;
             }
 
             if (! isset($this->valid['product_categories'][$categoryId])) {
@@ -605,21 +637,49 @@ class ImportLegacyMaster extends Command
                 continue;
             }
 
-            // kodeinduk & karton/drylog/plastik dicatat ke CATATAN produk, bukan diresolusi ke
-            // parent_id/structure_type (hierarki BOM lama yang butuh keputusan Owner tersendiri).
+            // kodeinduk legacy -> parent_id (turunan) bila induknya ada dan bukan dirinya sendiri; selain itu tercatat di catatan.
+            $parentCode = trim((string) ($row['kodeinduk'] ?? ''));
+            $parentId = ($parentCode !== '' && ! in_array($parentCode, ['-', '0'], true) && $parentCode !== $code) ? ($idByCode[$parentCode] ?? null) : null;
+
             $noteParts = [];
-            foreach (['kodeinduk' => 'kodeinduk legacy', 'karton' => 'karton', 'drylog' => 'drylog', 'plastik' => 'plastik'] as $column => $label) {
+            foreach (['karton' => 'karton', 'drylog' => 'drylog', 'plastik' => 'plastik'] as $column => $label) {
                 if (! empty($row[$column])) {
                     $noteParts[] = "{$label}: {$row[$column]}";
                 }
             }
+            if ($parentCode !== '' && ! in_array($parentCode, ['-', '0'], true) && $parentId === null) {
+                $noteParts[] = "kodeinduk legacy: {$parentCode}";
+                $this->conflicts['products'][] = "{$name} ({$code}): kodeinduk \"{$parentCode}\" tidak menunjuk produk lain yang ada -- diimpor sebagai induk, kodeinduk dicatat.";
+            }
 
-            $this->place('products', $id, ['code' => $code, 'name' => $name], "{$name} ({$code})", $name, [
+            $status = $this->place('products', $id, ['code' => $code, 'name' => $name], "{$name} ({$code})", $name, [
                 'category_id' => $categoryId,
                 'structure_type' => 'main',
-                'is_active' => true,
+                'is_active' => $active,
                 'legacy_note' => $noteParts === [] ? null : ('Legacy -- '.implode('; ', $noteParts)),
             ]);
+
+            if ($parentId !== null && in_array($status, ['created', 'same'], true)) {
+                $links[$id] = $parentId;
+            }
+        }
+
+        // Hubungan induk-turunan dipasang sesudah semua produk ada (induk bisa bernomor lebih besar dari turunannya).
+        $linked = 0;
+        foreach ($links as $childId => $parentId) {
+            if (! isset($this->valid['products'][$parentId])) {
+                continue;
+            }
+
+            $linked++;
+
+            if ($this->option('apply')) {
+                Product::whereKey($childId)->update(['structure_type' => 'sub', 'parent_id' => $parentId]);
+            }
+        }
+
+        if ($linked > 0) {
+            $this->notes[] = "Produk: {$linked} turunan dihubungkan ke induknya lewat kodeinduk legacy (structure_type sub, parent_id).";
         }
     }
 

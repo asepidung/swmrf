@@ -357,3 +357,14 @@ WAJIB dijalankan SESUDAH `legacy:import-master --only=grup` supaya ID grup legac
   (306 - 1 tanpa nama - 9 kembar - 1 gabungan).
 - Diskon bawaan 2% HANYA untuk LION DCA (6), DCB (28), DCC (214), bukan seluruh grup LION.
 - Semua aktif; TOP di luar 1-60 jadi 0; PIC kosong. Peta id lama -> id: `ImportLegacyMaster::customerIdMap()`.
+
+## Produk (keputusan Ayah, 20 Oktober 2026): impor SESUAI LEGACY
+
+Kode produk legacy dipertahankan apa adanya (mengubah kode mengganggu temuan barang dan stock opname). Kategori = idcut legacy;
+induk-turunan = `kodeinduk` legacy -> `parent_id` + `structure_type` sub (63 turunan dari 22 induk); karton/drylog/plastik masuk
+`legacy_note`. Tidak diimpor: STYROFOAM BESAR GARUDA, STYROFOAM BESAR, STYROFOAM KECIL, ICE GELL, DELIVERY COST (dipakai sebagai
+Biaya Tambahan di invoice; riwayat invoice lama nanti dipetakan ke Biaya Tambahan). Diimpor NONAKTIF dengan kode sementara
+TMP-<id>: LUNG, FAT ETC, SODAS BUFFALO, ZZZ X PAHA DEPAN S (kemungkinan sudah punya transaksi; ZZZ tidak digabung ke PAHA DEPAN
+karena Ayah belum yakin sama). Hasil yang harus cocok: 153 produk (158 - 5 non-daging), 4 di antaranya nonaktif.
+Perbaikan kategori/induk-turunan dari lembar kerja tim kantor (`legacy/lembar-kerja-produk-2026-10-20.xlsx`) menyusul sebagai
+tabel koreksi; kode TIDAK diubah.
