@@ -184,6 +184,23 @@ SQL;
     }
 
     /** @test */
+    public function only_runs_the_named_step(): void
+    {
+        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true, '--only' => 'kelas-sapi'])
+            ->assertSuccessful();
+
+        $this->assertGreaterThan(0, \App\Models\CattleClass::count());
+        $this->assertSame(0, \App\Models\Supplier::count());
+        $this->assertSame(0, \App\Models\Product::count());
+    }
+
+    /** @test */
+    public function an_unknown_only_step_is_rejected(): void
+    {
+        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--only' => 'salah'])->assertFailed();
+    }
+
+    /** @test */
     public function dry_run_reports_without_writing_anything(): void
     {
         $this->artisan('legacy:import-master', ['--source' => $this->sourcePath])
