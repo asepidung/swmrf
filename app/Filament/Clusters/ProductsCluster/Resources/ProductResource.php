@@ -94,7 +94,7 @@ class ProductResource extends Resource
                             ->createOptionForm(\App\Filament\Support\QuickCreate::schema('productCategory'))
                             ->createOptionAction(fn (Forms\Components\Actions\Action $action) => (\App\Filament\Support\QuickCreate::action('productCategory'))($action)->color('warning')),
 
-                        Forms\Components\TextInput::make('name')
+                        Forms\Components\TextInput::make('name')->warnIfSimilar(\App\Models\Product::class)
                             ->label(fn() => __('Product Name'))
                             ->autofocus()
                             ->required()

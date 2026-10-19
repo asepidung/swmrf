@@ -30,7 +30,7 @@ class MaterialCategoryResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
+                Forms\Components\TextInput::make('name')->warnIfSimilar(\App\Models\MaterialCategory::class)->unique(ignoreRecord: true)
                     ->label(fn() => __('Category Name'))
                     ->required()
                     ->maxLength(255)

@@ -42,7 +42,7 @@ class CustomerSegmentResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
+                Forms\Components\TextInput::make('name')->warnIfSimilar(\App\Models\CustomerSegment::class)->unique(ignoreRecord: true)
                     ->label(fn() => __('Name'))
                     ->required()
                     ->maxLength(255)

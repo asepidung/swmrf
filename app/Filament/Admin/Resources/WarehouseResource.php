@@ -53,7 +53,7 @@ class WarehouseResource extends Resource
                     ->maxLength(50)
                     ->unique(ignoreRecord: true)
                     ->extraInputAttributes(['style' => 'text-transform:uppercase']),
-                Forms\Components\TextInput::make('name')
+                Forms\Components\TextInput::make('name')->warnIfSimilar(\App\Models\Warehouse::class)
                     ->label(fn () => __('Name'))
                     ->required()
                     ->maxLength(255)

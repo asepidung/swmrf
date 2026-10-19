@@ -110,7 +110,7 @@ class CustomerResource extends Resource
                     ->compact()
                     ->columns(12)
                     ->schema([
-                        Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
+                        Forms\Components\TextInput::make('name')->warnIfSimilar(\App\Models\Customer::class)->unique(ignoreRecord: true)
                             ->label(fn() => __('Customer Name'))
                             ->required()
                             ->maxLength(255)

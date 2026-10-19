@@ -119,6 +119,22 @@ class AppServiceProvider extends ServiceProvider
                 ->visible(outsidePanels: true);
         });
 
+        // Peringatan "nama mirip" di kolom nama master data (bukan penolakan; yang persis sama ditolak aturan unik).
+        // Dipakai: ->warnIfSimilar(Customer::class). Terhitung saat kolom selesai diisi.
+        \Filament\Forms\Components\TextInput::macro('warnIfSimilar', function (string $model, string $column = 'name') {
+            /** @var \Filament\Forms\Components\TextInput $this */
+            return $this
+                ->live(onBlur: true)
+                ->hintColor('warning')
+                ->hint(function ($state, ?\Illuminate\Database\Eloquent\Model $record) use ($model, $column): ?string {
+                    $similar = \App\Support\LooseName::similarTo($model, is_string($state) ? $state : null, $record?->getKey(), $column);
+
+                    return $similar === []
+                        ? null
+                        : __('Similar to an existing record: :names. Check first, it may be the same one.', ['names' => implode(', ', $similar)]);
+                });
+        });
+
         \Illuminate\Support\Facades\Gate::define('viewLogViewer', function (?\App\Models\User $user) {
             return $user ? $user->hasPermission('view_activity_logs') : false;
         });
