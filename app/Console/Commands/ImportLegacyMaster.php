@@ -236,7 +236,12 @@ class ImportLegacyMaster extends Command
                     }
                     $this->importCustomers($sql);
                 },
-                'produk' => fn () => $this->importProducts($sql),
+                'produk' => function () use ($sql, $only) {
+                    if (! in_array('kategori', $only, true)) {
+                        $this->importProductCategories($sql);
+                    }
+                    $this->importProducts($sql);
+                },
                 'kategori-material' => fn () => $this->importMaterialCategories($sql),
                 'material' => function () use ($sql, $only) {
                     if (! in_array('kategori-material', $only, true)) {
