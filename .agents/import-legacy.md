@@ -283,3 +283,12 @@ plat yang sama dengan jenis berbeda = konflik, tidak ditimpa). Datanya ada di `A
 - Armada (tabel `vehicles`: vehicle_type, police_number): CANTER - F 8485 HD, TRAGA - F 9385 FI, L-300 - F 8489 HV,
   DUTRO - F 9201 F.
 - Semua aktif. Tidak ada masalah yang perlu keputusan. Hasil yang harus cocok: 2 supir dan 4 armada.
+
+## Catatan latihan di coba. (19 Oktober 2026)
+
+Perintah per tabel: `php artisan legacy:import-master --source=<berkas.sql> --only=<langkah> [--apply]`.
+Langkah: kategori, grade, supplier, kelas-sapi, grup, produk, material, bom. Snapshot dikirim ke `~/` di coba.
+(`scp`, di luar folder web). Dry-run dulu, lihat laporan, baru `--apply`.
+
+- Kelas sapi: DITERAPKAN di coba. Hasil 7 baris (id 1 STEER, 2 BULL, 3 HEIFER, 4 COW, 5 PREMIUM, 6 NONPREMIUM, 7 BULL & STEER).
+  Dijalankan ulang: 0 dibuat (aman diulang).
