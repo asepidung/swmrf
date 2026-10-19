@@ -58,7 +58,7 @@ class ImportLegacyMaster extends Command
 {
     protected $signature = 'legacy:import-master
                             {--source= : Path ke berkas dump SQL legacy}
-                            {--only= : Hanya langkah ini (pisah koma): kategori,grade,supplier,kelas-sapi,grup,produk,material,bom}
+                            {--only= : Hanya langkah ini (pisah koma): kategori,grade,supplier,kelas-sapi,grup,produk,kategori-material,material,bom}
                             {--apply : Benar-benar menulis perubahan (default hanya laporan dry-run)}';
 
     protected $description = 'Impor master data (kategori, grade, produk, bahan, supplier, kelas sapi, grup pelanggan) dari snapshot legacy, DENGAN id legacy';
@@ -66,7 +66,7 @@ class ImportLegacyMaster extends Command
     /** Kategori bahan yang benar-benar produksi/kemasan -- lihat `.agents/legacy-db.md`. */
     private const MATERIAL_CATEGORY_WHITELIST = [
         'KARTON', 'PLASTIK', 'LABEL', 'MIKA', 'STYROFOAM', 'TRAY',
-        'PACKAGING SUPPORT', 'MEAT PROCESSING', 'LAKBAN', 'PRODUKSI',
+        'PACKAGING SUPPORT', 'MEAT PROCESSING', 'LAKBAN', 'PRODUKSI', 'PERCETAKAN',
     ];
 
     /**
@@ -161,7 +161,7 @@ class ImportLegacyMaster extends Command
         $apply = (bool) $this->option('apply');
 
         $only = array_values(array_filter(array_map('trim', explode(',', (string) $this->option('only')))));
-        $unknown = array_diff($only, ['kategori', 'grade', 'supplier', 'kelas-sapi', 'grup', 'produk', 'material', 'bom']);
+        $unknown = array_diff($only, ['kategori', 'grade', 'supplier', 'kelas-sapi', 'grup', 'produk', 'kategori-material', 'material', 'bom']);
 
         if ($unknown !== []) {
             $this->error('--only tidak dikenal: '.implode(', ', $unknown));
@@ -177,7 +177,13 @@ class ImportLegacyMaster extends Command
                 'kelas-sapi' => fn () => $this->importCattleClasses($sql),
                 'grup' => fn () => $this->importCustomerGroups($sql),
                 'produk' => fn () => $this->importProducts($sql),
-                'material' => fn () => $this->importMaterialCategoriesAndMaterials($sql),
+                'kategori-material' => fn () => $this->importMaterialCategories($sql),
+                'material' => function () use ($sql, $only) {
+                    if (! in_array('kategori-material', $only, true)) {
+                        $this->importMaterialCategories($sql);
+                    }
+                    $this->importMaterials($sql);
+                },
                 'bom' => fn () => $this->importProductMaterials($sql),
             ];
 
@@ -418,7 +424,7 @@ class ImportLegacyMaster extends Command
     // rawcategory -> material_categories, rawmate -> materials
     // =========================================================================
 
-    private function importMaterialCategoriesAndMaterials(string $sql): void
+    private function importMaterialCategories(string $sql): void
     {
         foreach (LegacySqlDump::parseTable($sql, 'rawcategory') as $row) {
             $id = (int) $row['idrawcategory'];
@@ -433,7 +439,10 @@ class ImportLegacyMaster extends Command
                 $this->materialCategoryNames[$id] = $name;
             }
         }
+    }
 
+    private function importMaterials(string $sql): void
+    {
         foreach (LegacySqlDump::parseTable($sql, 'rawmate') as $row) {
             $id = (int) $row['idrawmate'];
             $name = $this->clean($row['nmrawmate']);
@@ -460,9 +469,10 @@ class ImportLegacyMaster extends Command
 
             $category = $this->materialCategoryNames[$categoryId] ?? '';
 
-            // `code` TIDAK diisi dari `kdrawmate` legacy -- Material punya penomoran sendiri (MTR001, ...)
-            // lewat `Material::booted()`. Satuan dicocokkan menurut nama (tabel satuan tidak punya id legacy).
+            // `code` = MTR + id (kdrawmate RMxxxx legacy selalu sama dengan id-nya, jadi RM0001 -> MTR001).
+            // Satuan dicocokkan menurut nama (tabel satuan tidak punya id legacy).
             $status = $this->place('materials', $id, ['name' => $name], "{$name} ({$category}, {$unit})", $name, [
+                'code' => 'MTR'.str_pad((string) $id, 3, '0', STR_PAD_LEFT),
                 'material_category_id' => $categoryId,
                 'min_stock' => (int) ($row['barmin'] ?? 0),
                 'is_active' => true,

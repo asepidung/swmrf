@@ -456,6 +456,17 @@ CREATE TABLE `supplier` (
     }
 
     /** @test */
+    public function material_code_is_mtr_plus_the_legacy_id(): void
+    {
+        $this->apply()->assertExitCode(0);
+
+        foreach (\App\Models\Material::all() as $material) {
+            $this->assertSame('MTR'.str_pad((string) $material->id, 3, '0', STR_PAD_LEFT), $material->code);
+        }
+        $this->assertGreaterThan(0, \App\Models\Material::count());
+    }
+
+    /** @test */
     public function a_product_that_only_differs_by_spacing_is_imported_twice_and_reported(): void
     {
         $this->apply()->expectsOutputToContain('mirip "STRIPLOIN CUT A" (id 6)');

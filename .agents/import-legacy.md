@@ -310,3 +310,13 @@ supaya daftar urut menurut nama inti (pola yang sama dengan "ASEP BPK"); satu sp
 kurung. "H. DONI" dan BPK/IBU dibiarkan. Dipakai di supplier; DIPAKAI JUGA untuk pelanggan, produk, material saat gilirannya.
 Supplier 26 memakai nama lengkap "SINERGY INDOPACK MAKMUR PT" (hasil gabungan 14 dan 26).
 Pelanggan baru yang diketik manual di aplikasi belum dirapikan otomatis (hanya diperingatkan bila mirip).
+
+### Material (keputusan Ayah via Hafizh, 19 Oktober 2026)
+
+- Material dipisah per tujuan (daftar per item: `legacy/material-dipilah-2026-10-19.xlsx`, tidak masuk git): REQUEST 151 ->
+  `materials`; OPERASIONAL 56 -> bukan material, cukup kategori Expense; ASET 9 -> kategori Expense "ASET"; HAPUS 10.
+  Latihan sekarang: impor yang ada dulu (kategori yang diimpor ditambah PERCETAKAN); pemilahan per item dikerjakan
+  setelahnya.
+- Kode material: **MTR + id** (kdrawmate RMxxxx legacy selalu sama dengan id-nya: RM0001 -> MTR001). Kode RM tidak
+  disimpan. `Material::booted()` kini menghormati kode yang sudah diisi (importer mengisinya).
+- Langkah importer: `--only=kategori-material` (hanya kategori) lalu `--only=material` (kategori + material).
