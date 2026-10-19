@@ -166,11 +166,12 @@ class PwaIconAndNotificationShapeTest extends TestCase
             'TaskAlert tidak mengirim ikon, sehingga browser memunculkan avatar huruf.',
         );
 
-        // "icon" (kanan, besar): Android memotong ikon notifikasi menjadi
-        // LINGKARAN. Versi "any" isinya menyentuh tepi kanvas, jadi pasti
-        // terpangkas -- yang boleh dipakai hanya versi beralas.
-        preg_match("/->icon\('([^']+)'\)/", $taskAlert, $iconMatch);
-        $this->assertStringContainsString('maskable', $iconMatch[1] ?? '', 'icon notifikasi bukan versi beralas.');
+        // "icon" (kanan, besar): kini piktogram per jenis notifikasi (NotificationKind), penuh warna sampai tepi
+        // dan beralas -- aman bila Android memotongnya menjadi LINGKARAN; gambar transparan dirender kotak biru
+        // polos di HyperOS. Isinya diperiksa di NotificationKindIconTest; di sini hanya dipastikan tetap lewat
+        // NotificationKind dan bukan logo yang sama dengan ikon aplikasi.
+        $this->assertStringContainsString('NotificationKind::iconFor(', $taskAlert, 'icon notifikasi tidak mengikuti jenisnya.');
+        $this->assertStringNotContainsString("->icon('/img/pwalogo", $taskAlert, 'icon notifikasi kembali ke logo (tampil dua kali).');
 
         // "badge" (kiri, kecil): Android HANYA membaca kanal alpha gambar ini
         // lalu mewarnainya sendiri. Memakai icon berwarna penuh (termasuk
