@@ -83,6 +83,15 @@ class ImportLegacyMaster extends Command
     /** Nama supplier yang selamat dari penggabungan: memakai nama lengkap dengan badan usahanya. */
     private const SUPPLIER_RENAMES = [26 => 'SINERGY INDOPACK MAKMUR PT'];
 
+    /**
+     * Bukan bahan produksi (operasional/aset menurut pemilahan Hafizh) tetapi sudah ada transaksinya di legacy:
+     * tetap diimpor, satuan PCS, status NONAKTIF (keputusan Ayah, 19 Oktober 2026).
+     */
+    private const NON_MATERIAL_IDS = [56, 66, 74, 176, 177, 178];
+
+    /** Satuan untuk bahan yang satuannya kosong di legacy (usul Ruby, disetujui Ayah): id lama => satuan. */
+    private const UNIT_WHEN_EMPTY_BY_ID = [180 => 'PCS'];
+
     /** Kolom bermakna "baris yang sama" per tabel, dan kolom beraturan unik di basis data. */
     private const TABLES = [
         'product_categories' => ['model' => ProductCategory::class, 'identity' => ['name', 'prefix'], 'unique' => ['name', 'prefix']],
@@ -460,11 +469,21 @@ class ImportLegacyMaster extends Command
             }
 
             $unit = $this->clean($row['unit'] ?? '');
+            $active = true;
 
             if ($unit === '') {
-                $this->conflicts['materials'][] = "{$name} (idrawmate={$id}): satuan kosong di legacy, dilewati -- material_unit_id wajib diisi.";
+                if (in_array($id, self::NON_MATERIAL_IDS, true)) {
+                    $unit = 'PCS';
+                    $active = false;
+                } elseif (isset(self::UNIT_WHEN_EMPTY_BY_ID[$id])) {
+                    $unit = self::UNIT_WHEN_EMPTY_BY_ID[$id];
+                } elseif (($this->materialCategoryNames[$categoryId] ?? '') === 'MEAT PROCESSING') {
+                    $unit = preg_match('/^(KECAP|SAUS|MINYAK)\b/', $name) ? 'LITER' : 'KG';
+                } else {
+                    $this->conflicts['materials'][] = "{$name} (idrawmate={$id}): satuan kosong di legacy, dilewati -- material_unit_id wajib diisi.";
 
-                continue;
+                    continue;
+                }
             }
 
             $category = $this->materialCategoryNames[$categoryId] ?? '';
@@ -475,7 +494,7 @@ class ImportLegacyMaster extends Command
                 'code' => 'MTR'.str_pad((string) $id, 3, '0', STR_PAD_LEFT),
                 'material_category_id' => $categoryId,
                 'min_stock' => (int) ($row['barmin'] ?? 0),
-                'is_active' => true,
+                'is_active' => $active,
             ], fn (): array => ['material_unit_id' => MaterialUnit::firstOrCreate(['name' => $unit])->id]);
 
             if (in_array($status, ['created', 'same'], true)) {

@@ -467,6 +467,44 @@ CREATE TABLE `supplier` (
     }
 
     /** @test */
+    public function empty_units_follow_the_agreed_rules(): void
+    {
+        $ddl = "CREATE TABLE `rawcategory` (
+  `idrawcategory` int(11) NOT NULL AUTO_INCREMENT,
+  `nmcategory` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`idrawcategory`)
+);
+"
+            ."CREATE TABLE `rawmate` (
+  `idrawmate` int(11) NOT NULL AUTO_INCREMENT,
+  `kdrawmate` varchar(10) DEFAULT NULL,
+  `nmrawmate` varchar(50) DEFAULT NULL,
+  `iduser` int(11) DEFAULT NULL,
+  `idrawcategory` int(11) DEFAULT NULL,
+  `stock` tinyint(1) DEFAULT 1,
+  `unit` varchar(10) DEFAULT NULL,
+  `barmin` int(11) DEFAULT NULL,
+  PRIMARY KEY (`idrawmate`)
+);
+";
+        $cat = $ddl."INSERT INTO `rawcategory` (`idrawcategory`,`nmcategory`) VALUES ('24','MEAT PROCESSING');
+";
+        $row = fn (int $id, string $name) => "INSERT INTO `rawmate` (`idrawmate`,`kdrawmate`,`nmrawmate`,`iduser`,`idrawcategory`,`stock`,`unit`,`barmin`) VALUES ('{$id}','RM{$id}','{$name}',NULL,'24','1',NULL,'0');
+";
+        file_put_contents($this->sourcePath, $cat.$row(56, 'FOOT SWITCH').$row(114, 'BUMBU SERBAGUNA SAPI').$row(151, 'KECAP MANIS').$row(180, 'TALI KASUR'));
+
+        $this->apply()->assertExitCode(0);
+
+        $this->assertFalse((bool) Material::find(56)->is_active, 'Bukan bahan produksi: nonaktif.');
+        $this->assertSame('PCS', Material::find(56)->unit->name);
+        $this->assertSame('KG', Material::find(114)->unit->name);
+        $this->assertSame('LITER', Material::find(151)->unit->name);
+        $this->assertSame('PCS', Material::find(180)->unit->name);
+        $this->assertTrue((bool) Material::find(114)->is_active);
+        $this->assertSame('MTR114', Material::find(114)->code);
+    }
+
+    /** @test */
     public function a_product_that_only_differs_by_spacing_is_imported_twice_and_reported(): void
     {
         $this->apply()->expectsOutputToContain('mirip "STRIPLOIN CUT A" (id 6)');
