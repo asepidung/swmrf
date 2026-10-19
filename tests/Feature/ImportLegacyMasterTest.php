@@ -527,6 +527,14 @@ CREATE TABLE `supplier` (
     }
 
     /** @test */
+    public function only_products_still_resolves_their_categories(): void
+    {
+        $this->artisan('legacy:import-master', ['--source' => $this->sourcePath, '--apply' => true, '--only' => 'produk'])->assertSuccessful();
+
+        $this->assertGreaterThan(0, Product::count());
+    }
+
+    /** @test */
     public function a_product_that_only_differs_by_spacing_is_imported_twice_and_reported(): void
     {
         $this->apply()->expectsOutputToContain('mirip "STRIPLOIN CUT A" (id 6)');
