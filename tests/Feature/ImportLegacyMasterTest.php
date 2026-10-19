@@ -354,8 +354,8 @@ SQL;
     public function legacy_grades_are_not_imported_as_rows_but_verified_against_the_translation_table(): void
     {
         $this->apply()
-            ->expectsOutputToContain('J01 (idgrade 1) -> gudang JONGGOL + grade CHILL')
-            ->expectsOutputToContain('J02 (idgrade 2) -> gudang JONGGOL + grade FROZEN')
+            ->expectsOutputToContain('J01 (idgrade 1) -> gudang JGL + grade CHILL')
+            ->expectsOutputToContain('J02 (idgrade 2) -> gudang JGL + grade FROZEN')
             ->assertExitCode(0);
 
         $this->assertSame(0, Grade::count(), 'Grade legacy menggabungkan gudang + kondisi; tidak diimpor sebagai baris.');
