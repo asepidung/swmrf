@@ -328,3 +328,12 @@ Pelanggan baru yang diketik manual di aplikasi belum dirapikan otomatis (hanya d
   Hafizh; material "kotor" itu dirapikan setelahnya (nonaktifkan/pindah ke Expense), bukan lewat importer.
 - Bahan MEAT PROCESSING tanpa satuan: LITER untuk KECAP/SAUS/MINYAK, selain itu KG. TALI KASUR (180): PCS. Food colour: KG.
 - Satuan kosong di kategori lain tetap dilewati dan dilaporkan.
+
+## Segmen pelanggan (keputusan Ayah, 19 Oktober 2026; tidak ada di legacy)
+
+Tabel `segment` legacy = 4 rekening bank penagihan (BNI PT, BCA, BNI, BCA PT), BUKAN kelompok pelanggan; tidak diimpor
+sebagai segmen (SEG-2: rekening dibahas terpisah dengan Hafizh, menyangkut invoice). Segmen pelanggan dibuat dari data Ayah
+lewat `php artisan master:seed-segments` (dry-run bawaan, `--apply`, aman diulang): MODERN MARKET, HOREKA, DISTRIBUTOR, RETAIL,
+INDUSTRI. Hasil yang harus cocok: 5 segmen.
+Masih terbuka untuk impor pelanggan: tiap pelanggan WAJIB punya segmen; legacy tidak punya datanya, jadi Ayah menentukan
+pemetaannya (per pelanggan atau per grup) sebelum pelanggan diimpor.
