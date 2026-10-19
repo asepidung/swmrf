@@ -58,6 +58,7 @@ class ImportLegacyMaster extends Command
 {
     protected $signature = 'legacy:import-master
                             {--source= : Path ke berkas dump SQL legacy}
+                            {--only= : Hanya langkah ini (pisah koma): kategori,grade,supplier,kelas-sapi,grup,produk,material,bom}
                             {--apply : Benar-benar menulis perubahan (default hanya laporan dry-run)}';
 
     protected $description = 'Impor master data (kategori, grade, produk, bahan, supplier, kelas sapi, grup pelanggan) dari snapshot legacy, DENGAN id legacy';
@@ -145,15 +146,32 @@ class ImportLegacyMaster extends Command
         $sql = file_get_contents($path);
         $apply = (bool) $this->option('apply');
 
-        $run = function () use ($sql, $apply): void {
-            $this->importProductCategories($sql);
-            $this->verifyGradeMap($sql);
-            $this->importSuppliers($sql);
-            $this->importCattleClasses($sql);
-            $this->importCustomerGroups($sql);
-            $this->importProducts($sql);
-            $this->importMaterialCategoriesAndMaterials($sql);
-            $this->importProductMaterials($sql);
+        $only = array_values(array_filter(array_map('trim', explode(',', (string) $this->option('only')))));
+        $unknown = array_diff($only, ['kategori', 'grade', 'supplier', 'kelas-sapi', 'grup', 'produk', 'material', 'bom']);
+
+        if ($unknown !== []) {
+            $this->error('--only tidak dikenal: '.implode(', ', $unknown));
+
+            return self::FAILURE;
+        }
+
+        $run = function () use ($sql, $apply, $only): void {
+            $steps = [
+                'kategori' => fn () => $this->importProductCategories($sql),
+                'grade' => fn () => $this->verifyGradeMap($sql),
+                'supplier' => fn () => $this->importSuppliers($sql),
+                'kelas-sapi' => fn () => $this->importCattleClasses($sql),
+                'grup' => fn () => $this->importCustomerGroups($sql),
+                'produk' => fn () => $this->importProducts($sql),
+                'material' => fn () => $this->importMaterialCategoriesAndMaterials($sql),
+                'bom' => fn () => $this->importProductMaterials($sql),
+            ];
+
+            foreach ($steps as $name => $step) {
+                if ($only === [] || in_array($name, $only, true)) {
+                    $step();
+                }
+            }
 
             // Satu penolakan saja membatalkan seluruh penulisan.
             if ($apply && $this->refusals !== []) {
