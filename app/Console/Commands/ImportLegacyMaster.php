@@ -105,6 +105,25 @@ class ImportLegacyMaster extends Command
         56 => 'MITLOIN GLOBAL GROUP PT',
     ];
 
+    /** Cabang CIPTA BOGA PRIMA PT: bukan kembar, tiga alamat kirim -> tetap tiga pelanggan dengan pembeda (keputusan Ayah). */
+    private const CUSTOMER_RENAMES = [
+        135 => 'CIPTA BOGA PRIMA PT (PASAR REBO)',
+        182 => 'CIPTA BOGA PRIMA PT (GEDANGAN)',
+        188 => 'CIPTA BOGA PRIMA PT (VIA EKSPEDISI ELVANO)',
+    ];
+
+    /** Segmen bila grup pelanggan tidak ada di GROUP_SEGMENTS (diperbaiki Ayah di aplikasi). */
+    private const DEFAULT_SEGMENT = 'RETAIL';
+
+    /** Usul segmen per grup pelanggan legacy (id grup => nama segmen). */
+    private const GROUP_SEGMENTS = [
+        3 => 'MODERN MARKET', 9 => 'MODERN MARKET', 12 => 'MODERN MARKET', 15 => 'MODERN MARKET',
+        33 => 'MODERN MARKET', 35 => 'MODERN MARKET', 40 => 'MODERN MARKET', 41 => 'MODERN MARKET',
+        1 => 'HOREKA', 4 => 'HOREKA', 6 => 'HOREKA', 20 => 'HOREKA', 31 => 'HOREKA', 44 => 'HOREKA',
+        45 => 'HOREKA', 46 => 'HOREKA', 47 => 'HOREKA', 49 => 'HOREKA', 51 => 'HOREKA',
+        21 => 'RETAIL',
+    ];
+
     /** Kolom bermakna "baris yang sama" per tabel, dan kolom beraturan unik di basis data. */
     private const TABLES = [
         'product_categories' => ['model' => ProductCategory::class, 'identity' => ['name', 'prefix'], 'unique' => ['name', 'prefix']],
@@ -144,6 +163,9 @@ class ImportLegacyMaster extends Command
 
     /** @var array<int, string> id legacy grup => nama (huruf besar) */
     private array $groupNames = [];
+
+    /** @var array<string, int> jumlah pelanggan per segmen pada jalan ini */
+    private array $segmentCounts = [];
 
     /**
      * Id legacy yang SETELAH jalan ini benar-benar ada di tabelnya (dibuat, atau sudah
@@ -418,14 +440,58 @@ class ImportLegacyMaster extends Command
         'ujilab' => 'Uji Lab',
     ];
 
-    private function importCustomers(string $sql): void
+    /**
+     * Peta id pelanggan legacy -> id yang dipakai (keputusan Ayah, 19 Oktober 2026): nama yang sama persis digabung dan yang
+     * dipakai adalah yang PALING BARU diperbarui (`tanggal_update`; sama -> id terbesar). Cabang yang diberi pembeda
+     * (CUSTOMER_RENAMES) tidak digabung. Hanya id yang digabung muncul di peta. Importer riwayat WAJIB memakainya.
+     *
+     * @return array<int, int>
+     */
+    public static function customerIdMap(string $sql): array
     {
-        $dropped = ['sales_referensi' => 0, 'email' => 0, 'catatan' => 0, 'pajak' => 0];
-        $segmentId = null;
+        $map = [];
+        $byName = [];
 
         foreach (LegacySqlDump::parseTable($sql, 'customers') as $row) {
             $id = (int) $row['idcustomer'];
-            $name = $this->clean($row['nama_customer']);
+            $name = self::CUSTOMER_RENAMES[$id] ?? strtoupper(trim((string) $row['nama_customer']));
+
+            if ($name !== '') {
+                $byName[$name][] = ['id' => $id, 'updated' => (string) ($row['tanggal_update'] ?? '')];
+            }
+        }
+
+        foreach ($byName as $rows) {
+            if (count($rows) < 2) {
+                continue;
+            }
+
+            usort($rows, fn ($a, $b) => [$b['updated'], $b['id']] <=> [$a['updated'], $a['id']]);
+            $survivor = $rows[0]['id'];
+
+            foreach (array_slice($rows, 1) as $loser) {
+                $map[$loser['id']] = $survivor;
+            }
+        }
+
+        return $map;
+    }
+
+    private function importCustomers(string $sql): void
+    {
+        $merged = self::customerIdMap($sql);
+        $segmentIds = [];
+        $dropped = ['sales_referensi' => 0, 'email' => 0, 'catatan' => 0, 'pajak' => 0];
+
+        foreach (LegacySqlDump::parseTable($sql, 'customers') as $row) {
+            $id = (int) $row['idcustomer'];
+            $name = self::CUSTOMER_RENAMES[$id] ?? \App\Support\TidyName::company($row['nama_customer']);
+
+            if (isset($merged[$id])) {
+                $this->notes[] = "Pelanggan digabung: idcustomer={$id} ({$name}) -> id {$merged[$id]} (yang lebih baru diperbarui).";
+
+                continue;
+            }
 
             if ($name === '') {
                 $this->conflicts['customers'][] = "idcustomer={$id}: nama kosong, dilewati.";
@@ -484,16 +550,19 @@ class ImportLegacyMaster extends Command
                 'is_active' => true,
             ];
 
-            // Semua pelanggan memakai satu segmen "UMUM" (segment legacy = rekening bank penagihan, bukan segmen).
-            $this->place('customers', $id, ['name' => $name], $name, $name, $extra, function () use (&$segmentId): array {
-                $segmentId ??= (int) CustomerSegment::firstOrCreate(['name' => 'UMUM'])->id;
+            // Segmen menurut grup (GROUP_SEGMENTS), selain itu DEFAULT_SEGMENT. `segment` legacy = rekening bank, bukan segmen.
+            $segmentName = self::GROUP_SEGMENTS[$groupId] ?? self::DEFAULT_SEGMENT;
+            $this->segmentCounts[$segmentName] = ($this->segmentCounts[$segmentName] ?? 0) + 1;
 
-                return ['customer_segment_id' => $segmentId];
+            $this->place('customers', $id, ['name' => $name], $name, $name, $extra, function () use (&$segmentIds, $segmentName): array {
+                $segmentIds[$segmentName] ??= (int) CustomerSegment::firstOrCreate(['name' => $segmentName])->id;
+
+                return ['customer_segment_id' => $segmentIds[$segmentName]];
             });
         }
 
-        $this->notes[] = 'Customers: semua pelanggan dipasang ke satu segmen "UMUM" (dibuat bila belum ada). Tabel `segment` legacy '
-            .'(BCA/BCA PT/BNI/BNI PT) adalah rekening penagihan, bukan segmen, dan TIDAK diimpor.';
+        $this->notes[] = 'Customers: segmen menurut grup: '.collect($this->segmentCounts)->map(fn ($n, $name) => "{$name}={$n}")->implode(', ')
+            .'. Tabel `segment` legacy (BCA/BCA PT/BNI/BNI PT) adalah rekening penagihan, bukan segmen, dan TIDAK diimpor.';
         $this->notes[] = 'Customers: kolom legacy yang tidak punya padanan dibuang: '
             .collect($dropped)->map(fn ($count, $column) => "{$column} terisi di {$count} baris")->implode('; ').'.';
     }

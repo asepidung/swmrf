@@ -108,10 +108,10 @@ SQL;
         $this->assertNull($lion->required_documents);
         $this->assertFalse($lion->invoice_exchange);
 
-        // Semua pelanggan memakai satu segmen UMUM.
-        $this->assertSame(1, CustomerSegment::count());
-        $this->assertSame(['UMUM'], CustomerSegment::pluck('name')->all());
-        $this->assertSame(1, Customer::distinct()->count('customer_segment_id'));
+        // Segmen menurut grup: Carrefour (grup 3) dan LION (grup 15) modern market; selain itu RETAIL.
+        $this->assertSame('MODERN MARKET', Customer::find(2)->segment->name);
+        $this->assertSame('MODERN MARKET', Customer::find(6)->segment->name);
+        $this->assertSame('RETAIL', Customer::find(176)->segment->name);
     }
 
     /** @test */
@@ -138,5 +138,40 @@ SQL;
 
         $this->importer(true)->assertFailed();
         $this->assertSame('ORANG LAIN', Customer::find(6)->name, 'Tidak ditimpa.');
+    }
+
+    /** @test */
+    public function same_name_customers_merge_into_the_newest_and_cipta_boga_stays_three(): void
+    {
+        $c = self::COLUMNS;
+        $row = fn (int $id, string $name, string $updated) => "INSERT INTO `customers` {$c} VALUES ('{$id}','{$name}','ALAMAT','1','14',NULL,'NO','','','','{$updated}','NO','','',NULL,'0','0','0','0','0','0','0');
+";
+        $ddl = "CREATE TABLE `customers` (
+  `idcustomer` int(11) NOT NULL AUTO_INCREMENT,
+  `nama_customer` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`idcustomer`)
+);
+";
+        $sql = $ddl
+            .$row(121, 'HPM CYBERPARK KRWC', '2023-01-01 00:00:00')
+            .$row(204, 'HPM CYBERPARK KRWC', '2024-05-01 00:00:00')
+            .$row(218, 'ABUBA - CIPETE', '2024-05-01 00:00:00')
+            .$row(219, 'ABUBA - CIPETE', '2024-05-01 00:00:00')
+            .$row(135, 'CIPTA BOGA PRIMA PT', '2023-01-01 00:00:00')
+            .$row(182, 'CIPTA BOGA PRIMA PT', '2023-01-01 00:00:00')
+            .$row(188, 'CIPTA BOGA PRIMA PT', '2023-01-01 00:00:00');
+        file_put_contents($this->sourcePath, $sql);
+
+        $this->assertSame([121 => 204, 218 => 219], \App\Console\Commands\ImportLegacyMaster::customerIdMap($sql));
+
+        $this->importer(true)->assertExitCode(0);
+
+        $this->assertNull(Customer::find(121), 'Yang lama digabung.');
+        $this->assertSame('HPM CYBERPARK KRWC', Customer::find(204)->name);
+        $this->assertNull(Customer::find(218), 'Tanggal sama -> id terbesar dipakai.');
+        $this->assertNotNull(Customer::find(219));
+        $this->assertSame('CIPTA BOGA PRIMA PT (PASAR REBO)', Customer::find(135)->name);
+        $this->assertSame('CIPTA BOGA PRIMA PT (GEDANGAN)', Customer::find(182)->name);
+        $this->assertSame('CIPTA BOGA PRIMA PT (VIA EKSPEDISI ELVANO)', Customer::find(188)->name);
     }
 }
