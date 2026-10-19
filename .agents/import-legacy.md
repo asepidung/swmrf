@@ -30,3 +30,13 @@ bagian "customers dengan id legacy").
   snapshot dengan aturan yang sama (bukan ditulis tangan), dan dites.
 - Pelanggan baru di aplikasi: nama yang sama persis ditolak. Yang beda hanya spasi/tanda baca ("CV. X" vs "CV.X")
   lolos formulir; cabang dari satu perusahaan harus diberi pembeda di nama seperti contoh Cipta Boga.
+
+## Supir dan armada (data awal dari Owner, 19 Oktober 2026; tidak ada di legacy)
+
+Perintah `php artisan master:seed-fleet` (dry-run bawaan; `--apply` menulis; aman diulang; nama/plat dibandingkan longgar;
+plat yang sama dengan jenis berbeda = konflik, tidak ditimpa). Datanya ada di `App\Console\Commands\SeedFleet`:
+
+- Supir (tabel `drivers`: name): ACEP NURFADILLAH, RESKHA PERMANA.
+- Armada (tabel `vehicles`: vehicle_type, police_number): CANTER - F 8485 HD, TRAGA - F 9385 FI, L-300 - F 8489 HV,
+  DUTRO - F 9201 F.
+- Semua aktif. Tidak ada masalah yang perlu keputusan. Hasil yang harus cocok: 2 supir dan 4 armada.
