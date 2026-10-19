@@ -429,6 +429,33 @@ SQL;
     }
 
     /** @test */
+    public function merged_suppliers_are_not_created_and_their_goods_move_to_the_survivor(): void
+    {
+        $sql = "DROP TABLE IF EXISTS `supplier`;
+CREATE TABLE `supplier` (
+  `idsupplier` int(11) NOT NULL AUTO_INCREMENT,
+  `nmsupplier` varchar(100) DEFAULT NULL,
+  `jenis_usaha` varchar(100) DEFAULT NULL,
+  `alamat` varchar(100) DEFAULT NULL,
+  `telepon` varchar(30) DEFAULT NULL,
+  `npwp` varchar(30) DEFAULT NULL,
+  `iduser` int(11) DEFAULT NULL,
+  PRIMARY KEY (`idsupplier`)
+);
+"
+            ."INSERT INTO `supplier` (`idsupplier`,`nmsupplier`,`jenis_usaha`,`alamat`,`telepon`,`npwp`,`iduser`) VALUES ('14','SINERGY INDOPACK MAKMUR PT','DRY LOCK','TANGERANG','',NULL,NULL);
+"
+            ."INSERT INTO `supplier` (`idsupplier`,`nmsupplier`,`jenis_usaha`,`alamat`,`telepon`,`npwp`,`iduser`) VALUES ('26','Sinergy Indopack Makmur','Plastik 350x500','Tanggerang','',NULL,NULL);
+";
+        file_put_contents($this->sourcePath, $sql);
+
+        $this->apply()->assertExitCode(0);
+
+        $this->assertNull(Supplier::find(14));
+        $this->assertSame('PLASTIK 350X500; DRY LOCK', Supplier::find(26)->supplied_goods);
+    }
+
+    /** @test */
     public function a_product_that_only_differs_by_spacing_is_imported_twice_and_reported(): void
     {
         $this->apply()->expectsOutputToContain('mirip "STRIPLOIN CUT A" (id 6)');

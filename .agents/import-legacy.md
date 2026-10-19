@@ -292,3 +292,13 @@ Langkah: kategori, grade, supplier, kelas-sapi, grup, produk, material, bom. Sna
 
 - Kelas sapi: DITERAPKAN di coba. Hasil 7 baris (id 1 STEER, 2 BULL, 3 HEIFER, 4 COW, 5 PREMIUM, 6 NONPREMIUM, 7 BULL & STEER).
   Dijalankan ulang: 0 dibuat (aman diulang).
+
+### Supplier (keputusan Ayah, 19 Oktober 2026)
+
+- Semua 43 supplier dibawa, aktif, TOP 0, PIC "-", tidak kena PPN. Yang tidak jelas (REGULER, ASEP IDUNG, SWM (STOCK IN),
+  MEAT PROCESSING) tetap diimpor supaya data legacy punya tempat menempel; dinonaktifkan nanti di aplikasi.
+- Digabung (id lama -> id yang dipakai; konstanta `ImportLegacyMaster::SUPPLIER_MERGES`, WAJIB dipakai importer riwayat):
+  41 -> 46 (CV. SAMUDERA KARUNIA RIZKY, alamat dan NPWP sama persis), 14 -> 26 (SINERGY INDOPACK MAKMUR),
+  9 -> 32 (INDOGUNA PT -> PT INDOGUNA UTAMA, kata Ayah satu perusahaan), 18 -> 19 (E - COMMERCE -> MARKETPLACE).
+  Jenis usaha supplier yang digabung dipindah ke yang selamat. Hasil yang harus cocok: 39 supplier.
+- NPWP (5 terisi) tidak dibawa: aplikasi tidak punya kolomnya.
