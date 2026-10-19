@@ -3,7 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Models\CattleClass;
+use App\Models\Customer;
 use App\Models\CustomerGroup;
+use App\Models\CustomerSegment;
 use App\Models\Material;
 use App\Models\MaterialCategory;
 use App\Models\MaterialUnit;
@@ -58,7 +60,7 @@ class ImportLegacyMaster extends Command
 {
     protected $signature = 'legacy:import-master
                             {--source= : Path ke berkas dump SQL legacy}
-                            {--only= : Hanya langkah ini (pisah koma): kategori,grade,supplier,kelas-sapi,grup,produk,kategori-material,material,bom}
+                            {--only= : Hanya langkah ini (pisah koma): kategori,grade,supplier,kelas-sapi,grup,pelanggan,produk,kategori-material,material,bom}
                             {--apply : Benar-benar menulis perubahan (default hanya laporan dry-run)}';
 
     protected $description = 'Impor master data (kategori, grade, produk, bahan, supplier, kelas sapi, grup pelanggan) dari snapshot legacy, DENGAN id legacy';
@@ -109,6 +111,7 @@ class ImportLegacyMaster extends Command
         'suppliers' => ['model' => Supplier::class, 'identity' => ['name'], 'unique' => ['name']],
         'cattle_classes' => ['model' => CattleClass::class, 'identity' => ['name'], 'unique' => ['name']],
         'customer_groups' => ['model' => CustomerGroup::class, 'identity' => ['name'], 'unique' => ['name']],
+        'customers' => ['model' => Customer::class, 'identity' => ['name'], 'unique' => ['name']],
         'products' => ['model' => Product::class, 'identity' => ['code', 'name'], 'unique' => ['code', 'name']],
         'material_categories' => ['model' => MaterialCategory::class, 'identity' => ['name'], 'unique' => ['name']],
         'materials' => ['model' => Material::class, 'identity' => ['name'], 'unique' => ['name']],
@@ -138,6 +141,9 @@ class ImportLegacyMaster extends Command
 
     /** @var array<int, string> baris laporan terjemahan grade legacy */
     private array $gradeLines = [];
+
+    /** @var array<int, string> id legacy grup => nama (huruf besar) */
+    private array $groupNames = [];
 
     /**
      * Id legacy yang SETELAH jalan ini benar-benar ada di tabelnya (dibuat, atau sudah
@@ -181,7 +187,7 @@ class ImportLegacyMaster extends Command
         $apply = (bool) $this->option('apply');
 
         $only = array_values(array_filter(array_map('trim', explode(',', (string) $this->option('only')))));
-        $unknown = array_diff($only, ['kategori', 'grade', 'supplier', 'kelas-sapi', 'grup', 'produk', 'kategori-material', 'material', 'bom']);
+        $unknown = array_diff($only, ['kategori', 'grade', 'supplier', 'kelas-sapi', 'grup', 'pelanggan', 'produk', 'kategori-material', 'material', 'bom']);
 
         if ($unknown !== []) {
             $this->error('--only tidak dikenal: '.implode(', ', $unknown));
@@ -196,6 +202,12 @@ class ImportLegacyMaster extends Command
                 'supplier' => fn () => $this->importSuppliers($sql),
                 'kelas-sapi' => fn () => $this->importCattleClasses($sql),
                 'grup' => fn () => $this->importCustomerGroups($sql),
+                'pelanggan' => function () use ($sql, $only) {
+                    if (! in_array('grup', $only, true)) {
+                        $this->importCustomerGroups($sql);
+                    }
+                    $this->importCustomers($sql);
+                },
                 'produk' => fn () => $this->importProducts($sql),
                 'kategori-material' => fn () => $this->importMaterialCategories($sql),
                 'material' => function () use ($sql, $only) {
@@ -386,8 +398,104 @@ class ImportLegacyMaster extends Command
 
             // `trading_terms_percent` dan penanda acuan costing TIDAK datang dari legacy
             // (kolom `terms` kosong di legacy); diisi `legacy:import-prices`.
+            $this->groupNames[$id] = $name;
             $this->place('customer_groups', $id, ['name' => $name], $name, $name);
         }
+    }
+
+    // =========================================================================
+    // customers -> customers (id legacy = idcustomer)
+    // =========================================================================
+
+    /** Bendera dokumen legacy -> nama dokumen di form Customer swmrf. */
+    private const DOCUMENT_FLAGS = [
+        'invoice' => 'Invoice',
+        'nkv' => 'NKV',
+        'halal' => 'Sertifikat Halal',
+        'sv' => 'SV',
+        'joss' => 'JOSS',
+        'phd' => 'PHD',
+        'ujilab' => 'Uji Lab',
+    ];
+
+    private function importCustomers(string $sql): void
+    {
+        $dropped = ['sales_referensi' => 0, 'email' => 0, 'catatan' => 0, 'pajak' => 0];
+        $segmentId = null;
+
+        foreach (LegacySqlDump::parseTable($sql, 'customers') as $row) {
+            $id = (int) $row['idcustomer'];
+            $name = $this->clean($row['nama_customer']);
+
+            if ($name === '') {
+                $this->conflicts['customers'][] = "idcustomer={$id}: nama kosong, dilewati.";
+
+                continue;
+            }
+
+            // Grup: id legacy, harus sudah ada (diimpor di atas). Tanpa grup yang sah, pelanggan diimpor tanpa grup.
+            $groupId = (int) ($row['idgroup'] ?? 0);
+            if ($groupId > 0 && ! isset($this->valid['customer_groups'][$groupId])) {
+                $this->conflicts['customers'][] = "{$name} (id {$id}): idgroup {$groupId} tidak ada di grup yang diimpor -- diimpor TANPA grup.";
+                $groupId = 0;
+            } elseif ($groupId === 0) {
+                $this->conflicts['customers'][] = "{$name} (id {$id}): tanpa grup di legacy -- diimpor TANPA grup.";
+            }
+
+            // TOP: 1..60 hari dipakai; selain itu 0 (kolom `top` tidak boleh kosong).
+            $top = (int) ($row['top'] ?? 0);
+            if ($top < 1 || $top > 60) {
+                $this->conflicts['customers'][] = "{$name} (id {$id}): TOP legacy \"".($row['top'] ?? '')."\" di luar 1-60 -- diisi 0.";
+                $top = 0;
+            }
+
+            // Diskon bawaan: 2% untuk grup LION (dikenali dari NAMA grup, bukan angkanya), 0 untuk lainnya.
+            $discount = ($groupId > 0 && ($this->groupNames[$groupId] ?? '') === 'LION') ? 2 : 0;
+
+            $documents = [];
+            foreach (self::DOCUMENT_FLAGS as $column => $label) {
+                if ((int) ($row[$column] ?? 0) === 1) {
+                    $documents[] = $label;
+                }
+            }
+
+            $address = collect([$row['alamat1'] ?? '', $row['alamat2'] ?? '', $row['alamat3'] ?? ''])
+                ->map(fn ($part) => trim((string) preg_replace('/\s+/', ' ', (string) $part)))
+                ->filter()
+                ->implode(', ');
+
+            $phone = trim((string) ($row['telepon'] ?? ''));
+
+            foreach (array_keys($dropped) as $column) {
+                $value = trim((string) ($row[$column] ?? ''));
+                if ($value !== '' && $value !== '-' && ! ($column === 'pajak' && strtoupper($value) === 'NO')) {
+                    $dropped[$column]++;
+                }
+            }
+
+            $extra = [
+                'customer_group_id' => $groupId > 0 ? $groupId : null,
+                'address' => $address !== '' ? $address : '-',
+                'top' => $top,
+                'default_discount' => $discount,
+                'phone' => ($phone === '' || $phone === '-') ? null : $phone,
+                'required_documents' => $documents === [] ? null : $documents,
+                'invoice_exchange' => strtoupper(trim((string) ($row['tukarfaktur'] ?? ''))) === 'YES',
+                'is_active' => true,
+            ];
+
+            // Semua pelanggan memakai satu segmen "UMUM" (segment legacy = rekening bank penagihan, bukan segmen).
+            $this->place('customers', $id, ['name' => $name], $name, $name, $extra, function () use (&$segmentId): array {
+                $segmentId ??= (int) CustomerSegment::firstOrCreate(['name' => 'UMUM'])->id;
+
+                return ['customer_segment_id' => $segmentId];
+            });
+        }
+
+        $this->notes[] = 'Customers: semua pelanggan dipasang ke satu segmen "UMUM" (dibuat bila belum ada). Tabel `segment` legacy '
+            .'(BCA/BCA PT/BNI/BNI PT) adalah rekening penagihan, bukan segmen, dan TIDAK diimpor.';
+        $this->notes[] = 'Customers: kolom legacy yang tidak punya padanan dibuang: '
+            .collect($dropped)->map(fn ($count, $column) => "{$column} terisi di {$count} baris")->implode('; ').'.';
     }
 
     // =========================================================================
