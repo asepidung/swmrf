@@ -89,7 +89,9 @@ class TaskNotifier
      */
     protected static function permissionHolders(array $permissions, ?int $exceptUserId): Collection
     {
-        return User::query()
+        // Pemegang izin MENCAKUP programmer: aturan penutup akun programmer tidak boleh menyembunyikannya dari
+        // penerima notifikasi, kalau tidak notifikasi untuknya berhenti saat karyawan yang memicunya.
+        return User::withoutGlobalScope(\App\Models\Scopes\HideProgrammerAccounts::class)
             ->where('is_active', true)
             ->when($exceptUserId !== null, fn ($query) => $query->whereKeyNot($exceptUserId))
             ->where(function ($query) use ($permissions) {

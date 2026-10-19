@@ -355,7 +355,16 @@ class ActivityLogResource extends Resource
             ->whereNotIn('subject_type', [
                 'App\Models\PurchaseCattleItem',
                 'App\Models\CattleReceivingItem',
-            ]);
+            ])
+            // Riwayat akun programmer (yang dilakukannya, dan yang dilakukan terhadap akunnya) hanya terlihat oleh
+            // pemiliknya sendiri; lihat HideProgrammerAccounts.
+            ->when($hidden = \App\Models\Scopes\HideProgrammerAccounts::hiddenIds(), fn (Builder $query) => $query
+                ->where(fn (Builder $q) => $q->whereNull('causer_id')
+                    ->orWhere('causer_type', '!=', \App\Models\User::class)
+                    ->orWhereNotIn('causer_id', $hidden))
+                ->where(fn (Builder $q) => $q->whereNull('subject_id')
+                    ->orWhere('subject_type', '!=', \App\Models\User::class)
+                    ->orWhereNotIn('subject_id', $hidden)));
     }
 
     public static function canCreate(): bool
