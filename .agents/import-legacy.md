@@ -347,3 +347,13 @@ Nama grup di legacy TERPOTONG 20 huruf; dipulihkan dari nama pelanggan di grup i
 Grup baru tambahan Ayah (di luar legacy, ID sesudah 57): KARYAWAN, WARGA +62, dan satu grup untuk gratisan/tamu (nama menunggu Ayah).
 Grup tambahan Ayah: `php artisan master:seed-groups` (dry-run bawaan, `--apply`, aman diulang): KARYAWAN, WARGA +62, GRATISAN.
 WAJIB dijalankan SESUDAH `legacy:import-master --only=grup` supaya ID grup legacy tidak tergeser (hasil: ID 58, 59, 60).
+
+### Pelanggan: keputusan Ayah selanjutnya (19 Oktober 2026)
+
+- Segmen menurut GRUP (konstanta `GROUP_SEGMENTS`): MODERN MARKET (HPM, LION, AEON, GRAND LUCKY, GS THE FRESH, THE FOODHALL,
+  CARREFOUR, GELAEL), HOREKA (ABUBA, CHEF NALDO, EL ASADOR, PULLMAN, YUAN GARDEN HOTEL, ABOUT US BRASSERIE, SWISSOTEL, IBIS,
+  MULLIGAN, SMOKEHOUSE BBQ, CORNER HOUSE GROUP), sisanya RETAIL (termasuk REGULER dan UNGROUP); dirapikan Ayah di aplikasi.
+- Digabung tambahan: 54 "FREE / SAMPLE" -> 127 "Free Sample" (`CUSTOMER_MERGES`). Hasil yang harus cocok: 295 pelanggan
+  (306 - 1 tanpa nama - 9 kembar - 1 gabungan).
+- Diskon bawaan 2% HANYA untuk LION DCA (6), DCB (28), DCC (214), bukan seluruh grup LION.
+- Semua aktif; TOP di luar 1-60 jadi 0; PIC kosong. Peta id lama -> id: `ImportLegacyMaster::customerIdMap()`.
