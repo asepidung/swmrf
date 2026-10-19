@@ -92,6 +92,17 @@ class ImportLegacyMaster extends Command
     /** Satuan untuk bahan yang satuannya kosong di legacy (usul Ruby, disetujui Ayah): id lama => satuan. */
     private const UNIT_WHEN_EMPTY_BY_ID = [180 => 'PCS'];
 
+    /**
+     * Nama grup pelanggan di legacy terpotong 20 huruf; nama lengkapnya terbaca dari pelanggan di grup itu
+     * (disetujui Ayah, 19 Oktober 2026): id lama => nama lengkap.
+     */
+    private const GROUP_RENAMES = [
+        43 => 'REPUBLIK MANOR PROPERTINDO PT',
+        45 => 'SWISSOTEL LIVING JAKARTA',
+        50 => 'ANUGERAH DIRGA CIPTA PT',
+        56 => 'MITLOIN GLOBAL GROUP PT',
+    ];
+
     /** Kolom bermakna "baris yang sama" per tabel, dan kolom beraturan unik di basis data. */
     private const TABLES = [
         'product_categories' => ['model' => ProductCategory::class, 'identity' => ['name', 'prefix'], 'unique' => ['name', 'prefix']],
@@ -365,7 +376,7 @@ class ImportLegacyMaster extends Command
     {
         foreach (LegacySqlDump::parseTable($sql, 'groupcs') as $row) {
             $id = (int) $row['idgroup'];
-            $name = $this->clean($row['nmgroup']);
+            $name = self::GROUP_RENAMES[$id] ?? \App\Support\TidyName::company($row['nmgroup']);
 
             if ($name === '') {
                 $this->conflicts['customer_groups'][] = "idgroup={$id}: nama kosong, dilewati.";
