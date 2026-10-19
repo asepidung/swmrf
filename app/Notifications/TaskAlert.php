@@ -43,9 +43,13 @@ class TaskAlert extends Notification
             // coba.wijayameat.co.id) yang disangka inisial pengirim. Sudah
             // dicoba dilepas DUA KALI dengan hasil sama; lihat sw.js.
             //
-            // Versi BERALAS, bukan pwalogo-192.png yang isinya menyentuh tepi
-            // -- Android memotong ikon besar notifikasi menjadi lingkaran.
-            ->icon('/img/pwalogo-maskable-192.png')
+            // Percobaan ketiga (19 Oktober 2026): gambar TRANSPARAN supaya hanya
+            // satu logo yang terlihat -> HyperOS merendernya sebagai kotak biru
+            // polos. Jangan dicoba lagi. Logo kiri adalah ikon aplikasi dari
+            // Android dan tidak bisa dilepas; gambar kanan kini piktogram per
+            // jenis notifikasi (lihat NotificationKind), penuh warna sampai
+            // tepi dan aman bila dipotong menjadi lingkaran.
+            ->icon(\App\Support\NotificationKind::iconFor($this->tag))
             // badge: ikon kecil di status bar, kiri. Android HANYA membaca
             // kanal alpha gambar ini lalu mewarnainya sendiri (putih) --
             // memberinya logo berwarna penuh membuat seluruh kanvas dianggap
@@ -60,6 +64,9 @@ class TaskAlert extends Notification
                 // yang sebenarnya sama.
                 'tag' => $this->tag,
             ])
-            ->options(['TTL' => 3600]);
+            // urgency high: tanpa ini layanan push memperlakukannya sebagai "normal" dan Android yang layarnya mati
+            // (mode hemat daya / Doze) boleh menundanya sampai perangkat aktif lagi -- terlalu lambat untuk tugas yang
+            // menunggu persetujuan seseorang.
+            ->options(['TTL' => 3600, 'urgency' => 'high']);
     }
 }
