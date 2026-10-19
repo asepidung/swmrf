@@ -67,7 +67,7 @@ class MaterialResource extends Resource
                             ->visibleOn('view')
                             ->disabled()
                             ->dehydrated(false),
-                        Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
+                        Forms\Components\TextInput::make('name')->warnIfSimilar(\App\Models\Material::class)->unique(ignoreRecord: true)
                             ->label(fn() => __('Item Name'))
                             ->autofocus()
                             ->required()

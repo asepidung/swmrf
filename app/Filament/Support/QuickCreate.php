@@ -76,6 +76,7 @@ class QuickCreate
                     ->maxLength(255)
                     ->extraInputAttributes(['style' => 'text-transform:uppercase'])
                     ->dehydrateStateUsing(fn ($state) => strtoupper((string) $state))
+                    ->warnIfSimilar(self::model($kind))
                     ->rule(fn () => self::uniqueIgnoringCase($kind)),
                 TextInput::make('prefix')
                     ->label(fn () => __('Prefix (Code)'))
@@ -93,6 +94,7 @@ class QuickCreate
                     ->label(fn () => __('Name'))
                     ->required()
                     ->maxLength(255)
+                    ->warnIfSimilar(self::model($kind))
                     ->rule(fn () => self::uniqueIgnoringCase($kind)),
                 Toggle::make('is_active')->default(true),
             ],
@@ -150,6 +152,7 @@ class QuickCreate
             ->maxLength(255)
             ->extraInputAttributes(['style' => 'text-transform:uppercase'])
             ->dehydrateStateUsing(fn ($state) => strtoupper((string) $state))
+            ->warnIfSimilar(self::model($kind))
             ->rule(fn () => self::uniqueIgnoringCase($kind));
     }
 

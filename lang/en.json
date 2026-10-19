@@ -1594,6 +1594,7 @@
     "General price": "General price",
     "No reference group -- valued using general price": "No reference group -- valued using general price",
     "No price found": "No price found",
+    "Similar to an existing record: :names. Check first, it may be the same one.": "Similar to an existing record: :names. Check first, it may be the same one.",
     "Pay down payment": "Pay down payment",
     "Cancel PO": "Cancel PO",
     "Set shrinkage limit": "Set shrinkage limit",

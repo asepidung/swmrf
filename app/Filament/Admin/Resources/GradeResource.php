@@ -52,7 +52,7 @@ class GradeResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
+                Forms\Components\TextInput::make('name')->warnIfSimilar(\App\Models\Grade::class)
                     ->label(fn () => __('Name'))
                     ->autofocus()
                     ->required()

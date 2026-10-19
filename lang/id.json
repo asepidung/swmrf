@@ -1594,6 +1594,7 @@
     "General price": "Harga umum",
     "No reference group -- valued using general price": "Tanpa grup acuan -- dinilai memakai harga umum",
     "No price found": "Harga tidak ditemukan",
+    "Similar to an existing record: :names. Check first, it may be the same one.": "Mirip dengan data yang sudah ada: :names. Periksa dulu, mungkin ini data yang sama.",
     "Pay down payment": "Bayar uang muka",
     "Cancel PO": "Batalkan PO",
     "Set shrinkage limit": "Atur batas susut",

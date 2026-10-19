@@ -46,7 +46,7 @@ class ExpenseCategoryResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
+                Forms\Components\TextInput::make('name')->warnIfSimilar(\App\Models\ExpenseCategory::class)
                     ->label(__('Name'))
                     ->unique(ignoreRecord: true)
                     ->autofocus()

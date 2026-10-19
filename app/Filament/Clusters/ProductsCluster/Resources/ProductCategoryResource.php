@@ -41,7 +41,7 @@ class ProductCategoryResource extends Resource
             ->schema([
                 Forms\Components\Card::make()
                     ->schema([
-                        Forms\Components\TextInput::make('name')
+                        Forms\Components\TextInput::make('name')->warnIfSimilar(\App\Models\ProductCategory::class)
                             ->label(fn() => __('Category Name'))
                             ->required()
                             ->unique(ignorable: fn ($record) => $record)

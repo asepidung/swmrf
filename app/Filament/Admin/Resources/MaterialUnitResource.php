@@ -30,7 +30,7 @@ class MaterialUnitResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')->unique(ignoreRecord: true)
+                Forms\Components\TextInput::make('name')->warnIfSimilar(\App\Models\MaterialUnit::class)->unique(ignoreRecord: true)
                     ->label(fn() => __('Unit Name'))
                     ->required()
                     ->maxLength(255)
