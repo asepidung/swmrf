@@ -272,3 +272,14 @@ dokumen terbuka, dan riwayat. `legacy:import-master` hanya memverifikasi terjema
 - Jangan menjalankan `migrate:fresh`/`db:seed` di VPS (lihat pengecualian untuk coba. di `agents.md`).
 - Bila snapshot hari pemindahan membawa nama kembar baru, ikuti aturan di bagian Pelanggan (paling baru, kecuali beda
   alamat kirim -> beri pembeda).
+  lolos formulir; cabang dari satu perusahaan harus diberi pembeda di nama seperti contoh Cipta Boga.
+
+## Supir dan armada (data awal dari Owner, 19 Oktober 2026; tidak ada di legacy)
+
+Perintah `php artisan master:seed-fleet` (dry-run bawaan; `--apply` menulis; aman diulang; nama/plat dibandingkan longgar;
+plat yang sama dengan jenis berbeda = konflik, tidak ditimpa). Datanya ada di `App\Console\Commands\SeedFleet`:
+
+- Supir (tabel `drivers`: name): ACEP NURFADILLAH, RESKHA PERMANA.
+- Armada (tabel `vehicles`: vehicle_type, police_number): CANTER - F 8485 HD, TRAGA - F 9385 FI, L-300 - F 8489 HV,
+  DUTRO - F 9201 F.
+- Semua aktif. Tidak ada masalah yang perlu keputusan. Hasil yang harus cocok: 2 supir dan 4 armada.
