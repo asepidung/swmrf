@@ -277,6 +277,43 @@ class BillOfMaterialFormTest extends TestCase
         $this->assertNull(ProductMaterial::find($baris->id));
     }
 
+    /** Kunci baris di state form (Livewire memberi kunci acak, bukan record-<id>). */
+    private function kunciBarisDi($aksi, ProductMaterial $baris): string
+    {
+        foreach ($aksi->instance()->mountedTableActionsData[0]['billOfMaterials'] as $kunci => $isi) {
+            if (($isi['id'] ?? null) === $baris->id) {
+                return $kunci;
+            }
+        }
+
+        $this->fail('Baris tidak ada di state form.');
+    }
+
+    public function test_the_row_delete_icon_shows_for_someone_with_edit_but_not_delete(): void
+    {
+        $produk = $this->produk();
+        $a = $this->bahan('KARTON TOP');
+        $baris = ProductMaterial::create(['product_id' => $produk->id, 'material_id' => $a->id, 'quantity' => 1, 'basis' => 'box']);
+
+        $this->actingAs($this->pengguna('view_product_materials', 'create_product_materials', 'edit_product_materials'));
+
+        $aksi = Livewire::test(ListProducts::class)->mountTableAction('bill_of_material', $produk);
+        $aksi->assertFormComponentActionVisible('billOfMaterials', 'delete', ['item' => $this->kunciBarisDi($aksi, $baris)], 'mountedTableActionForm');
+    }
+
+    public function test_a_saved_row_has_no_delete_icon_without_edit_or_delete_but_an_unsaved_row_always_has_one(): void
+    {
+        $produk = $this->produk();
+        $a = $this->bahan('KARTON TOP');
+        $baris = ProductMaterial::create(['product_id' => $produk->id, 'material_id' => $a->id, 'quantity' => 1, 'basis' => 'box']);
+
+        $this->actingAs($this->pengguna('view_product_materials', 'create_product_materials'));
+
+        $aksi = Livewire::test(ListProducts::class)->mountTableAction('bill_of_material', $produk);
+        $aksi->assertFormComponentActionHidden('billOfMaterials', 'delete', ['item' => $this->kunciBarisDi($aksi, $baris)], 'mountedTableActionForm');
+        $aksi->assertFormComponentActionVisible('billOfMaterials', 'delete', ['item' => 'baru-1'], 'mountedTableActionForm');
+    }
+
     public function test_a_save_with_nothing_changed_needs_no_bom_permission_at_all(): void
     {
         $produk = $this->produk();

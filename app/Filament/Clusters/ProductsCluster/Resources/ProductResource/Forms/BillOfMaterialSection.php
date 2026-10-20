@@ -80,7 +80,7 @@ class BillOfMaterialSection
                     // (atau Delete). Baris yang BARU ditambahkan dan belum disimpan selalu boleh dibuang, supaya baris kosong tidak
                     // menyandera tombol Save.
                     ->deleteAction(fn (\Filament\Forms\Components\Actions\Action $action) => $action->hidden(
-                        fn (array $arguments, Forms\Components\Repeater $component): bool => filled(($component->getState()[$arguments['item'] ?? ''] ?? [])['id'] ?? null)
+                        fn (array $arguments, Forms\Components\Repeater $component): bool => filled(data_get($component->getLivewire(), $component->getStatePath().'.'.($arguments['item'] ?? '').'.id'))
                             && ! (self::can('edit') || self::can('delete')),
                     ))
                     ->disabled(fn (): bool => ! self::can('create') && ! self::can('edit'))
