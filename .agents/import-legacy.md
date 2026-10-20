@@ -517,3 +517,14 @@ kecuali Ayah meminta. Konsekuensi untuk latihan alur: SO dan Invoice butuh dafta
   status Request -> Requested, Waiting -> Pending Finance, Ordering -> Pending Finance (di aplikasi baru PO lahir saat finance menyetujui; tidak ada "disetujui menunggu PO");
   top -> terms_of_payment; total = jumlah subtotal baris + taxrp; baris bahan di luar material impor dilewati dan dilaporkan; note "0" dianggap kosong.
 - Berikutnya: PO (request induk dari PO terbuka ikut dibawa), lalu GR. PO terbuka: stat 0 (utuh) dan stat 3 dengan sisa; PO sebelum 1 September 2026 dibawa berstatus dibatalkan (keputusan Ayah).
+
+### Keputusan: SELURUH RIWAYAT ikut pindah (Ayah, 21 Oktober 2026)
+
+Legacy akan ditutup; hanya Ayah yang masih bisa membukanya, dan itu pun hanya setahun. Maka Ayah ingin SEMUA riwayat dokumen pindah ke aplikasi baru (bukan hanya dokumen terbuka).
+Ini mengubah catatan lama "transaksi TIDAK diimpor" (`.agents/legacy-db.md`). Pengecualian yang sudah diputuskan: piutang (datanya tidak akurat) dan daftar harga (diisi Ayah sendiri) tetap tidak diimpor.
+Urutan modul (Ayah): request material-PO-GR; request beef-PO-GR; PO cattle-receive-weighing-carcass-boning; SO-Tally-DO-Invoice; repack; stock opname.
+Prinsip impor riwayat (usulan Ruby, menunggu persetujuan fase): (1) FASE A wajib selesai sebelum 1 November: master (selesai), stok daging (selesai), dokumen terbuka;
+(2) FASE B riwayat boleh menyusul sesudah legacy ditutup dan datanya beku, per modul, tanpa menahan operasional; (3) dokumen riwayat ditulis lewat DB::table (tanpa event model),
+jadi TIDAK membuat pergerakan stok, riwayat aktivitas palsu, atau nomor baru; (4) nomor dokumen legacy dibawa apa adanya; (5) tabel penghubung id lama -> id baru untuk setiap dokumen
+supaya impor bisa diulang dan dokumen anak menemukan induknya; (6) status diterjemahkan; yang tidak punya padanan dicatat. Ukuran terbesar di legacy: tallydetail 163 ribu, labelboning 175 ribu,
+detailhasil 37 ribu, stocktakedetail 23 ribu, invoicedetail 23 ribu, salesorderdetail 22 ribu baris.
