@@ -507,3 +507,13 @@ menguji bahwa data hasil pindahan berfungsi. Dokumen terbuka (SO/DO/PO yang masi
 Daftar harga legacy tidak berjalan dengan benar sehingga tidak bisa dipercaya: TIDAK diimpor dan TIDAK ikut salinan master ke VPS (`MasterSnapshot::TABLES` memang tidak memuat
 `price_lists`/`price_list_items`/costing). Ayah mengisi daftar harga sendiri dengan caranya. `legacy:import-prices` dan `costing:import-prices` tidak dipakai untuk latihan maupun hari-H
 kecuali Ayah meminta. Konsekuensi untuk latihan alur: SO dan Invoice butuh daftar harga grup yang diisi Ayah di coba. lebih dulu; HPP stok butuh costing yang dikunci tim.
+
+### Request material terbuka -> material_requisitions (Ayah, 21 Oktober 2026; langkah 1 dari request -> PO -> GR)
+
+`legacy:import-requests --source=<SWM-belanja-...sql> --fallback-user=<username> [--apply]` (dry-run bawaan, contoh pasangan lama -> baru, aman diulang, nomor dokumen yang sudah ada tidak ditimpa).
+- Arti status legacy (dari kode legacy, via Hafizh): Request = dibuat; Waiting = diterima purchasing (TOP terisi); Ordering = disetujui, PO belum dibuat; PO Created; Partial = ada GR; Completed = PO ditutup.
+  `is_deleted` bukan 0 = dihapus (127 = MySQL memotong tanggal). Terbuka = tidak dihapus dan Request/Waiting/Ordering (10 request, 17 baris di data 20 Okt).
+- Pemasangan: norequest -> document_number (apa adanya; baru memakai MR#yy); idsupplier/idrawmate nomor sama; iduser -> user_id bila akun ada, selain itu akun cadangan + nama pemohon asli di catatan;
+  status Request -> Requested, Waiting -> Pending Finance, Ordering -> Pending Finance (di aplikasi baru PO lahir saat finance menyetujui; tidak ada "disetujui menunggu PO");
+  top -> terms_of_payment; total = jumlah subtotal baris + taxrp; baris bahan di luar material impor dilewati dan dilaporkan; note "0" dianggap kosong.
+- Berikutnya: PO (request induk dari PO terbuka ikut dibawa), lalu GR. PO terbuka: stat 0 (utuh) dan stat 3 dengan sisa; PO sebelum 1 September 2026 dibawa berstatus dibatalkan (keputusan Ayah).
