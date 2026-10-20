@@ -148,7 +148,7 @@ class CustomerResource extends Resource
                             })
                             ->createOptionForm(\App\Filament\Support\QuickCreate::schema('customerGroup'))
                             ->createOptionAction(\App\Filament\Support\QuickCreate::action('customerGroup'))
-                            ->columnSpan(['default' => 1, 'lg' => 4]),
+                            ->columnSpan(['default' => 1, 'lg' => 5]),
 
                         Forms\Components\Select::make('customer_segment_id')
                             ->relationship('segment', 'name')
@@ -158,7 +158,7 @@ class CustomerResource extends Resource
                             ->preload()
                             ->createOptionForm(\App\Filament\Support\QuickCreate::schema('customerSegment'))
                             ->createOptionAction(\App\Filament\Support\QuickCreate::action('customerSegment'))
-                            ->columnSpan(['default' => 1, 'lg' => 4]),
+                            ->columnSpan(['default' => 1, 'lg' => 3]),
 
                         // Tanpa ->numeric(), yang akan membuat input menjadi
                         // type=number lengkap dengan tombol panah. TOP

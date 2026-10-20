@@ -381,3 +381,10 @@ Data BOM legacy (417 baris `bom_rawmate`) tidak meyakinkan (basis box/pcs tidak 
 diimpor. Diisi tim QC langsung dari aplikasi (tombol BOM di daftar produk), lewat izin `view/create/update/delete_product_materials`
 (plus `view_products` dan akses melihat material). Catatan kemasan legacy (karton/drylog/plastik) sudah ada di catatan tiap produk sebagai
 acuan. Langkah `--only=bom` di importer tetap ada tetapi tidak dipakai untuk latihan maupun import final.
+
+### Pelanggan digabung tambahan (Ayah, 20 Oktober 2026, saat meninjau di coba.)
+
+156 (AGUNG BPK) -> 169 (AGUNG SEDAYU BPK), 134 (BAZAR) -> 221 (BAZAAR), 18 (SHERLINDO MAKSIMA SUKSES PT) -> 143 (SHERLINDO); yang dipakai
+yang lebih baru diperbarui. Dicatat di `ImportLegacyMaster::CUSTOMER_MERGES` (peta id untuk riwayat). Hasil yang harus cocok: 292 pelanggan.
+Catatan: Ayah mengubah nama di coba. (mis. AGUNG (BPK)); hasil akhir master disalin dari coba., bukan impor ulang pelanggan.
+Formulir pelanggan: kolom Grup 5/12, Segmen 3/12 (sebelumnya 4/4).

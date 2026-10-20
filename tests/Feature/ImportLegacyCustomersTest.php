@@ -166,7 +166,7 @@ SQL;
 
         $map = \App\Console\Commands\ImportLegacyMaster::customerIdMap($sql);
         ksort($map);
-        $this->assertSame([54 => 127, 121 => 204, 218 => 219], $map);
+        $this->assertSame([18 => 143, 54 => 127, 121 => 204, 134 => 221, 156 => 169, 218 => 219], $map);
 
         $this->importer(true)->assertExitCode(0);
 

@@ -112,8 +112,13 @@ class ImportLegacyMaster extends Command
         188 => 'CIPTA BOGA PRIMA PT (VIA EKSPEDISI ELVANO)',
     ];
 
-    /** Digabung atas keputusan Ayah di luar aturan nama persis: id lama => id yang dipakai (FREE / SAMPLE -> Free Sample). */
-    private const CUSTOMER_MERGES = [54 => 127];
+    /** Digabung atas keputusan Ayah di luar aturan nama persis: id lama => id yang dipakai (Ayah menyebutnya sama; yang dipakai yang lebih baru diperbarui). */
+    private const CUSTOMER_MERGES = [
+        54 => 127, // FREE / SAMPLE -> Free Sample
+        156 => 169, // AGUNG (BPK) -> AGUNG SEDAYU (BPK)
+        134 => 221, // BAZAR -> BAZAAR
+        18 => 143, // SHERLINDO MAKSIMA SUKSES PT -> SHERLINDO
+    ];
 
     /** Diskon bawaan 2% HANYA untuk LION DCA, DCB, DCC (bukan seluruh grup LION), keputusan Ayah 19 Oktober 2026. */
     private const DISCOUNT_2_IDS = [6, 28, 214];
