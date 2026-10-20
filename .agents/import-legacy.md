@@ -1,5 +1,29 @@
 # Buku keputusan import data legacy (latihan di coba., dipakai untuk import final ke VPS)
 
+## RINGKASAN POLA IMPORT (baca ini dulu; diperbarui 20 Oktober 2026)
+
+**Keputusan Ayah:** VPS (produksi) TIDAK diubah dulu. Master data di coba. sudah lengkap dan dipakai langsung di VPS nanti lewat salinan; pengguna
+berlatih dari data KOSONG. Bila sampai 31 Oktober ada master baru (pelanggan, dst.), VPS tetap tidak disentuh; buat salinan ulang dari coba. pada hari-H.
+
+**Pola, per tabel, di coba.:** (1) tunjukkan perbandingan lama vs baru dan masalahnya ke Ayah, (2) dry-run, (3) laporan ke Ayah, (4) `--apply`,
+(5) jalankan ulang untuk memastikan 0 baris baru, (6) catat hasil di dokumen ini. Tidak ada yang diterapkan tanpa keputusan Ayah.
+
+**Perintah:** `legacy:import-master --source=<sql> --only=<langkah> [--apply]` (langkah: kategori, grade, supplier, kelas-sapi, grup, pelanggan, produk,
+kategori-material, material, bom); `master:seed-fleet` (supir, armada), `master:seed-segments` (5 segmen), `master:seed-groups` (KARYAWAN, WARGA +62, GRATISAN,
+sesudah grup legacy). Semua dry-run bawaan dan aman diulang. Snapshot SQL legacy dikirim dengan `scp` ke `~/` coba. (di luar folder web).
+
+**Urutan latihan:** gudang -> supir/armada -> kelas sapi -> supplier -> kategori material + material -> segmen -> grup pelanggan -> pelanggan ->
+kategori produk -> produk. BOM tidak diimpor (diisi QC di aplikasi). Rekening bank penagihan menunggu pembahasan dengan Hafizh.
+
+**Aturan yang berulang:** ID legacy dipertahankan; nama lewat `TidyName` (PT/CV di belakang tanpa titik, satu spasi sesudah tanda baca); nama kembar digabung
+dengan peta id lama->baru yang WAJIB dipakai importer riwayat (`SUPPLIER_MERGES`, `customerIdMap()` + `CUSTOMER_MERGES`); yang tidak jelas diimpor nonaktif
+agar data legacy punya tempat menempel; kode produk legacy tidak diubah; nama terpotong legacy dipulihkan dari data lain; satu penolakan membatalkan semuanya.
+
+**Hari-H (menunggu aba-aba Ayah):** cadangkan DB VPS -> deploy `main` -> migrate -> bersihkan sisa data uji master -> kirim snapshot (`master:export` di coba.) ->
+`master:import-snapshot` dry-run -> laporan -> `--apply`. Rincian di bagian "Salinan hasil akhir coba. -> VPS" di bawah.
+
+---
+
 Cara kerja (disepakati dengan Ayah, 19 Oktober 2026): **cara Ayah untuk kesepakatan, cara Ruby untuk eksekusi.**
 
 1. Per tabel ada **lembar pasangan**: kolom lama -> kolom baru, apa yang berubah, dan **potensi masalah bernomor**.
