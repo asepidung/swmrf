@@ -374,3 +374,10 @@ tabel koreksi; kode TIDAK diubah.
 Produk TIDAK dikoreksi: yang dipakai adalah hasil impor sesuai legacy apa adanya (153 produk, kode, kategori, induk-turunan). Lembar kerja
 koreksi, template generate kode, dan padanan AUS-MEAT tidak dipakai (terlalu rumit). Handbook AUS-MEAT hanya panduan; kode tetap milik
 sendiri. Bila nanti ada koreksi, dikerjakan langsung dari aplikasi di coba. dan ikut tersalin ke VPS bersama master lainnya.
+
+### BOM: tidak diimpor (keputusan Ayah, 20 Oktober 2026)
+
+Data BOM legacy (417 baris `bom_rawmate`) tidak meyakinkan (basis box/pcs tidak jelas, banyak bahan di luar cakupan), jadi BOM TIDAK
+diimpor. Diisi tim QC langsung dari aplikasi (tombol BOM di daftar produk), lewat izin `view/create/update/delete_product_materials`
+(plus `view_products` dan akses melihat material). Catatan kemasan legacy (karton/drylog/plastik) sudah ada di catatan tiap produk sebagai
+acuan. Langkah `--only=bom` di importer tetap ada tetapi tidak dipakai untuk latihan maupun import final.
