@@ -368,3 +368,9 @@ TMP-<id>: LUNG, FAT ETC, SODAS BUFFALO, ZZZ X PAHA DEPAN S (kemungkinan sudah pu
 karena Ayah belum yakin sama). Hasil yang harus cocok: 153 produk (158 - 5 non-daging), 4 di antaranya nonaktif.
 Perbaikan kategori/induk-turunan dari lembar kerja tim kantor (`legacy/lembar-kerja-produk-2026-10-20.xlsx`) menyusul sebagai
 tabel koreksi; kode TIDAK diubah.
+
+### Produk: keputusan akhir (Ayah, 20 Oktober 2026)
+
+Produk TIDAK dikoreksi: yang dipakai adalah hasil impor sesuai legacy apa adanya (153 produk, kode, kategori, induk-turunan). Lembar kerja
+koreksi, template generate kode, dan padanan AUS-MEAT tidak dipakai (terlalu rumit). Handbook AUS-MEAT hanya panduan; kode tetap milik
+sendiri. Bila nanti ada koreksi, dikerjakan langsung dari aplikasi di coba. dan ikut tersalin ke VPS bersama master lainnya.
