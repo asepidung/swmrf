@@ -425,3 +425,10 @@ Ayah dan tim memperbaiki master di coba. (nama, grup, segmen, pelanggan, BOM dar
 - Syarat di VPS: kode terbaru sudah di-deploy dan dimigrasi (kolom harus sama); tabel master di VPS kosong atau identik (sisa data uji dibersihkan dulu).
 - Urutan hari-H (usulan, menunggu aba-aba Ayah): cadangkan basis data VPS; deploy `main`; migrate; bersihkan sisa data uji master; scp snapshot ke VPS;
   `master:import-snapshot` dry-run -> laporan ke Ayah -> `--apply`; periksa jumlah di aplikasi (292 pelanggan, 153 produk, 161 material, dst.).
+
+### Gladi salinan master (20 Oktober 2026, di MySQL kosong lokal; VPS tidak disentuh)
+
+Jalur lengkap diuji di basis data kosong: `migrate --seed` (27 detik), `master:import-snapshot` dry-run 2 detik, `--apply` 3 detik, jalankan ulang = 0 baris
+baru (292 pelanggan, 153 produk, 161 material, 367 baris BOM, 63 turunan produk terhubung tanpa yatim). Ditemukan dan diperbaiki: kolom JSON
+(`customers.required_documents`) ditulis rapat di coba. tetapi berspasi di MySQL sehingga 14 pelanggan tampak "berbeda"; kini dibandingkan menurut isi.
+Perkiraan waktu hari-H: deploy + migrate beberapa menit, salinan master kurang dari satu menit.
