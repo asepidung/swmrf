@@ -432,3 +432,28 @@ Jalur lengkap diuji di basis data kosong: `migrate --seed` (27 detik), `master:i
 baru (292 pelanggan, 153 produk, 161 material, 367 baris BOM, 63 turunan produk terhubung tanpa yatim). Ditemukan dan diperbaiki: kolom JSON
 (`customers.required_documents`) ditulis rapat di coba. tetapi berspasi di MySQL sehingga 14 pelanggan tampak "berbeda"; kini dibandingkan menurut isi.
 Perkiraan waktu hari-H: deploy + migrate beberapa menit, salinan master kurang dari satu menit.
+
+## Rencana hari pemindahan (disampaikan Hafizh, 20 Oktober 2026; MENUNGGU konfirmasi Ayah di chat Ruby, JANGAN dieksekusi)
+
+Jadwal menurut Hafizh: malam ini dan besok pagi latihan modul; Rabu #579 (spek customer); Kamis 10:00 pelatihan di VPS; 31 Oktober VPS sudah bersih dari data
+latihan; 1 November 00:00 Ayah menutup legacy lalu data dipindah ke VPS dan harus selesai hari itu juga (Ayah sedang piknik, jadi langkahnya harus sudah terlatih).
+
+1. **Maintenance mode selama pindah data; akun pengguna TIDAK dinonaktifkan.** `php artisan down --secret=<acak>` sebagai `swmapp`; Ayah dan Ruby memeriksa
+   hasil lewat URL secret; selesai: `php artisan up`. Secret dibuat saat itu juga dan dikirim langsung ke Ayah, TIDAK ditulis di repo atau dokumen. Driver
+   maintenance = file (bawaan `config/app.php`); cron `schedule:run` tidak jalan selama down. Alasan: status aktif/nonaktif akun harus dibawa apa adanya.
+   Dilatih sekali di LOKAL (bukan di coba. selagi tim bekerja di sana) sebelum hari-H.
+2. **Password 1234.** Password yang sudah diganti peserta pelatihan TIDAK direset saat pindah data. Sebelum `artisan up`, laporkan ke Ayah daftar akun aktif
+   yang masih memakai 1234; Ayah memutuskan apakah akun itu dinonaktifkan sementara (risiko: orang lain masuk lebih dulu dengan 1234).
+3. **Bersih dari data latihan sebelum 31 Oktober.** `migrate:fresh` di VPS TETAP dilarang. Usul: cadangkan database VPS SEBELUM pelatihan Kamis, lalu kembalikan ke
+   cadangan itu sebelum data asli masuk. Caranya disepakati dengan IT Lead (MariaDB dipakai bersama aplikasi lain; yang dipulihkan hanya basis data aplikasi ini).
+
+**Urutan hari pemindahan (usulan, belum disetujui):** `artisan down --secret` -> cadangan basis data -> deploy `main` (pull, composer, migrate, optimize) -> master dari
+snapshot coba. (`master:import-snapshot`) -> langkah selisih master (lihat bawah) -> modul transaksi sesuai pola -> periksa lewat URL secret -> laporan akun
+yang masih 1234 ke Ayah -> `artisan up`.
+
+**Tambahan pola untuk modul di luar master:**
+- Dokumen setengah jalan (mis. SO terkirim sebagian): saran Hafizh, bawa SISANYA saja; keputusan tetap di Ayah per modul.
+- Hari-H butuh **langkah selisih master**: pelanggan/produk/dst. yang ditambahkan di legacy sesudah snapshot 19 Oktober harus diimpor lebih dulu dengan aturan yang
+  sama (nama dirapikan, peta gabungan, segmen menurut grup) SEBELUM dokumen masuk; baris master yang berubah dilaporkan ke Ayah.
+- Dari Ruby (modul di luar master): id baru tidak selalu sama dengan id lama, jadi dipakai tabel penghubung lama->baru supaya impor bisa diulang tanpa dobel,
+  tabel terjemahan status, dan peta id yang sudah ada (`customerIdMap`, `SUPPLIER_MERGES`).
