@@ -32,6 +32,7 @@ class ImportLegacyRequests extends Command
     protected $signature = 'legacy:import-requests
                             {--source= : Berkas snapshot SQL (legacy/tarik/tarik.sh belanja)}
                             {--fallback-user= : Username akun cadangan untuk pemohon yang tidak ada di aplikasi}
+                            {--cutoff=2026-09-01 : Request terbuka yang dibuat SEBELUM tanggal ini dibawa berstatus Rejected (dianggap ditinggalkan)}
                             {--apply : Benar-benar menulis (default hanya laporan dry-run)}
                             {--examples=2 : Jumlah contoh pasangan lama -> baru}';
 
@@ -46,6 +47,9 @@ class ImportLegacyRequests extends Command
     ];
 
     public const NOTE_TAG = 'Impor legacy';
+
+    /** Status request terbuka yang sudah terlalu lama (keputusan Ayah, 21 Oktober 2026: dibawa tetapi dibatalkan). */
+    public const STALE_STATUS = 'Rejected';
 
     public function handle(): int
     {
@@ -77,9 +81,9 @@ class ImportLegacyRequests extends Command
         $created = $skipped = $linesIn = $linesOut = 0;
         $refused = $conflicts = $examples = [];
         $perStatus = [];
-        $fallbackUsed = 0;
+        $fallbackUsed = $staleCount = $merged = 0;
 
-        $run = function () use ($rows, $details, $fallback, $apply, &$created, &$skipped, &$linesIn, &$linesOut, &$refused, &$conflicts, &$examples, &$perStatus, &$fallbackUsed): void {
+        $run = function () use ($rows, $details, $fallback, $apply, &$created, &$skipped, &$linesIn, &$linesOut, &$refused, &$conflicts, &$examples, &$perStatus, &$fallbackUsed, &$staleCount, &$merged): void {
             foreach ($rows as $row) {
                 $number = trim((string) $row['norequest']);
 
@@ -89,7 +93,10 @@ class ImportLegacyRequests extends Command
                     continue;
                 }
 
-                if (! Supplier::query()->whereKey((int) $row['idsupplier'])->exists()) {
+                // Supplier yang digabung saat impor master (peta WAJIB dipakai): id lama -> id yang dipakai.
+                $supplierId = ImportLegacyMaster::SUPPLIER_MERGES[(int) $row['idsupplier']] ?? (int) $row['idsupplier'];
+
+                if (! Supplier::query()->whereKey($supplierId)->exists()) {
                     $refused[] = "{$number}: supplier idsupplier={$row['idsupplier']} tidak ada -- DITOLAK.";
 
                     continue;
@@ -142,10 +149,23 @@ class ImportLegacyRequests extends Command
                 $subtotal = array_sum(array_column($items, 'subtotal'));
                 $tax = (float) $row['taxrp'];
                 $status = self::STATUS_MAP[$row['stat']];
+                $stale = ($row['creatime'] ?: '9999') < $this->option('cutoff');
+                $rejectNote = null;
+
+                if ($stale) {
+                    $status = self::STALE_STATUS;
+                    $rejectNote = 'Impor legacy: request berstatus '.$row['stat'].' sejak '.substr((string) $row['creatime'], 0, 10).', tidak pernah menjadi PO (dibatalkan saat pindah data).';
+                    $staleCount++;
+                }
+
+                if ($supplierId !== (int) $row['idsupplier']) {
+                    $merged++;
+                }
                 $header = [
                     'document_number' => $number,
                     'user_id' => $userId,
-                    'supplier_id' => (int) $row['idsupplier'],
+                    'supplier_id' => $supplierId,
+                    'reject_note' => $rejectNote,
                     'due_date' => $row['duedate'] ?: null,
                     'note' => trim($note.' | '.self::NOTE_TAG.' '.$row['stat'], ' |'),
                     'terms_of_payment' => (string) ((int) ($row['top'] ?? 0)),
@@ -192,17 +212,18 @@ class ImportLegacyRequests extends Command
             }
         }
 
-        $this->report($apply, $created, $skipped, $linesIn, $linesOut, $refused, $conflicts, $perStatus, $fallbackUsed, $examples);
+        $this->report($apply, $created, $skipped, $linesIn, $linesOut, $refused, $conflicts, $perStatus, $fallbackUsed, $examples, $staleCount, $merged);
 
         return $refused === [] ? self::SUCCESS : self::FAILURE;
     }
 
-    private function report(bool $apply, int $created, int $skipped, int $linesIn, int $linesOut, array $refused, array $conflicts, array $perStatus, int $fallbackUsed, array $examples): void
+    private function report(bool $apply, int $created, int $skipped, int $linesIn, int $linesOut, array $refused, array $conflicts, array $perStatus, int $fallbackUsed, array $examples, int $staleCount, int $merged): void
     {
         $this->line($apply ? ($refused === [] ? 'DITERAPKAN (--apply)' : 'DITOLAK -- tidak ada yang ditulis.') : 'DRY-RUN -- tidak ada yang ditulis. Tambahkan --apply untuk menulis.');
         $this->line("material_requisitions -- dibuat: {$created}, sudah ada (dilewati): {$skipped}, konflik: ".count($conflicts).', DITOLAK: '.count($refused));
         $this->line("Baris bahan: {$linesOut} dibawa dari {$linesIn}. Pemohon diganti akun cadangan: {$fallbackUsed} request.");
         $this->line('Status: '.collect($perStatus)->map(fn ($n, $k) => "{$k}={$n}")->implode(', '));
+        $this->line("Dibatalkan karena terlalu lama (dibuat sebelum --cutoff): {$staleCount}. Supplier lewat peta penggabungan: {$merged}.");
 
         foreach ($examples as [$row, $lines, $header, $items]) {
             $this->line('');

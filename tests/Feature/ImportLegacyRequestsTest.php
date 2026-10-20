@@ -45,9 +45,9 @@ class ImportLegacyRequestsTest extends TestCase
         return "INSERT INTO `{$table}` ({$cols}) VALUES ({$vals});\n";
     }
 
-    private function request(int $id, string $number, string $stat, int $user = 5, int $deleted = 0, string $note = ''): string
+    private function request(int $id, string $number, string $stat, int $user = 5, int $deleted = 0, string $note = '', int $supplier = 7, string $created = '2026-10-19 15:04:51'): string
     {
-        return $this->insert('request', ['idrequest' => $id, 'norequest' => $number, 'duedate' => '2026-10-22', 'iduser' => $user, 'idsupplier' => 7, 'note' => $note, 'stat' => $stat, 'is_deleted' => $deleted, 'xamount' => '99.00', 'taxrp' => '10.00', 'creatime' => '2026-10-19 15:04:51', 'tax' => '0', 'top' => 14]);
+        return $this->insert('request', ['idrequest' => $id, 'norequest' => $number, 'duedate' => '2026-10-22', 'iduser' => $user, 'idsupplier' => $supplier, 'note' => $note, 'stat' => $stat, 'is_deleted' => $deleted, 'xamount' => '99.00', 'taxrp' => '10.00', 'creatime' => $created, 'tax' => '0', 'top' => 14]);
     }
 
     private function line(int $id, int $request, int $material, string $qty = '10', string $price = '1000'): string
@@ -63,7 +63,9 @@ class ImportLegacyRequestsTest extends TestCase
         $user = User::create(['name' => 'Pemohon', 'username' => 'pemohon', 'password' => 'secret-password', 'gender' => 'L', 'role' => 'employee', 'is_active' => true]);
         DB::table('users')->where('id', $user->id)->update(['id' => 5]);
 
-        DB::table('suppliers')->insert(['id' => 7, 'name' => 'PT SUPPLIER', 'address' => '-', 'pic' => '-', 'top_days' => 0, 'created_at' => now(), 'updated_at' => now()]);
+        foreach ([7 => 'PT SUPPLIER', 26 => 'PT GABUNGAN'] as $id => $name) {
+            DB::table('suppliers')->insert(['id' => $id, 'name' => $name, 'address' => '-', 'pic' => '-', 'top_days' => 0, 'created_at' => now(), 'updated_at' => now()]);
+        }
         $unit = MaterialUnit::create(['name' => 'BOX']);
         $category = MaterialCategory::create(['name' => 'KARTON']);
         foreach ([23 => 'KARTON A', 91 => 'KARTON B'] as $id => $name) {
@@ -77,7 +79,9 @@ class ImportLegacyRequestsTest extends TestCase
             .$this->request(3, 'REQ-26/0003', 'Ordering').$this->line(5, 3, 91)
             .$this->request(4, 'REQ-26/0004', 'PO Created').$this->line(6, 4, 23)
             .$this->request(5, 'REQ-26/0005', 'Waiting', 5, 127).$this->line(7, 5, 23)
-            .$this->request(6, 'REQ-26/0006', 'Request').$this->line(8, 6, 500));
+            .$this->request(6, 'REQ-26/0006', 'Request').$this->line(8, 6, 500)
+            .$this->request(7, 'REQ-26/0007', 'Ordering', 5, 0, '', 14).$this->line(9, 7, 23)
+            .$this->request(8, 'REQ-26/0008', 'Ordering', 5, 0, '', 7, '2026-01-21 10:00:00').$this->line(10, 8, 91));
     }
 
     protected function tearDown(): void
@@ -97,7 +101,7 @@ class ImportLegacyRequestsTest extends TestCase
     /** @test */
     public function a_dry_run_shows_pairs_and_writes_nothing(): void
     {
-        $this->importer()->expectsOutputToContain('DRY-RUN')->expectsOutputToContain('dibuat: 3')->expectsOutputToContain('BARU  material_requisitions')->assertSuccessful();
+        $this->importer()->expectsOutputToContain('DRY-RUN')->expectsOutputToContain('dibuat: 5')->expectsOutputToContain('BARU  material_requisitions')->assertSuccessful();
 
         $this->assertSame(0, DB::table('material_requisitions')->count());
     }
@@ -108,7 +112,7 @@ class ImportLegacyRequestsTest extends TestCase
         $this->importer(true)->assertSuccessful();
 
         $this->assertSame(
-            ['REQ-26/0001', 'REQ-26/0002', 'REQ-26/0003'],
+            ['REQ-26/0001', 'REQ-26/0002', 'REQ-26/0003', 'REQ-26/0007', 'REQ-26/0008'],
             DB::table('material_requisitions')->orderBy('document_number')->pluck('document_number')->all(),
             'PO Created, dihapus (127), dan yang semua barisnya di luar impor tidak dibawa.'
         );
@@ -139,12 +143,31 @@ class ImportLegacyRequestsTest extends TestCase
     }
 
     /** @test */
+    public function a_merged_supplier_goes_through_the_merge_map(): void
+    {
+        $this->importer(true)->assertSuccessful();
+
+        $this->assertSame(26, (int) DB::table('material_requisitions')->where('document_number', 'REQ-26/0007')->value('supplier_id'), 'supplier 14 digabung ke 26');
+    }
+
+    /** @test */
+    public function an_open_request_older_than_the_cutoff_is_brought_as_rejected_with_a_reason(): void
+    {
+        $this->importer(true)->assertSuccessful();
+
+        $old = DB::table('material_requisitions')->where('document_number', 'REQ-26/0008')->first();
+        $this->assertSame('Rejected', $old->status);
+        $this->assertStringContainsString('sejak 2026-01-21', $old->reject_note);
+        $this->assertSame('Requested', DB::table('material_requisitions')->where('document_number', 'REQ-26/0001')->value('status'), 'yang baru tetap terbuka');
+    }
+
+    /** @test */
     public function running_it_twice_creates_nothing_and_does_not_overwrite(): void
     {
         $this->importer(true)->assertSuccessful();
         DB::table('material_requisitions')->where('document_number', 'REQ-26/0001')->update(['status' => 'PO Created']);
 
-        $this->importer(true)->expectsOutputToContain('dibuat: 0, sudah ada (dilewati): 3')->assertSuccessful();
+        $this->importer(true)->expectsOutputToContain('dibuat: 0, sudah ada (dilewati): 5')->assertSuccessful();
 
         $this->assertSame('PO Created', DB::table('material_requisitions')->where('document_number', 'REQ-26/0001')->value('status'), 'Tidak ditimpa.');
     }
