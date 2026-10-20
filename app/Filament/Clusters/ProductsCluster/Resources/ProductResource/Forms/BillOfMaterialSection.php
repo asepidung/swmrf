@@ -76,7 +76,13 @@ class BillOfMaterialSection
                     ->hiddenLabel()
                     ->addActionLabel(__('Add Material'))
                     ->addable(fn (): bool => self::can('create'))
-                    ->deletable(fn (): bool => self::can('delete'))
+                    // Menghapus BARIS adalah bagian dari mengedit daftar (Ayah, 20 Oktober 2026), bukan menghapus data: cukup izin Edit
+                    // (atau Delete). Baris yang BARU ditambahkan dan belum disimpan selalu boleh dibuang, supaya baris kosong tidak
+                    // menyandera tombol Save.
+                    ->deleteAction(fn (\Filament\Forms\Components\Actions\Action $action) => $action->hidden(
+                        fn (array $arguments, Forms\Components\Repeater $component): bool => filled(($component->getState()[$arguments['item'] ?? ''] ?? [])['id'] ?? null)
+                            && ! (self::can('edit') || self::can('delete')),
+                    ))
                     ->disabled(fn (): bool => ! self::can('create') && ! self::can('edit'))
                     ->reorderable(false)
                     ->cloneable(false)
@@ -97,7 +103,7 @@ class BillOfMaterialSection
                             ->required()
                             ->live()
                             ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                            ->columnSpan(['default' => 1, 'lg' => 5]),
+                            ->columnSpan(['default' => 1, 'lg' => 6]),
 
                         Forms\Components\Select::make('basis')
                             ->label('')
@@ -108,7 +114,7 @@ class BillOfMaterialSection
                             // Live supaya judul baris (ringkasan) ikut berubah.
                             ->live()
                             ->selectablePlaceholder(false)
-                            ->columnSpan(['default' => 1, 'lg' => 3]),
+                            ->columnSpan(['default' => 1, 'lg' => 2]),
 
                         // Tidak ada isian jumlah (Owner, 7 Oktober 2026): yang menentukan
                         // hanya bahan ini dihitung per pcs atau per box di produk ini,
