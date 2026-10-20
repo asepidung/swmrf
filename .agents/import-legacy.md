@@ -457,3 +457,29 @@ yang masih 1234 ke Ayah -> `artisan up`.
   sama (nama dirapikan, peta gabungan, segmen menurut grup) SEBELUM dokumen masuk; baris master yang berubah dilaporkan ke Ayah.
 - Dari Ruby (modul di luar master): id baru tidak selalu sama dengan id lama, jadi dipakai tabel penghubung lama->baru supaya impor bisa diulang tanpa dobel,
   tabel terjemahan status, dan peta id yang sudah ada (`customerIdMap`, `SUPPLIER_MERGES`).
+
+### Gladi maintenance mode (20 Oktober 2026, lokal; coba. dan VPS tidak disentuh)
+
+`php artisan down --secret=<acak>`: alamat biasa (`/`, `/admin/login`) = HTTP 503; membuka `/<secret>` memberi cookie `laravel_maintenance` (redirect 302 ke `/`) dan
+sesudahnya halaman normal terbuka (200) hanya untuk pemegang cookie; `php artisan up` mengembalikan semuanya dan berkas `storage/framework/down` hilang.
+Driver `file` (bawaan). Hasil gladi memenuhi rencana hari-H (Ayah dan Ruby masuk lewat secret, orang lain melihat 503).
+
+## Modul pertama di luar master: STOK AWAL DAGING (draft lembar pasangan; menunggu data; dipilih Ayah 20 Oktober 2026 "yang paling mudah")
+
+Sumber `stock` (586 baris di legacy 18 Sep; barcode yang sedang ada di gudang) -> tujuan `beef_stocks` (satu baris per barcode, status IN_STOCK).
+
+| Lama (`stock`) | Baru (`beef_stocks`) | Catatan / pola perbedaan |
+|---|---|---|
+| kdbarcode | barcode | Panjang 18/19/20 digit bercampur; validasi pemindai baru bisa menolak: putuskan relabel atau longgarkan untuk barcode lama |
+| idbarang | product_id | id sama (produk diimpor ber-ID legacy); produk non-daging tidak diimpor -> baris dilaporkan |
+| idgrade (J01..P03) | warehouse_id + grade_id | DIPECAH lewat `LegacyGradeMap` (gudang + grade baru) |
+| qty | weight | kg |
+| pcs | qty_pcs | |
+| ph | ph_level | |
+| pod, creatime | pack_date / exp_date (?) | arti `pod` belum pasti; tanggal kemas/kedaluwarsa asli ada di `labelboning` (packdate, exp) untuk barcode yang sama |
+| origin (digit asal) | origin | cocokkan dengan konstanta origin aplikasi baru |
+| price | `barcode_costs` (HPP) | bukan kolom `beef_stocks`; stok awal dinilai dari costing terkunci terakhir (keputusan Owner 11 Okt), `price` legacy hanya pembanding |
+| (tidak ada) | batch_no, note | batch dari boning bila ada; selain itu kosong |
+
+Perlu data tambahan dari legacy (hanya baca): `stock` penuh + baris `labelboning`, `relabel`, `trading`, `stockin`, `boning` yang barcode/lotnya ada di `stock`.
+Keputusan menunggu Ayah: stok awal diambil dari `stock` legacy atau dari opname fisik (586 barcode lama jadi daftar bantu)?
