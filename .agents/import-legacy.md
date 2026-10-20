@@ -483,3 +483,15 @@ Sumber `stock` (586 baris di legacy 18 Sep; barcode yang sedang ada di gudang) -
 
 Perlu data tambahan dari legacy (hanya baca): `stock` penuh + baris `labelboning`, `relabel`, `trading`, `stockin`, `boning` yang barcode/lotnya ada di `stock`.
 Keputusan menunggu Ayah: stok awal diambil dari `stock` legacy atau dari opname fisik (586 barcode lama jadi daftar bantu)?
+
+### Stok daging legacy -> beef_stocks (keputusan Ayah, 20 Oktober 2026)
+
+Bukan modul stok awal: hanya memindahkan DATA barang yang ada di gudang menurut legacy. Perintah `legacy:import-stock --source=<SWM-stok-...sql> [--apply]`
+(dry-run bawaan, contoh pasangan lama -> baru, aman diulang, satu penolakan membatalkan semua). Berkas ditarik dengan `bash legacy/tarik/tarik.sh stok`
+(Ayah mengizinkan Ruby menarik sendiri, 20 Oktober 2026; HANYA BACA; folder `legacy/tarik/` tidak ikut git).
+- Pemasangan: kunci = barcode (dibawa apa adanya, 18-20 digit); product_id = idbarang; gudang + grade lewat `LegacyGradeMap` (J01 -> JGL+CHILL, J02 -> JGL+FROZEN);
+  weight = qty; qty_pcs = pcs (kosong -> 0); ph_level = ph; pack_date = pod (tanggal kemas); exp_date = dari tabel sumber bila ada (hampir tidak ada); batch dari tabel sumber.
+- Origin: 1 BONING, 2 TRD-LC, 3 R-STCK, 6 R-RTRN (aturan aplikasi `BarcodeHelper::LEGACY_ORIGIN`); **7 (stock-in manual) -> -FOUND** (keputusan Ayah; aturan lama memetakan ke R-TRDG).
+- Batch: boning = `boning.batchboning` (mis. BN26083); repack = `repack.norepack` (mis. RPC-26026); GR beef = `grbeef.grnumber`; stock-in dan retur tanpa sumber = kosong.
+- `creatime` legacy tidak dipakai (tabel dibangun ulang dari opname 5 Okt); `price` kosong semua (nilai awal lewat `BarcodeCosts::valueOpeningStock()`); tidak ada catatan pergerakan stok.
+- Stok berubah tiap hari: untuk hari-H tarik ulang saat legacy ditutup.
