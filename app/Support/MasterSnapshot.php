@@ -178,6 +178,25 @@ class MasterSnapshot
 
         ksort($row);
 
-        return json_encode(array_map(fn ($v) => is_bool($v) ? (int) $v : (is_numeric($v) ? (string) (0 + $v) : $v), $row));
+        return json_encode(array_map(function ($v) {
+            if (is_bool($v)) {
+                return (int) $v;
+            }
+
+            if (is_numeric($v)) {
+                return (string) (0 + $v);
+            }
+
+            // Kolom JSON ditulis berbeda antar mesin basis data (rapat vs berspasi): bandingkan isinya, bukan penulisannya.
+            if (is_string($v) && $v !== '' && in_array($v[0], ['[', '{'], true)) {
+                $decoded = json_decode($v, true);
+
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    return json_encode($decoded);
+                }
+            }
+
+            return $v;
+        }, $row));
     }
 }

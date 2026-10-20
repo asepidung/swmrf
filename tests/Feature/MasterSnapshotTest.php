@@ -119,6 +119,20 @@ class MasterSnapshotTest extends TestCase
     }
 
     /** @test */
+    public function json_columns_are_compared_by_content_not_by_spacing(): void
+    {
+        $this->seedMaster();
+        $snapshot = MasterSnapshot::export();
+        $snapshot['tables']['customers'][0]['required_documents'] = '["Invoice", "NKV"]'; // berspasi, isi sama
+        $snapshot['meta']['checksum'] = hash('sha256', json_encode($snapshot['tables']));
+
+        $result = MasterSnapshot::import($snapshot, apply: true);
+
+        $this->assertFalse($result['refused']);
+        $this->assertSame(1, $result['report']['customers']['same']);
+    }
+
+    /** @test */
     public function a_tampered_snapshot_is_refused(): void
     {
         $this->seedMaster();
