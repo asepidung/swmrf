@@ -501,3 +501,9 @@ Bukan modul stok awal: hanya memindahkan DATA barang yang ada di gudang menurut 
 Piutang legacy TIDAK diimpor: fiturnya tidak dipakai di aplikasi lama sehingga datanya tidak akurat. Modul yang sudah dipindah ke coba.: master lengkap + stok daging (589 barcode).
 Langkah berikutnya: main ALUR di coba. dengan data impor (Request -> PO -> GR; SO -> Tally (barcode legacy direlabel) -> DO -> Invoice; boning/repack dari stok legacy) untuk
 menguji bahwa data hasil pindahan berfungsi. Dokumen terbuka (SO/DO/PO yang masih berjalan saat legacy ditutup) diputuskan Ayah sesudah main alur: diketik ulang atau dipindah.
+
+### Daftar harga: tidak diimpor dari legacy (Ayah, 20 Oktober 2026)
+
+Daftar harga legacy tidak berjalan dengan benar sehingga tidak bisa dipercaya: TIDAK diimpor dan TIDAK ikut salinan master ke VPS (`MasterSnapshot::TABLES` memang tidak memuat
+`price_lists`/`price_list_items`/costing). Ayah mengisi daftar harga sendiri dengan caranya. `legacy:import-prices` dan `costing:import-prices` tidak dipakai untuk latihan maupun hari-H
+kecuali Ayah meminta. Konsekuensi untuk latihan alur: SO dan Invoice butuh daftar harga grup yang diisi Ayah di coba. lebih dulu; HPP stok butuh costing yang dikunci tim.
