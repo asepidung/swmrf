@@ -388,3 +388,16 @@ acuan. Langkah `--only=bom` di importer tetap ada tetapi tidak dipakai untuk lat
 yang lebih baru diperbarui. Dicatat di `ImportLegacyMaster::CUSTOMER_MERGES` (peta id untuk riwayat). Hasil yang harus cocok: 292 pelanggan.
 Catatan: Ayah mengubah nama di coba. (mis. AGUNG (BPK)); hasil akhir master disalin dari coba., bukan impor ulang pelanggan.
 Formulir pelanggan: kolom Grup 5/12, Segmen 3/12 (sebelumnya 4/4).
+
+## Salinan hasil akhir coba. -> VPS (`master:export` dan `master:import-snapshot`, 20 Oktober 2026)
+
+Ayah dan tim memperbaiki master di coba. (nama, grup, segmen, pelanggan, BOM dari QC), jadi produksi menerima SALINAN coba., bukan impor ulang.
+- `php artisan master:export` (di coba.): menulis `storage/app/master-snapshot-<waktu>.json` (hanya membaca basis data; berisi data pelanggan, JANGAN masuk git).
+- `php artisan master:import-snapshot <berkas>` (di VPS): dry-run bawaan (semua dijalankan lalu dibatalkan), `--apply` menulis. id dipertahankan; baris
+  yang sama persis dilewati; isi berbeda pada id yang sama = DITOLAK; satu penolakan membatalkan semuanya; checksum dan kolom tabel diperiksa.
+- Tabel yang ikut (urut): warehouses, grades, cattle_classes, drivers, vehicles, suppliers, material_units, material_categories, materials,
+  product_categories, customer_groups, products, product_materials, customer_segments, customers. TIDAK ikut: pengguna, izin, rekening bank
+  (bank_accounts), kategori pengeluaran (expense_categories), transaksi, riwayat. Penulisan tanpa event model, jadi tidak membuat catatan riwayat palsu.
+- Syarat di VPS: kode terbaru sudah di-deploy dan dimigrasi (kolom harus sama); tabel master di VPS kosong atau identik (sisa data uji dibersihkan dulu).
+- Urutan hari-H (usulan, menunggu aba-aba Ayah): cadangkan basis data VPS; deploy `main`; migrate; bersihkan sisa data uji master; scp snapshot ke VPS;
+  `master:import-snapshot` dry-run -> laporan ke Ayah -> `--apply`; periksa jumlah di aplikasi (292 pelanggan, 153 produk, 161 material, dst.).
