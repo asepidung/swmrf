@@ -495,3 +495,9 @@ Bukan modul stok awal: hanya memindahkan DATA barang yang ada di gudang menurut 
 - Batch: boning = `boning.batchboning` (mis. BN26083); repack = `repack.norepack` (mis. RPC-26026); GR beef = `grbeef.grnumber`; stock-in dan retur tanpa sumber = kosong.
 - `creatime` legacy tidak dipakai (tabel dibangun ulang dari opname 5 Okt); `price` kosong semua (nilai awal lewat `BarcodeCosts::valueOpeningStock()`); tidak ada catatan pergerakan stok.
 - Stok berubah tiap hari: untuk hari-H tarik ulang saat legacy ditutup.
+
+### Piutang: tidak diimpor; berikutnya main alur (Ayah, 20 Oktober 2026)
+
+Piutang legacy TIDAK diimpor: fiturnya tidak dipakai di aplikasi lama sehingga datanya tidak akurat. Modul yang sudah dipindah ke coba.: master lengkap + stok daging (589 barcode).
+Langkah berikutnya: main ALUR di coba. dengan data impor (Request -> PO -> GR; SO -> Tally (barcode legacy direlabel) -> DO -> Invoice; boning/repack dari stok legacy) untuk
+menguji bahwa data hasil pindahan berfungsi. Dokumen terbuka (SO/DO/PO yang masih berjalan saat legacy ditutup) diputuskan Ayah sesudah main alur: diketik ulang atau dipindah.
