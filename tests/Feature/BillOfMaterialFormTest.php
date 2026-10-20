@@ -258,18 +258,23 @@ class BillOfMaterialFormTest extends TestCase
         }
     }
 
-    public function test_deleting_a_row_needs_the_delete_permission(): void
+    public function test_deleting_a_row_is_part_of_editing_so_edit_permission_is_enough(): void
     {
         $produk = $this->produk();
         $a = $this->bahan('KARTON TOP');
         $baris = ProductMaterial::create(['product_id' => $produk->id, 'material_id' => $a->id, 'quantity' => 1, 'basis' => 'box']);
 
+        // Hanya View + Create (tanpa Edit dan tanpa Delete): ditolak, baris tetap ada.
         try {
-            ProductBomSync::sync($produk, [], $this->pengguna('view_product_materials', 'create_product_materials', 'edit_product_materials'));
-            $this->fail('Menghapus baris tanpa izin delete seharusnya ditolak.');
+            ProductBomSync::sync($produk, [], $this->pengguna('view_product_materials', 'create_product_materials'));
+            $this->fail('Menghapus baris tanpa izin Edit atau Delete seharusnya ditolak.');
         } catch (ValidationException) {
             $this->assertNotNull(ProductMaterial::find($baris->id), 'Baris tidak boleh hilang walau permintaannya ditolak.');
         }
+
+        // Dengan izin Edit saja (keputusan Ayah, 20 Oktober 2026): boleh.
+        ProductBomSync::sync($produk, [], $this->pengguna('view_product_materials', 'edit_product_materials'));
+        $this->assertNull(ProductMaterial::find($baris->id));
     }
 
     public function test_a_save_with_nothing_changed_needs_no_bom_permission_at_all(): void

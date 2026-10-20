@@ -187,7 +187,11 @@ class ProductBomSync
             [$updates, 'edit_product_materials', __('You are not allowed to change rows of a bill of material.')],
             [$deletes, 'delete_product_materials', __('You are not allowed to delete rows from a bill of material.')],
         ] as [$needed, $permission, $message]) {
-            if ($needed && ! ($user?->hasPermission($permission) ?? false)) {
+            // Menghapus baris termasuk mengedit daftar: izin Edit cukup (Ayah, 20 Oktober 2026).
+            $allowed = ($user?->hasPermission($permission) ?? false)
+                || ($permission === 'delete_product_materials' && ($user?->hasPermission('edit_product_materials') ?? false));
+
+            if ($needed && ! $allowed) {
                 throw ValidationException::withMessages(['data.billOfMaterials' => $message]);
             }
         }
