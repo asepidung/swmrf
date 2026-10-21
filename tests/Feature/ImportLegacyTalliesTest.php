@@ -37,9 +37,9 @@ class ImportLegacyTalliesTest extends TestCase
         return $this->insert('tally', ['idtally' => $id, 'idso' => $so, 'sonumber' => 'SO-'.$so, 'notally' => $number, 'deliverydate' => '2026-10-21', 'idcustomer' => 6, 'po' => '', 'stat' => $stat, 'sealnumb' => 'S123', 'creatime' => '2026-10-20 09:00:00', 'is_deleted' => 0]);
     }
 
-    private function carton(int $id, int $tally, string $barcode, ?string $grade = '2', string $origin = '1', int $product = 21, string $ph = '5.6', string $exp = ''): string
+    private function carton(int $id, int $tally, string $barcode, ?string $grade = '2', string $origin = '1', int $product = 21, string $ph = '5.6', string $exp = '', string $pod = '2026-10-17'): string
     {
-        return $this->insert('tallydetail', ['idtallydetail' => $id, 'idtally' => $tally, 'barcode' => $barcode, 'idgrade' => $grade, 'ph' => $ph, 'idbarang' => $product, 'weight' => '17.40', 'pcs' => '3', 'pod' => '2026-10-17', 'origin' => $origin, 'creatime' => '2026-10-20 09:05:00', 'exp' => $exp]);
+        return $this->insert('tallydetail', ['idtallydetail' => $id, 'idtally' => $tally, 'barcode' => $barcode, 'idgrade' => $grade, 'ph' => $ph, 'idbarang' => $product, 'weight' => '17.40', 'pcs' => '3', 'pod' => $pod, 'origin' => $origin, 'creatime' => '2026-10-20 09:05:00', 'exp' => $exp]);
     }
 
     protected function setUp(): void
@@ -70,7 +70,7 @@ class ImportLegacyTalliesTest extends TestCase
             .$this->tally(1, 1, 'TS00001').$this->carton(1, 1, '10036231101000009054').$this->carton(2, 1, '10036231101000009055', null, '', 21, '')
             .$this->tally(2, 2, 'TS00001', 'Rejected').$this->carton(3, 2, '3240110000000649', '1', '3', 21, '5.5', '2026-12-01')
             .$this->tally(3, 3, 'TS00003', '').$this->carton(4, 3, '10036231101000009054', '4')
-            .$this->tally(4, 4, 'TS00004').$this->tally(5, 4, 'TS00005').$this->carton(5, 5, '10036231101000009099')
+            .$this->tally(4, 4, 'TS00004').$this->tally(5, 4, 'TS00005').$this->carton(5, 5, '10036231101000009099', '2', '1', 21, '5.6', '', '0000-00-00')
             .$this->tally(6, 99, 'TS00006').$this->carton(6, 6, '10036231101000009100', '2', '1', 777));
     }
 
@@ -167,6 +167,14 @@ class ImportLegacyTalliesTest extends TestCase
         $this->assertNull(DB::table('tallies')->where('tally_number', 'TS00004')->first(), 'tally kosong dilewati walau lebih dulu');
         $this->assertNotNull(DB::table('tallies')->where('tally_number', 'TS00005')->first());
         $this->assertNull(DB::table('tallies')->where('tally_number', 'TS00006')->first(), 'SO 99 tidak ada');
+    }
+
+    /** @test */
+    public function a_zero_pack_date_falls_back_to_the_scan_date(): void
+    {
+        $this->importer(true)->assertSuccessful();
+
+        $this->assertSame('2026-10-20', DB::table('tally_items')->where('barcode', '10036231101000009099')->value('pack_date'));
     }
 
     /** @test */
