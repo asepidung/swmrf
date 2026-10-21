@@ -51,9 +51,9 @@ class ImportLegacyCarcassesTest extends TestCase
         return $this->insert('carcase', ['idcarcase' => $id, 'killdate' => $date, 'idsupplier' => 7, 'idweight' => $weight, 'note' => '', 'idusers' => $user, 'is_deleted' => $deleted]);
     }
 
-    private function detail(int $id, int $carcase, int $weighDetail, string $c1 = '174.4', string $c2 = '185.1'): string
+    private function detail(int $id, int $carcase, int $weighDetail, string $c1 = '174.4', string $c2 = '185.1', string $breed = 'STEER'): string
     {
-        return $this->insert('carcasedetail', ['iddetail' => $id, 'idcarcase' => $carcase, 'idweightdetail' => $weighDetail, 'breed' => 'STEER', 'berat' => '652', 'eartag' => '5564', 'carcase1' => $c1, 'carcase2' => $c2, 'hides' => '44.4', 'tail' => '0']);
+        return $this->insert('carcasedetail', ['iddetail' => $id, 'idcarcase' => $carcase, 'idweightdetail' => $weighDetail, 'breed' => $breed, 'berat' => '652', 'eartag' => '5564', 'carcase1' => $c1, 'carcase2' => $c2, 'hides' => '44.4', 'tail' => '0']);
     }
 
     private function map(string $entity, int $legacy, int $new): void
@@ -87,7 +87,7 @@ class ImportLegacyCarcassesTest extends TestCase
         $this->path = tempnam(sys_get_temp_dir(), 'legacy-crc-').'.sql';
         file_put_contents($this->path, $this->ddl()
             .$this->carcase(369, 109).$this->detail(14113, 369, 3957).$this->detail(14114, 369, 3958, '170', '180')
-            .$this->carcase(100, 0, '2025-03-01').$this->detail(1, 100, 1111).$this->detail(2, 100, 1112)
+            .$this->carcase(100, 0, '2025-03-01').$this->detail(1, 100, 1111).$this->detail(2, 100, 1112, '170', '180', '')
             .$this->carcase(370, 109, '2026-10-19', 1).$this->detail(3, 370, 3957));
     }
 
@@ -106,19 +106,17 @@ class ImportLegacyCarcassesTest extends TestCase
     /** @test */
     public function a_dry_run_shows_pairs_and_writes_nothing(): void
     {
-        $this->importer()->expectsOutputToContain('DRY-RUN')->expectsOutputToContain('dibuat: 1')->expectsOutputToContain('BARU  carcasses')->assertSuccessful();
+        $this->importer()->expectsOutputToContain('DRY-RUN')->expectsOutputToContain('dibuat: 2')->expectsOutputToContain('BARU  carcasses')->assertSuccessful();
 
         $this->assertSame(0, DB::table('carcasses')->count());
     }
 
     /** @test */
-    public function a_linked_carcass_is_paired_and_old_unlinked_ones_are_reported_not_brought(): void
+    public function a_linked_carcass_is_paired(): void
     {
-        $this->importer(true)->expectsOutputToContain('TIDAK DIBAWA (tanpa catatan timbang di legacy): 1 karkas dengan 2 ekor')->assertSuccessful();
+        $this->importer(true)->assertSuccessful();
 
-        $this->assertSame(['CRC-0369'], DB::table('carcasses')->pluck('carcass_number')->all(), 'yang dihapus dan yang tanpa timbang tidak dibawa');
-
-        $c = DB::table('carcasses')->first();
+        $c = DB::table('carcasses')->where('carcass_number', 'CRC-0369')->first();
         $this->assertSame($this->weighingId, (int) $c->cattle_weighing_id);
         $this->assertSame('2026-10-19', $c->kill_date);
         $this->assertSame(5, (int) $c->created_by);
@@ -129,6 +127,45 @@ class ImportLegacyCarcassesTest extends TestCase
         $this->assertSame(174.4, (float) $items[0]->carcass_1);
         $this->assertSame(185.1, (float) $items[0]->carcass_2);
         $this->assertSame(44.4, (float) $items[0]->hides);
+        $this->assertNull(DB::table('carcasses')->where('carcass_number', 'CRC-0370')->first(), 'karkas yang dihapus tidak dibawa');
+    }
+
+    /** @test */
+    public function without_synthetic_old_unlinked_carcasses_are_only_reported(): void
+    {
+        $this->artisan('legacy:import-carcasses', ['--source' => $this->path, '--fallback-user' => 'cadangan', '--without-synthetic' => true, '--apply' => true])
+            ->expectsOutputToContain('TANPA catatan timbang di legacy: 1 karkas dengan 2 ekor')
+            ->assertSuccessful();
+
+        $this->assertSame(['CRC-0369'], DB::table('carcasses')->pluck('carcass_number')->all());
+    }
+
+    /** @test */
+    public function an_old_carcass_without_a_weighing_gets_a_synthetic_receiving_and_weighing(): void
+    {
+        $this->importer(true)->expectsOutputToContain('Dibentuk receive+timbang pengganti: 1 karkas, 2 ekor')->assertSuccessful();
+
+        $c = DB::table('carcasses')->where('carcass_number', 'CRC-0100')->first();
+        $this->assertNotNull($c);
+        $this->assertStringContainsString('Dibentuk dari data karkas legacy', $c->note);
+
+        $weighing = DB::table('cattle_weighings')->where('id', $c->cattle_weighing_id)->first();
+        $this->assertSame('WGH-K0100', $weighing->weighing_number);
+        $this->assertSame('2025-03-01', $weighing->weighing_date);
+
+        $receiving = DB::table('cattle_receivings')->where('id', $weighing->cattle_receiving_id)->first();
+        $this->assertSame('RCV-K0100', $receiving->receiving_number);
+        $this->assertSame('CPO-LGC-S7', DB::table('purchase_cattles')->where('id', $receiving->purchase_cattle_id)->value('document_number'));
+        $this->assertSame(1, DB::table('purchase_cattles')->where('document_number', 'CPO-LGC-S7')->count(), 'satu PO pengganti per supplier');
+
+        $tags = DB::table('cattle_receiving_items')->where('cattle_receiving_id', $receiving->id)->orderBy('id')->get();
+        $this->assertSame('5564', $tags[0]->eartag);
+        $this->assertSame('5564-250301', $tags[1]->eartag, 'eartag kembar diberi akhiran tanggal');
+        $this->assertSame(1, (int) $tags[0]->cattle_class_id, 'breed STEER');
+        $this->assertSame(1, (int) $tags[1]->cattle_class_id, 'breed kosong -> STEER');
+        $this->assertStringContainsString('kelas tidak tercatat di legacy', (string) $tags[1]->notes);
+        $this->assertSame(652.0, (float) DB::table('cattle_weighing_items')->where('cattle_weighing_id', $weighing->id)->value('actual_weight'), 'berat hidup dari karkas');
+        $this->assertSame(2, DB::table('carcass_items')->where('carcass_id', $c->id)->count());
     }
 
     /** @test */
@@ -136,9 +173,9 @@ class ImportLegacyCarcassesTest extends TestCase
     {
         $this->importer(true)->assertSuccessful();
 
-        $carcassId = (int) DB::table('carcasses')->value('id');
+        $carcassId = (int) DB::table('carcasses')->where('carcass_number', 'CRC-0369')->value('id');
         $this->assertSame($carcassId, (int) DB::table('legacy_import_map')->where(['entity' => 'carcass', 'legacy_id' => 369])->value('new_id'));
-        $this->assertSame(2, DB::table('legacy_import_map')->where('entity', 'carcass_item')->count());
+        $this->assertSame(4, DB::table('legacy_import_map')->where('entity', 'carcass_item')->count(), '2 karkas x 2 ekor');
     }
 
     /** @test */
@@ -147,11 +184,12 @@ class ImportLegacyCarcassesTest extends TestCase
         $this->importer(true)->assertSuccessful();
         DB::table('legacy_import_map')->whereIn('entity', ['carcass', 'carcass_item'])->delete();
 
-        $this->importer(true)->expectsOutputToContain('dibuat: 0, sudah ada (dilewati): 1')->assertSuccessful();
+        $this->importer(true)->expectsOutputToContain('dibuat: 0, sudah ada (dilewati): 2')->assertSuccessful();
 
-        $this->assertSame(1, DB::table('carcasses')->count());
-        $this->assertSame(1, DB::table('legacy_import_map')->where('entity', 'carcass')->count(), 'penghubung dipulihkan');
-        $this->assertSame(2, DB::table('legacy_import_map')->where('entity', 'carcass_item')->count());
+        $this->assertSame(2, DB::table('carcasses')->count());
+        $this->assertSame(1, DB::table('cattle_receivings')->count() - 1, 'tidak membentuk receive pengganti lagi');
+        $this->assertSame(2, DB::table('legacy_import_map')->where('entity', 'carcass')->count(), 'penghubung dipulihkan');
+        $this->assertGreaterThanOrEqual(2, DB::table('legacy_import_map')->where('entity', 'carcass_item')->count());
     }
 
     /** @test */

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\User;
 use App\Support\LegacySqlDump;
+use App\Support\LooseName;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -15,6 +16,11 @@ use Illuminate\Support\Facades\DB;
  * `legacy:import-cattle-receipts` (idweigh -> penimbangan, idweighdetail -> baris timbang). Karkas LAMA yang di legacy tidak punya catatan timbang
  * (sebelum modul timbang legacy dipakai) TIDAK bisa dihubungkan dan DILEWATI serta dilaporkan (keputusan tentangnya menunggu Ayah).
  *
+ * Karkas LAMA (tanpa catatan timbang) dibawa juga (keputusan Ayah, 21 Oktober 2026): untuk tiap karkas dibentuk receive + timbang PENGGANTI dari data karkas itu
+ * sendiri (eartag, kelas dari kolom breed, berat hidup), terhubung ke satu PO sapi pengganti per supplier ("CPO-LGC-S<idsupplier>"), semuanya diberi catatan "dibentuk dari data
+ * karkas legacy". Breed kosong -> kelas STEER (dicatat di catatan baris). Eartag mengikuti aturan unik yang sama (yang lebih lama mengalah dengan akhiran tanggal).
+ * `--without-synthetic` mematikannya (karkas lama hanya dilaporkan).
+ *
  * Pemasangan: carcass_number = "CRC-<idcarcase 4 digit>" (legacy tidak punya nomor karkas); kill_date = killdate; created_by = idusers bila akun ada, selain itu
  * `--fallback-user`; item: carcass_1 = carcase1, carcass_2 = carcase2, hides, tail apa adanya. Kelas dan eartag tetap di baris receive (tidak diulang di karkas).
  */
@@ -23,6 +29,7 @@ class ImportLegacyCarcasses extends Command
     protected $signature = 'legacy:import-carcasses
                             {--source= : Berkas snapshot SQL (legacy/tarik/tarik.sh sapi)}
                             {--fallback-user= : Username akun pengganti untuk pembuat yang tidak ada di aplikasi}
+                            {--without-synthetic : Jangan membentuk receive/timbang pengganti untuk karkas lama (dilewati saja)}
                             {--apply : Benar-benar menulis (default hanya laporan dry-run)}
                             {--examples=2 : Jumlah contoh pasangan lama -> baru}';
 
@@ -57,11 +64,16 @@ class ImportLegacyCarcasses extends Command
         $details = $table('carcasedetail')->groupBy('idcarcase');
         $rows = $table('carcase')->filter(fn ($r) => (int) $r['is_deleted'] === 0)->sortBy('idcarcase')->values();
 
-        $stats = ['created' => 0, 'skipped' => 0, 'unlinked' => 0, 'unlinkedHeads' => 0, 'items' => 0, 'itemsLost' => 0, 'fallback' => 0, 'carcass1' => 0.0, 'carcass2' => 0.0, 'oldest' => null, 'newest' => null, 'duplicateLinks' => 0];
+        $synthetic = ! $this->option('without-synthetic');
+        $classes = DB::table('cattle_classes')->pluck('id', 'name')->mapWithKeys(fn ($id, $name) => [LooseName::key($name) => $id]);
+        $taken = DB::table('cattle_receiving_items')->pluck('eartag')->map(fn ($t) => strtoupper($t))->flip()->all();
+        $supplierIds = \App\Models\Supplier::query()->pluck('id')->flip();
+        $poIds = [];
+        $stats = ['created' => 0, 'skipped' => 0, 'unlinked' => 0, 'unlinkedHeads' => 0, 'items' => 0, 'itemsLost' => 0, 'fallback' => 0, 'carcass1' => 0.0, 'carcass2' => 0.0, 'oldest' => null, 'newest' => null, 'duplicateLinks' => 0, 'synthetic' => 0, 'syntheticHeads' => 0, 'blankBreed' => 0, 'tagsChanged' => 0];
         $conflicts = $examples = [];
         $usedItems = [];
 
-        $run = function () use ($rows, $details, $weighings, $weighItems, $userIds, $existing, $fallback, $apply, &$stats, &$conflicts, &$examples, &$usedItems): void {
+        $run = function () use ($rows, $details, $weighings, $weighItems, $userIds, $existing, $fallback, $apply, $synthetic, $classes, $supplierIds, &$taken, &$poIds, &$stats, &$conflicts, &$examples, &$usedItems): void {
             foreach ($rows as $row) {
                 $number = 'CRC-'.str_pad((string) $row['idcarcase'], 4, '0', STR_PAD_LEFT);
                 $weighingId = $weighings[(int) $row['idweight']] ?? null;
@@ -85,15 +97,6 @@ class ImportLegacyCarcasses extends Command
                     continue;
                 }
 
-                if ($weighingId === null) {
-                    $stats['unlinked']++;
-                    $stats['unlinkedHeads'] += $details->get($row['idcarcase'], collect())->count();
-                    $stats['oldest'] = min($stats['oldest'] ?? '9999', (string) $row['killdate']);
-                    $stats['newest'] = max($stats['newest'] ?? '0000', (string) $row['killdate']);
-
-                    continue;
-                }
-
                 $note = trim((string) ($row['note'] ?? ''));
                 $userId = (int) $row['idusers'];
 
@@ -103,10 +106,34 @@ class ImportLegacyCarcasses extends Command
                     $stats['fallback']++;
                 }
 
+                $synthItems = [];
+
+                if ($weighingId === null) {
+                    $stats['unlinked']++;
+                    $stats['unlinkedHeads'] += $details->get($row['idcarcase'], collect())->count();
+                    $stats['oldest'] = min($stats['oldest'] ?? '9999', (string) $row['killdate']);
+                    $stats['newest'] = max($stats['newest'] ?? '0000', (string) $row['killdate']);
+
+                    if (! $synthetic) {
+                        continue;
+                    }
+
+                    $supplierId = ImportLegacyMaster::SUPPLIER_MERGES[(int) $row['idsupplier']] ?? (int) $row['idsupplier'];
+
+                    if (! isset($supplierIds[$supplierId])) {
+                        $conflicts[] = "{$number}: supplier idsupplier={$row['idsupplier']} tidak ada, karkas lama dilewati.";
+
+                        continue;
+                    }
+
+                    [$weighingId, $synthItems] = $this->synthesize($row, $details->get($row['idcarcase'], collect()), $supplierId, $userId, $classes, $taken, $poIds, $apply, $stats);
+                    $note = trim($note.' | Dibentuk dari data karkas legacy (tanpa catatan receive/timbang di legacy)', ' |');
+                }
+
                 $items = [];
 
                 foreach ($details->get($row['idcarcase'], collect()) as $d) {
-                    $weighItem = $weighItems[(int) $d['idweightdetail']] ?? null;
+                    $weighItem = $synthItems[(int) $d['iddetail']] ?? ($weighItems[(int) $d['idweightdetail']] ?? null);
 
                     if ($weighItem === null) {
                         $stats['itemsLost']++;
@@ -159,6 +186,91 @@ class ImportLegacyCarcasses extends Command
         return self::SUCCESS;
     }
 
+    /**
+     * Membentuk receive + timbang pengganti untuk SATU karkas lama; mengembalikan [id penimbangan, [iddetail karkas => id baris timbang]].
+     * Saat dry-run (tanpa --apply) id-nya palsu (-1) dan tidak ada yang ditulis.
+     *
+     * @param  \Illuminate\Support\Collection<int, array<string, mixed>>  $rows
+     * @param  array<string, int>  $classes
+     * @param  array<string, true>  $taken
+     * @param  array<int, int>  $poIds
+     * @return array{0: int, 1: array<int, int>}
+     */
+    private function synthesize(array $row, $rows, int $supplierId, int $userId, $classes, array &$taken, array &$poIds, bool $apply, array &$stats): array
+    {
+        $id = (int) $row['idcarcase'];
+        $at = $row['killdate'].' 00:00:00';
+        $tagNote = 'Dibentuk dari data karkas legacy (idcarcase='.$id.')';
+        $fakeId = -1;
+
+        if (! isset($poIds[$supplierId])) {
+            $number = 'CPO-LGC-S'.$supplierId;
+            $existingPo = DB::table('purchase_cattles')->where('document_number', $number)->value('id');
+            $poIds[$supplierId] = $existingPo ?: ($apply ? DB::table('purchase_cattles')->insertGetId([
+                'document_number' => $number, 'supplier_id' => $supplierId, 'shipping_date' => $row['killdate'], 'summary_note' => 'PO pengganti untuk karkas legacy sebelum modul receive/timbang dipakai',
+                'created_by' => $userId, 'created_at' => $at, 'updated_at' => $at,
+            ]) : $fakeId);
+        }
+
+        $receivingId = $apply ? DB::table('cattle_receivings')->insertGetId([
+            'receiving_number' => 'RCV-K'.str_pad((string) $id, 4, '0', STR_PAD_LEFT), 'purchase_cattle_id' => $poIds[$supplierId], 'supplier_id' => $supplierId, 'receive_date' => $row['killdate'],
+            'note' => $tagNote, 'created_by' => $userId, 'created_at' => $at, 'updated_at' => $at,
+        ]) : $fakeId;
+        $weighingId = $apply ? DB::table('cattle_weighings')->insertGetId([
+            'weighing_number' => 'WGH-K'.str_pad((string) $id, 4, '0', STR_PAD_LEFT), 'cattle_receiving_id' => $receivingId, 'weighing_date' => $row['killdate'],
+            'note' => $tagNote, 'created_by' => $userId, 'created_at' => $at, 'updated_at' => $at,
+        ]) : $fakeId;
+
+        $links = [];
+
+        foreach ($rows as $d) {
+            $classId = $classes[LooseName::key($d['breed'] ?? '')] ?? null;
+            $itemNote = null;
+
+            if ($classId === null) {
+                $classId = $classes[LooseName::key('STEER')];
+                $itemNote = 'kelas tidak tercatat di legacy; diisi STEER';
+                $stats['blankBreed']++;
+            }
+
+            $tag = strtoupper(trim((string) $d['eartag']));
+            $candidate = $tag;
+            $base = $tag;
+            $n = 2;
+
+            if (isset($taken[$candidate])) {
+                $base = $tag.'-'.date('ymd', strtotime($row['killdate']));
+                $candidate = $base;
+                $stats['tagsChanged']++;
+            }
+
+            while (isset($taken[$candidate])) {
+                $candidate = $base.'-'.$n++;
+            }
+
+            $taken[$candidate] = true;
+            $weight = (float) $d['berat'];
+            $stats['syntheticHeads']++;
+
+            if ($apply) {
+                $receivingItem = DB::table('cattle_receiving_items')->insertGetId([
+                    'cattle_receiving_id' => $receivingId, 'cattle_class_id' => $classId, 'eartag' => $candidate, 'initial_weight' => round($weight, 2), 'notes' => $itemNote,
+                    'created_at' => $at, 'updated_at' => $at,
+                ]);
+                $links[(int) $d['iddetail']] = DB::table('cattle_weighing_items')->insertGetId([
+                    'cattle_weighing_id' => $weighingId, 'cattle_receiving_item_id' => $receivingItem, 'actual_weight' => $weight > 0 ? round($weight, 2) : null,
+                    'created_at' => $at, 'updated_at' => $at,
+                ]);
+            } else {
+                $links[(int) $d['iddetail']] = $fakeId;
+            }
+        }
+
+        $stats['synthetic']++;
+
+        return [$weighingId, $links];
+    }
+
     /** Mencatat penghubung id legacy -> id baru (hanya saat --apply). */
     private function remember(string $entity, int $legacyId, int $newId): void
     {
@@ -169,7 +281,8 @@ class ImportLegacyCarcasses extends Command
     {
         $this->line($apply ? 'DITERAPKAN (--apply)' : 'DRY-RUN -- tidak ada yang ditulis. Tambahkan --apply untuk menulis.');
         $this->line("carcasses -- dibuat: {$stats['created']}, sudah ada (dilewati): {$stats['skipped']}; ekor (item): {$stats['items']}; karkas 1 total ".number_format($stats['carcass1'], 0, ',', '.').' kg, karkas 2 total '.number_format($stats['carcass2'], 0, ',', '.').' kg');
-        $this->line("TIDAK DIBAWA (tanpa catatan timbang di legacy): {$stats['unlinked']} karkas dengan {$stats['unlinkedHeads']} ekor, killdate ".($stats['oldest'] ?? '-').' .. '.($stats['newest'] ?? '-').". Baris karkas tanpa baris timbang: {$stats['itemsLost']}. Baris timbang dipakai ganda: {$stats['duplicateLinks']}. Pembuat diganti akun pengganti: {$stats['fallback']}.");
+        $this->line("TANPA catatan timbang di legacy: {$stats['unlinked']} karkas dengan {$stats['unlinkedHeads']} ekor, killdate ".($stats['oldest'] ?? '-').' .. '.($stats['newest'] ?? '-').". Dibentuk receive+timbang pengganti: {$stats['synthetic']} karkas, {$stats['syntheticHeads']} ekor (kelas diisi STEER karena breed kosong: {$stats['blankBreed']}; eartag diberi akhiran tanggal: {$stats['tagsChanged']}).");
+        $this->line("Baris karkas tanpa baris timbang: {$stats['itemsLost']}. Baris timbang dipakai ganda: {$stats['duplicateLinks']}. Pembuat diganti akun pengganti: {$stats['fallback']}.");
 
         foreach ($examples as [$row, $lines, $header, $items]) {
             $this->line('');
