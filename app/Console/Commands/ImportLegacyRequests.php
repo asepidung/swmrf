@@ -92,14 +92,26 @@ class ImportLegacyRequests extends Command
         $userIds = User::withoutGlobalScopes()->pluck('id')->flip();
         $existing = DB::table('material_requisitions')->pluck('document_number')->flip();
 
+        $seenNumbers = [];
+        $duplicates = 0;
         $created = $skipped = $linesIn = $linesOut = 0;
         $refused = $conflicts = $examples = [];
         $perStatus = [];
         $fallbackUsed = $staleCount = $merged = $linesSkipped = 0;
 
-        $run = function () use ($rows, $details, $fallback, $apply, $materialNames, $supplierIds, $materialIds, $userIds, $existing, &$created, &$skipped, &$linesIn, &$linesOut, &$refused, &$conflicts, &$examples, &$perStatus, &$fallbackUsed, &$staleCount, &$merged, &$linesSkipped): void {
+        $run = function () use ($rows, $details, $fallback, $apply, &$seenNumbers, &$duplicates, $materialNames, $supplierIds, $materialIds, $userIds, $existing, &$created, &$skipped, &$linesIn, &$linesOut, &$refused, &$conflicts, &$examples, &$perStatus, &$fallbackUsed, &$staleCount, &$merged, &$linesSkipped): void {
             foreach ($rows as $row) {
                 $number = trim((string) $row['norequest']);
+                $duplicateNote = null;
+
+                // Dua dokumen legacy bernomor sama (mis. REQ-25/0017): yang pertama memakai nomor aslinya, berikutnya diberi akhiran -2, -3, ...
+                $seenNumbers[$number] = ($seenNumbers[$number] ?? 0) + 1;
+
+                if ($seenNumbers[$number] > 1) {
+                    $duplicateNote = "Nomor kembar di legacy (idrequest={$row['idrequest']}): nomor asli {$number}";
+                    $number .= '-'.$seenNumbers[$number];
+                    $duplicates++;
+                }
 
                 if (isset($existing[$number])) {
                     $skipped++;
@@ -167,6 +179,10 @@ class ImportLegacyRequests extends Command
                     $conflicts[] = "{$number}: tidak ada baris bahan yang bisa dibawa, request dilewati.";
 
                     continue;
+                }
+
+                if ($duplicateNote !== null) {
+                    $note = trim($note.' | '.$duplicateNote, ' |');
                 }
 
                 if ($skippedHere > 0) {
@@ -239,18 +255,18 @@ class ImportLegacyRequests extends Command
             }
         }
 
-        $this->report($apply, $created, $skipped, $linesIn, $linesOut, $refused, $conflicts, $perStatus, $fallbackUsed, $examples, $staleCount, $merged, $linesSkipped);
+        $this->report($apply, $created, $skipped, $linesIn, $linesOut, $refused, $conflicts, $perStatus, $fallbackUsed, $examples, $staleCount, $merged, $linesSkipped, $duplicates);
 
         return $refused === [] ? self::SUCCESS : self::FAILURE;
     }
 
-    private function report(bool $apply, int $created, int $skipped, int $linesIn, int $linesOut, array $refused, array $conflicts, array $perStatus, int $fallbackUsed, array $examples, int $staleCount, int $merged, int $linesSkipped): void
+    private function report(bool $apply, int $created, int $skipped, int $linesIn, int $linesOut, array $refused, array $conflicts, array $perStatus, int $fallbackUsed, array $examples, int $staleCount, int $merged, int $linesSkipped, int $duplicates): void
     {
         $this->line($apply ? ($refused === [] ? 'DITERAPKAN (--apply)' : 'DITOLAK -- tidak ada yang ditulis.') : 'DRY-RUN -- tidak ada yang ditulis. Tambahkan --apply untuk menulis.');
         $this->line("material_requisitions -- dibuat: {$created}, sudah ada (dilewati): {$skipped}, konflik: ".count($conflicts).', DITOLAK: '.count($refused));
         $this->line("Baris bahan: {$linesOut} dibawa dari {$linesIn} ({$linesSkipped} dilewati karena bahan di luar material impor). Pemohon diganti akun cadangan: {$fallbackUsed} request.");
         $this->line('Status: '.collect($perStatus)->map(fn ($n, $k) => "{$k}={$n}")->implode(', '));
-        $this->line("Dibatalkan karena terlalu lama (dibuat sebelum --cutoff): {$staleCount}. Supplier lewat peta penggabungan: {$merged}.");
+        $this->line("Dibatalkan karena terlalu lama (dibuat sebelum --cutoff): {$staleCount}. Supplier lewat peta penggabungan: {$merged}. Nomor kembar di legacy diberi akhiran: {$duplicates}.");
 
         foreach ($examples as [$row, $lines, $header, $items]) {
             $this->line('');
