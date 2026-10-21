@@ -588,7 +588,7 @@ class ImportLegacyMaster extends Command
     // =========================================================================
 
     /** Barang non-daging di tabel produk legacy: dipakai sebagai Biaya Tambahan invoice, TIDAK diimpor (keputusan Ayah, 20 Oktober 2026). */
-    private const NON_MEAT_PRODUCT_NAMES = ['STYROFOAM BESAR GARUDA', 'STYROFOAM BESAR', 'STYROFOAM KECIL', 'ICE GELL', 'DELIVERY COST'];
+    public const NON_MEAT_PRODUCT_NAMES = ['STYROFOAM BESAR GARUDA', 'STYROFOAM BESAR', 'STYROFOAM KECIL', 'ICE GELL', 'DELIVERY COST'];
 
     /** Salah input / nama ganda yang kemungkinan sudah punya transaksi: diimpor NONAKTIF dengan kode sementara TMP-<id>. */
     private const INACTIVE_PRODUCT_NAMES = ['LUNG', 'FAT ETC', 'SODAS BUFFALO', 'ZZZ X PAHA DEPAN S'];
