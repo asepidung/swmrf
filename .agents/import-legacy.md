@@ -528,3 +528,12 @@ Prinsip impor riwayat (usulan Ruby, menunggu persetujuan fase): (1) FASE A wajib
 jadi TIDAK membuat pergerakan stok, riwayat aktivitas palsu, atau nomor baru; (4) nomor dokumen legacy dibawa apa adanya; (5) tabel penghubung id lama -> id baru untuk setiap dokumen
 supaya impor bisa diulang dan dokumen anak menemukan induknya; (6) status diterjemahkan; yang tidak punya padanan dicatat. Ukuran terbesar di legacy: tallydetail 163 ribu, labelboning 175 ribu,
 detailhasil 37 ribu, stocktakedetail 23 ribu, invoicedetail 23 ribu, salesorderdetail 22 ribu baris.
+
+### Fase A/B menjadi SATU jalur latihan dengan cadangan (Ayah dan Ruby, 21 Oktober 2026)
+
+Alasan Ayah: coba. dipakai untuk menemukan ATURAN impor; menjalankannya di VPS cepat (stok 589 baris selesai dalam hitungan detik). Yang menentukan bukan lamanya menjalankan, melainkan berapa modul
+yang aturannya sempat dilatih dan diperiksa sebelum 1 November. Maka: semua modul dilatih di coba. menurut urutan Ayah; pada hari-H dijalankan berurutan menurut prioritas (master, stok, dokumen terbuka,
+lalu riwayat per modul) selagi aplikasi dalam maintenance mode. Modul yang aturannya belum siap/diperiksa otomatis menjadi "Fase B" (menyusul sesudah legacy beku, selagi legacy masih bisa dibuka Ayah setahun).
+Aplikasi boleh dibuka (`artisan up`) begitu bagian kritis (master, stok, dokumen terbuka) selesai dan diperiksa; riwayat yang tersisa boleh jalan sesudahnya karena ditulis tanpa event model dan memakai
+nomor dokumen legacy (awalan berbeda dari nomor baru). Tabel besar dimuat bertahap (chunk). Id master tetap sama dengan legacy; yang digabung lewat peta (`SUPPLIER_MERGES`, `customerIdMap()`);
+dokumen yang menunjuk pelanggan/supplier yang hilang DILAPORKAN, bukan dibuang diam-diam. Ayah memastikan tidak akan menghapus pelanggan.
