@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\User;
 use App\Support\LegacySqlDump;
@@ -42,7 +43,12 @@ class ImportLegacyInvoices extends Command
 
     protected $description = 'Pindahkan seluruh riwayat Invoice legacy ke invoices + invoice_items (dry-run bawaan)';
 
-    public const EXCHANGE_STATUS = ['Sudah TF' => 'Sudah TF', 'Belum TF' => 'Belum TF', '-' => 'Belum Dibayar', '' => 'Belum Dibayar'];
+    public const EXCHANGE_STATUS = [
+        Invoice::STATUS_EXCHANGED => Invoice::STATUS_EXCHANGED,
+        Invoice::STATUS_EXCHANGE_PENDING => Invoice::STATUS_EXCHANGE_PENDING,
+        '-' => Invoice::STATUS_UNPAID,
+        '' => Invoice::STATUS_UNPAID,
+    ];
 
     public function handle(): int
     {
@@ -196,7 +202,7 @@ class ImportLegacyInvoices extends Command
 
                 if ($payment === 'settled' || $legacyBalance <= 0) {
                     $paid = $bill;
-                    $status = 'Lunas';
+                    $status = Invoice::STATUS_PAID;
                 } else {
                     $paid = 0.0;
                     $status = self::EXCHANGE_STATUS[$exchange];

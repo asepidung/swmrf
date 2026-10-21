@@ -112,13 +112,13 @@ class MasterSnapshot
 
         foreach ($snapshot['tables'] as $table => $rows) {
             if (! in_array($table, self::TABLES, true)) {
-                $problems[] = "Tabel \"{$table}\" tidak termasuk daftar master yang boleh disalin.";
+                $problems[] = __('Table ":table" is not one of the master tables that may be copied.', ['table' => $table]);
 
                 continue;
             }
 
             if (! Schema::hasTable($table)) {
-                $problems[] = "Tabel \"{$table}\" tidak ada di basis data ini (deploy kode terbaru dulu).";
+                $problems[] = __('Table ":table" does not exist in this database (deploy the latest code first).', ['table' => $table]);
 
                 continue;
             }
@@ -127,7 +127,7 @@ class MasterSnapshot
             $there = $snapshot['meta']['columns'][$table] ?? [];
 
             if (array_diff($there, $here) !== [] || array_diff($here, $there) !== []) {
-                $problems[] = "Kolom tabel \"{$table}\" berbeda antara sumber dan tujuan (migrasi belum sama).";
+                $problems[] = __('Columns of table ":table" differ between source and target (migrations are not the same yet).', ['table' => $table]);
             }
         }
 
@@ -152,7 +152,7 @@ class MasterSnapshot
                 if (self::business((array) $existing) === self::business($row)) {
                     $result['same']++;
                 } else {
-                    $result['refused'][] = "id {$row['id']}: sudah ada di tujuan dengan isi berbeda";
+                    $result['refused'][] = __('id :id: already exists at the target with different content', ['id' => $row['id']]);
                 }
 
                 continue;
@@ -162,6 +162,8 @@ class MasterSnapshot
                 DB::table($table)->insert($row);
                 $result['created']++;
             } catch (\Throwable $e) {
+                report($e);
+
                 $result['refused'][] = "id {$row['id']}: ".strtok($e->getMessage(), "\n");
             }
         }

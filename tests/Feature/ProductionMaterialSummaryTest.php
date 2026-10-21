@@ -114,7 +114,7 @@ class ProductionMaterialSummaryTest extends TestCase
         ]);
         $po = DB::table('purchase_materials')->insertGetId([
             'po_number' => 'PO-'.uniqid(), 'material_requisition_id' => $requisition, 'supplier_id' => $this->supplier->id,
-            'po_date' => now()->toDateString(), 'total_amount' => 0, 'status' => 'approved', 'created_at' => now(), 'updated_at' => now(),
+            'po_date' => now()->toDateString(), 'total_amount' => 0, 'status' => 'pending', 'created_at' => now(), 'updated_at' => now(),
         ]);
         $gr = DB::table('goods_receipt_materials')->insertGetId([
             'gr_number' => 'GR-'.uniqid(), 'purchase_material_id' => $po, 'supplier_id' => $this->supplier->id,
