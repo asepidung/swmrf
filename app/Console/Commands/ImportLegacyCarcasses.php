@@ -142,7 +142,8 @@ class ImportLegacyCarcasses extends Command
                         continue;
                     }
 
-                    if (isset($usedItems[$weighItem])) {
+                    // id palsu (-1) pada dry-run untuk karkas pengganti jangan dihitung sebagai pemakaian ganda.
+                    if ($weighItem > 0 && isset($usedItems[$weighItem])) {
                         $stats['duplicateLinks']++;
                         $conflicts[] = "{$number}: baris timbang idweighdetail={$d['idweightdetail']} dipakai dua baris karkas (eartag {$d['eartag']}); keduanya dibawa.";
                     }
@@ -301,7 +302,7 @@ class ImportLegacyCarcasses extends Command
         }
 
         $this->line('');
-        $this->line('Catatan: karkas tanpa catatan timbang tidak bisa dihubungkan (aplikasi baru mewajibkan penimbangan); keputusan menunggu Ayah.');
+        $this->line('Catatan: karkas tanpa catatan timbang dibawa lewat receive + timbang pengganti (--without-synthetic untuk hanya melaporkan).');
 
         foreach (array_slice($conflicts, 0, 6) as $line) {
             $this->line("  ! {$line}");
