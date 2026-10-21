@@ -6,21 +6,21 @@ use App\Models\CustomerProductSpec;
 use App\Models\User;
 
 /**
- * Spek customer per produk tidak punya izin sendiri (#579, keputusan Owner):
- * siapa pun yang boleh membuat atau mengubah Sales Order boleh mengisi dan
- * mengubah spek, dan siapa pun yang boleh melihat Sales Order atau Tally
- * boleh melihatnya.
+ * Spek customer per produk punya izin sendiri (keputusan Owner, 21 Oktober
+ * 2026, setelah menunya pindah ke grup QC): `view_customer_specs` untuk
+ * melihat dan `manage_customer_specs` untuk mengisi, mengubah, dan menghapus.
+ * Berlaku juga untuk tombol "Simpan sebagai spek tetap" di Sales Order.
  */
 class CustomerProductSpecPolicy
 {
     private function canSee(User $user): bool
     {
-        return $user->hasPermission('view_sales_orders') || $user->hasPermission('view_tallies');
+        return $user->hasPermission('view_customer_specs') || $user->hasPermission('manage_customer_specs');
     }
 
     private function canWrite(User $user): bool
     {
-        return $user->hasPermission('create_sales_orders') || $user->hasPermission('edit_sales_orders');
+        return $user->hasPermission('manage_customer_specs');
     }
 
     public function viewAny(User $user): bool { return $this->canSee($user); }
