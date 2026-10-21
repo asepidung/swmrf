@@ -83,6 +83,9 @@ class ImportLegacyRequests extends Command
             ->sortBy('idrequest')
             ->values();
 
+        // Nama bahan legacy (bila ikut ditarik) untuk mencatat baris yang dilewati sebagai teks.
+        $materialNames = collect(LegacySqlDump::parseTable($sql, 'rawmate'))->pluck('nmrawmate', 'idrawmate');
+
         // Himpunan id yang ada, dimuat sekali (ratusan dokumen x puluhan baris).
         $supplierIds = Supplier::query()->pluck('id')->flip();
         $materialIds = Material::query()->pluck('id')->flip();
@@ -94,7 +97,7 @@ class ImportLegacyRequests extends Command
         $perStatus = [];
         $fallbackUsed = $staleCount = $merged = $linesSkipped = 0;
 
-        $run = function () use ($rows, $details, $fallback, $apply, $supplierIds, $materialIds, $userIds, $existing, &$created, &$skipped, &$linesIn, &$linesOut, &$refused, &$conflicts, &$examples, &$perStatus, &$fallbackUsed, &$staleCount, &$merged, &$linesSkipped): void {
+        $run = function () use ($rows, $details, $fallback, $apply, $materialNames, $supplierIds, $materialIds, $userIds, $existing, &$created, &$skipped, &$linesIn, &$linesOut, &$refused, &$conflicts, &$examples, &$perStatus, &$fallbackUsed, &$staleCount, &$merged, &$linesSkipped): void {
             foreach ($rows as $row) {
                 $number = trim((string) $row['norequest']);
 
@@ -131,6 +134,7 @@ class ImportLegacyRequests extends Command
 
                 $items = [];
                 $skippedHere = 0;
+                $skippedText = [];
                 foreach ($details->get($row['idrequest'], collect()) as $line) {
                     $linesIn++;
 
@@ -138,6 +142,7 @@ class ImportLegacyRequests extends Command
                         $conflicts[] = "{$number}: baris bahan idrawmate={$line['idrawmate']} bukan material impor, dilewati.";
                         $linesSkipped++;
                         $skippedHere++;
+                        $skippedText[] = trim(($materialNames[$line['idrawmate']] ?? 'bahan '.$line['idrawmate']).' '.(float) $line['qty'].' x '.(float) $line['price']);
 
                         continue;
                     }
@@ -165,7 +170,7 @@ class ImportLegacyRequests extends Command
                 }
 
                 if ($skippedHere > 0) {
-                    $note = trim($note." | {$skippedHere} baris bahan dilewati (bahan di luar material impor)", ' |');
+                    $note = trim($note." | {$skippedHere} baris bahan dilewati (bahan di luar material impor): ".implode('; ', $skippedText), ' |');
                 }
 
                 $subtotal = array_sum(array_column($items, 'subtotal'));

@@ -25,6 +25,7 @@ class ImportLegacyRequestsTest extends TestCase
         $cols = [
             'request' => 'idrequest int, norequest varchar(20), duedate date, iduser int, idsupplier int, note varchar(50), stat varchar(20), is_deleted int, xamount decimal(15,2), taxrp decimal(15,2), creatime datetime, tax varchar(5), top int',
             'requestdetail' => 'iddetail int, idrequest int, idrawmate int, qty decimal(12,2), price decimal(15,2), notes varchar(50)',
+            'rawmate' => 'idrawmate int, nmrawmate varchar(50), unit varchar(10)',
         ];
         $out = '';
 
@@ -50,6 +51,11 @@ class ImportLegacyRequestsTest extends TestCase
         return $this->insert('request', ['idrequest' => $id, 'norequest' => $number, 'duedate' => '2026-10-22', 'iduser' => $user, 'idsupplier' => $supplier, 'note' => $note, 'stat' => $stat, 'is_deleted' => $deleted, 'xamount' => '99.00', 'taxrp' => '10.00', 'creatime' => $created, 'tax' => '0', 'top' => 14]);
     }
 
+    private function rawmate(): string
+    {
+        return $this->insert('rawmate', ['idrawmate' => 500, 'nmrawmate' => 'ATK PULPEN', 'unit' => 'Pcs']);
+    }
+
     private function line(int $id, int $request, int $material, string $qty = '10', string $price = '1000'): string
     {
         return $this->insert('requestdetail', ['iddetail' => $id, 'idrequest' => $request, 'idrawmate' => $material, 'qty' => $qty, 'price' => $price, 'notes' => '']);
@@ -73,7 +79,7 @@ class ImportLegacyRequestsTest extends TestCase
         }
 
         $this->path = tempnam(sys_get_temp_dir(), 'legacy-req-').'.sql';
-        file_put_contents($this->path, $this->ddl()
+        file_put_contents($this->path, $this->ddl().$this->rawmate()
             .$this->request(1, 'REQ-26/0001', 'Request').$this->line(1, 1, 23)
             .$this->request(2, 'REQ-26/0002', 'Waiting', 99, 0, '0').$this->line(2, 2, 23, '5', '200').$this->line(3, 2, 91, '2', '50').$this->line(4, 2, 500)
             .$this->request(3, 'REQ-26/0003', 'Ordering').$this->line(5, 3, 91)
@@ -126,6 +132,7 @@ class ImportLegacyRequestsTest extends TestCase
         $completed = DB::table('material_requisitions')->where('document_number', 'REQ-26/0009')->first();
         $this->assertSame(0, DB::table('material_requisition_items')->where('material_requisition_id', $completed->id)->count(), 'Dokumen riwayat dibawa tanpa baris bila semua bahannya di luar impor.');
         $this->assertStringContainsString('1 baris bahan dilewati', $completed->note);
+        $this->assertStringContainsString('ATK PULPEN 10 x 1000', $completed->note, 'baris yang dilewati dicatat sebagai teks lengkap dengan nama bahan');
     }
 
     /** @test */
