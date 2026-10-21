@@ -103,7 +103,7 @@ class ImportLegacyTalliesTest extends TestCase
         $soId = (int) DB::table('legacy_import_map')->where(['entity' => 'sales_order', 'legacy_id' => 1])->value('new_id');
         $first = DB::table('tallies')->where('tally_number', 'TS00001')->first();
         $this->assertSame($soId, (int) $first->sales_order_id);
-        $this->assertSame('locked', $first->status);
+        $this->assertSame('do', $first->status, 'DO -> do');
         $this->assertSame('S123', $first->seal_number);
         $this->assertSame(User::where('username', 'cadangan')->value('id'), (int) $first->created_by);
         $this->assertSame('2026-10-20 09:00:00', $first->created_at);

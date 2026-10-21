@@ -544,3 +544,9 @@ dokumen yang menunjuk pelanggan/supplier yang hilang DILAPORKAN, bukan dibuang d
 - Status: Delivered→completed, Cancel/Rejected→cancelled (Rejected diberi catatan), Waiting→waiting, On Process→processing, On Delivery→on_delivery, DRAFT→completed. SO "basi" (belum Delivered tetapi semua DO-nya sudah Invoiced) → completed (5 SO).
 - Diskon legacy dianggap persen; nilai > 100 (4 baris, tampak rupiah, harga 0) tidak dibawa, dicatat di note baris.
 - Tanpa efek model (tugas/notifikasi/stok). Mengisi `legacy_import_map` (sales_order, sales_order_item) untuk Tally/DO/Invoice. Idempoten (rerun: 0 dibuat, 8.224 dilewati).
+
+## Tally (`legacy:import-tallies`) — diterapkan di coba. 21 Okt 2026
+- Sumber: `tally` + `tallydetail` (snapshot `tarik.sh tally`): 8.042 tally, 165.617 karton. Dibawa 8.041 tally (1 tally KOSONG pada SO yang punya tally lain dilewati: TS00031/SO 176; aplikasi baru satu tally per SO) dan semua kartonnya (6.279.129 kg). Penghubung ke SO lewat `legacy_import_map` (sales_order).
+- Tally: notally→tally_number (kembar 206 diberi -2/-3 menurut idtally), sealnumb→seal_number, stat DO→do (Tally::STATUS_DELIVERED), Rejected→locked, kosong→processing (2), pembuat = akun pengganti (legacy tidak mencatat), created_at = creatime.
+- Karton: barcode apa adanya; gudang+grade lewat LegacyGradeMap; origin lewat `ImportLegacyStock::ORIGIN_NAMES` (kosong → digit awal barcode); pH kosong tetap kosong (102.965); exp kosong tetap kosong.
+- Aturan temuan: grade KOSONG (1.559 karton, 29 tally awal 2023) → J01 (JGL+CHILL), asumsi; barcode KEMBAR di dua tally (235) → yang lebih baru diberi akhiran -2 dan barcode asli di `original_barcode` (barcode harus unik); pack_date 0000-00-00 (1) → tanggal scan; batch_no tidak dibawa. Tanpa efek stok. Idempoten.
