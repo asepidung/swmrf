@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Semua produk beserta spek-nya untuk satu customer. Mengubah dan menghapus mengikuti izin
- * "Kelola spek customer"; Excel (spek customer ini) ada di sini, bukan di daftar.
+ * "Kelola spek customer"; cetak (spek customer ini) ada di sini, Excel semua customer ada di Detail List.
  */
 class SpecsRelationManager extends RelationManager
 {
@@ -88,30 +88,12 @@ class SpecsRelationManager extends RelationManager
             ->defaultSort('product_id')
             ->paginated(false)
             ->headerActions([
-                Tables\Actions\Action::make('excel')
-                    ->label(__('Excel'))
-                    ->icon('heroicon-o-document-text')
-                    ->color('success')
-                    ->action(function () {
-                        $customer = $this->getOwnerRecord();
-                        $records = $customer->productSpecs()->with('product')->get()->sortBy(fn ($r) => $r->product?->name);
-
-                        return response()->streamDownload(function () use ($records) {
-                            $writer = new \OpenSpout\Writer\XLSX\Writer();
-                            $writer->openToFile('php://output');
-                            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                __('Product'), __('Weight per pack'), __('Cut'),
-                                __('Condition'), __('Packaging'), __('Spec Note'),
-                            ]));
-                            foreach ($records as $record) {
-                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                    $record->product?->name, $record->weight_per_pack, $record->cut,
-                                    CustomerProductSpec::conditionLabel($record->condition), $record->packaging, $record->note,
-                                ]));
-                            }
-                            $writer->close();
-                        }, 'spek-'.\Illuminate\Support\Str::slug($customer->name).'.xlsx');
-                    }),
+                Tables\Actions\Action::make('print')
+                    ->label(__('Print'))
+                    ->icon('heroicon-o-printer')
+                    ->color('gray')
+                    ->url(fn (): string => route('print.customer-specs', $this->getOwnerRecord()))
+                    ->openUrlInNewTab(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()->modalHeading(__('Edit spec')),
