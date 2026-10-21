@@ -18,6 +18,15 @@ class SalesOrderItem extends Model
         'price',
         'discount',
         'note',
+        'spec',
+    ];
+
+    /**
+     * Salinan spek customer saat baris ini dibuat (#579). Tidak mengikuti
+     * spek tetap sesudahnya, supaya SO lama tidak berubah.
+     */
+    protected $casts = [
+        'spec' => 'array',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -29,7 +38,8 @@ class SalesOrderItem extends Model
                 'weight', 
                 'price', 
                 'discount', 
-                'note'
+                'note',
+                'spec',
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();

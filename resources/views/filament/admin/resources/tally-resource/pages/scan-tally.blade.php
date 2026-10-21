@@ -140,7 +140,12 @@
                                 $totalBox += $row['scanned_box'];
                             @endphp
                             <tr>
-                                <td class="py-2 px-2 font-medium dark:text-white">{{ $row['product_name'] }}</td>
+                                <td class="py-2 px-2 font-medium dark:text-white">
+                                    {{ $row['product_name'] }}
+                                    @if ($row['spec'] !== '')
+                                        <div class="text-xs font-normal text-gray-500 dark:text-gray-400">{{ __('Spec') }}: {{ $row['spec'] }}</div>
+                                    @endif
+                                </td>
                                 <td class="py-2 px-2 text-right whitespace-nowrap">{{ number_format($row['po_weight'], 2) }}</td>
                                 <td class="py-2 px-2 text-right whitespace-nowrap font-semibold text-primary-600 dark:text-primary-400">
                                     {{ number_format($row['scanned_weight'], 2) }}

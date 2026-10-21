@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\SalesOrderResource\Pages;
 use App\Filament\Admin\Resources\SalesOrderResource;
 use App\Models\SalesOrder;
 use App\Support\MasterDataDeletion;
+use App\Models\CustomerProductSpec;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
@@ -73,6 +74,7 @@ class EditSalesOrder extends EditRecord
                 'price' => number_format($item->price, 0, '', '.'),
                 'discount' => number_format($item->discount, 0, '', '.'),
                 'note' => $item->note,
+                'spec' => CustomerProductSpec::encode($item->spec),
             ];
         }
         $data['items'] = $items;
@@ -108,6 +110,8 @@ class EditSalesOrder extends EditRecord
                 'price' => (int) str_replace('.', '', $item['price'] ?? 0),
                 'discount' => (int) ($item['discount'] ?? 0),
                 'note' => $item['note'] ?? '',
+                // Salinan spek customer (#579), apa adanya dari form.
+                'spec' => CustomerProductSpec::decode($item['spec'] ?? null),
             ]);
         }
     }

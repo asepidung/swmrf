@@ -7849,3 +7849,12 @@ Menghapus BARIS bahan di daftar BOM adalah bagian dari mengedit, bukan menghapus
 disembunyikan (keputusan 13 Oktober), ikon hapus baris dulu tidak muncul untuk petugas QC dan baris kosong tidak bisa dibuang sehingga
 Save tertahan. Sekarang: izin Edit (atau Delete) cukup untuk menghapus baris yang sudah tersimpan (`BillOfMaterialSection`, `ProductBomSync::authorise`);
 baris yang baru ditambahkan dan belum disimpan selalu bisa dibuang. Kolom tampilan: Material 6, Basis 2, Catatan 4.
+
+## Spek customer per produk di Sales Order, 21 Oktober 2026 (#579)
+Konsep disepakati Ayah 20 Oktober 2026. Rincian fitur di `docs/modules/sales_orders.md` bagian 4. Keputusan yang diambil implementor dan perlu diingat:
+- **Salinan, bukan rujukan.** `sales_order_items.spec` (json, nullable) menyimpan salinan spek saat baris dibuat. Form SO memegangnya sebagai TEKS JSON di field `Hidden` (`CustomerProductSpec::encode()/decode()`), bukan array: input hidden tidak aman menampung array. Halaman Edit menghapus lalu membuat ulang semua baris saat menyimpan, jadi salinan WAJIB ikut dibawa dari form -- itu sebabnya `spec` ada di `mutateFormDataBeforeFill` dan di `afterSave`.
+- **Tanpa izin baru.** Memakai izin SO yang sudah ada (tulis = `create_sales_orders` atau `edit_sales_orders`; lihat = `view_sales_orders` atau `view_tallies`). Karena itu tidak ada entri baru di `tertunda.md` §G dan tidak ada migrasi izin. Penjaga tulis ada di `CustomerProductSpec::saveFixed()`, bukan hanya di tombol.
+- **Mengganti customer/produk di baris SO menimpa spek baris itu** dengan spek tetap pasangan barunya (atau kosong), sejajar perilaku harga dan diskon. Membuka SO lama TIDAK mengisi spek-nya.
+- **Kolom `condition`** disimpan sebagai kunci (`chill`, `frozen`, `chill_aging`, `frozen_aging`), labelnya di `CustomerProductSpec::CONDITIONS`. `condition` kata cadangan MySQL; Laravel memberi tanda kutip, jangan menulisnya mentah di SQL.
+- **Tidak dikerjakan** (keputusan Ayah): nama di label (LION/HPM) dan isi otomatis dari catatan SO legacy.
+- Baris item yang diimpor/dibuat tanpa spek tetap sah (kolom nullable), jadi impor dokumen SO terbuka tidak terganggu.

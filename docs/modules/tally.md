@@ -18,3 +18,7 @@ Model `Tally` bersifat parasitik (mendampingi entitas lain) secara spesifik mela
 - **Indikator Progres (*Progress Summary*)**: Di puncak halaman, aplikasi secara *real-time* menyorot total sementara kotak yang diproses ("Count: 5") dan total bebannya ("Weight: 100.4 Kg") menggunakan komponen huruf tebal dengan lencana dinamis yang selalu diperbarui setiap tombol ketik dilepaskan (menggunakan intervensi skrip kustom *Livewire Reactive Polling* atau eksekusi *hook* JS lokal).
 - **Format Label Barcode (Siap Cetak)**: Data *Tally* yang rinci menyediakan titik *trigger* cetak cepat. Admin bisa menembakkan data ini ke *Thermal Printer* atau mencetak *Tally Sheet* vertikal panjang. Elemen desainnya dibuat memanjang dan sederhana, dirancang agar ramah dicetak pada kertas kertas bon.
 - **Dukungan Lintas Bahasa (*Bilingual*)**: *Title* pada form (seperti "Berat Kotak" atau "Total") tersambung ke kamus terjemahan, sehingga memudahkan mandor gudang yang mungkin beroperasi dengan instruksi mesin non-Bahasa Inggris.
+
+## Catatan: spek customer di layar scan (#579)
+
+Tabel ringkasan di layar scan menampilkan spek baris SO (salinan di `sales_order_items.spec`) di bawah nama produk, supaya gudang tidak bertanya ulang soal gramasi, potongan, dan kemasan. Hanya membaca; tidak mengubah alur scan.

@@ -52,7 +52,7 @@ class ResetTrainingData extends Command
         'activity_log', 'bank_transactions', 'barcode_costs', 'beef_stock_movements', 'beef_stocks',
         'boning_carcasses', 'boning_items', 'bonings', 'carcass_items', 'carcasses', 'cattle_classes',
         'cattle_receiving_items', 'cattle_receivings', 'cattle_weighing_items', 'cattle_weighings',
-        'costing_cattle', 'costing_items', 'costing_price_defaults', 'costings', 'customer_groups',
+        'costing_cattle', 'costing_items', 'costing_price_defaults', 'costings', 'customer_groups', 'customer_product_specs',
         'customer_segments', 'customers', 'delivery_order_items', 'delivery_order_receipt_items',
         'delivery_order_receipts', 'delivery_orders', 'delivery_plans', 'drivers', 'expense_categories',
         'expenses', 'exports', 'failed_import_rows', 'financial_losses', 'goods_receipt_material_items',
