@@ -383,7 +383,7 @@ class CustomerProductSpecTest extends TestCase
         $this->assertFalse($outsider->can('update', $this->fixedSpec()));
         $this->assertFalse($outsider->can('delete', CustomerProductSpec::first()));
         $this->assertFalse(CustomerProductSpecResource::canViewAny());
-        $this->assertFalse(CustomerProductSpecResource::canCreate());
+        $this->assertFalse(CustomerProductSpecResource::canCreate(), 'spek lahir dari baris SO, bukan dari menu ini');
     }
 
     public function test_a_direct_request_cannot_write_the_master_without_permission(): void
@@ -398,21 +398,21 @@ class CustomerProductSpecTest extends TestCase
         }
     }
 
-    public function test_the_master_pages_are_closed_without_permission(): void
+    public function test_the_pages_are_closed_without_permission(): void
     {
-        $spec = $this->fixedSpec();
+        $this->fixedSpec();
         $outsider = $this->employee('view_customers');
 
         Livewire::actingAs($outsider)
-            ->test(CustomerProductSpecResource\Pages\EditCustomerProductSpec::class, ['record' => $spec->getRouteKey()])
+            ->test(CustomerProductSpecResource\Pages\ListCustomerProductSpecs::class)
             ->assertForbidden();
 
         Livewire::actingAs($outsider)
-            ->test(CustomerProductSpecResource\Pages\CreateCustomerProductSpec::class)
+            ->test(CustomerProductSpecResource\Pages\ViewCustomerSpecs::class, ['record' => $this->customer->getRouteKey()])
             ->assertForbidden();
 
-        Livewire::actingAs($this->employee('manage_customer_specs'))
-            ->test(CustomerProductSpecResource\Pages\CreateCustomerProductSpec::class)
+        Livewire::actingAs($this->employee('view_customer_specs'))
+            ->test(CustomerProductSpecResource\Pages\ListCustomerProductSpecs::class)
             ->assertSuccessful();
     }
 
@@ -432,27 +432,47 @@ class CustomerProductSpecTest extends TestCase
         $this->assertSame('rib', $saved->cut);
     }
 
-    public function test_one_customer_can_get_several_products_at_once_and_the_menu_is_in_the_qc_group(): void
+    public function test_the_list_has_one_row_per_customer_with_specs_and_the_detail_shows_the_products(): void
     {
         $second = Product::create(['code' => '100999', 'name' => 'RIBEYE', 'category_id' => $this->product->category_id, 'structure_type' => 'main', 'is_active' => true]);
+        $this->fixedSpec();
+        CustomerProductSpec::create(['customer_id' => $this->customer->id, 'product_id' => $second->id, 'cut' => 'slice 2 mm']);
 
         $this->assertSame('QC', CustomerProductSpecResource::getNavigationGroup());
 
-        Livewire::actingAs($this->employee('manage_customer_specs'))
-            ->test(CustomerProductSpecResource\Pages\CreateCustomerProductSpec::class)
-            ->fillForm([
-                'customer_id' => $this->otherCustomer->id,
-                'items' => [
-                    ['product_id' => $this->product->id, 'cut' => 'slice 2 mm', 'condition' => 'chill'],
-                    ['product_id' => $second->id, 'weight_per_pack' => '1 kg', 'packaging' => 'vacuum'],
-                ],
-            ])
-            ->call('create')
-            ->assertHasNoFormErrors();
+        $viewer = $this->employee('view_customer_specs');
 
-        $this->assertSame(2, CustomerProductSpec::where('customer_id', $this->otherCustomer->id)->count());
-        $this->assertSame('slice 2 mm', CustomerProductSpec::where(['customer_id' => $this->otherCustomer->id, 'product_id' => $this->product->id])->value('cut'));
-        $this->assertSame('vacuum', CustomerProductSpec::where(['customer_id' => $this->otherCustomer->id, 'product_id' => $second->id])->value('packaging'));
+        Livewire::actingAs($viewer)
+            ->test(CustomerProductSpecResource\Pages\ListCustomerProductSpecs::class)
+            ->assertCanSeeTableRecords(collect([$this->customer]))
+            ->assertCanNotSeeTableRecords(collect([$this->otherCustomer]));
+
+        Livewire::actingAs($viewer)
+            ->test(CustomerProductSpecResource\RelationManagers\SpecsRelationManager::class, [
+                'ownerRecord' => $this->customer,
+                'pageClass' => CustomerProductSpecResource\Pages\ViewCustomerSpecs::class,
+            ])
+            ->assertCanSeeTableRecords($this->customer->productSpecs)
+            ->assertSee('RIBEYE')
+            ->assertSee('slice 2 mm');
+    }
+
+    public function test_only_a_manager_can_edit_or_delete_a_spec_from_the_detail(): void
+    {
+        $spec = $this->fixedSpec();
+        $args = ['ownerRecord' => $this->customer, 'pageClass' => CustomerProductSpecResource\Pages\ViewCustomerSpecs::class];
+
+        Livewire::actingAs($this->employee('view_customer_specs'))
+            ->test(CustomerProductSpecResource\RelationManagers\SpecsRelationManager::class, $args)
+            ->assertTableActionHidden('edit', $spec)
+            ->assertTableActionHidden('delete', $spec);
+
+        Livewire::actingAs($this->employee('manage_customer_specs'))
+            ->test(CustomerProductSpecResource\RelationManagers\SpecsRelationManager::class, $args)
+            ->callTableAction('edit', $spec, ['cut' => 'rib 3 cm'])
+            ->assertHasNoTableActionErrors();
+
+        $this->assertSame('rib 3 cm', $spec->fresh()->cut);
     }
 
     public function test_clearing_every_field_removes_the_fixed_spec(): void
