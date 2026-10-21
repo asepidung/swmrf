@@ -129,7 +129,7 @@ class ImportLegacyTalliesTest extends TestCase
         $this->assertSame('R-STCK', $item->origin, 'digit asal 3 diterjemahkan');
         $this->assertNull($item->original_barcode);
 
-        $prm = DB::table('tally_items')->where('barcode', '10036231101000009054-2')->first();
+        $prm = DB::table('tally_items')->where(['barcode' => '10036231101000009054', 'tally_id' => DB::table('tallies')->where('tally_number', 'TS00003')->value('id')])->first();
         $this->assertSame(2, (int) $prm->warehouse_id, 'P02 -> PRM + FROZEN');
         $this->assertSame(2, (int) $prm->grade_id);
     }
@@ -148,15 +148,12 @@ class ImportLegacyTalliesTest extends TestCase
     }
 
     /** @test */
-    public function a_duplicate_barcode_in_a_later_tally_gets_a_suffix_and_keeps_the_original(): void
+    public function the_same_barcode_in_another_tally_is_kept_as_is(): void
     {
         $this->importer(true)->assertSuccessful();
 
-        $newer = DB::table('tally_items')->where('barcode', '10036231101000009054-2')->first();
-        $this->assertNotNull($newer);
-        $this->assertSame('10036231101000009054', $newer->original_barcode);
-        $this->assertSame(DB::table('tallies')->where('tally_number', 'TS00003')->value('id'), $newer->tally_id);
-        $this->assertSame(DB::table('tallies')->where('tally_number', 'TS00001')->value('id'), DB::table('tally_items')->where('barcode', '10036231101000009054')->value('tally_id'));
+        $this->assertSame(2, DB::table('tally_items')->where('barcode', '10036231101000009054')->count(), 'retur lalu kirim ulang: sah');
+        $this->assertSame(0, DB::table('tally_items')->whereNotNull('original_barcode')->count());
     }
 
     /** @test */

@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\DB;
  *    Satu SO hanya boleh punya satu tally di aplikasi baru: tally KOSONG (tanpa karton) pada SO yang punya tally lain dilewati; dua tally berisi pada satu SO = DITOLAK;
  *  - tally_items: barcode apa adanya; product_id = idbarang; gudang + grade lewat `LegacyGradeMap`, grade KOSONG (data awal 2023) -> J01 (JGL + CHILL); weight; qty_pcs = pcs; ph_level (kosong tetap kosong);
  *    pack_date = pod; exp_date = exp; origin: digit `origin` (kosong -> digit awal barcode) diterjemahkan seperti stok (`ImportLegacyStock::ORIGIN_NAMES`).
- *  - barcode KEMBAR di dua tally (karton yang discan ulang): aplikasi baru mensyaratkan barcode unik, jadi yang lebih BARU diberi akhiran "-2" dan barcode aslinya disimpan di `original_barcode`;
+ *  - barcode yang sama boleh muncul di tally LAIN (karton dikirim, batal/tolak/retur, kembali ke gudang, dikirim lagi; unik hanya per tally: tally_id + barcode). Kembar di tally yang SAMA: yang kedua dilewati;
  *  - pack_date legacy kosong/0000-00-00 -> tanggal scan (creatime);
  *  - batch_no tidak dibawa (legacy tidak mencatatnya pada tally).
  */
@@ -79,7 +79,7 @@ class ImportLegacyTallies extends Command
         $taken = DB::table('tally_items')->pluck('id', 'barcode')->all();
         $productIds = Product::query()->pluck('id')->flip();
 
-        $stats = ['created' => 0, 'skipped' => 0, 'items' => 0, 'kg' => 0.0, 'suffixNumber' => 0, 'suffixBarcode' => 0, 'emptyGrade' => 0, 'blankPh' => 0, 'emptyDup' => 0, 'noSo' => 0, 'noProduct' => 0, 'zeroDate' => 0, 'emptyTallies' => 0];
+        $stats = ['created' => 0, 'skipped' => 0, 'items' => 0, 'kg' => 0.0, 'suffixNumber' => 0, 'reused' => 0, 'sameTally' => 0, 'emptyGrade' => 0, 'blankPh' => 0, 'emptyDup' => 0, 'noSo' => 0, 'noProduct' => 0, 'zeroDate' => 0, 'emptyTallies' => 0];
         $perStatus = $perOrigin = $refused = $conflicts = $examples = [];
         $numberSeen = [];
         $filledSo = $tallies->filter(fn ($r) => $details->has($r['idtally']))->countBy('idso');
@@ -138,6 +138,7 @@ class ImportLegacyTallies extends Command
                 }
 
                 $items = [];
+                $inTally = [];
 
                 foreach ($lines as $line) {
                     $barcode = trim((string) $line['barcode']);
@@ -172,20 +173,15 @@ class ImportLegacyTallies extends Command
                         continue;
                     }
 
-                    $original = null;
+                    if (isset($inTally[$barcode])) {
+                        $stats['sameTally']++;
+                        $conflicts[] = "{$number}: barcode {$barcode} muncul dua kali di tally yang sama, yang kedua dilewati.";
 
-                    if (isset($taken[$barcode])) {
-                        $original = $barcode;
-                        $barcode .= '-2';
-                        $stats['suffixBarcode']++;
-
-                        if (isset($taken[$barcode])) {
-                            $refused[] = "{$number}: barcode {$original} muncul lebih dari dua kali -- DITOLAK.";
-
-                            continue;
-                        }
+                        continue;
                     }
 
+                    $inTally[$barcode] = true;
+                    $stats['reused'] += isset($taken[$barcode]) ? 1 : 0;
                     $taken[$barcode] = true;
                     $place = LegacyGradeMap::resolve((int) $gradeRaw);
                     $ph = trim((string) ($line['ph'] ?? ''));
@@ -203,7 +199,7 @@ class ImportLegacyTallies extends Command
                     $stats['kg'] += $weight;
 
                     $items[(int) $line['idtallydetail']] = [
-                        'barcode' => $barcode, 'original_barcode' => $original, 'product_id' => $productId, 'warehouse_id' => $place['warehouse_id'], 'grade_id' => $place['grade_id'],
+                        'barcode' => $barcode, 'product_id' => $productId, 'warehouse_id' => $place['warehouse_id'], 'grade_id' => $place['grade_id'],
                         'weight' => $weight, 'qty_pcs' => (int) $line['pcs'], 'ph_level' => $ph === '' ? null : round((float) $ph, 1), 'pack_date' => $packDate,
                         'exp_date' => trim((string) ($line['exp'] ?? '')) === '' ? null : $line['exp'], 'origin' => $origin, 'created_at' => $line['creatime'] ?: now(), 'updated_at' => $line['creatime'] ?: now(),
                     ];
@@ -268,7 +264,7 @@ class ImportLegacyTallies extends Command
         $this->line("tallies -- dibuat: {$stats['created']}, sudah ada (dilewati): {$stats['skipped']}, konflik: ".count($conflicts).', DITOLAK: '.count($refused));
         $this->line("Karton: {$stats['items']} dibawa; berat total ".number_format($stats['kg'], 0, ',', '.')." kg. Tally tanpa karton: {$stats['emptyTallies']}.");
         $this->line('Status: '.collect($perStatus)->map(fn ($n, $k) => "{$k}={$n}")->implode(', ').'. Asal: '.collect($perOrigin)->map(fn ($n, $k) => "{$k}={$n}")->implode(', ').'.');
-        $this->line("Nomor tally kembar diberi akhiran: {$stats['suffixNumber']}. Barcode kembar diberi -2: {$stats['suffixBarcode']}. Grade kosong -> J01: {$stats['emptyGrade']}. pH kosong: {$stats['blankPh']}. Tanggal kemas 0000-00-00 -> tanggal scan: {$stats['zeroDate']}.");
+        $this->line("Nomor tally kembar diberi akhiran: {$stats['suffixNumber']}. Barcode dipakai lagi di tally lain (sah: retur/batal lalu kirim ulang): {$stats['reused']}; kembar di tally yang sama (dilewati): {$stats['sameTally']}. Grade kosong -> J01: {$stats['emptyGrade']}. pH kosong: {$stats['blankPh']}. Tanggal kemas 0000-00-00 -> tanggal scan: {$stats['zeroDate']}.");
         $this->line("Dilewati: SO tidak ada {$stats['noSo']}, tally kosong pada SO yang punya tally lain {$stats['emptyDup']}, produk bukan impor {$stats['noProduct']} karton.");
 
         foreach ($examples as [$row, $lines, $header, $items]) {
