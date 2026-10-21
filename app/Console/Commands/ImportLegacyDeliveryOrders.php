@@ -82,6 +82,7 @@ class ImportLegacyDeliveryOrders extends Command
             'receipts' => 0, 'receiptSkipped' => 0, 'receiptItems' => 0, 'receiptNoDo' => 0, 'receiptSuffix' => 0, 'fallback' => 0, 'kg' => 0.0];
         $perStatus = $missingDrivers = $missingPlates = $refused = $conflicts = $examples = [];
         $doIdOf = [];
+        $knownDo = $orders->pluck('iddo')->map(fn ($i) => (int) $i)->flip();
         $receiptSeen = [];
 
         $userOf = function (int $legacyUser) use ($userIds, $fallback, &$stats): int {
@@ -94,7 +95,7 @@ class ImportLegacyDeliveryOrders extends Command
             return $fallback->id;
         };
 
-        $run = function () use ($orders, $orderLines, $receipts, $receiptLines, $soMap, $tallyMap, $customerMap, $customerIds, $productIds, $drivers, $vehicles, &$existingDo, &$existingReceipt, $userOf, $apply, &$stats, &$perStatus, &$missingDrivers, &$missingPlates, &$refused, &$conflicts, &$examples, &$doIdOf, &$receiptSeen): void {
+        $run = function () use ($orders, $orderLines, $receipts, $receiptLines, $soMap, $tallyMap, $customerMap, $customerIds, $productIds, $drivers, $vehicles, &$existingDo, &$existingReceipt, $userOf, $apply, $knownDo, &$stats, &$perStatus, &$missingDrivers, &$missingPlates, &$refused, &$conflicts, &$examples, &$doIdOf, &$receiptSeen): void {
             foreach ($orders as $row) {
                 $number = trim((string) $row['donumber']);
 
@@ -227,9 +228,10 @@ class ImportLegacyDeliveryOrders extends Command
                 }
 
                 $doId = $doIdOf[(int) $row['iddo']] ?? DB::table('legacy_import_map')->where(['entity' => 'delivery_order', 'legacy_id' => (int) $row['iddo']])->value('new_id');
+                $doId ??= (! $apply && isset($knownDo[(int) $row['iddo']])) ? -1 : null; // dry-run: DO yang akan dibuat belum punya id
                 $stats['receiptNoDo'] += $doId ? 0 : 1;
                 $soId = $row['idso'] ? ($soMap[(int) $row['idso']] ?? null) : null;
-                $soId ??= $doId ? DB::table('delivery_orders')->where('id', $doId)->value('sales_order_id') : null;
+                $soId ??= $doId > 0 ? DB::table('delivery_orders')->where('id', $doId)->value('sales_order_id') : null;
                 $items = [];
 
                 foreach ($receiptLines->get($row['iddoreceipt'], collect()) as $line) {
