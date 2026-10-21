@@ -570,3 +570,14 @@ dokumen yang menunjuk pelanggan/supplier yang hilang DILAPORKAN, bukan dibuang d
 - Status tukar faktur: "Sudah TF"→Sudah TF, "Belum TF"→Belum TF, "-"→Belum Dibayar. PEMBAYARAN: legacy tidak pernah mencatat pelunasan, jadi opsi `--payment` wajib. KEPUTUSAN AYAH (21 Okt): `settled` — semua riwayat Lunas (paid_amount = tagihan, saldo 0, tanpa catatan pembayaran); akunting mencari yang belum lunas mulai 1 November.
 - 22 invoice jumlah itemnya berbeda dari xamount legacy: memakai jumlah item, selisih dicatat di note. 12 tanpa jatuh tempo.
 - Pola 4 langkah SO→Tally→DO→Invoice selesai di coba.; urutan wajib: SO, Tally, DO, Invoice (penghubung `legacy_import_map`: sales_order, tally, delivery_order, delivery_order_receipt, invoice). Cabang berikutnya: cek dampak modul spek customer (#579) pada impor SO.
+
+## Repack (`legacy:import-repacks`) — diterapkan di coba. 21 Okt 2026
+- Sumber (`tarik.sh repack`): `repack` 1.229, `detailbahan` 29.743, `detailhasil` 34.079 (hanya yang tidak dihapus). Semua dibawa: bahan 532.077 kg, hasil 534.007 kg.
+- Pasangan: norepack→doc_no (kembar 2 diberi -2), tglrepack, kunci (1→LOCKED, selain itu OPEN), pembuat = akun pengganti, created_at = dibuat. Bahan→`repack_materials` (gudang+grade lewat LegacyGradeMap, origin lewat ORIGIN_NAMES, status IN_STOCK); hasil→`repack_results`.
+- Aturan temuan: grade kosong (25) → J01; pod kosong/0000 (174) → tanggal scan; origin 0 (3) → digit awal barcode; catatan baris hasil (45) digabung ke note repack; batch_no hasil tidak dibawa; 8 repack tanpa bahan dan 6 tanpa hasil tetap dibawa; barcode yang sama boleh jadi bahan di dua repack (82) dan rantai hasil→bahan.
+- Tanpa efek: stok, pergerakan stok, valuasi/HPP, kerugian finansial.
+- Catatan: hanya 35 repack legacy yang dikunci, 1.194 masuk OPEN (setia ke data). Jika Ayah mau semua riwayat dikunci, satu UPDATE status/kunci.
+
+## Stock opname — DILEWATI (keputusan Ayah, 21 Okt 2026)
+- Tidak diimpor. Hasil opname lama sudah tercermin di stok yang dipindahkan; dokumennya hanya arsip dan tidak ada modul yang bergantung padanya. Legacy tetap bisa dibuka Ayah sebagai arsip.
+- Daftar modul riwayat yang dipindahkan: request/PO/GR material, request/PO/GR beef, PO sapi–receive–timbang–karkas–boning, SO, Tally, DO + tanda terima, Invoice, Repack.
