@@ -188,4 +188,49 @@ class ImportLegacyPosTest extends TestCase
         $this->importer(true)->assertSuccessful();
         $this->importer(true)->expectsOutputToContain('dibuat: 0, sudah ada (dilewati): 8')->assertSuccessful();
     }
+
+    /** @test */
+    public function beef_pos_go_to_purchase_products_with_the_beef_status_meaning(): void
+    {
+        $category = DB::table('product_categories')->insertGetId(['name' => 'PRIME CUT', 'prefix' => 1, 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('products')->insert(['id' => 80, 'code' => '700900', 'name' => 'DAGING A', 'category_id' => $category, 'structure_type' => 'main', 'is_active' => 1, 'created_at' => now(), 'updated_at' => now()]);
+        $userId = User::where('username', 'penyetuju')->value('id');
+        $pr = DB::table('product_requisitions')->insertGetId(['document_number' => 'RED-26/0001', 'user_id' => $userId, 'supplier_id' => 7, 'due_date' => '2026-10-22', 'status' => 'PO Created', 'total_amount' => 0, 'created_at' => now(), 'updated_at' => now()]);
+
+        $cols = [
+            'requestbeef' => 'idrequest int, norequest varchar(20), duedate date, iduser int, idsupplier int, note varchar(50), stat varchar(20), is_deleted int, xamount decimal(15,2), taxrp decimal(15,2), creatime datetime, tax varchar(5), top int',
+            'pobeef' => 'idpo int, nopo varchar(30), idrequest int, idsupplier int, xamount decimal(15,2), taxrp decimal(15,2), tax varchar(5), duedate date, note varchar(50), is_deleted int, creatime datetime, top int, stat varchar(2)',
+            'pobeefdetail' => 'idpodetail int, idpo int, idbarang int, qty decimal(12,2), price decimal(15,2), subtotal decimal(15,2), notes varchar(50)',
+            'barang' => 'idbarang int, kdbarang varchar(10), nmbarang varchar(50), idcut int',
+        ];
+        $sql = '';
+
+        foreach ($cols as $table => $list) {
+            $parts = array_map(fn ($c) => '`'.strtok($c, ' ').'` '.substr($c, strpos($c, ' ') + 1), explode(', ', $list));
+            $sql .= "CREATE TABLE `{$table}` (
+  ".implode(",
+  ", $parts)."
+) ENGINE=InnoDB;
+";
+        }
+
+        $po = fn (int $id, string $number, string $stat, string $created) => $this->insert('pobeef', ['idpo' => $id, 'nopo' => $number, 'idrequest' => 1, 'idsupplier' => 7, 'xamount' => '300000', 'taxrp' => '0', 'tax' => '0', 'duedate' => '2026-10-30', 'note' => '', 'is_deleted' => 0, 'creatime' => $created, 'top' => 0, 'stat' => $stat])
+            .$this->insert('pobeefdetail', ['idpodetail' => $id, 'idpo' => $id, 'idbarang' => 80, 'qty' => '30', 'price' => '10000', 'subtotal' => '300000', 'notes' => '']);
+
+        file_put_contents($this->path, $sql
+            .$this->insert('barang', ['idbarang' => 80, 'kdbarang' => '700900', 'nmbarang' => 'DAGING A', 'idcut' => 1])
+            .$this->insert('requestbeef', ['idrequest' => 1, 'norequest' => 'RED-26/0001', 'duedate' => '2026-10-19', 'iduser' => 5, 'idsupplier' => 7, 'note' => '', 'stat' => 'PO Created', 'is_deleted' => 0, 'xamount' => '300000', 'taxrp' => '0', 'creatime' => '2026-10-01 10:00:00', 'tax' => 'No', 'top' => 0])
+            .$po(1, 'POB-1', '0', '2026-10-10 09:00:00').$po(2, 'POB-2', '0', '2026-03-05 09:00:00').$po(3, 'POB-3', '1', '2026-10-10 09:00:00').$po(4, 'POB-4', '2', '2026-10-10 09:00:00'));
+
+        $this->artisan('legacy:import-pos', ['--source' => $this->path, '--approver' => 'penyetuju', '--beef' => true, '--apply' => true])->assertSuccessful();
+
+        $status = fn (string $n) => DB::table('purchase_products')->where('po_number', $n)->value('status');
+        $this->assertSame('pending', $status('POB-1'), 'stat 0 baru -> pending');
+        $this->assertSame('canceled', $status('POB-2'), 'stat 0 sebelum cutoff -> canceled');
+        $this->assertSame('completed', $status('POB-3'), 'stat 1 (sudah diterima) -> completed');
+        $this->assertSame('canceled', $status('POB-4'), 'stat 2 -> canceled');
+        $this->assertSame($pr, (int) DB::table('purchase_products')->where('po_number', 'POB-1')->value('product_requisition_id'));
+        $this->assertSame(80, (int) DB::table('purchase_product_items')->value('product_id'));
+        $this->assertSame(0, DB::table('purchase_materials')->count(), 'PO material tidak disentuh');
+    }
 }

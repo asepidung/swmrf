@@ -30,6 +30,7 @@ class ImportLegacyPos extends Command
     protected $signature = 'legacy:import-pos
                             {--source= : Berkas snapshot SQL (legacy/tarik/tarik.sh belanja)}
                             {--approver= : Username akun yang dicatat sebagai penyetuju PO impor}
+                            {--beef : PO DAGING (pobeef -> purchase_products); bawaan: PO material}
                             {--cutoff=2026-09-01 : PO terbuka (stat 0) yang dibuat SEBELUM tanggal ini dibawa berstatus canceled}
                             {--apply : Benar-benar menulis (default hanya laporan dry-run)}
                             {--examples=2 : Jumlah contoh pasangan lama -> baru}';
@@ -60,25 +61,31 @@ class ImportLegacyPos extends Command
         $apply = (bool) $this->option('apply');
         $table = fn (string $name) => collect(LegacySqlDump::parseTable($sql, $name));
 
-        $requests = $table('request')->filter(fn ($r) => (int) $r['is_deleted'] === 0)->sortBy('idrequest');
+        // PO DAGING (--beef): tabel bersaudara; tidak ada penerimaan sebagian (satu GR menutup PO): 0 terbuka, 1 sudah diterima, 2 batal.
+        $beef = (bool) $this->option('beef');
+        $cfg = $beef
+            ? ['req' => 'requestbeef', 'po' => 'pobeef', 'det' => 'pobeefdetail', 'col' => 'idbarang', 'parent' => 'product_requisitions', 'parentFk' => 'product_requisition_id', 'target' => 'purchase_products', 'items' => 'purchase_product_items', 'fk' => 'purchase_product_id', 'itemCol' => 'product_id']
+            : ['req' => 'request', 'po' => 'po', 'det' => 'podetail', 'col' => 'idrawmate', 'parent' => 'material_requisitions', 'parentFk' => 'material_requisition_id', 'target' => 'purchase_materials', 'items' => 'purchase_material_items', 'fk' => 'purchase_material_id', 'itemCol' => 'material_id'];
+
+        $requests = $table($cfg['req'])->filter(fn ($r) => (int) $r['is_deleted'] === 0)->sortBy('idrequest');
         $requestNumber = $this->requestNumbers($requests);
-        $requisitions = DB::table('material_requisitions')->pluck('id', 'document_number');
+        $requisitions = DB::table($cfg['parent'])->pluck('id', 'document_number');
 
-        $details = $table('podetail')->groupBy('idpo');
-        $grs = $table('grraw')->filter(fn ($r) => (int) $r['is_deleted'] === 0)->groupBy('idpo');
-        $grLines = $table('grrawdetail')->filter(fn ($r) => (int) $r['is_deleted'] === 0)->groupBy('idgr');
-        $names = $table('rawmate')->pluck('nmrawmate', 'idrawmate');
+        $details = $table($cfg['det'])->groupBy('idpo');
+        $grs = $beef ? collect() : $table('grraw')->filter(fn ($r) => (int) $r['is_deleted'] === 0)->groupBy('idpo');
+        $grLines = $beef ? collect() : $table('grrawdetail')->filter(fn ($r) => (int) $r['is_deleted'] === 0)->groupBy('idgr');
+        $names = $beef ? $table('barang')->pluck('nmbarang', 'idbarang') : $table('rawmate')->pluck('nmrawmate', 'idrawmate');
         $supplierIds = Supplier::query()->pluck('id')->flip();
-        $materialIds = Material::query()->pluck('id')->flip();
-        $existing = DB::table('purchase_materials')->pluck('po_number')->flip();
+        $materialIds = ($beef ? \App\Models\Product::query() : Material::query())->pluck('id')->flip();
+        $existing = DB::table($cfg['target'])->pluck('po_number')->flip();
 
-        $rows = $table('po')->filter(fn ($r) => (int) $r['is_deleted'] === 0)->sortBy('idpo')->values();
+        $rows = $table($cfg['po'])->filter(fn ($r) => (int) $r['is_deleted'] === 0)->sortBy('idpo')->values();
 
         $stats = ['created' => 0, 'skipped' => 0, 'linesIn' => 0, 'linesOut' => 0, 'linesSkipped' => 0, 'merged' => 0, 'duplicates' => 0, 'stale' => 0];
         $refused = $conflicts = $examples = $perStatus = [];
         $seen = [];
 
-        $run = function () use ($rows, $details, $grs, $grLines, $names, $supplierIds, $materialIds, $existing, $requestNumber, $requisitions, $approver, $apply, &$stats, &$refused, &$conflicts, &$examples, &$perStatus, &$seen): void {
+        $run = function () use ($rows, $details, $grs, $grLines, $cfg, $beef, $names, $supplierIds, $materialIds, $existing, $requestNumber, $requisitions, $approver, $apply, &$stats, &$refused, &$conflicts, &$examples, &$perStatus, &$seen): void {
             foreach ($rows as $row) {
                 $number = trim((string) $row['nopo']);
                 $note = trim((string) ($row['note'] ?? ''));
@@ -125,10 +132,10 @@ class ImportLegacyPos extends Command
                 foreach ($details->get($row['idpo'], collect()) as $line) {
                     $stats['linesIn']++;
 
-                    if (! isset($materialIds[(int) $line['idrawmate']])) {
+                    if (! isset($materialIds[(int) $line[$cfg['col']]])) {
                         $stats['linesSkipped']++;
-                        $skippedText[] = trim(($names[$line['idrawmate']] ?? 'bahan '.$line['idrawmate']).' '.(float) $line['qty'].' x '.(float) $line['price']);
-                        $conflicts[] = "{$number}: baris bahan idrawmate={$line['idrawmate']} bukan material impor, dilewati.";
+                        $skippedText[] = trim(($names[$line[$cfg['col']]] ?? 'bahan '.$line[$cfg['col']]).' '.(float) $line['qty'].' x '.(float) $line['price']);
+                        $conflicts[] = "{$number}: baris bahan {$cfg['col']}={$line[$cfg['col']]} bukan material/produk impor, dilewati.";
 
                         continue;
                     }
@@ -136,7 +143,7 @@ class ImportLegacyPos extends Command
                     $qty = (float) $line['qty'];
                     $price = (float) $line['price'];
                     $items[] = [
-                        'material_id' => (int) $line['idrawmate'],
+                        $cfg['itemCol'] => (int) $line[$cfg['col']],
                         'qty' => $qty,
                         'price' => $price,
                         'subtotal' => round($qty * $price, 2),
@@ -172,7 +179,7 @@ class ImportLegacyPos extends Command
                 $tax = (float) $row['taxrp'];
                 $header = [
                     'po_number' => $number,
-                    'material_requisition_id' => $parentId,
+                    $cfg['parentFk'] => $parentId,
                     'supplier_id' => $supplierId,
                     'approved_by' => $approver->id,
                     'po_date' => substr((string) $row['creatime'], 0, 10),
@@ -190,10 +197,10 @@ class ImportLegacyPos extends Command
                 $stats['created']++;
 
                 if ($apply) {
-                    $id = DB::table('purchase_materials')->insertGetId($header + ['created_at' => $row['creatime'] ?: now(), 'updated_at' => $row['creatime'] ?: now()]);
+                    $id = DB::table($cfg['target'])->insertGetId($header + ['created_at' => $row['creatime'] ?: now(), 'updated_at' => $row['creatime'] ?: now()]);
 
                     foreach ($items as $item) {
-                        DB::table('purchase_material_items')->insert($item + ['purchase_material_id' => $id, 'created_at' => $row['creatime'] ?: now(), 'updated_at' => $row['creatime'] ?: now()]);
+                        DB::table($cfg['items'])->insert($item + [$cfg['fk'] => $id, 'created_at' => $row['creatime'] ?: now(), 'updated_at' => $row['creatime'] ?: now()]);
                     }
                 }
             }
@@ -211,7 +218,7 @@ class ImportLegacyPos extends Command
             }
         }
 
-        $this->report($apply, $stats, $refused, $conflicts, $perStatus, $examples);
+        $this->report($cfg, $apply, $stats, $refused, $conflicts, $perStatus, $examples);
 
         return $refused === [] ? self::SUCCESS : self::FAILURE;
     }
@@ -236,10 +243,10 @@ class ImportLegacyPos extends Command
         return $map;
     }
 
-    private function report(bool $apply, array $stats, array $refused, array $conflicts, array $perStatus, array $examples): void
+    private function report(array $cfg, bool $apply, array $stats, array $refused, array $conflicts, array $perStatus, array $examples): void
     {
         $this->line($apply ? ($refused === [] ? 'DITERAPKAN (--apply)' : 'DITOLAK -- tidak ada yang ditulis.') : 'DRY-RUN -- tidak ada yang ditulis. Tambahkan --apply untuk menulis.');
-        $this->line("purchase_materials -- dibuat: {$stats['created']}, sudah ada (dilewati): {$stats['skipped']}, konflik: ".count($conflicts).', DITOLAK: '.count($refused));
+        $this->line("{$cfg['target']} -- dibuat: {$stats['created']}, sudah ada (dilewati): {$stats['skipped']}, konflik: ".count($conflicts).', DITOLAK: '.count($refused));
         $this->line("Baris bahan: {$stats['linesOut']} dibawa dari {$stats['linesIn']} ({$stats['linesSkipped']} dilewati karena bahan di luar material impor).");
         $this->line('Status: '.collect($perStatus)->map(fn ($n, $k) => "{$k}={$n}")->implode(', '));
         $this->line("PO terbuka lama dibatalkan (sebelum --cutoff): {$stats['stale']}. Supplier lewat peta penggabungan: {$stats['merged']}. Nomor kembar diberi akhiran: {$stats['duplicates']}.");
@@ -250,14 +257,14 @@ class ImportLegacyPos extends Command
             $this->line("  LAMA  po: nopo={$row['nopo']} idrequest={$row['idrequest']} idsupplier={$row['idsupplier']} creatime={$row['creatime']} stat={$row['stat']} top=".($row['top'] ?? '').' tax='.($row['tax'] ?? '')." taxrp={$row['taxrp']} xamount={$row['xamount']}");
 
             foreach (array_slice($lines, 0, 2) as $line) {
-                $this->line("        podetail: idrawmate={$line['idrawmate']} qty={$line['qty']} price={$line['price']} subtotal={$line['subtotal']}");
+                $this->line("        {$cfg['det']}: {$cfg['col']}={$line[$cfg['col']]} qty={$line['qty']} price={$line['price']} subtotal={$line['subtotal']}");
             }
 
-            $this->line("  BARU  purchase_materials: po_number={$header['po_number']} request_induk={$parentNumber} supplier_id={$header['supplier_id']} po_date={$header['po_date']} total_amount={$header['total_amount']} status={$header['status']}");
+            $this->line("  BARU  {$cfg['target']}: po_number={$header['po_number']} request_induk={$parentNumber} supplier_id={$header['supplier_id']} po_date={$header['po_date']} total_amount={$header['total_amount']} status={$header['status']}");
             $this->line("        catatan: {$header['note']}");
 
             foreach (array_slice($items, 0, 2) as $item) {
-                $this->line("        item: material_id={$item['material_id']} qty={$item['qty']} price={$item['price']} subtotal={$item['subtotal']}");
+                $this->line("        item: {$cfg['itemCol']}={$item[$cfg['itemCol']]} qty={$item['qty']} price={$item['price']} subtotal={$item['subtotal']}");
             }
         }
 
