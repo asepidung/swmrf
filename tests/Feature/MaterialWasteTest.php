@@ -98,7 +98,7 @@ class MaterialWasteTest extends TestCase
         // PO induk tanpa item, supaya tidak ikut menjadi harga PO.
         $poId = DB::table('purchase_materials')->insertGetId([
             'po_number' => 'PO-GR-'.uniqid(), 'material_requisition_id' => $this->requisitionId(), 'supplier_id' => $this->supplier->id, 'po_date' => now()->toDateString(),
-            'total_amount' => 0, 'status' => 'approved', 'created_at' => now(), 'updated_at' => now(),
+            'total_amount' => 0, 'status' => 'pending', 'created_at' => now(), 'updated_at' => now(),
         ]);
 
         $grId = DB::table('goods_receipt_materials')->insertGetId([
@@ -118,7 +118,7 @@ class MaterialWasteTest extends TestCase
     {
         $poId = DB::table('purchase_materials')->insertGetId([
             'po_number' => 'PO-'.uniqid(), 'material_requisition_id' => $this->requisitionId(), 'supplier_id' => $this->supplier->id, 'po_date' => $date,
-            'total_amount' => $price, 'status' => 'approved', 'created_at' => now(), 'updated_at' => now(),
+            'total_amount' => $price, 'status' => 'pending', 'created_at' => now(), 'updated_at' => now(),
         ]);
 
         DB::table('purchase_material_items')->insert([

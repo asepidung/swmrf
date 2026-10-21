@@ -49,6 +49,7 @@ class ResetTrainingData extends Command
 
     /** Tabel yang DIKOSONGKAN. */
     public const WIPE = [
+        'legacy_import_map',
         'activity_log', 'bank_transactions', 'barcode_costs', 'beef_stock_movements', 'beef_stocks',
         'boning_carcasses', 'boning_items', 'bonings', 'carcass_items', 'carcasses', 'cattle_classes',
         'cattle_receiving_items', 'cattle_receivings', 'cattle_weighing_items', 'cattle_weighings',

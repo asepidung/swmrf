@@ -211,7 +211,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     })->name('print.salesorder');
 
     Route::get('/print/customer-specs/{record}', function (\App\Models\Customer $record) {
-        abort_unless(auth()->user()?->can('viewAny', \App\Models\CustomerProductSpec::class) ?? false, 403);
+        abort_unless((auth()->user()?->hasPermission('view_customer_specs') || auth()->user()?->hasPermission('manage_customer_specs')) ?? false, 403);
 
         $customer = $record->load(['group', 'segment']);
         $specs = $record->productSpecs()->with('product')->get()->sortBy(fn ($spec) => $spec->product?->name)->values();

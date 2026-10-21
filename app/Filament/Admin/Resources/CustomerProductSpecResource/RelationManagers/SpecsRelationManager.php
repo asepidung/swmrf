@@ -96,8 +96,11 @@ class SpecsRelationManager extends RelationManager
                     ->openUrlInNewTab(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()->modalHeading(__('Edit spec')),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->modalHeading(__('Edit spec'))
+                    ->authorize(fn (): bool => auth()->user()?->hasPermission('manage_customer_specs') ?? false),
+                Tables\Actions\DeleteAction::make()
+                    ->authorize(fn (): bool => auth()->user()?->hasPermission('manage_customer_specs') ?? false),
             ]);
     }
 }

@@ -713,7 +713,7 @@ class PrintRoutePermissionGuardsTest extends TestCase
             );
         }
 
-        // 35 sejak issue #509 langkah 5 menambah production-material.print
+        // 35 sejak issue #509 langkah 5 menambah production-material.print; 36 sejak print.customer-specs (21 Okt 2026)
         // (izinnya view_bonings / view_repacks menurut jenis dokumen; diuji di
         // ProductionMaterialSummaryTest); 34 sejak issue #480 langkah 3 menambah
         // print.costing; 33 sejak
@@ -721,6 +721,6 @@ class PrintRoutePermissionGuardsTest extends TestCase
         // menambah expense.receipt-photo; 31 sejak issue #451 menambah
         // sales-return-plan.print; tidak ada lagi pengecualian sejak
         // sales-return.label/.pdf ditutup di langkah 5.
-        $this->assertSame(35 - count($pengecualian), $diperiksa, 'Jumlah route yang benar-benar diperiksa tidak sesuai dugaan -- periksa apakah ada route baru yang perlu ditangani atau dikecualikan secara sadar.');
+        $this->assertSame(36 - count($pengecualian), $diperiksa, 'Jumlah route yang benar-benar diperiksa tidak sesuai dugaan -- periksa apakah ada route baru yang perlu ditangani atau dikecualikan secara sadar.');
     }
 }
