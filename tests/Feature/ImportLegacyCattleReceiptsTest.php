@@ -183,6 +183,30 @@ class ImportLegacyCattleReceiptsTest extends TestCase
     }
 
     /** @test */
+    public function the_legacy_to_new_id_map_is_written_and_restored_on_a_rerun(): void
+    {
+        $this->importer(true)->assertSuccessful();
+
+        $count = fn (string $entity) => DB::table('legacy_import_map')->where('entity', $entity)->count();
+        $this->assertSame(2, $count('cattle_receiving'));
+        $this->assertSame(3, $count('cattle_receiving_item'));
+        $this->assertSame(2, $count('cattle_weighing'));
+        $this->assertSame(3, $count('cattle_weighing_item'));
+
+        DB::table('legacy_import_map')->delete();
+        $this->importer(true)->assertSuccessful();
+
+        $this->assertSame(2, $count('cattle_receiving'), 'penghubung dipulihkan pada pengulangan');
+        $this->assertSame(3, $count('cattle_receiving_item'));
+        $this->assertSame(2, $count('cattle_weighing'));
+        $this->assertSame(3, $count('cattle_weighing_item'));
+        $this->assertSame(
+            DB::table('cattle_receiving_items')->where('eartag', 'A77')->value('id'),
+            (int) DB::table('legacy_import_map')->where(['entity' => 'cattle_receiving_item', 'legacy_id' => 2])->value('new_id')
+        );
+    }
+
+    /** @test */
     public function the_fallback_user_is_required(): void
     {
         $this->importer(true, false)->assertFailed();
