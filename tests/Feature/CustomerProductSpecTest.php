@@ -32,7 +32,7 @@ use Tests\TestCase;
  *  - "Hanya untuk SO ini" tidak menyentuh spek tetap;
  *  - baris SO menyimpan SALINAN, jadi SO lama tidak berubah saat spek tetap
  *    diubah;
- *  - spek tampil di Tally dan di cetakan;
+ *  - spek tampil di Tally dan di cetak SO (cetak surat jalan TIDAK memuatnya, permintaan Owner 21 Oktober 2026);
  *  - tanpa izin Sales Order, spek tetap tidak bisa diubah, termasuk lewat
  *    permintaan langsung.
  */
@@ -346,7 +346,7 @@ class CustomerProductSpecTest extends TestCase
         $page->assertSee('soup 4x4 cm · vacuum');
     }
 
-    public function test_the_spec_prints_on_the_sales_order_and_the_delivery_order(): void
+    public function test_the_spec_prints_on_the_sales_order_but_not_on_the_delivery_order(): void
     {
         $so = $this->salesOrderWithSpec(['weight_per_pack' => '1 kg an', 'condition' => 'frozen_aging']);
 
@@ -365,7 +365,8 @@ class CustomerProductSpecTest extends TestCase
         $this->actingAs($this->admin)
             ->get(route('print.delivery-order', $delivery))
             ->assertOk()
-            ->assertSee('1 kg an · Frozen aging');
+            ->assertDontSee('1 kg an')
+            ->assertSee('Jl. Perum Asabri Blok B Desa Sukasirna Kec. Jonggol Kab. Bogor Telp. 021-89935103', false);
     }
 
     // =========================================================================
