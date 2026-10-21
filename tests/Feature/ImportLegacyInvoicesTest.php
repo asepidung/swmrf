@@ -78,7 +78,9 @@ class ImportLegacyInvoicesTest extends TestCase
         file_put_contents($this->master, $this->ddl('customers', 'idcustomer int, nama_customer varchar(100), tanggal_update datetime')
             .$this->insert('customers', ['idcustomer' => 6, 'nama_customer' => 'LION DCA', 'tanggal_update' => '2023-01-01 00:00:00'])
             .$this->insert('customers', ['idcustomer' => 18, 'nama_customer' => 'SHERLINDO MAKSIMA SUKSES PT', 'tanggal_update' => '2023-08-04 00:00:00'])
-            .$this->insert('customers', ['idcustomer' => 143, 'nama_customer' => 'SHERLINDO', 'tanggal_update' => '2024-03-29 00:00:00']));
+            .$this->insert('customers', ['idcustomer' => 143, 'nama_customer' => 'SHERLINDO', 'tanggal_update' => '2024-03-29 00:00:00'])
+            .$this->ddl('barang', 'idbarang int, nmbarang varchar(100)')
+            .$this->insert('barang', ['idbarang' => 777, 'nmbarang' => 'STYROFOAM KECIL']));
 
         file_put_contents($this->path, $this->ddl('invoice', 'idinvoice int, noinvoice varchar(30), iddoreceipt int, top int, duedate date, status varchar(30), tgltf date, idsegment int, invoice_date date, idcustomer int, pocustomer varchar(50), donumber varchar(30), note varchar(255), xweight decimal(12,2), xamount decimal(12,2), xdiscount decimal(12,2), tax decimal(12,2), charge decimal(12,2), downpayment decimal(12,2), balance decimal(12,2), creatime datetime, is_deleted int')
             .$this->ddl('invoicedetail', 'idinvoicedetail int, idinvoice int, idbarang int, weight decimal(12,2), price decimal(12,2), discount int, discountrp decimal(12,2), amount decimal(12,2)')
@@ -140,7 +142,11 @@ class ImportLegacyInvoicesTest extends TestCase
         $this->importer(true)->assertSuccessful();
 
         $inv = DB::table('invoices')->where('invoice_number', 'INV-1')->first();
-        $this->assertSame(2, DB::table('invoice_items')->where('invoice_id', $inv->id)->count(), 'produk bukan impor dilewati');
+        $this->assertSame(2, DB::table('invoice_items')->where('invoice_id', $inv->id)->count(), 'barang non-daging tidak jadi item');
+        $this->assertSame(5.0, (float) $inv->charge, 'baris STYROFOAM menjadi Biaya Tambahan');
+        $charge = DB::table('invoice_additional_charges')->where('invoice_id', $inv->id)->first();
+        $this->assertSame('STYROFOAM KECIL', $charge->name);
+        $this->assertSame(5.0, (float) $charge->amount);
         $this->assertSame(1000.0, (float) $inv->subtotal);
         $item = DB::table('invoice_items')->where('invoice_id', $inv->id)->orderBy('id')->first();
         $this->assertSame(21, (int) $item->product_id);
@@ -157,7 +163,7 @@ class ImportLegacyInvoicesTest extends TestCase
         $one = DB::table('invoices')->where('invoice_number', 'INV-1')->first();
         $this->assertSame('Belum Dibayar', $one->status, '"-" -> Belum Dibayar');
         $this->assertSame(0.0, (float) $one->paid_amount);
-        $this->assertSame(1000.0, (float) $one->balance);
+        $this->assertSame(1005.0, (float) $one->balance, 'subtotal + biaya tambahan');
 
         $two = DB::table('invoices')->where('invoice_number', 'INV-2')->first();
         $this->assertSame('Sudah TF', $two->status);

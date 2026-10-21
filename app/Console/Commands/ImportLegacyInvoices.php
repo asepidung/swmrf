@@ -24,7 +24,8 @@ use Illuminate\Support\Facades\DB;
  *  - item: product_id, weight, price, discount_percent = discount, discount_rp = discountrp, amount; box 0 (legacy tidak mencatat); subtotal = jumlah amount item (arti di aplikasi baru);
  *    invoice yang jumlah itemnya berbeda dari xamount legacy tetap memakai jumlah item dan selisihnya dicatat di note;
  *  - satu baris `receivables` per invoice (seperti CreateInvoice di aplikasi baru; daftar piutang membacanya);
- *  - charge legacy (>0) -> satu baris `invoice_additional_charges` "Biaya tambahan (legacy)"; down_payment = downpayment;
+ *  - barang NON-DAGING di baris invoice (STYROFOAM, ICE GELL, DELIVERY COST: tidak diimpor sebagai produk) -> baris `invoice_additional_charges` (nama, jumlah, harga, diskon, nilai);
+ *    charge legacy (>0) -> satu baris tambahan "Biaya tambahan (legacy)"; invoices.charge = jumlah semuanya (arti di aplikasi baru); down_payment = downpayment;
  *  - PEMBAYARAN: legacy tidak mencatat pelunasan sama sekali (balance tidak pernah dikurangi), jadi `--payment` WAJIB dipilih:
  *      settled = semua invoice dianggap lunas (paid_amount = tagihan, saldo 0, status Lunas) tanpa catatan pembayaran;
  *      open    = tidak ada yang dibayar (paid_amount 0, saldo = tagihan; invoice dengan saldo legacy 0 = Lunas), status menurut tukar faktur.
@@ -84,13 +85,14 @@ class ImportLegacyInvoices extends Command
         $existing = DB::table('invoices')->pluck('id', 'invoice_number');
         $receipts = DB::table('delivery_order_receipts')->get(['id', 'delivery_order_id', 'sales_order_id', 'customer_id'])->keyBy('id');
         $orderSo = DB::table('delivery_orders')->pluck('sales_order_id', 'id');
+        $barang = collect(LegacySqlDump::parseTable(file_get_contents($masterPath), 'barang'))->mapWithKeys(fn ($r) => [(int) $r['idbarang'] => strtoupper(trim((string) $r['nmbarang']))]);
         $groupOf = DB::table('customers')->pluck('customer_group_id', 'id');
         $substitute = DB::table('sales_orders')->where('so_number', 'like', 'SO-LGC-%')->pluck('id', 'so_number');
 
-        $stats = ['created' => 0, 'skipped' => 0, 'items' => 0, 'skippedItems' => 0, 'subtotal' => 0.0, 'charge' => 0.0, 'dp' => 0.0, 'paid' => 0.0, 'balance' => 0.0, 'kg' => 0.0, 'noReceipt' => 0, 'substituteSo' => 0, 'mismatch' => 0, 'charges' => 0, 'noDue' => 0];
+        $stats = ['created' => 0, 'skipped' => 0, 'items' => 0, 'skippedItems' => 0, 'subtotal' => 0.0, 'charge' => 0.0, 'dp' => 0.0, 'paid' => 0.0, 'balance' => 0.0, 'kg' => 0.0, 'noReceipt' => 0, 'substituteSo' => 0, 'mismatch' => 0, 'extraLines' => 0, 'charges' => 0, 'noDue' => 0];
         $perStatus = $refused = $conflicts = $examples = [];
 
-        $run = function () use ($invoices, $lines, $groupOf, $receiptMap, $customerMap, $customerIds, $productIds, &$existing, $receipts, $orderSo, &$substitute, $fallback, $payment, $apply, &$stats, &$perStatus, &$refused, &$conflicts, &$examples): void {
+        $run = function () use ($invoices, $lines, $barang, $groupOf, $receiptMap, $customerMap, $customerIds, $productIds, &$existing, $receipts, $orderSo, &$substitute, $fallback, $payment, $apply, &$stats, &$perStatus, &$refused, &$conflicts, &$examples): void {
             foreach ($invoices as $row) {
                 $number = trim((string) $row['noinvoice']);
 
@@ -123,12 +125,23 @@ class ImportLegacyInvoices extends Command
                 $soId = $receipt?->sales_order_id ?: ($receipt?->delivery_order_id ? ($orderSo[$receipt->delivery_order_id] ?? null) : null);
 
                 $items = [];
+                $extra = [];
                 $note = trim((string) ($row['note'] ?? ''));
 
                 foreach ($lines->get($row['idinvoice'], collect()) as $line) {
                     if (! isset($productIds[(int) $line['idbarang']])) {
-                        $stats['skippedItems']++;
-                        $conflicts[] = "{$number}: baris idbarang={$line['idbarang']} bukan produk impor, dilewati.";
+                        $name = $barang[(int) $line['idbarang']] ?? '';
+
+                        if (in_array($name, ImportLegacyMaster::NON_MEAT_PRODUCT_NAMES, true)) {
+                            $extra[] = [
+                                'name' => $name, 'qty' => round((float) $line['weight'], 2), 'price' => round((float) $line['price'], 2), 'discount_percent' => (float) ($line['discount'] ?? 0),
+                                'discount_rp' => round((float) ($line['discountrp'] ?? 0), 2), 'amount' => round((float) $line['amount'], 2),
+                            ];
+                            $stats['extraLines']++;
+                        } else {
+                            $stats['skippedItems']++;
+                            $conflicts[] = "{$number}: baris idbarang={$line['idbarang']} ({$name}) bukan produk impor dan bukan biaya tambahan, dilewati.";
+                        }
 
                         continue;
                     }
@@ -163,13 +176,20 @@ class ImportLegacyInvoices extends Command
 
                 $subtotal = round(array_sum(array_column($items, 'amount')), 2);
                 $legacyAmount = round((float) $row['xamount'], 2);
+                $extraSum = round(array_sum(array_column($extra, 'amount')), 2) - round((float) ($row['charge'] ?? 0), 2);
 
-                if (abs($subtotal - $legacyAmount) > 1) {
+                if (abs($subtotal + $extraSum - $legacyAmount) > 1) {
                     $stats['mismatch']++;
                     $note = trim($note.' | Selisih legacy: jumlah item '.number_format($subtotal, 2, '.', '').' vs xamount '.number_format($legacyAmount, 2, '.', ''), ' |');
                 }
 
-                $charge = round((float) ($row['charge'] ?? 0), 2);
+                $legacyCharge = round((float) ($row['charge'] ?? 0), 2);
+
+                if ($legacyCharge > 0) {
+                    $extra[] = ['name' => 'Biaya tambahan (legacy)', 'qty' => 1, 'price' => $legacyCharge, 'discount_percent' => 0, 'discount_rp' => 0, 'amount' => $legacyCharge];
+                }
+
+                $charge = round(array_sum(array_column($extra, 'amount')), 2);
                 $downPayment = round((float) ($row['downpayment'] ?? 0), 2);
                 $bill = max(0, round($subtotal + $charge - $downPayment, 2));
                 $legacyBalance = round((float) $row['balance'], 2);
@@ -203,7 +223,7 @@ class ImportLegacyInvoices extends Command
                 $stats['paid'] += $paid;
                 $stats['balance'] += $header['balance'];
                 $stats['kg'] += $header['total_weight'];
-                $stats['charges'] += $charge > 0 ? 1 : 0;
+                $stats['charges'] += $extra !== [] ? 1 : 0;
 
                 if (count($examples) < (int) $this->option('examples')) {
                     $examples[] = [$row, $lines->get($row['idinvoice'], collect())->take(2)->all(), $header, array_slice($items, 0, 2, true)];
@@ -220,8 +240,8 @@ class ImportLegacyInvoices extends Command
                         DB::table('invoice_items')->insert(array_map(fn ($i) => $i + ['invoice_id' => $id, 'created_at' => $at, 'updated_at' => $at], array_values($chunk)));
                     }
 
-                    if ($charge > 0) {
-                        DB::table('invoice_additional_charges')->insert(['invoice_id' => $id, 'name' => 'Biaya tambahan (legacy)', 'qty' => 1, 'price' => $charge, 'discount_percent' => 0, 'discount_rp' => 0, 'amount' => $charge, 'created_at' => $at, 'updated_at' => $at]);
+                    foreach ($extra as $e) {
+                        DB::table('invoice_additional_charges')->insert($e + ['invoice_id' => $id, 'created_at' => $at, 'updated_at' => $at]);
                     }
                 }
             }
@@ -257,7 +277,7 @@ class ImportLegacyInvoices extends Command
 
         $this->line($apply ? ($refused === [] ? 'DITERAPKAN (--apply)' : 'DITOLAK -- tidak ada yang ditulis.') : 'DRY-RUN -- tidak ada yang ditulis. Tambahkan --apply untuk menulis.');
         $this->line("invoices -- dibuat: {$stats['created']}, sudah ada (dilewati): {$stats['skipped']}, konflik: ".count($conflicts).', DITOLAK: '.count($refused)." (pembayaran: {$payment})");
-        $this->line("Item: {$stats['items']} dibawa ({$stats['skippedItems']} dilewati bukan produk impor); berat ".$fmt($stats['kg']).' kg. Biaya tambahan: '.$stats['charges'].' invoice.');
+        $this->line("Item: {$stats['items']} dibawa ({$stats['skippedItems']} dilewati bukan produk impor); berat ".$fmt($stats['kg']).' kg. Biaya tambahan: '.$stats['charges'].' invoice ('.$stats['extraLines'].' baris barang non-daging dipindah ke Biaya Tambahan).');
         $this->line('Nilai: subtotal Rp '.$fmt($stats['subtotal']).' + biaya Rp '.$fmt($stats['charge']).' - uang muka Rp '.$fmt($stats['dp']).'; dibayar Rp '.$fmt($stats['paid']).'; SALDO Rp '.$fmt($stats['balance']).'.');
         $this->line('Status: '.collect($perStatus)->map(fn ($n, $k) => "{$k}={$n}")->implode(', ').'.');
         $this->line("Tanpa tanda terima di aplikasi baru: {$stats['noReceipt']}; memakai SO pengganti: {$stats['substituteSo']}; jumlah item beda dari xamount legacy: {$stats['mismatch']}; tanpa jatuh tempo: {$stats['noDue']}.");
