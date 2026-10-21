@@ -220,7 +220,7 @@ class ImportLegacyRequests extends Command
                     'supplier_id' => $supplierId,
                     'reject_note' => $rejectNote,
                     'due_date' => $row['duedate'] ?: null,
-                    'note' => trim($note.' | '.self::NOTE_TAG.' '.$row['stat'], ' |'),
+                    'note' => trim($note, ' |'),
                     'terms_of_payment' => (string) ((int) ($row['top'] ?? 0)),
                     'tax_type' => null,
                     'tax_amount' => $tax,

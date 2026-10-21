@@ -169,7 +169,7 @@ class ImportLegacyPos extends Command
                 }
 
                 $terms = 'TOP '.(int) ($row['top'] ?? 0).' hari; jatuh tempo '.($row['duedate'] ?: '-').'; PPN '.(float) ($row['tax'] ?? 0).'%';
-                $note = trim($note.' | '.$terms.' | '.self::NOTE_TAG." stat {$stat}", ' |');
+                $note = trim($note.' | '.$terms, ' |');
 
                 if ($skippedText !== []) {
                     $note .= ' | '.count($skippedText).' baris bahan dilewati (bahan di luar material impor): '.implode('; ', $skippedText);

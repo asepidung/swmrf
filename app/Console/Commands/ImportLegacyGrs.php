@@ -160,7 +160,7 @@ class ImportLegacyGrs extends Command
                     'supplier_id' => $supplierId,
                     'receive_date' => $row['receivedate'] ?: substr((string) $row['creatime'], 0, 10),
                     'sj_number' => trim((string) ($row['suppcode'] ?? '')) ?: null,
-                    'note' => trim($note.' | '.self::NOTE_TAG, ' |'),
+                    'note' => trim($note, ' |'),
                     'is_locked' => 1,
                     'created_by' => $userId,
                 ];
