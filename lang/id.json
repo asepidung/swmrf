@@ -1808,7 +1808,7 @@
     "Condition": "Kondisi",
     "Packaging": "Kemasan",
     "Spec Note": "Catatan Spek",
-    "Save as this customer's fixed spec": "Simpan sebagai spek tetap customer ini",
+    "Save as fixed spec for this customer": "Simpan sebagai spek tetap customer ini",
     "Only for this SO": "Hanya untuk SO ini",
     "Fixed spec saved": "Spek tetap tersimpan",
     "This customer already has a spec for this product. Edit that one instead.": "Customer ini sudah punya spek untuk produk ini. Ubah yang sudah ada.",

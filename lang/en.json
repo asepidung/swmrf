@@ -1808,7 +1808,7 @@
     "Condition": "Condition",
     "Packaging": "Packaging",
     "Spec Note": "Spec Note",
-    "Save as this customer's fixed spec": "Save as this customer's fixed spec",
+    "Save as fixed spec for this customer": "Save as fixed spec for this customer",
     "Only for this SO": "Only for this SO",
     "Fixed spec saved": "Fixed spec saved",
     "This customer already has a spec for this product. Edit that one instead.": "This customer already has a spec for this product. Edit that one instead.",

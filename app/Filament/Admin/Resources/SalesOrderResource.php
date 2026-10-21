@@ -475,7 +475,7 @@ class SalesOrderResource extends Resource
                 Forms\Components\Radio::make('save_scope')
                     ->hiddenLabel()
                     ->options([
-                        'fixed' => __('Save as this customer\'s fixed spec'),
+                        'fixed' => __('Save as fixed spec for this customer'),
                         'once' => __('Only for this SO'),
                     ])
                     ->disableOptionWhen(fn (string $value): bool => $value === 'fixed'
