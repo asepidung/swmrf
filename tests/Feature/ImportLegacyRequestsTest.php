@@ -81,7 +81,9 @@ class ImportLegacyRequestsTest extends TestCase
             .$this->request(5, 'REQ-26/0005', 'Waiting', 5, 127).$this->line(7, 5, 23)
             .$this->request(6, 'REQ-26/0006', 'Request').$this->line(8, 6, 500)
             .$this->request(7, 'REQ-26/0007', 'Ordering', 5, 0, '', 14).$this->line(9, 7, 23)
-            .$this->request(8, 'REQ-26/0008', 'Ordering', 5, 0, '', 7, '2026-01-21 10:00:00').$this->line(10, 8, 91));
+            .$this->request(8, 'REQ-26/0008', 'Ordering', 5, 0, '', 7, '2026-01-21 10:00:00').$this->line(10, 8, 91)
+            .$this->request(9, 'REQ-26/0009', 'Completed').$this->line(11, 9, 500)
+            .$this->request(10, 'REQ-26/0010', 'Partial').$this->line(12, 10, 23));
     }
 
     protected function tearDown(): void
@@ -101,20 +103,39 @@ class ImportLegacyRequestsTest extends TestCase
     /** @test */
     public function a_dry_run_shows_pairs_and_writes_nothing(): void
     {
-        $this->importer()->expectsOutputToContain('DRY-RUN')->expectsOutputToContain('dibuat: 5')->expectsOutputToContain('BARU  material_requisitions')->assertSuccessful();
+        $this->importer()->expectsOutputToContain('DRY-RUN')->expectsOutputToContain('dibuat: 8')->expectsOutputToContain('BARU  material_requisitions')->assertSuccessful();
 
         $this->assertSame(0, DB::table('material_requisitions')->count());
     }
 
     /** @test */
-    public function only_open_not_deleted_requests_with_importable_lines_are_brought(): void
+    public function the_whole_history_is_brought_except_deleted_and_open_requests_without_importable_lines(): void
     {
         $this->importer(true)->assertSuccessful();
 
         $this->assertSame(
-            ['REQ-26/0001', 'REQ-26/0002', 'REQ-26/0003', 'REQ-26/0007', 'REQ-26/0008'],
+            ['REQ-26/0001', 'REQ-26/0002', 'REQ-26/0003', 'REQ-26/0004', 'REQ-26/0007', 'REQ-26/0008', 'REQ-26/0009', 'REQ-26/0010'],
             DB::table('material_requisitions')->orderBy('document_number')->pluck('document_number')->all(),
-            'PO Created, dihapus (127), dan yang semua barisnya di luar impor tidak dibawa.'
+            'Dihapus (127) dan request TERBUKA yang semua barisnya di luar impor tidak dibawa.'
+        );
+
+        foreach (['REQ-26/0004', 'REQ-26/0009', 'REQ-26/0010'] as $number) {
+            $this->assertSame('PO Created', DB::table('material_requisitions')->where('document_number', $number)->value('status'), 'PO Created/Partial/Completed -> PO Created');
+        }
+
+        $completed = DB::table('material_requisitions')->where('document_number', 'REQ-26/0009')->first();
+        $this->assertSame(0, DB::table('material_requisition_items')->where('material_requisition_id', $completed->id)->count(), 'Dokumen riwayat dibawa tanpa baris bila semua bahannya di luar impor.');
+        $this->assertStringContainsString('1 baris bahan dilewati', $completed->note);
+    }
+
+    /** @test */
+    public function only_open_limits_it_to_open_requests(): void
+    {
+        $this->artisan('legacy:import-requests', ['--source' => $this->path, '--fallback-user' => 'cadangan', '--only-open' => true, '--apply' => true])->assertSuccessful();
+
+        $this->assertSame(
+            ['REQ-26/0001', 'REQ-26/0002', 'REQ-26/0003', 'REQ-26/0007', 'REQ-26/0008'],
+            DB::table('material_requisitions')->orderBy('document_number')->pluck('document_number')->all()
         );
     }
 
@@ -167,7 +188,7 @@ class ImportLegacyRequestsTest extends TestCase
         $this->importer(true)->assertSuccessful();
         DB::table('material_requisitions')->where('document_number', 'REQ-26/0001')->update(['status' => 'PO Created']);
 
-        $this->importer(true)->expectsOutputToContain('dibuat: 0, sudah ada (dilewati): 5')->assertSuccessful();
+        $this->importer(true)->expectsOutputToContain('dibuat: 0, sudah ada (dilewati): 8')->assertSuccessful();
 
         $this->assertSame('PO Created', DB::table('material_requisitions')->where('document_number', 'REQ-26/0001')->value('status'), 'Tidak ditimpa.');
     }
