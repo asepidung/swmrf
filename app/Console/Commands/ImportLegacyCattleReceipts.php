@@ -133,6 +133,16 @@ class ImportLegacyCattleReceipts extends Command
                         }
                     }
 
+                    if ($apply) {
+                        $this->remember('cattle_receiving', (int) $row['idreceive'], (int) $existingReceipts[$number]);
+
+                        foreach ($receiptDetails->get($row['idreceive'], collect()) as $d) {
+                            if (isset($itemIds[(int) $d['idreceivedetail']])) {
+                                $this->remember('cattle_receiving_item', (int) $d['idreceivedetail'], (int) $itemIds[(int) $d['idreceivedetail']]);
+                            }
+                        }
+                    }
+
                     continue;
                 }
 
@@ -197,8 +207,11 @@ class ImportLegacyCattleReceipts extends Command
                     $id = DB::table('cattle_receivings')->insertGetId($header + ['created_at' => $row['creatime'] ?: now(), 'updated_at' => $row['creatime'] ?: now()]);
                     $receivingIds[(int) $row['idreceive']] = $id;
 
+                    $this->remember('cattle_receiving', (int) $row['idreceive'], $id);
+
                     foreach ($items as $legacyId => $item) {
                         $itemIds[$legacyId] = DB::table('cattle_receiving_items')->insertGetId($item + ['cattle_receiving_id' => $id, 'created_at' => $row['creatime'] ?: now(), 'updated_at' => $row['creatime'] ?: now()]);
+                        $this->remember('cattle_receiving_item', (int) $legacyId, $itemIds[$legacyId]);
                     }
                 } else {
                     $receivingIds[(int) $row['idreceive']] = -1;
@@ -214,6 +227,19 @@ class ImportLegacyCattleReceipts extends Command
 
                 if (isset($existingWeighings[$number])) {
                     $stats['skippedWeighings']++;
+
+                    if ($apply) {
+                        $this->remember('cattle_weighing', (int) $row['idweigh'], (int) $existingWeighings[$number]);
+                        $byItem = DB::table('cattle_weighing_items')->where('cattle_weighing_id', $existingWeighings[$number])->pluck('id', 'cattle_receiving_item_id');
+
+                        foreach ($weighDetails->get($row['idweigh'], collect()) as $d) {
+                            $receivingItem = $itemIds[(int) $d['idreceivedetail']] ?? null;
+
+                            if ($receivingItem !== null && isset($byItem[$receivingItem])) {
+                                $this->remember('cattle_weighing_item', (int) $d['idweighdetail'], (int) $byItem[$receivingItem]);
+                            }
+                        }
+                    }
 
                     continue;
                 }
@@ -247,7 +273,7 @@ class ImportLegacyCattleReceipts extends Command
                     }
 
                     $weight = (float) $d['weight'];
-                    $items[] = ['cattle_receiving_item_id' => $itemId, 'actual_weight' => $weight > 0 ? round($weight, 2) : null, 'notes' => trim((string) ($d['notes'] ?? '')) ?: null];
+                    $items[(int) $d['idweighdetail']] = ['cattle_receiving_item_id' => $itemId, 'actual_weight' => $weight > 0 ? round($weight, 2) : null, 'notes' => trim((string) ($d['notes'] ?? '')) ?: null];
                     $stats['unweighed'] += $weight > 0 ? 0 : 1;
                     $stats['actualKg'] += $weight;
                 }
@@ -261,8 +287,10 @@ class ImportLegacyCattleReceipts extends Command
                         'created_by' => $userId, 'created_at' => $row['creatime'] ?: now(), 'updated_at' => $row['creatime'] ?: now(),
                     ]);
 
-                    foreach (array_chunk($items, 300) as $chunk) {
-                        DB::table('cattle_weighing_items')->insert(array_map(fn ($i) => $i + ['cattle_weighing_id' => $id, 'created_at' => $row['creatime'] ?: now(), 'updated_at' => $row['creatime'] ?: now()], $chunk));
+                    $this->remember('cattle_weighing', (int) $row['idweigh'], $id);
+
+                    foreach ($items as $legacyId => $item) {
+                        $this->remember('cattle_weighing_item', (int) $legacyId, DB::table('cattle_weighing_items')->insertGetId($item + ['cattle_weighing_id' => $id, 'created_at' => $row['creatime'] ?: now(), 'updated_at' => $row['creatime'] ?: now()]));
                     }
                 }
             }
@@ -283,6 +311,12 @@ class ImportLegacyCattleReceipts extends Command
         $this->report($apply, $stats, $refused, $conflicts, $changed, $examples);
 
         return $refused === [] ? self::SUCCESS : self::FAILURE;
+    }
+
+    /** Mencatat penghubung id legacy -> id baru (hanya saat --apply). */
+    private function remember(string $entity, int $legacyId, int $newId): void
+    {
+        DB::table('legacy_import_map')->insertOrIgnore(['entity' => $entity, 'legacy_id' => $legacyId, 'new_id' => $newId, 'created_at' => now(), 'updated_at' => now()]);
     }
 
     private function report(bool $apply, array $stats, array $refused, array $conflicts, array $changed, array $examples): void
