@@ -70,6 +70,12 @@ class Customer extends Model
         $this->attributes['pic'] = $value === null ? null : strtoupper(trim($value));
     }
 
+    /** Spek tetap per produk (#579). */
+    public function productSpecs()
+    {
+        return $this->hasMany(CustomerProductSpec::class);
+    }
+
     public function group()
     {
         return $this->belongsTo(CustomerGroup::class, 'customer_group_id');
