@@ -146,6 +146,8 @@ class DatabaseSeeder extends Seeder
             ['name' => 'create_qc_reports', 'module_name' => 'QC Reports', 'description' => 'Create QC reports'],
             ['name' => 'edit_qc_reports', 'module_name' => 'QC Reports', 'description' => 'Edit QC reports'],
             ['name' => 'delete_qc_reports', 'module_name' => 'QC Reports', 'description' => 'Delete QC reports'],
+            ['name' => 'view_customer_specs', 'module_name' => 'Customer Specs', 'description' => 'View customer specs'],
+            ['name' => 'manage_customer_specs', 'module_name' => 'Customer Specs', 'description' => 'Manage customer specs'],
             ['name' => 'view_deleted_qc_reports', 'module_name' => 'QC Reports', 'description' => 'View deleted QC reports'],
 
             // Carcass Module

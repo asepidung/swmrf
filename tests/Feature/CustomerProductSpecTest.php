@@ -6,7 +6,7 @@ use App\Filament\Admin\Resources\DeliveryOrderResource;
 use App\Filament\Admin\Resources\SalesOrderResource\Pages\CreateSalesOrder;
 use App\Filament\Admin\Resources\SalesOrderResource\Pages\EditSalesOrder;
 use App\Filament\Admin\Resources\TallyResource\Pages\ScanTally;
-use App\Filament\Clusters\CustomersCluster\Resources\CustomerProductSpecResource;
+use App\Filament\Admin\Resources\CustomerProductSpecResource;
 use App\Models\Customer;
 use App\Models\CustomerProductSpec;
 use App\Models\CustomerSegment;
@@ -411,24 +411,48 @@ class CustomerProductSpecTest extends TestCase
             ->test(CustomerProductSpecResource\Pages\CreateCustomerProductSpec::class)
             ->assertForbidden();
 
-        Livewire::actingAs($this->employee('view_sales_orders', 'create_sales_orders'))
+        Livewire::actingAs($this->employee('manage_customer_specs'))
             ->test(CustomerProductSpecResource\Pages\CreateCustomerProductSpec::class)
             ->assertSuccessful();
     }
 
-    public function test_whoever_can_create_or_edit_sales_orders_can_write_and_whoever_can_view_them_can_read(): void
+    public function test_the_own_permissions_decide_who_writes_and_who_reads(): void
     {
-        $this->assertTrue($this->employee('create_sales_orders')->can('create', CustomerProductSpec::class));
-        $this->assertTrue($this->employee('edit_sales_orders')->can('update', $this->fixedSpec()));
-        $this->assertTrue($this->employee('view_sales_orders')->can('viewAny', CustomerProductSpec::class));
-        $this->assertTrue($this->employee('view_tallies')->can('viewAny', CustomerProductSpec::class));
+        $this->assertTrue($this->employee('manage_customer_specs')->can('create', CustomerProductSpec::class));
+        $this->assertTrue($this->employee('manage_customer_specs')->can('update', $this->fixedSpec()));
+        $this->assertTrue($this->employee('view_customer_specs')->can('viewAny', CustomerProductSpec::class));
 
-        // Hanya melihat bukan izin menulis.
-        $this->assertFalse($this->employee('view_sales_orders')->can('update', CustomerProductSpec::first()));
+        // Hanya melihat bukan izin menulis, dan izin Sales Order/Tally tidak lagi cukup.
+        $this->assertFalse($this->employee('view_customer_specs')->can('update', CustomerProductSpec::first()));
+        $this->assertFalse($this->employee('view_customer_specs')->can('create', CustomerProductSpec::class));
+        $this->assertFalse($this->employee('create_sales_orders', 'edit_sales_orders', 'view_sales_orders', 'view_tallies')->can('viewAny', CustomerProductSpec::class));
 
-        $writer = $this->employee('create_sales_orders');
+        $writer = $this->employee('manage_customer_specs');
         $saved = CustomerProductSpec::saveFixed($this->otherCustomer->id, $this->product->id, ['cut' => 'rib'], $writer);
         $this->assertSame('rib', $saved->cut);
+    }
+
+    public function test_one_customer_can_get_several_products_at_once_and_the_menu_is_in_the_qc_group(): void
+    {
+        $second = Product::create(['code' => '100999', 'name' => 'RIBEYE', 'category_id' => $this->product->category_id, 'structure_type' => 'main', 'is_active' => true]);
+
+        $this->assertSame('QC', CustomerProductSpecResource::getNavigationGroup());
+
+        Livewire::actingAs($this->employee('manage_customer_specs'))
+            ->test(CustomerProductSpecResource\Pages\CreateCustomerProductSpec::class)
+            ->fillForm([
+                'customer_id' => $this->otherCustomer->id,
+                'items' => [
+                    ['product_id' => $this->product->id, 'cut' => 'slice 2 mm', 'condition' => 'chill'],
+                    ['product_id' => $second->id, 'weight_per_pack' => '1 kg', 'packaging' => 'vacuum'],
+                ],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(2, CustomerProductSpec::where('customer_id', $this->otherCustomer->id)->count());
+        $this->assertSame('slice 2 mm', CustomerProductSpec::where(['customer_id' => $this->otherCustomer->id, 'product_id' => $this->product->id])->value('cut'));
+        $this->assertSame('vacuum', CustomerProductSpec::where(['customer_id' => $this->otherCustomer->id, 'product_id' => $second->id])->value('packaging'));
     }
 
     public function test_clearing_every_field_removes_the_fixed_spec(): void

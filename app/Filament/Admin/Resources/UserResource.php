@@ -157,6 +157,7 @@ class UserResource extends Resource
      * @var array<string, string>
      */
     public const SPECIFIC_LABELS = [
+        'manage_customer_specs' => 'Manage',
         'pay_purchase_products' => 'Pay down payment',
         'pay_purchase_materials' => 'Pay down payment',
         'cancel_purchase_products' => 'Cancel PO',

@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Clusters\CustomersCluster\Resources\CustomerProductSpecResource\Pages;
+namespace App\Filament\Admin\Resources\CustomerProductSpecResource\Pages;
 
-use App\Filament\Clusters\CustomersCluster\Resources\CustomerProductSpecResource;
+use App\Filament\Admin\Resources\CustomerProductSpecResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 

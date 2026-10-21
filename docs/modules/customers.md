@@ -60,4 +60,4 @@ Cluster **Customers** terdiri dari tiga Resource: `CustomerResource`,
 
 ## 4. Spek per produk (#579)
 
-Cluster Customers punya Resource keempat, `CustomerProductSpecResource` (menu **Customer Specs**): spek tetap satu pasangan customer + produk (gramasi, bentuk potong, kondisi, kemasan, catatan). Pasangan unik di basis data; customer dan produk hanya bisa dipilih saat membuat. Ekspor Excel ada, PDF tidak. Dipakai Sales Order untuk mengisi baris secara otomatis -- rincian di [`sales_orders.md`](sales_orders.md) bagian 4. Izinnya meminjam izin Sales Order (lihat `CustomerProductSpecPolicy`), jadi tidak muncul sebagai modul di daftar izin.
+Spek customer per produk tidak lagi di cluster Customers: menunya **Customer Specs** ada di grup **QC** dengan izin sendiri (`view_customer_specs`, `manage_customer_specs`). Rincian di [`sales_orders.md`](sales_orders.md) bagian 4.
