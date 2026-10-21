@@ -210,6 +210,16 @@ Route::middleware(['web', 'auth'])->group(function () {
         return view('print.salesorder', compact('record'));
     })->name('print.salesorder');
 
+    Route::get('/print/customer-specs/{record}', function (\App\Models\Customer $record) {
+        abort_unless(auth()->user()?->can('viewAny', \App\Models\CustomerProductSpec::class) ?? false, 403);
+
+        $customer = $record->load(['group', 'segment']);
+        $specs = $record->productSpecs()->with('product')->get()->sortBy(fn ($spec) => $spec->product?->name)->values();
+        abort_if($specs->isEmpty(), 404);
+
+        return view('print.customer-specs', compact('customer', 'specs'));
+    })->name('print.customer-specs');
+
     // ------------------------------------------
     // 7. MODUL TALLY
     // ------------------------------------------

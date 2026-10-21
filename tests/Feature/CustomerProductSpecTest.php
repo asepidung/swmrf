@@ -457,6 +457,34 @@ class CustomerProductSpecTest extends TestCase
             ->assertSee('slice 2 mm');
     }
 
+    public function test_the_customer_page_prints_and_the_detail_list_has_every_customer_and_exports(): void
+    {
+        $this->fixedSpec();
+        CustomerProductSpec::create(['customer_id' => $this->otherCustomer->id, 'product_id' => $this->product->id, 'cut' => 'rib 3 cm']);
+        $viewer = $this->employee('view_customer_specs');
+
+        $this->actingAs($viewer)
+            ->get(route('print.customer-specs', $this->customer))
+            ->assertOk()
+            ->assertSee($this->customer->name)
+            ->assertSee('soup 4x4 cm')
+            ->assertDontSee('rib 3 cm', false);
+
+        $this->actingAs($this->employee('view_customers'))->get(route('print.customer-specs', $this->customer))->assertForbidden();
+
+        Livewire::actingAs($viewer)
+            ->test(CustomerProductSpecResource\Pages\CustomerSpecDetailList::class)
+            ->assertCanSeeTableRecords(CustomerProductSpec::all())
+            ->assertTableActionExists('excel')
+            ->callTableAction('excel')
+            ->assertHasNoTableActionErrors();
+
+        Livewire::actingAs($viewer)
+            ->test(CustomerProductSpecResource\RelationManagers\SpecsRelationManager::class, ['ownerRecord' => $this->customer, 'pageClass' => CustomerProductSpecResource\Pages\ViewCustomerSpecs::class])
+            ->assertTableActionExists('print')
+            ->assertTableActionDoesNotExist('excel');
+    }
+
     public function test_only_a_manager_can_edit_or_delete_a_spec_from_the_detail(): void
     {
         $spec = $this->fixedSpec();

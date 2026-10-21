@@ -128,6 +128,7 @@ class CustomerProductSpecResource extends Resource
     {
         return [
             'index' => Pages\ListCustomerProductSpecs::route('/'),
+            'detail-list' => Pages\CustomerSpecDetailList::route('/detail-list'),
             'view' => Pages\ViewCustomerSpecs::route('/{record}'),
         ];
     }
