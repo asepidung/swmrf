@@ -161,6 +161,7 @@ class Permission extends Model
             ],
             'QC' => [
                 'QC Reports',
+                'Customer Specs',
             ],
             'REPORTS' => [
                 'Reports',
