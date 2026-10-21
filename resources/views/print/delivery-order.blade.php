@@ -51,13 +51,15 @@
         <tr>
             <td style="vertical-align: top;">
                 <span style="font-size: 16px; font-weight: bold; text-transform: uppercase;">Delivery Order</span><br />
-                <strong style="font-size: 18px;">PT. SANTI WIJAYA MEAT</strong><br />
-                <span style="font-size: 12px; color: #555;">Jl. Perum Asabri Blok B Desa Sukasirna Kec. Jonggol Kab. Bogor Telp. 021-89935103</span>
+                <strong style="font-size: 18px;">PT. SANTI WIJAYA MEAT</strong>
             </td>
             <td style="text-align: right; vertical-align: top; width: 40%;">
                 <span style="font-size: 12px; color: #555;">DO Number :</span><br />
                 <strong style="font-size: 20px;">{{ $record->delivery_order_number }}</strong>
             </td>
+        </tr>
+        <tr>
+            <td colspan="2" style="font-size: 11px; color: #555; white-space: nowrap;">Jl. Perum Asabri Blok B Desa Sukasirna Kec. Jonggol Kab. Bogor Telp. 021-89935103</td>
         </tr>
     </table>
     <hr />
@@ -112,8 +114,6 @@
                 $no = 1;
                 $totalBox = 0;
                 $totalWeight = 0;
-                // Spek dibaca dari baris SO-nya (#579); satu produk satu baris di SO.
-                $soItems = ($record->salesOrder?->items ?? collect())->keyBy('product_id');
             @endphp
             @foreach ($record->items as $item)
                 @php
@@ -123,12 +123,7 @@
                 <tr>
                     <td>{{ $no++ }}</td>
                     <td>{{ $item->product?->code }}</td>
-                    <td class="left-align">
-                        {{ $item->product?->name }}
-                        @if ($spec = \App\Models\CustomerProductSpec::summarize($soItems->get($item->product_id)?->spec))
-                            <br><small>Spek: {{ $spec }}</small>
-                        @endif
-                    </td>
+                    <td class="left-align">{{ $item->product?->name }}</td>
                     <td>{{ $item->box }}</td>
                     <td class="right-align">{{ number_format($item->weight, 2) }} Kg</td>
                     <td class="left-align">{{ $item->notes }}</td>
