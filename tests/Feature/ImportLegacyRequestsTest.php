@@ -220,4 +220,43 @@ class ImportLegacyRequestsTest extends TestCase
 
         $this->assertSame(0, DB::table('material_requisitions')->count(), 'Satu penolakan membatalkan semuanya.');
     }
+
+    /** @test */
+    public function beef_requests_go_to_product_requisitions_with_confirmed_as_po_created(): void
+    {
+        $category = DB::table('product_categories')->insertGetId(['name' => 'PRIME CUT', 'prefix' => 1, 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('products')->insert(['id' => 80, 'code' => '700900', 'name' => 'DAGING A', 'category_id' => $category, 'structure_type' => 'main', 'is_active' => 1, 'created_at' => now(), 'updated_at' => now()]);
+
+        $cols = [
+            'requestbeef' => 'idrequest int, norequest varchar(20), duedate date, iduser int, idsupplier int, note varchar(50), stat varchar(20), is_deleted int, xamount decimal(15,2), taxrp decimal(15,2), creatime datetime, tax varchar(5), top int',
+            'requestbeefdetail' => 'iddetail int, idrequest int, idbarang int, qty decimal(12,2), price decimal(15,2), notes varchar(50)',
+            'barang' => 'idbarang int, kdbarang varchar(10), nmbarang varchar(50), idcut int',
+        ];
+        $sql = '';
+
+        foreach ($cols as $table => $list) {
+            $parts = array_map(fn ($c) => '`'.strtok($c, ' ').'` '.substr($c, strpos($c, ' ') + 1), explode(', ', $list));
+            $sql .= "CREATE TABLE `{$table}` (
+  ".implode(",
+  ", $parts)."
+) ENGINE=InnoDB;
+";
+        }
+
+        $sql .= $this->insert('barang', ['idbarang' => 80, 'kdbarang' => '700900', 'nmbarang' => 'DAGING A', 'idcut' => 1])
+            .$this->insert('requestbeef', ['idrequest' => 1, 'norequest' => 'RED-26/0001', 'duedate' => '2026-10-19', 'iduser' => 5, 'idsupplier' => 7, 'note' => '', 'stat' => 'Confirmed', 'is_deleted' => 0, 'xamount' => '300000', 'taxrp' => '0', 'creatime' => '2026-10-19 14:40:04', 'tax' => 'No', 'top' => 0])
+            .$this->insert('requestbeefdetail', ['iddetail' => 1, 'idrequest' => 1, 'idbarang' => 80, 'qty' => '30', 'price' => '10000', 'notes' => ''])
+            .$this->insert('requestbeef', ['idrequest' => 2, 'norequest' => 'RED-26/0002', 'duedate' => '2026-10-19', 'iduser' => 5, 'idsupplier' => 7, 'note' => '', 'stat' => 'PO Created', 'is_deleted' => 0, 'xamount' => '0', 'taxrp' => '0', 'creatime' => '2026-10-19 14:41:04', 'tax' => 'No', 'top' => 0])
+            .$this->insert('requestbeefdetail', ['iddetail' => 2, 'idrequest' => 2, 'idbarang' => 80, 'qty' => '5', 'price' => '2000', 'notes' => '']);
+        file_put_contents($this->path, $sql);
+
+        $this->artisan('legacy:import-requests', ['--source' => $this->path, '--fallback-user' => 'cadangan', '--beef' => true, '--apply' => true])->assertSuccessful();
+
+        $one = DB::table('product_requisitions')->where('document_number', 'RED-26/0001')->first();
+        $this->assertSame('PO Created', $one->status, 'Confirmed -> PO Created');
+        $this->assertSame(300000.0, (float) $one->total_amount);
+        $this->assertSame(80, (int) DB::table('product_requisition_items')->where('product_requisition_id', $one->id)->value('product_id'));
+        $this->assertSame(2, DB::table('product_requisitions')->count());
+        $this->assertSame(0, DB::table('material_requisitions')->count() - 0, 'request material tidak disentuh');
+    }
 }
