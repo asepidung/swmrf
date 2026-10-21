@@ -617,6 +617,35 @@ class TallyTest extends TestCase
     }
 
     /** @test */
+    public function a_deleted_tally_can_be_created_again_for_the_same_sales_order()
+    {
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer->id,
+            'delivery_date' => now()->addDays(2)->format('Y-m-d'),
+            'created_by' => $this->user->id,
+            'status' => 'waiting',
+        ]);
+
+        $first = Tally::create(['sales_order_id' => $so->id, 'status' => Tally::STATUS_PROCESSING]);
+        $so->update(['status' => SalesOrder::STATUS_PROCESSING]);
+        $first->delete();
+
+        $this->assertSame(SalesOrder::STATUS_WAITING, $so->fresh()->status, 'menghapus tally mengembalikan SO ke waiting');
+
+        Livewire::actingAs($this->user)
+            ->test(\App\Filament\Admin\Resources\TallyResource\Pages\DraftTally::class)
+            ->callTableAction('process', $so, ['pod_limit' => 15])
+            ->assertHasNoTableActionErrors();
+
+        $this->assertSame(1, Tally::withTrashed()->where('sales_order_id', $so->id)->count(), 'satu SO tetap satu tally');
+        $tally = Tally::where('sales_order_id', $so->id)->first();
+        $this->assertNotNull($tally, 'tally aktif lagi');
+        $this->assertSame($first->id, $tally->id, 'tally lama dipulihkan, nomornya tetap');
+        $this->assertSame(Tally::STATUS_PROCESSING, $tally->status);
+        $this->assertSame(SalesOrder::STATUS_PROCESSING, $so->fresh()->status);
+    }
+
+    /** @test */
     public function it_updates_pod_limit_in_session()
     {
         $so = SalesOrder::create([
