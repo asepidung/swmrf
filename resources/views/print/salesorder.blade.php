@@ -234,7 +234,12 @@
                         <tr>
                             <td class="text-center">{{ $index + 1 }}</td>
                             <td class="text-center">{{ $item->product->code ?? '-' }}</td>
-                            <td>{{ $item->product->name ?? '-' }}</td>
+                            <td>
+                                {{ $item->product->name ?? '-' }}
+                                @if ($spec = \App\Models\CustomerProductSpec::summarize($item->spec))
+                                    <br><small class="text-muted"><strong>Spek:</strong> {{ $spec }}</small>
+                                @endif
+                            </td>
                             <td class="text-right">{{ number_format($item->weight, 2, ',', '.') }}</td>
                             <td class="text-right price-col">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
                             <td class="text-center price-col">{{ $item->discount }} %</td>

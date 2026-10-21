@@ -570,6 +570,8 @@ class ScanTally extends Page implements HasForms, HasTable
                     'scanned_box' => $scannedBox,
                     'balance' => $scannedWeight - (float) $item->weight,
                     'notes' => $item->note,
+                    // Salinan spek customer di baris SO (#579), supaya gudang tidak bertanya ulang.
+                    'spec' => \App\Models\CustomerProductSpec::summarize($item->spec),
                 ];
             })
             ->all();

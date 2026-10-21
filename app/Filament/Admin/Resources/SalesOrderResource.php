@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\SalesOrderResource\Pages;
 use App\Models\Customer;
+use App\Models\CustomerProductSpec;
 use App\Models\PriceList;
 use App\Models\PriceListItem;
 use App\Models\Product;
@@ -66,11 +67,21 @@ class SalesOrderResource extends Resource
                                 $discount = static::customerDefaultDiscount($state);
 
                                 $items = $get('items') ?? [];
+
+                                // Spek tetap milik pasangan customer + produk,
+                                // jadi ikut disegarkan seperti harga: satu
+                                // kueri untuk semua baris.
+                                $specs = CustomerProductSpec::snapshotsFor(
+                                    $state,
+                                    array_column($items, 'product_id'),
+                                );
+
                                 foreach ($items as $key => $item) {
                                     if (!empty($item['product_id'])) {
                                         $newPrice = static::calculateProductPrice($state, $item['product_id']);
                                         $set("items.{$key}.price", number_format($newPrice, 0, '', '.'));
                                         $set("items.{$key}.discount", $discount);
+                                        $set("items.{$key}.spec", CustomerProductSpec::encode($specs[$item['product_id']] ?? null));
                                     }
                                 }
                             }),
@@ -227,7 +238,8 @@ class SalesOrderResource extends Resource
                                 $customerId = $livewire->data['customer_id'] ?? $get('../../customer_id') ?? null;
                                 $selectedProductIds = $data['product_ids'] ?? [];
                                 $currentItems = $livewire->data['items'] ?? $get('../../items') ?? [];
-                                
+                                $specs = CustomerProductSpec::snapshotsFor($customerId, $selectedProductIds);
+
                                 foreach ($selectedProductIds as $productId) {
                                     $existingKey = null;
                                     foreach ($currentItems as $key => $item) {
@@ -259,6 +271,7 @@ class SalesOrderResource extends Resource
                                             'price' => number_format($price, 0, '', '.'),
                                             'discount' => static::customerDefaultDiscount($customerId),
                                             'note' => '',
+                                            'spec' => CustomerProductSpec::encode($specs[$productId] ?? null),
                                         ];
                                     }
                                 }
@@ -305,14 +318,37 @@ class SalesOrderResource extends Resource
                                 'min' => __('Sales order cannot be created without any products.'),
                                 'minItems' => __('Sales order cannot be created without any products.'),
                             ])
+                            // Spek customer per produk (#579) tampil di bar atas
+                            // baris, sejajar tombol hapus, sehingga kolom produk
+                            // tidak dipersempit.
+                            ->itemLabel(function (array $state): ?string {
+                                $summary = CustomerProductSpec::summarize($state['spec'] ?? null);
+
+                                return $summary === '' ? null : __('Spec').': '.Str::limit($summary, 140);
+                            })
+                            ->extraItemActions([static::specAction()])
                             ->columns(12)
                             ->schema([
                                 Forms\Components\Hidden::make('id'),
+
+                                // Salinan spek baris ini, sebagai JSON (lihat
+                                // CustomerProductSpec::encode()). Inilah yang
+                                // disimpan ke sales_order_items.spec.
+                                Forms\Components\Hidden::make('spec'),
 
                                 \App\Filament\Support\MasterSelect::product('product_id')
                                     ->hiddenLabel()
                                     ->placeholder(__('Product'))
                                     ->required()
+                                    ->live()
+                                    ->afterStateUpdated(function (Get $get, Set $set, $state): void {
+                                        // Mengganti produk di sebuah baris juga
+                                        // mengganti spek-nya dengan spek tetap
+                                        // produk baru itu (atau kosong).
+                                        $set('spec', CustomerProductSpec::encode(
+                                            CustomerProductSpec::snapshotsFor($get('../../customer_id'), [$state])[$state] ?? null
+                                        ));
+                                    })
                                     ->disabled(fn (Get $get, ?SalesOrder $record) => $record?->status === SalesOrder::STATUS_PROCESSING && !empty($get('id')))
                                     ->dehydrated()
                                     ->extraAttributes([
@@ -388,6 +424,89 @@ class SalesOrderResource extends Resource
                     ])
                     ->disabled(fn (?SalesOrder $record) => in_array($record?->status, SalesOrder::STATUS_LOCKED_FOR_EDIT, true))
             ]);
+    }
+
+    /**
+     * Tombol "+ Spek" / "Spek ✓" di bar atas tiap baris item (#579).
+     *
+     * Modalnya mengisi lima field spek dan menanyakan ke mana disimpan:
+     * "spek tetap customer ini" (bawaan, ditulis ke customer_product_specs
+     * dan dipakai SO berikutnya) atau "hanya untuk SO ini" (hanya salinan di
+     * baris). Salinan di baris selalu ikut ditulis.
+     */
+    protected static function specAction(): Forms\Components\Actions\Action
+    {
+        // Isi baris yang dimaksud tombolnya; kosong bila barisnya belum dikenal.
+        $rowState = fn (Forms\Components\Repeater $component, array $arguments): array => filled($arguments['item'] ?? null)
+            ? ($component->getChildComponentContainer($arguments['item'])->getRawState() ?? [])
+            : [];
+
+        return Forms\Components\Actions\Action::make('spec')
+            ->label(fn (Forms\Components\Repeater $component, array $arguments): string => filled($rowState($component, $arguments)['spec'] ?? null) ? __('Spec ✓') : __('+ Spec'))
+            ->color(fn (Forms\Components\Repeater $component, array $arguments): string => filled($rowState($component, $arguments)['spec'] ?? null) ? 'success' : 'gray')
+            ->link()
+            ->visible(fn (Forms\Components\Repeater $component, array $arguments, ?SalesOrder $record): bool => filled($rowState($component, $arguments)['product_id'] ?? null)
+                && ! in_array($record?->status, SalesOrder::STATUS_LOCKED_FOR_EDIT, true))
+            ->modalHeading(__('Customer Spec'))
+            ->modalWidth('lg')
+            ->modalSubmitActionLabel(__('Save'))
+            ->fillForm(fn (Forms\Components\Repeater $component, array $arguments, $livewire): array => (CustomerProductSpec::decode($rowState($component, $arguments)['spec'] ?? null) ?? [])
+                + ['save_scope' => static::canSaveFixedSpec($livewire->data['customer_id'] ?? null) ? 'fixed' : 'once'])
+            ->form(fn ($livewire): array => [
+                Forms\Components\TextInput::make('weight_per_pack')
+                    ->label(__('Weight per pack'))
+                    ->placeholder('500 gr / pack')
+                    ->maxLength(255)
+                    ->autofocus(),
+                Forms\Components\TextInput::make('cut')
+                    ->label(__('Cut'))
+                    ->placeholder('slice 1,5 mm')
+                    ->maxLength(255),
+                Forms\Components\Select::make('condition')
+                    ->label(__('Condition'))
+                    ->options(CustomerProductSpec::CONDITIONS),
+                Forms\Components\TextInput::make('packaging')
+                    ->label(__('Packaging'))
+                    ->placeholder('vacuum per pcs')
+                    ->maxLength(255),
+                Forms\Components\Textarea::make('note')
+                    ->label(__('Spec Note'))
+                    ->rows(2),
+                Forms\Components\Radio::make('save_scope')
+                    ->hiddenLabel()
+                    ->options([
+                        'fixed' => __('Save as this customer\'s fixed spec'),
+                        'once' => __('Only for this SO'),
+                    ])
+                    ->disableOptionWhen(fn (string $value): bool => $value === 'fixed'
+                        && ! static::canSaveFixedSpec($livewire->data['customer_id'] ?? null))
+                    ->required(),
+            ])
+            ->action(function (array $data, Forms\Components\Repeater $component, array $arguments, Get $get, Set $set) use ($rowState): void {
+                $key = $arguments['item'];
+                $customerId = $get('customer_id');
+                $productId = $rowState($component, $arguments)['product_id'] ?? null;
+                $spec = CustomerProductSpec::normalize($data);
+
+                // Tanpa customer tidak ada pasangan yang bisa disimpan: sisa
+                // pilihannya hanya salinan di baris ini.
+                if (($data['save_scope'] ?? 'fixed') === 'fixed' && $customerId && $productId) {
+                    CustomerProductSpec::saveFixed($customerId, $productId, $spec);
+
+                    \Filament\Notifications\Notification::make()
+                        ->title(__('Fixed spec saved'))
+                        ->success()
+                        ->send();
+                }
+
+                $set("items.{$key}.spec", CustomerProductSpec::encode($spec));
+            });
+    }
+
+    /** Boleh menyimpan spek tetap: customer sudah dipilih, dan user berhak menulisnya. */
+    protected static function canSaveFixedSpec(mixed $customerId): bool
+    {
+        return filled($customerId) && (auth()->user()?->can('create', CustomerProductSpec::class) ?? false);
     }
 
     /**

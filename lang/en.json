@@ -1797,6 +1797,21 @@
     "rows without a price are counted as Rp 0.": "rows without a price are counted as Rp 0.",
     "This item is already in the list.": "This item is already in the list.",
     "Type to search...": "Type to search...",
-    "Nothing found. If it is new, add it first, then search again here.": "Nothing found. If it is new, add it first, then search again here."
+    "Nothing found. If it is new, add it first, then search again here.": "Nothing found. If it is new, add it first, then search again here.",
+    "+ Spec": "+ Spec",
+    "Spec ✓": "Spec ✓",
+    "Spec": "Spec",
+    "Customer Spec": "Customer Spec",
+    "Customer Specs": "Customer Specs",
+    "Weight per pack": "Weight per pack",
+    "Cut": "Cut",
+    "Condition": "Condition",
+    "Packaging": "Packaging",
+    "Spec Note": "Spec Note",
+    "Save as this customer's fixed spec": "Save as this customer's fixed spec",
+    "Only for this SO": "Only for this SO",
+    "Fixed spec saved": "Fixed spec saved",
+    "This customer already has a spec for this product. Edit that one instead.": "This customer already has a spec for this product. Edit that one instead.",
+    "Save": "Save"
 }
 

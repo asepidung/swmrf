@@ -57,3 +57,7 @@ Cluster **Customers** terdiri dari tiga Resource: `CustomerResource`,
   `index`/`create`/`edit` di ketiga Resource.
 - Dukungan bilingual (`lang/en.json` + `lang/id.json`) seperti standar
   seluruh panel.
+
+## 4. Spek per produk (#579)
+
+Cluster Customers punya Resource keempat, `CustomerProductSpecResource` (menu **Customer Specs**): spek tetap satu pasangan customer + produk (gramasi, bentuk potong, kondisi, kemasan, catatan). Pasangan unik di basis data; customer dan produk hanya bisa dipilih saat membuat. Ekspor Excel ada, PDF tidak. Dipakai Sales Order untuk mengisi baris secara otomatis -- rincian di [`sales_orders.md`](sales_orders.md) bagian 4. Izinnya meminjam izin Sales Order (lihat `CustomerProductSpecPolicy`), jadi tidak muncul sebagai modul di daftar izin.

@@ -20,3 +20,14 @@ Model `SalesOrder` merupakan simpul (Hub) kompleks yang menarik berbagai Master 
 - **Masking Mata Uang Standar Bank**: Keseluruhan antarmuka finansial ini dilapisi topeng format mata uang lokal (Rupiah/Desimal). Input "150000" secara visual mekar dengan elegan menjadi "150.000", sehingga mata dengan cepat meraba ketepatan nilai.
 - **Struktur Dokumen Korporat yang Kokoh**: Bagian "Summary" (Total Nilai Kotor, Pajak PPN yang ditarik sebagai konfigurasi centang, Diskon, dan Tagihan Bersih) ditempatkan rapi mengelompok pada *Card* mandiri di pojok kanan bawah, berjejer paralel dengan deretan baris barang. Layout standar ERP dunia (*Odoo/SAP*) ini membuat staf akunting merasa familiar.
 - **Lokalisasi Menyeluruh**: Bahasa menu, tombol *Checkout*, hingga balok konfirmasi merah hijau ditautkan secara utuh ke mekanisme *Bilingual*, memudahkan pengoperasian operasional perusahaan bagi para *User* di Indonesia tanpa kendala linguistik.
+
+## 4. Spek customer per produk (#579, 21 Oktober 2026)
+
+Spek (gramasi, bentuk potong, kondisi, kemasan, catatan spek) milik **pasangan customer + produk**, bukan milik satu SO. Catatan SO (`note`) tetap untuk hal per order (jumlah, logistik sekali jalan) dan TIDAK dipakai sebagai sumber spek.
+
+- **Master:** tabel `customer_product_specs` (customer_id + product_id unik; `weight_per_pack`, `cut`, `condition` [chill / frozen / chill_aging / frozen_aging], `packaging`, `note`; semua boleh kosong). Dikelola di cluster Customers, menu **Customer Specs**, dengan saringan customer dan produk. Memakai `LogsActivity`.
+- **Di baris SO:** bar atas tiap baris menampilkan ringkasan ("Spek: 1 kg/pack · soup 4x4 cm · Chill · vacuum") dan tombol **+ Spek** (belum ada) atau **Spek ✓** (sudah ada). Begitu customer + produk terpilih, spek tetap terisi otomatis. Mengganti customer atau produk di baris mengisi ulang spek-nya (seperti harga dan diskon). Modal spek punya pilihan **Simpan sebagai spek tetap customer ini** (bawaan) atau **Hanya untuk SO ini**. Mengosongkan semua isian lalu menyimpan sebagai spek tetap menghapus spek tetapnya.
+- **Salinan:** baris SO menyimpan salinan spek di kolom json `sales_order_items.spec` (nullable). SO lama tidak berubah bila spek tetap diubah kemudian, dan membuka lalu menyimpan ulang SO lama tidak mengisinya otomatis.
+- **Tampil di:** cetak SO, layar scan Tally (di bawah nama produk pada tabel ringkasan), dan cetak surat jalan (dibaca dari baris SO-nya per produk).
+- **Izin:** tidak ada izin baru. Mengisi/mengubah/menghapus spek tetap = `create_sales_orders` ATAU `edit_sales_orders`; melihat = `view_sales_orders` ATAU `view_tallies`. Tulis ke master dijaga di `CustomerProductSpec::saveFixed()` (bukan hanya di tombol), jadi permintaan Livewire langsung tanpa izin ditolak.
+- **Tidak dikerjakan:** nama di label (LION/HPM) dan isi otomatis dari catatan SO legacy.

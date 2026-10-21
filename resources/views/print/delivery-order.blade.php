@@ -112,6 +112,8 @@
                 $no = 1;
                 $totalBox = 0;
                 $totalWeight = 0;
+                // Spek dibaca dari baris SO-nya (#579); satu produk satu baris di SO.
+                $soItems = ($record->salesOrder?->items ?? collect())->keyBy('product_id');
             @endphp
             @foreach ($record->items as $item)
                 @php
@@ -121,7 +123,12 @@
                 <tr>
                     <td>{{ $no++ }}</td>
                     <td>{{ $item->product?->code }}</td>
-                    <td class="left-align">{{ $item->product?->name }}</td>
+                    <td class="left-align">
+                        {{ $item->product?->name }}
+                        @if ($spec = \App\Models\CustomerProductSpec::summarize($soItems->get($item->product_id)?->spec))
+                            <br><small>Spek: {{ $spec }}</small>
+                        @endif
+                    </td>
                     <td>{{ $item->box }}</td>
                     <td class="right-align">{{ number_format($item->weight, 2) }} Kg</td>
                     <td class="left-align">{{ $item->notes }}</td>
