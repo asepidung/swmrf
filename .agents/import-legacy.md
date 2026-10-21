@@ -573,10 +573,10 @@ dokumen yang menunjuk pelanggan/supplier yang hilang DILAPORKAN, bukan dibuang d
 
 ## Repack (`legacy:import-repacks`) — diterapkan di coba. 21 Okt 2026
 - Sumber (`tarik.sh repack`): `repack` 1.229, `detailbahan` 29.743, `detailhasil` 34.079 (hanya yang tidak dihapus). Semua dibawa: bahan 532.077 kg, hasil 534.007 kg.
-- Pasangan: norepack→doc_no (kembar 2 diberi -2), tglrepack, kunci (1→LOCKED, selain itu OPEN), pembuat = akun pengganti, created_at = dibuat. Bahan→`repack_materials` (gudang+grade lewat LegacyGradeMap, origin lewat ORIGIN_NAMES, status IN_STOCK); hasil→`repack_results`.
+- Pasangan: norepack→doc_no (kembar 2 diberi -2), tglrepack, kunci (semua LOCKED), pembuat = akun pengganti, created_at = dibuat. Bahan→`repack_materials` (gudang+grade lewat LegacyGradeMap, origin lewat ORIGIN_NAMES, status IN_STOCK); hasil→`repack_results`.
 - Aturan temuan: grade kosong (25) → J01; pod kosong/0000 (174) → tanggal scan; origin 0 (3) → digit awal barcode; catatan baris hasil (45) digabung ke note repack; batch_no hasil tidak dibawa; 8 repack tanpa bahan dan 6 tanpa hasil tetap dibawa; barcode yang sama boleh jadi bahan di dua repack (82) dan rantai hasil→bahan.
 - Tanpa efek: stok, pergerakan stok, valuasi/HPP, kerugian finansial.
-- Catatan: hanya 35 repack legacy yang dikunci, 1.194 masuk OPEN (setia ke data). Jika Ayah mau semua riwayat dikunci, satu UPDATE status/kunci.
+- Keputusan Ayah (21 Okt): SEMUA riwayat repack ditutup (LOCKED, kunci 1), walau di legacy hanya 35 dari 1.229 yang dikunci. Importer menulis LOCKED; di coba. satu UPDATE sudah menyamakan 1.194 yang tadinya OPEN.
 
 ## Stock opname — DILEWATI (keputusan Ayah, 21 Okt 2026)
 - Tidak diimpor. Hasil opname lama sudah tercermin di stok yang dipindahkan; dokumennya hanya arsip dan tidak ada modul yang bergantung padanya. Legacy tetap bisa dibuka Ayah sebagai arsip.

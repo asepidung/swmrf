@@ -106,7 +106,8 @@ class ImportLegacyRepacksTest extends TestCase
         $this->assertStringContainsString('1453261019000000001: sisa', $one->note, 'catatan hasil digabung ke note');
 
         $two = DB::table('repacks')->where('doc_no', 'RP-1-2')->first();
-        $this->assertSame('OPEN', $two->status);
+        $this->assertSame('LOCKED', $two->status, 'kunci legacy 0 pun ditutup (keputusan Ayah)');
+        $this->assertSame(1, (int) $two->kunci);
         $this->assertSame(User::where('username', 'cadangan')->value('id'), (int) $two->created_by);
         $this->assertNotNull(DB::table('repacks')->where('doc_no', 'RP-3')->first(), 'repack tanpa bahan dan hasil tetap dibawa');
     }

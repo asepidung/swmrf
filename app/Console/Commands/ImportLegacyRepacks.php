@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
  * semuanya. Ditulis lewat DB::table: TIDAK mengurangi/menambah stok, tidak membuat pergerakan stok, valuasi (HPP), atau kerugian finansial.
  *
  * Pemasangan:
- *  - repacks: doc_no = norepack (kembar diberi -2, -3 menurut idrepack); repack_date = tglrepack; kunci = kunci; status = LOCKED bila kunci = 1, selain itu OPEN;
+ *  - repacks: doc_no = norepack (kembar diberi -2, -3 menurut idrepack); repack_date = tglrepack; SEMUA riwayat dibawa LOCKED + kunci 1 (keputusan Ayah, 21 Oktober 2026; di legacy hampir semuanya tidak pernah dikunci);
  *    created_by = idusers bila akun ada, selain itu `--fallback-user`; created_at = dibuat; note = note + catatan hasil (kolom `note` baris hasil legacy; aplikasi baru
  *    tidak punya kolom itu di hasil);
  *  - repack_materials (bahan): barcode apa adanya; product_id = idbarang; gudang + grade lewat `LegacyGradeMap` (grade KOSONG -> J01); weight = qty; qty_pcs = pcs;
@@ -201,7 +201,7 @@ class ImportLegacyRepacks extends Command
                     $stats['fallback']++;
                 }
 
-                $locked = (int) $row['kunci'] === 1;
+                $locked = true; // keputusan Ayah (21 Okt 2026): semua riwayat repack ditutup (LOCKED), apa pun nilai `kunci` legacy
                 $header = [
                     'doc_no' => $number, 'repack_date' => $row['tglrepack'], 'status' => $locked ? 'LOCKED' : 'OPEN', 'kunci' => $locked ? 1 : 0, 'note' => $note ?: null, 'created_by' => $userId,
                 ];
