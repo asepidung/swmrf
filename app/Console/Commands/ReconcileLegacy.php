@@ -182,7 +182,8 @@ class ReconcileLegacy extends Command
 
     private function checkBoning(): void
     {
-        $bonings = $this->snap('sapi', 'boning');
+        // Snapshot memuat boning yang dihapus di legacy; importer membuangnya, jadi rekonsiliasi pun hanya menghitung yang hidup.
+        $bonings = $this->snap('sapi', 'boning')->filter(fn ($b) => (int) ($b['is_deleted'] ?? 0) === 0);
         $liveIds = $bonings->pluck('idboning')->flip();
         $count = 0;
         $kg = 0.0;
