@@ -40,10 +40,14 @@ class VehicleResource extends Resource
             ->schema([
                 Forms\Components\TextInput::make('vehicle_type')
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->extraInputAttributes(['style' => 'text-transform:uppercase'])
+                    ->dehydrateStateUsing(fn ($state) => strtoupper((string) $state)),
                 Forms\Components\TextInput::make('police_number')
                     ->required()
                     ->maxLength(255)
+                    ->extraInputAttributes(['style' => 'text-transform:uppercase'])
+                    ->dehydrateStateUsing(fn ($state) => strtoupper((string) $state))
                     ->unique(ignoreRecord: true),
                 Forms\Components\Toggle::make('is_active')
                     ->default(true),

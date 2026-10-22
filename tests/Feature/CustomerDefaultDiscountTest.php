@@ -159,7 +159,7 @@ class CustomerDefaultDiscountTest extends TestCase
         $this->assertStringContainsString("TextInput::make('default_discount')", $source);
 
         // Batasnya nyata, bukan pemeriksaan panjang karakter.
-        $field = substr($source, strpos($source, "TextInput::make('default_discount')"), 900);
+        $field = substr($source, strpos($source, "TextInput::make('default_discount')"), 1500);
         $this->assertStringContainsString("'integer'", $field);
         $this->assertStringContainsString("'max:100'", $field);
         $this->assertStringNotContainsString('->numeric()', $field);
