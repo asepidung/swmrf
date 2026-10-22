@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
  *
  * Pemasangan:
  *  - tallies: sales_order_id = SO hasil impor (peta `sales_order`; cadangan: sonumber); tally_number = notally (nomor kembar diberi akhiran -2, -3 menurut urutan idtally); seal_number = sealnumb;
- *    status: DO -> do (Tally::STATUS_DELIVERED), Rejected -> locked, kosong -> processing; created_by = `--fallback-user` (legacy tidak mencatat pembuat tally); created_at = creatime.
+ *    status: DO -> do (Tally::STATUS_DELIVERED), Approved (disetujui, belum jadi DO; ditemukan di gladi resik 22 Okt) -> locked, Rejected -> locked, kosong -> processing; created_by = `--fallback-user` (legacy tidak mencatat pembuat tally); created_at = creatime.
  *    Satu SO hanya boleh punya satu tally di aplikasi baru: tally KOSONG (tanpa karton) pada SO yang punya tally lain dilewati; dua tally berisi pada satu SO = DITOLAK;
  *  - tally_items: barcode apa adanya; product_id = idbarang; gudang + grade lewat `LegacyGradeMap`, grade KOSONG (data awal 2023) -> J01 (JGL + CHILL); weight; qty_pcs = pcs; ph_level (kosong tetap kosong);
  *    pack_date = pod; exp_date = exp; origin: digit `origin` (kosong -> digit awal barcode) diterjemahkan seperti stok (`ImportLegacyStock::ORIGIN_NAMES`).
@@ -34,7 +34,7 @@ class ImportLegacyTallies extends Command
 
     protected $description = 'Pindahkan seluruh riwayat Tally legacy ke tallies + tally_items (dry-run bawaan)';
 
-    public const STATUS_MAP = ['DO' => 'do', 'Rejected' => 'locked', '' => 'processing'];
+    public const STATUS_MAP = ['DO' => 'do', 'Approved' => 'locked', 'Rejected' => 'locked', '' => 'processing'];
 
     public const EMPTY_GRADE = 1;
 
