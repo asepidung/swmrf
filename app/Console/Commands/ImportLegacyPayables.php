@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
  * Dry-run bawaan; `--apply` menulis; aman diulang (penerimaan yang sudah punya hutang dilewati); ditulis lewat DB::table (tanpa event model, tanpa pembayaran/kas).
  *
  * Cakupan: GR material (`goods_receipt_materials`) dan GR beef (`goods_receipt_products`) yang tanggal terimanya SEBELUM `--before` dan belum punya hutang.
+ * Nomor dokumen hutang = nomor GR; GR material dan GR beef berbagi deret nomor legacy, jadi nomor kembar antar-jenis diberi akhiran -2, -3.
  * Nilai = jumlah subtotal item + PPN supplier PKP (seperti `Payable::generateForGoodsReceipt*`), jatuh tempo = tanggal terima + TOP supplier.
  * Penerimaan sapi (`cattle_receivings`) TIDAK dibuatkan hutang riwayat di sini (nilainya bergantung pada harga kelas sapi dan pembayaran PO sapi).
  */
@@ -52,7 +53,7 @@ class ImportLegacyPayables extends Command
 
         $apply = (bool) $this->option('apply');
         $taken = DB::table('payables')->pluck('id', 'document_number');
-        $stats = ['created' => 0, 'skipped' => 0, 'noAmount' => 0, 'amount' => 0.0, 'byType' => []];
+        $stats = ['created' => 0, 'skipped' => 0, 'noAmount' => 0, 'suffix' => 0, 'amount' => 0.0, 'byType' => []];
         $conflicts = [];
 
         $run = function () use ($before, $user, $apply, &$taken, &$stats, &$conflicts): void {
@@ -69,10 +70,16 @@ class ImportLegacyPayables extends Command
                             continue;
                         }
 
+                        // GR material dan GR beef memakai deret nomor legacy yang sama; nomor dokumen hutang harus unik, jadi yang kedua diberi akhiran -2, -3.
                         if (isset($taken[$number])) {
-                            $conflicts[] = "{$number}: nomor dokumen hutang sudah dipakai, dilewati.";
+                            $n = 2;
 
-                            continue;
+                            while (isset($taken[$number.'-'.$n])) {
+                                $n++;
+                            }
+
+                            $number .= '-'.$n;
+                            $stats['suffix']++;
                         }
 
                         $subtotal = (float) $gr->items->sum('subtotal');
@@ -105,7 +112,7 @@ class ImportLegacyPayables extends Command
         $apply ? DB::transaction($run) : $run();
 
         $this->line($apply ? 'DITERAPKAN (--apply)' : 'DRY-RUN -- tidak ada yang ditulis. Tambahkan --apply untuk menulis.');
-        $this->line("payables -- dibuat (LUNAS): {$stats['created']}, sudah ada (dilewati): {$stats['skipped']}, tanpa nilai (dilewati): {$stats['noAmount']}, konflik: ".count($conflicts).'.');
+        $this->line("payables -- dibuat (LUNAS): {$stats['created']}, sudah ada (dilewati): {$stats['skipped']}, tanpa nilai (dilewati): {$stats['noAmount']}, nomor kembar diberi akhiran: {$stats['suffix']}, konflik: ".count($conflicts).'.');
         $this->line('Nilai total yang dianggap lunas: Rp '.number_format($stats['amount'], 0, ',', '.').'. Rincian: '.collect($stats['byType'])->map(fn ($n, $k) => "{$k}={$n}")->implode(', ').'.');
         $this->line('Catatan: ditulis tanpa event model (tanpa pembayaran, tanpa kas). Penerimaan sapi tidak dibuatkan hutang riwayat.');
 
