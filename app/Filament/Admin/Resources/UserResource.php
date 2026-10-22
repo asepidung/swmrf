@@ -157,6 +157,7 @@ class UserResource extends Resource
      * @var array<string, string>
      */
     public const SPECIFIC_LABELS = [
+        'reopen_carcass_for_boning' => 'Open for boning',
         'reopen_settled_invoices' => 'Reopen settled',
         'reopen_settled_payables' => 'Reopen settled',
         'manage_customer_specs' => 'Manage',

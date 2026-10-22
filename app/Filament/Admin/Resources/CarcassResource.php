@@ -557,6 +557,22 @@ class CarcassResource extends Resource
             ])
             ->actions([
                 \App\Filament\Admin\Resources\QcReportResource\Actions\LihatLaporanQc::make(),
+                Tables\Actions\Action::make('reopen_for_boning')
+                    ->label(__('Open for boning'))
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('warning')
+                    ->modalHeading(__('Open this imported carcass for boning'))
+                    ->modalDescription(__('Imported carcasses count as already boned. Use this only for an exceptional case, for example a carcass whose boning is done after go-live.'))
+                    ->visible(fn (Carcass $record): bool => $record->legacy_boned && ! $record->trashed() && (auth()->user()?->hasPermission('reopen_carcass_for_boning') ?? false))
+                    ->authorize(fn (): bool => auth()->user()?->hasPermission('reopen_carcass_for_boning') ?? false)
+                    ->form([
+                        Forms\Components\Textarea::make('reason')->label(__('Reason'))->required()->maxLength(500),
+                    ])
+                    ->action(function (Carcass $record, array $data): void {
+                        $record->reopenForBoning((string) $data['reason']);
+
+                        \Filament\Notifications\Notification::make()->title(__('Carcass opened for boning'))->success()->send();
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

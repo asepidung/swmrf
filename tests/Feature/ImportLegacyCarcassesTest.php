@@ -120,6 +120,7 @@ class ImportLegacyCarcassesTest extends TestCase
         $this->assertSame($this->weighingId, (int) $c->cattle_weighing_id);
         $this->assertSame('2026-10-19', $c->kill_date);
         $this->assertSame(5, (int) $c->created_by);
+        $this->assertSame(1, (int) $c->legacy_boned, 'karkas hasil impor dianggap sudah di-boning (tidak masuk Draft Boning)');
 
         $items = DB::table('carcass_items')->where('carcass_id', $c->id)->orderBy('id')->get();
         $this->assertCount(2, $items);

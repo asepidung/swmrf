@@ -24,12 +24,56 @@ class Carcass extends Model
         'cattle_weighing_id',
         'kill_date',
         'note',
+        'legacy_boned',
         'created_by'
     ];
 
     protected $casts = [
         'kill_date' => 'date',
+        'legacy_boned' => 'boolean',
     ];
+
+    /**
+     * Karkas yang menunggu boning: belum dipakai boning mana pun dan bukan riwayat impor legacy (`legacy_boned`).
+     * Dipakai Draft Boning dan pilihan karkas di form boning.
+     */
+    public function scopeWaitingForBoning($query)
+    {
+        return $query->where('legacy_boned', false)->whereDoesntHave('boningCarcasses');
+    }
+
+    /**
+     * Buka karkas hasil impor untuk boning (kejadian luar biasa, mis. sapi dipotong menjelang go-live dan boning-nya baru sesudahnya).
+     * Dijaga izin `reopen_carcass_for_boning` di sini (bukan hanya di tombol); alasan wajib dan tercatat di riwayat aktivitas.
+     *
+     * @throws \Illuminate\Auth\Access\AuthorizationException tanpa izin
+     * @throws \RuntimeException bila karkas bukan riwayat impor atau alasan kosong
+     */
+    public function reopenForBoning(string $reason, ?User $by = null): void
+    {
+        $by ??= auth()->user();
+
+        if (! $by?->hasPermission('reopen_carcass_for_boning')) {
+            throw new \Illuminate\Auth\Access\AuthorizationException(__('You are not allowed to reopen carcasses for boning.'));
+        }
+
+        if (! $this->legacy_boned) {
+            throw new \RuntimeException(__('This carcass is not an imported record.'));
+        }
+
+        if (trim($reason) === '') {
+            throw new \RuntimeException(__('A reason is required.'));
+        }
+
+        $this->legacy_boned = false;
+        $this->save();
+
+        activity('carcass')
+            ->performedOn($this)
+            ->causedBy($by)
+            ->withProperties(['reason' => $reason])
+            ->log('Karkas hasil impor dibuka untuk boning: '.$this->carcass_number);
+    }
 
     public function getActivitylogOptions(): LogOptions
     {
