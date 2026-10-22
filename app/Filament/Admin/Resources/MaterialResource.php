@@ -96,21 +96,25 @@ class MaterialResource extends Resource
                             ->createOptionAction(\App\Filament\Support\QuickCreate::action('materialCategory')),
                         // Stok minimum hanya berarti bagi material yang masuk daftar
                         // stok. Mesin, kulkas, stiker, materai tidak punya batas
-                        // minimum, jadi isiannya muncul hanya bila toggle di bawahnya
+                        // minimum, jadi isiannya muncul hanya bila toggle di atasnya
                         // menyala (Owner, 7 Oktober 2026). Bila mati, nilainya
                         // disimpan 0 -- lihat `normaliseStockData()`.
-                        Forms\Components\TextInput::make('min_stock')
-                            ->label(fn() => __('Min. Stock'))
-                            ->numeric()
-                            ->default(0)
-                            ->visible(fn (Get $get): bool => (bool) $get('show_in_stock'))
-                            ->required(fn (Get $get): bool => (bool) $get('show_in_stock')),
                         Forms\Components\Toggle::make('show_in_stock')
                             ->label(fn() => __('Show in Stock List?'))
                             ->helperText(__('Turn OFF for non-inventory items like Office Supplies.'))
                             ->default(true)
                             ->live()
                             ->columnSpanFull(),
+                        Forms\Components\TextInput::make('min_stock')
+                            ->label(fn() => __('Min. Stock'))
+                            // Bukan type=number: panah naik-turun dan roda tetikus mengubah angkanya tanpa sengaja.
+                            // Keyboard angka tetap muncul (inputmode), dan nilai awal 0 terpilih semua saat difokus
+                            // sehingga langsung bisa diketik (Owner, 22 Oktober 2026; pola yang sama dengan TOP dan diskon customer).
+                            ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right', 'onfocus' => 'this.select()'])
+                            ->rules(['integer', 'min:0'])
+                            ->default(0)
+                            ->visible(fn (Get $get): bool => (bool) $get('show_in_stock'))
+                            ->required(fn (Get $get): bool => (bool) $get('show_in_stock')),
                         Forms\Components\Toggle::make('is_active')
                             ->label(fn() => __('Is Active'))
                             ->default(true)

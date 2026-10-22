@@ -201,13 +201,14 @@ class CustomerResource extends Resource
                             ->label(fn() => __('Discount'))
                             ->suffix('%')
                             ->default(0)
-                            ->maxLength(3)
                             // Keputusan Owner, 7 September 2026: default 0
                             // terpilih otomatis saat difokus, supaya bisa
                             // langsung diketik tanpa menghapus nolnya dulu.
                             // Pola sama dipakai Invoice/SalesOrder untuk
                             // field angka yang sudah terisi nilai awal.
-                            ->extraInputAttributes(['inputmode' => 'numeric', 'class' => 'text-right', 'onfocus' => 'this.select()'])
+                            // Batas 3 digit hanya di sisi layar (maxlength). batas panjang (maxLength) dulu memasang aturan `max:3`, yang bersama
+                            // `integer` dibaca sebagai ANGKA <= 3: diskon 5 ditolak dengan pesan "tidak boleh lebih dari 100%".
+                            ->extraInputAttributes(['inputmode' => 'numeric', 'maxlength' => '3', 'class' => 'text-right', 'onfocus' => 'this.select()'])
                             ->rules(['integer', 'min:0', 'max:100'])
                             ->validationMessages([
                                 'integer' => __('Discount must be a whole percent.'),

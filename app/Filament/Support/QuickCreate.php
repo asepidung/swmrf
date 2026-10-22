@@ -90,20 +90,21 @@ class QuickCreate
             ],
 
             'driver' => [
-                TextInput::make('name')
-                    ->label(fn () => __('Name'))
-                    ->required()
-                    ->maxLength(255)
-                    ->warnIfSimilar(self::model($kind))
-                    ->rule(fn () => self::uniqueIgnoringCase($kind)),
+                self::uppercaseName($kind),
                 Toggle::make('is_active')->default(true),
             ],
 
             'vehicle' => [
-                TextInput::make('vehicle_type')->required()->maxLength(255),
+                TextInput::make('vehicle_type')
+                    ->required()
+                    ->maxLength(255)
+                    ->extraInputAttributes(['style' => 'text-transform:uppercase'])
+                    ->dehydrateStateUsing(fn ($state) => strtoupper((string) $state)),
                 TextInput::make('police_number')
                     ->required()
                     ->maxLength(255)
+                    ->extraInputAttributes(['style' => 'text-transform:uppercase'])
+                    ->dehydrateStateUsing(fn ($state) => strtoupper((string) $state))
                     ->rule(fn () => self::uniqueIgnoringCase($kind, 'police_number')),
                 Toggle::make('is_active')->default(true),
             ],

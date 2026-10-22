@@ -41,6 +41,8 @@ class DriverResource extends Resource
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255)
+                    ->extraInputAttributes(['style' => 'text-transform:uppercase'])
+                    ->dehydrateStateUsing(fn ($state) => strtoupper((string) $state))
                     ->unique(ignoreRecord: true),
                 Forms\Components\Toggle::make('is_active')
                     ->default(true),
