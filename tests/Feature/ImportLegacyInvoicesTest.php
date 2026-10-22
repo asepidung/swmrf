@@ -171,7 +171,11 @@ class ImportLegacyInvoicesTest extends TestCase
         $this->assertSame(143, (int) $two->customer_id, 'pelanggan 18 digabung ke 143');
         $this->assertSame(2000.0 + 100 - 300, (float) $two->balance, 'subtotal + biaya - uang muka');
 
-        $this->assertSame('Lunas', DB::table('invoices')->where('invoice_number', 'INV-3')->value('status'), 'saldo legacy 0 = Lunas');
+        $three = DB::table('invoices')->where('invoice_number', 'INV-3')->first();
+        $this->assertSame('Belum TF', $three->status, 'pengecualian: belum tukar faktur tetap dicatat belum ditukar');
+        $this->assertSame(0.0, (float) $three->paid_amount);
+        $this->assertSame(500.0, (float) $three->balance);
+        $this->assertNull($three->due_date, 'jatuh tempo kosong sampai ditukar');
     }
 
     /** @test */
@@ -179,7 +183,7 @@ class ImportLegacyInvoicesTest extends TestCase
     {
         $this->importer(true, 'settled')->assertSuccessful();
 
-        $this->assertSame(0, DB::table('invoices')->where('status', '<>', 'Lunas')->count());
+        $this->assertSame(['INV-3'], DB::table('invoices')->where('status', '<>', 'Lunas')->pluck('invoice_number')->all(), 'semua Lunas kecuali yang belum tukar faktur');
         $two = DB::table('invoices')->where('invoice_number', 'INV-2')->first();
         $this->assertSame(1800.0, (float) $two->paid_amount);
         $this->assertSame(0.0, (float) $two->balance);

@@ -363,6 +363,58 @@ class Invoice extends Model
      * dari yang ditagihkan dikurangi yang sudah dibayar -- mengikuti
      * Payable::recalculate().
      */
+    /**
+     * Buka kembali invoice yang dianggap LUNAS (riwayat impor legacy tidak mencatat pelunasan, jadi semuanya masuk Lunas).
+     *
+     * Akunting mengisi SISA yang belum dibayar dan alasannya; yang sudah dibayar menjadi `paid_amount`, sisanya kembali menjadi tagihan.
+     * Status kembali ke keadaan tukar fakturnya (Belum TF / Sudah TF) atau Belum Dibayar. Dijaga izin `reopen_settled_invoices`
+     * di sini, bukan hanya di tombolnya, dan tercatat di riwayat aktivitas.
+     *
+     * @throws \Illuminate\Auth\Access\AuthorizationException tanpa izin
+     * @throws \RuntimeException bila invoice belum lunas atau sisanya di luar batas tagihan
+     */
+    public function reopenSettled(float $outstanding, string $reason, ?User $by = null): void
+    {
+        $by ??= auth()->user();
+
+        if (! $by?->hasPermission('reopen_settled_invoices')) {
+            throw new \Illuminate\Auth\Access\AuthorizationException(__('You are not allowed to reopen settled invoices.'));
+        }
+
+        if ($this->status !== static::STATUS_PAID) {
+            throw new \RuntimeException(__('Only a settled invoice can be reopened.'));
+        }
+
+        $billed = $this->billedAmount();
+
+        if ($outstanding <= 0 || $outstanding > $billed) {
+            throw new \RuntimeException(__('The outstanding amount must be more than zero and at most the bill (:bill).', ['bill' => number_format($billed, 0, ',', '.')]));
+        }
+
+        if (trim($reason) === '') {
+            throw new \RuntimeException(__('A reason is required.'));
+        }
+
+        $this->paid_amount = round($billed - $outstanding, 2);
+        $this->status = static::STATUS_UNPAID;
+
+        // Riwayat tukar faktur tidak hilang: kembalikan ke status tukar fakturnya bila customer wajib tukar faktur.
+        if ($this->invoice_exchange_date) {
+            $this->status = static::STATUS_EXCHANGED;
+        } elseif ($this->customer?->invoice_exchange) {
+            $this->status = static::STATUS_EXCHANGE_PENDING;
+        }
+
+        $this->recalculate();
+        $this->save();
+
+        activity('invoice')
+            ->performedOn($this)
+            ->causedBy($by)
+            ->withProperties(['outstanding' => $outstanding, 'paid_amount' => $this->paid_amount, 'reason' => $reason])
+            ->log('Buka kembali invoice yang dianggap lunas: '.$this->invoice_number);
+    }
+
     public function recalculate(): void
     {
         $billed = $this->billedAmount();

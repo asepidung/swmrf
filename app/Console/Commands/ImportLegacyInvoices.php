@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\DB;
  *  - satu baris `receivables` per invoice (seperti CreateInvoice di aplikasi baru; daftar piutang membacanya);
  *  - barang NON-DAGING di baris invoice (STYROFOAM, ICE GELL, DELIVERY COST: tidak diimpor sebagai produk) -> baris `invoice_additional_charges` (nama, jumlah, harga, diskon, nilai);
  *    charge legacy (>0) -> satu baris tambahan "Biaya tambahan (legacy)"; invoices.charge = jumlah semuanya (arti di aplikasi baru); down_payment = downpayment;
+ *  - PENGECUALIAN tukar faktur: invoice berstatus "Belum TF" di legacy TIDAK dianggap lunas: tetap Belum TF, belum dibayar, jatuh tempo kosong;
  *  - PEMBAYARAN: legacy tidak mencatat pelunasan sama sekali (balance tidak pernah dikurangi), jadi `--payment` WAJIB dipilih:
  *      settled = semua invoice dianggap lunas (paid_amount = tagihan, saldo 0, status Lunas) tanpa catatan pembayaran;
  *      open    = tidak ada yang dibayar (paid_amount 0, saldo = tagihan; invoice dengan saldo legacy 0 = Lunas), status menurut tukar faktur.
@@ -95,7 +96,7 @@ class ImportLegacyInvoices extends Command
         $groupOf = DB::table('customers')->pluck('customer_group_id', 'id');
         $substitute = DB::table('sales_orders')->where('so_number', 'like', 'SO-LGC-%')->pluck('id', 'so_number');
 
-        $stats = ['created' => 0, 'skipped' => 0, 'items' => 0, 'skippedItems' => 0, 'subtotal' => 0.0, 'charge' => 0.0, 'dp' => 0.0, 'paid' => 0.0, 'balance' => 0.0, 'kg' => 0.0, 'noReceipt' => 0, 'substituteSo' => 0, 'mismatch' => 0, 'extraLines' => 0, 'charges' => 0, 'noDue' => 0];
+        $stats = ['created' => 0, 'skipped' => 0, 'items' => 0, 'skippedItems' => 0, 'subtotal' => 0.0, 'charge' => 0.0, 'dp' => 0.0, 'paid' => 0.0, 'balance' => 0.0, 'kg' => 0.0, 'noReceipt' => 0, 'substituteSo' => 0, 'mismatch' => 0, 'extraLines' => 0, 'pendingExchange' => 0, 'charges' => 0, 'noDue' => 0];
         $perStatus = $refused = $conflicts = $examples = [];
 
         $run = function () use ($invoices, $lines, $barang, $groupOf, $receiptMap, $customerMap, $customerIds, $productIds, &$existing, $receipts, $orderSo, &$substitute, $fallback, $payment, $apply, &$stats, &$perStatus, &$refused, &$conflicts, &$examples): void {
@@ -200,7 +201,13 @@ class ImportLegacyInvoices extends Command
                 $bill = max(0, round($subtotal + $charge - $downPayment, 2));
                 $legacyBalance = round((float) $row['balance'], 2);
 
-                if ($payment === 'settled' || $legacyBalance <= 0) {
+                if ($exchange === Invoice::STATUS_EXCHANGE_PENDING) {
+                    // PENGECUALIAN (Ayah, 22 Okt 2026): invoice yang BELUM tukar faktur di legacy tetap dicatat belum ditukar dan
+                    // belum dibayar, apa pun pilihan --payment; jatuh tempo baru dihitung saat ditukar (aturan Invoice).
+                    $paid = 0.0;
+                    $status = Invoice::STATUS_EXCHANGE_PENDING;
+                    $stats['pendingExchange']++;
+                } elseif ($payment === 'settled' || $legacyBalance <= 0) {
                     $paid = $bill;
                     $status = Invoice::STATUS_PAID;
                 } else {
@@ -214,7 +221,7 @@ class ImportLegacyInvoices extends Command
 
                 $header = [
                     'invoice_number' => $number, 'delivery_order_receipt_id' => $receiptId, 'customer_id' => $customerId, 'sales_order_id' => $soId, 'invoice_date' => $row['invoice_date'],
-                    'due_date' => ($due === '' || str_starts_with($due, '0000')) ? null : $due, 'term_of_payment' => (int) $row['top'], 'status' => $status,
+                    'due_date' => ($due === '' || str_starts_with($due, '0000') || $status === Invoice::STATUS_EXCHANGE_PENDING) ? null : $due, 'term_of_payment' => (int) $row['top'], 'status' => $status,
                     'invoice_exchange_date' => ($tgltf === '' || str_starts_with($tgltf, '0000')) ? null : $tgltf, 'po_number' => trim((string) ($row['pocustomer'] ?? '')) ?: null,
                     'delivery_order_number' => trim((string) ($row['donumber'] ?? '')) ?: null, 'note' => $note ?: null, 'total_weight' => round((float) $row['xweight'], 2), 'subtotal' => $subtotal,
                     'total_discount' => round((float) ($row['xdiscount'] ?? 0), 2), 'tax' => 0, 'charge' => $charge, 'down_payment' => $downPayment, 'paid_amount' => $paid,
@@ -286,7 +293,7 @@ class ImportLegacyInvoices extends Command
         $this->line("Item: {$stats['items']} dibawa ({$stats['skippedItems']} dilewati bukan produk impor); berat ".$fmt($stats['kg']).' kg. Biaya tambahan: '.$stats['charges'].' invoice ('.$stats['extraLines'].' baris barang non-daging dipindah ke Biaya Tambahan).');
         $this->line('Nilai: subtotal Rp '.$fmt($stats['subtotal']).' + biaya Rp '.$fmt($stats['charge']).' - uang muka Rp '.$fmt($stats['dp']).'; dibayar Rp '.$fmt($stats['paid']).'; SALDO Rp '.$fmt($stats['balance']).'.');
         $this->line('Status: '.collect($perStatus)->map(fn ($n, $k) => "{$k}={$n}")->implode(', ').'.');
-        $this->line("Tanpa tanda terima di aplikasi baru: {$stats['noReceipt']}; memakai SO pengganti: {$stats['substituteSo']}; jumlah item beda dari xamount legacy: {$stats['mismatch']}; tanpa jatuh tempo: {$stats['noDue']}.");
+        $this->line("Tanpa tanda terima di aplikasi baru: {$stats['noReceipt']}; memakai SO pengganti: {$stats['substituteSo']}; jumlah item beda dari xamount legacy: {$stats['mismatch']}; tanpa jatuh tempo: {$stats['noDue']}. Belum tukar faktur (dicatat belum ditukar dan belum dibayar): {$stats['pendingExchange']}.");
 
         foreach ($examples as [$row, $lines, $header, $items]) {
             $this->line('');

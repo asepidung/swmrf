@@ -120,6 +120,48 @@ class Payable extends Model
      * `amount` tidak pernah diubah. Ia nilai asli yang disepakati, dan
      * kompensasi berdiri di sampingnya supaya keduanya tetap terbaca.
      */
+    /**
+     * Buka kembali hutang yang dianggap LUNAS (riwayat impor legacy: semua hutang dicatat lunas).
+     *
+     * Akunting mengisi SISA yang belum dibayar dan alasannya. Dijaga izin `reopen_settled_payables` di sini, bukan hanya di
+     * tombolnya, dan tercatat di riwayat aktivitas.
+     *
+     * @throws \Illuminate\Auth\Access\AuthorizationException tanpa izin
+     * @throws \RuntimeException bila hutang belum lunas atau sisanya di luar batas
+     */
+    public function reopenSettled(float $outstanding, string $reason, ?User $by = null): void
+    {
+        $by ??= auth()->user();
+
+        if (! $by?->hasPermission('reopen_settled_payables')) {
+            throw new \Illuminate\Auth\Access\AuthorizationException(__('You are not allowed to reopen settled payables.'));
+        }
+
+        if ($this->status !== 'paid') {
+            throw new \RuntimeException(__('Only a settled payable can be reopened.'));
+        }
+
+        $payable = max((float) $this->amount - (float) $this->compensation, 0);
+
+        if ($outstanding <= 0 || $outstanding > $payable) {
+            throw new \RuntimeException(__('The outstanding amount must be more than zero and at most the bill (:bill).', ['bill' => number_format($payable, 0, ',', '.')]));
+        }
+
+        if (trim($reason) === '') {
+            throw new \RuntimeException(__('A reason is required.'));
+        }
+
+        $this->paid_amount = round($payable - $outstanding, 2);
+        $this->recalculate();
+        $this->save();
+
+        activity('payable')
+            ->performedOn($this)
+            ->causedBy($by)
+            ->withProperties(['outstanding' => $outstanding, 'paid_amount' => $this->paid_amount, 'reason' => $reason])
+            ->log('Buka kembali hutang yang dianggap lunas: '.$this->document_number);
+    }
+
     public function recalculate(): void
     {
         $amount = (float) $this->amount;
