@@ -581,3 +581,13 @@ dokumen yang menunjuk pelanggan/supplier yang hilang DILAPORKAN, bukan dibuang d
 ## Stock opname — DILEWATI (keputusan Ayah, 21 Okt 2026)
 - Tidak diimpor. Hasil opname lama sudah tercermin di stok yang dipindahkan; dokumennya hanya arsip dan tidak ada modul yang bergantung padanya. Legacy tetap bisa dibuka Ayah sebagai arsip.
 - Daftar modul riwayat yang dipindahkan: request/PO/GR material, request/PO/GR beef, PO sapi–receive–timbang–karkas–boning, SO, Tally, DO + tanda terima, Invoice, Repack.
+
+## Gladi resik penuh di coba. — 22 Okt 2026 (reset -> impor semua dari awal)
+Urutan yang dijalankan (skrip lokal `legacy/tarik/gladi-run.sh <awal> <akhir>`, dikirim ke `~/gladi/run.sh` di coba.; tiap langkah dry-run lalu `--apply`, berhenti bila ada penolakan):
+0. backup DB (mysqldump, nilai `.env` dibersihkan dari `\r`) + `master:export` (menyimpan master yang sudah Ayah lengkapi) -> `app:reset-training-data --apply` -> `master:import-snapshot --apply`.
+1 stok beef, 2 stok material, 3 request material, 4 request beef, 5 PO material, 6 PO beef, 7 GR material, 8 GR beef, 9 PO sapi, 10 receive+timbang, 11 karkas, 12 boning (+label 2023-2026),
+13 SO, 14 Tally, 15 DO+tanda terima, 16 Invoice (`--payment=settled`), 17 Repack, 18 Retur penjualan.
+Waktu mesin (tanpa waktu manusia): tarik 15 snapshot 70 dtk, kirim ke coba. 20 dtk, backup 2 dtk, reset 3 dtk, master 2 dtk, impor 1-18 sekitar 10 menit. Terlama: boning 94+94 dtk, tally 84+91 dtk, repack 32+32 dtk, SO 14 dtk.
+Hasil: 0 DITOLAK di semua langkah setelah satu perbaikan. TEMUAN gladi: data legacy bergerak antara hari; tally baru berstatus `Approved` (disetujui, belum jadi DO) belum dikenal -> dipetakan ke `locked` (sudah di main). Pelajaran hari-H: status/nilai BARU bisa muncul kapan saja; dry-run berhenti di penolakan pertama, jadi sisakan waktu untuk perbaikan kecil.
+Total akhir coba.: stok beef 356, stok material 66, request 357+190, PO 353+192, GR 140+179, PO sapi 109 (104 + 5 pengganti), receive 280 (104 + 176 pengganti), karkas 320, boning 445 (169.393 label), SO 8.725 (8.231 + 494 pengganti dari invoice lama), tally 8.050 (165.810 karton), DO 8.540, tanda terima 8.521, invoice 8.518 (semua Lunas), repack 1.231 (semua LOCKED), retur 34.
+Spek customer yang Ayah isi di coba. tidak ikut `master:export` (tabel `customer_product_specs` tidak ada di `MasterSnapshot::TABLES`) dan terhapus oleh reset; bila perlu dibawa ke VPS, tabel itu harus ditambahkan ke snapshot.
