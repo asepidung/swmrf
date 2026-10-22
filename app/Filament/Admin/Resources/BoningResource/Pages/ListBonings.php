@@ -20,7 +20,13 @@ class ListBonings extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make()->label(__('Create')),
+            // Boning dibuat dari Draft Boning (karkas yang menunggu, dipilih beberapa sekaligus), bukan dari form kosong.
+            Actions\Action::make('draft')
+                ->label(__('Draft Boning'))
+                ->icon('heroicon-m-clipboard-document-list')
+                ->color('info')
+                ->visible(fn (): bool => auth()->user()?->hasPermission('create_bonings') ?? false)
+                ->url(fn (): string => $this->getResource()::getUrl('draft')),
         ];
     }
 }

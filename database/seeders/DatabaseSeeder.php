@@ -148,6 +148,7 @@ class DatabaseSeeder extends Seeder
             ['name' => 'delete_qc_reports', 'module_name' => 'QC Reports', 'description' => 'Delete QC reports'],
             ['name' => 'reopen_settled_invoices', 'module_name' => 'Invoices', 'description' => 'Reopen settled invoices'],
             ['name' => 'reopen_settled_payables', 'module_name' => 'Payables', 'description' => 'Reopen settled payables'],
+            ['name' => 'reopen_carcass_for_boning', 'module_name' => 'Carcass', 'description' => 'Reopen imported carcass for boning'],
             ['name' => 'view_customer_specs', 'module_name' => 'Customer Specs', 'description' => 'View customer specs'],
             ['name' => 'manage_customer_specs', 'module_name' => 'Customer Specs', 'description' => 'Manage customer specs'],
             ['name' => 'view_deleted_qc_reports', 'module_name' => 'QC Reports', 'description' => 'View deleted QC reports'],

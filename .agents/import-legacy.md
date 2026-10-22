@@ -606,3 +606,6 @@ Spek customer yang Ayah isi di coba. tidak ikut `master:export` (tabel `customer
 
 ## Keputusan Ayah 22 Okt 2026: spek customer tidak dibawa ke VPS
 Tabel `customer_product_specs` TIDAK ditambahkan ke `MasterSnapshot::TABLES`. Pengisian spek baru dimulai 2 November setelah go-live, jadi VPS mulai tanpa spek. Customer (marketing) dan BOM (QC) selesai dikerjakan 20 Okt dan akun mereka sudah dinonaktifkan; keduanya ikut salinan master.
+
+## Karkas hasil impor tidak masuk Draft Boning (keputusan Ayah, 22 Okt 2026)
+Boning legacy tidak punya hubungan ke karkas, jadi `legacy:import-carcasses` menandai semua karkas yang diimpor `carcasses.legacy_boned = 1` (migrasi `2026_10_22_200000` mengisinya juga untuk yang sudah ada di `legacy_import_map`). Karkas bertanda itu tidak muncul di Draft Boning maupun pilihan karkas di form boning. Untuk kejadian luar biasa (mis. sapi dipotong menjelang go-live, boning-nya sesudahnya): aksi **"Buka untuk boning"** di daftar Karkas (izin `reopen_carcass_for_boning`, alasan wajib, tercatat di riwayat aktivitas). Karkas yang baru diinput sesudah go-live muncul di Draft Boning seperti biasa. Boning kini dibuat dari **Draft Boning** (pilih beberapa karkas, aksi "Create Boning"); tombol Create di daftar boning diganti tombol Draft Boning.

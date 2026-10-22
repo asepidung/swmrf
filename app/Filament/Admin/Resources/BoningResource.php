@@ -98,6 +98,8 @@ class BoningResource extends Resource
                                     ->label(__('Carcass Number'))
                                     ->options(function (\Filament\Forms\Get $get, ?\Illuminate\Database\Eloquent\Model $record) {
                                         $query = Carcass::query();
+                                        // Karkas hasil impor legacy dianggap sudah di-boning (keputusan Owner, 22 Oktober 2026).
+                                        $query->where('legacy_boned', false);
                                         
                                         $parentBoningId = $get('../../id');
 
@@ -322,6 +324,7 @@ class BoningResource extends Resource
     {
         return [
             'index' => Pages\ListBonings::route('/'),
+            'draft' => Pages\DraftBoning::route('/draft'),
             'create' => Pages\CreateBoning::route('/create'),
             'view' => Pages\ViewBoning::route('/{record}'),
             'edit' => Pages\EditBoning::route('/{record}/edit'),

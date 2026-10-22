@@ -160,7 +160,7 @@ class ImportLegacyCarcasses extends Command
                     $stats['carcass2'] += (float) $d['carcase2'];
                 }
 
-                $header = ['carcass_number' => $number, 'cattle_weighing_id' => $weighingId, 'kill_date' => $row['killdate'], 'note' => trim($note, ' |') ?: null, 'created_by' => $userId];
+                $header = ['carcass_number' => $number, 'cattle_weighing_id' => $weighingId, 'kill_date' => $row['killdate'], 'note' => trim($note, ' |') ?: null, 'legacy_boned' => 1, 'created_by' => $userId];
                 $stats['created']++;
                 $stats['items'] += count($items);
 
