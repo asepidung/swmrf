@@ -23,3 +23,14 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# Mitigasi PHP2Shell (CVE-2026-109618/109619): batasi ukuran body request (Hostinger LiteSpeed).
+# Diabaikan oleh nginx di VPS dan oleh server tanpa modul ini (jangan pakai php_value tanpa pembungkus: Apache tanpa mod_php akan error 500).
+<IfModule lsapi_module>
+    php_value post_max_size 16M
+    php_value upload_max_filesize 16M
+</IfModule>
+<IfModule LiteSpeed>
+    php_value post_max_size 16M
+    php_value upload_max_filesize 16M
+</IfModule>
