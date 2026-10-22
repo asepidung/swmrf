@@ -7858,3 +7858,12 @@ Konsep disepakati Ayah 20 Oktober 2026. Rincian fitur di `docs/modules/sales_ord
 - **Kolom `condition`** disimpan sebagai kunci (`chill`, `frozen`, `chill_aging`, `frozen_aging`), labelnya di `CustomerProductSpec::CONDITIONS`. `condition` kata cadangan MySQL; Laravel memberi tanda kutip, jangan menulisnya mentah di SQL.
 - **Tidak dikerjakan** (keputusan Ayah): nama di label (LION/HPM) dan isi otomatis dari catatan SO legacy.
 - Baris item yang diimpor/dibuat tanpa spek tetap sah (kolom nullable), jadi impor dokumen SO terbuka tidak terganggu.
+
+## Antrian dari uji coba Ayah di coba. (22 Oktober 2026) — dikumpulkan dulu, dikerjakan bersama-sama
+
+**Sudah dikerjakan dan di-merge ke main (deploy ke coba. menunggu SSH Hostinger pulih, timeout 22 Okt malam):** diskon customer 5% tidak lagi ditolak (maxLength(3) + integer dibaca angka <= 3); nama supir, jenis dan plat armada paksa huruf besar; form Material: "Show in Stock List?" di atas "Min. Stock", Min. Stock tanpa type=number dan terpilih semua saat difokus.
+
+**Belum dikerjakan:**
+1. **Request material, tahap review Purchasing:** harga wajib diisi Purchasing dan TIDAK BOLEH 0. Bila ada baris berharga 0, jangan izinkan aksi "approve / kirim ke Finance" (status "Pending Finance"). Request beef sudah benar (jadikan acuan perilakunya). Tes: baris 0 ditolak, semua terisi lolos; jaga di model/aksi, bukan hanya tombol.
+2. **Nilai uang PO material tampak ngaco** (contoh di layar Item Details: SARUNG TANGAN KARET qty 8,00 harga Rp 80 subtotal Rp 640; HAIR NET qty 1,00 harga Rp 43 subtotal Rp 43). Perlu dicari penyebabnya: kode aplikasi baru (cara hitung subtotal/satuan beli vs satuan pakai, "Content per Unit") atau data hasil impor legacy (harga legacy mungkin per pcs sedangkan qty/satuan di aplikasi baru per kemasan, atau pembulatan). Cek: PO yang dibuat dari nol di aplikasi baru vs PO hasil impor (`ImportLegacyPos`, `ImportLegacyRequests`), kolom price/subtotal di `purchase_material_items`, dan `materials.content_per_unit`.
+Catatan: Ayah meminta dicatat dulu dan dikumpulkan; tidak ada perubahan kode untuk nomor 1 dan 2 sampai Ayah memberi aba-aba.
