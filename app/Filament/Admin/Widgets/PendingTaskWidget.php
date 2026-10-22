@@ -573,7 +573,9 @@ class PendingTaskWidget extends Widget
         if (!$user->isProgrammer() && !$user->hasPermission('tukar_faktur')) {
             return 0;
         }
-        return \App\Models\Invoice::whereNull('invoice_exchange_date')
+        // Invoice yang sudah lunas tidak perlu ditukar lagi (termasuk riwayat hasil impor legacy).
+        return \App\Models\Invoice::where('status', '!=', \App\Models\Invoice::STATUS_PAID)
+            ->whereNull('invoice_exchange_date')
             ->whereHas('customer', function ($query) {
                 $query->where('invoice_exchange', true);
             })->count();

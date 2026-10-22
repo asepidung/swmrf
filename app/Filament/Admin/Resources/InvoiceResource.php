@@ -680,7 +680,7 @@ class InvoiceResource extends Resource
                 Tables\Columns\TextColumn::make('tukar_faktur')
                     ->label(__('TTF'))
                     ->getStateUsing(function (Invoice $record) {
-                        if ($record->customer?->invoice_exchange && is_null($record->invoice_exchange_date)) {
+                        if ($record->customer?->invoice_exchange && is_null($record->invoice_exchange_date) && $record->status !== Invoice::STATUS_PAID) {
                             return __('TTF');
                         }
                         return null;
@@ -753,7 +753,7 @@ class InvoiceResource extends Resource
                 Tables\Filters\Filter::make('belum_tukar_faktur')
                     ->label(__('Invoice not exchanged yet'))
                     ->toggle()
-                    ->query(fn (\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder => $query->whereNull('invoice_exchange_date')->whereHas('customer', fn($q) => $q->where('invoice_exchange', true))),
+                    ->query(fn (\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder => $query->where('status', '!=', Invoice::STATUS_PAID)->whereNull('invoice_exchange_date')->whereHas('customer', fn($q) => $q->where('invoice_exchange', true))),
 
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,
