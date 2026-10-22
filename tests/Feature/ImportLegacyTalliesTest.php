@@ -186,6 +186,12 @@ class ImportLegacyTalliesTest extends TestCase
     }
 
     /** @test */
+    public function an_approved_legacy_tally_that_is_not_yet_a_delivery_order_is_locked(): void
+    {
+        $this->assertSame('locked', \App\Console\Commands\ImportLegacyTallies::STATUS_MAP['Approved']);
+    }
+
+    /** @test */
     public function the_fallback_user_is_required(): void
     {
         $this->importer(true, false)->assertFailed();
