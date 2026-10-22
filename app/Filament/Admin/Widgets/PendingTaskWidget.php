@@ -107,7 +107,7 @@ class PendingTaskWidget extends Widget
      * Tiap hitungan mengembalikan nol bila penggunanya tidak berhak, jadi
      * penyaringan haknya sudah terjadi di dalam metode masing-masing.
      *
-     * @return array<int, array{label: string, url: string, tone: string}>
+     * @return array<int, array{label: string, text: string, count: int, url: string, tone: string}>
      */
     public function tasks(): array
     {
@@ -122,6 +122,11 @@ class PendingTaskWidget extends Widget
                 'label' => str_contains($message, '|')
                     ? trans_choice($message, $count, ['count' => $count])
                     : __($message, ['count' => $count]),
+                // Kartu di Dashboard menampilkan angkanya besar-besar, jadi kalimatnya ditulis tanpa angka itu.
+                'text' => trim(preg_replace('/\s+/', ' ', str_replace('§', '', str_contains($message, '|')
+                    ? trans_choice($message, $count, ['count' => '§'])
+                    : __($message, ['count' => '§'])))),
+                'count' => $count,
                 'url' => $url,
                 'tone' => $tone,
             ];
