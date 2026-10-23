@@ -326,7 +326,7 @@ class CostReportsTest extends TestCase
         $this->deliveryOrder([['S1', $this->tl, 10]], 1500000);
 
         Livewire::test(StockValueReport::class)->assertSee('Rp 1.000.000')->assertSee('TENDERLOIN');
-        Livewire::test(SalesCostReport::class)->assertSee('Rp 1.500.000')->assertSee('Rp 500.000')->assertSee('PELANGGAN UJI');
+        Livewire::test(SalesCostReport::class)->assertSee('Rp 500.000')->assertDontSee('Rp 1.500.000')->assertSee('PELANGGAN UJI')->assertSee('TENDERLOIN');
     }
 
     /** @test */

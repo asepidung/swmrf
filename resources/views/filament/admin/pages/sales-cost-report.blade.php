@@ -21,20 +21,11 @@
     @php
         $groupsForCards = collect($report['rows'])->groupBy('delivery_order');
         $completeGroups = $groupsForCards->filter(fn ($lines) => $lines->every(fn ($l) => $l['unvalued_barcodes'] === 0 && $l['sales'] !== null));
+        // Margin terbesar di paling atas; yang belum punya margin di bawah (Owner, 24 Oktober 2026).
+        $invoiceGroups = ($this->onlyValued ? $completeGroups : $groupsForCards)
+            ->sortByDesc(fn ($lines) => $lines->contains(fn ($l) => $l['margin'] === null) ? -INF : $lines->sum('margin'));
+        $invoicePage = $this->paginateRows($invoiceGroups, 'invoicePage');
     @endphp
-    <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
-        @foreach ([
-            [__('Sales'), $rupiah($total['sales'])],
-            ['HPP', $rupiah($total['hpp'])],
-            [__('Margin'), $total['margin_rows'] > 0 ? $rupiah($total['margin']) : '-'],
-            [__('Complete'), $completeGroups->count().' / '.$groupsForCards->count().' '.__('delivery orders')],
-        ] as [$label, $value])
-            <div class="rounded-xl p-4 ring-1 ring-gray-950/5 dark:ring-white/10" style="background: rgba(var(--gray-500), .08);">
-                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $label }}</div>
-                <div class="mt-1 text-lg font-semibold tabular-nums">{{ $value }}</div>
-            </div>
-        @endforeach
-    </div>
 
     <x-filament::section :heading="__('Per delivery order')">
         @if (count($report['rows']))
@@ -51,7 +42,7 @@
                     </thead>
                     <tbody>
                         {{-- Daftar ringkas: tanggal, faktur, customer, kg, margin. Penjualan, HPP dan rincian ada di halaman detail faktur (Owner, 24 Oktober 2026). --}}
-                        @foreach (($this->onlyValued ? $completeGroups : $groupsForCards) as $doNumber => $lines)
+                        @foreach ($invoicePage as $doNumber => $lines)
                             @php
                                 $first = $lines->first();
                                 $margin = $lines->contains(fn ($l) => $l['margin'] === null) ? null : $lines->sum('margin');
@@ -76,6 +67,8 @@
                 </table>
             </div>
 
+            <div class="mt-3"><x-filament::pagination :paginator="$invoicePage" /></div>
+
             @if ($total['not_invoiced_rows'] > 0 || $total['unvalued_barcodes'] > 0)
                 <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
                     <x-filament::badge color="warning" size="sm" class="inline-flex">{{ __('incomplete') }}</x-filament::badge>
@@ -89,36 +82,41 @@
         @endif
     </x-filament::section>
 
-    @foreach ([['by_customer', __('Per customer')], ['by_product', __('Per product')]] as [$key, $heading])
-        @if (count($report[$key]))
-            <x-filament::section :heading="$heading">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead>
-                            <tr>
-                                <th class="{{ $head }}">{{ $key === 'by_customer' ? __('Customer') : __('Product') }}</th>
-                                <th class="{{ $head }} text-end">Kg</th>
-                                <th class="{{ $head }} text-end">{{ __('Sales') }}</th>
-                                <th class="{{ $head }} text-end">HPP</th>
-                                <th class="{{ $head }} text-end">{{ __('Margin') }}</th>
-                                <th class="{{ $head }} text-end">{{ __('Unvalued barcodes') }}</th>
+    @if (count($report['by_product']))
+        @php
+            $productGroups = collect($report['by_product'])->sortByDesc(fn ($g) => $g['margin_rows'] > 0 ? $g['margin'] : -INF);
+            $productPage = $this->paginateRows($productGroups, 'productPage');
+        @endphp
+        <x-filament::section :heading="__('Per product')">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr>
+                            <th class="{{ $head }}">{{ __('Product') }}</th>
+                            <th class="{{ $head }} text-end">Kg</th>
+                            <th class="{{ $head }} text-end">{{ __('Margin') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($productPage as $group)
+                            <tr class="{{ $row }}">
+                                <td class="py-3 pe-4">{{ $group['name'] }}</td>
+                                <td class="whitespace-nowrap py-3 pe-4 text-end tabular-nums">{{ $number($group['kg']) }}</td>
+                                <td class="whitespace-nowrap py-3 text-end tabular-nums">{{ $group['margin_rows'] > 0 ? $rupiah($group['margin']) : '-' }}</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($report[$key] as $group)
-                                <tr class="{{ $row }}">
-                                    <td class="py-3 pe-3">{{ $group['name'] }}</td>
-                                    <td class="py-3 text-end tabular-nums">{{ $number($group['kg']) }}</td>
-                                    <td class="py-3 text-end tabular-nums">{{ $rupiah($group['sales']) }}</td>
-                                    <td class="py-3 text-end tabular-nums">{{ $rupiah($group['hpp']) }}</td>
-                                    <td class="py-3 text-end tabular-nums">{{ $rupiah($group['margin']) }}</td>
-                                    <td class="py-3 text-end tabular-nums">{{ $group['unvalued_barcodes'] }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </x-filament::section>
-        @endif
-    @endforeach
+                        @endforeach
+                    </tbody>
+                    <tfoot>
+                        <tr class="{{ $row }}">
+                            <td class="py-3 pe-4 font-semibold">{{ __('Total') }}</td>
+                            <td class="whitespace-nowrap py-3 pe-4 text-end font-semibold tabular-nums">{{ $number($total['kg']) }}</td>
+                            <td class="whitespace-nowrap py-3 text-end font-semibold tabular-nums">{{ $total['margin_rows'] > 0 ? $rupiah($total['margin']) : '-' }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="mt-3"><x-filament::pagination :paginator="$productPage" /></div>
+        </x-filament::section>
+    @endif
 </x-filament-panels::page>
