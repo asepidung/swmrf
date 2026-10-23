@@ -63,7 +63,12 @@ class ListRepacks extends ListRecords
                 })
                 ->visible(fn (): bool => auth()->user()?->hasPermission('set_repack_yield_limit') ?? false),
 
-            Actions\CreateAction::make()->label(__('Create')),
+            // Repack baru baru boleh dibuat SESUDAH QC mengisi batas susut (Owner, 23 Oktober 2026). Sebelumnya dokumen bebas dibuat
+            // selagi batas kosong; kini tombolnya mati dengan penjelasan, dan halaman buat juga menolak (lihat CreateRepack::mount()).
+            Actions\CreateAction::make()
+                ->label(__('Create'))
+                ->disabled(fn (): bool => Repack::shrinkLimitPercent() === null)
+                ->tooltip(fn (): ?string => Repack::shrinkLimitPercent() === null ? __('QC has not set the shrinkage limit yet.') : null),
         ];
     }
 }

@@ -15,6 +15,9 @@ use Illuminate\Database\Eloquent\Builder;
 
 class TallyResource extends Resource
 {
+    // Urutan menu grup Gudang (Owner, 23 Oktober 2026): Tally paling atas.
+    protected static ?int $navigationSort = 1;
+
     protected static ?string $model = Tally::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';

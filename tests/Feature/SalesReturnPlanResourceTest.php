@@ -285,7 +285,7 @@ class SalesReturnPlanResourceTest extends TestCase
 
         $do = \App\Models\DeliveryOrder::create([
             'customer_id' => $this->customer->id, 'delivery_date' => now()->toDateString(),
-            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'Joko'])->id,
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => strtoupper('Joko')])->id,
             'status' => 'Delivered',
         ]);
         \App\Models\DeliveryOrderItem::create([

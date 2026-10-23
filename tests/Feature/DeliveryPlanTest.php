@@ -278,7 +278,7 @@ class DeliveryPlanTest extends TestCase
 
         $plan = DeliveryPlan::find($so->delivery_plan_id);
         $plan->update([
-            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'Joko'])->id,
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => strtoupper('Joko')])->id,
             'vehicle_id' => \App\Models\Vehicle::firstOrCreate(['vehicle_type' => 'FUSO', 'police_number' => 'B 1234 CD'])->id,
             'load_time' => '08:00:00',
         ]);
@@ -332,7 +332,7 @@ class DeliveryPlanTest extends TestCase
             'created_by' => $this->adminUser->id,
         ]);
         DeliveryPlan::find($lengkap->delivery_plan_id)->update([
-            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'Joko'])->id,
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => strtoupper('Joko')])->id,
             'vehicle_id' => \App\Models\Vehicle::firstOrCreate(['vehicle_type' => 'FUSO', 'police_number' => 'B 1234 CD'])->id,
             'load_time' => '08:00:00',
         ]);

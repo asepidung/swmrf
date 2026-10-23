@@ -16,6 +16,9 @@ use Illuminate\Database\Eloquent\Builder;
 
 class SalesReturnResource extends Resource
 {
+    // Urutan menu grup Gudang (Owner, 23 Oktober 2026): Tally paling atas.
+    protected static ?int $navigationSort = 2;
+
     protected static ?string $model = SalesReturn::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-path-rounded-square';
