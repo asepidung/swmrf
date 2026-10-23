@@ -116,6 +116,7 @@ class ImportLegacyBoningsTest extends TestCase
         $this->assertSame('2026-10-20', $b->boning_date);
         $this->assertSame('LOCKED', $b->status);
         $this->assertSame(1, (int) $b->kunci);
+        $this->assertSame(1, (int) $b->legacy_imported, 'boning impor tidak ikut Draft Costing');
         $this->assertSame(5, (int) $b->created_by);
         $this->assertSame('STEER & BULL | Jumlah sapi: 14', $b->note);
 
