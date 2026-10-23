@@ -149,4 +149,42 @@ class ReceivablePerCustomerTest extends TestCase
 
         $this->assertSame([$invoice->id], array_keys($page->get('data')['allocations']), 'grup biasa: seluruh invoice grup tampil tanpa memilih customer');
     }
+
+    public function test_a_normal_group_can_pay_only_the_ticked_invoices(): void
+    {
+        $normal = CustomerGroup::create(['name' => 'LION']);
+        $dc = $this->customer('LION DCA', $normal);
+        $first = $this->invoice($dc, 500000, now()->subDays(9)->toDateString());
+        $second = $this->invoice($dc, 700000, now()->subDays(3)->toDateString());
+
+        $page = Livewire::test(ReceivePayment::class, ['record' => $normal]);
+
+        $this->assertEqualsCanonicalizing([(string) $first->id, (string) $second->id], $page->get('data')['selected_invoices'], 'awalnya semua tercentang');
+
+        $page->set('data.selected_invoices', [(string) $second->id])
+            ->set('data.bank_account_id', $this->bank->id)
+            ->set('data.payment_date', now()->toDateString())
+            ->set('data.amount', '700.000')
+            ->call('save');
+
+        $this->assertSame('Lunas', $second->fresh()->status);
+        $this->assertSame(500000.0, (float) $first->fresh()->balance, 'yang tidak dicentang tidak tersentuh walau lebih tua');
+        $this->assertNotSame('Lunas', $first->fresh()->status);
+    }
+
+    public function test_saving_with_nothing_ticked_is_refused(): void
+    {
+        $normal = CustomerGroup::create(['name' => 'LION']);
+        $dc = $this->customer('LION DCA', $normal);
+        $this->invoice($dc, 500000, now()->subDays(3)->toDateString());
+
+        Livewire::test(ReceivePayment::class, ['record' => $normal])
+            ->set('data.selected_invoices', [])
+            ->set('data.bank_account_id', $this->bank->id)
+            ->set('data.payment_date', now()->toDateString())
+            ->set('data.amount', '500.000')
+            ->call('save');
+
+        $this->assertSame(0, \DB::table('payments')->count());
+    }
 }
