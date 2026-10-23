@@ -8,11 +8,15 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Saldo stok MATERIAL legacy -> `material_stocks` (satu baris per material: qty). Keputusan Ayah, 21 Oktober 2026.
+ * Saldo stok MATERIAL legacy -> `material_stocks` (satu baris per material: qty). Keputusan Ayah, 21 Oktober 2026; rumus DIKOREKSI 23 Oktober 2026.
  *
- * Rumus saldo legacy (dari data, dua mekanisme pemakaian di masa berbeda): saldo = jumlah `stockraw` yang tidak dihapus (masuk bernilai
- * positif, penyesuaian keluar bernilai negatif) - `raw_usage` (hanya Desember 2025) - `raw_stock_out_detail` dari dokumen yang tidak dihapus
- * (Januari-Oktober 2026). Saldo negatif (selisih kecil) dibawa sebagai 0 dan dilaporkan. Material di luar material impor dilaporkan sebagai teks.
+ * Rumus saldo = persis yang dipakai layar stok legacy (`stockraw/index.php`): jumlah penerimaan (`grrawdetail` dari GR yang tidak dihapus)
+ * dikurangi pengeluaran (`raw_stock_out_detail` dari dokumen yang tidak dihapus). Satuannya satuan BELI (Box, Pcs, Ikat), sama dengan aplikasi baru.
+ * Versi pertama salah memakai tabel `stockraw` (buku lain, angkanya dalam pcs: DRY LOG 50.435 padahal layar legacy 17 Box; 88 dari 227 material meleset),
+ * dikurangi `raw_usage`. Layar legacy tidak memakai keduanya.
+ *
+ * Butuh DUA snapshot: `--source` (tarik.sh stokmaterial: pengeluaran, nama material) dan `--grs` (tarik.sh belanja: penerimaan GR).
+ * Saldo negatif (selisih kecil) dibawa sebagai 0 dan dilaporkan. Material di luar material impor dilaporkan sebagai teks.
  *
  * Dry-run bawaan; `--apply` menulis; aman diulang (material yang sudah punya baris stok dilewati, TIDAK ditimpa: stok berubah oleh operasional).
  * Ditulis tanpa event model dan tanpa catatan pergerakan: stok awal sebelum buku besar (sama dengan stok daging).
@@ -20,7 +24,8 @@ use Illuminate\Support\Facades\DB;
 class ImportLegacyMaterialStock extends Command
 {
     protected $signature = 'legacy:import-material-stock
-                            {--source= : Berkas snapshot SQL (legacy/tarik/tarik.sh stokmaterial)}
+                            {--source= : Berkas snapshot SQL pengeluaran dan nama material (legacy/tarik/tarik.sh stokmaterial)}
+                            {--grs= : Berkas snapshot SQL penerimaan GR material (legacy/tarik/tarik.sh belanja)}
                             {--apply : Benar-benar menulis (default hanya laporan dry-run)}';
 
     protected $description = 'Pindahkan saldo stok material legacy ke material_stocks (dry-run bawaan)';
@@ -28,27 +33,30 @@ class ImportLegacyMaterialStock extends Command
     public function handle(): int
     {
         $path = $this->option('source');
+        $grsPath = $this->option('grs');
 
-        if (! $path || ! is_file($path)) {
-            $this->error('--source wajib diisi dengan berkas snapshot SQL yang ada.');
+        if (! $path || ! is_file($path) || ! $grsPath || ! is_file($grsPath)) {
+            $this->error('--source (snapshot stokmaterial) dan --grs (snapshot belanja) wajib diisi dengan berkas yang ada.');
 
             return self::FAILURE;
         }
 
         $sql = file_get_contents($path);
+        $grsSql = file_get_contents($grsPath);
         $apply = (bool) $this->option('apply');
         $table = fn (string $name) => collect(LegacySqlDump::parseTable($sql, $name));
+        $grTable = fn (string $name) => collect(LegacySqlDump::parseTable($grsSql, $name));
 
-        $in = $table('stockraw')->filter(fn ($r) => (int) $r['is_deleted'] === 0)
+        $liveGrs = $grTable('grraw')->filter(fn ($r) => (int) ($r['is_deleted'] ?? 0) === 0)->pluck('idgr')->flip();
+        $in = $grTable('grrawdetail')->filter(fn ($d) => isset($liveGrs[$d['idgr']]) && (int) ($d['is_deleted'] ?? 0) === 0)
             ->groupBy('idrawmate')->map(fn ($g) => $g->sum(fn ($r) => (float) $r['qty']));
-        $usage = $table('raw_usage')->groupBy('idrawmate')->map(fn ($g) => $g->sum(fn ($r) => (float) $r['qty']));
         $liveOuts = $table('raw_stock_out')->filter(fn ($r) => (int) $r['is_deleted'] === 0)->pluck('idstockout')->flip();
         $out = $table('raw_stock_out_detail')->filter(fn ($d) => isset($liveOuts[$d['idstockout']]))
             ->groupBy('idrawmate')->map(fn ($g) => $g->sum(fn ($r) => (float) $r['qty']));
         $names = $table('rawmate')->pluck('nmrawmate', 'idrawmate');
 
-        $balances = $in->keys()->merge($usage->keys())->merge($out->keys())->unique()
-            ->mapWithKeys(fn ($id) => [(int) $id => round(($in[$id] ?? 0) - ($usage[$id] ?? 0) - ($out[$id] ?? 0), 2)]);
+        $balances = $in->keys()->merge($out->keys())->unique()
+            ->mapWithKeys(fn ($id) => [(int) $id => round(($in[$id] ?? 0) - ($out[$id] ?? 0), 2)]);
 
         $materialIds = Material::query()->pluck('id')->flip();
         $existing = DB::table('material_stocks')->pluck('qty', 'material_id');
