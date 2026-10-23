@@ -289,7 +289,7 @@ class DeliveryPlanTest extends TestCase
         ]);
 
         $plan = $plan->fresh();
-        $this->assertEquals('Joko', $plan->driver->name);
+        $this->assertEquals('JOKO', $plan->driver->name);
         $this->assertEquals('FUSO - B 1234 CD', $plan->vehicle->vehicle_type . ' - ' . $plan->vehicle->police_number);
         $this->assertEquals('08:00:00', $plan->load_time);
     }
