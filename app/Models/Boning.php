@@ -22,17 +22,51 @@ class Boning extends Model
     protected $table = 'bonings';
 
     protected $fillable = [
-        'doc_no', 'boning_date', 'status', 'kunci', 'note', 'created_by',
+        'doc_no', 'boning_date', 'status', 'kunci', 'note', 'legacy_imported', 'created_by',
         'drylog_qty', 'drylog_unit_price', 'drylog_amount',
     ];
 
     protected $casts = [
+        'legacy_imported' => 'boolean',
         'boning_date' => 'date',
         'kunci' => 'boolean',
         'drylog_qty' => 'integer',
         'drylog_unit_price' => 'decimal:4',
         'drylog_amount' => 'decimal:2',
     ];
+
+    /**
+     * Buka boning hasil impor untuk costing (kejadian luar biasa, mis. boning 1 November yang memang perlu dicosting).
+     * Dijaga izin `reopen_boning_for_costing` di sini (bukan hanya di tombol); alasan wajib dan tercatat di riwayat aktivitas.
+     *
+     * @throws \Illuminate\Auth\Access\AuthorizationException tanpa izin
+     * @throws \RuntimeException bila boning bukan hasil impor atau alasan kosong
+     */
+    public function reopenForCosting(string $reason, ?User $by = null): void
+    {
+        $by ??= auth()->user();
+
+        if (! $by?->hasPermission('reopen_boning_for_costing')) {
+            throw new \Illuminate\Auth\Access\AuthorizationException(__('You are not allowed to reopen bonings for costing.'));
+        }
+
+        if (! $this->legacy_imported) {
+            throw new \RuntimeException(__('This boning is not an imported record.'));
+        }
+
+        if (trim($reason) === '') {
+            throw new \RuntimeException(__('A reason is required.'));
+        }
+
+        $this->legacy_imported = false;
+        $this->save();
+
+        activity('boning')
+            ->performedOn($this)
+            ->causedBy($by)
+            ->withProperties(['reason' => $reason])
+            ->log('Boning hasil impor dibuka untuk costing: '.$this->doc_no);
+    }
 
     public function getActivitylogOptions(): LogOptions
     {

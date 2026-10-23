@@ -109,7 +109,7 @@ class ImportLegacyBonings extends Command
                 $at = $row['dibuat'] ?: $row['tglboning'].' 00:00:00';
                 $header = [
                     'doc_no' => $docNo, 'boning_date' => $row['tglboning'], 'status' => $locked ? 'LOCKED' : 'OPEN', 'kunci' => $locked ? 1 : 0,
-                    'note' => $note ?: null, 'created_by' => $userId,
+                    'note' => $note ?: null, 'legacy_imported' => 1, 'created_by' => $userId,
                 ];
 
                 $id = $apply ? DB::table('bonings')->insertGetId($header + ['created_at' => $at, 'updated_at' => $at]) : -1;

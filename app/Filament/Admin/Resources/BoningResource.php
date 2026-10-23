@@ -225,6 +225,22 @@ class BoningResource extends Resource
             )
             ->actions([
                 \App\Filament\Admin\Resources\QcReportResource\Actions\LihatLaporanQc::make(),
+                Tables\Actions\Action::make('reopen_for_costing')
+                    ->label(__('Open for costing'))
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('warning')
+                    ->modalHeading(__('Open this imported boning for costing'))
+                    ->modalDescription(__('Imported bonings are kept out of Draft Costing. Use this only for an exceptional case, for example a boning that really needs costing after go-live.'))
+                    ->visible(fn (Boning $record): bool => $record->legacy_imported && ! $record->trashed() && (auth()->user()?->hasPermission('reopen_boning_for_costing') ?? false))
+                    ->authorize(fn (): bool => auth()->user()?->hasPermission('reopen_boning_for_costing') ?? false)
+                    ->form([
+                        Forms\Components\Textarea::make('reason')->label(__('Reason'))->required()->maxLength(500),
+                    ])
+                    ->action(function (Boning $record, array $data): void {
+                        $record->reopenForCosting((string) $data['reason']);
+
+                        Notification::make()->title(__('Boning opened for costing'))->success()->send();
+                    }),
 /* 1. Tombol Lock */
                 Tables\Actions\Action::make('lock')
                     // Ikon dan warna menggambarkan KEADAAN, bukan aksinya:

@@ -227,6 +227,8 @@ class Costing extends Model
     public static function boningsWaiting(): \Illuminate\Database\Eloquent\Builder
     {
         return Boning::query()
+            // Boning hasil impor legacy tidak ikut daftar tunggu (Owner, 23 Oktober 2026); buka per boning lewat "Buka untuk costing".
+            ->where('legacy_imported', false)
             ->whereHas('items')
             ->whereDoesntHave('costing', fn ($q) => $q->whereNotNull('saved_at'));
     }
