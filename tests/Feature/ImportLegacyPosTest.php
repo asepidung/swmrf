@@ -125,6 +125,33 @@ class ImportLegacyPosTest extends TestCase
     }
 
     /** @test */
+    public function the_vat_is_read_from_the_legacy_total_not_from_the_miscalculated_tax_column(): void
+    {
+        // Baris PO-26/008 berjumlah 10.000. xamount legacy 10.000 = tanpa PPN, walau kolom tax tertulis 11.
+        // Baris PO-26/003 berjumlah 10.000. xamount legacy 11.100 = ber-PPN 11%, walau kolom tax tertulis 0.
+        $sql = file_get_contents($this->path);
+        $lines = explode("
+", $sql);
+
+        foreach ($lines as $i => $line) {
+            if (str_contains($line, "INSERT INTO `po`") && str_contains($line, "'PO-26/008'")) {
+                $lines[$i] = str_replace("'999'", "'10000'", $line);
+            }
+
+            if (str_contains($line, "INSERT INTO `po`") && str_contains($line, "'PO-26/003'")) {
+                $lines[$i] = str_replace(["'999'", "'11'"], ["'11100'", "'0'"], $line);
+            }
+        }
+
+        file_put_contents($this->path, implode("
+", $lines));
+        $this->importer(true)->assertSuccessful();
+
+        $this->assertSame(10000.0, (float) DB::table('purchase_materials')->where('po_number', 'PO-26/008')->value('total_amount'), 'tanpa PPN');
+        $this->assertSame(11100.0, (float) DB::table('purchase_materials')->where('po_number', 'PO-26/003')->value('total_amount'), 'ber-PPN 11%');
+    }
+
+    /** @test */
     public function the_approver_is_required(): void
     {
         $this->importer(true, false)->assertFailed();
@@ -164,7 +191,7 @@ class ImportLegacyPosTest extends TestCase
         $this->assertSame(DB::table('material_requisitions')->where('document_number', 'REQ-26/0001')->value('id'), (int) $po->material_requisition_id);
         $this->assertSame(User::where('username', 'penyetuju')->value('id'), (int) $po->approved_by);
         $this->assertSame('2026-10-10', $po->po_date);
-        $this->assertSame(10000.0 + 100.0, (float) $po->total_amount, 'total = jumlah subtotal + pajak');
+        $this->assertEqualsWithDelta(11100.0, (float) $po->total_amount, 0.01, 'xamount legacy tidak cocok dengan jumlah baris, jadi PPN mengikuti kolom tax (11%); taxrp legacy tidak dipakai');
         $this->assertStringContainsString('TOP 14 hari', $po->note);
 
         $second = DB::table('purchase_materials')->where('po_number', 'PO-26/008')->first();

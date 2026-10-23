@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\DB;
  *  - material_requisition_id = request induk menurut nomor request (yang kembar memakai aturan akhiran yang sama dengan `legacy:import-requests`); PO tanpa induk dilewati dan dilaporkan;
  *  - supplier_id lewat peta penggabungan supplier; approved_by = `--approver` (legacy tidak mencatat penyetuju PO);
  *  - status: 2 -> canceled; 1 -> completed; 3 -> completed bila qty GR >= qty PO, selain itu partial; 0 -> pending, tetapi canceled bila dibuat sebelum `--cutoff` (dianggap ditinggalkan);
- *  - po_date = tanggal creatime; total = jumlah subtotal baris yang dibawa + pajak (taxrp);
+ *  - po_date = tanggal creatime; total = jumlah (qty x harga) baris yang dibawa + PPN 11% bila PO itu ber-PPN (dibaca dari xamount; kolom taxrp legacy tidak dipakai karena salah hitung);
  *  - baris bahan di luar material impor dilewati dan dicatat sebagai teks di catatan; TOP, jatuh tempo, dan PPN legacy juga dicatat di catatan (tabel baru tidak punya kolomnya).
  */
 class ImportLegacyPos extends Command
@@ -81,7 +81,7 @@ class ImportLegacyPos extends Command
 
         $rows = $table($cfg['po'])->filter(fn ($r) => (int) $r['is_deleted'] === 0)->sortBy('idpo')->values();
 
-        $stats = ['created' => 0, 'skipped' => 0, 'linesIn' => 0, 'linesOut' => 0, 'linesSkipped' => 0, 'merged' => 0, 'duplicates' => 0, 'stale' => 0];
+        $stats = ['created' => 0, 'skipped' => 0, 'linesIn' => 0, 'linesOut' => 0, 'linesSkipped' => 0, 'merged' => 0, 'duplicates' => 0, 'stale' => 0, 'taxGuessed' => 0];
         $refused = $conflicts = $examples = $perStatus = [];
         $seen = [];
 
@@ -175,8 +175,24 @@ class ImportLegacyPos extends Command
                     $note .= ' | '.count($skippedText).' baris bahan dilewati (bahan di luar material impor): '.implode('; ', $skippedText);
                 }
 
+                // Total = jumlah (qty x harga) baris yang dibawa + PPN. Kolom `taxrp` legacy TIDAK dipakai: ia salah hitung (PPN 11% dikenakan
+                // lagi di atas total yang sudah ber-PPN, jadi 12,21%) dan membuat total PO hasil impor lebih besar dari total legacy.
+                // Ada atau tidaknya PPN dibaca dari `xamount` legacy: sama dengan jumlah baris x 1,11 = ber-PPN 11%; sama dengan jumlah baris = tanpa PPN;
+                // selain itu (baris diubah sesudah PO terbit) dipakai kolom `tax` (persen) legacy.
                 $subtotal = array_sum(array_column($items, 'subtotal'));
-                $tax = (float) $row['taxrp'];
+                $legacyLines = $details->get($row['idpo'], collect())->sum(fn ($l) => (float) $l['qty'] * (float) $l['price']);
+                $legacyTotal = (float) ($row['xamount'] ?? 0);
+
+                if ($legacyLines > 0 && abs($legacyTotal - $legacyLines * 1.11) <= 2) {
+                    $rate = 0.11;
+                } elseif ($legacyLines > 0 && abs($legacyTotal - $legacyLines) <= 2) {
+                    $rate = 0.0;
+                } else {
+                    $rate = (float) ($row['tax'] ?? 0) > 0 ? 0.11 : 0.0;
+                    $stats['taxGuessed'] += $legacyLines > 0 ? 1 : 0;
+                }
+
+                $tax = round($subtotal * $rate, 2);
                 $header = [
                     'po_number' => $number,
                     $cfg['parentFk'] => $parentId,
