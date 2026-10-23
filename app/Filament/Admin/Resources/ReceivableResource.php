@@ -166,6 +166,23 @@ class ReceivableResource extends Resource
         return __(':count Inv', ['count' => $count]);
     }
 
+    /** Nominal dan jumlah invoice dalam SATU baris ("Rp 10.289.400,00 · 1 Inv"), supaya daftar lebih ringkas (Owner, 23 Oktober 2026). */
+    protected static function rupiahWithCount(mixed $amount, ?int $count, bool $alwaysShow = false): string
+    {
+        $text = 'Rp '.number_format((float) $amount, 2, ',', '.');
+        $inv = static::invoiceCount($count, $alwaysShow);
+
+        return $inv ? $text.'  ·  '.$inv : $text;
+    }
+
+    /** Baris total di kaki daftar: jumlah seluruh grup (bukan hanya halaman yang tampil). */
+    protected static function sumOf(string $column): \Filament\Tables\Columns\Summarizers\Sum
+    {
+        return \Filament\Tables\Columns\Summarizers\Sum::make()
+            ->label(__('Total'))
+            ->money('IDR', locale: 'id');
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -180,28 +197,25 @@ class ReceivableResource extends Resource
 
                 Tables\Columns\TextColumn::make('total_receivable')
                     ->label(__('Total Receivable'))
-                    ->money('IDR', locale: 'id')
+                    ->formatStateUsing(fn ($state, $record): string => static::rupiahWithCount($state, $record->total_receivable_count, alwaysShow: true))
                     ->sortable()
-                    ->description(fn ($record): ?string => static::invoiceCount(
-                        $record->total_receivable_count,
-                        alwaysShow: true,
-                    ))
+                    ->summarize(static::sumOf('total_receivable'))
                     ->alignEnd()
                     ->weight('bold'),
 
                 Tables\Columns\TextColumn::make('due_soon')
                     ->label(__('Due Soon'))
-                    ->money('IDR', locale: 'id')
+                    ->formatStateUsing(fn ($state, $record): string => static::rupiahWithCount($state, $record->due_soon_count))
                     ->sortable()
-                    ->description(fn ($record): ?string => static::invoiceCount($record->due_soon_count))
+                    ->summarize(static::sumOf('due_soon'))
                     ->alignEnd()
                     ->color('warning'),
 
                 Tables\Columns\TextColumn::make('overdue')
                     ->label(__('Overdue'))
-                    ->money('IDR', locale: 'id')
+                    ->formatStateUsing(fn ($state, $record): string => static::rupiahWithCount($state, $record->overdue_count))
                     ->sortable()
-                    ->description(fn ($record): ?string => static::invoiceCount($record->overdue_count))
+                    ->summarize(static::sumOf('overdue'))
                     ->alignEnd()
                     ->color('danger'),
 

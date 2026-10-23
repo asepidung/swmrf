@@ -13,12 +13,6 @@ class ViewReceivable extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('payment')
-                ->label(__('Receive Payment'))
-                ->icon('heroicon-o-banknotes')
-                ->color('success')
-                ->visible(fn () => auth()->user()?->hasPermission('receive_receivables') ?? false)
-                ->url(fn () => ReceivableResource::getUrl('payment', ['record' => $this->record->id])),
             Actions\Action::make('back')
                 ->label(__('Back'))
                 ->color('gray')
