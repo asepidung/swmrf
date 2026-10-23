@@ -5,6 +5,8 @@ namespace App\Filament\Admin\Resources\ReceivableResource\RelationManagers;
 use App\Models\Invoice;
 
 use App\Models\Receivable;
+use App\Filament\Admin\Resources\ReceivableResource;
+use Filament\Notifications\Notification;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -140,9 +142,51 @@ class ReceivablesRelationManager extends RelationManager
                 // No static actions like Tukar Faktur here. Read-only overview for now.
                 // Later, Payment actions will be added here.
             ])
+            // Pilih invoice yang dibayar langsung di tabel (Owner, 23 Oktober 2026): terlama paling atas, yang lunas di bawah dan tidak bisa
+            // dicentang. "Terima Pembayaran" lalu hanya menghitung invoice yang dicentang, jadi tidak ada pilihan ganda di halaman bayar.
+            ->checkIfRecordIsSelectableUsing(fn (Receivable $record): bool => $record->invoice !== null
+                && $record->invoice->status !== Invoice::STATUS_PAID
+                && $record->invoice->balance > 0)
+            ->header(fn (): \Illuminate\Contracts\View\View => view('filament.admin.resources.receivable-resource.selected-total', [
+                'balances' => $this->getOwnerRecord()->receivables()->with('invoice')->get()
+                    ->filter(fn (Receivable $r): bool => $r->invoice && $r->invoice->status !== Invoice::STATUS_PAID && $r->invoice->balance > 0)
+                    ->mapWithKeys(fn (Receivable $r): array => [(string) $r->id => (float) $r->invoice->balance])
+                    ->all(),
+            ]))
             ->bulkActions([
-                // 
+                Tables\Actions\BulkAction::make('receive_payment')
+                    ->label(__('Receive Payment'))
+                    ->icon('heroicon-o-banknotes')
+                    ->color('success')
+                    ->visible(fn (): bool => auth()->user()?->hasPermission('receive_receivables') ?? false)
+                    ->authorize(fn (): bool => auth()->user()?->hasPermission('receive_receivables') ?? false)
+                    ->deselectRecordsAfterCompletion(false)
+                    ->action(function (\Illuminate\Support\Collection $records) {
+                        $group = $this->getOwnerRecord();
+                        $invoiceIds = $records->filter(fn (Receivable $r): bool => $r->invoice && $r->invoice->status !== Invoice::STATUS_PAID && $r->invoice->balance > 0)
+                            ->map(fn (Receivable $r): int => (int) $r->invoice_id)->values();
+
+                        if ($invoiceIds->isEmpty()) {
+                            Notification::make()->warning()->title(__('Tick at least one invoice to pay.'))->send();
+
+                            return;
+                        }
+
+                        // Grup yang anggotanya orang berbeda (KARYAWAN, WARGA +62): satu pembayaran hanya untuk satu customer.
+                        if ($group->pays_per_customer && $records->pluck('customer_id')->unique()->count() > 1) {
+                            Notification::make()->danger()
+                                ->title(__('This group pays per customer: tick the invoices of one customer only.'))
+                                ->send();
+
+                            return;
+                        }
+
+                        return redirect(ReceivableResource::getUrl('payment', ['record' => $group->id, 'invoices' => $invoiceIds->implode(',')]));
+                    }),
             ])
-            ->defaultSort('invoice_id', 'desc');
+            ->defaultSort(fn (Builder $query) => $query
+                ->orderByRaw('(select case when invoices.status = ? then 1 else 0 end from invoices where invoices.id = receivables.invoice_id) asc', [Invoice::STATUS_PAID])
+                ->orderByRaw('(select invoices.invoice_date from invoices where invoices.id = receivables.invoice_id) asc')
+                ->orderBy('receivables.id'));
     }
 }

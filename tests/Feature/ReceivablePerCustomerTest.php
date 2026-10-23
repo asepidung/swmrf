@@ -187,4 +187,45 @@ class ReceivablePerCustomerTest extends TestCase
 
         $this->assertSame(0, \DB::table('payments')->count());
     }
+
+    public function test_ticking_invoices_on_the_view_page_carries_only_them_to_the_payment_page(): void
+    {
+        $normal = CustomerGroup::create(['name' => 'LION']);
+        $dc = $this->customer('LION DCA', $normal);
+        $old = $this->invoice($dc, 500000, now()->subDays(9)->toDateString());
+        $new = $this->invoice($dc, 700000, now()->subDays(3)->toDateString());
+
+        $manager = Livewire::test(\App\Filament\Admin\Resources\ReceivableResource\RelationManagers\ReceivablesRelationManager::class, [
+            'ownerRecord' => $normal, 'pageClass' => \App\Filament\Admin\Resources\ReceivableResource\Pages\ViewReceivable::class,
+        ]);
+
+        $manager->assertCanSeeTableRecords($normal->receivables()->orderBy('id')->get(), inOrder: false);
+        $manager->callTableBulkAction('receive_payment', [$normal->receivables()->where('invoice_id', $new->id)->first()])
+            ->assertRedirect(\App\Filament\Admin\Resources\ReceivableResource::getUrl('payment', ['record' => $normal->id, 'invoices' => (string) $new->id]));
+
+        $this->get(\App\Filament\Admin\Resources\ReceivableResource::getUrl('payment', ['record' => $normal->id, 'invoices' => (string) $new->id]));
+
+        $page = Livewire::withQueryParams(['invoices' => (string) $new->id])->test(ReceivePayment::class, ['record' => $normal]);
+
+        $this->assertTrue($page->get('presetSelection'));
+        $this->assertSame([(string) $new->id], $page->get('data')['selected_invoices']);
+        $this->assertNotContains((string) $old->id, $page->get('data')['selected_invoices']);
+    }
+
+    public function test_a_per_customer_group_refuses_ticks_from_two_customers(): void
+    {
+        $manager = Livewire::test(\App\Filament\Admin\Resources\ReceivableResource\RelationManagers\ReceivablesRelationManager::class, [
+            'ownerRecord' => $this->group, 'pageClass' => \App\Filament\Admin\Resources\ReceivableResource\Pages\ViewReceivable::class,
+        ]);
+
+        $manager->callTableBulkAction('receive_payment', $this->group->receivables()->get())->assertNotified()->assertNoRedirect();
+    }
+
+    public function test_a_preset_customer_is_taken_from_the_ticked_invoice(): void
+    {
+        $page = Livewire::withQueryParams(['invoices' => (string) $this->aniInvoice->id])->test(ReceivePayment::class, ['record' => $this->group]);
+
+        $this->assertSame((string) $this->ani->id, (string) $page->get('data')['customer_id']);
+        $this->assertSame([(string) $this->aniInvoice->id], $page->get('data')['selected_invoices']);
+    }
 }

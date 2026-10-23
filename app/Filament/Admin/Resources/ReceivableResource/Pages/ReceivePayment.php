@@ -31,6 +31,9 @@ class ReceivePayment extends Page
 
     public ?array $data = [];
 
+    /** Invoice yang dicentang di halaman Lihat Piutang; bila ada, customer dan invoice tidak dipilih lagi di sini. */
+    public bool $presetSelection = false;
+
     /**
      * Halaman ini MENERIMA UANG, jadi dijaga di tingkat halaman.
      *
@@ -79,12 +82,32 @@ class ReceivePayment extends Page
             $allocations[$inv->id] = 0;
         }
 
+        $selected = $outstandingInvoices->pluck('id')->map(fn ($id) => (string) $id)->all();
+        $customerId = null;
+
+        // Pilihan dari tabel Lihat Piutang (?invoices=1,2,3): hanya yang memang masih ditagihkan di grup ini yang dipakai.
+        $picked = array_filter(array_map('intval', explode(',', (string) request()->query('invoices', ''))));
+
+        if ($picked !== []) {
+            $chosen = $this->allOutstandingInvoices()->filter(fn ($invoice) => in_array((int) $invoice->id, $picked, true))->values();
+
+            if ($chosen->isNotEmpty()) {
+                $this->presetSelection = true;
+                $selected = $chosen->map(fn ($invoice) => (string) $invoice->id)->all();
+
+                if ($this->perCustomer()) {
+                    $customerId = (string) $chosen->first()->customer_id;
+                }
+            }
+        }
+
         $this->form->fill([
             'payment_date' => now()->toDateString(),
             'amount' => 0,
             'deductions' => [],
             'allocations' => $allocations,
-            'selected_invoices' => $outstandingInvoices->pluck('id')->map(fn ($id) => (string) $id)->all(),
+            'selected_invoices' => $selected,
+            'customer_id' => $customerId,
         ]);
     }
 
@@ -132,6 +155,7 @@ class ReceivePayment extends Page
         return $form
             ->schema([
                 Section::make(__('Customer'))
+                    ->visible(fn (): bool => ! $this->presetSelection)
                     ->description(fn (): ?string => $this->perCustomer()
                         ? __('This group pays per customer: choose who is paying. Only the invoices of that customer are shown.')
                         : __('Optional: choose one customer to pay only the invoices of that customer. Leave empty to pay for the whole group.'))
