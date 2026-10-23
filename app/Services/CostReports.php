@@ -138,6 +138,7 @@ class CostReports
 
                 $rows[] = [
                     'date' => $order->delivery_date ? Carbon::parse($order->delivery_date)->toDateString() : null,
+                    'delivery_order_id' => $order->id,
                     'delivery_order' => $order->delivery_order_number,
                     'invoice' => $invoice?->invoice_number,
                     'customer_id' => $order->customer_id,
@@ -162,6 +163,15 @@ class CostReports
             'by_customer' => self::group($rows, 'customer_id', 'customer'),
             'by_product' => self::group($rows, 'product_id', 'product'),
         ];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $rows
+     * @return array<string, mixed>
+     */
+    public static function summarize(array $rows): array
+    {
+        return self::sum($rows);
     }
 
     /**
