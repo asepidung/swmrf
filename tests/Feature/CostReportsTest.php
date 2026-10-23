@@ -330,6 +330,16 @@ class CostReportsTest extends TestCase
     }
 
     /** @test */
+    public function the_sales_cost_report_can_hide_delivery_orders_with_an_incomplete_cost(): void
+    {
+        $this->actingAs($this->userWith('view_cost_reports'));
+        $this->deliveryOrder([['NOCOST', $this->tl, 10]], 1500000);
+
+        Livewire::test(SalesCostReport::class)->assertSee('1 items')
+            ->set('onlyValued', true)->assertDontSee('1 items');
+    }
+
+    /** @test */
     public function excel_and_pdf_download_for_both_reports_and_follow_the_filter(): void
     {
         $this->actingAs($this->userWith('view_cost_reports'));
