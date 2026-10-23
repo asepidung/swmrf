@@ -24,6 +24,9 @@ use Filament\Pages\Page;
 class SalesCostReport extends Page implements HasForms
 {
     use InteractsWithForms;
+    use \Livewire\WithPagination;
+
+    public const PER_PAGE = 25;
 
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
 
@@ -97,6 +100,27 @@ class SalesCostReport extends Page implements HasForms
     }
 
     /** @return array<string, mixed> */
+    /** Halaman dari sebuah daftar (nama halaman terpisah supaya dua tabel tidak saling menggeser). */
+    public function paginateRows(\Illuminate\Support\Collection $items, string $pageName): \Illuminate\Pagination\LengthAwarePaginator
+    {
+        $page = \Illuminate\Pagination\Paginator::resolveCurrentPage($pageName);
+
+        return new \Illuminate\Pagination\LengthAwarePaginator(
+            $items->forPage($page, self::PER_PAGE)->values(),
+            $items->count(),
+            self::PER_PAGE,
+            $page,
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath(), 'pageName' => $pageName],
+        );
+    }
+
+    /** Ganti periode, customer, produk atau saklar = kembali ke halaman pertama. */
+    public function updated(string $name): void
+    {
+        $this->resetPage('invoicePage');
+        $this->resetPage('productPage');
+    }
+
     public function getReport(): array
     {
         $from = Carbon::parse($this->periodFrom ?: now()->startOfMonth());
