@@ -204,6 +204,59 @@ class MaterialRequisitionNotificationFlowTest extends TestCase
         $this->assertAlerted($this->purchasing, __('Material Request Approved'));
     }
 
+    /** @test */
+    public function typed_prices_with_thousand_separators_are_stored_at_face_value()
+    {
+        Notification::fake();
+
+        $requisition = $this->makeRequisition('Requested');
+        $item = $requisition->items()->first();
+
+        foreach (['80.000' => 80000.0, '80000' => 80000.0, '43.500' => 43500.0, '1.250.000' => 1250000.0, '80,5' => 80.5, '1.250.000,50' => 1250000.5] as $typed => $expected) {
+            $this->assertSame($expected, \App\Filament\Admin\Resources\MaterialRequisitionResource::parseNumber($typed), "ketik {$typed}");
+        }
+
+        $page = Livewire::actingAs($this->purchasing)->test(ReviewMaterialRequisition::class, ['record' => $requisition->id]);
+        $key = array_key_first($page->get('data.items'));
+        $page->set("data.items.{$key}.price", '80.000')->callAction('approve');
+
+        $this->assertSame(80000.0, (float) $requisition->items()->first()->price, 'harga yang diketik 80.000 harus tersimpan 80000, bukan 80');
+        $this->assertSame(100 * 80000.0, (float) $requisition->items()->first()->subtotal);
+    }
+
+    /** @test */
+    public function purchasing_cannot_send_a_request_with_a_zero_price_to_finance()
+    {
+        Notification::fake();
+
+        $requisition = $this->makeRequisition('Requested');
+        $requisition->items()->update(['price' => 0, 'subtotal' => 0]);
+
+        Livewire::actingAs($this->purchasing)
+            ->test(ReviewMaterialRequisition::class, ['record' => $requisition->id])
+            ->callAction('approve');
+
+        $this->assertSame('Requested', $requisition->fresh()->status, 'harga 0 menahan request di Purchasing');
+        $this->assertNull($requisition->fresh()->reviewed_by);
+        Notification::assertNotSentTo($this->finance, TaskAlert::class);
+    }
+
+    /** @test */
+    public function one_zero_priced_line_among_priced_lines_is_enough_to_hold_the_request()
+    {
+        Notification::fake();
+
+        $requisition = $this->makeRequisition('Requested');
+        $second = Material::create(['code' => 'MTR002', 'name' => 'KARTON 20 KG', 'material_category_id' => $this->material->material_category_id, 'material_unit_id' => $this->material->material_unit_id, 'is_active' => 1]);
+        $requisition->items()->create(['material_id' => $second->id, 'qty' => 10, 'price' => 0, 'subtotal' => 0]);
+
+        Livewire::actingAs($this->purchasing)
+            ->test(ReviewMaterialRequisition::class, ['record' => $requisition->id])
+            ->callAction('approve');
+
+        $this->assertSame('Requested', $requisition->fresh()->status);
+    }
+
     /**
      * save() punya argumen kedua yang mengatur toast "Saved". Tanpa dimatikan,
      * pengguna melihat dua toast sekaligus.

@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * `legacy:import-material-stock`: saldo stok material legacy -> material_stocks. Fixture dikarang sendiri.
+ * `legacy:import-material-stock`: saldo stok material legacy (penerimaan GR - pengeluaran, seperti layar stok legacy) -> material_stocks.
+ * Fixture dikarang sendiri.
  */
 class ImportLegacyMaterialStockTest extends TestCase
 {
@@ -15,15 +16,10 @@ class ImportLegacyMaterialStockTest extends TestCase
 
     private string $path;
 
-    private function ddl(): string
+    private string $grs;
+
+    private function ddl(array $cols): string
     {
-        $cols = [
-            'stockraw' => 'id int, idtransaksi varchar(20), idrawmate int, qty decimal(12,2), creatime datetime, is_deleted int',
-            'raw_stock_out' => 'idstockout int, nostockout varchar(20), tgl date, kegiatan varchar(20), ref_id int, ref_no varchar(20), kegiatan_note varchar(50), idusers int, createtime datetime, updatetime datetime, is_deleted int',
-            'raw_stock_out_detail' => 'iddetail int, idstockout int, idrawmate int, qty decimal(12,2), note varchar(50)',
-            'raw_usage' => 'idusage int, sumber varchar(20), idsumber int, idrawmate int, qty decimal(12,2), note varchar(50), iduser int, createtime datetime',
-            'rawmate' => 'idrawmate int, kdrawmate varchar(10), nmrawmate varchar(50), idrawcategory int, stock int, unit varchar(10), barmin int',
-        ];
         $out = '';
 
         foreach ($cols as $table => $list) {
@@ -43,9 +39,24 @@ class ImportLegacyMaterialStockTest extends TestCase
         return "INSERT INTO `{$table}` ({$cols}) VALUES ({$vals});\n";
     }
 
-    private function raw(int $id, int $material, string $qty, int $deleted = 0): string
+    private function gr(int $id, int $deleted = 0): string
     {
-        return $this->insert('stockraw', ['id' => $id, 'idtransaksi' => '1260000000'.$id, 'idrawmate' => $material, 'qty' => $qty, 'creatime' => '2026-01-01 10:00:00', 'is_deleted' => $deleted]);
+        return $this->insert('grraw', ['idgr' => $id, 'is_deleted' => $deleted]);
+    }
+
+    private function grLine(int $id, int $gr, int $material, string $qty, int $deleted = 0): string
+    {
+        return $this->insert('grrawdetail', ['idgrdetail' => $id, 'idgr' => $gr, 'idrawmate' => $material, 'qty' => $qty, 'is_deleted' => $deleted]);
+    }
+
+    private function out(int $id, int $deleted = 0): string
+    {
+        return $this->insert('raw_stock_out', ['idstockout' => $id, 'nostockout' => 'SOM-'.$id, 'is_deleted' => $deleted]);
+    }
+
+    private function outLine(int $id, int $out, int $material, string $qty): string
+    {
+        return $this->insert('raw_stock_out_detail', ['iddetail' => $id, 'idstockout' => $out, 'idrawmate' => $material, 'qty' => $qty]);
     }
 
     protected function setUp(): void
@@ -55,38 +66,47 @@ class ImportLegacyMaterialStockTest extends TestCase
         $unit = DB::table('material_units')->insertGetId(['name' => 'BOX', 'created_at' => now(), 'updated_at' => now()]);
         $category = DB::table('material_categories')->insertGetId(['name' => 'KARTON', 'created_at' => now(), 'updated_at' => now()]);
         foreach ([23 => 'KARTON A', 91 => 'KARTON B', 92 => 'KARTON C'] as $id => $name) {
-            DB::table('materials')->insert(['id' => $id, 'code' => 'MTR'.$id, 'name' => $name, 'material_category_id' => $category, 'material_unit_id' => $unit, 'min_stock' => 0, 'is_active' => 1, 'show_in_stock' => 1, 'created_at' => now(), 'updated_at' => now()]);
+            DB::table('materials')->insert(['id' => $id, 'code' => 'MTR'.$id, 'name' => $name, 'material_category_id' => $category, 'material_unit_id' => $unit, 'min_stock' => 0, 'is_active' => 1, 'created_at' => now(), 'updated_at' => now()]);
         }
 
         $this->path = tempnam(sys_get_temp_dir(), 'legacy-ms-').'.sql';
-        file_put_contents($this->path, $this->ddl()
-            .$this->insert('rawmate', ['idrawmate' => 23, 'kdrawmate' => 'RM0023', 'nmrawmate' => 'KARTON A', 'idrawcategory' => 2, 'stock' => 1, 'unit' => 'Box', 'barmin' => 0])
-            .$this->insert('rawmate', ['idrawmate' => 91, 'kdrawmate' => 'RM0091', 'nmrawmate' => 'KARTON B', 'idrawcategory' => 2, 'stock' => 1, 'unit' => 'Box', 'barmin' => 0])
-            .$this->insert('rawmate', ['idrawmate' => 92, 'kdrawmate' => 'RM0092', 'nmrawmate' => 'KARTON C', 'idrawcategory' => 2, 'stock' => 1, 'unit' => 'Box', 'barmin' => 0])
-            .$this->insert('rawmate', ['idrawmate' => 500, 'kdrawmate' => 'RM0500', 'nmrawmate' => 'SPIDOL', 'idrawcategory' => 26, 'stock' => 1, 'unit' => 'Pcs', 'barmin' => 0])
-            // material 23: masuk 100 + 50 - penyesuaian 10 (negatif), dikurangi usage 5 dan stock_out 20 -> 115; baris dihapus (7) diabaikan
-            .$this->raw(1, 23, '100').$this->raw(2, 23, '50').$this->raw(3, 23, '-10').$this->raw(4, 23, '7', 1)
-            .$this->insert('raw_usage', ['idusage' => 1, 'sumber' => 'REPACK', 'idsumber' => 1, 'idrawmate' => 23, 'qty' => '5', 'note' => '', 'iduser' => 1, 'createtime' => '2025-12-20 10:00:00'])
-            .$this->insert('raw_stock_out', ['idstockout' => 1, 'nostockout' => 'SOM-1', 'tgl' => '2026-02-01', 'kegiatan' => 'BONING', 'ref_id' => null, 'ref_no' => 'BN1', 'kegiatan_note' => '', 'idusers' => 1, 'createtime' => '2026-02-01 10:00:00', 'updatetime' => '2026-02-01 10:00:00', 'is_deleted' => 0])
-            .$this->insert('raw_stock_out', ['idstockout' => 2, 'nostockout' => 'SOM-2', 'tgl' => '2026-02-02', 'kegiatan' => 'BONING', 'ref_id' => null, 'ref_no' => 'BN2', 'kegiatan_note' => '', 'idusers' => 1, 'createtime' => '2026-02-02 10:00:00', 'updatetime' => '2026-02-02 10:00:00', 'is_deleted' => 1])
-            .$this->insert('raw_stock_out_detail', ['iddetail' => 1, 'idstockout' => 1, 'idrawmate' => 23, 'qty' => '20', 'note' => ''])
-            .$this->insert('raw_stock_out_detail', ['iddetail' => 2, 'idstockout' => 2, 'idrawmate' => 23, 'qty' => '99', 'note' => ''])
-            // material 91: saldo negatif kecil -> 0; material 92: saldo nol; material 500: di luar material impor
-            .$this->raw(5, 91, '3').$this->insert('raw_usage', ['idusage' => 2, 'sumber' => 'BONING', 'idsumber' => 1, 'idrawmate' => 91, 'qty' => '9', 'note' => '', 'iduser' => 1, 'createtime' => '2025-12-21 10:00:00'])
-            .$this->raw(6, 92, '4').$this->insert('raw_usage', ['idusage' => 3, 'sumber' => 'BONING', 'idsumber' => 2, 'idrawmate' => 92, 'qty' => '4', 'note' => '', 'iduser' => 1, 'createtime' => '2025-12-22 10:00:00'])
-            .$this->raw(7, 500, '25'));
+        $this->grs = tempnam(sys_get_temp_dir(), 'legacy-gr-').'.sql';
+
+        file_put_contents($this->path, $this->ddl([
+            'raw_stock_out' => 'idstockout int, nostockout varchar(20), is_deleted int',
+            'raw_stock_out_detail' => 'iddetail int, idstockout int, idrawmate int, qty decimal(12,2)',
+            'rawmate' => 'idrawmate int, nmrawmate varchar(50), unit varchar(10)',
+        ])
+            .$this->insert('rawmate', ['idrawmate' => 23, 'nmrawmate' => 'KARTON A', 'unit' => 'Box'])
+            .$this->insert('rawmate', ['idrawmate' => 91, 'nmrawmate' => 'KARTON B', 'unit' => 'Box'])
+            .$this->insert('rawmate', ['idrawmate' => 92, 'nmrawmate' => 'KARTON C', 'unit' => 'Box'])
+            .$this->insert('rawmate', ['idrawmate' => 500, 'nmrawmate' => 'SPIDOL', 'unit' => 'Pcs'])
+            // pengeluaran material 23: 20 (dokumen hidup) dan 99 (dokumen dihapus, diabaikan)
+            .$this->out(1).$this->out(2, 1).$this->outLine(1, 1, 23, '20').$this->outLine(2, 2, 23, '99')
+            // material 91 keluar 9 (lebih besar dari masuk 3 -> saldo negatif); material 92 keluar 4 (habis); material 500 di luar material impor
+            .$this->outLine(3, 1, 91, '9').$this->outLine(4, 1, 92, '4'));
+
+        file_put_contents($this->grs, $this->ddl([
+            'grraw' => 'idgr int, is_deleted int',
+            'grrawdetail' => 'idgrdetail int, idgr int, idrawmate int, qty decimal(12,2), is_deleted int',
+        ])
+            // material 23: masuk 100 + 50; baris dihapus (7) dan GR yang dihapus (1000) diabaikan -> 150 - 20 = 130
+            .$this->gr(1).$this->gr(2, 1)
+            .$this->grLine(1, 1, 23, '100').$this->grLine(2, 1, 23, '50').$this->grLine(3, 1, 23, '7', 1).$this->grLine(4, 2, 23, '1000')
+            .$this->grLine(5, 1, 91, '3').$this->grLine(6, 1, 92, '4').$this->grLine(7, 1, 500, '25'));
     }
 
     protected function tearDown(): void
     {
         @unlink($this->path);
+        @unlink($this->grs);
 
         parent::tearDown();
     }
 
-    private function importer(bool $apply = false)
+    private function importer(bool $apply = false, bool $withGrs = true)
     {
-        return $this->artisan('legacy:import-material-stock', ['--source' => $this->path] + ($apply ? ['--apply' => true] : []));
+        return $this->artisan('legacy:import-material-stock', ['--source' => $this->path] + ($withGrs ? ['--grs' => $this->grs] : []) + ($apply ? ['--apply' => true] : []));
     }
 
     /** @test */
@@ -98,11 +118,11 @@ class ImportLegacyMaterialStockTest extends TestCase
     }
 
     /** @test */
-    public function the_balance_is_ledger_minus_usage_and_stock_out_ignoring_deleted_rows(): void
+    public function the_balance_is_receipts_minus_stock_outs_ignoring_deleted_rows_and_documents(): void
     {
         $this->importer(true)->assertSuccessful();
 
-        $this->assertSame(115.0, (float) DB::table('material_stocks')->where('material_id', 23)->value('qty'), '100 + 50 - 10 - 5 - 20; baris dan dokumen yang dihapus diabaikan');
+        $this->assertSame(130.0, (float) DB::table('material_stocks')->where('material_id', 23)->value('qty'), '100 + 50 - 20; baris, GR, dan pengeluaran yang dihapus diabaikan');
         $this->assertSame(1, DB::table('material_stocks')->count(), 'saldo nol atau negatif tidak dibawa; material di luar impor tidak dibawa');
     }
 
@@ -122,5 +142,13 @@ class ImportLegacyMaterialStockTest extends TestCase
 
         $this->assertSame(50.0, (float) DB::table('material_stocks')->where('material_id', 23)->value('qty'));
         $this->assertSame(0, DB::table('material_stock_movements')->count(), 'tanpa catatan pergerakan');
+    }
+
+    /** @test */
+    public function both_snapshots_are_required(): void
+    {
+        $this->importer(true, false)->assertFailed();
+
+        $this->assertSame(0, DB::table('material_stocks')->count());
     }
 }

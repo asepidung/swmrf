@@ -561,12 +561,15 @@ class BeefStockResource extends Resource
                 ->button()
                 ->color('success'),
             ])
-            // Filternya di ATAS tabel, bukan di balik tombol.
+            // Filternya di balik ikon corong di bilah tabel (Owner, 22 Oktober 2026: bagian atas halaman ini terlalu memakan tempat).
             //
-            // Tanggal yang sedang dilihat harus terbaca sekilas: angka stok
-            // yang ternyata milik tanggal lain adalah kesalahan yang tidak
-            // menimbulkan gejala apa pun.
-            ->filtersLayout(FiltersLayout::AboveContent)
+            // Dulu filter dibuka di atas tabel supaya tanggal yang sedang dilihat terbaca sekilas: angka stok yang ternyata milik
+            // tanggal lain adalah kesalahan yang tidak menimbulkan gejala apa pun. Pengaman itu TETAP ada tanpa membuka filternya:
+            // bila tanggal dipilih, kalimat posisi di `description()` di bawah tampil di atas tabel dan lencana filter pada corong
+            // menyala ("Position as at ...").
+            ->filtersLayout(FiltersLayout::Dropdown)
+            ->filtersFormColumns(1)
+            ->filtersFormWidth('xs')
             ->description(fn (): ?string => static::keteranganPosisi())
             ->filters([
                 // Posisi stok pada tanggal tertentu.

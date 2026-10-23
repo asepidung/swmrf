@@ -101,6 +101,45 @@ class ReviewMaterialRequisition extends EditRecord
         ];
     }
 
+    /**
+     * Nama material yang harganya masih kosong atau 0.
+     *
+     * Purchasing wajib mengisi harga sebelum request naik ke Finance; harga 0 sama dengan belum diisi (permintaan Owner,
+     * 23 Oktober 2026; request beef sudah begitu). Hanya baris yang punya material yang diperiksa.
+     *
+     * @return array<int, string>
+     */
+    protected function itemsMissingPrice(): array
+    {
+        $missing = [];
+
+        foreach ($this->data['items'] ?? [] as $item) {
+            if (empty($item['material_id'])) {
+                continue;
+            }
+
+            if (MaterialRequisitionResource::parseNumber($item['price'] ?? 0) > 0) {
+                continue;
+            }
+
+            $missing[] = \App\Models\Material::find($item['material_id'])->name ?? ('#'.$item['material_id']);
+        }
+
+        return $missing;
+    }
+
+    /** Request tanpa satu pun material tidak boleh naik ke Finance (total 0, tidak ada yang disetujui). */
+    protected function hasNoItems(): bool
+    {
+        foreach ($this->data['items'] ?? [] as $item) {
+            if (! empty($item['material_id'])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     protected function getApproveAction(): Actions\Action
     {
         return Actions\Action::make('approve')
@@ -109,6 +148,30 @@ class ReviewMaterialRequisition extends EditRecord
             ->icon('heroicon-s-check-circle')
             ->requiresConfirmation()
             ->action(function () {
+                if ($this->hasNoItems()) {
+                    Notification::make()
+                        ->title(__('Request has no items, it cannot be sent to Finance'))
+                        ->body(__('Add at least one product, or reject the request instead.'))
+                        ->danger()
+                        ->persistent()
+                        ->send();
+
+                    return;
+                }
+
+                $missing = $this->itemsMissingPrice();
+
+                if ($missing !== []) {
+                    Notification::make()
+                        ->title(__('Some prices are still empty, so this cannot go to Finance yet'))
+                        ->body(__('Fill in the price for these items first').': '.implode(', ', $missing).'.')
+                        ->danger()
+                        ->persistent()
+                        ->send();
+
+                    return;
+                }
+
                 // Argumen KEDUA mematikan toast "Saved" bawaan Filament, supaya
                 // pengguna tidak melihat dua toast sekaligus.
                 $this->save(false, false);
