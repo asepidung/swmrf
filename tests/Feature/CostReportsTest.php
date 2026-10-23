@@ -335,8 +335,20 @@ class CostReportsTest extends TestCase
         $this->actingAs($this->userWith('view_cost_reports'));
         $this->deliveryOrder([['NOCOST', $this->tl, 10]], 1500000);
 
-        Livewire::test(SalesCostReport::class)->assertSee('1 items')
-            ->set('onlyValued', true)->assertDontSee('1 items');
+        Livewire::test(SalesCostReport::class)->assertSee('/sales-cost-report/', false)
+            ->set('onlyValued', true)->assertDontSee('/sales-cost-report/', false);
+    }
+
+    /** @test */
+    public function the_detail_page_of_an_invoice_shows_sales_hpp_and_items(): void
+    {
+        $this->actingAs($this->userWith('view_cost_reports'));
+        $this->stock('A1', $this->tl, $this->jonggol, 10, 100000);
+        BarcodeCost::create(['barcode' => 'S1', 'product_id' => $this->tl->id, 'cost_per_kg' => 100000, 'source_type' => 'boning']);
+        $order = $this->deliveryOrder([['S1', $this->tl, 10]], 1500000);
+
+        Livewire::test(\App\Filament\Admin\Pages\SalesCostReportDetail::class, ['order' => $order->id ?? \App\Models\DeliveryOrder::first()->id])
+            ->assertSee('TENDERLOIN')->assertSee('Rp 1.500.000')->assertSee('Rp 1.000.000')->assertSee('Rp 500.000');
     }
 
     /** @test */

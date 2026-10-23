@@ -46,68 +46,31 @@
                             <th class="{{ $head }}">{{ __('Invoice') }}</th>
                             <th class="{{ $head }}">{{ __('Customer') }}</th>
                             <th class="{{ $head }} text-end">Kg</th>
-                            <th class="{{ $head }} text-end">{{ __('Sales') }}</th>
-                            <th class="{{ $head }} text-end">HPP</th>
                             <th class="{{ $head }} text-end">{{ __('Margin') }}</th>
-                            <th class="{{ $head }} text-end whitespace-nowrap">{{ __('Unvalued') }}</th>
                         </tr>
                     </thead>
-                    @foreach (($this->onlyValued ? $completeGroups : $groupsForCards) as $doNumber => $lines)
-                        @php
-                            $first = $lines->first();
-                            $sum = [
-                                'kg' => $lines->sum('kg'),
-                                'sales' => $lines->contains(fn ($l) => $l['sales'] === null) ? null : $lines->sum('sales'),
-                                'hpp' => $lines->sum('hpp'),
-                                'margin' => $lines->contains(fn ($l) => $l['margin'] === null) ? null : $lines->sum('margin'),
-                                'unvalued' => $lines->sum('unvalued_barcodes'),
-                            ];
-                        @endphp
-                        {{-- Satu baris per surat jalan/faktur; klik untuk melihat barangnya (Owner, 24 Oktober 2026). --}}
-                        <tbody x-data="{ open: false }" class="{{ $row }}">
-                            <tr class="cursor-pointer border-t border-gray-100 hover:bg-gray-50 dark:border-white/5 dark:hover:bg-white/5" x-on:click="open = ! open">
-                                <td class="whitespace-nowrap py-3 pe-4 tabular-nums">
-                                    <span class="inline-block w-4 text-gray-400" x-text="open ? '▾' : '▸'"></span>{{ \Carbon\Carbon::parse($first['date'])->format('d/m/y') }}
-                                </td>
-                                <td class="whitespace-nowrap py-3 pe-4">{{ $first['invoice'] ?? '-' }}</td>
-                                <td class="py-3 pe-4">
-                                    {{ $first['customer'] }}
-                                    <span class="ms-1 text-xs text-gray-400">{{ $lines->count() }} {{ __('items') }}</span>
-                                </td>
-                                <td class="whitespace-nowrap py-3 pe-4 text-end tabular-nums">{{ $number($sum['kg']) }}</td>
-                                <td class="whitespace-nowrap py-3 pe-4 text-end tabular-nums">{{ $rupiah($sum['sales']) }}</td>
-                                {{-- Bila ada barcode tanpa nilai, HPP belum utuh: tampil "-" (bukan Rp 0 yang menyesatkan). --}}
-                                <td class="whitespace-nowrap py-3 pe-4 text-end tabular-nums">{{ $sum['unvalued'] > 0 ? '-' : $rupiah($sum['hpp']) }}</td>
-                                <td class="whitespace-nowrap py-3 pe-4 text-end tabular-nums">{{ $rupiah($sum['margin']) }}</td>
-                                <td class="py-3 text-end tabular-nums">
-                                    @if ($sum['unvalued'] > 0)
-                                        <x-filament::badge color="warning" size="sm" class="inline-flex">{{ $sum['unvalued'] }}</x-filament::badge>
-                                    @else
-                                        0
-                                    @endif
-                                </td>
+                    <tbody>
+                        {{-- Daftar ringkas: tanggal, faktur, customer, kg, margin. Penjualan, HPP dan rincian ada di halaman detail faktur (Owner, 24 Oktober 2026). --}}
+                        @foreach (($this->onlyValued ? $completeGroups : $groupsForCards) as $doNumber => $lines)
+                            @php
+                                $first = $lines->first();
+                                $margin = $lines->contains(fn ($l) => $l['margin'] === null) ? null : $lines->sum('margin');
+                                $detailUrl = \App\Filament\Admin\Pages\SalesCostReportDetail::getUrl(['order' => $first['delivery_order_id']]);
+                            @endphp
+                            <tr class="{{ $row }} cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5">
+                                <td class="whitespace-nowrap py-3 pe-4 tabular-nums"><a href="{{ $detailUrl }}" class="block">{{ \Carbon\Carbon::parse($first['date'])->format('d/m/y') }}</a></td>
+                                <td class="whitespace-nowrap py-3 pe-4"><a href="{{ $detailUrl }}" class="block font-medium text-primary-600 dark:text-primary-400">{{ $first['invoice'] ?? '-' }}</a></td>
+                                <td class="py-3 pe-4"><a href="{{ $detailUrl }}" class="block">{{ $first['customer'] }}</a></td>
+                                <td class="whitespace-nowrap py-3 pe-4 text-end tabular-nums"><a href="{{ $detailUrl }}" class="block">{{ $number($lines->sum('kg')) }}</a></td>
+                                <td class="whitespace-nowrap py-3 text-end tabular-nums"><a href="{{ $detailUrl }}" class="block">{{ $rupiah($margin) }}</a></td>
                             </tr>
-                            @foreach ($lines as $line)
-                                <tr x-show="open" x-cloak class="bg-gray-50/60 text-xs dark:bg-white/5">
-                                    <td colspan="2"></td>
-                                    <td class="py-2 pe-4 ps-4">{{ $line['product'] }}</td>
-                                    <td class="whitespace-nowrap py-2 pe-4 text-end tabular-nums">{{ $number($line['kg']) }}</td>
-                                    <td class="whitespace-nowrap py-2 pe-4 text-end tabular-nums">{{ $rupiah($line['sales']) }}</td>
-                                    <td class="whitespace-nowrap py-2 pe-4 text-end tabular-nums">{{ $line['unvalued_barcodes'] > 0 ? '-' : $rupiah($line['hpp']) }}</td>
-                                    <td class="whitespace-nowrap py-2 pe-4 text-end tabular-nums">{{ $rupiah($line['margin']) }}</td>
-                                    <td class="py-2 text-end tabular-nums">{{ $line['unvalued_barcodes'] }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    @endforeach
+                        @endforeach
+                    </tbody>
                     <tfoot>
                         <tr class="{{ $row }}">
-                            <td class="py-3 pe-3 font-semibold" colspan="3">{{ __('Total') }}</td>
-                            <td class="py-3 text-end font-semibold tabular-nums">{{ $number($total['kg']) }}</td>
-                            <td class="py-3 text-end font-semibold tabular-nums">{{ $rupiah($total['sales']) }}</td>
-                            <td class="py-3 text-end font-semibold tabular-nums">{{ $rupiah($total['hpp']) }}</td>
-                            <td class="py-3 text-end font-semibold tabular-nums">{{ $rupiah($total['margin']) }}</td>
-                            <td class="py-3 text-end font-semibold tabular-nums">{{ $total['unvalued_barcodes'] }}</td>
+                            <td class="py-3 pe-4 font-semibold" colspan="3">{{ __('Total') }}</td>
+                            <td class="whitespace-nowrap py-3 pe-4 text-end font-semibold tabular-nums">{{ $number($total['kg']) }}</td>
+                            <td class="whitespace-nowrap py-3 text-end font-semibold tabular-nums">{{ $total['margin_rows'] > 0 ? $rupiah($total['margin']) : '-' }}</td>
                         </tr>
                     </tfoot>
                 </table>
