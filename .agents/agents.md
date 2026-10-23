@@ -7900,3 +7900,5 @@ Rancangan yang diusulkan (belum dikerjakan, menunggu aba-aba): kolom `carcasses.
 2. Sales Return Plan: dropdown surat jalan menampilkan tanggal kirim (terbaru dulu), pilihan produk hanya yang ada di surat jalan terpilih, setelah dibuat kembali ke daftar. DIKERJAKAN. Terbuka untuk diskusi: kenapa ada berat klaim dan qty klaim, dan apakah ini menabrak aturan yang sudah dibuat.
 3. Terima Retur: belum sesuai, dibahas nanti (Ayah).
 4. Laporan HPP Penjualan: Ayah bingung tujuannya; dijelaskan di chat.
+
+**24 Okt 2026 (lanjutan):** plan retur hanya menampilkan surat jalan yang DIKIRIM dalam 3 bulan terakhir saat membuat plan baru (`SalesReturnPlan::MAX_DELIVERY_AGE_MONTHS`; label memakai tanggal kirim, bukan tanggal terkirim/tanda terima). Laporan HPP Penjualan: satu baris per surat jalan/faktur, klik untuk rincian barang (Excel/PDF tetap rinci per barang).

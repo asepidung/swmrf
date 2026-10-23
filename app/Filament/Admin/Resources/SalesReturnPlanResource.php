@@ -79,7 +79,7 @@ class SalesReturnPlanResource extends Resource
 
                         Forms\Components\Select::make('delivery_order_id')
                             ->label(__('Delivery Order'))
-                            ->relationship('deliveryOrder', 'delivery_order_number', function (Builder $query, callable $get) {
+                            ->relationship('deliveryOrder', 'delivery_order_number', function (Builder $query, callable $get, $livewire) {
                                 $customerId = $get('customer_id');
                                 if ($customerId) {
                                     $query->where('customer_id', $customerId);
@@ -87,14 +87,21 @@ class SalesReturnPlanResource extends Resource
 
                                 // Terbaru dulu: sales mengenali surat jalan dari tanggal kirimnya, bukan dari nomornya.
                                 $query->orderByDesc('delivery_date')->orderByDesc('id');
+
+                                // Retur hanya untuk barang yang dikirim dalam 3 bulan terakhir (Owner, 24 Oktober 2026); plan lama yang sudah
+                                // tersimpan tetap menampilkan surat jalannya (batas hanya berlaku saat membuat plan baru).
+                                if ($livewire instanceof \App\Filament\Admin\Resources\SalesReturnPlanResource\Pages\CreateSalesReturnPlan) {
+                                    $query->whereDate('delivery_date', '>=', now()->subMonths(\App\Models\SalesReturnPlan::MAX_DELIVERY_AGE_MONTHS)->toDateString());
+                                }
                             })
-                            ->getOptionLabelFromRecordUsing(fn (\App\Models\DeliveryOrder $record): string => $record->delivery_order_number.' — '.__('Delivered').' '.($record->delivery_date ? \Carbon\Carbon::parse($record->delivery_date)->translatedFormat('d M Y') : '-'))
+                            ->getOptionLabelFromRecordUsing(fn (\App\Models\DeliveryOrder $record): string => $record->delivery_order_number.' — '.__('Shipped').' '.($record->delivery_date ? \Carbon\Carbon::parse($record->delivery_date)->translatedFormat('d M Y') : '-'))
                             ->searchable(['delivery_order_number'])
                             ->preload()
                             ->live()
                             ->afterStateUpdated(fn (callable $set) => $set('items', []))
                             ->disabled(fn ($livewire): bool => static::isNotFullyEditable($livewire))
-                            ->placeholder(__('Pick a delivery order, or leave it empty for an unidentified return')),
+                            ->placeholder(__('Pick a delivery order, or leave it empty for an unidentified return'))
+                            ->helperText(__('Only delivery orders shipped within the last 3 months are listed.')),
 
                         Forms\Components\DatePicker::make('plan_date')
                             ->label(__('Plan Date'))

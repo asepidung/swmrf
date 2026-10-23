@@ -400,4 +400,24 @@ class SalesReturnPlanResourceTest extends TestCase
             ->get(route('sales-return-plan.print', $plan))
             ->assertSuccessful();
     }
+
+    /**
+     * @test
+     */
+    public function the_delivery_order_dropdown_only_lists_shipments_from_the_last_three_months(): void
+    {
+        $user = $this->employee(['view_sales_return_plans', 'create_sales_return_plans']);
+        $this->actingAs($user);
+
+        $driver = \App\Models\Driver::firstOrCreate(['name' => 'JOKO'])->id;
+        $recent = \App\Models\DeliveryOrder::create(['customer_id' => $this->customer->id, 'delivery_date' => now()->subDays(20)->toDateString(), 'driver_id' => $driver, 'status' => 'Delivered']);
+        $old = \App\Models\DeliveryOrder::create(['customer_id' => $this->customer->id, 'delivery_date' => now()->subMonths(4)->toDateString(), 'driver_id' => $driver, 'status' => 'Delivered']);
+
+        $page = Livewire::actingAs($user)->test(CreateSalesReturnPlan::class)->set('data.customer_id', $this->customer->id);
+        $options = $page->instance()->form->getComponent('data.delivery_order_id')->getOptions();
+
+        $this->assertArrayHasKey($recent->id, $options);
+        $this->assertArrayNotHasKey($old->id, $options);
+        $this->assertStringContainsString(now()->subDays(20)->format('Y'), (string) $options[$recent->id], 'label memuat tanggal kirim');
+    }
 }

@@ -22,6 +22,9 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class SalesReturnPlan extends Model
 {
+    /** Retur hanya untuk surat jalan yang dikirim dalam sekian bulan terakhir (Owner, 24 Oktober 2026). */
+    public const MAX_DELIVERY_AGE_MONTHS = 3;
+
     use SoftDeletes, LogsActivity;
 
     public const STATUS_DRAFT = 'Draft';
