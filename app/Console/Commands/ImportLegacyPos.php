@@ -183,12 +183,12 @@ class ImportLegacyPos extends Command
                 $legacyLines = $details->get($row['idpo'], collect())->sum(fn ($l) => (float) $l['qty'] * (float) $l['price']);
                 $legacyTotal = (float) ($row['xamount'] ?? 0);
 
-                if ($legacyLines > 0 && abs($legacyTotal - $legacyLines * 1.11) <= 2) {
-                    $rate = 0.11;
+                if ($legacyLines > 0 && abs($legacyTotal - $legacyLines * (1 + \App\Models\Supplier::TARIF_PPN)) <= 2) {
+                    $rate = \App\Models\Supplier::TARIF_PPN;
                 } elseif ($legacyLines > 0 && abs($legacyTotal - $legacyLines) <= 2) {
                     $rate = 0.0;
                 } else {
-                    $rate = (float) ($row['tax'] ?? 0) > 0 ? 0.11 : 0.0;
+                    $rate = (float) ($row['tax'] ?? 0) > 0 ? \App\Models\Supplier::TARIF_PPN : 0.0;
                     $stats['taxGuessed'] += $legacyLines > 0 ? 1 : 0;
                 }
 

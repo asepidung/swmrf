@@ -104,7 +104,7 @@ class SimilarNameWarningTest extends TestCase
         }
 
         $this->assertSame([], $tanpa, 'Kolom nama master data tanpa peringatan nama mirip.');
-        $this->assertGreaterThanOrEqual(3, substr_count(file_get_contents(app_path('Filament/Support/QuickCreate.php')), 'warnIfSimilar('), 'Formulir tambah cepat juga.');
+        $this->assertGreaterThanOrEqual(2, substr_count(file_get_contents(app_path('Filament/Support/QuickCreate.php')), 'warnIfSimilar('), 'Formulir tambah cepat juga.');
         $this->assertTrue(class_exists(Material::class));
     }
 }

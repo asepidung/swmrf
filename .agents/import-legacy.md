@@ -623,3 +623,6 @@ Boning legacy tidak punya hubungan ke karkas, jadi `legacy:import-carcasses` men
 
 ## Boning impor tidak ikut Draft Costing — 23 Okt 2026 (temuan Ayah nomor 6)
 Draft Costing memuat semua boning yang belum punya costing tersimpan, jadi ratusan boning impor akan tampil sebagai "menunggu costing". Kolom `bonings.legacy_imported` (migrasi `2026_10_23_200000`, diisi true untuk boning di `legacy_import_map` dan oleh `legacy:import-bonings`) menyingkirkannya dari `Costing::boningsWaiting()`. Kejadian luar biasa (mis. boning 1 November yang memang perlu dicosting): aksi **"Buka untuk costing"** di daftar Boning (izin `reopen_boning_for_costing`, alasan wajib, tercatat di riwayat aktivitas). Izin baru ini perlu dicentang Ayah di VPS.
+
+## Bahan penolong — 23 Okt 2026 (temuan Ayah nomor 2)
+Kolom `materials.is_auxiliary` (migrasi `2026_10_23_300000`; diisi true untuk material yang sudah dipakai di BOM) dan toggle "Bahan Penolong" di master Material. Dropdown material di Bill of Material dan Material Waste memakai `MasterSelect::auxiliaryMaterial()` sehingga hanya bahan penolong yang tampil. Sisa material perlu ditandai QC/Purchasing di master Material (di VPS maupun coba, sebelum BOM diisi).

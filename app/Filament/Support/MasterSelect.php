@@ -46,6 +46,12 @@ class MasterSelect
         return self::server(Select::make($name), Material::class, $activeOnly, withCode: $withCode);
     }
 
+    /** Material bahan penolong saja (`is_auxiliary`): untuk BOM dan Material Waste (Owner, 23 Oktober 2026). */
+    public static function auxiliaryMaterial(string $name = 'material_id', bool $withCode = false): Select
+    {
+        return self::server(Select::make($name), Material::class, true, fn (Builder $query) => $query->where('is_auxiliary', true), withCode: $withCode);
+    }
+
     public static function product(string $name = 'product_id', bool $activeOnly = true, bool $withCode = false): Select
     {
         return self::server(Select::make($name), Product::class, $activeOnly, withCode: $withCode);

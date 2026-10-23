@@ -96,7 +96,7 @@ class BillOfMaterialSection
                     ->schema([
                         Forms\Components\Hidden::make('id'),
 
-                        \App\Filament\Support\MasterSelect::material('material_id', withCode: true)
+                        \App\Filament\Support\MasterSelect::auxiliaryMaterial('material_id', withCode: true)
                             ->label('')
                             ->hiddenLabel()
                             ->placeholder(__('Select material'))
