@@ -8,6 +8,7 @@ use App\Models\BankTransaction;
 use App\Models\CustomerGroup;
 use App\Models\Invoice;
 use App\Models\Payment;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
@@ -83,6 +84,7 @@ class ReceivePayment extends Page
             'amount' => 0,
             'deductions' => [],
             'allocations' => $allocations,
+            'selected_invoices' => $outstandingInvoices->pluck('id')->map(fn ($id) => (string) $id)->all(),
         ]);
     }
 
@@ -123,7 +125,8 @@ class ReceivePayment extends Page
                 ->label($inv->invoice_number.' | '.__('Outstanding').': Rp '.$balanceStr)
                 ->default(0)
                 ->rules(['numeric', 'gte:0'])
-                ->maxValue($inv->balance);
+                ->maxValue($inv->balance)
+                ->visible(fn (): bool => $this->isSelected($inv->id));
         }
 
         return $form
@@ -146,6 +149,7 @@ class ReceivePayment extends Page
                                 // Ganti customer = mulai dari nol: uang dan alokasi milik customer sebelumnya tidak ikut.
                                 $set('amount', 0);
                                 $set('allocations', $this->getOutstandingInvoices()->mapWithKeys(fn ($invoice) => [$invoice->id => 0])->all());
+                                $set('selected_invoices', $this->getOutstandingInvoices()->pluck('id')->map(fn ($id) => (string) $id)->all());
                             }),
                     ]),
 
@@ -256,7 +260,7 @@ class ReceivePayment extends Page
                                 Select::make('invoice_id')
                                     ->label(__('For Invoice'))
                                     ->placeholder(__('For all invoices'))
-                                    ->options(fn (): array => $this->getOutstandingInvoices()
+                                    ->options(fn (): array => $this->payableInvoices()
                                         ->mapWithKeys(fn ($invoice): array => [
                                             $invoice->id => $invoice->invoice_number,
                                         ])
@@ -300,10 +304,23 @@ class ReceivePayment extends Page
                     // pertanyaan pertama saat uang masuk justru "ini melunasi
                     // semuanya atau sebagian?".
                     ->schema(count($invoiceFields) > 0 ? array_merge([
+                        // Centang invoice yang dibayar kali ini (Owner, 23 Oktober 2026): satu grup belum tentu membayar semua tagihannya
+                        // sekaligus. Yang tidak dicentang tidak dapat alokasi sama sekali dan tidak dipengaruhi uang yang masuk.
+                        CheckboxList::make('selected_invoices')
+                            ->label(__('Invoices paid this time'))
+                            ->helperText(__('Tick the invoices this payment is for. Unticked invoices stay unpaid.'))
+                            ->options(fn (): array => $this->getOutstandingInvoices()
+                                ->mapWithKeys(fn ($invoice): array => [(string) $invoice->id => $invoice->invoice_number.' | '.($invoice->customer?->name ?? '').' | '.__('Outstanding').': Rp '.number_format((float) $invoice->balance, 0, ',', '.')])
+                                ->all())
+                            ->bulkToggleable()
+                            ->live()
+                            ->afterStateUpdated(fn () => $this->autoAllocate())
+                            ->columnSpanFull(),
+
                         \Filament\Forms\Components\Placeholder::make('total_outstanding')
                             ->label(__('Total Outstanding'))
                             ->content(fn (): string => 'Rp '.number_format(
-                                $this->getOutstandingInvoices()->sum('balance'),
+                                $this->payableInvoices()->sum('balance'),
                                 0,
                                 ',',
                                 '.',
@@ -353,6 +370,21 @@ class ReceivePayment extends Page
         return $this->allOutstandingInvoices()
             ->filter(fn ($invoice) => $customerId === null || (int) $invoice->customer_id === $customerId)
             ->values();
+    }
+
+    /** Invoice yang dicentang untuk dibayar kali ini (selalu bagian dari getOutstandingInvoices()). */
+    private function payableInvoices()
+    {
+        $selected = array_map('intval', (array) ($this->data['selected_invoices'] ?? []));
+
+        return $this->getOutstandingInvoices()
+            ->filter(fn ($invoice) => in_array((int) $invoice->id, $selected, true))
+            ->values();
+    }
+
+    private function isSelected(int $invoiceId): bool
+    {
+        return in_array($invoiceId, array_map('intval', (array) ($this->data['selected_invoices'] ?? [])), true);
     }
 
     /** Seluruh invoice yang masih ditagihkan di grup ini, tertua dulu (tanpa penyaringan customer). */
@@ -504,8 +536,15 @@ class ReceivePayment extends Page
             + $this->depositForPayment();
 
         $alokasi = [];
+        $dipilih = $this->payableInvoices()->pluck('id')->map(fn ($id) => (int) $id)->all();
 
         foreach ($this->getOutstandingInvoices() as $invoice) {
+            if (! in_array((int) $invoice->id, $dipilih, true)) {
+                $alokasi[$invoice->id] = 0;
+
+                continue;
+            }
+
             $sisa = (float) $invoice->balance;
 
             // Potongan yang memang ditujukan ke invoice ini dipasang lebih
@@ -615,7 +654,15 @@ class ReceivePayment extends Page
         }
 
         // Alokasi hanya boleh ke invoice yang memang tampil untuk pembayaran ini (customer terpilih).
-        $allowedIds = $this->getOutstandingInvoices()->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $allowedIds = $this->payableInvoices()->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        if ($allowedIds === []) {
+            Notification::make()->danger()
+                ->title(__('Tick at least one invoice to pay.'))
+                ->send();
+
+            return;
+        }
 
         foreach ($allocations as $invId => $allocAmount) {
             if ((float) $allocAmount > 0 && ! in_array((int) $invId, $allowedIds, true)) {
@@ -644,6 +691,14 @@ class ReceivePayment extends Page
         // hendak dihindari dengan menunjuknya.
         foreach ($this->attachedDeductions() as $invoiceId => $jumlah) {
             $invoice = $this->getOutstandingInvoices()->firstWhere('id', $invoiceId);
+
+            if ($invoice && ! in_array((int) $invoiceId, $allowedIds, true)) {
+                Notification::make()->danger()
+                    ->title(__('A deduction points to an invoice that is not ticked.'))
+                    ->send();
+
+                return;
+            }
 
             if ($invoice && $jumlah > (float) $invoice->balance + 0.01) {
                 Notification::make()->danger()
