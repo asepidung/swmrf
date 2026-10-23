@@ -32,4 +32,23 @@ class AuxiliaryMaterialDropdownTest extends TestCase
         $this->assertSame([$plastik->id => 'PLASTIK'], $options);
         $this->assertFalse((bool) Material::where('name', 'MESIN')->first()->is_auxiliary, 'bawaan: bukan bahan penolong');
     }
+
+    public function test_manual_usage_offers_only_materials_shown_in_stock(): void
+    {
+        $unit = \DB::table('material_units')->insertGetId(['name' => 'PCS', 'created_at' => now(), 'updated_at' => now()]);
+        $category = \DB::table('material_categories')->insertGetId(['name' => 'PACKING', 'created_at' => now(), 'updated_at' => now()]);
+
+        $make = fn (string $name, bool $inStock): Material => Material::create([
+            'code' => strtoupper($name), 'name' => $name, 'material_category_id' => $category, 'material_unit_id' => $unit,
+            'min_stock' => 0, 'is_active' => true, 'show_in_stock' => $inStock,
+        ]);
+
+        $plastik = $make('PLASTIK', true);
+        $make('ATK', false);
+
+        $field = MasterSelect::stockedMaterial('material_id');
+
+        $this->assertSame([$plastik->id => 'PLASTIK'], MasterSelect::search(Material::class, '', true, fn ($q) => $q->where('show_in_stock', true)));
+        $this->assertSame('material_id', $field->getName());
+    }
 }

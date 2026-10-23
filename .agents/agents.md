@@ -7894,3 +7894,9 @@ Rancangan yang diusulkan (belum dikerjakan, menunggu aba-aba): kolom `carcasses.
 **23 Okt 2026, temuan nomor 5 tahap 2:** halaman Terima Pembayaran punya daftar centang `selected_invoices` (semua tercentang di awal; bisa dikurangi untuk semua grup, bukan hanya grup per customer). Yang tidak dicentang tidak dapat alokasi, tidak disentuh, dan potongan tidak boleh menunjuknya. Tes di `ReceivablePerCustomerTest`.
 
 **23 Okt 2026 (malam), pilihan invoice dipindah ke halaman Lihat Piutang (permintaan Ayah):** tabel invoice grup terurut terlama di atas (lunas di bawah, tidak bisa dicentang), total terpilih tampil langsung (Alpine, view `receivable-resource/selected-total`), aksi massal "Terima Pembayaran" membawa invoice yang dicentang ke halaman bayar lewat `?invoices=`; di sana customer dan invoice tidak dipilih lagi (`presetSelection`). Grup per customer menolak centang lebih dari satu customer. Halaman bayar yang dibuka langsung tetap memakai daftar centang sendiri.
+
+**24 Okt 2026, temuan penyisiran Ayah (dicatat):**
+1. Pemakaian Material manual: dropdown hanya material `show_in_stock` (`MasterSelect::stockedMaterial`). DIKERJAKAN.
+2. Sales Return Plan: dropdown surat jalan menampilkan tanggal kirim (terbaru dulu), pilihan produk hanya yang ada di surat jalan terpilih, setelah dibuat kembali ke daftar. DIKERJAKAN. Terbuka untuk diskusi: kenapa ada berat klaim dan qty klaim, dan apakah ini menabrak aturan yang sudah dibuat.
+3. Terima Retur: belum sesuai, dibahas nanti (Ayah).
+4. Laporan HPP Penjualan: Ayah bingung tujuannya; dijelaskan di chat.

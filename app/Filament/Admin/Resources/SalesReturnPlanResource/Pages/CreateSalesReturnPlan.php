@@ -50,9 +50,9 @@ class CreateSalesReturnPlan extends CreateRecord
         }
     }
 
-    /** Langsung ke Edit -- langkah wajar berikutnya adalah meninjau lalu Submit. */
+    /** Kembali ke daftar sesudah plan dibuat (Owner, 24 Oktober 2026). */
     protected function getRedirectUrl(): string
     {
-        return static::getResource()::getUrl('edit', ['record' => $this->getRecord()]);
+        return static::getResource()::getUrl('index');
     }
 }

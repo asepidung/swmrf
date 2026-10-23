@@ -84,9 +84,15 @@ class SalesReturnPlanResource extends Resource
                                 if ($customerId) {
                                     $query->where('customer_id', $customerId);
                                 }
+
+                                // Terbaru dulu: sales mengenali surat jalan dari tanggal kirimnya, bukan dari nomornya.
+                                $query->orderByDesc('delivery_date')->orderByDesc('id');
                             })
-                            ->searchable()
+                            ->getOptionLabelFromRecordUsing(fn (\App\Models\DeliveryOrder $record): string => $record->delivery_order_number.' — '.__('Delivered').' '.($record->delivery_date ? \Carbon\Carbon::parse($record->delivery_date)->translatedFormat('d M Y') : '-'))
+                            ->searchable(['delivery_order_number'])
                             ->preload()
+                            ->live()
+                            ->afterStateUpdated(fn (callable $set) => $set('items', []))
                             ->disabled(fn ($livewire): bool => static::isNotFullyEditable($livewire))
                             ->placeholder(__('Pick a delivery order, or leave it empty for an unidentified return')),
 
@@ -119,7 +125,16 @@ class SalesReturnPlanResource extends Resource
                                 Forms\Components\Hidden::make('id'),
 
                                 // Retur boleh untuk produk yang kini nonaktif.
-                                \App\Filament\Support\MasterSelect::product('product_id', activeOnly: false)
+                                \App\Filament\Support\MasterSelect::server(
+                                    Forms\Components\Select::make('product_id'),
+                                    \App\Models\Product::class,
+                                    false,
+                                    // Surat jalan dipilih: pilihan produk hanya yang ada di surat jalan itu (Owner, 24 Oktober 2026).
+                                    fn (Builder $query, $livewire, Get $get) => $query->when(
+                                        $get('../../delivery_order_id'),
+                                        fn (Builder $q, $doId) => $q->whereIn('id', \App\Models\DeliveryOrderItem::query()->where('delivery_order_id', $doId)->select('product_id')),
+                                    ),
+                                )
                                     ->label(__('Product'))
                                     ->required()
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()
