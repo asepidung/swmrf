@@ -1847,6 +1847,8 @@
     "Some selected carcasses were already taken by another boning. Nothing was created; refresh and select again.": "Some selected carcasses were already taken by another boning. Nothing was created; refresh and select again.",
     "Carcass weight": "Carcass weight",
     "Kill date": "Kill date",
+    "QC has not set the shrinkage limit yet.": "QC has not set the shrinkage limit yet.",
+    "Ask QC to fill in the Shrinkage Limit on the Repacks list first.": "Ask QC to fill in the Shrinkage Limit on the Repacks list first.",
     "Customer Specs": "Customer Specs",
     "Weight per pack": "Weight per pack",
     "Cut": "Cut",

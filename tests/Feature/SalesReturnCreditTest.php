@@ -136,7 +136,7 @@ class SalesReturnCreditTest extends TestCase
             'sales_order_id' => $this->salesOrder->id,
             'customer_id' => $this->customer->id,
             'delivery_date' => now()->toDateString(),
-            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'Joko'])->id,
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => strtoupper('Joko')])->id,
             'status' => 'Delivered',
         ]);
 

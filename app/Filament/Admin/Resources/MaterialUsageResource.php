@@ -20,6 +20,9 @@ use App\Filament\Exports\MaterialUsageExporter;
 
 class MaterialUsageResource extends Resource
 {
+    // Urutan menu grup Gudang (Owner, 23 Oktober 2026): Tally paling atas.
+    protected static ?int $navigationSort = 3;
+
     protected static ?string $model = MaterialUsageHeader::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-archive-box-arrow-down';

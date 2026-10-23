@@ -657,7 +657,8 @@ class InvoiceResource extends Resource
                         : null),
 
                 Tables\Columns\TextColumn::make('balance')
-                    ->label(__('Total Amount'))
+                    // Invoice adalah PIUTANG (uang yang akan kita terima), bukan hutang; "Total Amount" diterjemahkan "Total Hutang" di bahasa Indonesia.
+                    ->label(__('Total Receivable'))
                     ->numeric(0, ',', '.')
                     ->sortable()
                     ->alignEnd(),

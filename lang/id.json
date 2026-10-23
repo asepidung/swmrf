@@ -1847,6 +1847,8 @@
     "Some selected carcasses were already taken by another boning. Nothing was created; refresh and select again.": "Sebagian karkas yang dipilih sudah dipakai boning lain. Tidak ada yang dibuat; muat ulang lalu pilih lagi.",
     "Carcass weight": "Berat karkas",
     "Kill date": "Tanggal potong",
+    "QC has not set the shrinkage limit yet.": "QC belum mengisi batas susut.",
+    "Ask QC to fill in the Shrinkage Limit on the Repacks list first.": "Minta QC mengisi Batas Susut di daftar Repack lebih dulu.",
     "Customer Specs": "Spek Customer",
     "Weight per pack": "Berat per pack",
     "Cut": "Potongan",
