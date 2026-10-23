@@ -18,6 +18,24 @@
         </p>
     </x-filament::section>
 
+    @php
+        $groupsForCards = collect($report['rows'])->groupBy('delivery_order');
+        $completeGroups = $groupsForCards->filter(fn ($lines) => $lines->every(fn ($l) => $l['unvalued_barcodes'] === 0 && $l['sales'] !== null));
+    @endphp
+    <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+        @foreach ([
+            [__('Sales'), $rupiah($total['sales'])],
+            ['HPP', $rupiah($total['hpp'])],
+            [__('Margin'), $total['margin_rows'] > 0 ? $rupiah($total['margin']) : '-'],
+            [__('Complete'), $completeGroups->count().' / '.$groupsForCards->count().' '.__('delivery orders')],
+        ] as [$label, $value])
+            <div class="rounded-xl p-4 ring-1 ring-gray-950/5 dark:ring-white/10" style="background: rgba(var(--gray-500), .08);">
+                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $label }}</div>
+                <div class="mt-1 text-lg font-semibold tabular-nums">{{ $value }}</div>
+            </div>
+        @endforeach
+    </div>
+
     <x-filament::section :heading="__('Per delivery order')">
         @if (count($report['rows']))
             <div class="overflow-x-auto">
@@ -34,7 +52,7 @@
                             <th class="{{ $head }} text-end whitespace-nowrap">{{ __('Unvalued') }}</th>
                         </tr>
                     </thead>
-                    @foreach (collect($report['rows'])->groupBy('delivery_order') as $doNumber => $lines)
+                    @foreach (($this->onlyValued ? $completeGroups : $groupsForCards) as $doNumber => $lines)
                         @php
                             $first = $lines->first();
                             $sum = [

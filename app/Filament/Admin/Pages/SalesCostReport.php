@@ -39,6 +39,9 @@ class SalesCostReport extends Page implements HasForms
 
     public ?int $productId = null;
 
+    /** Sembunyikan surat jalan yang HPP-nya belum utuh (Owner, 24 Oktober 2026). */
+    public bool $onlyValued = false;
+
     public static function getNavigationGroup(): ?string
     {
         return __('REPORTS');
@@ -85,6 +88,11 @@ class SalesCostReport extends Page implements HasForms
                     ->label(__('Product'))
                     ->placeholder(__('All'))
                     ->live(),
+
+                \Filament\Forms\Components\Toggle::make('onlyValued')
+                    ->label(__('Only delivery orders with a complete cost'))
+                    ->live()
+                    ->columnSpanFull(),
             ]);
     }
 
