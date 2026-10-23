@@ -69,7 +69,7 @@ class CreateManualUsage extends CreateRecord
                         Forms\Components\Repeater::make('materialUsages')
                             ->relationship('materialUsages')
                             ->schema([
-                                \App\Filament\Support\MasterSelect::material('material_id')
+                                \App\Filament\Support\MasterSelect::stockedMaterial('material_id')
                                     ->label(__('Material'))
                                     ->required()
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()

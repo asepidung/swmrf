@@ -46,6 +46,12 @@ class MasterSelect
         return self::server(Select::make($name), Material::class, $activeOnly, withCode: $withCode);
     }
 
+    /** Material yang tampil di daftar stok saja (`show_in_stock`): untuk Pemakaian Material manual (Owner, 24 Oktober 2026). */
+    public static function stockedMaterial(string $name = 'material_id'): Select
+    {
+        return self::server(Select::make($name), Material::class, true, fn (Builder $query) => $query->where('show_in_stock', true));
+    }
+
     /** Material bahan penolong saja (`is_auxiliary`): untuk BOM dan Material Waste (Owner, 23 Oktober 2026). */
     public static function auxiliaryMaterial(string $name = 'material_id', bool $withCode = false): Select
     {
