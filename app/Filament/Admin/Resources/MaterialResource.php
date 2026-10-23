@@ -105,6 +105,11 @@ class MaterialResource extends Resource
                             ->default(true)
                             ->live()
                             ->columnSpanFull(),
+                        Forms\Components\Toggle::make('is_auxiliary')
+                            ->label(fn() => __('Auxiliary Material'))
+                            ->helperText(__('Turn ON for auxiliary materials (plastic, boxes, labels). Only these appear when filling a Bill of Material or Material Waste.'))
+                            ->default(false)
+                            ->columnSpanFull(),
                         Forms\Components\TextInput::make('min_stock')
                             ->label(fn() => __('Min. Stock'))
                             // Bukan type=number: panah naik-turun dan roda tetikus mengubah angkanya tanpa sengaja.
@@ -153,6 +158,9 @@ class MaterialResource extends Resource
                     ->boolean(),
                 Tables\Columns\IconColumn::make('show_in_stock')
                     ->label(fn() => __('Show in Stock'))
+                    ->boolean(),
+                Tables\Columns\IconColumn::make('is_auxiliary')
+                    ->label(fn() => __('Auxiliary'))
                     ->boolean(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()

@@ -197,7 +197,7 @@ trait ShowsBomMaterialUsage
                     ->defaultItems(0)
                     ->columns(['default' => 1, 'md' => 12])
                     ->schema([
-                        \App\Filament\Support\MasterSelect::material('material_id')
+                        \App\Filament\Support\MasterSelect::auxiliaryMaterial('material_id')
                             ->hiddenLabel()
                             ->placeholder(__('Select material'))
                             ->required()

@@ -149,7 +149,7 @@ class ReceivePayment extends Page
                                 // Ganti customer = mulai dari nol: uang dan alokasi milik customer sebelumnya tidak ikut.
                                 $set('amount', 0);
                                 $set('allocations', $this->getOutstandingInvoices()->mapWithKeys(fn ($invoice) => [$invoice->id => 0])->all());
-                                $set('selected_invoices', $this->getOutstandingInvoices()->pluck('id')->map(fn ($id) => (string) $id)->all());
+                                $set('selected_invoices', $this->getOutstandingInvoices()->map(fn ($invoice) => (string) $invoice->id)->all());
                             }),
                     ]),
 
