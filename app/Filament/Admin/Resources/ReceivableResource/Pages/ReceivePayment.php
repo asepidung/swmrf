@@ -128,6 +128,27 @@ class ReceivePayment extends Page
 
         return $form
             ->schema([
+                Section::make(__('Customer'))
+                    ->description(fn (): ?string => $this->perCustomer()
+                        ? __('This group pays per customer: choose who is paying. Only the invoices of that customer are shown.')
+                        : __('Optional: choose one customer to pay only the invoices of that customer. Leave empty to pay for the whole group.'))
+                    ->schema([
+                        Select::make('customer_id')
+                            ->label(__('Customer'))
+                            ->options(fn (): array => $this->allOutstandingInvoices()
+                                ->groupBy('customer_id')
+                                ->mapWithKeys(fn ($invoices, $id) => [$id => ($invoices->first()->customer?->name ?? '#'.$id).' — Rp '.number_format((float) $invoices->sum('balance'), 0, ',', '.')])
+                                ->all())
+                            ->searchable()
+                            ->required(fn (): bool => $this->perCustomer())
+                            ->live()
+                            ->afterStateUpdated(function (\Filament\Forms\Set $set): void {
+                                // Ganti customer = mulai dari nol: uang dan alokasi milik customer sebelumnya tidak ikut.
+                                $set('amount', 0);
+                                $set('allocations', $this->getOutstandingInvoices()->mapWithKeys(fn ($invoice) => [$invoice->id => 0])->all());
+                            }),
+                    ]),
+
                 Section::make(__('Payment Received'))
                     ->schema([
                         Select::make('bank_account_id')
@@ -296,9 +317,9 @@ class ReceivePayment extends Page
                         // angkanya tidak nol.
                         \Filament\Forms\Components\Placeholder::make('customer_deposit')
                             ->label(__('Customer Deposit'))
-                            ->visible(fn (): bool => $this->record->availableDeposit() > 0)
+                            ->visible(fn (): bool => $this->depositForPayment() > 0)
                             ->content(fn (): string => 'Rp '.number_format(
-                                $this->record->availableDeposit(), 0, ',', '.',
+                                $this->depositForPayment(), 0, ',', '.',
                             ).' — '.__('used first, before the money received today'))
                             ->extraAttributes(['class' => 'font-bold'])
                             ->columnSpanFull(),
@@ -322,8 +343,23 @@ class ReceivePayment extends Page
      */
     protected function getOutstandingInvoices()
     {
+        $customerId = $this->selectedCustomerId();
+
+        // Grup yang membayar per customer: tanpa customer terpilih tidak ada invoice yang tampil (dan tidak ada yang bisa dibayar).
+        if ($this->perCustomer() && $customerId === null) {
+            return collect();
+        }
+
+        return $this->allOutstandingInvoices()
+            ->filter(fn ($invoice) => $customerId === null || (int) $invoice->customer_id === $customerId)
+            ->values();
+    }
+
+    /** Seluruh invoice yang masih ditagihkan di grup ini, tertua dulu (tanpa penyaringan customer). */
+    private function allOutstandingInvoices()
+    {
         return $this->record->receivables()
-            ->with('invoice')
+            ->with(['invoice.customer'])
             ->get()
             ->pluck('invoice')
             ->filter(function ($invoice) {
@@ -331,6 +367,28 @@ class ReceivePayment extends Page
             })
             ->sortBy('invoice_date')
             ->values();
+    }
+
+    /**
+     * Grup yang anggotanya orang berbeda-beda membayar satuan per customer (CustomerGroup::pays_per_customer), temuan Owner 23 Oktober 2026.
+     * Di grup seperti itu uang satu customer tidak boleh melunasi tagihan customer lain, jadi customer wajib dipilih dan deposit grup tidak dipakai.
+     */
+    private function perCustomer(): bool
+    {
+        return (bool) $this->record->pays_per_customer;
+    }
+
+    private function selectedCustomerId(): ?int
+    {
+        $id = $this->data['customer_id'] ?? null;
+
+        return filled($id) ? (int) $id : null;
+    }
+
+    /** Deposit yang boleh dipakai pembayaran ini: nol untuk grup per customer (deposit adalah milik grup, bukan milik satu orang). */
+    private function depositForPayment(): float
+    {
+        return $this->perCustomer() ? 0.0 : $this->record->availableDeposit();
     }
 
     /**
@@ -435,7 +493,7 @@ class ReceivePayment extends Page
         return $this->angka($this->data['amount'] ?? 0)
             + $this->pooledDeductions()
             + array_sum($this->attachedDeductions())
-            + $this->record->availableDeposit();
+            + $this->depositForPayment();
     }
 
     public function autoAllocate(): void
@@ -443,7 +501,7 @@ class ReceivePayment extends Page
         $tertuju = $this->attachedDeductions();
         $kantong = $this->angka($this->data['amount'] ?? 0)
             + $this->pooledDeductions()
-            + $this->record->availableDeposit();
+            + $this->depositForPayment();
 
         $alokasi = [];
 
@@ -534,7 +592,40 @@ class ReceivePayment extends Page
             $totalAllocated += (float) $allocAmount;
         }
 
-        $deposit = $this->record->availableDeposit();
+        $deposit = $this->depositForPayment();
+
+        if ($this->perCustomer()) {
+            if ($this->selectedCustomerId() === null) {
+                Notification::make()->danger()
+                    ->title(__('Choose the customer who is paying first.'))
+                    ->send();
+
+                return;
+            }
+
+            // Uang satu orang tidak boleh melebihi tagihannya sendiri: kelebihannya tidak punya tempat (tidak ada deposit bersama).
+            if ($totalAllocated + 0.01 < $totalAvailable) {
+                Notification::make()->danger()
+                    ->title(__('The payment is larger than the outstanding bills of this customer.'))
+                    ->body(__('Rp :extra would be left over. This group pays per customer, so extra money cannot be kept as a shared deposit.', ['extra' => number_format($totalAvailable - $totalAllocated, 0, ',', '.')]))
+                    ->send();
+
+                return;
+            }
+        }
+
+        // Alokasi hanya boleh ke invoice yang memang tampil untuk pembayaran ini (customer terpilih).
+        $allowedIds = $this->getOutstandingInvoices()->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        foreach ($allocations as $invId => $allocAmount) {
+            if ((float) $allocAmount > 0 && ! in_array((int) $invId, $allowedIds, true)) {
+                Notification::make()->danger()
+                    ->title(__('An invoice outside the chosen customer was allocated.'))
+                    ->send();
+
+                return;
+            }
+        }
 
         // Nol boleh, ASAL ada depositnya. Melunasi tagihan sepenuhnya dari
         // deposit memang berbentuk begitu: tidak ada uang baru yang masuk hari

@@ -20,12 +20,14 @@ class CustomerGroup extends Model
         'trading_terms_percent',
         'is_costing_reference',
         'is_general_price_reference',
+        'pays_per_customer',
     ];
 
     protected $casts = [
         'trading_terms_percent' => 'float',
         'is_costing_reference' => 'boolean',
         'is_general_price_reference' => 'boolean',
+        'pays_per_customer' => 'boolean',
     ];
 
     /**

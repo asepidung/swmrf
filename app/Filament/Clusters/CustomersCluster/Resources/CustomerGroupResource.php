@@ -68,6 +68,11 @@ class CustomerGroupResource extends Resource
                             ->label(fn() => __('Head Office Address'))
                             ->extraInputAttributes(['style' => 'text-transform:uppercase'])
                             ->columnSpanFull(),
+
+                        Forms\Components\Toggle::make('pays_per_customer')
+                            ->label(fn() => __('Each customer pays separately'))
+                            ->helperText(__('Turn ON for groups whose members are different people (for example employees): receiving a payment then asks for one customer and never mixes money between customers.'))
+                            ->columnSpanFull(),
                     ])->columns(2),
             ]);
     }
