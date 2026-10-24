@@ -29,7 +29,7 @@ use Tests\TestCase;
  *    kali, dan pesanan yang batal sebelum dikirim tidak pernah muncul di
  *    surat jalan sama sekali -- jadi angkanya memang tidak akan sama persis
  *    dengan laporan lama.
- *  - Sales Report menjumlah `billedAmount()`, bukan satu kolom `xamount`
+ *  - Sales Report menjumlah `salesAmount()` (subtotal + biaya lain - retur; uang muka TIDAK mengurangi), bukan satu kolom `xamount`
  *    seperti dulu. Aplikasi ini tidak menyimpan grand total; ia menghitungnya
  *    dari penyusunnya, dan retur yang sudah disetujui mengurangi.
  */
@@ -92,11 +92,11 @@ class SalesReportTest extends TestCase
     // =====================================================================
 
     /**
-     * Angkanya SAMA dengan `Invoice::billedAmount()`, invoice per invoice.
+     * Angkanya SAMA dengan `Invoice::salesAmount()`, invoice per invoice.
      *
      * Inilah uji yang paling penting di berkas ini. Laporannya menjumlah
      * lewat SQL supaya satu tahun cukup satu query, sementara sisa aplikasi
-     * memakai `billedAmount()` yang menghitung di PHP. Dua jalan menuju
+     * memakai `salesAmount()` yang menghitung di PHP. Dua jalan menuju
      * angka yang sama adalah dua tempat yang bisa berbeda -- dan kalau
      * berbeda, yang salah tidak akan ketahuan dari layar mana pun: keduanya
      * menampilkan angka yang tampak masuk akal.
@@ -116,15 +116,23 @@ class SalesReportTest extends TestCase
                 ->whereYear('invoice_date', 2026)
                 ->whereMonth('invoice_date', $bulan)
                 ->get()
-                ->sum(fn (Invoice $satu): float => $satu->billedAmount());
+                ->sum(fn (Invoice $satu): float => $satu->salesAmount());
 
             $this->assertEqualsWithDelta(
                 $dariModel,
                 $bulanan[$bulan],
                 0.01,
-                "Laporan bulan $bulan tidak sama dengan jumlah billedAmount() invoicenya sendiri.",
+                "Laporan bulan $bulan tidak sama dengan jumlah salesAmount() invoicenya sendiri.",
             );
         }
+    }
+
+    /** Uang muka adalah pemasukan penjualan: tidak mengurangi nilai penjualan (Owner, 24 Oktober 2026). */
+    public function test_down_payment_does_not_reduce_sales(): void
+    {
+        $this->invoice('2026-03-05', 10_000_000, charge: 250_000, dp: 1_000_000);
+
+        $this->assertEqualsWithDelta(10_250_000.0, LaporanPenjualan::totalPerBulan(2026)[3], 0.01);
     }
 
     /** Dua belas bulan selalu ada, walaupun tidak ada invoicenya. */

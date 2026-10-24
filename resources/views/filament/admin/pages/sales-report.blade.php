@@ -94,7 +94,7 @@
         </div>
 
         <div class="mt-4 text-xs text-gray-500 dark:text-gray-400">
-            {{ __('Figures are amounts billed: subtotal plus other charges, less down payment and approved returns. Cost of goods is not included yet.') }}
+            {{ __('Figures are sales value: subtotal plus other charges, less approved returns. Down payments count as sales. Cost of goods is not included yet.') }}
         </div>
     </x-filament::section>
 </x-filament-panels::page>
