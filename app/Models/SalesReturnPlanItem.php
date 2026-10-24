@@ -51,79 +51,44 @@ class SalesReturnPlanItem extends Model
     }
 
     /**
-     * Klaim tidak boleh melebihi yang benar-benar terkirim di DO yang
-     * dipilih plan-nya. Plan tanpa DO (unidentified) tidak punya batas ini.
-     *
-     * @throws \Exception
-     */
-    private static function assertWithinDeliveredWeight(self $item): void
-    {
-        $plan = $item->plan()->first();
-
-        if (! $plan || ! $plan->delivery_order_id) {
-            return;
-        }
-
-        $deliveryOrder = $plan->deliveryOrder()->first();
-        $delivered = $deliveryOrder?->deliveredWeightFor($item->product_id) ?? 0.0;
-
-        if ($delivered <= 0) {
-            throw new \Exception(__('This product was not part of the chosen delivery order.'));
-        }
-
-        if ($item->claimed_weight > $delivered) {
-            throw new \Exception(__('The claimed weight cannot exceed what was actually delivered on this delivery order.'));
-        }
-    }
-
-    /**
-     * Berat produk yang terkirim: di surat jalan yang dipilih, atau (tanpa surat jalan) total yang diterima customer itu
-     * dalam 3 bulan sampai tanggal acuan (Owner, 24 Oktober 2026). Dipakai tampilan form dan batas kerasnya.
+     * Berat produk yang DITERIMA customer menurut bukti terima (DO receipt): di surat jalan yang dipilih, atau (tanpa surat jalan)
+     * total yang diterima customer itu dalam 3 bulan sampai tanggal acuan. Surat jalan yang belum punya bukti terima memakai
+     * berat surat jalannya. Hanya INFORMASI untuk pengisi plan, bukan batas (Owner, 24 Oktober 2026).
      */
     public static function deliveredWeight(?int $deliveryOrderId, ?int $customerId, int $productId, ?\Carbon\CarbonInterface $until = null): float
     {
         if ($deliveryOrderId) {
-            return (float) (DeliveryOrder::find($deliveryOrderId)?->deliveredWeightFor($productId) ?? 0);
-        }
+            $orderIds = collect([$deliveryOrderId]);
+        } elseif ($customerId) {
+            $until = \Carbon\Carbon::parse($until ?? now());
+            $from = $until->copy()->subMonths(SalesReturnPlan::MAX_DELIVERY_AGE_MONTHS);
 
-        if (! $customerId) {
-            return 0.0;
-        }
-
-        $until = \Carbon\Carbon::parse($until ?? now());
-        $from = $until->copy()->subMonths(SalesReturnPlan::MAX_DELIVERY_AGE_MONTHS);
-
-        return round((float) DeliveryOrderItem::query()
-            ->where('product_id', $productId)
-            ->whereIn('delivery_order_id', DeliveryOrder::query()
+            $orderIds = DeliveryOrder::query()
                 ->where('customer_id', $customerId)
                 ->whereDate('delivery_date', '>=', $from->toDateString())
                 ->whereDate('delivery_date', '<=', $until->toDateString())
-                ->select('id'))
-            ->sum('weight'), 2);
-    }
-
-    /**
-     * Batas keras plan TANPA surat jalan: klaim tidak boleh melebihi yang diterima customer dalam 3 bulan terakhir.
-     * Dipanggil dari halaman buat/ubah plan (plan dengan surat jalan dijaga `assertWithinDeliveredWeight()`).
-     *
-     * @throws \Exception
-     */
-    public static function assertWithinCustomerWindow(SalesReturnPlan $plan, int $productId, float $weight): void
-    {
-        if ($plan->delivery_order_id || ! $plan->customer_id) {
-            return;
+                ->pluck('id');
+        } else {
+            return 0.0;
         }
 
-        $delivered = self::deliveredWeight(null, (int) $plan->customer_id, $productId, $plan->plan_date);
-
-        if ($delivered <= 0) {
-            throw new \Exception(__('This product was not delivered to this customer in the last 3 months.'));
+        if ($orderIds->isEmpty()) {
+            return 0.0;
         }
 
-        if ($weight > $delivered) {
-            throw new \Exception(__('The claimed weight cannot exceed what was delivered to this customer in the last 3 months.'));
-        }
+        $receiptWeight = DeliveryOrderReceiptItem::query()
+            ->where('product_id', $productId)
+            ->whereIn('delivery_order_receipt_id', DeliveryOrderReceipt::query()->whereIn('delivery_order_id', $orderIds)->select('id'))
+            ->sum('weight');
+
+        $withoutReceipt = $orderIds->diff(DeliveryOrderReceipt::query()->whereIn('delivery_order_id', $orderIds)->pluck('delivery_order_id'));
+
+        $orderWeight = $withoutReceipt->isEmpty() ? 0 : DeliveryOrderItem::query()
+            ->where('product_id', $productId)
+            ->whereIn('delivery_order_id', $withoutReceipt)
+            ->sum('weight');
+
+        return round((float) $receiptWeight + (float) $orderWeight, 2);
     }
 
     protected static function booted(): void
@@ -142,7 +107,6 @@ class SalesReturnPlanItem extends Model
                 throw new \Exception(__('Items can only be added to a sales return plan while it is still a draft.'));
             }
 
-            self::assertWithinDeliveredWeight($item);
         });
 
         static::updating(function (self $item) {
@@ -152,7 +116,6 @@ class SalesReturnPlanItem extends Model
                 throw new \Exception(__('This plan has already been received and its items can no longer be changed.'));
             }
 
-            self::assertWithinDeliveredWeight($item);
         });
 
         static::deleting(function (self $item) {

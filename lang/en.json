@@ -1886,6 +1886,8 @@
     "This product was not delivered to this customer in the last 3 months.": "This product was not delivered to this customer in the last 3 months.",
     "The claimed weight cannot exceed what was delivered to this customer in the last 3 months.": "The claimed weight cannot exceed what was delivered to this customer in the last 3 months.",
     "Delivered (Kg)": "Delivered (Kg)",
+    "Received (Kg)": "Received (Kg)",
+    "More than the :kg kg received. It is still allowed, for example for an agreement outside the system.": "More than the :kg kg received. It is still allowed, for example for an agreement outside the system.",
     "Customer Specs": "Customer Specs",
     "Weight per pack": "Weight per pack",
     "Cut": "Cut",

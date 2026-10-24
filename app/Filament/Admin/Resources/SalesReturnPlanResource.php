@@ -192,7 +192,7 @@ class SalesReturnPlanResource extends Resource
 
                                 // Berat yang terkirim, otomatis dari surat jalan terpilih (atau dari yang diterima customer 3 bulan terakhir bila tanpa surat jalan).
                                 Forms\Components\TextInput::make('delivered_display')
-                                    ->label(__('Delivered (Kg)'))
+                                    ->label(__('Received (Kg)'))
                                     ->disabled()
                                     ->dehydrated(false)
                                     ->afterStateHydrated(function (Forms\Components\TextInput $component, Get $get): void {
@@ -210,6 +210,16 @@ class SalesReturnPlanResource extends Resource
                                         if (static::parseWeight($value) <= 0) {
                                             $fail(__('The claimed weight must be more than zero.'));
                                         }
+                                    })
+                                    ->live(onBlur: true)
+                                    ->helperText(function (Get $get): ?string {
+                                        $delivered = static::deliveredKg($get);
+
+                                        if ($delivered === null || static::parseWeight($get('claimed_weight')) <= $delivered) {
+                                            return null;
+                                        }
+
+                                        return __('More than the :kg kg received. It is still allowed, for example for an agreement outside the system.', ['kg' => number_format($delivered, 2, ',', '.')]);
                                     })
                                     ->extraInputAttributes(['class' => 'text-right pr-claim-weight', 'inputmode' => 'decimal', 'x-on:focus' => '$el.select()'])
                                     ->columnSpan(['default' => 1, 'lg' => 3]),
@@ -233,8 +243,8 @@ class SalesReturnPlanResource extends Resource
             ]);
     }
 
-    /** Teks kolom "Terkirim (Kg)" untuk sebuah baris item; kosong sebelum produk dipilih. */
-    public static function deliveredText(Get $get): ?string
+    /** Berat yang diterima (menurut bukti terima) untuk sebuah baris item; null sebelum produk dipilih. */
+    public static function deliveredKg(Get $get): ?float
     {
         $productId = (int) $get('product_id');
 
@@ -242,14 +252,20 @@ class SalesReturnPlanResource extends Resource
             return null;
         }
 
-        $kg = \App\Models\SalesReturnPlanItem::deliveredWeight(
+        return \App\Models\SalesReturnPlanItem::deliveredWeight(
             $get('../../delivery_order_id') ? (int) $get('../../delivery_order_id') : null,
             $get('../../customer_id') ? (int) $get('../../customer_id') : null,
             $productId,
             $get('../../plan_date') ? \Carbon\Carbon::parse($get('../../plan_date')) : null,
         );
+    }
 
-        return number_format($kg, 2, ',', '.');
+    /** Teks kolom "Diterima (Kg)" untuk sebuah baris item; kosong sebelum produk dipilih. */
+    public static function deliveredText(Get $get): ?string
+    {
+        $kg = static::deliveredKg($get);
+
+        return $kg === null ? null : number_format($kg, 2, ',', '.');
     }
 
     /** Berat klaim dari isian ("1.234,5" -> 1234.5); angka asli (int/float) dipakai apa adanya. */
