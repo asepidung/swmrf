@@ -181,26 +181,13 @@ class SalesReturnPlanResourceTest extends TestCase
     }
 
     /** @test */
-    public function submitting_from_the_edit_page_moves_the_plan_to_submitted(): void
+    public function the_edit_page_has_no_submit_action_because_the_warehouse_pulls_draft_plans(): void
     {
         $plan = $this->draftPlanWithItem();
 
         Livewire::actingAs($this->employee(['view_sales_return_plans', 'edit_sales_return_plans']))
             ->test(EditSalesReturnPlan::class, ['record' => $plan->getKey()])
-            ->callAction('submit_plan');
-
-        $this->assertSame(SalesReturnPlan::STATUS_SUBMITTED, $plan->fresh()->status);
-    }
-
-    /** @test */
-    public function the_submit_action_is_hidden_once_the_plan_is_no_longer_draft(): void
-    {
-        $plan = $this->draftPlanWithItem();
-        $plan->submit();
-
-        Livewire::actingAs($this->employee(['view_sales_return_plans', 'edit_sales_return_plans']))
-            ->test(EditSalesReturnPlan::class, ['record' => $plan->getKey()])
-            ->assertActionHidden('submit_plan');
+            ->assertActionDoesNotExist('submit_plan');
     }
 
     /**

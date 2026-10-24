@@ -86,9 +86,29 @@ class SalesReturnPullPlanTest extends TestCase
     }
 
     /** @test */
-    public function a_sales_return_cannot_pull_a_draft_plan(): void
+    public function pulling_a_draft_plan_starts_its_processing_and_deleting_the_return_puts_it_back_to_draft(): void
     {
         $plan = $this->draftPlanWithItem();
+
+        $return = SalesReturn::create([
+            'return_date' => now()->toDateString(),
+            'sales_return_plan_id' => $plan->id,
+            'customer_id' => $this->customer->id,
+        ]);
+
+        $this->assertSame(SalesReturnPlan::STATUS_SUBMITTED, $plan->fresh()->status, 'ditarik gudang = sedang diproses (tampil On Process)');
+        $this->assertSame('On Process', SalesReturnPlan::statusLabel($plan->fresh()->status));
+
+        $return->delete();
+
+        $this->assertSame(SalesReturnPlan::STATUS_DRAFT, $plan->fresh()->status, 'penarikan dibatalkan: plan bisa ditarik ulang');
+    }
+
+    /** @test */
+    public function a_cancelled_plan_cannot_be_pulled(): void
+    {
+        $plan = $this->draftPlanWithItem();
+        $plan->cancel();
 
         $this->expectException(\Exception::class);
 

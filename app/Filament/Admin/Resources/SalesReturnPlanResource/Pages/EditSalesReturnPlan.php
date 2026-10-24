@@ -132,26 +132,7 @@ class EditSalesReturnPlan extends EditRecord
                 ->color('gray')
                 ->url(fn (): string => $this->getResource()::getUrl('index')),
 
-            Actions\Action::make('submit_plan')
-                ->label(__('Submit Plan'))
-                ->color('success')
-                ->icon('heroicon-o-paper-airplane')
-                ->requiresConfirmation()
-                ->visible(fn (): bool => $this->getRecord()->status === SalesReturnPlan::STATUS_DRAFT)
-                ->action(function () {
-                    try {
-                        $this->getRecord()->submit();
-                    } catch (\RuntimeException $e) {
-                        report($e);
-                        Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
-
-                        return;
-                    }
-
-                    Notification::make()->title(__('Plan submitted.'))->success()->send();
-
-                    $this->redirect($this->getResource()::getUrl('view', ['record' => $this->getRecord()]));
-                }),
+            // Tidak ada tombol Submit: gudang yang menarik plan Draft lewat Pull Plan, dan itu yang mengubahnya menjadi On Process.
 
             // Submitted tidak lagi punya tombol Submit (sudah terkirim),
             // tapi tetap bisa negosiasi qty klaim di sini -- redirect

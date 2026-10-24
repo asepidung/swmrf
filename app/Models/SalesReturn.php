@@ -57,8 +57,9 @@ class SalesReturn extends Model
 
             $plan = SalesReturnPlan::find($model->sales_return_plan_id);
 
-            if (! $plan || $plan->status !== SalesReturnPlan::STATUS_SUBMITTED) {
-                throw new \Exception(__('The chosen plan is not submitted, so it cannot be pulled.'));
+            // Gudang menarik plan yang masih Draft (Owner, 24 Oktober 2026); plan yang sudah diproses tidak bisa ditarik lagi.
+            if (! $plan || ! in_array($plan->status, [SalesReturnPlan::STATUS_DRAFT, SalesReturnPlan::STATUS_SUBMITTED], true)) {
+                throw new \Exception(__('The chosen plan is not waiting to be pulled.'));
             }
 
             if ($plan->salesReturn()->exists()) {
@@ -78,6 +79,13 @@ class SalesReturn extends Model
             }
         });
 
+        static::created(function (self $model) {
+            // Ditarik gudang = plan mulai diproses (status Submitted, tampil "On Process").
+            if ($model->plan && $model->plan->status === SalesReturnPlan::STATUS_DRAFT) {
+                $model->plan->submit();
+            }
+        });
+
         static::deleting(function (self $model) {
             // Hapus retur mengembalikan plan-nya ke Submitted, SUPAYA bisa
             // ditarik ulang -- tapi hanya kalau plan-nya sempat Received
@@ -87,6 +95,13 @@ class SalesReturn extends Model
             // perlu dibalik.
             if ($model->plan && $model->plan->status === SalesReturnPlan::STATUS_RECEIVED) {
                 $model->plan->markSubmitted();
+            }
+
+            // Penarikan dibatalkan: plan kembali Draft supaya gudang bisa menariknya ulang.
+            $model->plan?->refresh();
+
+            if ($model->plan && $model->plan->status === SalesReturnPlan::STATUS_SUBMITTED) {
+                $model->plan->markDraft();
             }
         });
 
