@@ -67,7 +67,6 @@ class EditSalesReturnPlan extends EditRecord
                 'id' => $item->id,
                 'product_id' => $item->product_id,
                 'claimed_weight' => $item->claimed_weight,
-                'claimed_qty_pcs' => $item->claimed_qty_pcs,
                 'note' => $item->note,
             ];
         }
@@ -105,7 +104,6 @@ class EditSalesReturnPlan extends EditRecord
                     $payload = [
                         'product_id' => $item['product_id'],
                         'claimed_weight' => $item['claimed_weight'],
-                        'claimed_qty_pcs' => $item['claimed_qty_pcs'] ?? null,
                         'note' => $item['note'] ?? null,
                     ];
 

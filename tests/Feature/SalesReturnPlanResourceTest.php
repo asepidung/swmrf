@@ -420,4 +420,16 @@ class SalesReturnPlanResourceTest extends TestCase
         $this->assertArrayNotHasKey($old->id, $options);
         $this->assertStringContainsString(now()->subDays(20)->format('Y'), (string) $options[$recent->id], 'label memuat tanggal kirim');
     }
+
+    /**
+     * @test
+     */
+    public function claimed_weight_accepts_thousand_separators_and_a_decimal_comma(): void
+    {
+        $this->assertSame(1234.5, SalesReturnPlanResource::parseWeight('1.234,5'));
+        $this->assertSame(16.6, SalesReturnPlanResource::parseWeight('16,60'));
+        $this->assertSame(2500.0, SalesReturnPlanResource::parseWeight('2.500'));
+        $this->assertSame(10.0, SalesReturnPlanResource::parseWeight(10));
+        $this->assertSame(0.0, SalesReturnPlanResource::parseWeight(''));
+    }
 }
