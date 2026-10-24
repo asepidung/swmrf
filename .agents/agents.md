@@ -7902,3 +7902,5 @@ Rancangan yang diusulkan (belum dikerjakan, menunggu aba-aba): kolom `carcasses.
 4. Laporan HPP Penjualan: Ayah bingung tujuannya; dijelaskan di chat.
 
 **24 Okt 2026 (lanjutan):** plan retur hanya menampilkan surat jalan yang DIKIRIM dalam 3 bulan terakhir saat membuat plan baru (`SalesReturnPlan::MAX_DELIVERY_AGE_MONTHS`; label memakai tanggal kirim, bukan tanggal terkirim/tanda terima). Laporan HPP Penjualan: satu baris per surat jalan/faktur, klik untuk rincian barang (Excel/PDF tetap rinci per barang).
+
+**24 Okt 2026, plan retur:** Claimed Qty (Pcs) dihapus dari form (kolom DB tetap); berat klaim memakai pemisah ribuan otomatis dan koma desimal (`SalesReturnPlanResource::parseWeight`), dengan info 'terkirim' di bawah kolom: dari surat jalan terpilih, atau dari yang diterima customer dalam 3 bulan terakhir bila tanpa surat jalan; tanpa surat jalan pilihan produk dibatasi ke produk yang diterima customer itu 3 bulan terakhir.

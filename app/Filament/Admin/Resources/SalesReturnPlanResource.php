@@ -126,6 +126,28 @@ class SalesReturnPlanResource extends Resource
                 // ditampilkan ramah, bukan menjalar sebagai galat mentah
                 // dari mekanisme auto-save relationship Filament.
                 Forms\Components\Section::make(__('Items'))
+                    // Pemisah ribuan otomatis untuk berat klaim (koma = desimal, maksimal 2 digit). Dipasang di Section pembungkus, bukan
+                    // mask per baris, karena mask Alpine di dalam Repeater merusak baris yang dihapus (lihat ReceivePayment).
+                    ->extraAttributes([
+                        'x-on:input' => '
+                            (function(e) {
+                                let t = e.target;
+                                if (!t || !t.classList.contains("pr-claim-weight")) return;
+                                let raw = t.value.replace(/[^0-9,]/g, "");
+                                let parts = raw.split(",");
+                                let intPart = parts[0].replace(/^0+(?=\d)/, "");
+                                let grouped = intPart === "" ? "" : new Intl.NumberFormat("de-DE").format(parseInt(intPart, 10));
+                                let formatted = parts.length > 1 ? grouped + "," + parts.slice(1).join("").slice(0, 2) : grouped;
+                                if (t.value !== formatted) {
+                                    let start = t.selectionStart, len = t.value.length;
+                                    t.value = formatted;
+                                    let pos = Math.max(0, start + formatted.length - len);
+                                    t.setSelectionRange(pos, pos);
+                                    t.dispatchEvent(new Event("input", { bubbles: true }));
+                                }
+                            })(event)
+                        ',
+                    ])
                     ->schema([
                         Forms\Components\Repeater::make('items')
                             ->hiddenLabel()
@@ -138,11 +160,20 @@ class SalesReturnPlanResource extends Resource
                                     \App\Models\Product::class,
                                     false,
                                     // Surat jalan dipilih: pilihan produk hanya yang ada di surat jalan itu (Owner, 24 Oktober 2026).
-                                    fn (Builder $query, $livewire, Get $get) => $query->when(
-                                        $get('../../delivery_order_id'),
-                                        fn (Builder $q, $doId) => $q->whereIn('id', \App\Models\DeliveryOrderItem::query()->where('delivery_order_id', $doId)->select('product_id')),
-                                    ),
+                                    fn (Builder $query, $livewire, Get $get) => $get('../../delivery_order_id')
+                                        ? $query->whereIn('id', \App\Models\DeliveryOrderItem::query()->where('delivery_order_id', $get('../../delivery_order_id'))->select('product_id'))
+                                        // Tanpa surat jalan: hanya produk yang diterima customer ini dalam 3 bulan terakhir (Owner, 24 Oktober 2026).
+                                        : $query->when(
+                                            $get('../../customer_id'),
+                                            fn (Builder $q, $customerId) => $q->whereIn('id', \App\Models\DeliveryOrderItem::query()
+                                                ->whereIn('delivery_order_id', \App\Models\DeliveryOrder::query()
+                                                    ->where('customer_id', $customerId)
+                                                    ->whereDate('delivery_date', '>=', now()->subMonths(\App\Models\SalesReturnPlan::MAX_DELIVERY_AGE_MONTHS)->toDateString())
+                                                    ->select('id'))
+                                                ->select('product_id')),
+                                        ),
                                 )
+                                    ->live()
                                     ->label(__('Product'))
                                     ->required()
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()
@@ -160,23 +191,52 @@ class SalesReturnPlanResource extends Resource
 
                                 Forms\Components\TextInput::make('claimed_weight')
                                     ->label(__('Claimed Weight (Kg)'))
-                                    ->numeric()
-                                    ->minValue(0.01)
                                     ->required()
-                                    ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'numeric'])
-                                    ->columnSpan(['default' => 1, 'lg' => 2]),
+                                    ->formatStateUsing(fn ($state): ?string => $state === null || $state === '' ? null : rtrim(rtrim(number_format((float) $state, 2, ',', '.'), '0'), ','))
+                                    ->dehydrateStateUsing(fn ($state): float => static::parseWeight($state))
+                                    ->rule(fn (): \Closure => function (string $attribute, $value, \Closure $fail): void {
+                                        if (static::parseWeight($value) <= 0) {
+                                            $fail(__('The claimed weight must be more than zero.'));
+                                        }
+                                    })
+                                    ->helperText(function (Get $get): ?string {
+                                        $productId = (int) $get('product_id');
 
-                                Forms\Components\TextInput::make('claimed_qty_pcs')
-                                    ->label(__('Claimed Qty (Pcs)'))
-                                    ->numeric()
-                                    ->integer()
-                                    ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'numeric'])
-                                    ->columnSpan(['default' => 1, 'lg' => 2]),
+                                        if (! $productId) {
+                                            return null;
+                                        }
+
+                                        $doId = $get('../../delivery_order_id');
+
+                                        if ($doId) {
+                                            $kg = \App\Models\DeliveryOrder::find($doId)?->deliveredWeightFor($productId) ?? 0;
+
+                                            return __('Delivered on this delivery order').': '.number_format((float) $kg, 2, ',', '.').' kg';
+                                        }
+
+                                        $customerId = $get('../../customer_id');
+
+                                        if (! $customerId) {
+                                            return null;
+                                        }
+
+                                        $kg = \App\Models\DeliveryOrderItem::query()
+                                            ->where('product_id', $productId)
+                                            ->whereIn('delivery_order_id', \App\Models\DeliveryOrder::query()
+                                                ->where('customer_id', $customerId)
+                                                ->whereDate('delivery_date', '>=', now()->subMonths(\App\Models\SalesReturnPlan::MAX_DELIVERY_AGE_MONTHS)->toDateString())
+                                                ->select('id'))
+                                            ->sum('weight');
+
+                                        return __('Delivered to this customer in the last 3 months').': '.number_format((float) $kg, 2, ',', '.').' kg';
+                                    })
+                                    ->extraInputAttributes(['class' => 'text-right pr-claim-weight', 'inputmode' => 'decimal', 'x-on:focus' => '$el.select()'])
+                                    ->columnSpan(['default' => 1, 'lg' => 3]),
 
                                 Forms\Components\TextInput::make('note')
                                     ->label(__('Note'))
                                     ->maxLength(255)
-                                    ->columnSpan(['default' => 1, 'lg' => 4]),
+                                    ->columnSpan(['default' => 1, 'lg' => 5]),
                             ])
                             ->columns(12)
                             ->minItems(1)
@@ -190,6 +250,16 @@ class SalesReturnPlanResource extends Resource
                             ->addActionLabel(__('Add Item')),
                     ]),
             ]);
+    }
+
+    /** Berat klaim dari isian ("1.234,5" -> 1234.5); angka asli (int/float) dipakai apa adanya. */
+    public static function parseWeight(mixed $value): float
+    {
+        if (is_int($value) || is_float($value)) {
+            return (float) $value;
+        }
+
+        return (float) str_replace(['.', ','], ['', '.'], trim((string) $value));
     }
 
     public static function table(Table $table): Table

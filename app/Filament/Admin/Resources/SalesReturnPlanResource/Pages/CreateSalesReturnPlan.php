@@ -35,7 +35,6 @@ class CreateSalesReturnPlan extends CreateRecord
                     $plan->items()->create([
                         'product_id' => $item['product_id'],
                         'claimed_weight' => $item['claimed_weight'],
-                        'claimed_qty_pcs' => $item['claimed_qty_pcs'] ?? null,
                         'note' => $item['note'] ?? null,
                     ]);
                 }
