@@ -7913,3 +7913,5 @@ Rancangan yang diusulkan (belum dikerjakan, menunggu aba-aba): kolom `carcasses.
 
 **24 Okt 2026, relabel retur:** field 'Original Delivery Order' di Relabel Mode disembunyikan bila retur sudah punya surat jalan (dari plan); nilainya tetap terisi otomatis dan tersimpan (`dehydratedWhenHidden`). Retur tanpa surat jalan tetap menanyakannya. Alasan fungsi: karton relabel tidak menunjuk kiriman asal, jadi tanpa DO nilai kreditnya nol.
 **INGATKAN AYAH: bahas 'detail tally' (Ayah minta diingatkan setelah relabel retur beres, 24 Okt 2026; sementara dikesampingkan).**
+
+**24 Okt 2026, detail tally (permintaan Ayah):** halaman `/admin/tallies/{id}/items` (`TallyResource\Pages\TallyItems`) berisi seluruh barcode yang discan (barcode, item, gudang, grade, berat, pcs, POD, asal, jam scan; cari, urut, total berat, ekspor Excel dan PDF), dibuka dari tombol daftar di halaman lihat tally. Izin: view_tallies. Kolom 'Code' legacy (J01 dst) diganti Gudang + Grade.

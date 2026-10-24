@@ -232,6 +232,7 @@ Tables\Actions\Action::make('scan')
             'draft' => Pages\DraftTally::route('/draft'),
             'scan' => Pages\ScanTally::route('/{record}/scan'),
             'view' => Pages\ViewTally::route('/{record}'),
+            'items' => Pages\TallyItems::route('/{record}/items'),
         ];
     }
 

@@ -1893,6 +1893,8 @@
     "The chosen plan is not waiting to be pulled.": "The chosen plan is not waiting to be pulled.",
     "Only draft plans that have items are listed. Pulling a plan starts its processing.": "Only draft plans that have items are listed. Pulling a plan starts its processing.",
     "No draft plan is waiting to be pulled.": "No draft plan is waiting to be pulled.",
+    "Tally Detail": "Tally Detail",
+    "Time Scan": "Time Scan",
     "Customer Specs": "Customer Specs",
     "Weight per pack": "Weight per pack",
     "Cut": "Cut",
