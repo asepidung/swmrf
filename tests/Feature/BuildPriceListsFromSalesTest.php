@@ -161,4 +161,20 @@ class BuildPriceListsFromSalesTest extends TestCase
         $this->actingAs($user->fresh())->get(route('print.pricelist', $list))
             ->assertSeeInOrder(['BACKRIB', 'BONE SP', 'FQ 85 CL', 'TOMAHAWK']);
     }
+
+    /** @test */
+    public function the_detail_exports_are_sorted_by_group_then_product(): void
+    {
+        $ga = CustomerGroup::create(['name' => 'ALFA']);
+        $gb = CustomerGroup::create(['name' => 'BETA']);
+        foreach ([[$gb, 'BLADE'], [$ga, 'TOMAHAWK'], [$ga, 'BACKRIB'], [$gb, 'ANGUS']] as [$group, $name]) {
+            (PriceList::firstOrCreate(['customer_group_id' => $group->id]))->items()->create(['product_id' => $this->product($name)->id, 'price' => 1]);
+        }
+
+        $sorted = \App\Filament\Admin\Resources\PriceListResource\Pages\PriceListDetailList::sortedForExport(
+            \App\Models\PriceListItem::with(['priceList.customerGroup', 'product'])->get()
+        )->map(fn ($i) => $i->priceList->customerGroup->name.'/'.$i->product->name)->all();
+
+        $this->assertSame(['ALFA/BACKRIB', 'ALFA/TOMAHAWK', 'BETA/ANGUS', 'BETA/BLADE'], $sorted);
+    }
 }
