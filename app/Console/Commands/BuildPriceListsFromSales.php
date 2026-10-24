@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\DB;
  * grup GRATISAN, yang memang bernilai 0. SO batal dan yang sudah dihapus tidak dihitung. Produk tanpa
  * riwayat dibiarkan kosong (diisi manual). Grup tanpa customer tidak disentuh.
  *
+ * Kolom catatan item sengaja dibiarkan kosong: price list dicetak untuk customer (Owner, 24 Oktober 2026).
+ *
  * Dijalankan hari-H SESUDAH import SO. Dry-run bawaan; `--apply` menulis. Harga yang sudah ada di price
  * list (mis. dari `legacy:import-prices`, atau diubah lewat layar) tidak ditimpa kecuali `--overwrite`.
  * Aman diulang.
@@ -139,12 +141,11 @@ class BuildPriceListsFromSales extends Command
         $existing = $priceList->items()->pluck('price', 'product_id');
 
         foreach ($latest as $productId => $item) {
-            $note = "Harga SO {$item['so']} {$item['date']} ({$item['customer']})";
             $label = ($names[$productId] ?? "#{$productId}").' Rp '.number_format($item['price'], 0, ',', '.');
 
             if (! $existing->has($productId)) {
                 $counts['create']++;
-                $priceList->items()->create(['product_id' => $productId, 'price' => $item['price'], 'note' => mb_substr($note, 0, 255)]);
+                $priceList->items()->create(['product_id' => $productId, 'price' => $item['price']]);
 
                 continue;
             }
@@ -157,7 +158,7 @@ class BuildPriceListsFromSales extends Command
 
             if ($this->option('overwrite')) {
                 $counts['updated']++;
-                $priceList->items()->where('product_id', $productId)->update(['price' => $item['price'], 'note' => mb_substr($note, 0, 255)]);
+                $priceList->items()->where('product_id', $productId)->update(['price' => $item['price']]);
             } else {
                 $counts['differs']++;
                 $counts['lines'][] = "! {$label} -- sudah ada Rp ".number_format((int) $existing[$productId], 0, ',', '.').', tidak ditimpa (pakai --overwrite)';

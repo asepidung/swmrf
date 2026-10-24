@@ -72,6 +72,7 @@ class BuildPriceListsFromSalesTest extends TestCase
         $this->artisan('pricelist:build-from-sales', ['--apply' => true])->assertSuccessful();
 
         $this->assertSame(97000, $this->priceOf($group, $fq));
+        $this->assertNull(PriceList::first()->items()->first()->note, 'catatan kosong: price list dicetak untuk customer');
     }
 
     /** @test */
