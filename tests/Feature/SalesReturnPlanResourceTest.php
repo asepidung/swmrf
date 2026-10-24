@@ -60,6 +60,21 @@ class SalesReturnPlanResourceTest extends TestCase
         ]);
     }
 
+    /** Surat jalan terbaru ke customer uji, supaya klaim tanpa surat jalan punya dasar (batas keras 3 bulan). */
+    private function deliverToCustomer(array $products, float $kg = 1000): void
+    {
+        $this->actingAs($this->employee());
+
+        $do = \App\Models\DeliveryOrder::create([
+            'customer_id' => $this->customer->id, 'delivery_date' => now()->subDays(5)->toDateString(),
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'JOKO'])->id, 'status' => 'Delivered',
+        ]);
+
+        foreach ($products as $product) {
+            \App\Models\DeliveryOrderItem::create(['delivery_order_id' => $do->id, 'product_id' => $product->id, 'box' => 1, 'weight' => $kg]);
+        }
+    }
+
     private function employee(array $permissionNames = []): User
     {
         $user = User::factory()->create(['role' => 'employee', 'is_active' => true]);
@@ -236,6 +251,7 @@ class SalesReturnPlanResourceTest extends TestCase
     /** @test */
     public function creating_a_plan_saves_the_header_and_its_items_in_one_step(): void
     {
+        $this->deliverToCustomer([$this->product, $this->productB]);
         Livewire::actingAs($this->employee(['view_sales_return_plans', 'create_sales_return_plans']))
             ->test(CreateSalesReturnPlan::class)
             ->fillForm([
@@ -310,6 +326,7 @@ class SalesReturnPlanResourceTest extends TestCase
     /** @test */
     public function editing_a_draft_plan_can_add_and_remove_items(): void
     {
+        $this->deliverToCustomer([$this->product, $this->productB]);
         $plan = $this->draftPlanWithItem();
         $originalItem = $plan->items()->first();
 
@@ -342,6 +359,7 @@ class SalesReturnPlanResourceTest extends TestCase
      */
     public function editing_a_submitted_plan_can_negotiate_the_claimed_weight(): void
     {
+        $this->deliverToCustomer([$this->product, $this->productB]);
         $plan = $this->draftPlanWithItem();
         $plan->submit();
         $originalItem = $plan->items()->first();
@@ -431,5 +449,39 @@ class SalesReturnPlanResourceTest extends TestCase
         $this->assertSame(2500.0, SalesReturnPlanResource::parseWeight('2.500'));
         $this->assertSame(10.0, SalesReturnPlanResource::parseWeight(10));
         $this->assertSame(0.0, SalesReturnPlanResource::parseWeight(''));
+    }
+
+    /**
+     * @test
+     */
+    public function a_plan_without_a_delivery_order_cannot_claim_more_than_the_customer_received_in_three_months(): void
+    {
+        $this->deliverToCustomer([$this->product], 10);
+        $user = $this->employee(['view_sales_return_plans', 'create_sales_return_plans']);
+
+        foreach ([['product' => $this->product, 'kg' => 11], ['product' => $this->productB, 'kg' => 1]] as $case) {
+            Livewire::actingAs($user)
+                ->test(CreateSalesReturnPlan::class)
+                ->fillForm([
+                    'customer_id' => $this->customer->id,
+                    'plan_date' => now()->toDateString(),
+                    'items' => [['product_id' => $case['product']->id, 'claimed_weight' => $case['kg']]],
+                ])
+                ->call('create');
+        }
+
+        $this->assertSame(0, SalesReturnPlan::count(), 'melebihi yang diterima, atau produk yang tidak pernah diterima, ditolak');
+
+        Livewire::actingAs($user)
+            ->test(CreateSalesReturnPlan::class)
+            ->fillForm([
+                'customer_id' => $this->customer->id,
+                'plan_date' => now()->toDateString(),
+                'items' => [['product_id' => $this->product->id, 'claimed_weight' => 10]],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(1, SalesReturnPlan::count());
     }
 }
