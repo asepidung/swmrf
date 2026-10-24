@@ -336,9 +336,20 @@ class Invoice extends Model
      */
     public function billedAmount(): float
     {
+        return $this->salesAmount() - (float) $this->down_payment;
+    }
+
+    /**
+     * Nilai penjualan invoice ini: subtotal + biaya tambahan, dikurangi retur jual yang sudah disetujui.
+     *
+     * Uang muka TIDAK mengurangi: uang itu sudah pemasukan penjualan, hanya dibayar lebih awal
+     * (Owner, 24 Oktober 2026). Yang mengurangi penjualan cuma retur -- penjualan yang gagal.
+     * Dipakai Sales Report; `billedAmount()` (yang ditagih) tetap mengurangi uang muka.
+     */
+    public function salesAmount(): float
+    {
         return (float) $this->subtotal
             + (float) $this->charge
-            - (float) $this->down_payment
             // Barang yang dikembalikan pelanggan tidak jadi ditagihkan.
             //
             // Dikurangkan DI SINI, bukan dengan mengubah baris invoicenya.

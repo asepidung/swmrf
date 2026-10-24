@@ -25,14 +25,15 @@ class LaporanPenjualan
     /**
      * Total penjualan per bulan dalam satu tahun, dalam rupiah.
      *
-     * Yang dijumlahkan `billedAmount()`: berapa yang benar-benar DITAGIHKAN
-     * kepada pelanggan -- subtotal ditambah biaya lain, dikurangi uang muka
-     * dan dikurangi retur yang sudah disetujui.
+     * Yang dijumlahkan `salesAmount()`: nilai PENJUALAN -- subtotal ditambah
+     * biaya lain, dikurangi retur yang sudah disetujui. Uang muka tidak
+     * mengurangi: uang muka sudah pemasukan penjualan, hanya dibayar lebih awal
+     * (Owner, 24 Oktober 2026).
      *
      * Rumusnya ditulis sebagai SQL supaya satu tahun cukup SATU query, bukan
      * satu query per invoice -- `Invoice::returnedAmount()` menembak basis
      * data setiap kali dipanggil. Bahwa SQL itu menjawab sama dengan
-     * `Invoice::billedAmount()` BUKAN diandalkan dari kemiripan bentuknya:
+     * `Invoice::salesAmount()` BUKAN diandalkan dari kemiripan bentuknya:
      * ada uji yang membandingkan keduanya invoice per invoice, dan uji itulah
      * yang menahan keduanya tetap satu jawaban saat salah satunya diubah.
      *
@@ -51,7 +52,7 @@ class LaporanPenjualan
         $baris = Invoice::query()
             ->select('invoices.invoice_date')
             ->selectRaw(
-                'invoices.subtotal + invoices.charge - invoices.down_payment '
+                'invoices.subtotal + invoices.charge '
                 .'- COALESCE(retur.kredit, 0) as ditagih'
             )
             ->leftJoinSub(

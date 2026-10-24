@@ -422,7 +422,7 @@
     "Fast Moving Products": "Produk Fast Moving",
     "Female": "Perempuan",
     "Field": "Kolom",
-    "Figures are amounts billed: subtotal plus other charges, less down payment and approved returns. Cost of goods is not included yet.": "Angkanya yang ditagihkan: subtotal ditambah biaya lain, dikurangi uang muka dan retur yang sudah disetujui. Harga pokok belum ikut dihitung.",
+    "Figures are sales value: subtotal plus other charges, less approved returns. Down payments count as sales. Cost of goods is not included yet.": "Angkanya nilai penjualan: subtotal ditambah biaya lain, dikurangi retur yang sudah disetujui. Uang muka termasuk penjualan. Harga pokok belum ikut dihitung.",
     "Fill Report": "Isi Laporan",
     "Fill in every weight, or leave all of them empty. A single blank row cannot be told apart from one that was forgotten.": "Isi semua beratnya, atau kosongkan semuanya. Satu baris kosong di antara yang terisi tidak bisa dibedakan dari yang kelupaan.",
     "Fill in the price for these items first": "Isi dulu harga untuk barang berikut",

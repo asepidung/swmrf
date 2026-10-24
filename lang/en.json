@@ -422,7 +422,7 @@
     "Fast Moving Products": "Fast Moving Products",
     "Female": "Female",
     "Field": "Field",
-    "Figures are amounts billed: subtotal plus other charges, less down payment and approved returns. Cost of goods is not included yet.": "Figures are amounts billed: subtotal plus other charges, less down payment and approved returns. Cost of goods is not included yet.",
+    "Figures are sales value: subtotal plus other charges, less approved returns. Down payments count as sales. Cost of goods is not included yet.": "Figures are sales value: subtotal plus other charges, less approved returns. Down payments count as sales. Cost of goods is not included yet.",
     "Fill Report": "Fill Report",
     "Fill in every weight, or leave all of them empty. A single blank row cannot be told apart from one that was forgotten.": "Fill in every weight, or leave all of them empty. A single blank row cannot be told apart from one that was forgotten.",
     "Fill in the price for these items first": "Fill in the price for these items first",
