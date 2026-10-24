@@ -294,7 +294,7 @@ class SalesReturnPlanResourceTest extends TestCase
      *
      * @test
      */
-    public function creating_a_plan_with_a_claim_exceeding_the_delivery_order_fails_the_whole_save(): void
+    public function creating_a_plan_with_a_claim_exceeding_the_delivery_order_is_saved_anyway(): void
     {
         $user = $this->employee(['view_sales_return_plans', 'create_sales_return_plans']);
         $this->actingAs($user);
@@ -320,7 +320,7 @@ class SalesReturnPlanResourceTest extends TestCase
             ])
             ->call('create');
 
-        $this->assertSame(0, SalesReturnPlan::count());
+        $this->assertSame(1, SalesReturnPlan::count(), 'melebihi yang diterima hanya diberi tahu, tidak ditolak');
     }
 
     /** @test */
@@ -454,30 +454,33 @@ class SalesReturnPlanResourceTest extends TestCase
     /**
      * @test
      */
-    public function a_plan_without_a_delivery_order_cannot_claim_more_than_the_customer_received_in_three_months(): void
+    public function the_received_weight_comes_from_the_receipt_and_never_blocks_a_claim(): void
     {
-        $this->deliverToCustomer([$this->product], 10);
-        $user = $this->employee(['view_sales_return_plans', 'create_sales_return_plans']);
+        $this->actingAs($this->employee());
+        $do = \App\Models\DeliveryOrder::create([
+            'customer_id' => $this->customer->id, 'delivery_date' => now()->subDays(5)->toDateString(),
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'JOKO'])->id, 'status' => 'Delivered',
+        ]);
+        \App\Models\DeliveryOrderItem::create(['delivery_order_id' => $do->id, 'product_id' => $this->product->id, 'box' => 1, 'weight' => 10]);
 
-        foreach ([['product' => $this->product, 'kg' => 11], ['product' => $this->productB, 'kg' => 1]] as $case) {
-            Livewire::actingAs($user)
-                ->test(CreateSalesReturnPlan::class)
-                ->fillForm([
-                    'customer_id' => $this->customer->id,
-                    'plan_date' => now()->toDateString(),
-                    'items' => [['product_id' => $case['product']->id, 'claimed_weight' => $case['kg']]],
-                ])
-                ->call('create');
-        }
+        // Belum ada bukti terima: memakai berat surat jalan.
+        $this->assertSame(10.0, \App\Models\SalesReturnPlanItem::deliveredWeight($do->id, null, $this->product->id));
 
-        $this->assertSame(0, SalesReturnPlan::count(), 'melebihi yang diterima, atau produk yang tidak pernah diterima, ditolak');
+        $receipt = \App\Models\DeliveryOrderReceipt::create(['delivery_order_id' => $do->id, 'customer_id' => $this->customer->id, 'receipt_number' => 'RC-UJI-1', 'total_box' => 1, 'total_weight' => 8, 'delivery_date' => now()->subDays(5)->toDateString(), 'status' => 'Received', 'created_by' => auth()->id()]);
+        \App\Models\DeliveryOrderReceiptItem::create(['delivery_order_receipt_id' => $receipt->id, 'product_id' => $this->product->id, 'box' => 1, 'weight' => 8]);
 
-        Livewire::actingAs($user)
+        // Ada bukti terima: yang diterima customer (8), bukan yang dikirim (10); tanpa surat jalan dihitung per customer 3 bulan.
+        $this->assertSame(8.0, \App\Models\SalesReturnPlanItem::deliveredWeight($do->id, null, $this->product->id));
+        $this->assertSame(8.0, \App\Models\SalesReturnPlanItem::deliveredWeight(null, $this->customer->id, $this->product->id));
+        $this->assertSame(0.0, \App\Models\SalesReturnPlanItem::deliveredWeight(null, $this->customer->id, $this->productB->id));
+
+        // Klaim melebihi apa pun tetap tersimpan.
+        Livewire::actingAs($this->employee(['view_sales_return_plans', 'create_sales_return_plans']))
             ->test(CreateSalesReturnPlan::class)
             ->fillForm([
                 'customer_id' => $this->customer->id,
                 'plan_date' => now()->toDateString(),
-                'items' => [['product_id' => $this->product->id, 'claimed_weight' => 10]],
+                'items' => [['product_id' => $this->productB->id, 'claimed_weight' => 500]],
             ])
             ->call('create')
             ->assertHasNoFormErrors();

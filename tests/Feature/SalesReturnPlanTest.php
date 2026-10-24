@@ -145,14 +145,15 @@ class SalesReturnPlanTest extends TestCase
     }
 
     /** @test */
-    public function a_claim_exceeding_what_was_delivered_on_the_chosen_do_is_rejected(): void
+    public function a_claim_exceeding_what_was_delivered_on_the_chosen_do_is_only_informational(): void
     {
+        // Berat yang diterima hanya informasi, bukan penghalang (Owner, 24 Oktober 2026): kesepakatan di luar sistem tetap bisa dicatat.
         $do = $this->deliveryOrderFor($this->customer, delivered: 20);
         $plan = $this->plan(['delivery_order_id' => $do->id]);
 
-        $this->expectException(\Exception::class);
+        $item = $plan->items()->create(['product_id' => $this->product->id, 'claimed_weight' => 25]);
 
-        $plan->items()->create(['product_id' => $this->product->id, 'claimed_weight' => 25]);
+        $this->assertNotNull($item->id);
     }
 
     /** @test */
@@ -167,14 +168,14 @@ class SalesReturnPlanTest extends TestCase
     }
 
     /** @test */
-    public function a_product_never_delivered_on_the_chosen_do_is_rejected(): void
+    public function a_product_never_delivered_on_the_chosen_do_is_still_accepted(): void
     {
         $do = $this->deliveryOrderFor($this->customer, delivered: 0);
         $plan = $this->plan(['delivery_order_id' => $do->id]);
 
-        $this->expectException(\Exception::class);
+        $item = $plan->items()->create(['product_id' => $this->product->id, 'claimed_weight' => 5]);
 
-        $plan->items()->create(['product_id' => $this->product->id, 'claimed_weight' => 5]);
+        $this->assertNotNull($item->id);
     }
 
     /** @test */
