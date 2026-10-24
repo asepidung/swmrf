@@ -197,6 +197,8 @@ Route::middleware(['web', 'auth'])->group(function () {
         abort_unless(auth()->user()?->hasPermission('view_price_lists') ?? false, 403);
 
         $record->load(['customerGroup', 'items.product', 'creator']);
+        // Cetakan untuk customer: barang urut abjad (Owner, 24 Oktober 2026).
+        $record->setRelation('items', $record->items->sortBy(fn ($item) => mb_strtoupper($item->product?->name ?? ''), SORT_NATURAL)->values());
         return view('print.pricelist', compact('record'));
     })->name('print.pricelist');
 

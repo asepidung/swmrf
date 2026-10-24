@@ -145,4 +145,20 @@ class BuildPriceListsFromSalesTest extends TestCase
         $this->assertSame(2000, $this->priceOf($g2, $p));
         $this->assertNull(PriceList::where('customer_group_id', $empty->id)->first());
     }
+
+    /** @test */
+    public function the_printed_price_list_is_in_alphabetical_order(): void
+    {
+        $group = CustomerGroup::create(['name' => 'G']);
+        $list = PriceList::create(['customer_group_id' => $group->id]);
+        foreach (['TOMAHAWK', 'BONE SP', 'FQ 85 CL', 'BACKRIB'] as $name) {
+            $list->items()->create(['product_id' => $this->product($name)->id, 'price' => 1000]);
+        }
+
+        $user = \App\Models\User::factory()->create();
+        $user->permissions()->attach(\App\Models\Permission::firstOrCreate(['name' => 'view_price_lists'], ['module_name' => 'Fixture', 'description' => 'view_price_lists'])->id);
+
+        $this->actingAs($user->fresh())->get(route('print.pricelist', $list))
+            ->assertSeeInOrder(['BACKRIB', 'BONE SP', 'FQ 85 CL', 'TOMAHAWK']);
+    }
 }
