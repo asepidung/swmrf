@@ -101,6 +101,8 @@ class EditSalesReturnPlan extends EditRecord
                 $record->items()->whereNotIn('id', $submittedIds)->get()->each(fn (SalesReturnPlanItem $item) => $item->delete());
 
                 foreach ($itemsData as $item) {
+                    \App\Models\SalesReturnPlanItem::assertWithinCustomerWindow($record->fresh(), (int) $item['product_id'], (float) $item['claimed_weight']);
+
                     $payload = [
                         'product_id' => $item['product_id'],
                         'claimed_weight' => $item['claimed_weight'],

@@ -174,6 +174,7 @@ class SalesReturnPlanResource extends Resource
                                         ),
                                 )
                                     ->live()
+                                    ->afterStateUpdated(fn (Get $get, \Filament\Forms\Set $set) => $set('delivered_display', static::deliveredText($get)))
                                     ->label(__('Product'))
                                     ->required()
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()
@@ -189,6 +190,17 @@ class SalesReturnPlanResource extends Resource
                                     ->dehydrated()
                                     ->columnSpan(['default' => 1, 'lg' => 4]),
 
+                                // Berat yang terkirim, otomatis dari surat jalan terpilih (atau dari yang diterima customer 3 bulan terakhir bila tanpa surat jalan).
+                                Forms\Components\TextInput::make('delivered_display')
+                                    ->label(__('Delivered (Kg)'))
+                                    ->disabled()
+                                    ->dehydrated(false)
+                                    ->afterStateHydrated(function (Forms\Components\TextInput $component, Get $get): void {
+                                        $component->state(static::deliveredText($get));
+                                    })
+                                    ->extraInputAttributes(['class' => 'text-right'])
+                                    ->columnSpan(['default' => 1, 'lg' => 2]),
+
                                 Forms\Components\TextInput::make('claimed_weight')
                                     ->label(__('Claimed Weight (Kg)'))
                                     ->required()
@@ -199,44 +211,13 @@ class SalesReturnPlanResource extends Resource
                                             $fail(__('The claimed weight must be more than zero.'));
                                         }
                                     })
-                                    ->helperText(function (Get $get): ?string {
-                                        $productId = (int) $get('product_id');
-
-                                        if (! $productId) {
-                                            return null;
-                                        }
-
-                                        $doId = $get('../../delivery_order_id');
-
-                                        if ($doId) {
-                                            $kg = \App\Models\DeliveryOrder::find($doId)?->deliveredWeightFor($productId) ?? 0;
-
-                                            return __('Delivered on this delivery order').': '.number_format((float) $kg, 2, ',', '.').' kg';
-                                        }
-
-                                        $customerId = $get('../../customer_id');
-
-                                        if (! $customerId) {
-                                            return null;
-                                        }
-
-                                        $kg = \App\Models\DeliveryOrderItem::query()
-                                            ->where('product_id', $productId)
-                                            ->whereIn('delivery_order_id', \App\Models\DeliveryOrder::query()
-                                                ->where('customer_id', $customerId)
-                                                ->whereDate('delivery_date', '>=', now()->subMonths(\App\Models\SalesReturnPlan::MAX_DELIVERY_AGE_MONTHS)->toDateString())
-                                                ->select('id'))
-                                            ->sum('weight');
-
-                                        return __('Delivered to this customer in the last 3 months').': '.number_format((float) $kg, 2, ',', '.').' kg';
-                                    })
                                     ->extraInputAttributes(['class' => 'text-right pr-claim-weight', 'inputmode' => 'decimal', 'x-on:focus' => '$el.select()'])
                                     ->columnSpan(['default' => 1, 'lg' => 3]),
 
                                 Forms\Components\TextInput::make('note')
                                     ->label(__('Note'))
                                     ->maxLength(255)
-                                    ->columnSpan(['default' => 1, 'lg' => 5]),
+                                    ->columnSpan(['default' => 1, 'lg' => 3]),
                             ])
                             ->columns(12)
                             ->minItems(1)
@@ -250,6 +231,25 @@ class SalesReturnPlanResource extends Resource
                             ->addActionLabel(__('Add Item')),
                     ]),
             ]);
+    }
+
+    /** Teks kolom "Terkirim (Kg)" untuk sebuah baris item; kosong sebelum produk dipilih. */
+    public static function deliveredText(Get $get): ?string
+    {
+        $productId = (int) $get('product_id');
+
+        if (! $productId) {
+            return null;
+        }
+
+        $kg = \App\Models\SalesReturnPlanItem::deliveredWeight(
+            $get('../../delivery_order_id') ? (int) $get('../../delivery_order_id') : null,
+            $get('../../customer_id') ? (int) $get('../../customer_id') : null,
+            $productId,
+            $get('../../plan_date') ? \Carbon\Carbon::parse($get('../../plan_date')) : null,
+        );
+
+        return number_format($kg, 2, ',', '.');
     }
 
     /** Berat klaim dari isian ("1.234,5" -> 1234.5); angka asli (int/float) dipakai apa adanya. */

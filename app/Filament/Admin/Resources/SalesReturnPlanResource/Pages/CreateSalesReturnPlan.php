@@ -32,6 +32,8 @@ class CreateSalesReturnPlan extends CreateRecord
                 $plan = SalesReturnPlan::create($data);
 
                 foreach ($itemsData as $item) {
+                    \App\Models\SalesReturnPlanItem::assertWithinCustomerWindow($plan, (int) $item['product_id'], (float) $item['claimed_weight']);
+
                     $plan->items()->create([
                         'product_id' => $item['product_id'],
                         'claimed_weight' => $item['claimed_weight'],

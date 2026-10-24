@@ -76,6 +76,56 @@ class SalesReturnPlanItem extends Model
         }
     }
 
+    /**
+     * Berat produk yang terkirim: di surat jalan yang dipilih, atau (tanpa surat jalan) total yang diterima customer itu
+     * dalam 3 bulan sampai tanggal acuan (Owner, 24 Oktober 2026). Dipakai tampilan form dan batas kerasnya.
+     */
+    public static function deliveredWeight(?int $deliveryOrderId, ?int $customerId, int $productId, ?\Carbon\CarbonInterface $until = null): float
+    {
+        if ($deliveryOrderId) {
+            return (float) (DeliveryOrder::find($deliveryOrderId)?->deliveredWeightFor($productId) ?? 0);
+        }
+
+        if (! $customerId) {
+            return 0.0;
+        }
+
+        $until = \Carbon\Carbon::parse($until ?? now());
+        $from = $until->copy()->subMonths(SalesReturnPlan::MAX_DELIVERY_AGE_MONTHS);
+
+        return round((float) DeliveryOrderItem::query()
+            ->where('product_id', $productId)
+            ->whereIn('delivery_order_id', DeliveryOrder::query()
+                ->where('customer_id', $customerId)
+                ->whereDate('delivery_date', '>=', $from->toDateString())
+                ->whereDate('delivery_date', '<=', $until->toDateString())
+                ->select('id'))
+            ->sum('weight'), 2);
+    }
+
+    /**
+     * Batas keras plan TANPA surat jalan: klaim tidak boleh melebihi yang diterima customer dalam 3 bulan terakhir.
+     * Dipanggil dari halaman buat/ubah plan (plan dengan surat jalan dijaga `assertWithinDeliveredWeight()`).
+     *
+     * @throws \Exception
+     */
+    public static function assertWithinCustomerWindow(SalesReturnPlan $plan, int $productId, float $weight): void
+    {
+        if ($plan->delivery_order_id || ! $plan->customer_id) {
+            return;
+        }
+
+        $delivered = self::deliveredWeight(null, (int) $plan->customer_id, $productId, $plan->plan_date);
+
+        if ($delivered <= 0) {
+            throw new \Exception(__('This product was not delivered to this customer in the last 3 months.'));
+        }
+
+        if ($weight > $delivered) {
+            throw new \Exception(__('The claimed weight cannot exceed what was delivered to this customer in the last 3 months.'));
+        }
+    }
+
     protected static function booted(): void
     {
         static::creating(function (self $item) {
