@@ -21,6 +21,14 @@ class PriceListDetailList extends Page implements HasTable
 
     public function getTitle(): string { return __('Price List Detail'); }
 
+    /** Ekspor PDF/Excel urut abjad: grup, lalu nama produk (Owner, 24 Oktober 2026). */
+    public static function sortedForExport(\Illuminate\Support\Collection $records): \Illuminate\Support\Collection
+    {
+        return $records
+            ->sortBy(fn (PriceListItem $item) => mb_strtoupper(($item->priceList?->customerGroup?->name ?? '').'|'.($item->product?->name ?? '')), SORT_NATURAL)
+            ->values();
+    }
+
     public function table(Table $table): Table
     {
         return $table
@@ -58,7 +66,7 @@ class PriceListDetailList extends Page implements HasTable
                         ->icon('heroicon-o-document-arrow-down')
                         ->color('danger')
                         ->action(function ($livewire) {
-                            $records = $livewire->getFilteredTableQuery()->get();
+                            $records = static::sortedForExport($livewire->getFilteredTableQuery()->get());
                             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.price-list-details-pdf', ['records' => $records])->setPaper('a4', 'portrait');
                             return response()->streamDownload(fn () => print($pdf->output()), 'Detail_Price_List_' . now()->format('Y-m-d') . '.pdf');
                         }),
@@ -67,7 +75,7 @@ class PriceListDetailList extends Page implements HasTable
                         ->color('success')
                         ->icon('heroicon-o-document-arrow-down')
                         ->action(function ($livewire) {
-                            $records = $livewire->getFilteredTableQuery()->get();
+                            $records = static::sortedForExport($livewire->getFilteredTableQuery()->get());
                             return response()->streamDownload(function () use ($records) {
                                 $writer = new \OpenSpout\Writer\XLSX\Writer();
                                 $writer->openToFile('php://output');
