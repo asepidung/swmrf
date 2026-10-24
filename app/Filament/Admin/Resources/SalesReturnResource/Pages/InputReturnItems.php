@@ -204,6 +204,10 @@ class InputReturnItems extends Page implements HasForms, HasTable
                         ->hiddenLabel()
                         ->placeholder(__('Original Delivery Order'))
                         ->options(fn (): array => $this->originDeliveryOptions())
+                        // Retur yang sudah punya surat jalan (dari plan) tidak menanyakannya lagi: nilainya terisi otomatis dan tetap ikut
+                        // tersimpan. Hanya retur tanpa surat jalan (lintas pengiriman) yang masih menanyakan (Owner, 24 Oktober 2026).
+                        ->hidden(fn (): bool => filled($this->record->delivery_order_id))
+                        ->dehydratedWhenHidden()
                         ->searchable()
                         ->preload()
                         ->extraAttributes(['tabindex' => '-1'])
