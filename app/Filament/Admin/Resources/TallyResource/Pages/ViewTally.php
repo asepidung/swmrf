@@ -38,6 +38,14 @@ class ViewTally extends ViewRecord
                 ->iconButton()
                 ->url(fn () => $this->getResource()::getUrl('index')),
 
+            Actions\Action::make('detail')
+                ->label('')
+                ->tooltip(__('Tally Detail'))
+                ->icon('heroicon-m-list-bullet')
+                ->color('info')
+                ->iconButton()
+                ->url(fn () => $this->getResource()::getUrl('items', ['record' => $this->record->id])),
+
             Actions\Action::make('scan')
                 ->label('')
                 ->tooltip(__('Scan Barcodes'))

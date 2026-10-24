@@ -1893,6 +1893,8 @@
     "The chosen plan is not waiting to be pulled.": "Plan yang dipilih tidak sedang menunggu ditarik.",
     "Only draft plans that have items are listed. Pulling a plan starts its processing.": "Hanya plan Draft yang berisi item yang tampil. Menarik plan memulai pemrosesannya.",
     "No draft plan is waiting to be pulled.": "Belum ada plan Draft yang menunggu ditarik.",
+    "Tally Detail": "Detail Tally",
+    "Time Scan": "Jam Scan",
     "Customer Specs": "Spek Customer",
     "Weight per pack": "Berat per pack",
     "Cut": "Potongan",

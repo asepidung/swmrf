@@ -352,6 +352,29 @@ class CostReportsTest extends TestCase
     }
 
     /** @test */
+    public function the_tally_detail_page_lists_every_scanned_barcode_and_exports_it(): void
+    {
+        $this->actingAs($this->userWith('view_tallies'));
+        $do = $this->deliveryOrder([['DETAIL-S1', $this->tl, 10], ['DETAIL-S2', $this->tl, 5.5]], 1500000);
+        $tally = $do->tally;
+
+        $page = Livewire::test(\App\Filament\Admin\Resources\TallyResource\Pages\TallyItems::class, ['record' => $tally])
+            ->assertSee('DETAIL-S1')->assertSee('DETAIL-S2')->assertSee('TENDERLOIN')->assertSee('BONING')->assertSee('15,50');
+
+        $page->callAction('excel')->assertFileDownloaded();
+        $page->callAction('pdf')->assertFileDownloaded();
+    }
+
+    /** @test */
+    public function the_tally_detail_page_needs_the_view_permission(): void
+    {
+        $do = $this->deliveryOrder([['DETAIL-S1', $this->tl, 10]], 1500000);
+        $this->actingAs($this->userWith('view_cost_reports'));
+
+        $this->get(\App\Filament\Admin\Resources\TallyResource::getUrl('items', ['record' => $do->tally->id]))->assertForbidden();
+    }
+
+    /** @test */
     public function excel_and_pdf_download_for_both_reports_and_follow_the_filter(): void
     {
         $this->actingAs($this->userWith('view_cost_reports'));
