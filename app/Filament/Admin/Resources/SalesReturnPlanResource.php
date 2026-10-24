@@ -222,12 +222,12 @@ class SalesReturnPlanResource extends Resource
                                         return __('More than the :kg kg received. It is still allowed, for example for an agreement outside the system.', ['kg' => number_format($delivered, 2, ',', '.')]);
                                     })
                                     ->extraInputAttributes(['class' => 'text-right pr-claim-weight', 'inputmode' => 'decimal', 'x-on:focus' => '$el.select()'])
-                                    ->columnSpan(['default' => 1, 'lg' => 3]),
+                                    ->columnSpan(['default' => 1, 'lg' => 2]),
 
                                 Forms\Components\TextInput::make('note')
                                     ->label(__('Note'))
                                     ->maxLength(255)
-                                    ->columnSpan(['default' => 1, 'lg' => 3]),
+                                    ->columnSpan(['default' => 1, 'lg' => 4]),
                             ])
                             ->columns(12)
                             ->minItems(1)
