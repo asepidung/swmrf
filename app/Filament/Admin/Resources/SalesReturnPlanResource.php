@@ -101,7 +101,8 @@ class SalesReturnPlanResource extends Resource
                             ->afterStateUpdated(fn (callable $set) => $set('items', []))
                             ->disabled(fn ($livewire): bool => static::isNotFullyEditable($livewire))
                             ->placeholder(__('Pick a delivery order, or leave it empty for an unidentified return'))
-                            ->helperText(__('Only delivery orders shipped within the last 3 months are listed.')),
+                            ->helperText(__('Only delivery orders shipped within the last 3 months are listed.'))
+                            ->columnSpan(2),
 
                         Forms\Components\DatePicker::make('plan_date')
                             ->label(__('Plan Date'))
@@ -114,7 +115,7 @@ class SalesReturnPlanResource extends Resource
                             ->maxLength(255)
                             ->disabled(fn ($livewire): bool => static::isNotFullyEditable($livewire))
                             ->columnSpanFull(),
-                    ])->columns(3),
+                    ])->columns(4),
 
                 // Repeater BUKAN diikat lewat ->relationship() -- pola
                 // yang sama dengan SalesOrderResource/
