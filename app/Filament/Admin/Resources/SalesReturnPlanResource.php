@@ -307,6 +307,7 @@ class SalesReturnPlanResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('Status'))
                     ->badge()
+                    ->formatStateUsing(fn (string $state): string => SalesReturnPlan::statusLabel($state))
                     ->color(fn (string $state): string => match ($state) {
                         SalesReturnPlan::STATUS_DRAFT => 'warning',
                         SalesReturnPlan::STATUS_SUBMITTED => 'info',
@@ -333,7 +334,7 @@ class SalesReturnPlanResource extends Resource
                     ->label(__('Status'))
                     ->options([
                         SalesReturnPlan::STATUS_DRAFT => SalesReturnPlan::STATUS_DRAFT,
-                        SalesReturnPlan::STATUS_SUBMITTED => SalesReturnPlan::STATUS_SUBMITTED,
+                        SalesReturnPlan::STATUS_SUBMITTED => SalesReturnPlan::statusLabel(SalesReturnPlan::STATUS_SUBMITTED),
                         SalesReturnPlan::STATUS_RECEIVED => SalesReturnPlan::STATUS_RECEIVED,
                         SalesReturnPlan::STATUS_CANCELLED => SalesReturnPlan::STATUS_CANCELLED,
                     ]),

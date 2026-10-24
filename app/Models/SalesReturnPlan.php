@@ -105,6 +105,27 @@ class SalesReturnPlan extends Model
         $this->save();
     }
 
+    /** Nama status di layar: "Submitted" kini berarti sedang diproses gudang (Owner, 24 Oktober 2026). */
+    public static function statusLabel(string $status): string
+    {
+        return $status === self::STATUS_SUBMITTED ? __('On Process') : $status;
+    }
+
+    /**
+     * Gudang membatalkan penarikan (retur Draft-nya dihapus): plan kembali Draft supaya bisa ditarik ulang.
+     *
+     * @throws \RuntimeException
+     */
+    public function markDraft(): void
+    {
+        if ($this->status !== self::STATUS_SUBMITTED) {
+            throw new \RuntimeException(__('Only a plan that is on process can go back to draft.'));
+        }
+
+        $this->status = self::STATUS_DRAFT;
+        $this->save();
+    }
+
     /**
      * Dipanggil saat Sales Return yang menariknya di-approve.
      *
