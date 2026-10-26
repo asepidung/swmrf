@@ -21,14 +21,17 @@ class CreateExpense extends CreateRecord
     /**
      * Tidak lewat `Expense::create()` polos -- setiap dokumen HARUS
      * melahirkan BankTransaction-nya sendiri, dan itu hanya terjadi lewat
-     * `createAdvance()`/`createReimburse()` (lihat model).
+     * `createAdvance()`/`createReimburse()` (lihat model), yang juga menulis baris barangnya.
      */
     protected function handleRecordCreation(array $data): Model
     {
+        $items = $data['items'] ?? [];
+        unset($data['items']);
+
         try {
             return $data['type'] === Expense::TYPE_ADVANCE
-                ? Expense::createAdvance($data)
-                : Expense::createReimburse($data);
+                ? Expense::createAdvance($data, $items)
+                : Expense::createReimburse($data, $items);
         } catch (\Exception $e) {
             report($e);
             Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();

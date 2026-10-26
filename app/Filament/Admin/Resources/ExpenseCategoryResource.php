@@ -23,14 +23,12 @@ class ExpenseCategoryResource extends Resource
 
     protected static ?string $cluster = \App\Filament\Clusters\ExpensesCluster::class;
 
+    // Sub-menu cluster di atas, bukan di samping (posisi dibaca dari Resource, bukan dari Cluster).
+    protected static \Filament\Pages\SubNavigationPosition $subNavigationPosition = \Filament\Pages\SubNavigationPosition::Top;
+
     protected static ?string $navigationIcon = 'heroicon-o-tag';
 
     protected static ?int $navigationSort = 21;
-
-    public static function getNavigationGroup(): ?string
-    {
-        return __('FINANCE');
-    }
 
     public static function getModelLabel(): string
     {

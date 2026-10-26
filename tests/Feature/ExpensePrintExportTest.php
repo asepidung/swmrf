@@ -30,6 +30,12 @@ class ExpensePrintExportTest extends TestCase
         $this->category = ExpenseCategory::create(['name' => 'FIXTURE CATEGORY']);
     }
 
+    /** Satu barang bernilai $amount. */
+    private function items(float $amount): array
+    {
+        return [['expense_category_id' => $this->category->id, 'description' => 'barang uji', 'amount' => $amount]];
+    }
+
     private function employee(array $permissionNames = []): User
     {
         $user = User::factory()->create(['role' => 'employee', 'is_active' => true]);
@@ -48,17 +54,17 @@ class ExpensePrintExportTest extends TestCase
     {
         $expense = Expense::createAdvance([
             'expense_date' => now()->toDateString(),
-            'expense_category_id' => $this->category->id,
             'recipient_name' => 'budi',
-            'advance_amount' => 100000,
-        ]);
-        $expense->load(['category', 'bankAccount', 'recipientUser', 'createdBy', 'transactions']);
+        ], $this->items(100000));
+        $expense->load(['items.category', 'bankAccount', 'recipientUser', 'createdBy', 'transactions']);
 
         $html = View::make('print.expense', ['record' => $expense])->render();
 
         $this->assertStringContainsString($expense->expense_number, $html);
         $this->assertStringContainsString('100.000', $html);
         $this->assertStringContainsString('BUDI', $html);
+        $this->assertStringContainsString('barang uji', $html);
+        $this->assertStringContainsString('FIXTURE CATEGORY', $html);
     }
 
     /** Ekspor PDF harus benar-benar merender. */
@@ -66,13 +72,11 @@ class ExpensePrintExportTest extends TestCase
     {
         $expense = Expense::createAdvance([
             'expense_date' => now()->toDateString(),
-            'expense_category_id' => $this->category->id,
             'recipient_name' => 'budi',
-            'advance_amount' => 100000,
-        ]);
+        ], $this->items(100000));
 
         $html = View::make('exports.expenses-pdf', [
-            'records' => Expense::with('category')->get(),
+            'records' => Expense::with('items.category')->get(),
             'title' => 'Pengeluaran Kas Kecil',
         ])->render();
 
@@ -88,10 +92,8 @@ class ExpensePrintExportTest extends TestCase
     {
         $expense = Expense::createAdvance([
             'expense_date' => now()->toDateString(),
-            'expense_category_id' => $this->category->id,
             'recipient_name' => 'budi',
-            'advance_amount' => 100000,
-        ]);
+        ], $this->items(100000));
 
         Livewire::actingAs($this->employee(['view_cash_book']))
             ->test(ListCashBook::class)
@@ -103,16 +105,12 @@ class ExpensePrintExportTest extends TestCase
     {
         Expense::createAdvance([
             'expense_date' => now()->toDateString(),
-            'expense_category_id' => $this->category->id,
             'recipient_name' => 'terbuka',
-            'advance_amount' => 100000,
-        ]);
+        ], $this->items(100000));
         Expense::createReimburse([
             'expense_date' => now()->toDateString(),
-            'expense_category_id' => $this->category->id,
             'recipient_name' => 'selesai',
-            'receipt_amount' => 50000,
-        ]);
+        ], $this->items(50000));
 
         Livewire::actingAs($this->employee(['view_expenses']))
             ->test(\App\Filament\Admin\Resources\ExpenseResource\Pages\ListExpenses::class)

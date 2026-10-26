@@ -6,6 +6,7 @@ use App\Filament\Admin\Resources\ExpenseResource\Pages;
 use App\Models\BankAccount;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
+use App\Models\ExpenseItem;
 use App\Models\User;
 use App\Support\TrashedRecords;
 use Carbon\Carbon;
@@ -26,14 +27,12 @@ class ExpenseResource extends Resource
 
     protected static ?string $cluster = \App\Filament\Clusters\ExpensesCluster::class;
 
+    // Sub-menu cluster di atas, bukan di samping (posisi dibaca dari Resource, bukan dari Cluster).
+    protected static \Filament\Pages\SubNavigationPosition $subNavigationPosition = \Filament\Pages\SubNavigationPosition::Top;
+
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
 
     protected static ?int $navigationSort = 20;
-
-    public static function getNavigationGroup(): ?string
-    {
-        return __('FINANCE');
-    }
 
     public static function getModelLabel(): string
     {
@@ -63,30 +62,81 @@ class ExpenseResource extends Resource
             ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'numeric']);
     }
 
+    /** Angka dari isian uang yang sedang diketik ("1.200.000" -> 1200000). */
+    public static function moneyValue(mixed $state): float
+    {
+        return (float) str_replace(['.', ' '], '', (string) $state);
+    }
+
+    private static function canManage(): bool
+    {
+        return auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('edit_expenses') ?? false);
+    }
+
+    /**
+     * Baris barang: kategori, keterangan yang diketik, total harga. Dipakai form buat dan modal laporan
+     * balik kasbon (nilai disesuaikan dengan nota).
+     */
+    private static function itemsRepeater(): Forms\Components\Repeater
+    {
+        return Forms\Components\Repeater::make('items')
+            ->label(__('Items'))
+            ->schema([
+                Forms\Components\Select::make('expense_category_id')
+                    ->label(__('Category'))
+                    ->options(fn () => ExpenseCategory::where('is_active', true)->orderBy('name')->pluck('name', 'id'))
+                    ->searchable()
+                    ->required()
+                    ->columnSpan(['md' => 3]),
+                Forms\Components\TextInput::make('description')
+                    ->label(__('Description'))
+                    ->required()
+                    ->maxLength(255)
+                    ->columnSpan(['md' => 5]),
+                static::money('amount')
+                    ->label(__('Total Price'))
+                    ->required()
+                    ->live(onBlur: true)
+                    ->columnSpan(['md' => 4]),
+            ])
+            ->columns(['md' => 12])
+            ->defaultItems(1)
+            ->minItems(1)
+            ->addActionLabel(__('Add item'))
+            ->live();
+    }
+
+    private static function itemsTotalPlaceholder(): Forms\Components\Placeholder
+    {
+        return Forms\Components\Placeholder::make('items_total')
+            ->label(__('Total'))
+            ->content(fn (Forms\Get $get): string => 'Rp '.number_format(
+                collect($get('items') ?? [])->sum(fn ($item) => static::moneyValue($item['amount'] ?? 0)),
+                0, ',', '.',
+            ));
+    }
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\Section::make(__('Expense'))
                     ->schema([
-                        Forms\Components\Select::make('type')
-                            ->label(__('Type'))
-                            ->options([
-                                Expense::TYPE_ADVANCE => __('Advance (Kasbon)'),
-                                Expense::TYPE_REIMBURSE => __('Reimburse'),
-                            ])
-                            ->required()
-                            ->live()
-                            // Jenis dokumen menentukan BankTransaction yang
-                            // lahir saat dibuat -- tidak boleh diganti
-                            // sesudahnya tanpa menulis ulang jejak kasnya.
-                            ->disabled(fn (string $context): bool => $context === 'edit')
-                            ->dehydrated(),
-
                         Forms\Components\DatePicker::make('expense_date')
                             ->label(__('Date'))
                             ->required()
                             ->default(now()),
+
+                        Forms\Components\TextInput::make('recipient_name')
+                            ->label(__('Requester'))
+                            ->required()
+                            ->maxLength(255)
+                            ->extraInputAttributes(['style' => 'text-transform:uppercase']),
+
+                        Forms\Components\Select::make('user_id')
+                            ->label(__('Requester Account (optional)'))
+                            ->options(fn () => User::where('is_active', true)->pluck('name', 'id'))
+                            ->searchable(),
 
                         Forms\Components\Select::make('bank_account_id')
                             ->label(__('Cash/Bank Account'))
@@ -96,48 +146,136 @@ class ExpenseResource extends Resource
                             ->required()
                             ->disabled(fn (string $context): bool => $context === 'edit')
                             ->dehydrated(),
+                    ])->columns(['md' => 4]),
 
-                        Forms\Components\Select::make('expense_category_id')
-                            ->label(__('Category'))
-                            ->options(fn () => ExpenseCategory::where('is_active', true)->orderBy('name')->pluck('name', 'id'))
-                            ->searchable()
-                            ->required(),
+                Forms\Components\Section::make(__('Items'))
+                    ->schema([
+                        static::itemsRepeater()
+                            ->hiddenLabel()
+                            // Barang menentukan BankTransaction yang lahir saat dibuat; sesudahnya hanya
+                            // berubah lewat laporan balik kasbon (aksi Settle).
+                            ->disabled(fn (string $context): bool => $context === 'edit')
+                            ->dehydrated(fn (string $context): bool => $context === 'create'),
+                        static::itemsTotalPlaceholder(),
+                    ]),
 
-                        Forms\Components\TextInput::make('recipient_name')
-                            ->label(__('Recipient'))
+                Forms\Components\Section::make(__('How is it paid?'))
+                    ->schema([
+                        Forms\Components\Radio::make('type')
+                            ->hiddenLabel()
+                            ->options([
+                                Expense::TYPE_REIMBURSE => __('Reimburse'),
+                                Expense::TYPE_ADVANCE => __('Advance (Kasbon)'),
+                            ])
+                            ->descriptions([
+                                Expense::TYPE_REIMBURSE => __('The requester paid first; we pay them back according to the receipts.'),
+                                Expense::TYPE_ADVANCE => __('We give the estimated money now; the requester reports back with receipts and the value is adjusted.'),
+                            ])
                             ->required()
-                            ->maxLength(255)
-                            ->extraInputAttributes(['style' => 'text-transform:uppercase']),
-
-                        Forms\Components\Select::make('user_id')
-                            ->label(__('Recipient Account (optional)'))
-                            ->options(fn () => User::where('is_active', true)->pluck('name', 'id'))
-                            ->searchable(),
-
-                        static::money('advance_amount')
-                            ->label(__('Advance Amount'))
-                            ->visible(fn (Forms\Get $get): bool => $get('type') === Expense::TYPE_ADVANCE)
-                            ->required(fn (Forms\Get $get): bool => $get('type') === Expense::TYPE_ADVANCE)
                             ->disabled(fn (string $context): bool => $context === 'edit')
                             ->dehydrated(),
-
-                        static::money('receipt_amount')
-                            ->label(__('Receipt Amount'))
-                            ->visible(fn (Forms\Get $get): bool => $get('type') === Expense::TYPE_REIMBURSE)
-                            ->required(fn (Forms\Get $get): bool => $get('type') === Expense::TYPE_REIMBURSE)
-                            ->disabled(fn (string $context): bool => $context === 'edit')
-                            ->dehydrated(),
-
-                        Forms\Components\Textarea::make('description')
-                            ->label(__('Description'))
-                            ->columnSpanFull(),
-                    ])->columns(2),
+                    ]),
             ]);
+    }
+
+    /** Aksi laporan balik kasbon: nilai tiap barang disesuaikan dengan nota yang dibawa pemohon. */
+    public static function settleAction(): Tables\Actions\Action
+    {
+        return Tables\Actions\Action::make('settle')
+            ->label(__('Report Back'))
+            ->icon('heroicon-o-check-circle')
+            ->color('success')
+            ->visible(fn (Expense $record): bool => $record->awaitingReport() && static::canManage())
+            ->fillForm(fn (Expense $record): array => [
+                'items' => $record->items->map(fn ($item) => [
+                    'expense_category_id' => $item->expense_category_id,
+                    'description' => $item->description,
+                    'amount' => $item->amount,
+                ])->all(),
+            ])
+            ->form([
+                static::itemsRepeater()
+                    ->helperText(__('Adjust each item to the receipts. Add or remove rows if the receipts differ.')),
+                static::itemsTotalPlaceholder(),
+                Forms\Components\FileUpload::make('receipt_photo')
+                    ->label(__('Receipt Photo'))
+                    ->disk('local')
+                    ->directory('expense-receipts')
+                    ->visibility('private')
+                    ->image()
+                    ->maxSize(5120),
+            ])
+            ->action(function (Expense $record, array $data): void {
+                if (! static::canManage()) {
+                    Notification::make()->title(__('You do not have permission to do this.'))->danger()->send();
+
+                    return;
+                }
+
+                try {
+                    // Foto disimpan SELAGI masih Open -- settle() bisa langsung mengunci baris ke
+                    // Settled, dan update() sesudahnya akan ditolak guard `updating()` di model.
+                    if (! empty($data['receipt_photo'])) {
+                        $record->update(['receipt_photo' => $data['receipt_photo']]);
+                    }
+
+                    $record->settle($data['items']);
+                } catch (\Throwable $e) {
+                    report($e);
+                    Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
+
+                    return;
+                }
+
+                $owed = $record->fresh()->outstandingReturn();
+
+                $owed > 0
+                    ? Notification::make()->title(__('Reported. The requester still has to return :amount.', ['amount' => 'Rp '.number_format($owed, 0, ',', '.')]))->warning()->send()
+                    : Notification::make()->title(__('Expense settled.'))->success()->send();
+            });
+    }
+
+    /** Aksi terima pengembalian sisa kasbon -- sebagian atau bertahap. */
+    public static function returnAction(): Tables\Actions\Action
+    {
+        return Tables\Actions\Action::make('receive_return')
+            ->label(__('Receive Return'))
+            ->icon('heroicon-o-arrow-uturn-left')
+            ->color('warning')
+            ->visible(fn (Expense $record): bool => $record->outstandingReturn() > 0 && static::canManage())
+            ->fillForm(fn (Expense $record): array => ['amount' => $record->outstandingReturn()])
+            ->form(fn (Expense $record): array => [
+                Forms\Components\Placeholder::make('outstanding')
+                    ->label(__('Still to be returned'))
+                    ->content('Rp '.number_format($record->outstandingReturn(), 0, ',', '.')),
+                static::money('amount')
+                    ->label(__('Amount returned now'))
+                    ->required(),
+            ])
+            ->action(function (Expense $record, array $data): void {
+                if (! static::canManage()) {
+                    Notification::make()->title(__('You do not have permission to do this.'))->danger()->send();
+
+                    return;
+                }
+
+                try {
+                    $record->receiveReturn((float) $data['amount']);
+                } catch (\Throwable $e) {
+                    report($e);
+                    Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
+
+                    return;
+                }
+
+                Notification::make()->title(__('Return recorded.'))->success()->send();
+            });
     }
 
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->with('items.category'))
             ->columns([
                 Tables\Columns\TextColumn::make('expense_number')
                     ->label(__('Number'))
@@ -152,13 +290,12 @@ class ExpenseResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => $state === Expense::TYPE_ADVANCE ? __('Advance') : __('Reimburse'))
                     ->color(fn (string $state): string => $state === Expense::TYPE_ADVANCE ? 'warning' : 'gray'),
-                Tables\Columns\TextColumn::make('category.name')
-                    ->label(__('Category'))
-                    ->searchable()
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('recipient_name')
-                    ->label(__('Recipient'))
+                    ->label(__('Requester'))
                     ->searchable(),
+                Tables\Columns\TextColumn::make('categories')
+                    ->label(__('Category'))
+                    ->state(fn (Expense $record): string => $record->items->map(fn ($item) => $item->category?->name)->filter()->unique()->join(', ')),
                 Tables\Columns\TextColumn::make('advance_amount')
                     ->label(__('Advance'))
                     ->money('IDR', locale: 'id')
@@ -169,9 +306,11 @@ class ExpenseResource extends Resource
                     ->money('IDR', locale: 'id')
                     ->placeholder('-')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('balance_due')
-                    ->label(__('Balance Due'))
+                Tables\Columns\TextColumn::make('still_with_requester')
+                    ->label(__('With Requester'))
+                    ->state(fn (Expense $record): ?float => $record->stillWithRequester() ?: null)
                     ->money('IDR', locale: 'id')
+                    ->color('danger')
                     ->placeholder('-'),
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('Status'))
@@ -190,13 +329,13 @@ class ExpenseResource extends Resource
                         ->icon('heroicon-o-document-text')
                         ->color('success')
                         ->action(function ($livewire) {
-                            $records = $livewire->getFilteredTableQuery()->with('category')->get();
+                            $records = $livewire->getFilteredTableQuery()->with('items.category')->get();
 
                             return response()->streamDownload(function () use ($records) {
                                 $writer = new \OpenSpout\Writer\XLSX\Writer();
                                 $writer->openToFile('php://output');
                                 $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
-                                    'Number', 'Date', 'Type', 'Category', 'Recipient', 'Advance (Rp)', 'Receipt (Rp)', 'Status',
+                                    'Number', 'Date', 'Type', 'Category', 'Requester', 'Advance (Rp)', 'Receipt (Rp)', 'With Requester (Rp)', 'Status',
                                 ]));
 
                                 foreach ($records as $record) {
@@ -204,10 +343,11 @@ class ExpenseResource extends Resource
                                         $record->expense_number,
                                         optional($record->expense_date)->format('Y-m-d') ?? '',
                                         $record->type,
-                                        $record->category?->name ?? '',
+                                        $record->items->map(fn ($item) => $item->category?->name)->filter()->unique()->join(', '),
                                         $record->recipient_name,
                                         $record->advance_amount !== null ? (float) $record->advance_amount : 0,
                                         $record->receipt_amount !== null ? (float) $record->receipt_amount : 0,
+                                        $record->stillWithRequester(),
                                         $record->status,
                                     ]));
                                 }
@@ -221,7 +361,7 @@ class ExpenseResource extends Resource
                         ->icon('heroicon-o-document-arrow-down')
                         ->color('danger')
                         ->action(function ($livewire) {
-                            $records = $livewire->getFilteredTableQuery()->with('category')->get();
+                            $records = $livewire->getFilteredTableQuery()->with('items.category')->get();
 
                             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.expenses-pdf', [
                                 'records' => $records,
@@ -231,35 +371,36 @@ class ExpenseResource extends Resource
                             return response()->streamDownload(fn () => print($pdf->output()), 'expenses.pdf');
                         }),
 
-                    // Rekap sederhana Owner: total nominal NOTA (bukan uang
-                    // muka) per kategori per bulan, dari expense yang
-                    // BENAR-BENAR Settled -- lihat docblock Expense soal
-                    // biaya yang dilaporkan = nominal nota, bukan uang yang
-                    // keluar. Advance yang masih Open belum punya biaya
-                    // nyata untuk direkap.
+                    // Rekap sederhana Owner: total harga BARANG (nominal nota) per kategori, dari expense yang
+                    // nilainya sudah nyata -- reimburse, dan kasbon yang notanya sudah dilaporkan (sisa uang yang
+                    // belum kembali tidak mengubah biayanya). Kasbon yang belum dilaporkan masih estimasi.
                     Tables\Actions\Action::make('recap_by_category')
                         ->label(__('Recap by Category'))
                         ->icon('heroicon-o-chart-bar')
                         ->color('gray')
                         ->action(function ($livewire) {
-                            $settled = $livewire->getFilteredTableQuery()
+                            $items = ExpenseItem::query()
                                 ->with('category')
-                                ->where('status', Expense::STATUS_SETTLED)
+                                ->whereIn('expense_id', $livewire->getFilteredTableQuery()
+                                    ->whereNotNull('receipt_amount')
+                                    ->where('status', '!=', Expense::STATUS_CANCELLED)
+                                    ->reorder()
+                                    ->select('expenses.id'))
                                 ->get()
-                                ->groupBy(fn (Expense $expense) => $expense->category?->name ?? __('Uncategorized'));
+                                ->groupBy(fn (ExpenseItem $item) => $item->category?->name ?? __('Uncategorized'));
 
-                            return response()->streamDownload(function () use ($settled) {
+                            return response()->streamDownload(function () use ($items) {
                                 $writer = new \OpenSpout\Writer\XLSX\Writer();
                                 $writer->openToFile('php://output');
                                 $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
                                     'Category', 'Count', 'Total Receipt (Rp)',
                                 ]));
 
-                                foreach ($settled as $categoryName => $expenses) {
+                                foreach ($items->sortKeys() as $categoryName => $rows) {
                                     $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
                                         $categoryName,
-                                        $expenses->count(),
-                                        (float) $expenses->sum('receipt_amount'),
+                                        $rows->count(),
+                                        (float) $rows->sum('amount'),
                                     ]));
                                 }
 
@@ -286,7 +427,10 @@ class ExpenseResource extends Resource
 
                 Tables\Filters\SelectFilter::make('expense_category_id')
                     ->label(__('Category'))
-                    ->relationship('category', 'name'),
+                    ->options(fn () => ExpenseCategory::orderBy('name')->pluck('name', 'id'))
+                    ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
+                        ? $query->whereHas('items', fn (Builder $items) => $items->where('expense_category_id', $data['value']))
+                        : $query),
 
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,
@@ -327,58 +471,15 @@ class ExpenseResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\Action::make('settle')
-                    ->label(__('Settle'))
-                    ->icon('heroicon-o-check-circle')
-                    ->color('success')
-                    ->visible(fn (Expense $record): bool => $record->status === Expense::STATUS_OPEN
-                        && (auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('edit_expenses') ?? false)))
-                    ->form([
-                        static::money('receipt_amount')
-                            ->label(__('Receipt Amount'))
-                            ->required(),
-                        Forms\Components\FileUpload::make('receipt_photo')
-                            ->label(__('Receipt Photo'))
-                            ->disk('local')
-                            ->directory('expense-receipts')
-                            ->visibility('private')
-                            ->image()
-                            ->maxSize(5120),
-                    ])
-                    ->action(function (Expense $record, array $data): void {
-                        if (! (auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('edit_expenses') ?? false))) {
-                            Notification::make()->title(__('You do not have permission to do this.'))->danger()->send();
-
-                            return;
-                        }
-
-                        try {
-                            // Foto disimpan SELAGI masih Open -- settle()
-                            // sendiri langsung mengunci baris ke Settled,
-                            // dan update() sesudahnya akan ditolak guard
-                            // `updating()` di model.
-                            if (! empty($data['receipt_photo'])) {
-                                $record->update(['receipt_photo' => $data['receipt_photo']]);
-                            }
-
-                            $record->settle((float) $data['receipt_amount']);
-                        } catch (\Throwable $e) {
-                            report($e);
-                            Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
-
-                            return;
-                        }
-
-                        Notification::make()->title(__('Expense settled.'))->success()->send();
-                    }),
+                static::settleAction(),
+                static::returnAction(),
 
                 Tables\Actions\Action::make('cancel_expense')
                     ->label(__('Cancel'))
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->visible(fn (Expense $record): bool => $record->status === Expense::STATUS_OPEN
-                        && (auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('edit_expenses') ?? false)))
+                    ->visible(fn (Expense $record): bool => $record->awaitingReport() && static::canManage())
                     ->action(function (Expense $record): void {
                         if (! (auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('edit_expenses') ?? false))) {
                             Notification::make()->title(__('You do not have permission to do this.'))->danger()->send();
@@ -420,10 +521,8 @@ class ExpenseResource extends Resource
                         Infolists\Components\TextEntry::make('expense_date')
                             ->label(__('Date'))
                             ->date('d M Y'),
-                        Infolists\Components\TextEntry::make('category.name')
-                            ->label(__('Category')),
                         Infolists\Components\TextEntry::make('recipient_name')
-                            ->label(__('Recipient')),
+                            ->label(__('Requester')),
                         Infolists\Components\TextEntry::make('advance_amount')
                             ->label(__('Advance Amount'))
                             ->money('IDR', locale: 'id')
@@ -432,15 +531,36 @@ class ExpenseResource extends Resource
                             ->label(__('Receipt Amount'))
                             ->money('IDR', locale: 'id')
                             ->placeholder('-'),
-                        Infolists\Components\TextEntry::make('balance_due')
-                            ->label(__('Balance Due'))
+                        Infolists\Components\TextEntry::make('returned_amount')
+                            ->label(__('Returned'))
                             ->money('IDR', locale: 'id')
-                            ->placeholder('-'),
+                            ->visible(fn (Expense $record): bool => $record->type === Expense::TYPE_ADVANCE),
+                        Infolists\Components\TextEntry::make('still_with_requester')
+                            ->label(__('With Requester'))
+                            ->state(fn (Expense $record): float => $record->stillWithRequester())
+                            ->money('IDR', locale: 'id')
+                            ->color('danger')
+                            ->visible(fn (Expense $record): bool => $record->type === Expense::TYPE_ADVANCE),
                         Infolists\Components\TextEntry::make('description')
                             ->label(__('Description'))
                             ->placeholder('-')
                             ->columnSpanFull(),
                     ])->columns(2),
+
+                Infolists\Components\Section::make(__('Items'))
+                    ->schema([
+                        Infolists\Components\RepeatableEntry::make('items')
+                            ->hiddenLabel()
+                            ->schema([
+                                Infolists\Components\TextEntry::make('category.name')
+                                    ->label(__('Category')),
+                                Infolists\Components\TextEntry::make('description')
+                                    ->label(__('Description')),
+                                Infolists\Components\TextEntry::make('amount')
+                                    ->label(__('Total Price'))
+                                    ->money('IDR', locale: 'id'),
+                            ])->columns(3),
+                    ]),
 
                 Infolists\Components\Section::make(__('Bank Transactions'))
                     ->schema([
