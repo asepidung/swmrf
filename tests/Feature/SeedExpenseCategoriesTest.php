@@ -37,4 +37,18 @@ class SeedExpenseCategoriesTest extends TestCase
 
         $this->assertSame($before + count(SeedExpenseCategories::CATEGORIES) - 1, ExpenseCategory::count());
     }
+
+    /** @test */
+    public function the_legacy_categories_are_deactivated_but_kept(): void
+    {
+        $legacy = ExpenseCategory::where('name', 'ATK')->firstOrFail();
+
+        $this->artisan('expenses:seed-categories')->assertSuccessful();
+        $this->assertTrue($legacy->fresh()->is_active, 'dry-run tidak menulis');
+
+        $this->artisan('expenses:seed-categories', ['--apply' => true])->assertSuccessful();
+
+        $this->assertFalse($legacy->fresh()->is_active);
+        $this->assertNull($legacy->fresh()->deleted_at);
+    }
 }
