@@ -60,6 +60,17 @@ class BankAccountBalanceTest extends TestCase
         );
     }
 
+    public function test_a_legacy_cash_account_with_another_initial_is_reused_instead_of_creating_a_second_one(): void
+    {
+        $legacy = BankAccount::create([
+            'initial' => '0', 'bank_name' => 'Kas Tunai', 'account_number' => '-',
+            'account_holder' => 'Wijaya Meat', 'is_active' => true,
+        ]);
+
+        $this->assertSame($legacy->id, BankAccount::cashAccount()->id);
+        $this->assertSame(1, BankAccount::count());
+    }
+
     public function test_the_balance_is_the_sum_of_its_cash_book_entries(): void
     {
         $account = BankAccount::cashAccount();
