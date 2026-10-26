@@ -413,11 +413,9 @@ class PrintRoutePermissionGuardsTest extends TestCase
 
         return Expense::createReimburse([
             'expense_date' => now()->toDateString(),
-            'expense_category_id' => $category->id,
             'recipient_name' => 'fixture',
-            'receipt_amount' => 10000,
             'receipt_photo' => $path,
-        ]);
+        ], [['expense_category_id' => $category->id, 'description' => 'fixture', 'amount' => 10000]]);
     }
 
     /** @return string ID gabungan yang dipakai view `material_usage_headers` (usageable_type_usageable_id). */
@@ -623,10 +621,8 @@ class PrintRoutePermissionGuardsTest extends TestCase
         $category = ExpenseCategory::create(['name' => 'FIXTURE '.uniqid()]);
         $expense = Expense::createAdvance([
             'expense_date' => now()->toDateString(),
-            'expense_category_id' => $category->id,
             'recipient_name' => 'fixture',
-            'advance_amount' => 10000,
-        ]);
+        ], [['expense_category_id' => $category->id, 'description' => 'fixture', 'amount' => 10000]]);
         $this->assertRouteRequiresPermission('expense.print', ['expense' => $expense->id], 'view_expenses');
     }
 

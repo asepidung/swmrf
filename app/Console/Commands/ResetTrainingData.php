@@ -55,7 +55,7 @@ class ResetTrainingData extends Command
         'cattle_receiving_items', 'cattle_receivings', 'cattle_weighing_items', 'cattle_weighings',
         'costing_cattle', 'costing_items', 'costing_price_defaults', 'costings', 'customer_groups', 'customer_product_specs',
         'customer_segments', 'customers', 'delivery_order_items', 'delivery_order_receipt_items',
-        'delivery_order_receipts', 'delivery_orders', 'delivery_plans', 'drivers', 'expense_categories',
+        'delivery_order_receipts', 'delivery_orders', 'delivery_plans', 'drivers', 'expense_categories', 'expense_items',
         'expenses', 'exports', 'failed_import_rows', 'financial_losses', 'goods_receipt_material_items',
         'goods_receipt_materials', 'goods_receipt_product_items', 'goods_receipt_products', 'imports',
         'invoice_additional_charges', 'invoice_items', 'invoices', 'material_adjustments',

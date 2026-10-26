@@ -80,20 +80,20 @@
             <td width="33%">{{ $record->type === \App\Models\Expense::TYPE_ADVANCE ? 'Kasbon (Advance)' : 'Reimburse' }}</td>
         </tr>
         <tr>
-            <td>Kategori</td>
+            <td>Pemohon</td>
             <td>:</td>
-            <td>{{ $record->category?->name }}</td>
+            <td>{{ $record->recipient_name }}</td>
             <td>Status</td>
             <td>:</td>
             <td>{{ $record->status }}</td>
         </tr>
         <tr>
-            <td>Diberikan Kepada</td>
-            <td>:</td>
-            <td>{{ $record->recipient_name }}</td>
             <td>Akun Kas/Bank</td>
             <td>:</td>
             <td>{{ $record->bankAccount?->initial }}</td>
+            <td></td>
+            <td></td>
+            <td></td>
         </tr>
         @if ($record->description)
             <tr>
@@ -121,6 +121,25 @@
     <table class="items-table">
         <thead>
             <tr>
+                <th width="25%">Kategori</th>
+                <th width="50%">Keterangan Barang</th>
+                <th width="25%">Total Harga</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($record->items as $item)
+                <tr>
+                    <td class="left-align">{{ $item->category?->name }}</td>
+                    <td class="left-align">{{ $item->description }}</td>
+                    <td>Rp {{ number_format((float) $item->amount, 0, ',', '.') }}</td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+
+    <table class="items-table">
+        <thead>
+            <tr>
                 <th width="15%">Tanggal</th>
                 <th width="15%">Jenis</th>
                 <th width="20%">Nominal</th>
@@ -143,7 +162,7 @@
         <tr>
             <td width="50%">
                 <div>( {{ $record->recipient_name }} )</div>
-                <div style="font-size: 12px; color: #555;">Diterima Oleh</div>
+                <div style="font-size: 12px; color: #555;">Pemohon</div>
             </td>
             <td width="50%">
                 <div>( {{ $record->createdBy?->name ?? '-' }} )</div>

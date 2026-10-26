@@ -34,6 +34,12 @@ class ExpenseResourceTest extends TestCase
         $this->category = ExpenseCategory::create(['name' => 'FIXTURE CATEGORY']);
     }
 
+    /** Satu barang bernilai $amount. */
+    private function items(float $amount): array
+    {
+        return [['expense_category_id' => $this->category->id, 'description' => 'barang uji', 'amount' => $amount]];
+    }
+
     private function employee(array $permissionNames = []): User
     {
         $user = User::factory()->create(['role' => 'employee', 'is_active' => true]);
@@ -51,10 +57,8 @@ class ExpenseResourceTest extends TestCase
     {
         return Expense::createAdvance([
             'expense_date' => now()->toDateString(),
-            'expense_category_id' => $this->category->id,
             'recipient_name' => 'budi',
-            'advance_amount' => 100000,
-        ]);
+        ], $this->items(100000));
     }
 
     // =========================================================================
@@ -99,15 +103,18 @@ class ExpenseResourceTest extends TestCase
                 'type' => Expense::TYPE_ADVANCE,
                 'expense_date' => now()->toDateString(),
                 'bank_account_id' => BankAccount::cashAccount()->id,
-                'expense_category_id' => $this->category->id,
                 'recipient_name' => 'budi',
-                'advance_amount' => 100000,
+                'items' => [
+                    ['expense_category_id' => $this->category->id, 'description' => 'plastik', 'amount' => 60000],
+                    ['expense_category_id' => $this->category->id, 'description' => 'tali', 'amount' => 40000],
+                ],
             ])
             ->call('create')
             ->assertHasNoFormErrors();
 
         $expense = Expense::firstOrFail();
         $this->assertSame(Expense::STATUS_OPEN, $expense->status);
+        $this->assertSame(2, $expense->items()->count());
         $this->assertDatabaseHas('bank_transactions', [
             'reference_type' => Expense::class, 'reference_id' => $expense->id,
             'type' => 'out', 'amount' => 100000,
@@ -124,9 +131,8 @@ class ExpenseResourceTest extends TestCase
                 'type' => Expense::TYPE_REIMBURSE,
                 'expense_date' => now()->toDateString(),
                 'bank_account_id' => BankAccount::cashAccount()->id,
-                'expense_category_id' => $this->category->id,
                 'recipient_name' => 'budi',
-                'receipt_amount' => 50000,
+                'items' => [['expense_category_id' => $this->category->id, 'description' => 'lakban', 'amount' => 50000]],
             ])
             ->call('create')
             ->assertHasNoFormErrors();
@@ -153,7 +159,7 @@ class ExpenseResourceTest extends TestCase
     public function a_settled_expense_redirects_away_from_the_edit_page(): void
     {
         $expense = $this->openAdvance();
-        $expense->settle(100000);
+        $expense->settle($this->items(100000));
 
         Livewire::actingAs($this->employee(['view_expenses', 'edit_expenses']))
             ->test(EditExpense::class, ['record' => $expense->getRouteKey()])
@@ -180,13 +186,69 @@ class ExpenseResourceTest extends TestCase
     {
         $expense = $this->openAdvance();
 
-        Livewire::actingAs($this->employee(['view_expenses', 'edit_expenses']))
+        $page = Livewire::actingAs($this->employee(['view_expenses', 'edit_expenses']))
             ->test(ListExpenses::class)
-            ->callTableAction('settle', $expense, ['receipt_amount' => 85000]);
+            ->mountTableAction('settle', $expense);
+
+        // Form sudah terisi barang uang muka; ubah nilainya sesuai nota (baris yang sama, kuncinya dari form).
+        $key = array_key_first($page->instance()->mountedTableActionsData[0]['items']);
+        $page->setTableActionData(['items' => [$key => $this->items(85000)[0]]])->callMountedTableAction();
 
         $expense->refresh();
-        $this->assertSame(Expense::STATUS_SETTLED, $expense->status);
+        $this->assertSame(Expense::STATUS_OPEN, $expense->status, 'nota lebih kecil: tetap Open sampai sisanya kembali');
         $this->assertSame(85000.0, (float) $expense->receipt_amount);
+        $this->assertSame(15000.0, $expense->outstandingReturn());
+    }
+
+    /** @test */
+    public function the_return_action_takes_back_the_difference_in_parts(): void
+    {
+        $expense = $this->openAdvance();
+        $expense->settle($this->items(85000));
+
+        $page = Livewire::actingAs($this->employee(['view_expenses', 'edit_expenses']))->test(ListExpenses::class);
+
+        $page->callTableAction('receive_return', $expense, ['amount' => 5000]);
+        $this->assertSame(10000.0, $expense->fresh()->outstandingReturn());
+
+        $page->callTableAction('receive_return', $expense, ['amount' => 10000]);
+        $this->assertSame(Expense::STATUS_SETTLED, $expense->fresh()->status);
+    }
+
+    /** @test */
+    public function the_return_action_is_hidden_while_nothing_is_outstanding_and_without_permission(): void
+    {
+        $expense = $this->openAdvance();
+
+        Livewire::actingAs($this->employee(['view_expenses', 'edit_expenses']))
+            ->test(ListExpenses::class)
+            ->assertTableActionHidden('receive_return', $expense);
+
+        $expense->settle($this->items(85000));
+
+        Livewire::actingAs($this->employee(['view_expenses']))
+            ->test(ListExpenses::class)
+            ->assertTableActionHidden('receive_return', $expense);
+    }
+
+    /** @test */
+    public function the_dashboard_widget_lists_what_each_requester_still_holds(): void
+    {
+        $this->openAdvance();
+        $reported = Expense::createAdvance(['expense_date' => now()->toDateString(), 'recipient_name' => 'sari'], $this->items(50000));
+        $reported->settle($this->items(30000));
+
+        $this->actingAs($this->employee(['create_expenses']));
+        $this->assertTrue(\App\Filament\Admin\Widgets\ExpenseLiabilityWidget::canView());
+
+        Livewire::test(\App\Filament\Admin\Widgets\ExpenseLiabilityWidget::class)
+            ->assertSee('BUDI')
+            ->assertSee('SARI')
+            ->assertSee('100.000')
+            ->assertSee('20.000');
+
+        $this->actingAs($this->employee(['view_expenses']));
+        $this->assertFalse(\App\Filament\Admin\Widgets\ExpenseLiabilityWidget::canView());
     }
 
     /** @test */
@@ -207,7 +269,7 @@ class ExpenseResourceTest extends TestCase
     public function settle_and_cancel_are_hidden_once_the_expense_is_no_longer_open(): void
     {
         $expense = $this->openAdvance();
-        $expense->settle(100000);
+        $expense->settle($this->items(100000));
 
         Livewire::actingAs($this->employee(['view_expenses', 'edit_expenses']))
             ->test(ListExpenses::class)

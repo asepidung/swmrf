@@ -67,6 +67,18 @@ class EditExpense extends EditRecord
         }
     }
 
+    /** Barang tidak ikut form (terkunci di Edit) -- hanya ditampilkan dari relasinya. */
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $data['items'] = $this->getRecord()->items->map(fn ($item) => [
+            'expense_category_id' => $item->expense_category_id,
+            'description' => $item->description,
+            'amount' => $item->amount,
+        ])->all();
+
+        return $data;
+    }
+
     protected function getFormActions(): array
     {
         return [

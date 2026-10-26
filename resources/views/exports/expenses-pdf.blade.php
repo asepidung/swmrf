@@ -49,7 +49,7 @@
                 <th width="9%">Tanggal</th>
                 <th width="9%">Jenis</th>
                 <th width="12%">Kategori</th>
-                <th width="12%">Penerima</th>
+                <th width="12%">Pemohon</th>
                 <th class="text-right" width="12%">Uang Muka</th>
                 <th class="text-right" width="12%">Nota</th>
                 <th width="9%">Status</th>
@@ -70,7 +70,7 @@
                     <td>{{ $record->expense_number }}</td>
                     <td>{{ optional($record->expense_date)->format('d M Y') ?? '-' }}</td>
                     <td>{{ $record->type === \App\Models\Expense::TYPE_ADVANCE ? 'Advance' : 'Reimburse' }}</td>
-                    <td>{{ $record->category->name ?? '-' }}</td>
+                    <td>{{ $record->items->map(fn ($item) => $item->category?->name)->filter()->unique()->join(', ') ?: '-' }}</td>
                     <td>{{ $record->recipient_name }}</td>
                     <td class="text-right">{{ $record->advance_amount !== null ? number_format((float) $record->advance_amount, 0, ',', '.') : '-' }}</td>
                     <td class="text-right">{{ $record->receipt_amount !== null ? number_format((float) $record->receipt_amount, 0, ',', '.') : '-' }}</td>

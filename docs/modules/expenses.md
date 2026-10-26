@@ -152,3 +152,29 @@ siapa pun -- dicatat di `tertunda.md` §G.
 - Kaitan ke DO/driver tertentu untuk ongkir -- kategori saja dulu, kolom
   opsional bisa ditambah nanti kalau memang dibutuhkan.
 - Anggaran per kategori.
+
+## 8. Desain ulang 27 Oktober 2026 (keputusan Owner)
+
+Alur baru, menggantikan form satu-kategori di §3 dan §5 (bagian lain tetap berlaku):
+
+- **Banyak barang per pengajuan**: tabel `expense_items` (kategori, keterangan diketik, total harga).
+  Kategori pindah dari kepala dokumen ke barang; `expenses.expense_category_id` sekarang nullable dan
+  hanya terisi di dokumen lama (migrasi mengubah tiap dokumen lama jadi satu barang).
+- **Form dari atas ke bawah**: tanggal (default hari ini) + pemohon, daftar barang dengan total berjalan,
+  lalu pilihan Reimburse/Advance. Uang advance = jumlah seluruh barang (tidak diketik terpisah).
+- **Lapor balik kasbon** (`Expense::settle(array $items)`): barang disesuaikan dengan nota (boleh ubah
+  nilai, tambah/kurang baris). Nota sama = Settled. Nota lebih besar = kekurangan keluar tambahan,
+  Settled. Nota lebih kecil = **tetap Open**; sisanya dikembalikan lewat `receiveReturn()` (**boleh
+  sebagian dan bertahap**, kolom `returned_amount`), Settled saat seluruh selisih kembali.
+- Selama belum kembali, uangnya muncul sebagai **tanggungan pemohon** (`stillWithRequester()`): seluruh
+  uang muka kalau belum lapor, atau sisa selisih. Tampil di kolom tabel dan di widget Dashboard
+  `ExpenseLiabilityWidget` (hanya pemegang `create_expenses`, hanya kalau ada yang belum beres).
+- Batal/hapus hanya untuk kasbon yang BELUM dilaporkan (uang muka kembali penuh); yang sudah dilaporkan
+  diselesaikan lewat pengembalian.
+- Rekap per kategori sekarang per barang, dari dokumen yang notanya sudah ada (reimburse + kasbon yang
+  sudah dilaporkan, bukan yang dibatalkan).
+- Sub-menu cluster (Expenses / Expense Categories) tampil di atas: posisinya dibaca dari Resource,
+  bukan dari Cluster, dan resource tidak boleh mengisi grup navigasi sendiri.
+- Kategori Expense TIDAK ikut snapshot master: jalankan `expenses:seed-categories --apply` di tiap
+  lingkungan (lihat `.agents/import-legacy.md`).
+

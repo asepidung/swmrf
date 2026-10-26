@@ -42,9 +42,14 @@ class ExpenseTest extends TestCase
         return array_merge([
             'expense_date' => now()->toDateString(),
             'bank_account_id' => $this->cash->id,
-            'expense_category_id' => $this->category->id,
             'recipient_name' => 'budi',
         ], $overrides);
+    }
+
+    /** Satu barang bernilai $amount -- cukup untuk aturan yang hanya peduli totalnya. */
+    private function items(float $amount): array
+    {
+        return [['expense_category_id' => $this->category->id, 'description' => 'barang uji', 'amount' => $amount]];
     }
 
     // =========================================================================
@@ -69,7 +74,7 @@ class ExpenseTest extends TestCase
     /** @test */
     public function creating_an_expense_autogenerates_a_prefixed_number_and_uppercases_the_recipient(): void
     {
-        $expense = Expense::createAdvance($this->baseData(['advance_amount' => 100000]));
+        $expense = Expense::createAdvance($this->baseData(), $this->items(100000));
 
         $this->assertStringStartsWith('EXP#'.date('y'), $expense->expense_number);
         $this->assertSame('BUDI', $expense->recipient_name);
@@ -78,10 +83,10 @@ class ExpenseTest extends TestCase
     /** @test */
     public function an_expense_defaults_to_the_main_cash_account(): void
     {
-        $data = $this->baseData(['advance_amount' => 50000]);
+        $data = $this->baseData();
         unset($data['bank_account_id']);
 
-        $expense = Expense::createAdvance($data);
+        $expense = Expense::createAdvance($data, $this->items(50000));
 
         $this->assertSame($this->cash->id, $expense->bank_account_id);
     }
@@ -93,7 +98,7 @@ class ExpenseTest extends TestCase
     /** @test */
     public function an_advance_moves_cash_out_immediately_and_stays_open(): void
     {
-        $expense = Expense::createAdvance($this->baseData(['advance_amount' => 100000]));
+        $expense = Expense::createAdvance($this->baseData(), $this->items(100000));
 
         $this->assertSame(Expense::STATUS_OPEN, $expense->status);
         $this->assertSame(-100000.0, $this->cash->fresh()->currentBalance());
@@ -104,29 +109,116 @@ class ExpenseTest extends TestCase
     }
 
     /** @test */
-    public function settling_an_advance_for_less_than_the_receipt_returns_the_difference(): void
+    public function reporting_a_smaller_receipt_keeps_the_advance_open_until_the_difference_is_back(): void
     {
-        $expense = Expense::createAdvance($this->baseData(['advance_amount' => 100000]));
+        $expense = Expense::createAdvance($this->baseData(), $this->items(100000));
 
-        $expense->settle(85000);
+        $expense->settle($this->items(85000));
 
-        $this->assertSame(Expense::STATUS_SETTLED, $expense->fresh()->status);
-        $this->assertSame(85000.0, (float) $expense->fresh()->receipt_amount);
-        $this->assertSame(15000.0, $expense->fresh()->balance_due);
-        $this->assertDatabaseHas('bank_transactions', [
-            'reference_type' => Expense::class, 'reference_id' => $expense->id,
-            'type' => 'in', 'amount' => 15000,
-        ]);
-        // Keluar 100.000, masuk kembali 15.000 -- bersih 85.000 yang benar-benar dibelanjakan.
+        $expense = $expense->fresh();
+        $this->assertSame(Expense::STATUS_OPEN, $expense->status);
+        $this->assertSame(85000.0, (float) $expense->receipt_amount);
+        $this->assertSame(15000.0, $expense->outstandingReturn());
+        $this->assertSame(15000.0, $expense->stillWithRequester());
+        // Belum ada uang kembali: kas masih keluar penuh 100.000.
+        $this->assertSame(-100000.0, $this->cash->fresh()->currentBalance());
+    }
+
+    /** @test */
+    public function the_difference_can_be_returned_in_parts_and_the_last_part_settles_it(): void
+    {
+        $expense = Expense::createAdvance($this->baseData(), $this->items(100000));
+        $expense->settle($this->items(85000));
+
+        $expense->fresh()->receiveReturn(5000);
+        $expense = $expense->fresh();
+        $this->assertSame(Expense::STATUS_OPEN, $expense->status);
+        $this->assertSame(10000.0, $expense->outstandingReturn());
+        $this->assertSame(-95000.0, $this->cash->fresh()->currentBalance());
+
+        $expense->receiveReturn(10000);
+        $expense = $expense->fresh();
+        $this->assertSame(Expense::STATUS_SETTLED, $expense->status);
+        $this->assertSame(0.0, $expense->stillWithRequester());
         $this->assertSame(-85000.0, $this->cash->fresh()->currentBalance());
+    }
+
+    /** @test */
+    public function a_return_larger_than_the_outstanding_amount_is_refused(): void
+    {
+        $expense = Expense::createAdvance($this->baseData(), $this->items(100000));
+        $expense->settle($this->items(85000));
+
+        $this->expectException(\RuntimeException::class);
+
+        $expense->fresh()->receiveReturn(15001);
+    }
+
+    /** @test */
+    public function an_advance_not_yet_reported_counts_entirely_as_still_with_the_requester(): void
+    {
+        $expense = Expense::createAdvance($this->baseData(), $this->items(100000));
+
+        $this->assertTrue($expense->awaitingReport());
+        $this->assertSame(100000.0, $expense->stillWithRequester());
+    }
+
+    /** @test */
+    public function a_reported_advance_can_no_longer_be_cancelled_or_deleted(): void
+    {
+        $expense = Expense::createAdvance($this->baseData(), $this->items(100000));
+        $expense->settle($this->items(85000));
+
+        try {
+            $expense->fresh()->cancel();
+            $this->fail('cancel harus ditolak setelah dilaporkan');
+        } catch (\RuntimeException) {
+            $this->assertTrue(true);
+        }
+
+        $this->expectException(\Exception::class);
+        $expense->fresh()->delete();
+    }
+
+    /** @test */
+    public function an_advance_is_the_sum_of_all_its_items_and_the_report_replaces_them(): void
+    {
+        $expense = Expense::createAdvance($this->baseData(), [
+            ['expense_category_id' => $this->category->id, 'description' => 'plastik', 'amount' => 60000],
+            ['expense_category_id' => $this->category->id, 'description' => 'tali', 'amount' => 40000],
+        ]);
+
+        $this->assertSame(100000.0, (float) $expense->advance_amount);
+        $this->assertSame(2, $expense->items()->count());
+
+        $expense->settle([
+            ['expense_category_id' => $this->category->id, 'description' => 'plastik', 'amount' => 55000],
+            ['expense_category_id' => $this->category->id, 'description' => 'tali', 'amount' => 40000],
+            ['expense_category_id' => $this->category->id, 'description' => 'lakban', 'amount' => 10000],
+        ]);
+
+        $expense = $expense->fresh();
+        $this->assertSame(3, $expense->items()->count());
+        $this->assertSame(105000.0, (float) $expense->receipt_amount);
+        $this->assertSame(Expense::STATUS_SETTLED, $expense->status);
+        // Nota 5.000 lebih besar: kekurangan keluar tambahan.
+        $this->assertSame(-105000.0, $this->cash->fresh()->currentBalance());
+    }
+
+    /** @test */
+    public function an_item_without_category_description_or_price_is_refused(): void
+    {
+        $this->expectException(\RuntimeException::class);
+
+        Expense::createAdvance($this->baseData(), [['expense_category_id' => null, 'description' => 'x', 'amount' => 1000]]);
     }
 
     /** @test */
     public function settling_an_advance_for_more_than_given_takes_out_the_difference(): void
     {
-        $expense = Expense::createAdvance($this->baseData(['advance_amount' => 100000]));
+        $expense = Expense::createAdvance($this->baseData(), $this->items(100000));
 
-        $expense->settle(120000);
+        $expense->settle($this->items(120000));
 
         $this->assertDatabaseHas('bank_transactions', [
             'reference_type' => Expense::class, 'reference_id' => $expense->id,
@@ -138,9 +230,9 @@ class ExpenseTest extends TestCase
     /** @test */
     public function settling_an_advance_for_exactly_the_amount_given_creates_no_extra_transaction(): void
     {
-        $expense = Expense::createAdvance($this->baseData(['advance_amount' => 100000]));
+        $expense = Expense::createAdvance($this->baseData(), $this->items(100000));
 
-        $expense->settle(100000);
+        $expense->settle($this->items(100000));
 
         $this->assertSame(1, BankTransaction::where('reference_type', Expense::class)
             ->where('reference_id', $expense->id)->count());
@@ -149,13 +241,13 @@ class ExpenseTest extends TestCase
     /** @test */
     public function settling_twice_only_ever_records_one_settlement(): void
     {
-        $expense = Expense::createAdvance($this->baseData(['advance_amount' => 100000]));
+        $expense = Expense::createAdvance($this->baseData(), $this->items(100000));
 
-        $expense->settle(85000);
+        $expense->settle($this->items(85000));
 
         $this->expectException(\RuntimeException::class);
 
-        $expense->fresh()->settle(85000);
+        $expense->fresh()->settle($this->items(85000));
     }
 
     // =========================================================================
@@ -165,7 +257,7 @@ class ExpenseTest extends TestCase
     /** @test */
     public function a_reimbursement_is_a_single_outflow_and_immediately_settled(): void
     {
-        $expense = Expense::createReimburse($this->baseData(['receipt_amount' => 50000]));
+        $expense = Expense::createReimburse($this->baseData(), $this->items(50000));
 
         $this->assertSame(Expense::STATUS_SETTLED, $expense->status);
         $this->assertSame(1, $expense->transactions()->count());
@@ -182,7 +274,7 @@ class ExpenseTest extends TestCase
     /** @test */
     public function cancelling_an_open_advance_returns_the_full_amount_and_keeps_the_row(): void
     {
-        $expense = Expense::createAdvance($this->baseData(['advance_amount' => 100000]));
+        $expense = Expense::createAdvance($this->baseData(), $this->items(100000));
 
         $expense->cancel();
 
@@ -194,8 +286,8 @@ class ExpenseTest extends TestCase
     /** @test */
     public function a_settled_advance_cannot_be_cancelled(): void
     {
-        $expense = Expense::createAdvance($this->baseData(['advance_amount' => 100000]));
-        $expense->settle(100000);
+        $expense = Expense::createAdvance($this->baseData(), $this->items(100000));
+        $expense->settle($this->items(100000));
 
         $this->expectException(\RuntimeException::class);
 
@@ -205,7 +297,7 @@ class ExpenseTest extends TestCase
     /** @test */
     public function deleting_an_open_expense_refunds_it_automatically(): void
     {
-        $expense = Expense::createAdvance($this->baseData(['advance_amount' => 100000]));
+        $expense = Expense::createAdvance($this->baseData(), $this->items(100000));
 
         $expense->delete();
 
@@ -216,7 +308,7 @@ class ExpenseTest extends TestCase
     /** @test */
     public function a_settled_expense_cannot_be_deleted(): void
     {
-        $expense = Expense::createReimburse($this->baseData(['receipt_amount' => 50000]));
+        $expense = Expense::createReimburse($this->baseData(), $this->items(50000));
 
         $this->expectException(\Exception::class);
 
@@ -226,7 +318,7 @@ class ExpenseTest extends TestCase
     /** @test */
     public function a_settled_expense_cannot_be_edited(): void
     {
-        $expense = Expense::createReimburse($this->baseData(['receipt_amount' => 50000]));
+        $expense = Expense::createReimburse($this->baseData(), $this->items(50000));
 
         $this->expectException(\Exception::class);
 
@@ -236,7 +328,7 @@ class ExpenseTest extends TestCase
     /** @test */
     public function an_open_expense_can_still_be_edited(): void
     {
-        $expense = Expense::createAdvance($this->baseData(['advance_amount' => 100000]));
+        $expense = Expense::createAdvance($this->baseData(), $this->items(100000));
 
         $expense->update(['description' => 'catatan baru']);
 
@@ -250,7 +342,7 @@ class ExpenseTest extends TestCase
     /** @test */
     public function a_category_still_used_cannot_be_deleted(): void
     {
-        Expense::createAdvance($this->baseData(['advance_amount' => 10000]));
+        Expense::createAdvance($this->baseData(), $this->items(10000));
 
         $this->expectException(\Exception::class);
 

@@ -34,6 +34,11 @@ class ExpenseCategory extends Model
         return $this->hasMany(Expense::class);
     }
 
+    public function items(): HasMany
+    {
+        return $this->hasMany(ExpenseItem::class);
+    }
+
     protected static function booted(): void
     {
         static::creating(function (self $category) {
@@ -43,7 +48,7 @@ class ExpenseCategory extends Model
         });
 
         static::deleting(function (self $category) {
-            if ($category->expenses()->exists()) {
+            if ($category->expenses()->exists() || $category->items()->exists()) {
                 throw new \Exception(__('This expense category cannot be deleted because it is still used by existing expenses.'));
             }
         });

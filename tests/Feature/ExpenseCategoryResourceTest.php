@@ -56,10 +56,8 @@ class ExpenseCategoryResourceTest extends TestCase
         $category = ExpenseCategory::create(['name' => 'ONGKIR']);
         Expense::createAdvance([
             'expense_date' => now()->toDateString(),
-            'expense_category_id' => $category->id,
             'recipient_name' => 'budi',
-            'advance_amount' => 10000,
-        ]);
+        ], [['expense_category_id' => $category->id, 'description' => 'uji', 'amount' => 10000]]);
 
         Livewire::actingAs($this->employee(true))
             ->test(EditExpenseCategory::class, ['record' => $category->getRouteKey()])
