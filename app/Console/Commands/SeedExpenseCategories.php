@@ -11,7 +11,7 @@ use Illuminate\Console\Command;
  * dan dari item non-REQUEST di file pemilahan material (operasional, ATK, alat sablon, aset); Owner,
  * 26 Oktober 2026. Kategori Expense BUKAN bagian snapshot master, jadi perintah ini dijalankan di tiap
  * lingkungan (coba, VPS, hari-H). Dry-run bawaan; `--apply` menulis; aman diulang (nama dibandingkan longgar).
- * Kategori lama (ATK, AIR MINUM, dst.) tidak disentuh.
+ * Kategori lama (ATK, AIR MINUM, dst.) DINONAKTIFKAN (bukan dihapus; Expense lama tetap menunjuknya), keputusan Owner 26 Oktober 2026.
  */
 class SeedExpenseCategories extends Command
 {
@@ -45,6 +45,13 @@ class SeedExpenseCategories extends Command
         'Lain-lain' => 'Yang belum punya kategori sendiri',
     ];
 
+    /**
+     * Kategori awal dari migrasi September, tumpang tindih dengan kategori baru.
+     *
+     * @var array<int, string>
+     */
+    public const LEGACY_CATEGORIES = ['ATK', 'AIR MINUM', 'MATERAI', 'OBAT', 'ONGKIR DRIVER', 'PARKIR'];
+
     public function handle(): int
     {
         $apply = (bool) $this->option('apply');
@@ -67,6 +74,18 @@ class SeedExpenseCategories extends Command
             }
         }
 
+        $deactivated = [];
+
+        foreach ($existing as $category) {
+            if ($category->is_active && ! $category->deleted_at && in_array(mb_strtoupper(trim($category->name)), self::LEGACY_CATEGORIES, true)) {
+                $deactivated[] = $category->name;
+
+                if ($apply) {
+                    $category->update(['is_active' => false]);
+                }
+            }
+        }
+
         $this->line($apply ? 'DITERAPKAN (--apply)' : 'DRY-RUN -- tidak ada yang ditulis. Tambahkan --apply untuk menulis.');
         $this->line('dibuat: '.count($created).', sudah ada (dilewati): '.count($same));
 
@@ -76,6 +95,8 @@ class SeedExpenseCategories extends Command
         foreach ($same as $line) {
             $this->line("  = {$line}");
         }
+
+        $this->line('kategori lama dinonaktifkan: '.count($deactivated).($deactivated ? ' ('.implode(', ', $deactivated).')' : ''));
 
         return self::SUCCESS;
     }
