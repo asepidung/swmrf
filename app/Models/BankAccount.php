@@ -167,7 +167,10 @@ class BankAccount extends Model
     public static function cashAccount(): self
     {
         return \Illuminate\Support\Facades\DB::transaction(function () {
-            $existing = static::where('initial', self::CASH_INITIAL)->lockForUpdate()->first();
+            // Akun kas hasil import legacy bisa berinisial lain ("0") tapi tetap "Kas Tunai" tanpa nomor rekening;
+            // memakainya mencegah pembuatan KAS kedua yang bentrok di unique `account_number`.
+            $existing = static::where('initial', self::CASH_INITIAL)->lockForUpdate()->first()
+                ?? static::where('bank_name', 'Kas Tunai')->where('account_number', '-')->lockForUpdate()->first();
 
             if ($existing) {
                 return $existing;
