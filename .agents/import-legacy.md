@@ -638,3 +638,7 @@ Kolom `materials.is_auxiliary` (migrasi `2026_10_23_300000`; diisi true untuk ma
 ## Price list otomatis dari riwayat SO (24 Oktober 2026)
 
 Perintah `php artisan pricelist:build-from-sales` (dry-run bawaan, `--apply` menulis, `--overwrite` menimpa harga berbeda, `--group=` satu grup). Harga produk di sebuah grup = harga baris SO terbaru (tanggal kirim, lalu nomor SO) di antara semua customer grup itu. Harga 0 dilewati kecuali grup GRATISAN; SO batal/terhapus tidak dihitung; produk tanpa riwayat berharga dibiarkan kosong (isi manual). Harga yang sudah ada di price list (mis. dari `legacy:import-prices`) tidak ditimpa tanpa `--overwrite`. Dijalankan hari-H SESUDAH import SO, dan dicoba di coba lebih dulu.
+
+## Kategori Expense awal (26 Oktober 2026)
+
+`php artisan expenses:seed-categories` (dry-run bawaan, `--apply` menulis, aman diulang): 18 kategori disusun dari contoh petty cash Februari 2026 dari finance (196 baris; semuanya bisa dipetakan) dan item non-REQUEST di file pemilahan material (ATK, alat sablon, operasional, aset). Kategori Expense BUKAN bagian snapshot master, jadi perintah ini dijalankan di tiap lingkungan, termasuk hari-H. Kategori lama (ATK, AIR MINUM, MATERAI, OBAT, ONGKIR DRIVER, PARKIR) tidak disentuh; nonaktifkan lewat layar bila sudah tidak dipakai. Contoh Excel hanya bahan membuat kategori, tidak diimpor sebagai data.
