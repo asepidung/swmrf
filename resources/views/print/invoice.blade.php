@@ -456,5 +456,15 @@
             </div>
         </div>
     </div>
+
+    {{-- Langsung ke dialog cetak (sama seperti cetakan lain); tombol di halaman tetap ada untuk mencetak ulang. --}}
+    <script>
+        window.onload = function() {
+            window.print();
+        };
+        window.onafterprint = function() {
+            window.close();
+        };
+    </script>
 </body>
 </html>
