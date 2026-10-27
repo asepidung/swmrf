@@ -138,6 +138,21 @@ class Invoice extends Model
         return $this->belongsTo(DeliveryOrderReceipt::class, 'delivery_order_receipt_id');
     }
 
+    /**
+     * Tanggal kirim untuk cetakan invoice (keputusan Owner 27 Oktober 2026): diambil dari Delivery Order --
+     * lewat tanda terima DO, atau lewat nomor DO untuk invoice hasil import legacy. Bisa sama atau beda dengan
+     * tanggal invoice. Kalau DO-nya tidak ditemukan, jatuh ke tanggal invoice.
+     */
+    public function deliveryDate(): ?\Carbon\Carbon
+    {
+        $deliveryOrder = $this->deliveryOrderReceipt?->deliveryOrder
+            ?? ($this->delivery_order_number
+                ? DeliveryOrder::where('delivery_order_number', $this->delivery_order_number)->first()
+                : null);
+
+        return $deliveryOrder?->delivery_date ? \Carbon\Carbon::parse($deliveryOrder->delivery_date) : $this->invoice_date;
+    }
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'customer_id');

@@ -261,7 +261,7 @@
                             <tr>
                                 <td class="text-muted">Delivery Date</td>
                                 <td class="text-muted">:</td>
-                                <th>{{ $record->invoice_date ? $record->invoice_date->format('d-M-Y') : '-' }}</th>
+                                <th>{{ $record->deliveryDate()?->format('d-M-Y') ?? '-' }}</th>
                             </tr>
                             <tr>
                                 <td class="text-muted">Terms</td>
