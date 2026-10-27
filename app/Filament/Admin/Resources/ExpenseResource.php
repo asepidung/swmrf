@@ -417,6 +417,13 @@ class ExpenseResource extends Resource
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()?->hasPermission('view_deleted_expenses') ?? false),
 
+                // Pengganti tab "Open Advances": kasbon yang belum beres (belum lapor, atau sisa belum kembali).
+                // Saat aktif, batas tanggal bulan berjalan tidak berlaku -- kasbon lama tetap harus terlihat.
+                Tables\Filters\Filter::make('open')
+                    ->label(__('Open Advances'))
+                    ->toggle()
+                    ->query(fn (Builder $query): Builder => $query->where('status', Expense::STATUS_OPEN)),
+
                 Tables\Filters\SelectFilter::make('status')
                     ->label(__('Status'))
                     ->options([
@@ -444,7 +451,11 @@ class ExpenseResource extends Resource
                             ->label(__('Until'))
                             ->default(now()),
                     ])
-                    ->query(function (Builder $query, array $data): Builder {
+                    ->query(function (Builder $query, array $data, $livewire): Builder {
+                        if (! empty($livewire->tableFilters['open']['isActive'])) {
+                            return $query;
+                        }
+
                         $from = $data['from'] ?? now()->startOfMonth()->format('Y-m-d');
                         $until = $data['until'] ?? now()->format('Y-m-d');
 
