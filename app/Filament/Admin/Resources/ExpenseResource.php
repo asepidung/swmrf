@@ -236,7 +236,11 @@ class ExpenseResource extends Resource
                     ->required()
                     ->live(onBlur: true)
                     // Satu barang saja: nilainya otomatis mengikuti total.
-                    ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get): void {
+                    ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) use ($record): void {
+                        $shortfall = round(static::moneyValue($state) - (float) $record->advance_amount, 2);
+                        $set('topup_now', $shortfall > 0 ? number_format($shortfall, 0, ',', '.') : null);
+                        $set('returned_now', null);
+
                         $items = $get('items') ?? [];
 
                         if (count($items) === 1) {
@@ -265,7 +269,8 @@ class ExpenseResource extends Resource
                     }),
 
                 static::money('returned_now')
-                    ->label(__('Already returned now'))
+                    ->label(__('Money returned by the requester'))
+                    ->helperText(__('Leave empty if it has not been returned yet; it stays recorded as owed by the requester.'))
                     ->visible(fn (Forms\Get $get): bool => static::moneyValue($get('total_used')) < (float) $record->advance_amount)
                     ->rules([
                         fn (Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get, $record): void {
@@ -273,6 +278,20 @@ class ExpenseResource extends Resource
 
                             if (static::moneyValue($value) > $left) {
                                 $fail(__('The returned amount cannot exceed what is left over.'));
+                            }
+                        },
+                    ]),
+
+                static::money('topup_now')
+                    ->label(__('Extra money given to the requester'))
+                    ->helperText(__('Filled with the full shortfall; lower it if only part is given now, the rest stays as what we owe.'))
+                    ->visible(fn (Forms\Get $get): bool => static::moneyValue($get('total_used')) > (float) $record->advance_amount)
+                    ->rules([
+                        fn (Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get, $record): void {
+                            $shortfall = round(static::moneyValue($get('total_used')) - (float) $record->advance_amount, 2);
+
+                            if (static::moneyValue($value) > $shortfall) {
+                                $fail(__('The extra money given cannot exceed the shortfall.'));
                             }
                         },
                     ]),
@@ -300,6 +319,7 @@ class ExpenseResource extends Resource
                         (float) $data['total_used'],
                         $data['receipt_note'] ?? null,
                         (float) ($data['returned_now'] ?? 0),
+                        array_key_exists('topup_now', $data) && filled($data['topup_now']) ? (float) $data['topup_now'] : 0.0,
                     );
                 } catch (\Throwable $e) {
                     report($e);
@@ -308,11 +328,51 @@ class ExpenseResource extends Resource
                     return;
                 }
 
-                $owed = $record->fresh()->outstandingReturn();
+                $fresh = $record->fresh();
+                $money = fn (float $value): string => 'Rp '.number_format($value, 0, ',', '.');
 
-                $owed > 0
-                    ? Notification::make()->title(__('Reported. The requester still has to return :amount.', ['amount' => 'Rp '.number_format($owed, 0, ',', '.')]))->warning()->send()
-                    : Notification::make()->title(__('Expense settled.'))->success()->send();
+                match (true) {
+                    $fresh->outstandingReturn() > 0 => Notification::make()->title(__('Reported. The requester still has to return :amount.', ['amount' => $money($fresh->outstandingReturn())]))->warning()->send(),
+                    $fresh->outstandingTopup() > 0 => Notification::make()->title(__('Reported. We still owe the requester :amount.', ['amount' => $money($fresh->outstandingTopup())]))->warning()->send(),
+                    default => Notification::make()->title(__('Expense settled.'))->success()->send(),
+                };
+            });
+    }
+
+    /** Aksi bayar kekurangan kasbon ke pemohon -- sebagian atau bertahap. */
+    public static function payTopupAction(): Tables\Actions\Action
+    {
+        return Tables\Actions\Action::make('pay_topup')
+            ->label(__('Pay Shortfall'))
+            ->icon('heroicon-o-banknotes')
+            ->color('warning')
+            ->visible(fn (Expense $record): bool => $record->outstandingTopup() > 0 && static::canManage())
+            ->fillForm(fn (Expense $record): array => ['amount' => $record->outstandingTopup()])
+            ->form(fn (Expense $record): array => [
+                Forms\Components\Placeholder::make('outstanding')
+                    ->label(__('We still owe the requester'))
+                    ->content('Rp '.number_format($record->outstandingTopup(), 0, ',', '.')),
+                static::money('amount')
+                    ->label(__('Amount paid now'))
+                    ->required(),
+            ])
+            ->action(function (Expense $record, array $data): void {
+                if (! static::canManage()) {
+                    Notification::make()->title(__('You do not have permission to do this.'))->danger()->send();
+
+                    return;
+                }
+
+                try {
+                    $record->payTopup((float) $data['amount']);
+                } catch (\Throwable $e) {
+                    report($e);
+                    Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
+
+                    return;
+                }
+
+                Notification::make()->title(__('Payment recorded.'))->success()->send();
             });
     }
 
@@ -392,6 +452,12 @@ class ExpenseResource extends Resource
                     ->state(fn (Expense $record): ?float => $record->stillWithRequester() ?: null)
                     ->money('IDR', locale: 'id')
                     ->color('danger')
+                    ->placeholder('-'),
+                Tables\Columns\TextColumn::make('owed_to_requester')
+                    ->label(__('We Owe Requester'))
+                    ->state(fn (Expense $record): ?float => $record->outstandingTopup() ?: null)
+                    ->money('IDR', locale: 'id')
+                    ->color('warning')
                     ->placeholder('-'),
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('Status'))
@@ -565,6 +631,7 @@ class ExpenseResource extends Resource
             ->actions([
                 static::settleAction(),
                 static::returnAction(),
+                static::payTopupAction(),
 
                 Tables\Actions\Action::make('cancel_expense')
                     ->label(__('Cancel'))

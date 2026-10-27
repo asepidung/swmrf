@@ -1942,5 +1942,17 @@
     "Receipt Photo (optional)": "Receipt Photo (optional)",
     "On a phone you can take the photo straight from the camera.": "On a phone you can take the photo straight from the camera.",
     "The returned amount cannot exceed what is left over.": "The returned amount cannot exceed what is left over.",
-    "The total used must be above zero.": "The total used must be above zero."
+    "The total used must be above zero.": "The total used must be above zero.",
+    "Money returned by the requester": "Money returned by the requester",
+    "Leave empty if it has not been returned yet; it stays recorded as owed by the requester.": "Leave empty if it has not been returned yet; it stays recorded as owed by the requester.",
+    "Extra money given to the requester": "Extra money given to the requester",
+    "Filled with the full shortfall; lower it if only part is given now, the rest stays as what we owe.": "Filled with the full shortfall; lower it if only part is given now, the rest stays as what we owe.",
+    "The extra money given cannot exceed the shortfall.": "The extra money given cannot exceed the shortfall.",
+    "There is no shortfall left to pay for this advance.": "There is no shortfall left to pay for this advance.",
+    "Reported. We still owe the requester :amount.": "Reported. We still owe the requester :amount.",
+    "We Owe Requester": "We Owe Requester",
+    "Pay Shortfall": "Pay Shortfall",
+    "We still owe the requester": "We still owe the requester",
+    "Amount paid now": "Amount paid now",
+    "Payment recorded.": "Payment recorded."
 }

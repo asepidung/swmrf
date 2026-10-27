@@ -1942,5 +1942,17 @@
     "Receipt Photo (optional)": "Foto Nota (opsional)",
     "On a phone you can take the photo straight from the camera.": "Di HP, foto bisa langsung dari kamera.",
     "The returned amount cannot exceed what is left over.": "Jumlah yang dikembalikan tidak boleh melebihi sisa uang.",
-    "The total used must be above zero.": "Total terpakai harus di atas nol."
+    "The total used must be above zero.": "Total terpakai harus di atas nol.",
+    "Money returned by the requester": "Uang yang dikembalikan pemohon",
+    "Leave empty if it has not been returned yet; it stays recorded as owed by the requester.": "Kosongkan kalau belum dikembalikan; tetap tercatat sebagai tanggungan pemohon.",
+    "Extra money given to the requester": "Uang pengganti tambahan untuk pemohon",
+    "Filled with the full shortfall; lower it if only part is given now, the rest stays as what we owe.": "Terisi penuh sebesar kekurangan; kurangi kalau baru sebagian, sisanya menjadi utang kita ke pemohon.",
+    "The extra money given cannot exceed the shortfall.": "Uang pengganti tidak boleh melebihi kekurangan.",
+    "There is no shortfall left to pay for this advance.": "Tidak ada kekurangan yang harus dibayar untuk kasbon ini.",
+    "Reported. We still owe the requester :amount.": "Sudah dilaporkan. Kita masih berutang :amount ke pemohon.",
+    "We Owe Requester": "Utang ke Pemohon",
+    "Pay Shortfall": "Bayar Kekurangan",
+    "We still owe the requester": "Kita masih berutang ke pemohon",
+    "Amount paid now": "Jumlah dibayar sekarang",
+    "Payment recorded.": "Pembayaran tercatat."
 }

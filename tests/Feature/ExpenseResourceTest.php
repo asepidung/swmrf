@@ -287,6 +287,47 @@ class ExpenseResourceTest extends TestCase
     }
 
     /** @test */
+    public function the_report_form_asks_for_the_return_or_the_extra_money_right_away(): void
+    {
+        $expense = $this->openAdvance();
+
+        $page = Livewire::actingAs($this->employee(['view_expenses', 'edit_expenses']))
+            ->test(ListExpenses::class)
+            ->mountTableAction('settle', $expense);
+
+        $key = array_key_first($page->instance()->mountedTableActionsData[0]['items']);
+
+        // Terpakai 85.000 dari 100.000: sisa 15.000 dikembalikan sekaligus, sisanya menjadi tanggungan pemohon.
+        $page->setTableActionData(['total_used' => 85000, 'returned_now' => 10000, 'items' => [$key => $this->items(85000)[0]]])
+            ->callMountedTableAction();
+
+        $this->assertSame(5000.0, $expense->fresh()->outstandingReturn());
+    }
+
+    /** @test */
+    public function the_report_form_records_the_extra_money_and_the_pay_shortfall_action_finishes_it(): void
+    {
+        $expense = $this->openAdvance();
+
+        $page = Livewire::actingAs($this->employee(['view_expenses', 'edit_expenses']))
+            ->test(ListExpenses::class)
+            ->mountTableAction('settle', $expense);
+
+        $key = array_key_first($page->instance()->mountedTableActionsData[0]['items']);
+
+        $page->setTableActionData(['total_used' => 160000, 'topup_now' => 40000, 'items' => [$key => $this->items(160000)[0]]])
+            ->callMountedTableAction();
+
+        $this->assertSame(20000.0, $expense->fresh()->outstandingTopup());
+
+        Livewire::actingAs($this->employee(['view_expenses', 'edit_expenses']))
+            ->test(ListExpenses::class)
+            ->callTableAction('pay_topup', $expense->fresh(), ['amount' => 20000]);
+
+        $this->assertSame(Expense::STATUS_SETTLED, $expense->fresh()->status);
+    }
+
+    /** @test */
     public function the_dashboard_widget_lists_what_each_requester_still_holds(): void
     {
         $this->openAdvance();
