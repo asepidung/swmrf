@@ -102,7 +102,7 @@ class SalesReturnPlanResource extends Resource
                             ->disabled(fn ($livewire): bool => static::isNotFullyEditable($livewire))
                             ->placeholder(__('Pick a delivery order, or leave it empty for an unidentified return'))
                             ->helperText(__('Only delivery orders shipped within the last 3 months are listed.'))
-                            ->columnSpan(2),
+                            ->columnSpan(['default' => 1, 'lg' => 2]),
 
                         Forms\Components\DatePicker::make('plan_date')
                             ->label(__('Plan Date'))
