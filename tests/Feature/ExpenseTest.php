@@ -247,6 +247,38 @@ class ExpenseTest extends TestCase
     }
 
     /** @test */
+    public function a_larger_receipt_with_partial_extra_money_keeps_the_advance_open_until_we_pay_the_rest(): void
+    {
+        $expense = Expense::createAdvance($this->baseData(), $this->items(500000));
+
+        $expense->settle($this->items(600000), 600000, null, 0, 40000);
+
+        $expense = $expense->fresh();
+        $this->assertSame(Expense::STATUS_OPEN, $expense->status);
+        $this->assertSame(60000.0, $expense->outstandingTopup());
+        $this->assertSame(0.0, $expense->stillWithRequester());
+        $this->assertSame(-540000.0, $this->cash->fresh()->currentBalance());
+
+        $expense->payTopup(25000);
+        $this->assertSame(35000.0, $expense->fresh()->outstandingTopup());
+
+        $expense->fresh()->payTopup(35000);
+        $expense = $expense->fresh();
+        $this->assertSame(Expense::STATUS_SETTLED, $expense->status);
+        $this->assertSame(-600000.0, $this->cash->fresh()->currentBalance());
+    }
+
+    /** @test */
+    public function the_extra_money_cannot_exceed_the_shortfall(): void
+    {
+        $expense = Expense::createAdvance($this->baseData(), $this->items(500000));
+
+        $this->expectException(\RuntimeException::class);
+
+        $expense->settle($this->items(600000), 600000, null, 0, 150000);
+    }
+
+    /** @test */
     public function an_item_without_category_description_or_price_is_refused(): void
     {
         $this->expectException(\RuntimeException::class);

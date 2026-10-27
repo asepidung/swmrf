@@ -35,7 +35,7 @@ class ExpenseLiabilityWidget extends TableWidget
     /** Uang di tangan pemohon per dokumen: seluruh uang muka kalau belum lapor, selain itu sisa yang belum kembali. */
     public static function stillWithRequesterSql(): string
     {
-        return 'CASE WHEN receipt_amount IS NULL THEN advance_amount ELSE advance_amount - receipt_amount - returned_amount END';
+        return 'CASE WHEN receipt_amount IS NULL THEN advance_amount WHEN advance_amount - receipt_amount - returned_amount > 0 THEN advance_amount - receipt_amount - returned_amount ELSE 0 END';
     }
 
     public function table(Table $table): Table
@@ -48,6 +48,7 @@ class ExpenseLiabilityWidget extends TableWidget
                 Expense::query()
                     ->where('status', Expense::STATUS_OPEN)
                     ->where('type', Expense::TYPE_ADVANCE)
+                    ->whereRaw($owed.' > 0')
                     ->select([
                         DB::raw('MIN(id) as id'),
                         'recipient_name',

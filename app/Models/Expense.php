@@ -47,6 +47,7 @@ class Expense extends Model
         'advance_amount',
         'receipt_amount',
         'returned_amount',
+        'topup_paid_amount',
         'settled_at',
         'settled_by',
         'status',
@@ -61,6 +62,7 @@ class Expense extends Model
         'advance_amount' => 'decimal:2',
         'receipt_amount' => 'decimal:2',
         'returned_amount' => 'decimal:2',
+        'topup_paid_amount' => 'decimal:2',
         'settled_at' => 'datetime',
     ];
 
@@ -125,6 +127,19 @@ class Expense extends Model
         }
 
         return max(0.0, round((float) $this->advance_amount - (float) $this->receipt_amount - (float) $this->returned_amount, 2));
+    }
+
+    /**
+     * Kekurangan yang masih harus kita ganti ke pemohon: nota lebih besar dari uang muka dan uang penggantinya
+     * belum penuh diberikan. Kebalikan `outstandingReturn()`.
+     */
+    public function outstandingTopup(): float
+    {
+        if ($this->type !== self::TYPE_ADVANCE || $this->status !== self::STATUS_OPEN || $this->receipt_amount === null) {
+            return 0.0;
+        }
+
+        return max(0.0, round((float) $this->receipt_amount - (float) $this->advance_amount - (float) $this->topup_paid_amount, 2));
     }
 
     /**
@@ -298,7 +313,7 @@ class Expense extends Model
      *
      * @throws \RuntimeException
      */
-    public function settle(array $items, ?float $total = null, ?string $note = null, float $returnedNow = 0): void
+    public function settle(array $items, ?float $total = null, ?string $note = null, float $returnedNow = 0, ?float $topupNow = null): void
     {
         $items = static::cleanItems($items);
 
@@ -312,7 +327,7 @@ class Expense extends Model
 
         $receiptAmount = round(array_sum(array_column($items, 'amount')), 2);
 
-        DB::transaction(function () use ($items, $receiptAmount, $note, $returnedNow) {
+        DB::transaction(function () use ($items, $receiptAmount, $note, $returnedNow, $topupNow) {
             $locked = self::whereKey($this->id)->lockForUpdate()->first();
 
             if (! $locked || $locked->status !== self::STATUS_OPEN || $locked->type !== self::TYPE_ADVANCE) {
@@ -324,9 +339,16 @@ class Expense extends Model
             }
 
             $balanceDue = round((float) $locked->advance_amount - $receiptAmount, 2);
+            $shortfall = max(0.0, -$balanceDue);
+            // Tanpa angka, seluruh kekurangan langsung diganti (perilaku awal).
+            $topup = $shortfall > 0 ? round($topupNow ?? $shortfall, 2) : 0.0;
 
             if ($returnedNow > max(0, $balanceDue) + 0.005) {
                 throw new \RuntimeException(__('The returned amount cannot exceed what is left over.'));
+            }
+
+            if ($topup < 0 || $topup > $shortfall + 0.005) {
+                throw new \RuntimeException(__('The extra money given cannot exceed the shortfall.'));
             }
 
             $this->writeItems($items);
@@ -334,16 +356,22 @@ class Expense extends Model
             // Aman dari guard updating() -- status ASLI sebelum baris ini
             // masih Open, jadi tidak pernah tertahan sebagai "sudah
             // terkunci".
+            $settledNow = $balanceDue == 0.0 || ($shortfall > 0 && $topup >= $shortfall - 0.005);
+
             $this->forceFill(array_merge(
-                ['receipt_amount' => $receiptAmount, 'receipt_note' => filled($note) ? trim($note) : null],
-                $balanceDue > 0 ? [] : ['status' => self::STATUS_SETTLED, 'settled_at' => now(), 'settled_by' => Auth::id()],
+                [
+                    'receipt_amount' => $receiptAmount,
+                    'receipt_note' => filled($note) ? trim($note) : null,
+                    'topup_paid_amount' => $topup,
+                ],
+                $settledNow ? ['status' => self::STATUS_SETTLED, 'settled_at' => now(), 'settled_by' => Auth::id()] : [],
             ))->save();
 
-            if ($balanceDue < 0) {
+            if ($topup > 0) {
                 BankTransaction::create([
                     'bank_account_id' => $this->bank_account_id,
                     'type' => 'out',
-                    'amount' => abs($balanceDue),
+                    'amount' => $topup,
                     'reference_type' => self::class,
                     'reference_id' => $this->id,
                     'description' => __('Additional expense beyond advance for :number', ['number' => $this->expense_number]),
@@ -354,6 +382,46 @@ class Expense extends Model
             if ($returnedNow > 0) {
                 $this->receiveReturn($returnedNow);
             }
+        });
+    }
+
+    /**
+     * Ganti kekurangan kasbon ke pemohon -- boleh sebagian, boleh berkali-kali. Begitu seluruh kekurangan
+     * terbayar, dokumen menjadi `Settled`.
+     *
+     * @throws \RuntimeException
+     */
+    public function payTopup(float $amount): void
+    {
+        DB::transaction(function () use ($amount) {
+            $locked = self::whereKey($this->id)->lockForUpdate()->first();
+
+            if (! $locked || $locked->outstandingTopup() <= 0) {
+                throw new \RuntimeException(__('There is no shortfall left to pay for this advance.'));
+            }
+
+            $outstanding = $locked->outstandingTopup();
+
+            if ($amount <= 0 || round($amount, 2) > $outstanding) {
+                throw new \RuntimeException(__('The extra money given cannot exceed the shortfall.'));
+            }
+
+            $done = round($outstanding - $amount, 2) <= 0;
+
+            $this->forceFill(array_merge(
+                ['topup_paid_amount' => round((float) $locked->topup_paid_amount + $amount, 2)],
+                $done ? ['status' => self::STATUS_SETTLED, 'settled_at' => now(), 'settled_by' => Auth::id()] : [],
+            ))->save();
+
+            BankTransaction::create([
+                'bank_account_id' => $this->bank_account_id,
+                'type' => 'out',
+                'amount' => round($amount, 2),
+                'reference_type' => self::class,
+                'reference_id' => $this->id,
+                'description' => __('Additional expense beyond advance for :number', ['number' => $this->expense_number]),
+                'transaction_date' => now()->toDateString(),
+            ]);
         });
     }
 
