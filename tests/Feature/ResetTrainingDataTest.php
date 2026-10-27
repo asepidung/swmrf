@@ -42,7 +42,7 @@ class ResetTrainingDataTest extends TestCase
         CattleClass::create(['name' => 'STEER']);
         Grade::create(['name' => 'CHILL', 'is_active' => true]);
         Warehouse::create(['code' => 'JONGGOL', 'name' => 'JONGGOL', 'is_active' => true]);
-        BankAccount::create(['account_holder' => 'KAS', 'account_number' => '1', 'bank_name' => 'KAS', 'initial' => 5000000, 'is_active' => true]);
+        BankAccount::create(['account_holder' => 'KAS', 'account_number' => '1', 'bank_name' => 'KAS', 'initial' => 'KAS', 'is_active' => true]);
         User::factory()->create(['username' => 'saepullrock']);
         DB::table('bank_transactions')->count();
     }
@@ -99,7 +99,8 @@ class ResetTrainingDataTest extends TestCase
         $this->assertSame(1, Grade::count());
         $this->assertSame(1, Warehouse::count());
         $this->assertSame(1, BankAccount::count());
-        $this->assertSame(0.0, (float) BankAccount::first()->initial, 'Akun kas ada, saldo awalnya 0.');
+        $this->assertSame('KAS', BankAccount::first()->initial, 'Akun kas ada dan inisialnya tidak ditimpa.');
+        $this->assertSame(0.0, BankAccount::first()->currentBalance(), 'Saldo 0 karena transaksinya hilang.');
 
         // id mulai dari 1 lagi.
         $first = CattleClass::create(['name' => 'BULL']);

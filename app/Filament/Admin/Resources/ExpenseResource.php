@@ -87,7 +87,7 @@ class ExpenseResource extends Resource
                     ->options(fn () => ExpenseCategory::where('is_active', true)->orderBy('name')->pluck('name', 'id'))
                     ->searchable()
                     ->required()
-                    ->columnSpan(['md' => 3]),
+                    ->columnSpan(['md' => 4]),
                 Forms\Components\TextInput::make('description')
                     ->label(__('Description'))
                     ->required()
@@ -97,7 +97,7 @@ class ExpenseResource extends Resource
                     ->label(__('Total Price'))
                     ->required()
                     ->live(onBlur: true)
-                    ->columnSpan(['md' => 4]),
+                    ->columnSpan(['md' => 3]),
             ])
             ->columns(['md' => 12])
             ->defaultItems(1)
@@ -127,16 +127,14 @@ class ExpenseResource extends Resource
                             ->required()
                             ->default(now()),
 
+                        // Pemohon tidak selalu punya akun sistem, jadi nama diketik; saran dari nama yang pernah dipakai
+                        // menjaga satu orang tidak tercatat dengan beberapa ejaan (tanggungan dikelompokkan per nama).
                         Forms\Components\TextInput::make('recipient_name')
                             ->label(__('Requester'))
                             ->required()
                             ->maxLength(255)
+                            ->datalist(fn (): array => Expense::query()->select('recipient_name')->distinct()->orderBy('recipient_name')->pluck('recipient_name')->all())
                             ->extraInputAttributes(['style' => 'text-transform:uppercase']),
-
-                        Forms\Components\Select::make('user_id')
-                            ->label(__('Requester Account (optional)'))
-                            ->options(fn () => User::where('is_active', true)->pluck('name', 'id'))
-                            ->searchable(),
 
                         Forms\Components\Select::make('bank_account_id')
                             ->label(__('Cash/Bank Account'))
@@ -146,7 +144,7 @@ class ExpenseResource extends Resource
                             ->required()
                             ->disabled(fn (string $context): bool => $context === 'edit')
                             ->dehydrated(),
-                    ])->columns(['md' => 4]),
+                    ])->columns(['md' => 3]),
 
                 Forms\Components\Section::make(__('Items'))
                     ->schema([

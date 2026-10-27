@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Kosongkan data hasil PELATIHAN (transaksi dan master) tetapi pertahankan akses dan data dasar
  * (issue #535, untuk go-live 1 November): users, permissions, user_permissions, push_subscriptions,
- * grades, warehouses, dan bank_accounts (akun kas tetap ada; saldo awal menjadi 0, transaksinya hilang).
+ * grades, warehouses, dan bank_accounts (akun tetap ada apa adanya; saldo selalu jumlah transaksinya, jadi ikut 0 begitu transaksinya hilang).
  *
  * Dry-run bawaan: hanya laporan per tabel (dihapus/dipertahankan, jumlah baris). `--apply` butuh
  * mengetik nama database. Sesudahnya tabel yang dikosongkan mulai dari id 1 lagi (AUTO_INCREMENT
@@ -33,7 +33,7 @@ class ResetTrainingData extends Command
         'push_subscriptions' => 'langganan notifikasi perangkat',
         'grades' => 'grade (id terkunci, masuk barcode)',
         'warehouses' => 'gudang',
-        'bank_accounts' => 'akun kas (saldo awal direset ke 0)',
+        'bank_accounts' => 'akun kas/bank (saldo mengikuti transaksi yang dihapus)',
         // infrastruktur Laravel/aplikasi
         'migrations' => 'riwayat migrasi',
         'sessions' => 'sesi login',
@@ -127,11 +127,10 @@ class ResetTrainingData extends Command
 
         $this->wipe($wipe->all());
 
-        // Akun kas tetap ada; saldo awalnya ikut direset (transaksinya sudah hilang).
-        DB::table('bank_accounts')->update(['initial' => 0]);
-
+        // Akun kas/bank tidak disentuh. `initial` adalah INISIAL/nama pendek akun (KAS, BCA PT), bukan saldo --
+        // dulu baris ini menimpanya jadi "0" dan akun kas tampil sebagai "0" di pilihan akun.
         $this->newLine();
-        $this->info('Selesai: '.$wipe->count().' tabel dikosongkan dan id-nya mulai dari 1 lagi; saldo awal akun kas = 0.');
+        $this->info('Selesai: '.$wipe->count().' tabel dikosongkan dan id-nya mulai dari 1 lagi; akun kas/bank dipertahankan, saldonya 0 karena transaksinya hilang.');
         $this->line('Berikutnya: import master ber-id legacy, lalu reservasi rentang id (#535).');
 
         return self::SUCCESS;
