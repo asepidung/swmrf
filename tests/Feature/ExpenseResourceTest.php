@@ -192,12 +192,13 @@ class ExpenseResourceTest extends TestCase
 
         // Form sudah terisi barang uang muka; ubah nilainya sesuai nota (baris yang sama, kuncinya dari form).
         $key = array_key_first($page->instance()->mountedTableActionsData[0]['items']);
-        $page->setTableActionData(['items' => [$key => $this->items(85000)[0]]])->callMountedTableAction();
+        $page->setTableActionData(['total_used' => 85000, 'receipt_note' => 'Nota 123 Toko Maju', 'items' => [$key => $this->items(85000)[0]]])->callMountedTableAction();
 
         $expense->refresh();
         $this->assertSame(Expense::STATUS_OPEN, $expense->status, 'nota lebih kecil: tetap Open sampai sisanya kembali');
         $this->assertSame(85000.0, (float) $expense->receipt_amount);
         $this->assertSame(15000.0, $expense->outstandingReturn());
+        $this->assertSame('Nota 123 Toko Maju', $expense->receipt_note);
     }
 
     /** @test */
@@ -243,6 +244,39 @@ class ExpenseResourceTest extends TestCase
             ->filterTable('open', true)
             ->assertCanSeeTableRecords([$old])
             ->assertCanNotSeeTableRecords([$settled]);
+    }
+
+    /** @test */
+    public function a_single_total_without_touching_the_items_is_enough_to_report_back(): void
+    {
+        $expense = $this->openAdvance();
+
+        $page = Livewire::actingAs($this->employee(['view_expenses', 'edit_expenses']))
+            ->test(ListExpenses::class)
+            ->mountTableAction('settle', $expense);
+
+        $page->setTableActionData(['total_used' => 450000, 'returned_now' => 0])->callMountedTableAction();
+
+        $expense->refresh();
+        $this->assertSame(450000.0, (float) $expense->receipt_amount);
+        $this->assertSame(450000.0, (float) $expense->items()->sum('amount'), 'baris barang mengikuti total');
+    }
+
+    /** @test */
+    public function the_requester_suggestions_include_employees_and_earlier_names(): void
+    {
+        $segment = \App\Models\CustomerSegment::firstOrCreate(['name' => 'RETAIL']);
+        $group = \App\Models\CustomerGroup::create(['name' => 'KARYAWAN']);
+        \App\Models\Customer::create(['name' => 'furqon', 'address' => 'Bogor', 'top_days' => 0, 'customer_segment_id' => $segment->id, 'customer_group_id' => $group->id]);
+        $other = \App\Models\CustomerGroup::create(['name' => 'HOTEL']);
+        \App\Models\Customer::create(['name' => 'novotel', 'address' => 'Bogor', 'top_days' => 30, 'customer_segment_id' => $segment->id, 'customer_group_id' => $other->id]);
+        $this->openAdvance();
+
+        $suggestions = ExpenseResource::requesterSuggestions();
+
+        $this->assertContains('FURQON', $suggestions);
+        $this->assertContains('BUDI', $suggestions);
+        $this->assertNotContains('NOVOTEL', $suggestions);
     }
 
     /** @test */

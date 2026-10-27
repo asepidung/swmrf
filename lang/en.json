@@ -1928,5 +1928,19 @@
     "The returned amount must be above zero and not more than the outstanding amount.": "The returned amount must be above zero and not more than the outstanding amount.",
     "Advances still with the requester": "Advances still with the requester",
     "Open advances": "Open advances",
-    "Oldest": "Oldest"
+    "Oldest": "Oldest",
+    "Money given": "Money given",
+    "Total used (per receipts)": "Total used (per receipts)",
+    "Itemised breakdown (optional)": "Itemised breakdown (optional)",
+    "If the rows do not add up to the total, they are adjusted proportionally.": "If the rows do not add up to the total, they are adjusted proportionally.",
+    "Exactly as given. Nothing to return.": "Exactly as given. Nothing to return.",
+    "The requester must return :amount.": "The requester must return :amount.",
+    "We add :amount to cover the shortfall.": "We add :amount to cover the shortfall.",
+    "Already returned now": "Already returned now",
+    "Receipt notes": "Receipt notes",
+    "Receipt number, shop, anything that documents the receipts.": "Receipt number, shop, anything that documents the receipts.",
+    "Receipt Photo (optional)": "Receipt Photo (optional)",
+    "On a phone you can take the photo straight from the camera.": "On a phone you can take the photo straight from the camera.",
+    "The returned amount cannot exceed what is left over.": "The returned amount cannot exceed what is left over.",
+    "The total used must be above zero.": "The total used must be above zero."
 }

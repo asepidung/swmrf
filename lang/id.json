@@ -1928,5 +1928,19 @@
     "The returned amount must be above zero and not more than the outstanding amount.": "Jumlah yang dikembalikan harus di atas nol dan tidak melebihi sisa.",
     "Advances still with the requester": "Kasbon yang masih di tangan pemohon",
     "Open advances": "Kasbon belum beres",
-    "Oldest": "Terlama"
+    "Oldest": "Terlama",
+    "Money given": "Uang yang diberikan",
+    "Total used (per receipts)": "Total terpakai (sesuai nota)",
+    "Itemised breakdown (optional)": "Rincian per barang (opsional)",
+    "If the rows do not add up to the total, they are adjusted proportionally.": "Kalau jumlah baris tidak sama dengan total, baris disesuaikan secara proporsional.",
+    "Exactly as given. Nothing to return.": "Pas dengan uang yang diberikan. Tidak ada yang perlu dikembalikan.",
+    "The requester must return :amount.": "Pemohon wajib mengembalikan :amount.",
+    "We add :amount to cover the shortfall.": "Kita menambah :amount untuk kekurangannya.",
+    "Already returned now": "Sudah dikembalikan sekarang",
+    "Receipt notes": "Catatan nota",
+    "Receipt number, shop, anything that documents the receipts.": "Nomor nota, toko, atau keterangan lain yang mencatat nota.",
+    "Receipt Photo (optional)": "Foto Nota (opsional)",
+    "On a phone you can take the photo straight from the camera.": "Di HP, foto bisa langsung dari kamera.",
+    "The returned amount cannot exceed what is left over.": "Jumlah yang dikembalikan tidak boleh melebihi sisa uang.",
+    "The total used must be above zero.": "Total terpakai harus di atas nol."
 }

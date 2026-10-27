@@ -65,7 +65,35 @@ class ExpenseResource extends Resource
     /** Angka dari isian uang yang sedang diketik ("1.200.000" -> 1200000). */
     public static function moneyValue(mixed $state): float
     {
-        return (float) str_replace(['.', ' '], '', (string) $state);
+        $text = trim((string) $state);
+
+        // Angka mentah dari database/fillForm ("500000.00") jangan dibuang titiknya; isian bertitik
+        // ribuan ("500.000", "1.200.000") atau berkoma harus dibuang.
+        if (preg_match('/^\d+\.\d{1,2}$/', $text) === 1) {
+            return (float) $text;
+        }
+
+        return (float) str_replace(['.', ' ', ','], ['', '', '.'], $text);
+    }
+
+    /**
+     * Saran nama pemohon: nama yang pernah dipakai, ditambah karyawan (pelanggan di grup KARYAWAN --
+     * semua karyawan perusahaan, belum tentu punya akun sistem).
+     *
+     * @return array<int, string>
+     */
+    public static function requesterSuggestions(): array
+    {
+        $employees = \App\Models\Customer::query()
+            ->whereHas('group', fn (Builder $group) => $group->where('name', 'KARYAWAN'))
+            ->pluck('name');
+
+        return Expense::query()->distinct()->pluck('recipient_name')
+            ->merge($employees->map(fn ($name) => mb_strtoupper($name)))
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
     }
 
     private static function canManage(): bool
@@ -133,7 +161,7 @@ class ExpenseResource extends Resource
                             ->label(__('Requester'))
                             ->required()
                             ->maxLength(255)
-                            ->datalist(fn (): array => Expense::query()->select('recipient_name')->distinct()->orderBy('recipient_name')->pluck('recipient_name')->all())
+                            ->datalist(fn (): array => static::requesterSuggestions())
                             ->extraInputAttributes(['style' => 'text-transform:uppercase']),
 
                         Forms\Components\Select::make('bank_account_id')
@@ -176,32 +204,96 @@ class ExpenseResource extends Resource
             ]);
     }
 
-    /** Aksi laporan balik kasbon: nilai tiap barang disesuaikan dengan nota yang dibawa pemohon. */
+    /**
+     * Aksi laporan balik kasbon. Yang wajib hanya TOTAL terpakai sesuai nota; rincian per barang opsional
+     * (kalau jumlah barisnya tidak sama dengan total, baris disesuaikan proporsional di model). Pencatatan
+     * nota bisa diketik bebas, foto opsional.
+     */
     public static function settleAction(): Tables\Actions\Action
     {
         return Tables\Actions\Action::make('settle')
             ->label(__('Report Back'))
             ->icon('heroicon-o-check-circle')
             ->color('success')
+            ->modalWidth('3xl')
             ->visible(fn (Expense $record): bool => $record->awaitingReport() && static::canManage())
             ->fillForm(fn (Expense $record): array => [
+                'total_used' => $record->advance_amount,
                 'items' => $record->items->map(fn ($item) => [
                     'expense_category_id' => $item->expense_category_id,
                     'description' => $item->description,
                     'amount' => $item->amount,
                 ])->all(),
             ])
-            ->form([
-                static::itemsRepeater()
-                    ->helperText(__('Adjust each item to the receipts. Add or remove rows if the receipts differ.')),
-                static::itemsTotalPlaceholder(),
+            ->form(fn (Expense $record): array => [
+                Forms\Components\Placeholder::make('given')
+                    ->label(__('Money given'))
+                    ->content('Rp '.number_format((float) $record->advance_amount, 0, ',', '.')),
+
+                static::money('total_used')
+                    ->label(__('Total used (per receipts)'))
+                    ->required()
+                    ->live(onBlur: true)
+                    // Satu barang saja: nilainya otomatis mengikuti total.
+                    ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get): void {
+                        $items = $get('items') ?? [];
+
+                        if (count($items) === 1) {
+                            $set('items.'.array_key_first($items).'.amount', static::moneyValue($state));
+                        }
+                    })
+                    ->rules([
+                        fn (): \Closure => function (string $attribute, $value, \Closure $fail): void {
+                            if (static::moneyValue($value) <= 0) {
+                                $fail(__('The total used must be above zero.'));
+                            }
+                        },
+                    ]),
+
+                Forms\Components\Placeholder::make('difference')
+                    ->hiddenLabel()
+                    ->content(function (Forms\Get $get) use ($record): string {
+                        $left = round((float) $record->advance_amount - static::moneyValue($get('total_used')), 2);
+                        $money = fn (float $value): string => 'Rp '.number_format(abs($value), 0, ',', '.');
+
+                        return match (true) {
+                            $left > 0 => __('The requester must return :amount.', ['amount' => $money($left)]),
+                            $left < 0 => __('We add :amount to cover the shortfall.', ['amount' => $money($left)]),
+                            default => __('Exactly as given. Nothing to return.'),
+                        };
+                    }),
+
+                static::money('returned_now')
+                    ->label(__('Already returned now'))
+                    ->visible(fn (Forms\Get $get): bool => static::moneyValue($get('total_used')) < (float) $record->advance_amount)
+                    ->rules([
+                        fn (Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get, $record): void {
+                            $left = round((float) $record->advance_amount - static::moneyValue($get('total_used')), 2);
+
+                            if (static::moneyValue($value) > $left) {
+                                $fail(__('The returned amount cannot exceed what is left over.'));
+                            }
+                        },
+                    ]),
+
+                Forms\Components\Textarea::make('receipt_note')
+                    ->label(__('Receipt notes'))
+                    ->helperText(__('Receipt number, shop, anything that documents the receipts.'))
+                    ->rows(2),
+
                 Forms\Components\FileUpload::make('receipt_photo')
-                    ->label(__('Receipt Photo'))
+                    ->label(__('Receipt Photo (optional)'))
+                    ->helperText(__('On a phone you can take the photo straight from the camera.'))
                     ->disk('local')
                     ->directory('expense-receipts')
                     ->visibility('private')
                     ->image()
                     ->maxSize(5120),
+
+                Forms\Components\Section::make(__('Itemised breakdown (optional)'))
+                    ->description(__('If the rows do not add up to the total, they are adjusted proportionally.'))
+                    ->collapsed()
+                    ->schema([static::itemsRepeater()->hiddenLabel()]),
             ])
             ->action(function (Expense $record, array $data): void {
                 if (! static::canManage()) {
@@ -217,7 +309,12 @@ class ExpenseResource extends Resource
                         $record->update(['receipt_photo' => $data['receipt_photo']]);
                     }
 
-                    $record->settle($data['items']);
+                    $record->settle(
+                        $data['items'],
+                        (float) $data['total_used'],
+                        $data['receipt_note'] ?? null,
+                        (float) ($data['returned_now'] ?? 0),
+                    );
                 } catch (\Throwable $e) {
                     report($e);
                     Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
@@ -552,6 +649,10 @@ class ExpenseResource extends Resource
                             ->visible(fn (Expense $record): bool => $record->type === Expense::TYPE_ADVANCE),
                         Infolists\Components\TextEntry::make('description')
                             ->label(__('Description'))
+                            ->placeholder('-')
+                            ->columnSpanFull(),
+                        Infolists\Components\TextEntry::make('receipt_note')
+                            ->label(__('Receipt notes'))
                             ->placeholder('-')
                             ->columnSpanFull(),
                     ])->columns(2),
