@@ -52,6 +52,7 @@ class Expense extends Model
         'status',
         'description',
         'receipt_photo',
+        'receipt_note',
         'created_by',
     ];
 
@@ -285,21 +286,33 @@ class Expense extends Model
     }
 
     /**
-     * Laporan balik kasbon: pemohon membawa nota, barang disesuaikan dengan nota (nilai, boleh tambah/kurang
-     * baris). Sama dengan uang yang diberikan -> `Settled`. Lebih besar -> kekurangan keluar tambahan dan
-     * `Settled`. Lebih kecil -> tetap `Open` sampai sisanya kembali lewat `receiveReturn()`, sebagian atau
-     * bertahap, dan selama itu tanggungan pemohon terus tampil.
+     * Laporan balik kasbon: pemohon membawa nota. `$total` = jumlah terpakai menurut nota; kalau diisi dan
+     * beda dari jumlah baris barang, barisnya disesuaikan proporsional (selisih pembulatan ke baris terbesar),
+     * supaya rekap per kategori tetap menjumlah ke total. Tanpa `$total`, jumlah baris itulah totalnya.
+     * Sama dengan uang yang diberikan -> `Settled`. Lebih besar -> kekurangan keluar tambahan dan `Settled`.
+     * Lebih kecil -> tetap `Open` sampai sisanya kembali lewat `receiveReturn()`, sebagian atau bertahap
+     * (`$returnedNow` mencatat bagian yang sudah dikembalikan saat itu juga), dan selama itu tanggungan
+     * pemohon terus tampil.
      *
      * @param  array<int, array<string, mixed>>  $items
      *
      * @throws \RuntimeException
      */
-    public function settle(array $items): void
+    public function settle(array $items, ?float $total = null, ?string $note = null, float $returnedNow = 0): void
     {
         $items = static::cleanItems($items);
+
+        if ($total !== null) {
+            if ($total <= 0) {
+                throw new \RuntimeException(__('The total used must be above zero.'));
+            }
+
+            $items = static::scaleItems($items, round($total, 2));
+        }
+
         $receiptAmount = round(array_sum(array_column($items, 'amount')), 2);
 
-        DB::transaction(function () use ($items, $receiptAmount) {
+        DB::transaction(function () use ($items, $receiptAmount, $note, $returnedNow) {
             $locked = self::whereKey($this->id)->lockForUpdate()->first();
 
             if (! $locked || $locked->status !== self::STATUS_OPEN || $locked->type !== self::TYPE_ADVANCE) {
@@ -312,13 +325,17 @@ class Expense extends Model
 
             $balanceDue = round((float) $locked->advance_amount - $receiptAmount, 2);
 
+            if ($returnedNow > max(0, $balanceDue) + 0.005) {
+                throw new \RuntimeException(__('The returned amount cannot exceed what is left over.'));
+            }
+
             $this->writeItems($items);
 
             // Aman dari guard updating() -- status ASLI sebelum baris ini
             // masih Open, jadi tidak pernah tertahan sebagai "sudah
             // terkunci".
             $this->forceFill(array_merge(
-                ['receipt_amount' => $receiptAmount],
+                ['receipt_amount' => $receiptAmount, 'receipt_note' => filled($note) ? trim($note) : null],
                 $balanceDue > 0 ? [] : ['status' => self::STATUS_SETTLED, 'settled_at' => now(), 'settled_by' => Auth::id()],
             ))->save();
 
@@ -333,7 +350,36 @@ class Expense extends Model
                     'transaction_date' => now()->toDateString(),
                 ]);
             }
+
+            if ($returnedNow > 0) {
+                $this->receiveReturn($returnedNow);
+            }
         });
+    }
+
+    /**
+     * Sesuaikan nilai baris ke `$total` secara proporsional; sisa pembulatan ke baris terbesar.
+     *
+     * @param  array<int, array{expense_category_id: int, description: string, amount: float}>  $items
+     * @return array<int, array{expense_category_id: int, description: string, amount: float}>
+     */
+    private static function scaleItems(array $items, float $total): array
+    {
+        $sum = round(array_sum(array_column($items, 'amount')), 2);
+
+        if (abs($sum - $total) < 0.005) {
+            return $items;
+        }
+
+        foreach ($items as $i => $item) {
+            $items[$i]['amount'] = round($item['amount'] * $total / $sum, 2);
+        }
+
+        $remainder = round($total - array_sum(array_column($items, 'amount')), 2);
+        $largest = array_search(max(array_column($items, 'amount')), array_column($items, 'amount'));
+        $items[$largest]['amount'] = round($items[$largest]['amount'] + $remainder, 2);
+
+        return $items;
     }
 
     /**

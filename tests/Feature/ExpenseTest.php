@@ -206,6 +206,47 @@ class ExpenseTest extends TestCase
     }
 
     /** @test */
+    public function a_single_total_scales_the_items_proportionally_and_keeps_the_sum_exact(): void
+    {
+        $expense = Expense::createAdvance($this->baseData(), [
+            ['expense_category_id' => $this->category->id, 'description' => 'a', 'amount' => 300000],
+            ['expense_category_id' => $this->category->id, 'description' => 'b', 'amount' => 200000],
+        ]);
+
+        $expense->settle($expense->items->map(fn ($i) => $i->only(['expense_category_id', 'description', 'amount']))->all(), 450000, 'Nota 77');
+
+        $expense = $expense->fresh();
+        $this->assertSame(450000.0, (float) $expense->receipt_amount);
+        $this->assertSame(450000.0, $expense->itemsTotal());
+        $this->assertSame([270000.0, 180000.0], $expense->items->map(fn ($i) => (float) $i->amount)->all());
+        $this->assertSame('Nota 77', $expense->receipt_note);
+        $this->assertSame(50000.0, $expense->outstandingReturn());
+    }
+
+    /** @test */
+    public function part_of_the_difference_can_be_returned_in_the_same_step(): void
+    {
+        $expense = Expense::createAdvance($this->baseData(), $this->items(500000));
+
+        $expense->settle($this->items(500000), 450000, null, 20000);
+
+        $expense = $expense->fresh();
+        $this->assertSame(Expense::STATUS_OPEN, $expense->status);
+        $this->assertSame(30000.0, $expense->outstandingReturn());
+        $this->assertSame(-480000.0, $this->cash->fresh()->currentBalance());
+    }
+
+    /** @test */
+    public function returning_more_than_the_difference_at_report_time_is_refused(): void
+    {
+        $expense = Expense::createAdvance($this->baseData(), $this->items(500000));
+
+        $this->expectException(\RuntimeException::class);
+
+        $expense->settle($this->items(500000), 450000, null, 60000);
+    }
+
+    /** @test */
     public function an_item_without_category_description_or_price_is_refused(): void
     {
         $this->expectException(\RuntimeException::class);

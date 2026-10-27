@@ -158,6 +158,10 @@
         </tbody>
     </table>
 
+    @if ($record->receipt_note)
+        <p style="margin-top: 12px;"><strong>Catatan Nota :</strong> {{ $record->receipt_note }}</p>
+    @endif
+
     <table class="signature-table" style="margin-top: 20px;">
         <tr>
             <td width="50%">
