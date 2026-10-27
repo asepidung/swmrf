@@ -606,7 +606,11 @@ class InvoiceResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
-                    ->color('primary'),
+                    ->color('primary')
+                    // Nomor invoice membuka halaman cetak langsung (keputusan Owner 27 Oktober 2026), tanpa
+                    // lewat halaman edit; barisnya yang lain tetap membuka edit/lihat.
+                    ->url(fn (Invoice $record): string => route('print.invoice', $record->id))
+                    ->openUrlInNewTab(),
 
                 Tables\Columns\TextColumn::make('customer.name')
                     ->label(__('Customer'))

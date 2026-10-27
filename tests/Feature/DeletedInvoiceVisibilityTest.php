@@ -124,6 +124,17 @@ class DeletedInvoiceVisibilityTest extends TestCase
             ->assertCanNotSeeTableRecords([$mati]);
     }
 
+    /** Nomor invoice di daftar langsung membuka halaman cetak, tanpa lewat halaman edit. */
+    public function test_the_invoice_number_links_straight_to_the_print_page(): void
+    {
+        $invoice = $this->buatInvoice('SWM-INV#26-0005', dihapus: false);
+
+        Livewire::actingAs($this->buatPengguna('pencetak', bolehLihatTerhapus: false))
+            ->test(ListInvoices::class)
+            ->assertTableColumnStateSet('invoice_number', 'SWM-INV#26-0005', $invoice)
+            ->assertSeeHtml('href="'.route('print.invoice', $invoice->id).'"');
+    }
+
     /** Dan yang punya haknya tetap bisa memunculkannya lewat filter. */
     public function test_a_user_with_the_permission_can_still_reach_them(): void
     {
