@@ -74,6 +74,6 @@ class ExpenseLiabilityWidget extends TableWidget
             ])
             ->defaultSort('owed', 'desc')
             ->paginated(false)
-            ->recordUrl(fn (): string => ExpenseResource::getUrl('index', ['activeTab' => 'open']));
+            ->recordUrl(fn (): string => ExpenseResource::getUrl('index', ['tableFilters' => ['open' => ['isActive' => true]]]));
     }
 }

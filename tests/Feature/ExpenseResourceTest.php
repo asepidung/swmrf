@@ -232,6 +232,20 @@ class ExpenseResourceTest extends TestCase
     }
 
     /** @test */
+    public function the_open_advances_filter_also_shows_old_advances_beyond_the_current_month(): void
+    {
+        $old = Expense::createAdvance(['expense_date' => now()->subMonths(2)->toDateString(), 'recipient_name' => 'lama'], $this->items(100000));
+        $settled = Expense::createReimburse(['expense_date' => now()->toDateString(), 'recipient_name' => 'beres'], $this->items(50000));
+
+        Livewire::actingAs($this->employee(['view_expenses']))
+            ->test(ListExpenses::class)
+            ->assertCanNotSeeTableRecords([$old])
+            ->filterTable('open', true)
+            ->assertCanSeeTableRecords([$old])
+            ->assertCanNotSeeTableRecords([$settled]);
+    }
+
+    /** @test */
     public function the_dashboard_widget_lists_what_each_requester_still_holds(): void
     {
         $this->openAdvance();
