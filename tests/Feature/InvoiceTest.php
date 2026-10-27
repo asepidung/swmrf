@@ -387,6 +387,50 @@ class InvoiceTest extends TestCase
     }
 
     /** @test */
+    public function the_delivery_date_comes_from_the_delivery_order_not_the_invoice_date()
+    {
+        $deliveryOrder = $this->receiptRegular->deliveryOrder;
+        $deliveryOrder->forceFill(['delivery_date' => '2026-10-26'])->saveQuietly();
+
+        $invoice = Invoice::create([
+            'customer_id' => $this->customerRegular->id,
+            'sales_order_id' => $this->receiptRegular->sales_order_id,
+            'delivery_order_receipt_id' => $this->receiptRegular->id,
+            'invoice_date' => '2026-10-27',
+            'term_of_payment' => 30,
+            'status' => '-',
+            'subtotal' => 1000000.0,
+            'total_discount' => 0,
+            'tax' => 0,
+            'balance' => 1000000.0,
+        ]);
+
+        $this->assertSame('2026-10-26', $invoice->deliveryDate()->toDateString());
+
+        $this->actingAs($this->user)
+            ->get(route('print.invoice', $invoice->id))
+            ->assertSee('26-Oct-2026');
+    }
+
+    /** @test */
+    public function the_delivery_date_falls_back_to_the_invoice_date_without_a_delivery_order()
+    {
+        $invoice = Invoice::create([
+            'customer_id' => $this->customerRegular->id,
+            'sales_order_id' => $this->receiptRegular->sales_order_id,
+            'invoice_date' => '2026-10-27',
+            'term_of_payment' => 30,
+            'status' => '-',
+            'subtotal' => 1000000.0,
+            'total_discount' => 0,
+            'tax' => 0,
+            'balance' => 1000000.0,
+        ]);
+
+        $this->assertSame('2026-10-27', $invoice->deliveryDate()->toDateString());
+    }
+
+    /** @test */
     public function it_renders_print_invoice_correctly()
     {
         $this->actingAs($this->user);
