@@ -268,6 +268,9 @@ class ExpenseResourceTest extends TestCase
         $segment = \App\Models\CustomerSegment::firstOrCreate(['name' => 'RETAIL']);
         $group = \App\Models\CustomerGroup::create(['name' => 'KARYAWAN']);
         \App\Models\Customer::create(['name' => 'furqon', 'address' => 'Bogor', 'top_days' => 0, 'customer_segment_id' => $segment->id, 'customer_group_id' => $group->id]);
+        foreach (['asep idung (bpk)', 'widi (ibu)', 'nunu bpk'] as $name) {
+            \App\Models\Customer::create(['name' => $name, 'address' => 'Bogor', 'top_days' => 0, 'customer_segment_id' => $segment->id, 'customer_group_id' => $group->id]);
+        }
         $other = \App\Models\CustomerGroup::create(['name' => 'HOTEL']);
         \App\Models\Customer::create(['name' => 'novotel', 'address' => 'Bogor', 'top_days' => 30, 'customer_segment_id' => $segment->id, 'customer_group_id' => $other->id]);
         $this->openAdvance();
@@ -275,6 +278,10 @@ class ExpenseResourceTest extends TestCase
         $suggestions = ExpenseResource::requesterSuggestions();
 
         $this->assertContains('FURQON', $suggestions);
+        $this->assertContains('ASEP IDUNG', $suggestions);
+        $this->assertContains('WIDI', $suggestions);
+        $this->assertContains('NUNU', $suggestions);
+        $this->assertNotContains('ASEP IDUNG (BPK)', $suggestions);
         $this->assertContains('BUDI', $suggestions);
         $this->assertNotContains('NOVOTEL', $suggestions);
     }

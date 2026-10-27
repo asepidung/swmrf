@@ -89,7 +89,8 @@ class ExpenseResource extends Resource
             ->pluck('name');
 
         return Expense::query()->distinct()->pluck('recipient_name')
-            ->merge($employees->map(fn ($name) => mb_strtoupper($name)))
+            // Nama pelanggan karyawan memakai akhiran sapaan "(BPK)"/"(IBU)"; sebagai pemohon cukup namanya.
+            ->merge($employees->map(fn ($name) => trim((string) preg_replace('/\s*\(?\b(BPK|IBU)\b\)?\s*$/i', '', mb_strtoupper($name)))))
             ->unique()
             ->sort()
             ->values()
