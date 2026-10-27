@@ -10,8 +10,8 @@
         body {
             background-color: #f4f6f9;
             font-family: 'Cambria', Georgia, serif;
-            font-size: 13px;
-            color: #333;
+            font-size: 15px;
+            color: #111;
         }
 
         .page-container {
@@ -52,15 +52,15 @@
         }
 
         .company-name {
-            font-size: 16px;
+            font-size: 19px;
             font-weight: bold;
             color: #111;
             letter-spacing: 0.5px;
         }
 
         .company-address {
-            font-size: 10px;
-            color: #555;
+            font-size: 12px;
+            color: #333;
             margin-top: 2px;
             line-height: 1.4;
         }
@@ -71,14 +71,14 @@
 
         .doc-title-box h2 {
             margin: 0;
-            font-size: 24px;
+            font-size: 28px;
             font-weight: bold;
             color: #007bff;
             letter-spacing: 1px;
         }
 
         .doc-meta {
-            font-size: 12px;
+            font-size: 15px;
             color: #111;
             margin-top: 3px;
             font-weight: bold;
@@ -115,7 +115,7 @@
         .table-collapse {
             border-collapse: collapse;
             width: 100%;
-            font-size: 12px;
+            font-size: 14px;
         }
 
         .table-collapse th, .table-collapse td {
@@ -150,7 +150,7 @@
             }
             .company-name { font-size: 14px; }
             .doc-title-box h2 { font-size: 18px; }
-            .table-collapse { font-size: 10px; }
+            .table-collapse { font-size: 12px; }
         }
 
         @media print {
@@ -200,6 +200,22 @@
             padding: 8px 12px;
             font-weight: bold;
             margin-top: 10px;
+            font-size: 15px;
+        }
+
+        /* Meta dua kolom selalu (juga di kertas/layar sempit), label gelap dan terbaca. */
+        .invoice-meta td, .invoice-meta th {
+            font-size: 15px;
+            padding: 3px 4px;
+            color: #111;
+        }
+
+        .invoice-meta .text-muted {
+            color: #333 !important;
+        }
+
+        @media print {
+            @page { margin: 12mm; }
         }
     </style>
 </head>
@@ -235,8 +251,8 @@
 
                 <!-- Invoice Details -->
                 <div class="row mb-3">
-                    <div class="col-md-6 mb-3 mb-md-0">
-                        <table class="table table-borderless table-sm">
+                    <div class="col-6">
+                        <table class="table table-borderless table-sm invoice-meta">
                             <tr>
                                 <td style="width: 120px;" class="text-muted">Do Number</td>
                                 <td style="width: 15px;" class="text-muted">:</td>
@@ -274,8 +290,8 @@
                             </tr>
                         </table>
                     </div>
-                    <div class="col-md-6">
-                        <table class="table table-borderless table-sm">
+                    <div class="col-6">
+                        <table class="table table-borderless table-sm invoice-meta">
                             <tr>
                                 <td class="text-muted">Cust PO</td>
                                 <td class="text-muted">:</td>
@@ -373,7 +389,7 @@
 
                 <!-- Payment Methods & Finance -->
                 <div class="mt-4">
-                    <h5 class="font-weight-bold" style="font-size: 14px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">Payment Methods</h5>
+                    <h5 class="font-weight-bold" style="font-size: 16px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">Payment Methods</h5>
                     <div class="row">
                         <div class="col-8">
                             @if(strpos(strtoupper($record->customer->name ?? ''), "LION") !== false)
