@@ -207,8 +207,8 @@ class ExpenseResource extends Resource
 
     /**
      * Aksi laporan balik kasbon. Yang wajib hanya TOTAL terpakai sesuai nota; rincian per barang opsional
-     * (kalau jumlah barisnya tidak sama dengan total, baris disesuaikan proporsional di model). Pencatatan
-     * nota bisa diketik bebas, foto opsional.
+     * (kalau jumlah barisnya tidak sama dengan total, baris disesuaikan proporsional di model). Nota dicatat
+     * lewat isian bebas (tidak ada unggah foto: foto tidak mengisi angka, hanya bukti).
      */
     public static function settleAction(): Tables\Actions\Action
     {
@@ -282,15 +282,6 @@ class ExpenseResource extends Resource
                     ->helperText(__('Receipt number, shop, anything that documents the receipts.'))
                     ->rows(2),
 
-                Forms\Components\FileUpload::make('receipt_photo')
-                    ->label(__('Receipt Photo (optional)'))
-                    ->helperText(__('On a phone you can take the photo straight from the camera.'))
-                    ->disk('local')
-                    ->directory('expense-receipts')
-                    ->visibility('private')
-                    ->image()
-                    ->maxSize(5120),
-
                 Forms\Components\Section::make(__('Itemised breakdown (optional)'))
                     ->description(__('If the rows do not add up to the total, they are adjusted proportionally.'))
                     ->collapsed()
@@ -304,12 +295,6 @@ class ExpenseResource extends Resource
                 }
 
                 try {
-                    // Foto disimpan SELAGI masih Open -- settle() bisa langsung mengunci baris ke
-                    // Settled, dan update() sesudahnya akan ditolak guard `updating()` di model.
-                    if (! empty($data['receipt_photo'])) {
-                        $record->update(['receipt_photo' => $data['receipt_photo']]);
-                    }
-
                     $record->settle(
                         $data['items'],
                         (float) $data['total_used'],
