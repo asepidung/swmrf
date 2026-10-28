@@ -43,29 +43,14 @@ class ListPendingPoProducts extends Page implements HasTable
                     ->icon('heroicon-o-truck')
                     ->color('success')
                     ->button()
-                    ->action(function (PurchaseProduct $record) {
-                        // Satu PO satu penerimaan yang sedang dikerjakan (temuan pelatihan 28 Oktober 2026: dua orang
-                        // menekan Process GR dan lahir dua GRB). Selama masih ada GR yang belum terkunci untuk PO ini,
-                        // orang kedua dibawa ke GR yang sama, bukan dibuatkan yang baru. Penerimaan bertahap tetap
-                        // jalan: GR berikutnya baru lahir setelah yang sebelumnya terkunci.
-                        $gr = \Illuminate\Support\Facades\DB::transaction(function () use ($record) {
-                            // Kunci baris PO supaya dua klik bersamaan berurutan, bukan bersamaan.
-                            PurchaseProduct::whereKey($record->id)->lockForUpdate()->first();
+                    // Tombol ini hanya MEMBUKA formulir; dokumen GRB baru lahir saat Simpan (Owner, 28 Oktober 2026).
+                    // GR lama yang belum terkunci untuk PO ini (sisa alur lama) dilanjutkan, bukan dibuatkan yang baru.
+                    ->url(function (PurchaseProduct $record): string {
+                        $open = GoodsReceiptProduct::where('purchase_product_id', $record->id)->where('is_locked', false)->orderBy('id')->first();
 
-                            return GoodsReceiptProduct::where('purchase_product_id', $record->id)
-                                ->where('is_locked', false)
-                                ->orderBy('id')
-                                ->first()
-                                ?? GoodsReceiptProduct::create([
-                                    'purchase_product_id' => $record->id,
-                                    'supplier_id' => $record->supplier_id,
-                                    'receive_date' => now()->format('Y-m-d'),
-                                    'created_by' => auth()->id(),
-                                ]);
-                        });
-
-                        // Redirect to the Input page
-                        return redirect(GoodsReceiptProductResource::getUrl('input', ['record' => $gr->id]));
+                        return $open
+                            ? GoodsReceiptProductResource::getUrl('input', ['record' => $open->id])
+                            : GoodsReceiptProductResource::getUrl('new', ['purchaseProduct' => $record->id]);
                     }),
                 Action::make('cancel_po')
                     ->label(__('Cancel'))

@@ -33,6 +33,34 @@ class CreateInvoice extends CreateRecord
         parent::mount();
     }
 
+    /**
+     * Satu penerimaan DO satu invoice. Dokumen lahir saat Simpan, jadi dua orang yang membuka penerimaan yang sama
+     * bisa sama-sama menyimpan dan menagih dua kali. Baris penerimaan dikunci dan diperiksa ulang di dalam transaksi
+     * (temuan pelatihan 28 Oktober 2026: dokumen ganda).
+     */
+    protected function handleRecordCreation(array $data): \Illuminate\Database\Eloquent\Model
+    {
+        return DB::transaction(function () use ($data) {
+            $receiptId = $data['delivery_order_receipt_id'] ?? null;
+
+            if ($receiptId) {
+                DeliveryOrderReceipt::whereKey($receiptId)->lockForUpdate()->first();
+
+                if (Invoice::where('delivery_order_receipt_id', $receiptId)->exists()) {
+                    \Filament\Notifications\Notification::make()
+                        ->title(__('This delivery receipt already has an invoice'))
+                        ->body(__('Someone else may have just created it. Open it from the invoice list.'))
+                        ->danger()
+                        ->send();
+
+                    throw new \Filament\Support\Exceptions\Halt();
+                }
+            }
+
+            return parent::handleRecordCreation($data);
+        });
+    }
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $receipt = DeliveryOrderReceipt::with('customer')->find($data['delivery_order_receipt_id'] ?? null);
