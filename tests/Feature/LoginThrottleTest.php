@@ -65,4 +65,27 @@ class LoginThrottleTest extends TestCase
 
         $this->assertSame(0, RateLimiter::attempts('login-user:'.sha1('arif|127.0.0.1')));
     }
+
+    /** @test */
+    public function the_login_page_reloads_itself_when_its_security_token_has_expired(): void
+    {
+        $this->get('/admin/login')
+            ->assertSuccessful()
+            ->assertSee('failure.status === 419', false)
+            ->assertSee('window.location.reload()', false);
+    }
+
+    /** @test */
+    public function spaces_around_the_username_do_not_break_the_login(): void
+    {
+        $this->user('arif');
+
+        Livewire::test(Login::class)
+            ->set('data.username', '  arif ')
+            ->set('data.password', 'secret-1234')
+            ->call('authenticate')
+            ->assertHasNoErrors();
+
+        $this->assertAuthenticated();
+    }
 }

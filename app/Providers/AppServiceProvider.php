@@ -172,6 +172,34 @@ class AppServiceProvider extends ServiceProvider
             fn (): string => view('pwa.install-banner')->render()
         );
 
+        // Halaman login yang terbuka lama (tab/PWA dibuka kembali di HP) punya token keamanan basi; menekan Masuk
+        // memunculkan "This page has expired" dan peserta mengira sandinya salah (pelatihan 28 Oktober 2026: Arif
+        // dan Candra). Di halaman login saja: muat ulang otomatis begitu token ditolak (419), dan muat ulang saat
+        // halaman kembali terlihat setelah lama tersembunyi, sehingga formnya selalu segar.
+        \Filament\Support\Facades\FilamentView::registerRenderHook(
+            \Filament\View\PanelsRenderHook::AUTH_LOGIN_FORM_BEFORE,
+            fn (): string => "<script>
+                document.addEventListener('livewire:init', function () {
+                    Livewire.hook('request', function (ctx) {
+                        ctx.fail(function (failure) {
+                            if (failure.status === 419) {
+                                failure.preventDefault();
+                                window.location.reload();
+                            }
+                        });
+                    });
+                });
+                (function () {
+                    var hiddenAt = null;
+                    document.addEventListener('visibilitychange', function () {
+                        if (document.hidden) { hiddenAt = Date.now(); return; }
+                        if (hiddenAt !== null && Date.now() - hiddenAt > 10 * 60 * 1000) { window.location.reload(); }
+                        hiddenAt = null;
+                    });
+                })();
+            </script>"
+        );
+
         \Filament\Support\Facades\FilamentView::registerRenderHook(
             \Filament\View\PanelsRenderHook::BODY_END,
             fn (): string => "<script>

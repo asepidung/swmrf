@@ -74,7 +74,8 @@ class Login extends BasePage
     protected function getCredentialsFromFormData(array $data): array
     {
         return [
-            'username' => $data['username'],
+            // Spasi di depan/belakang (keyboard HP) tidak boleh membuat username dianggap salah.
+            'username' => trim((string) $data['username']),
             'password' => $data['password'],
         ];
     }
