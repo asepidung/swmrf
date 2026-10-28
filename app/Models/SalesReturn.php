@@ -107,9 +107,34 @@ class SalesReturn extends Model
 
         static::deleted(function (self $model) {
             $model->isForceDeleting() ? $model->financialLoss()->forceDelete() : $model->financialLoss()->delete();
+
+            // Retur terhapus melepas plan-nya: kolom itu UNIQUE, jadi tanpa ini plan yang sama tidak bisa ditarik
+            // ulang (error hapus lalu buat ulang). Id asal disimpan untuk pemulihan.
+            if (! $model->isForceDeleting() && $model->sales_return_plan_id) {
+                $planId = $model->sales_return_plan_id;
+
+                \Illuminate\Support\Facades\DB::table($model->getTable())->where($model->getKeyName(), $model->getKey())
+                    ->update(['released_plan_id' => $planId, 'sales_return_plan_id' => null]);
+
+                $model->setRawAttributes(array_merge($model->getAttributes(), ['released_plan_id' => $planId, 'sales_return_plan_id' => null]), true);
+            }
+        });
+
+        // Memulihkan retur hanya boleh kalau plan asalnya masih bebas (belum ditarik retur lain).
+        static::restoring(function (self $model) {
+            if ($model->released_plan_id && static::where('sales_return_plan_id', $model->released_plan_id)->exists()) {
+                throw new \Exception(__('This plan has already been pulled into a sales return.'));
+            }
         });
 
         static::restored(function (self $model) {
+            if ($model->released_plan_id) {
+                \Illuminate\Support\Facades\DB::table($model->getTable())->where($model->getKeyName(), $model->getKey())
+                    ->update(['sales_return_plan_id' => $model->released_plan_id, 'released_plan_id' => null]);
+
+                $model->setRawAttributes(array_merge($model->getAttributes(), ['sales_return_plan_id' => $model->released_plan_id, 'released_plan_id' => null]), true);
+            }
+
             if ($model->financialLoss()->withTrashed()->exists()) {
                 $model->financialLoss()->withTrashed()->restore();
             }
