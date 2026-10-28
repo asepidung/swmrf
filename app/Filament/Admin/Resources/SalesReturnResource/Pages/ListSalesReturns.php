@@ -50,6 +50,12 @@ class ListSalesReturns extends ListRecords
                             'delivery_order_id' => $plan->delivery_order_id,
                             'return_date' => now(),
                         ]);
+                    } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                        // Dua orang menarik plan yang sama bersamaan: indeks unik menolak yang kedua.
+                        report($e);
+                        Notification::make()->title(__('Failed'))->body(__('This plan has already been pulled into a sales return.'))->danger()->send();
+
+                        return;
                     } catch (\Exception $e) {
                         report($e);
                         Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();

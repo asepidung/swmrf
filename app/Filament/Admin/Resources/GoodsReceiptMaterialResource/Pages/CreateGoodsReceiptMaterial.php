@@ -43,6 +43,9 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
             || (auth()->user()?->hasPermission('create_gr_materials') ?? false);
     }
 
+    /** Jumlah penerimaan PO ini saat formulir dibuka -- berubah berarti orang lain sudah menerima. */
+    public int $receiptsAtOpen = 0;
+
     public function mount(): void
     {
         $this->poId = request()->query('po_id');
@@ -53,6 +56,7 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
         }
 
         $this->purchaseMaterial = PurchaseMaterial::with('items.material')->findOrFail($this->poId);
+        $this->receiptsAtOpen = \App\Models\GoodsReceiptMaterial::where('purchase_material_id', $this->poId)->count();
 
         if (!in_array($this->purchaseMaterial->status, ['pending', 'partial'])) {
             Notification::make()->title(__('PO is already completed!'))->danger()->send();
@@ -239,6 +243,24 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
 
         DB::beginTransaction();
         try {
+            // PO dikunci dan diperiksa ulang: kalau sejak formulir dibuka sudah ada penerimaan lain untuk PO ini
+            // (dua orang menerima PO yang sama), simpanan ditolak -- bukan stok dan hutang yang tercatat dua kali.
+            $lockedPo = PurchaseMaterial::whereKey($this->purchaseMaterial->id)->lockForUpdate()->first();
+            $receiptsNow = \App\Models\GoodsReceiptMaterial::where('purchase_material_id', $this->purchaseMaterial->id)->count();
+
+            if (! $lockedPo || ! in_array($lockedPo->status, ['pending', 'partial'], true) || $receiptsNow !== $this->receiptsAtOpen) {
+                DB::rollBack();
+
+                Notification::make()
+                    ->title(__('Someone else has already received against this purchase order'))
+                    ->body(__('Open it from the goods receipt list instead of creating another one.'))
+                    ->danger()
+                    ->send();
+                $this->redirect(GoodsReceiptMaterialResource::getUrl('index'));
+
+                return;
+            }
+
             // Nomor GR sekarang dibuat oleh GoodsReceiptMaterial::boot()
             // sendiri (creating -> generateGrNumber(), lewat
             // DocumentNumber::next() yang mengunci baris) -- bukan dibaca

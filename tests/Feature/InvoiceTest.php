@@ -172,6 +172,21 @@ class InvoiceTest extends TestCase
     }
 
     /** @test */
+    public function two_people_creating_an_invoice_for_the_same_receipt_only_produce_one(): void
+    {
+        $this->actingAs($this->user);
+
+        $first = Livewire::withQueryParams(['delivery_order_receipt_id' => $this->receiptRegular->id])->test(CreateInvoice::class);
+        $second = Livewire::withQueryParams(['delivery_order_receipt_id' => $this->receiptRegular->id])->test(CreateInvoice::class);
+
+        $first->call('create');
+        $this->assertSame(1, Invoice::where('delivery_order_receipt_id', $this->receiptRegular->id)->count());
+
+        $second->call('create');
+        $this->assertSame(1, Invoice::where('delivery_order_receipt_id', $this->receiptRegular->id)->count(), 'dokumen kedua ditolak');
+    }
+
+    /** @test */
     public function it_calculates_regular_invoice_due_date_and_totals_correctly()
     {
         $this->actingAs($this->user);

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Admin\Resources\GoodsReceiptProductResource\Pages\ListPendingPoProducts;
+use App\Filament\Admin\Resources\GoodsReceiptProductResource\Pages\NewGoodsReceiptProduct;
 use App\Models\Customer;
 use App\Models\CustomerSegment;
 use App\Models\GoodsReceiptProduct;
@@ -81,14 +82,14 @@ class TrainingFixesSalesReturnGrbTest extends TestCase
     }
 
     /** @test */
-    public function two_people_pressing_process_gr_on_the_same_po_share_one_receipt_until_it_is_locked(): void
+    public function a_receipt_is_born_on_save_and_a_second_person_saving_the_same_po_is_refused(): void
     {
         $supplier = Supplier::create(['name' => 'FIXTURE SUPPLIER', 'address' => 'X', 'pic' => 'X', 'phone' => '08', 'top_days' => 30, 'is_active' => true]);
         $requester = User::factory()->create();
         $requisition = ProductRequisition::create(['supplier_id' => $supplier->id, 'document_number' => 'PR-1', 'user_id' => $requester->id, 'due_date' => now()->addWeek()->toDateString(), 'status' => 'Approved']);
         $po = PurchaseProduct::create(['product_requisition_id' => $requisition->id, 'po_number' => 'PO-1', 'po_date' => now()->toDateString(), 'supplier_id' => $supplier->id, 'total_amount' => 0, 'status' => 'pending']);
 
-        $make = function (string $name) {
+        $make = function () {
             $user = User::factory()->create(['role' => 'employee', 'is_active' => true]);
             foreach (['view_goods_receipt_products', 'edit_goods_receipt_products'] as $permission) {
                 $user->permissions()->attach(Permission::firstOrCreate(['name' => $permission], ['module_name' => 'GR Beef', 'description' => $permission])->id);
@@ -97,15 +98,39 @@ class TrainingFixesSalesReturnGrbTest extends TestCase
             return $user->fresh();
         };
 
-        Livewire::actingAs($make('a'))->test(ListPendingPoProducts::class)->callTableAction('process_gr', $po);
-        Livewire::actingAs($make('b'))->test(ListPendingPoProducts::class)->callTableAction('process_gr', $po);
+        // Menekan Process GR dan membuka formulir TIDAK melahirkan dokumen.
+        $first = Livewire::actingAs($make())->test(NewGoodsReceiptProduct::class, ['purchaseProduct' => $po]);
+        $second = Livewire::actingAs($make())->test(NewGoodsReceiptProduct::class, ['purchaseProduct' => $po]);
+        $this->assertSame(0, GoodsReceiptProduct::where('purchase_product_id', $po->id)->count());
 
+        $first->set('data.receive_date', now()->toDateString())->call('saveGr');
         $this->assertSame(1, GoodsReceiptProduct::where('purchase_product_id', $po->id)->count());
+        $this->assertSame('completed', $po->fresh()->status);
 
-        // Setelah penerimaan itu terkunci, penerimaan bertahap berikutnya memang boleh lahir.
-        GoodsReceiptProduct::where('purchase_product_id', $po->id)->update(['is_locked' => true]);
-        Livewire::actingAs($make('c'))->test(ListPendingPoProducts::class)->callTableAction('process_gr', $po);
+        // Orang kedua menyimpan formulir yang dibuka sebelum orang pertama selesai: ditolak, tidak ada GRB kedua.
+        $second->set('data.receive_date', now()->toDateString())->call('saveGr');
+        $this->assertSame(1, GoodsReceiptProduct::where('purchase_product_id', $po->id)->count());
+    }
 
-        $this->assertSame(2, GoodsReceiptProduct::where('purchase_product_id', $po->id)->count());
+    /** @test */
+    public function the_pending_list_opens_the_form_or_continues_an_unlocked_receipt(): void
+    {
+        $supplier = Supplier::create(['name' => 'FIXTURE SUPPLIER', 'address' => 'X', 'pic' => 'X', 'phone' => '08', 'top_days' => 30, 'is_active' => true]);
+        $requisition = ProductRequisition::create(['supplier_id' => $supplier->id, 'document_number' => 'PR-2', 'user_id' => User::factory()->create()->id, 'due_date' => now()->addWeek()->toDateString(), 'status' => 'Approved']);
+        $po = PurchaseProduct::create(['product_requisition_id' => $requisition->id, 'po_number' => 'PO-2', 'po_date' => now()->toDateString(), 'supplier_id' => $supplier->id, 'total_amount' => 0, 'status' => 'pending']);
+
+        $user = User::factory()->create(['role' => 'employee', 'is_active' => true]);
+        foreach (['view_goods_receipt_products', 'edit_goods_receipt_products'] as $permission) {
+            $user->permissions()->attach(Permission::firstOrCreate(['name' => $permission], ['module_name' => 'GR Beef', 'description' => $permission])->id);
+        }
+
+        Livewire::actingAs($user->fresh())->test(ListPendingPoProducts::class)
+            ->assertTableActionHasUrl('process_gr', \App\Filament\Admin\Resources\GoodsReceiptProductResource::getUrl('new', ['purchaseProduct' => $po->id]), $po);
+        $this->assertSame(0, GoodsReceiptProduct::count(), 'tombol tidak membuat dokumen');
+
+        $open = GoodsReceiptProduct::create(['purchase_product_id' => $po->id, 'supplier_id' => $supplier->id, 'receive_date' => now()->toDateString(), 'created_by' => $user->id]);
+
+        Livewire::actingAs($user->fresh())->test(ListPendingPoProducts::class)
+            ->assertTableActionHasUrl('process_gr', \App\Filament\Admin\Resources\GoodsReceiptProductResource::getUrl('input', ['record' => $open->id]), $po);
     }
 }

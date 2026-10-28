@@ -99,6 +99,27 @@ class GoodsReceiptMaterialSusulanTest extends TestCase
     // =========================================================================
 
     /** @test */
+    public function a_second_person_saving_a_receipt_for_the_same_po_is_refused(): void
+    {
+        $po = $this->poMaterial();
+        $user = $this->employee(['create_gr_materials']);
+
+        $fill = [
+            'receive_date' => now()->toDateString(), 'sj_number' => 'SJ-1',
+            'items' => [['material_id' => $this->material->id, 'material_name' => 'GARAM', 'unit_name' => 'KG', 'po_qty' => '100', 'qty_received' => '100', 'price' => 10000]],
+        ];
+
+        $first = \Livewire\Livewire::actingAs($user)->withQueryParams(['po_id' => $po->id])->test(CreateGoodsReceiptMaterial::class);
+        $second = \Livewire\Livewire::actingAs($user)->withQueryParams(['po_id' => $po->id])->test(CreateGoodsReceiptMaterial::class);
+
+        $first->fillForm($fill)->call('forceCompleted');
+        $this->assertSame(1, GoodsReceiptMaterial::where('purchase_material_id', $po->id)->count());
+
+        $second->fillForm($fill)->call('forceCompleted');
+        $this->assertSame(1, GoodsReceiptMaterial::where('purchase_material_id', $po->id)->count(), 'penerimaan kedua untuk PO yang sama ditolak');
+    }
+
+    /** @test */
     public function create_page_is_closed_over_http_without_create_gr_materials(): void
     {
         $po = $this->poMaterial();

@@ -318,6 +318,7 @@ Tables\Actions\Action::make('lock')
             'index' => Pages\ListGoodsReceiptProducts::route('/'),
             'drafts' => Pages\ListPendingPoProducts::route('/drafts'),
             'detail-list' => Pages\GoodsReceiptProductDetailList::route('/detail-list'),
+            'new' => Pages\NewGoodsReceiptProduct::route('/new/{purchaseProduct}'),
             'input' => Pages\InputGoodsReceiptProduct::route('/{record}/input'),
             'view' => Pages\ViewGoodsReceiptProduct::route('/{record}'),
             'labeling' => Pages\LabelingGoodsReceiptProduct::route('/{record}/labeling'),

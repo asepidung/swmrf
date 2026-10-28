@@ -1954,5 +1954,12 @@
     "Pay Shortfall": "Bayar Kekurangan",
     "We still owe the requester": "Kita masih berutang ke pemohon",
     "Amount paid now": "Jumlah dibayar sekarang",
-    "Payment recorded.": "Pembayaran tercatat."
+    "Payment recorded.": "Pembayaran tercatat.",
+    "This purchase order is no longer waiting for a goods receipt.": "Purchase order ini sudah tidak menunggu penerimaan barang.",
+    "Someone else has already started receiving this purchase order": "Orang lain sudah mulai menerima purchase order ini",
+    "Open it from the goods receipt list instead of creating another one.": "Buka dari daftar penerimaan barang, jangan membuat yang baru.",
+    "Input Goods Receipt Product": "Input Penerimaan Beef",
+    "This delivery receipt already has an invoice": "Penerimaan surat jalan ini sudah punya invoice",
+    "Someone else may have just created it. Open it from the invoice list.": "Mungkin orang lain baru saja membuatnya. Buka dari daftar invoice.",
+    "Someone else has already received against this purchase order": "Orang lain sudah menerima purchase order ini"
 }

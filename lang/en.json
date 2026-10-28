@@ -1954,5 +1954,12 @@
     "Pay Shortfall": "Pay Shortfall",
     "We still owe the requester": "We still owe the requester",
     "Amount paid now": "Amount paid now",
-    "Payment recorded.": "Payment recorded."
+    "Payment recorded.": "Payment recorded.",
+    "This purchase order is no longer waiting for a goods receipt.": "This purchase order is no longer waiting for a goods receipt.",
+    "Someone else has already started receiving this purchase order": "Someone else has already started receiving this purchase order",
+    "Open it from the goods receipt list instead of creating another one.": "Open it from the goods receipt list instead of creating another one.",
+    "Input Goods Receipt Product": "Input Goods Receipt Product",
+    "This delivery receipt already has an invoice": "This delivery receipt already has an invoice",
+    "Someone else may have just created it. Open it from the invoice list.": "Someone else may have just created it. Open it from the invoice list.",
+    "Someone else has already received against this purchase order": "Someone else has already received against this purchase order"
 }

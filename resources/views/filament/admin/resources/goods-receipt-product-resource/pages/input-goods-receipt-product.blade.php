@@ -1,4 +1,9 @@
 <x-filament-panels::page>
+    {{-- Dari formulir baru (?next=1): pilihan lanjutan langsung terbuka. --}}
+    @if (request()->boolean('next'))
+        <div x-data x-init="$nextTick(() => $dispatch('open-modal', { id: 'next-step-modal' }))"></div>
+    @endif
+
     <div class="flex flex-col gap-6">
         <!-- 1. Form Card (Header/Meta Data) -->
         <div class="bg-white dark:bg-gray-900 shadow-sm ring-1 ring-gray-950/5 dark:ring-white/10 rounded-xl p-6">
