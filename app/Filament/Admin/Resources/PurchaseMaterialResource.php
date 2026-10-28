@@ -220,7 +220,7 @@ class PurchaseMaterialResource extends Resource
                             ->default(now()->startOfMonth()),
                         Forms\Components\DatePicker::make('created_until')
                             ->label('Until Date')
-                            ->default(now()),
+                            ->default(fn () => \App\Support\PlanDateFilter::until(\App\Models\PurchaseMaterial::class, 'po_date')),
                     ])
                     ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
                         return $query

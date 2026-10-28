@@ -78,11 +78,11 @@ class PurchaseProductDetailList extends Page implements HasTable
                             ->default(now()->startOfMonth()),
                         Forms\Components\DatePicker::make('po_until')
                             ->label(__('Until Date'))
-                            ->default(now()),
+                            ->default(fn () => \App\Support\PlanDateFilter::until(\App\Models\PurchaseProduct::class, 'po_date')),
                     ])
                     ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
                         $from = $data['po_from'] ?? now()->startOfMonth()->toDateString();
-                        $until = $data['po_until'] ?? now()->toDateString();
+                        $until = $data['po_until'] ?? \App\Support\PlanDateFilter::until(\App\Models\PurchaseProduct::class, 'po_date')->toDateString();
 
                         return $query->whereHas('purchaseProduct', function ($q) use ($from, $until) {
                             $q->when(
@@ -97,7 +97,7 @@ class PurchaseProductDetailList extends Page implements HasTable
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
                         $defaultFrom = now()->startOfMonth()->toDateString();
-                        $defaultUntil = now()->toDateString();
+                        $defaultUntil = \App\Support\PlanDateFilter::until(\App\Models\PurchaseProduct::class, 'po_date')->toDateString();
 
                         if (($data['po_from'] ?? null) && $data['po_from'] !== $defaultFrom) {
                             $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['po_from'])->format('d M Y');

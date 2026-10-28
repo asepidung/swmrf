@@ -205,11 +205,11 @@ class PurchaseProductResource extends Resource
                             ->default(now()->startOfMonth()),
                         Forms\Components\DatePicker::make('created_until')
                             ->label('Until Date')
-                            ->default(now()),
+                            ->default(fn () => \App\Support\PlanDateFilter::until(\App\Models\PurchaseProduct::class, 'po_date')),
                     ])
                     ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
                         $from = $data['created_from'] ?? now()->startOfMonth()->toDateString();
-                        $until = $data['created_until'] ?? now()->toDateString();
+                        $until = $data['created_until'] ?? \App\Support\PlanDateFilter::until(\App\Models\PurchaseProduct::class, 'po_date')->toDateString();
 
                         return $query
                             ->when($from, fn($q, $date) => $q->whereDate('po_date', '>=', $date))
@@ -218,7 +218,7 @@ class PurchaseProductResource extends Resource
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
                         $defaultFrom = now()->startOfMonth()->toDateString();
-                        $defaultUntil = now()->toDateString();
+                        $defaultUntil = \App\Support\PlanDateFilter::until(\App\Models\PurchaseProduct::class, 'po_date')->toDateString();
 
                         if (($data['created_from'] ?? null) && $data['created_from'] !== $defaultFrom) {
                             $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['created_from'])->format('d M Y');

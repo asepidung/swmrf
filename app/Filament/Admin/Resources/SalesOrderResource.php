@@ -640,12 +640,12 @@ class SalesOrderResource extends Resource
 
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,
-                // badge cuma tampil kalau user mengubahnya. Sebelumnya
-                // `until` memakai `SalesOrder::max('delivery_date')` --
-                // dipertimbangkan lagi karena delivery_date bisa jatuh di
-                // masa depan, tapi Owner memutuskan tetap seragam "tanggal 1
-                // sampai hari ini" di semua modul, termasuk ini (7 September
-                // 2026).
+                // badge cuma tampil kalau user mengubahnya. Batas akhir =
+                // yang terjauh antara hari ini dan tanggal kirim SO terjauh
+                // (PlanDateFilter), karena SO bersifat plan dan sering untuk
+                // hari esok: keputusan Owner 28 Oktober 2026 (pelatihan, SO
+                // untuk tanggal 29 tidak muncul), menggantikan "tanggal 1
+                // sampai hari ini" 7 September 2026.
                 Tables\Filters\Filter::make('delivery_date')
                     ->form([
                         Forms\Components\DatePicker::make('delivery_from')
@@ -653,11 +653,11 @@ class SalesOrderResource extends Resource
                             ->default(now()->startOfMonth()),
                         Forms\Components\DatePicker::make('delivery_until')
                             ->label(__('Until Date'))
-                            ->default(now()),
+                            ->default(fn () => \App\Support\PlanDateFilter::until(\App\Models\SalesOrder::class, 'delivery_date')),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         $from = $data['delivery_from'] ?? now()->startOfMonth()->toDateString();
-                        $until = $data['delivery_until'] ?? now()->toDateString();
+                        $until = $data['delivery_until'] ?? \App\Support\PlanDateFilter::until(\App\Models\SalesOrder::class, 'delivery_date')->toDateString();
 
                         return $query
                             ->when(
@@ -672,7 +672,7 @@ class SalesOrderResource extends Resource
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
                         $defaultFrom = now()->startOfMonth()->toDateString();
-                        $defaultUntil = now()->toDateString();
+                        $defaultUntil = \App\Support\PlanDateFilter::until(\App\Models\SalesOrder::class, 'delivery_date')->toDateString();
 
                         if (($data['delivery_from'] ?? null) && $data['delivery_from'] !== $defaultFrom) {
                             $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['delivery_from'])->format('d M Y');
