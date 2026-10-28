@@ -187,6 +187,14 @@ class MaterialRequisitionResource extends Resource
 
                         Forms\Components\Repeater::make('items')
                             ->hiddenLabel()
+                            // Request tanpa item tidak boleh tersimpan (temuan pelatihan 28 Oktober 2026): halaman
+                            // membuang baris kosong SEBELUM validasi, jadi form yang hanya berisi baris kosong lolos.
+                            ->required()
+                            ->minItems(1)
+                            ->validationMessages([
+                                'required' => __('Add at least one item.'),
+                                'min' => __('Add at least one item.'),
+                            ])
                             ->reorderableWithDragAndDrop(false)
                             ->schema([
                                 \App\Filament\Support\MasterSelect::material('material_id')
