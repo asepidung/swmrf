@@ -91,11 +91,11 @@ class SalesOrderDetailList extends Page implements HasTable
                             ->default(now()->startOfMonth()),
                         \Filament\Forms\Components\DatePicker::make('delivery_until')
                             ->label(__('Until Date'))
-                            ->default(now()),
+                            ->default(fn () => \App\Support\PlanDateFilter::until(\App\Models\SalesOrder::class, 'delivery_date')),
                     ])
                     ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
                         $from = $data['delivery_from'] ?? now()->startOfMonth()->toDateString();
-                        $until = $data['delivery_until'] ?? now()->toDateString();
+                        $until = $data['delivery_until'] ?? \App\Support\PlanDateFilter::until(\App\Models\SalesOrder::class, 'delivery_date')->toDateString();
 
                         return $query->whereHas('salesOrder', function ($q) use ($from, $until) {
                             $q->when(
@@ -110,7 +110,7 @@ class SalesOrderDetailList extends Page implements HasTable
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
                         $defaultFrom = now()->startOfMonth()->toDateString();
-                        $defaultUntil = now()->toDateString();
+                        $defaultUntil = \App\Support\PlanDateFilter::until(\App\Models\SalesOrder::class, 'delivery_date')->toDateString();
 
                         if (($data['delivery_from'] ?? null) && $data['delivery_from'] !== $defaultFrom) {
                             $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['delivery_from'])->format('d M Y');

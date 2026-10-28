@@ -76,7 +76,7 @@ class DeliveryPlanDetailList extends Page implements HasTable
                             ->default(now()->startOfMonth()),
                         \Filament\Forms\Components\DatePicker::make('delivery_until')
                             ->label(__('Until Date'))
-                            ->default(now()),
+                            ->default(fn () => \App\Support\PlanDateFilter::until(\App\Models\DeliveryPlan::class, 'delivery_date')),
                     ])
                     // Keputusan Owner, 7 September 2026 (dikoreksi ulang):
                     // silent date filter wajib (project.md:112), rujukan
@@ -84,7 +84,7 @@ class DeliveryPlanDetailList extends Page implements HasTable
                     // tampil kalau user mengubahnya.
                     ->query(function (Builder $query, array $data): Builder {
                         $from = $data['delivery_from'] ?? now()->startOfMonth()->toDateString();
-                        $until = $data['delivery_until'] ?? now()->toDateString();
+                        $until = $data['delivery_until'] ?? \App\Support\PlanDateFilter::until(\App\Models\DeliveryPlan::class, 'delivery_date')->toDateString();
 
                         return $query->whereHas('deliveryPlan', function ($q) use ($from, $until) {
                             $q->when(
@@ -99,7 +99,7 @@ class DeliveryPlanDetailList extends Page implements HasTable
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
                         $defaultFrom = now()->startOfMonth()->toDateString();
-                        $defaultUntil = now()->toDateString();
+                        $defaultUntil = \App\Support\PlanDateFilter::until(\App\Models\DeliveryPlan::class, 'delivery_date')->toDateString();
 
                         if (($data['delivery_from'] ?? null) && $data['delivery_from'] !== $defaultFrom) {
                             $indicators[] = 'From: ' . \Carbon\Carbon::parse($data['delivery_from'])->format('d M Y');
