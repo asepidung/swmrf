@@ -72,7 +72,8 @@ class LoginThrottleTest extends TestCase
         $this->get('/admin/login')
             ->assertSuccessful()
             ->assertSee('failure.status === 419', false)
-            ->assertSee('window.location.reload()', false);
+            ->assertSee('window.location.reload()', false)
+            ->assertSee('login419', false);
     }
 
     /** @test */
