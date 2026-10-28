@@ -163,6 +163,28 @@ class BuildPriceListsFromSalesTest extends TestCase
     }
 
     /** @test */
+    public function the_printed_price_list_groups_by_product_category_first(): void
+    {
+        $group = CustomerGroup::create(['name' => 'G']);
+        $list = PriceList::create(['customer_group_id' => $group->id]);
+        $first = \App\Models\ProductCategory::create(['name' => 'PRIME CUT 2', 'prefix' => 91, 'is_active' => true]);
+        $second = \App\Models\ProductCategory::create(['name' => 'SECONDARY', 'prefix' => 92, 'is_active' => true]);
+
+        // Abjad saja akan memberi ALFA, BRAVO, CHARLIE, ZULU; kategori dulu: ZULU dan BRAVO (kategori 1) mendahului.
+        foreach ([['CHARLIE', $second], ['ZULU', $first], ['ALFA', $second], ['BRAVO', $first]] as [$name, $category]) {
+            $product = $this->product($name);
+            $product->update(['category_id' => $category->id]);
+            $list->items()->create(['product_id' => $product->id, 'price' => 1000]);
+        }
+
+        $user = \App\Models\User::factory()->create();
+        $user->permissions()->attach(\App\Models\Permission::firstOrCreate(['name' => 'view_price_lists'], ['module_name' => 'Fixture', 'description' => 'view_price_lists'])->id);
+
+        $this->actingAs($user->fresh())->get(route('print.pricelist', $list))
+            ->assertSeeInOrder(['BRAVO', 'ZULU', 'ALFA', 'CHARLIE']);
+    }
+
+    /** @test */
     public function the_detail_exports_are_sorted_by_group_then_product(): void
     {
         $ga = CustomerGroup::create(['name' => 'ALFA']);

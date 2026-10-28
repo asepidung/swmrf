@@ -24,9 +24,7 @@ class PriceListDetailList extends Page implements HasTable
     /** Ekspor PDF/Excel urut abjad: grup, lalu nama produk (Owner, 24 Oktober 2026). */
     public static function sortedForExport(\Illuminate\Support\Collection $records): \Illuminate\Support\Collection
     {
-        return $records
-            ->sortBy(fn (PriceListItem $item) => mb_strtoupper(($item->priceList?->customerGroup?->name ?? '').'|'.($item->product?->name ?? '')), SORT_NATURAL)
-            ->values();
+        return PriceListItem::sortedForPrint($records, byGroup: true);
     }
 
     public function table(Table $table): Table
