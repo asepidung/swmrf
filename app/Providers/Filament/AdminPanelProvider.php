@@ -227,7 +227,12 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 \Filament\View\PanelsRenderHook::BODY_END,
-                fn (): string => \Illuminate\Support\Facades\Blade::render('<livewire:global-task-poller />'),
+                // Hanya untuk yang sudah login: di halaman login komponen ini menembak server tiap 10 detik, dan di peramban
+                // yang sesinya tidak terbawa (Chrome Arif, 28 Oktober 2026) tembakan itu 419 lalu memuat ulang halaman
+                // di tengah orang mengetik sandi.
+                fn (): string => auth()->check()
+                    ? \Illuminate\Support\Facades\Blade::render('<livewire:global-task-poller />')
+                    : '',
             )
             // Tombol berlangganan notifikasi perangkat, di topbar.
             ->renderHook(
