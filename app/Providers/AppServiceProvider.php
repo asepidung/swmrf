@@ -184,6 +184,22 @@ class AppServiceProvider extends ServiceProvider
                         ctx.fail(function (failure) {
                             if (failure.status === 419) {
                                 failure.preventDefault();
+
+                                // Muat ulang paling banyak dua kali per menit. Kalau peramban tidak menyimpan cookie
+                                // sesi, token SELALU basi dan muat ulang tanpa batas hanya memutar halaman tanpa pesan
+                                // (Arif, 28 Oktober 2026): setelah itu tampilkan penyebabnya.
+                                var now = Date.now();
+                                var tries = [];
+                                try { tries = JSON.parse(sessionStorage.getItem('login419') || '[]').filter(function (at) { return now - at < 60000; }); } catch (e) {}
+
+                                if (tries.length >= 2) {
+                                    alert('Peramban ini tidak menyimpan sesi login. Buka lewat Chrome biasa (bukan dari dalam WhatsApp), hapus data situs app.wijayameat.co.id, pastikan cookie diizinkan serta tanggal dan jam HP otomatis, lalu coba lagi.');
+
+                                    return;
+                                }
+
+                                tries.push(now);
+                                try { sessionStorage.setItem('login419', JSON.stringify(tries)); } catch (e) {}
                                 window.location.reload();
                             }
                         });
