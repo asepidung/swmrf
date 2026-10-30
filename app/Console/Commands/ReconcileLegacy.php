@@ -15,13 +15,16 @@ use Illuminate\Support\Facades\DB;
  * Sisi legacy memakai aturan yang sama dengan importernya (hanya baris yang tidak dihapus, hanya produk yang ada di aplikasi baru), sehingga selisih
  * yang muncul adalah selisih SUNGGUHAN, bukan akibat aturan pemindahan. Keluar dengan kode 1 bila ada selisih.
  *
- * Modul: stok, boning, so, tally, do, invoice, repack, retur. `--dir` berisi snapshot hasil `legacy/tarik/tarik.sh` (berkas SWM-<modul>-*.sql terbaru dipakai).
+ * Modul penjualan dan stok: stok, boning, so, tally, do, invoice, repack, retur. Modul pembelian: request, po, gr, pocattle, hutang
+ * (dokumen pembelian tidak memakai `legacy_import_map`, jadi sisi baru dicari lewat NOMOR dokumen dengan aturan akhiran -2, -3 yang sama dengan importer;
+ * hutang dibandingkan dengan rumus aplikasi baru atas penerimaan hasil impor). `--dir` berisi snapshot hasil `legacy/tarik/tarik.sh` (berkas SWM-<modul>-*.sql terbaru dipakai).
  */
 class ReconcileLegacy extends Command
 {
     protected $signature = 'legacy:reconcile
                             {--dir= : Folder berisi snapshot legacy (SWM-<modul>-*.sql)}
-                            {--only= : Hanya modul ini (pisah koma): stok,boning,so,tally,do,invoice,repack,retur}';
+                            {--only= : Hanya modul ini (pisah koma): stok,boning,so,tally,do,invoice,repack,retur,request,po,gr,pocattle,hutang}
+                            {--before=2026-11-02 : Batas tanggal terima untuk modul hutang (sama dengan legacy:import-payables --before)}';
 
     protected $description = 'Bandingkan angka snapshot legacy dengan aplikasi baru per modul (hanya baca)';
 
@@ -46,7 +49,7 @@ class ReconcileLegacy extends Command
         ini_set('memory_limit', '2048M');
 
         $this->productIds = DB::table('products')->pluck('id')->flip();
-        $all = ['stok', 'boning', 'so', 'tally', 'do', 'invoice', 'repack', 'retur'];
+        $all = ['stok', 'boning', 'so', 'tally', 'do', 'invoice', 'repack', 'retur', 'request', 'po', 'gr', 'pocattle', 'hutang'];
         $only = array_values(array_filter(array_map('trim', explode(',', (string) $this->option('only')))));
         $modules = $only === [] ? $all : $only;
 
@@ -209,6 +212,201 @@ class ReconcileLegacy extends Command
         $rows = $this->snap('stok', 'stock')->filter(fn ($r) => trim((string) $r['kdbarcode']) !== '' && LegacyGradeMap::knows((int) $r['idgrade']) && $this->known($r));
         $this->add('Stok', 'barcode di gudang', $rows->count(), DB::table('beef_stocks')->count(), 'dibanding seluruh beef_stocks (belum ada gerak stok baru)');
         $this->add('Stok', 'berat (kg)', $rows->sum(fn ($r) => round((float) $r['qty'], 2)), (float) DB::table('beef_stocks')->sum('weight'));
+    }
+
+    /**
+     * Nomor dokumen dengan aturan importer: nomor kembar diberi akhiran -2, -3 menurut urutan id.
+     *
+     * @return array<int, string> id legacy => nomor di aplikasi baru
+     */
+    private function numbersOf($rows, string $idColumn, string $numberColumn): array
+    {
+        $seen = [];
+        $map = [];
+
+        foreach ($rows as $row) {
+            $number = trim((string) $row[$numberColumn]);
+            $seen[$number] = ($seen[$number] ?? 0) + 1;
+            $map[(int) $row[$idColumn]] = $seen[$number] > 1 ? $number.'-'.$seen[$number] : $number;
+        }
+
+        return $map;
+    }
+
+    /** @return array<int, int> id baris di aplikasi baru yang nomornya ada di daftar */
+    private function newIdsByNumber(string $table, string $column, array $numbers): array
+    {
+        $ids = [];
+
+        foreach (array_chunk(array_values($numbers), 500) as $chunk) {
+            $ids = array_merge($ids, DB::table($table)->whereIn($column, $chunk)->pluck('id')->all());
+        }
+
+        return $ids;
+    }
+
+    /** @return array{0: int, 1: float} jumlah baris dan jumlah kolom untuk anak dari induk-induk itu */
+    private function childTotals(string $table, string $foreignKey, array $parentIds, string $sumColumn): array
+    {
+        $count = 0;
+        $sum = 0.0;
+
+        foreach (array_chunk($parentIds, 500) as $chunk) {
+            $count += DB::table($table)->whereIn($foreignKey, $chunk)->count();
+            $sum += (float) DB::table($table)->whereIn($foreignKey, $chunk)->sum($sumColumn);
+        }
+
+        return [$count, $sum];
+    }
+
+    /**
+     * Satu pasang dokumen + barisnya: jumlah dokumen, jumlah baris, dan satu jumlah (nilai atau berat/qty).
+     *
+     * @param  array{label: string, module: string, head: string, line: string, idCol: string, numCol: string, itemCol: string, target: string, items: string, fk: string, sumNew: string, legacySum: callable, sumLabel: string, headFilter?: callable, docKeep?: callable, known: callable}  $c
+     */
+    private function checkDocuments(string $group, array $c): void
+    {
+        $rows = $this->snap($c['module'], $c['head'])->filter($c['headFilter'] ?? fn ($r) => (int) ($r['is_deleted'] ?? 0) === 0)->sortBy($c['idCol'])->values();
+        $numbers = $this->numbersOf($rows, $c['idCol'], $c['numCol']);
+        $lines = $this->snap($c['module'], $c['line'])->filter(fn ($l) => (int) ($l['is_deleted'] ?? 0) === 0)->groupBy($c['idCol']);
+
+        $kept = $rows->filter(function ($r) use ($c, $lines) {
+            $known = $lines->get($r[$c['idCol']], collect())->filter(fn ($l) => $c['known']($l));
+
+            return ($c['docKeep'] ?? fn ($row, $knownLines) => true)($r, $known);
+        });
+
+        $legacyLines = $kept->flatMap(fn ($r) => $lines->get($r[$c['idCol']], collect())->filter(fn ($l) => $c['known']($l)));
+        $keptNumbers = array_intersect_key($numbers, $kept->pluck($c['idCol'])->map(fn ($id) => (int) $id)->flip()->all());
+        $newIds = $this->newIdsByNumber($c['target'], $c['newNumCol'], $keptNumbers);
+        [$newLines, $newSum] = $this->childTotals($c['items'], $c['fk'], $newIds, $c['sumNew']);
+
+        $this->add($group, $c['label'].': dokumen', $kept->count(), count($newIds), $rows->count() !== $kept->count() ? 'dilewati importer (tanpa baris bahan impor): '.($rows->count() - $kept->count()) : '');
+        $this->add($group, $c['label'].': baris', $legacyLines->count(), $newLines, 'baris bahan di luar material/produk impor tidak dibawa');
+        $this->add($group, $c['label'].': '.$c['sumLabel'], $legacyLines->sum($c['legacySum']), $newSum);
+    }
+
+    private function checkRequest(): void
+    {
+        $materials = DB::table('materials')->pluck('id')->flip();
+        $products = $this->productIds;
+        $statuses = [...\App\Console\Commands\ImportLegacyRequests::OPEN_STATUSES, ...\App\Console\Commands\ImportLegacyRequests::HISTORY_STATUSES];
+
+        foreach ([
+            ['Request material', 'belanja', 'request', 'requestdetail', 'idrawmate', 'material_requisitions', 'material_requisition_items', 'material_requisition_id', $materials],
+            ['Request beef', 'belanjabeef', 'requestbeef', 'requestbeefdetail', 'idbarang', 'product_requisitions', 'product_requisition_items', 'product_requisition_id', $products],
+        ] as [$label, $module, $head, $line, $col, $target, $items, $fk, $ids]) {
+            $this->checkDocuments('Pembelian', [
+                'label' => $label, 'module' => $module, 'head' => $head, 'line' => $line, 'idCol' => 'idrequest', 'numCol' => 'norequest', 'newNumCol' => 'document_number',
+                'target' => $target, 'items' => $items, 'fk' => $fk, 'sumNew' => 'subtotal', 'sumLabel' => 'nilai (Rp)',
+                'headFilter' => fn ($r) => (int) $r['is_deleted'] === 0 && in_array($r['stat'], $statuses, true),
+                'known' => fn ($l) => isset($ids[(int) $l[$col]]),
+                // Request terbuka tanpa satu pun baris bahan impor dilewati importer; riwayat tetap dibawa tanpa baris.
+                'docKeep' => fn ($r, $known) => ! (in_array($r['stat'], \App\Console\Commands\ImportLegacyRequests::OPEN_STATUSES, true) && $known->isEmpty()),
+                'legacySum' => fn ($l) => round(round((float) $l['qty'], 4) * (float) $l['price'], 2),
+            ]);
+        }
+    }
+
+    private function checkPo(): void
+    {
+        $materials = DB::table('materials')->pluck('id')->flip();
+        $products = $this->productIds;
+
+        foreach ([
+            ['PO material', 'belanja', 'po', 'podetail', 'idrawmate', 'purchase_materials', 'purchase_material_items', 'purchase_material_id', $materials],
+            ['PO beef', 'belanjabeef', 'pobeef', 'pobeefdetail', 'idbarang', 'purchase_products', 'purchase_product_items', 'purchase_product_id', $products],
+        ] as [$label, $module, $head, $line, $col, $target, $items, $fk, $ids]) {
+            $this->checkDocuments('Pembelian', [
+                'label' => $label, 'module' => $module, 'head' => $head, 'line' => $line, 'idCol' => 'idpo', 'numCol' => 'nopo', 'newNumCol' => 'po_number',
+                'target' => $target, 'items' => $items, 'fk' => $fk, 'sumNew' => 'subtotal', 'sumLabel' => 'nilai (Rp)',
+                'known' => fn ($l) => isset($ids[(int) $l[$col]]),
+                'legacySum' => fn ($l) => round((float) $l['qty'] * (float) $l['price'], 2),
+            ]);
+        }
+    }
+
+    private function checkGr(): void
+    {
+        $materials = DB::table('materials')->pluck('id')->flip();
+        $products = $this->productIds;
+
+        foreach ([
+            ['GR material', 'belanja', 'grraw', 'grrawdetail', 'idrawmate', 'goods_receipt_materials', 'goods_receipt_material_items', 'goods_receipt_material_id', 'qty_received', $materials],
+            ['GR beef', 'belanjabeef', 'grbeef', 'grbeefdetail', 'idbarang', 'goods_receipt_products', 'goods_receipt_product_items', 'goods_receipt_product_id', 'weight', $products],
+        ] as [$label, $module, $head, $line, $col, $target, $items, $fk, $sumNew, $ids]) {
+            $this->checkDocuments('Pembelian', [
+                'label' => $label, 'module' => $module, 'head' => $head, 'line' => $line, 'idCol' => 'idgr', 'numCol' => 'grnumber', 'newNumCol' => 'gr_number',
+                'target' => $target, 'items' => $items, 'fk' => $fk, 'sumNew' => $sumNew, 'sumLabel' => 'qty / berat',
+                'known' => fn ($l) => isset($ids[(int) $l[$col]]),
+                'legacySum' => fn ($l) => round((float) $l['qty'], 2),
+            ]);
+        }
+    }
+
+    private function checkPocattle(): void
+    {
+        $classNames = DB::table('cattle_classes')->count();
+        $this->checkDocuments('Pembelian', [
+            'label' => 'PO sapi', 'module' => 'sapi', 'head' => 'pocattle', 'line' => 'pocattledetail', 'idCol' => 'idpo', 'numCol' => 'nopo', 'newNumCol' => 'document_number',
+            'target' => 'purchase_cattles', 'items' => 'purchase_cattle_items', 'fk' => 'purchase_cattle_id', 'sumNew' => 'qty', 'sumLabel' => 'ekor',
+            'known' => fn ($l) => $classNames > 0,
+            'legacySum' => fn ($l) => (float) $l['qty'],
+        ]);
+    }
+
+    /**
+     * Hutang riwayat: satu hutang untuk tiap penerimaan hasil impor yang tanggal terimanya sebelum --before, semuanya lunas (saldo 0), dan nilainya
+     * sama dengan rumus aplikasi baru (jumlah subtotal item + PPN supplier PKP). Sisi "legacy" di sini adalah harapan dari penerimaan hasil impor.
+     */
+    private function checkHutang(): void
+    {
+        $before = (string) $this->option('before');
+        $expectedCount = 0;
+        $zeroValue = 0;
+        $expectedAmount = 0.0;
+        $actualCount = 0;
+        $actualAmount = 0.0;
+        $actualBalance = 0.0;
+
+        foreach ([
+            ['belanja', 'grraw', 'goods_receipt_materials', 'goods_receipt_material_items', 'goods_receipt_material_id', \App\Models\GoodsReceiptMaterial::class],
+            ['belanjabeef', 'grbeef', 'goods_receipt_products', 'goods_receipt_product_items', 'goods_receipt_product_id', \App\Models\GoodsReceiptProduct::class],
+        ] as [$module, $head, $target, $items, $fk, $class]) {
+            $rows = $this->snap($module, $head)->filter(fn ($r) => (int) $r['is_deleted'] === 0)->sortBy('idgr')->values();
+            $numbers = $this->numbersOf($rows, 'idgr', 'grnumber');
+            $ids = $this->newIdsByNumber($target, 'gr_number', $numbers);
+
+            foreach (array_chunk($ids, 500) as $chunk) {
+                $receipts = DB::table($target)->whereIn('id', $chunk)->where('receive_date', '<', $before)->get(['id', 'supplier_id']);
+                $subtotals = DB::table($items)->whereIn($fk, $receipts->pluck('id'))->selectRaw($fk.' as gr, sum(subtotal) as total')->groupBy($fk)->pluck('total', 'gr');
+                $suppliers = \App\Models\Supplier::withoutGlobalScopes()->whereIn('id', $receipts->pluck('supplier_id')->unique())->get()->keyBy('id');
+
+                foreach ($receipts as $receipt) {
+                    $sub = (float) ($subtotals[$receipt->id] ?? 0);
+                    $amount = round($sub + (float) ($suppliers[$receipt->supplier_id]?->ppnAtas($sub) ?? 0), 2);
+
+                    // Importer tidak membuat hutang untuk penerimaan bernilai nol (tanpa item atau tanpa harga).
+                    if ($amount <= 0) {
+                        $zeroValue++;
+
+                        continue;
+                    }
+
+                    $expectedCount++;
+                    $expectedAmount += $amount;
+                }
+
+                $payables = DB::table('payables')->where('payableable_type', $class)->whereIn('payableable_id', $receipts->pluck('id'))->whereNull('deleted_at');
+                $actualCount += (clone $payables)->count();
+                $actualAmount += (float) (clone $payables)->sum('amount');
+                $actualBalance += (float) (clone $payables)->sum('balance');
+            }
+        }
+
+        $this->add('Hutang', "hutang riwayat (penerimaan sebelum {$before})", $expectedCount, $actualCount, $zeroValue > 0 ? "penerimaan bernilai Rp 0 tidak dibuatkan hutang: {$zeroValue}" : '');
+        $this->add('Hutang', 'nilai hutang (Rp): subtotal item + PPN supplier PKP', $expectedAmount, $actualAmount);
+        $this->add('Hutang', 'saldo hutang (Rp): semua riwayat dianggap lunas', 0, $actualBalance);
     }
 
     private function report(): int
