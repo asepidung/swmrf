@@ -34,6 +34,13 @@ php8.4 artisan app:reset-training-data --apply    # mengetik nama database
 
 Dipertahankan: users, hak akses, langganan push, grade, gudang, akun kas (saldo awal KAS tetap). Dikosongkan: transaksi dan master latihan.
 
+Sesudah reset, dua hal manual (keputusan Ayah, 30 Oktober 2026):
+
+- `settings` dipertahankan oleh reset dan masih memuat `repack.max_shrink_percent` = 5 hasil coba-coba peserta. Hapus barisnya supaya kosong;
+  QC yang mengisi angka resminya. Kosong berarti pembatas susut Repack belum menyala (`Setting::number()` mengembalikan null).
+  `php8.4 artisan tinker --execute="DB::table('settings')->where('key','repack.max_shrink_percent')->delete();"`
+- `php8.4 artisan cache:clear`, supaya tidak ada sisa cache latihan.
+
 ## 3. Master dan data awal
 
 Urutan disusun dari ketergantungan antartabel. Semuanya dry-run dulu, lalu `--apply`.
