@@ -82,7 +82,7 @@ Baris "konflik" yang dilewati importer (mis. 163 request material, 156 PO materi
 
 ## 5. Periksa sebelum dibuka
 
-- `legacy:reconcile --dir=<folder snapshot>` untuk modul stok, boning, so, tally, do, invoice, repack, retur. Selisih harus dijelaskan satu per satu.
+- `legacy:reconcile --dir=<folder snapshot>` untuk semua modul: stok, boning, so, tally, do, invoice, repack, retur, request, po, gr, pocattle, hutang (53 pemeriksaan; gladi 30 Oktober: semua cocok). Selisih harus dijelaskan satu per satu. Hutang dibandingkan dengan rumus aplikasi baru; penerimaan bernilai Rp 0 memang tidak dibuatkan hutang (di gladi: 69).
 - `php artisan optimize`, `filament:optimize`, cek halaman login 200.
 - Masuk dengan akun Ayah dan akun satu orang dari tiap peran: izin sesuai, dashboard muncul, notifikasi push terkirim.
 - Buat satu dokumen uji dari tiap alur utama (tidak disimpan; hapus sesudahnya bila perlu) untuk memastikan tidak ada error 500.
