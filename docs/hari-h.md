@@ -65,7 +65,7 @@ Berkas snapshot diletakkan di `~/gladi30/` dengan pola `SWM-<modul>-<tanggal>-*.
 sales-order, tally, delivery-order, invoice, repack, retur-penjualan. 27 hutang (`--before=2026-11-02`). 28 pricelist.
 
 Invoice: `--payment` adalah SATU pilihan untuk seluruh riwayat (`settled` = semua dianggap lunas, `open` = tidak ada yang dibayar). Gladi memakai `settled`.
-Legacy tidak mencatat pelunasan, jadi Ayah menentukan mana yang dipakai sebelum hari-H.
+Legacy tidak mencatat pelunasan. KEPUTUSAN AYAH (30 Oktober 2026): pakai `settled`; semua invoice riwayat dianggap lunas dan accounting yang membuka kembali (aksi reopen) bila ada yang sebenarnya belum lunas.
 
 Hasil gladi bersih di coba, 30 Oktober 2026 (snapshot legacy hari itu):
 
