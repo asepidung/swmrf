@@ -56,22 +56,15 @@ Urutan disusun dari ketergantungan antartabel. Semuanya dry-run dulu, lalu `--ap
 
 Pastikan dulu tidak ada transaksi baru di legacy. Tarik semua snapshot dengan `legacy/tarik/tarik.sh`, catat waktu tarik.
 
-Urutan impor (setiap langkah: dry-run, baca, `--apply`):
+Urutan impor mengikuti `legacy/tarik/gladi-run.sh` (18 langkah yang sudah dijalankan di coba pada gladi 22 Oktober; tiap langkah dry-run dulu,
+berhenti bila ada penolakan, lalu `--apply`). Pemakaian di mesin tujuan: `gladi-run.sh <awal> <akhir>`.
 
-1. `legacy:import-stock`
-2. `legacy:import-material-stock`
-3. `legacy:import-requests` (material, lalu `--beef`)
-4. `legacy:import-pos` (material, lalu `--beef`)
-5. `legacy:import-grs`, `legacy:import-beef-grs`
-6. `legacy:import-cattle-pos`, `legacy:import-cattle-receipts`, `legacy:import-carcasses`, `legacy:import-bonings`
-7. `legacy:import-tallies`
-8. `legacy:import-sales-orders`, `legacy:import-delivery-orders`
-9. `legacy:import-invoices` (wajib `--payment=settled` atau `open`; dua kali jalan untuk dua kelompok)
-10. `legacy:import-sales-returns`, `legacy:import-repacks`
-11. `legacy:import-payables --before=2026-11-02`
-12. `pricelist:build-from-sales --apply`
+stok, stok-material, request-material, request-beef, po-material, po-beef, gr-material, gr-beef, po-sapi, receive-timbang, karkas, boning,
+sales-order, tally, delivery-order, invoice (`--payment=settled`), repack, retur-penjualan.
 
-Catatan: urutan ini disusun dari ketergantungan, bukan dari catatan pelaksanaan. Gladi di coba (bagian 6) yang memastikannya.
+Yang BELUM ada di skrip gladi dan perlu ditambahkan sebelum hari-H: `legacy:import-invoices --payment=open` (invoice belum lunas),
+`legacy:import-payables --before=2026-11-02`, lalu `pricelist:build-from-sales --apply`. Tanggal di nama berkas snapshot di skrip
+(`2026-10-22`) harus diganti dengan tanggal tarikan baru.
 
 ## 5. Periksa sebelum dibuka
 
