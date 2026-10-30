@@ -56,15 +56,29 @@ Urutan disusun dari ketergantungan antartabel. Semuanya dry-run dulu, lalu `--ap
 
 Pastikan dulu tidak ada transaksi baru di legacy. Tarik semua snapshot dengan `legacy/tarik/tarik.sh`, catat waktu tarik.
 
-Urutan impor mengikuti `legacy/tarik/gladi-run.sh` (18 langkah yang sudah dijalankan di coba pada gladi 22 Oktober; tiap langkah dry-run dulu,
-berhenti bila ada penolakan, lalu `--apply`). Pemakaian di mesin tujuan: `gladi-run.sh <awal> <akhir>`.
+Urutan impor mengikuti `legacy/tarik/gladi-run.sh` (28 langkah; skrip ini tidak ikut git karena `legacy/` di-ignore). Tiap langkah dry-run dulu,
+berhenti bila ada penolakan (`DITOLAK: <angka > 0>` atau kode keluar bukan nol), lalu `--apply`. Pemakaian di mesin tujuan: `gladi-run.sh [awal] [akhir]`.
+Berkas snapshot diletakkan di `~/gladi30/` dengan pola `SWM-<modul>-<tanggal>-*.sql`; ganti tanggalnya lewat variabel `TGL`.
 
-stok, stok-material, request-material, request-beef, po-material, po-beef, gr-material, gr-beef, po-sapi, receive-timbang, karkas, boning,
-sales-order, tally, delivery-order, invoice (`--payment=settled`), repack, retur-penjualan.
+1-8 master dan data awal: import-master, import-prices, seed-groups, seed-segments, seed-fleet, deactivate-non-request, expense-categories, bank-accounts.
+9-26 legacy: stok, stok-material, request-material, request-beef, po-material, po-beef, gr-material, gr-beef, po-sapi, receive-timbang, karkas, boning,
+sales-order, tally, delivery-order, invoice, repack, retur-penjualan. 27 hutang (`--before=2026-11-02`). 28 pricelist.
 
-Yang BELUM ada di skrip gladi dan perlu ditambahkan sebelum hari-H: `legacy:import-invoices --payment=open` (invoice belum lunas),
-`legacy:import-payables --before=2026-11-02`, lalu `pricelist:build-from-sales --apply`. Tanggal di nama berkas snapshot di skrip
-(`2026-10-22`) harus diganti dengan tanggal tarikan baru.
+Invoice: `--payment` adalah SATU pilihan untuk seluruh riwayat (`settled` = semua dianggap lunas, `open` = tidak ada yang dibayar). Gladi memakai `settled`.
+Legacy tidak mencatat pelunasan, jadi Ayah menentukan mana yang dipakai sebelum hari-H.
+
+Hasil gladi bersih di coba, 30 Oktober 2026 (snapshot legacy hari itu):
+
+| Langkah | Lama |
+|---|---|
+| Tarik 16 modul snapshot dari legacy (hanya baca) | 34 detik |
+| Unggah 137 MB ke server tujuan (scp) | 2 menit |
+| Reset (backup 10 MB sebelumnya) | beberapa detik |
+| 28 langkah impor (dry-run + apply) | 545 detik (sekitar 9 menit) |
+| `legacy:reconcile` | beberapa detik |
+
+Terlama: boning (186 detik), tally (189 detik), repack (75 detik). Hasil `legacy:reconcile`: SEMUA COCOK, 29 dari 29 pemeriksaan.
+Baris "konflik" yang dilewati importer (mis. 163 request material, 156 PO material, 46 GR material) bukan penolakan; daftarnya dibaca dari laporan dry-run.
 
 ## 5. Periksa sebelum dibuka
 
