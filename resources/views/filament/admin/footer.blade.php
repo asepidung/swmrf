@@ -2,9 +2,11 @@
     <div class="h-[1px] w-24 bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent mb-2"></div>
     <div class="flex flex-wrap items-center justify-center gap-2 px-4 text-center">
         <span class="font-semibold text-gray-700 dark:text-gray-300 tracking-wide">WijayaApps</span>
-        <span class="px-2 py-0.5 text-[10px] font-medium bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 rounded-full border border-primary-100 dark:border-primary-900/40">
-            Ver 2.0.0
-        </span>
+        {{-- Klik membuka riwayat versi (komponen VersionNotice di akhir halaman). Nomornya dari config/changelog.php, bukan ditulis di sini. --}}
+        <button type="button" x-data x-on:click="$dispatch('open-version-history')" title="{{ __('Version history') }}"
+            class="px-2 py-0.5 text-[10px] font-medium bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 rounded-full border border-primary-100 dark:border-primary-900/40 hover:underline cursor-pointer">
+            Ver {{ \App\Support\AppVersion::current() }}
+        </button>
         <span class="text-gray-300 dark:text-gray-700 hidden sm:inline">|</span>
         <span title="Asep Idung" class="cursor-help hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Copyright &copy; {{ date('Y') }}</span>
         <span class="text-gray-300 dark:text-gray-700 hidden sm:inline">|</span>
