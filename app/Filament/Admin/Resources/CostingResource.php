@@ -251,12 +251,6 @@ class CostingResource extends Resource
             ->modifyQueryUsing(fn (Builder $query) => $query->whereNotNull('saved_at'))
             ->defaultSort('created_at', 'desc')
             ->filters([
-                Tables\Filters\SelectFilter::make('status')
-                    ->label(__('Status'))
-                    ->options([
-                        Costing::STATUS_DRAFT => __('Saved'),
-                        Costing::STATUS_LOCKED => Costing::STATUS_LOCKED,
-                    ]),
 
                 // Silent date filter, standar modul transaksional (rujukan CashBookResource).
                 Tables\Filters\Filter::make('costing_date')
@@ -293,6 +287,12 @@ class CostingResource extends Resource
 
                         return $indicators;
                     }),
+                Tables\Filters\SelectFilter::make('status')
+                    ->label(__('Status'))
+                    ->options([
+                        Costing::STATUS_DRAFT => __('Saved'),
+                        Costing::STATUS_LOCKED => Costing::STATUS_LOCKED,
+                    ]),
             ])
             ->actions([
                 // Costing yang belum dikunci boleh dihapus; yang terkunci tidak (hapus ditolak model).

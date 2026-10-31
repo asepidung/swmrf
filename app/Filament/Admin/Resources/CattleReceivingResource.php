@@ -340,13 +340,6 @@ class CattleReceivingResource extends Resource
             )
             ->recordClasses(fn (CattleReceiving $record) => $record->trashed() ? 'border-s-2 border-danger-600 dark:border-danger-400 bg-danger-50 dark:bg-danger-900/50' : null)
             ->filters([
-                Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_cattle_receivings')),
-                \App\Filament\Support\MasterSelect::filter(
-                    Tables\Filters\SelectFilter::make('supplier_id')
-                        ->label(__('Supplier')),
-                    \App\Models\Supplier::class,
-                ),
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,
                 // badge cuma tampil kalau user mengubahnya.
@@ -386,6 +379,13 @@ class CattleReceivingResource extends Resource
                         }
                         return $indicators;
                     }),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('supplier_id')
+                        ->label(__('Supplier')),
+                    \App\Models\Supplier::class,
+                ),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_cattle_receivings')),
             ])
             ->headerActions([])
             ->actions([

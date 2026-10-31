@@ -322,13 +322,6 @@ Tables\Actions\ActionGroup::make([
                 ]),
             ])
             ->filters([
-                // Repack memakai hapus lunak dan `RepackPolicy` punya
-                // `restore()`, tetapi tidak ada satu pun layar yang
-                // menampilkan baris terhapusnya -- jadi izin memulihkan itu
-                // tidak pernah bisa dipakai, dan repack yang telanjur
-                // terhapus hilang untuk selamanya dari pandangan.
-                Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->user()?->hasPermission('view_deleted_repacks') ?? false),
 
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,
@@ -370,8 +363,14 @@ Tables\Actions\ActionGroup::make([
                                 ->removeField('created_until');
                         }
                         return $indicators;
-                    })
-                    // ->toggleable(isToggledHiddenByDefault: true), // Removed because Filter doesn't have toggleable method
+                    }),
+                // Repack memakai hapus lunak dan `RepackPolicy` punya
+                // `restore()`, tetapi tidak ada satu pun layar yang
+                // menampilkan baris terhapusnya -- jadi izin memulihkan itu
+                // tidak pernah bisa dipakai, dan repack yang telanjur
+                // terhapus hilang untuk selamanya dari pandangan.
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()?->hasPermission('view_deleted_repacks') ?? false),
             ])
             ->headerActions([
                 Tables\Actions\Action::make('export_excel')

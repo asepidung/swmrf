@@ -110,19 +110,6 @@ class TallyResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_tallies')),
-
-                \App\Filament\Support\MasterSelect::filter(
-                    Tables\Filters\SelectFilter::make('customer_id')
-                        ->label(__('Customer'))
-                        // Customer sebuah Tally ada di Sales Order-nya.
-                        ->query(fn (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder => $query->when(
-                            filled($data['value'] ?? null),
-                            fn ($query) => $query->whereHas('salesOrder', fn ($q) => $q->where('customer_id', $data['value'])),
-                        )),
-                    \App\Models\Customer::class,
-                ),
 
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form
@@ -165,6 +152,19 @@ class TallyResource extends Resource
                         }
                         return $indicators;
                     }),
+
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('customer_id')
+                        ->label(__('Customer'))
+                        // Customer sebuah Tally ada di Sales Order-nya.
+                        ->query(fn (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder => $query->when(
+                            filled($data['value'] ?? null),
+                            fn ($query) => $query->whereHas('salesOrder', fn ($q) => $q->where('customer_id', $data['value'])),
+                        )),
+                    \App\Models\Customer::class,
+                ),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_tallies')),
             ])
             ->recordClasses(fn (Tally $record) => match (true) {
                 $record->trashed() => 'bg-danger-50 dark:bg-danger-900/20',

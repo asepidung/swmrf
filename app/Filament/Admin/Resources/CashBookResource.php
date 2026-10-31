@@ -165,16 +165,6 @@ class CashBookResource extends Resource
                     ->color('success'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('bank_account_id')
-                    ->label(__('Account'))
-                    ->options(fn () => BankAccount::orderBy('initial')->pluck('initial', 'id')),
-
-                Tables\Filters\SelectFilter::make('type')
-                    ->label(__('Type'))
-                    ->options([
-                        'in' => __('Cash In'),
-                        'out' => __('Cash Out'),
-                    ]),
 
                 // Silent date filter: tanggal 1 bulan berjalan sampai hari ini,
                 // tanpa badge indikator, mengikuti standar modul transaksional.
@@ -212,6 +202,16 @@ class CashBookResource extends Resource
 
                         return $indicators;
                     }),
+                Tables\Filters\SelectFilter::make('bank_account_id')
+                    ->label(__('Account'))
+                    ->options(fn () => BankAccount::orderBy('initial')->pluck('initial', 'id')),
+
+                Tables\Filters\SelectFilter::make('type')
+                    ->label(__('Type'))
+                    ->options([
+                        'in' => __('Cash In'),
+                        'out' => __('Cash Out'),
+                    ]),
             ])
             ->actions([])
             ->bulkActions([])

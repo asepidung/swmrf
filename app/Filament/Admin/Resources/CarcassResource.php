@@ -552,6 +552,8 @@ class CarcassResource extends Resource
                     ->color('success'),
             ])
             ->filters([
+                \App\Filament\Support\DateRangeFilter::make('kill_date'),
+
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()?->hasPermission('view_deleted_carcasses') ?? false),
             ])

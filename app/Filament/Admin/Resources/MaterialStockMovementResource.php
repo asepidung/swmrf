@@ -198,14 +198,6 @@ class MaterialStockMovementResource extends Resource
                 ->color('success'),
             ])
             ->filters([
-                // Pilihannya SELURUH jenis yang benar-benar ditulis aplikasi.
-                //
-                // Daftar lamanya memuat empat dari sembilan, dan `ISSUE` tidak
-                // pernah ditulis kode mana pun. Enam jenis tidak bisa disaring
-                // sama sekali, termasuk seluruh pemakaian material.
-                Tables\Filters\SelectFilter::make('transaction_type')
-                    ->options(\App\Models\MaterialStockMovement::typeOptions())
-                    ->label(__('Transaction Type')),
                 Tables\Filters\Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('from')
@@ -227,6 +219,14 @@ class MaterialStockMovementResource extends Resource
                             );
                     })
                     ->indicateUsing(fn (array $data): array => []),
+                // Pilihannya SELURUH jenis yang benar-benar ditulis aplikasi.
+                //
+                // Daftar lamanya memuat empat dari sembilan, dan `ISSUE` tidak
+                // pernah ditulis kode mana pun. Enam jenis tidak bisa disaring
+                // sama sekali, termasuk seluruh pemakaian material.
+                Tables\Filters\SelectFilter::make('transaction_type')
+                    ->options(\App\Models\MaterialStockMovement::typeOptions())
+                    ->label(__('Transaction Type')),
             ])
             ->actions([
                 // Read-only, clickable row handles navigation

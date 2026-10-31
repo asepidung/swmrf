@@ -153,13 +153,6 @@ class GoodsReceiptProductResource extends Resource
                 fn (GoodsReceiptProduct $record): string => Pages\InputGoodsReceiptProduct::getUrl(['record' => $record]),
             )
             ->filters([
-                Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_goods_receipt_products')),
-                \App\Filament\Support\MasterSelect::filter(
-                    Tables\Filters\SelectFilter::make('supplier_id')
-                        ->label(__('Supplier')),
-                    \App\Models\Supplier::class,
-                ),
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,
                 // badge cuma tampil kalau user mengubahnya.
@@ -198,6 +191,13 @@ class GoodsReceiptProductResource extends Resource
                         }
                         return $indicators;
                     }),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('supplier_id')
+                        ->label(__('Supplier')),
+                    \App\Models\Supplier::class,
+                ),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_goods_receipt_products')),
             ])
             ->actions([
                 \App\Filament\Admin\Resources\QcReportResource\Actions\LihatLaporanQc::make(),
