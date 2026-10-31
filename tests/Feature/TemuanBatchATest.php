@@ -46,14 +46,19 @@ class TemuanBatchATest extends TestCase
         $this->assertLessThan($sorts['penggunaan'], $sorts['retur']);
     }
 
-    public function test_the_invoice_amount_column_says_receivable_not_payable(): void
+    /**
+     * Daftar invoice menampilkan NILAI invoice (keputusan Ayah, 31 Oktober 2026, menggantikan "Total Piutang" sebelumnya):
+     * invoice adalah data tagihan, lunas atau belum angkanya tetap. Sisa tagihan ada di modul Piutang.
+     */
+    public function test_the_invoice_list_shows_the_invoice_value_not_the_receivable(): void
     {
-        $this->assertSame('Total Receivable', trans('Total Receivable', [], 'en'));
-        $this->assertSame('Total Piutang', trans('Total Receivable', [], 'id'));
+        $this->assertSame('Invoice Amount', trans('Invoice Amount', [], 'en'));
+        $this->assertSame('Nilai Invoice', trans('Invoice Amount', [], 'id'));
 
         $source = file_get_contents(app_path('Filament/Admin/Resources/InvoiceResource.php'));
-        $column = substr($source, strpos($source, "TextColumn::make('balance')"), 400);
-        $this->assertStringContainsString("__('Total Receivable')", $column);
+        $column = substr($source, strpos($source, "TextColumn::make('subtotal')"), 300);
+        $this->assertStringContainsString("__('Invoice Amount')", $column);
+        $this->assertStringNotContainsString("__('Total Receivable')", $column);
         $this->assertStringNotContainsString("__('Total Amount')", $column);
     }
 

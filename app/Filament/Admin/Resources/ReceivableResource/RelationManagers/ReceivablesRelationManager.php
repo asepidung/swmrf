@@ -131,6 +131,14 @@ class ReceivablesRelationManager extends RelationManager
                         'gray' => '-',
                     ])
                     ->formatStateUsing(fn ($state) => Invoice::statusLabel($state)),
+
+                // Retur dan buka-kembali ada di Piutang, bukan di daftar Invoice (keputusan Ayah, 31 Oktober 2026): penanda ini
+                // supaya sisa tagihan yang berkurang tidak terbaca sebagai galat oleh siapa pun yang membuka tabel ini.
+                Tables\Columns\TextColumn::make('has_sales_returns')
+                    ->label(__('Returns'))
+                    ->getStateUsing(fn (Receivable $record): ?string => $record->invoice?->returnedAmount() > 0 ? __('Reduced by Return') : null)
+                    ->badge()
+                    ->colors(['warning' => __('Reduced by Return')]),
             ])
             ->filters([
                 // Simple filters can be added here if needed
@@ -139,8 +147,41 @@ class ReceivablesRelationManager extends RelationManager
                 // Remove create action
             ])
             ->actions([
-                // No static actions like Tukar Faktur here. Read-only overview for now.
-                // Later, Payment actions will be added here.
+                // Membuka kembali invoice yang tadinya dianggap lunas (mis. hasil impor riwayat) tetapi sebenarnya belum selesai.
+                // Dulu ada di daftar Invoice; dipindah ke sini karena ini urusan piutang (Ayah, 31 Oktober 2026).
+                Tables\Actions\Action::make('reopen_settled')
+                    ->label(__('Reopen'))
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('warning')
+                    ->modalHeading(__('Reopen a settled invoice'))
+                    ->modalDescription(__('Use this when a transaction that was counted as settled is actually not finished yet.'))
+                    ->visible(fn (Receivable $record): bool => $record->invoice !== null
+                        && $record->invoice->status === Invoice::STATUS_PAID
+                        && ! $record->invoice->trashed()
+                        && (auth()->user()?->hasPermission('reopen_settled_invoices') ?? false))
+                    ->authorize(fn (): bool => auth()->user()?->hasPermission('reopen_settled_invoices') ?? false)
+                    ->form(fn (Receivable $record): array => [
+                        Forms\Components\TextInput::make('outstanding')
+                            ->label(__('Amount still unpaid'))
+                            ->helperText(__('Bill: :bill', ['bill' => number_format($record->invoice->billedAmount(), 0, ',', '.')]))
+                            ->numeric()
+                            ->required()
+                            ->default($record->invoice->billedAmount())
+                            ->minValue(1)
+                            ->maxValue($record->invoice->billedAmount()),
+                        Forms\Components\Textarea::make('reason')
+                            ->label(__('Reason'))
+                            ->required()
+                            ->maxLength(500),
+                    ])
+                    ->action(function (Receivable $record, array $data): void {
+                        \Illuminate\Support\Facades\DB::transaction(function () use ($record, $data): void {
+                            $locked = Invoice::whereKey($record->invoice_id)->lockForUpdate()->firstOrFail();
+                            $locked->reopenSettled((float) $data['outstanding'], (string) $data['reason']);
+                        });
+
+                        Notification::make()->title(__('Invoice reopened'))->success()->send();
+                    }),
             ])
             // Pilih invoice yang dibayar langsung di tabel (Owner, 23 Oktober 2026): terlama paling atas, yang lunas di bawah dan tidak bisa
             // dicentang. "Terima Pembayaran" lalu hanya menghitung invoice yang dicentang, jadi tidak ada pilihan ganda di halaman bayar.
