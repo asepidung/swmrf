@@ -285,13 +285,6 @@ class ActivityLogResource extends Resource
                 fn (Model $record): string => Pages\ViewActivityLog::getUrl([$record->getKey()]),
             )
             ->filters([
-                Tables\Filters\SelectFilter::make('description')
-                    ->label(__('Event'))
-                    ->options([
-                        'created' => 'Created',
-                        'updated' => 'Updated',
-                        'deleted' => 'Deleted',
-                    ]),
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,
                 // badge cuma tampil kalau user mengubahnya. Sebelumnya
@@ -331,6 +324,13 @@ class ActivityLogResource extends Resource
                         }
                         return $indicators;
                     }),
+                Tables\Filters\SelectFilter::make('description')
+                    ->label(__('Event'))
+                    ->options([
+                        'created' => 'Created',
+                        'updated' => 'Updated',
+                        'deleted' => 'Deleted',
+                    ]),
             ])
             ->actions([
                 // Clean UI: Clickable rows instead of action buttons

@@ -148,8 +148,6 @@ class SalesReturnResource extends Resource
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('items.invoice'))
             ->defaultSort('created_at', 'desc')
             ->filters([
-                TrashedFilter::make()
-                    ->visible(fn () => auth()->user()?->hasPermission('view_deleted_sales_returns') ?? false),
                 Filter::make('date_range')
                     ->form([
                         Forms\Components\DatePicker::make('date_from')->label(__('From Date'))->default(now()->startOfMonth()),
@@ -174,6 +172,8 @@ class SalesReturnResource extends Resource
                         ->label(__('Customer')),
                     \App\Models\Customer::class,
                 ),
+                TrashedFilter::make()
+                    ->visible(fn () => auth()->user()?->hasPermission('view_deleted_sales_returns') ?? false),
             ])
             ->actions([
                 \App\Filament\Admin\Resources\QcReportResource\Actions\LihatLaporanQc::make(),

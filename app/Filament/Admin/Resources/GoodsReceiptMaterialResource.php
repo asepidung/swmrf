@@ -262,13 +262,6 @@ class GoodsReceiptMaterialResource extends Resource
             )
             ->headerActions([])
             ->filters([
-                Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_gr_materials')),
-                \App\Filament\Support\MasterSelect::filter(
-                    Tables\Filters\SelectFilter::make('supplier_id')
-                        ->label(__('Supplier')),
-                    \App\Models\Supplier::class,
-                ),
                 Tables\Filters\Filter::make('receive_date')
                     ->form([
                         Forms\Components\DatePicker::make('from')
@@ -289,6 +282,13 @@ class GoodsReceiptMaterialResource extends Resource
                                 fn (Builder $query, $date): Builder => $query->whereDate('receive_date', '<=', $date),
                             );
                     }),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('supplier_id')
+                        ->label(__('Supplier')),
+                    \App\Models\Supplier::class,
+                ),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_gr_materials')),
             ])
             ->actions([
                 Tables\Actions\Action::make('lock')

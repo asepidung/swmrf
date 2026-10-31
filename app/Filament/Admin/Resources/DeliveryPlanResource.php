@@ -193,14 +193,6 @@ class DeliveryPlanResource extends Resource
                 default => null,
             })
             ->filters([
-
-                Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_delivery_plans')),
-                \App\Filament\Support\MasterSelect::filter(
-                    Tables\Filters\SelectFilter::make('customer_id')
-                        ->label(__('Customer')),
-                    \App\Models\Customer::class,
-                ),
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- TAPI hanya sisi `from` yang ikut pola
                 // itu di sini. `until` SENGAJA dibiarkan tanpa batas atas:
@@ -247,6 +239,14 @@ class DeliveryPlanResource extends Resource
                         }
                         return $indicators;
                     }),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('customer_id')
+                        ->label(__('Customer')),
+                    \App\Models\Customer::class,
+                ),
+
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_delivery_plans')),
             ])
             ->headerActions([])
             ->actions([
