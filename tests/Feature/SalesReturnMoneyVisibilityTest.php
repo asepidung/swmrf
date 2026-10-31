@@ -190,13 +190,31 @@ class SalesReturnMoneyVisibilityTest extends TestCase
     // =========================================================================
 
     /** @test */
-    public function the_invoice_list_flags_invoices_reduced_by_a_return(): void
+    public function the_invoice_list_shows_the_document_value_and_no_longer_flags_returns(): void
     {
         $retur = $this->approvedReturnReducingAnInvoice();
         $invoice = $retur->items()->first()->invoice;
         $this->grant('view_invoices');
 
+        // Retur dihitung di piutang; daftar invoice tetap menampilkan angka yang tertulis di dokumennya.
         Livewire::test(ListInvoices::class)
-            ->assertTableColumnStateSet('has_sales_returns', __('Reduced by Return'), $invoice);
+            ->assertTableColumnStateSet('subtotal', 10000000.0, $invoice)
+            ->assertTableColumnDoesNotExist('has_sales_returns')
+            ->assertTableActionDoesNotExist('reopen_settled');
+    }
+
+    /** @test */
+    public function the_receivables_table_flags_invoices_reduced_by_a_return(): void
+    {
+        $retur = $this->approvedReturnReducingAnInvoice();
+        $invoice = $retur->items()->first()->invoice;
+        $this->grant('view_receivables');
+
+        $receivable = Receivable::where('invoice_id', $invoice->id)->firstOrFail();
+
+        Livewire::test(\App\Filament\Admin\Resources\ReceivableResource\RelationManagers\ReceivablesRelationManager::class, [
+            'ownerRecord' => $receivable->customer->customerGroup ?? CustomerGroup::find($receivable->customer_group_id),
+            'pageClass' => \App\Filament\Admin\Resources\ReceivableResource\Pages\ViewReceivable::class,
+        ])->assertTableColumnStateSet('has_sales_returns', __('Reduced by Return'), $receivable);
     }
 }

@@ -119,6 +119,32 @@ class ReopenSettledTest extends TestCase
         $invoice->fresh()->reopenSettled(1000, 'sudah dibuka', $by);
     }
 
+    /** Buka-kembali ada di tabel Piutang (bukan daftar Invoice), dan hanya terlihat bagi pemegang izinnya. */
+    public function test_the_reopen_action_lives_in_the_receivables_table(): void
+    {
+        $invoice = $this->settledInvoice();
+        $groupId = (int) DB::table('customers')->where('id', $invoice->customer_id)->value('customer_group_id');
+        $receivable = \App\Models\Receivable::create(['invoice_id' => $invoice->id, 'customer_id' => $invoice->customer_id, 'customer_group_id' => $groupId]);
+        $group = \App\Models\CustomerGroup::findOrFail($groupId);
+        $page = [
+            'ownerRecord' => $group,
+            'pageClass' => \App\Filament\Admin\Resources\ReceivableResource\Pages\ViewReceivable::class,
+        ];
+        $manager = \App\Filament\Admin\Resources\ReceivableResource\RelationManagers\ReceivablesRelationManager::class;
+
+        \Livewire\Livewire::actingAs($this->user('view_receivables'))->test($manager, $page)
+            ->assertTableActionHidden('reopen_settled', $receivable);
+
+        \Livewire\Livewire::actingAs($this->user('view_receivables', 'reopen_settled_invoices'))->test($manager, $page)
+            ->assertTableActionVisible('reopen_settled', $receivable)
+            ->callTableAction('reopen_settled', $receivable, ['outstanding' => 250000, 'reason' => 'Belum ditransfer customer'])
+            ->assertHasNoTableActionErrors();
+
+        $fresh = $invoice->fresh();
+        $this->assertSame(250000.0, (float) $fresh->balance);
+        $this->assertSame(Invoice::STATUS_UNPAID, $fresh->status);
+    }
+
     public function test_a_payable_is_reopened_with_the_unpaid_part(): void
     {
         $payable = $this->settledPayable();
