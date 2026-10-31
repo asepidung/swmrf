@@ -746,19 +746,6 @@ class InvoiceResource extends Resource
                     ),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_invoices')),
-
-                \App\Filament\Support\MasterSelect::filter(
-                    Tables\Filters\SelectFilter::make('customer_id')
-                        ->label(__('Customer')),
-                    \App\Models\Customer::class,
-                ),
-
-                Tables\Filters\Filter::make('belum_tukar_faktur')
-                    ->label(__('Invoice not exchanged yet'))
-                    ->toggle()
-                    ->query(fn (\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder => $query->where('status', '!=', Invoice::STATUS_PAID)->whereNull('invoice_exchange_date')->whereHas('customer', fn($q) => $q->where('invoice_exchange', true))),
 
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,
@@ -793,6 +780,19 @@ class InvoiceResource extends Resource
                         }
                         return $indicators;
                     }),
+
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('customer_id')
+                        ->label(__('Customer')),
+                    \App\Models\Customer::class,
+                ),
+
+                Tables\Filters\Filter::make('belum_tukar_faktur')
+                    ->label(__('Invoice not exchanged yet'))
+                    ->toggle()
+                    ->query(fn (\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder => $query->where('status', '!=', Invoice::STATUS_PAID)->whereNull('invoice_exchange_date')->whereHas('customer', fn($q) => $q->where('invoice_exchange', true))),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_invoices')),
             ])
             ->actions([
                 Tables\Actions\Action::make('reopen_settled')

@@ -100,6 +100,8 @@ class MutationResource extends Resource
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
+                \App\Filament\Support\DateRangeFilter::make('mutation_date'),
+
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()?->hasPermission('view_deleted_mutations') ?? false),
             ])

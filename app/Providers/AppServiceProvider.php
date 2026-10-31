@@ -76,6 +76,10 @@ class AppServiceProvider extends ServiceProvider
             fn (\Filament\Forms\Components\DatePicker $picker) => $picker
                 ->native(false)
                 ->displayFormat('d/m/Y')
+                // Panel kalender menutup sendiri setelah tanggal diklik (permintaan Ayah, 31 Oktober 2026; sebelumnya
+                // harus klik area kosong). Hanya DatePicker: DateTimePicker yang punya jam tidak ikut, karena jam
+                // dipilih SESUDAH tanggal dan panel yang menutup lebih dulu membuat jam tidak bisa diatur.
+                ->closeOnDateSelection()
                 // State-nya dikembalikan menjadi TANGGAL SAJA.
                 //
                 // Filament sengaja menyimpan state pemilih non-native sebagai

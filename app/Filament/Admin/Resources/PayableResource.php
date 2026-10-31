@@ -200,16 +200,6 @@ class PayableResource extends Resource
                 ->color('success'),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_payables')),
-                Tables\Filters\SelectFilter::make('payableable_type')
-                    ->label(__('Category'))
-                    ->options(fn (): array => Payable::sourceLabels()),
-                \App\Filament\Support\MasterSelect::filter(
-                    Tables\Filters\SelectFilter::make('supplier_id')
-                        ->label(__('Supplier')),
-                    \App\Models\Supplier::class,
-                ),
                 Tables\Filters\Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('from')
@@ -231,6 +221,16 @@ class PayableResource extends Resource
                             );
                     })
                     ->indicateUsing(fn (array $data): array => []),
+                Tables\Filters\SelectFilter::make('payableable_type')
+                    ->label(__('Category'))
+                    ->options(fn (): array => Payable::sourceLabels()),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('supplier_id')
+                        ->label(__('Supplier')),
+                    \App\Models\Supplier::class,
+                ),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_payables')),
             ])
             ->actions([
                 Tables\Actions\Action::make('reopen_settled')

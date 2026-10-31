@@ -375,14 +375,6 @@ class DeliveryOrderResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_delivery_orders')),
-
-                \App\Filament\Support\MasterSelect::filter(
-                    Tables\Filters\SelectFilter::make('customer_id')
-                        ->label(__('Customer')),
-                    \App\Models\Customer::class,
-                ),
 
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,
@@ -424,6 +416,14 @@ class DeliveryOrderResource extends Resource
                         }
                         return $indicators;
                     }),
+
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('customer_id')
+                        ->label(__('Customer')),
+                    \App\Models\Customer::class,
+                ),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_delivery_orders')),
             ])
             ->recordClasses(fn (DeliveryOrder $record) => match (true) {
                 $record->trashed() => 'bg-danger-50 dark:bg-danger-900/20',

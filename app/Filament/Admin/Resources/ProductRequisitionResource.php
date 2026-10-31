@@ -382,6 +382,20 @@ class ProductRequisitionResource extends Resource
                     }),
             ])
             ->filters([
+                Tables\Filters\Filter::make('created_at')
+                    ->form([
+                        Forms\Components\DatePicker::make('created_from')
+                            ->label(fn() => __('From Date'))
+                            ->default(now()->startOfMonth()),
+                        Forms\Components\DatePicker::make('created_until')
+                            ->label(fn() => __('Until Date'))
+                            ->default(now()),
+                    ])
+                    ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
+                        return $query
+                            ->when($data['created_from'], fn($q, $date) => $q->whereDate('created_at', '>=', $date))
+                            ->when($data['created_until'], fn($q, $date) => $q->whereDate('created_at', '<=', $date));
+                    }),
                 \App\Filament\Support\MasterSelect::filter(
                     Tables\Filters\SelectFilter::make('supplier_id')
                         ->label(fn() => __('Supplier')),
@@ -400,20 +414,6 @@ class ProductRequisitionResource extends Resource
                         'PO Created' => 'PO Created',
                         'Rejected' => 'Rejected',
                     ]),
-                Tables\Filters\Filter::make('created_at')
-                    ->form([
-                        Forms\Components\DatePicker::make('created_from')
-                            ->label(fn() => __('From Date'))
-                            ->default(now()->startOfMonth()),
-                        Forms\Components\DatePicker::make('created_until')
-                            ->label(fn() => __('Until Date'))
-                            ->default(now()),
-                    ])
-                    ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
-                        return $query
-                            ->when($data['created_from'], fn($q, $date) => $q->whereDate('created_at', '>=', $date))
-                            ->when($data['created_until'], fn($q, $date) => $q->whereDate('created_at', '<=', $date));
-                    })
             ])
             ->headerActions([
                 \Filament\Tables\Actions\Action::make('detail')
