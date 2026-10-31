@@ -234,6 +234,13 @@ class AdminPanelProvider extends PanelProvider
                     ? \Illuminate\Support\Facades\Blade::render('<livewire:global-task-poller />')
                     : '',
             )
+            // Riwayat versi (klik "Ver ..." di footer) dan jendela "Yang baru" sekali per versi. Hanya yang sudah login.
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::BODY_END,
+                fn (): string => auth()->check()
+                    ? \Illuminate\Support\Facades\Blade::render('<livewire:version-notice />')
+                    : '',
+            )
             // Tombol berlangganan notifikasi perangkat, di topbar.
             ->renderHook(
                 \Filament\View\PanelsRenderHook::USER_MENU_BEFORE,
