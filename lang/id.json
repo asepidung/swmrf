@@ -1961,5 +1961,12 @@
     "Input Goods Receipt Product": "Input Penerimaan Beef",
     "This delivery receipt already has an invoice": "Penerimaan surat jalan ini sudah punya invoice",
     "Someone else may have just created it. Open it from the invoice list.": "Mungkin orang lain baru saja membuatnya. Buka dari daftar invoice.",
-    "Someone else has already received against this purchase order": "Orang lain sudah menerima purchase order ini"
+    "Someone else has already received against this purchase order": "Orang lain sudah menerima purchase order ini",
+    "Version history": "Riwayat versi",
+    "What is new": "Yang baru",
+    "Got it": "Mengerti",
+    "Current": "Sekarang",
+    "New module": "Modul baru",
+    "Fix": "Perbaikan",
+    "Release": "Rilis"
 }

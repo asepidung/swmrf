@@ -1961,5 +1961,12 @@
     "Input Goods Receipt Product": "Input Goods Receipt Product",
     "This delivery receipt already has an invoice": "This delivery receipt already has an invoice",
     "Someone else may have just created it. Open it from the invoice list.": "Someone else may have just created it. Open it from the invoice list.",
-    "Someone else has already received against this purchase order": "Someone else has already received against this purchase order"
+    "Someone else has already received against this purchase order": "Someone else has already received against this purchase order",
+    "Version history": "Version history",
+    "What is new": "What is new",
+    "Got it": "Got it",
+    "Current": "Current",
+    "New module": "New module",
+    "Fix": "Fix",
+    "Release": "Release"
 }
