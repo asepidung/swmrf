@@ -323,8 +323,8 @@ class SalesReturnPlanResource extends Resource
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
-                TrashedFilter::make()
-                    ->visible(fn () => auth()->user()?->hasPermission('view_deleted_sales_return_plans') ?? false),
+                \App\Filament\Support\DateRangeFilter::make('plan_date'),
+
                 \App\Filament\Support\MasterSelect::filter(
                     Tables\Filters\SelectFilter::make('customer_id')
                         ->label(__('Customer')),
@@ -338,6 +338,8 @@ class SalesReturnPlanResource extends Resource
                         SalesReturnPlan::STATUS_RECEIVED => SalesReturnPlan::STATUS_RECEIVED,
                         SalesReturnPlan::STATUS_CANCELLED => SalesReturnPlan::STATUS_CANCELLED,
                     ]),
+                TrashedFilter::make()
+                    ->visible(fn () => auth()->user()?->hasPermission('view_deleted_sales_return_plans') ?? false),
             ])
             ->actions([
                 //

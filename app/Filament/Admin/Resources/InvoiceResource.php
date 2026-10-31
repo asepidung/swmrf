@@ -660,22 +660,14 @@ class InvoiceResource extends Resource
                         ? __('Open the delivery order print page')
                         : null),
 
-                Tables\Columns\TextColumn::make('balance')
-                    // Invoice adalah PIUTANG (uang yang akan kita terima), bukan hutang; "Total Amount" diterjemahkan "Total Hutang" di bahasa Indonesia.
-                    ->label(__('Total Receivable'))
+                // Daftar invoice menampilkan NILAI invoice (keputusan Ayah, 31 Oktober 2026), bukan sisa tagihan: lunas atau belum,
+                // angkanya tetap. Sisa tagihan, retur, dan buka-kembali ada di modul Piutang.
+                Tables\Columns\TextColumn::make('subtotal')
+                    ->label(__('Invoice Amount'))
+                    ->getStateUsing(fn (Invoice $record): float => $record->documentAmount())
                     ->numeric(0, ',', '.')
                     ->sortable()
                     ->alignEnd(),
-
-                // Issue #451 langkah 5: penanda kecil supaya sisa tagihan
-                // yang sudah berkurang tidak terbaca sebagai galat oleh
-                // siapa pun yang membuka daftar ini tanpa tahu ada retur
-                // di baliknya.
-                Tables\Columns\TextColumn::make('has_sales_returns')
-                    ->label(__('Returns'))
-                    ->getStateUsing(fn (Invoice $record): ?string => $record->returnedAmount() > 0 ? __('Reduced by Return') : null)
-                    ->badge()
-                    ->colors(['warning' => __('Reduced by Return')]),
 
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label(__('Created By'))
@@ -746,19 +738,6 @@ class InvoiceResource extends Resource
                     ),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_invoices')),
-
-                \App\Filament\Support\MasterSelect::filter(
-                    Tables\Filters\SelectFilter::make('customer_id')
-                        ->label(__('Customer')),
-                    \App\Models\Customer::class,
-                ),
-
-                Tables\Filters\Filter::make('belum_tukar_faktur')
-                    ->label(__('Invoice not exchanged yet'))
-                    ->toggle()
-                    ->query(fn (\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder => $query->where('status', '!=', Invoice::STATUS_PAID)->whereNull('invoice_exchange_date')->whereHas('customer', fn($q) => $q->where('invoice_exchange', true))),
 
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,
@@ -793,39 +772,21 @@ class InvoiceResource extends Resource
                         }
                         return $indicators;
                     }),
-            ])
-            ->actions([
-                Tables\Actions\Action::make('reopen_settled')
-                    ->label(__('Reopen'))
-                    ->icon('heroicon-o-arrow-uturn-left')
-                    ->color('warning')
-                    ->modalHeading(__('Reopen a settled invoice'))
-                    ->modalDescription(__('Use this when a transaction that was counted as settled is actually not finished yet.'))
-                    ->visible(fn (Invoice $record): bool => $record->status === Invoice::STATUS_PAID && ! $record->trashed() && (auth()->user()?->hasPermission('reopen_settled_invoices') ?? false))
-                    ->authorize(fn (): bool => auth()->user()?->hasPermission('reopen_settled_invoices') ?? false)
-                    ->form(fn (Invoice $record): array => [
-                        Forms\Components\TextInput::make('outstanding')
-                            ->label(__('Amount still unpaid'))
-                            ->helperText(__('Bill: :bill', ['bill' => number_format($record->billedAmount(), 0, ',', '.')]))
-                            ->numeric()
-                            ->required()
-                            ->default($record->billedAmount())
-                            ->minValue(1)
-                            ->maxValue($record->billedAmount()),
-                        Forms\Components\Textarea::make('reason')
-                            ->label(__('Reason'))
-                            ->required()
-                            ->maxLength(500),
-                    ])
-                    ->action(function (Invoice $record, array $data): void {
-                        \Illuminate\Support\Facades\DB::transaction(function () use ($record, $data): void {
-                            $locked = Invoice::whereKey($record->id)->lockForUpdate()->firstOrFail();
-                            $locked->reopenSettled((float) $data['outstanding'], (string) $data['reason']);
-                        });
 
-                        \Filament\Notifications\Notification::make()->title(__('Invoice reopened'))->success()->send();
-                    }),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('customer_id')
+                        ->label(__('Customer')),
+                    \App\Models\Customer::class,
+                ),
+
+                Tables\Filters\Filter::make('belum_tukar_faktur')
+                    ->label(__('Invoice not exchanged yet'))
+                    ->toggle()
+                    ->query(fn (\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder => $query->where('status', '!=', Invoice::STATUS_PAID)->whereNull('invoice_exchange_date')->whereHas('customer', fn($q) => $q->where('invoice_exchange', true))),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_invoices')),
             ])
+            ->actions([])
             ->headerActions([])
             ->bulkActions([])
             ->recordUrl(function (Invoice $record) {

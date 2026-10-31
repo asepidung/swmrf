@@ -236,18 +236,6 @@ class BeefStockMovementResource extends Resource
                 ->color('success'),
             ])
             ->filters([
-                // Pilihannya SELURUH jenis yang benar-benar ditulis aplikasi.
-                //
-                // Daftar yang ditulis tangan di sini dulu memuat sepuluh dari
-                // sembilan belas, dan salah satunya -- `TALLY_REVERT` -- tidak
-                // pernah ditulis kode mana pun, jadi memilihnya selalu
-                // menghasilkan daftar kosong.
-                Tables\Filters\SelectFilter::make('transaction_type')
-                    ->options(BeefStockMovement::typeOptions())
-                    ->label(__('Transaction Type')),
-                Tables\Filters\SelectFilter::make('warehouse_id')
-                    ->relationship('warehouse', 'name')
-                    ->label(__('Warehouse')),
                 Tables\Filters\Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('from')
@@ -269,6 +257,18 @@ class BeefStockMovementResource extends Resource
                             );
                     })
                     ->indicateUsing(fn (array $data): array => []),
+                // Pilihannya SELURUH jenis yang benar-benar ditulis aplikasi.
+                //
+                // Daftar yang ditulis tangan di sini dulu memuat sepuluh dari
+                // sembilan belas, dan salah satunya -- `TALLY_REVERT` -- tidak
+                // pernah ditulis kode mana pun, jadi memilihnya selalu
+                // menghasilkan daftar kosong.
+                Tables\Filters\SelectFilter::make('transaction_type')
+                    ->options(BeefStockMovement::typeOptions())
+                    ->label(__('Transaction Type')),
+                Tables\Filters\SelectFilter::make('warehouse_id')
+                    ->relationship('warehouse', 'name')
+                    ->label(__('Warehouse')),
             ])
             ->actions([])
             ->recordUrl(fn (BeefStockMovement $record): string => Pages\ViewBeefStockMovement::getUrl(['record' => $record]))

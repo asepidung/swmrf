@@ -186,13 +186,6 @@ class PurchaseCattleResource extends Resource
             )
             ->recordClasses(fn (Model $record) => $record->trashed() ? 'border-s-2 border-danger-600 dark:border-danger-400 bg-danger-50 dark:bg-danger-900/50' : null)
             ->filters([
-                Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_purchase_cattles')),
-                \App\Filament\Support\MasterSelect::filter(
-                    SelectFilter::make('supplier_id')
-                        ->label(__('Supplier')),
-                    \App\Models\Supplier::class,
-                ),
                 Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')
@@ -213,6 +206,13 @@ class PurchaseCattleResource extends Resource
                                 fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
                             );
                     }),
+                \App\Filament\Support\MasterSelect::filter(
+                    SelectFilter::make('supplier_id')
+                        ->label(__('Supplier')),
+                    \App\Models\Supplier::class,
+                ),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_purchase_cattles')),
             ])
             // Ekspor Excel dan PDF wajib untuk modul transaksional
             // (project.md). Halaman ini sebelumnya punya headerActions kosong,

@@ -208,11 +208,6 @@ class PurchaseMaterialResource extends Resource
                     ->money('IDR', locale: 'id'),
             ])
             ->filters([
-                \App\Filament\Support\MasterSelect::filter(
-                    Tables\Filters\SelectFilter::make('supplier_id')
-                        ->label('Supplier'),
-                    \App\Models\Supplier::class,
-                ),
                 Tables\Filters\Filter::make('po_date')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')
@@ -226,7 +221,12 @@ class PurchaseMaterialResource extends Resource
                         return $query
                             ->when($data['created_from'], fn($q, $date) => $q->whereDate('po_date', '>=', $date))
                             ->when($data['created_until'], fn($q, $date) => $q->whereDate('po_date', '<=', $date));
-                    })
+                    }),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('supplier_id')
+                        ->label('Supplier'),
+                    \App\Models\Supplier::class,
+                ),
             ])
                         ->headerActions([])
             ->actions([

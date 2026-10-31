@@ -190,11 +190,6 @@ class PurchaseProductResource extends Resource
                     ->money('IDR', locale: 'id'),
             ])
             ->filters([
-                \App\Filament\Support\MasterSelect::filter(
-                    Tables\Filters\SelectFilter::make('supplier_id')
-                        ->label('Supplier'),
-                    \App\Models\Supplier::class,
-                ),
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,
                 // badge cuma tampil kalau user mengubahnya.
@@ -227,7 +222,12 @@ class PurchaseProductResource extends Resource
                             $indicators[] = 'Until: ' . \Carbon\Carbon::parse($data['created_until'])->format('d M Y');
                         }
                         return $indicators;
-                    })
+                    }),
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('supplier_id')
+                        ->label('Supplier'),
+                    \App\Models\Supplier::class,
+                ),
             ])
                         ->headerActions([])
             ->actions([

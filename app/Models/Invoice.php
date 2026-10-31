@@ -343,6 +343,15 @@ class Invoice extends Model
     }
 
     /**
+     * Nilai DOKUMEN invoice: apa yang tertulis di kertas yang dipegang pelanggan, tidak peduli sudah dibayar atau belum
+     * dan tidak dikurangi retur (retur dihitung di piutang, bukan di invoice). Ini angka yang tampil di daftar Invoice.
+     */
+    public function documentAmount(): float
+    {
+        return (float) $this->subtotal + (float) $this->charge;
+    }
+
+    /**
      * Berapa yang ditagihkan kepada pelanggan.
      *
      * Dihitung, bukan disimpan. Ketiga kolomnya sudah ada dan sudah punya

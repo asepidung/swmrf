@@ -165,7 +165,16 @@ class MaterialStockResource extends Resource
                         : ($record->qty < ($record->min_stock ?? 0) ? 'danger' : 'success'))
                     ->weight(fn (\App\Models\Material $record): ?string => \App\Models\MaterialStockTake::isCounting()
                         ? null
-                        : ($record->qty < ($record->min_stock ?? 0) ? 'bold' : null)),
+                        : ($record->qty < ($record->min_stock ?? 0) ? 'bold' : null))
+                    // Baris total di bawah daftar (permintaan Ayah, 31 Oktober 2026), supaya angkanya bisa dicocokkan dengan legacy.
+                    // Menjumlah SEMUA baris hasil pencarian/filter, lintas satuan; ikut disamarkan selama penghitungan fisik berjalan.
+                    ->summarize(
+                        \Filament\Tables\Columns\Summarizers\Sum::make()
+                            ->label(__('Total'))
+                            ->formatStateUsing(fn ($state): string => \App\Models\MaterialStockTake::isCounting()
+                                ? '***'
+                                : number_format((float) $state, 0, ',', '.')),
+                    ),
                 Tables\Columns\TextColumn::make('min_stock')
                     ->label(__('Min. Stock'))
                     ->numeric(decimalPlaces: 0, decimalSeparator: ',', thousandsSeparator: '.')

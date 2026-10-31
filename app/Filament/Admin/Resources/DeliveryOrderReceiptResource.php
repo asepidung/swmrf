@@ -180,14 +180,6 @@ class DeliveryOrderReceiptResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_delivery_orders')),
-
-                \App\Filament\Support\MasterSelect::filter(
-                    Tables\Filters\SelectFilter::make('customer_id')
-                        ->label(__('Customer')),
-                    \App\Models\Customer::class,
-                ),
 
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,
@@ -228,6 +220,14 @@ class DeliveryOrderReceiptResource extends Resource
                         }
                         return $indicators;
                     }),
+
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('customer_id')
+                        ->label(__('Customer')),
+                    \App\Models\Customer::class,
+                ),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_delivery_orders')),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()

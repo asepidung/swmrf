@@ -629,14 +629,6 @@ class SalesOrderResource extends Resource
                     ->toggleable(),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_sales_orders')),
-
-                \App\Filament\Support\MasterSelect::filter(
-                    Tables\Filters\SelectFilter::make('customer_id')
-                        ->label(__('Customer')),
-                    \App\Models\Customer::class,
-                ),
 
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,
@@ -682,6 +674,14 @@ class SalesOrderResource extends Resource
                         }
                         return $indicators;
                     }),
+
+                \App\Filament\Support\MasterSelect::filter(
+                    Tables\Filters\SelectFilter::make('customer_id')
+                        ->label(__('Customer')),
+                    \App\Models\Customer::class,
+                ),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_sales_orders')),
             ])
             ->recordClasses(fn (SalesOrder $record) => match (true) {
                 $record->trashed() => 'bg-danger-50 dark:bg-danger-900/20',

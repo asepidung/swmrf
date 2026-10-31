@@ -388,11 +388,6 @@ class CattleWeighingResource extends Resource
                     ->color('success'),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_cattle_weighings')),
-                Tables\Filters\SelectFilter::make('supplier')
-                    ->relationship('receiving.supplier', 'name')
-                    ->label(__('Supplier')),
                 Tables\Filters\Filter::make('weighing_date')
                     ->form([
                         Forms\Components\DatePicker::make('from')
@@ -413,6 +408,11 @@ class CattleWeighingResource extends Resource
                                 fn (Builder $query, $date): Builder => $query->whereDate('weighing_date', '<=', $date),
                             );
                     }),
+                Tables\Filters\SelectFilter::make('supplier')
+                    ->relationship('receiving.supplier', 'name')
+                    ->label(__('Supplier')),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()->hasPermission('view_deleted_cattle_weighings')),
             ])
             ->actions([
                 // Actions moved to Edit/View page header actions per project guidelines

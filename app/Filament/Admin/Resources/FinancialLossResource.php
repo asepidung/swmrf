@@ -151,14 +151,6 @@ class FinancialLossResource extends Resource
                 fn (Model $record): string => Pages\ViewFinancialLoss::getUrl([$record->getKey()]),
             )
             ->filters([
-                // Pilihannya dibaca dari daftar di model, bukan ditulis
-                // ulang di sini. Daftar yang ditulis tangan sudah sekali
-                // ketinggalan: susut kirim tidak pernah bisa dipilih.
-                Tables\Filters\SelectFilter::make('transaction_type')
-                    ->label(__('Filter Source'))
-                    ->options(collect(FinancialLoss::SEMUA_SUMBER)
-                        ->mapWithKeys(fn (string $sumber): array => [$sumber => __($sumber)])
-                        ->all()),
 
                 // Keputusan Owner, 7 September 2026 (dikoreksi ulang setelah
                 // rujukan CashBookResource ditemukan): bukan soal "ada
@@ -205,6 +197,14 @@ class FinancialLossResource extends Resource
 
                         return $indicators;
                     }),
+                // Pilihannya dibaca dari daftar di model, bukan ditulis
+                // ulang di sini. Daftar yang ditulis tangan sudah sekali
+                // ketinggalan: susut kirim tidak pernah bisa dipilih.
+                Tables\Filters\SelectFilter::make('transaction_type')
+                    ->label(__('Filter Source'))
+                    ->options(collect(FinancialLoss::SEMUA_SUMBER)
+                        ->mapWithKeys(fn (string $sumber): array => [$sumber => __($sumber)])
+                        ->all()),
             ])
             ->actions([])
             ->bulkActions([])
