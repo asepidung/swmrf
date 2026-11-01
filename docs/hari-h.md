@@ -105,3 +105,22 @@ Umumkan ke semua user. Sandi bawaan user impor wajib diganti saat masuk pertama.
 
 Sebelum bagian 2 sudah ada backup. Kalau ada kegagalan yang tidak bisa diperbaiki: tetap dalam mode pemeliharaan, pulihkan backup,
 analisis, ulangi. Legacy tidak dimatikan sampai Ayah menyatakan hasil periksa bagian 5 lolos.
+
+## 9. Catatan pelaksanaan (sebenarnya yang terjadi)
+
+- **Legacy ditutup 31 Oktober ~20:59** (lebih awal dari rencana 1 November 00:00), atas keputusan Ayah. Tangkapan akhir ditarik malam itu; semua
+  modul identik kecuali tally (satu tarikan, ssh legacy sedang berat). Pemuatan 29 langkah, 53/53 pemeriksaan cocok.
+- **VPS dibuka 1 November (bukan 2 November 06:00)** atas aba-aba Ayah ("naikan aja ke vps"), setelah semua perbaikan di bawah terpasang.
+- Dikoreksi sesudah pemuatan: PO-SWM/26/X/140 (harga Rp 211.023 menjadi Rp 1.233.000).
+- **Rencana Pengiriman tidak ikut terbentuk** karena importer menulis langsung ke tabel (tanpa event model). Perbaikannya
+  `legacy:link-delivery-plans --apply` (30 SO terbuka menjadi 30 rencana). Driver, armada, dan jam muat berasal dari tabel legacy
+  `delivery_plan_detail` (ditarik lewat `legacy/tarik/plandev.inc`) dan diisi sekali di VPS: MPE = ACEP NURFADILLAH; RESKA = RESKHA PERMANA;
+  CASUAL = driver lepas (driver baru "CASUAL"; orang lepas lain ditambah per orang, mis. "CASUAL - BUDI"); DINAS = DUTRO.
+- **Pembuat dokumen impor** yang tidak tercatat di legacy menjadi akun nonaktif "Legacy": `legacy:assign-legacy-creator --apply`
+  (invoice 8.566, tally 8.107, SO-LGC 494, hutang 258). Akun cadangan `opik` (QC) tidak lagi terbaca sebagai pembuat.
+- **6 invoice "Belum TF" (Rp 119.452.220) tetap belum lunas**; sisanya 8.560 lunas. Daftar Invoice sekarang menampilkan nilai invoice;
+  Return dan Reopen ada di Piutang.
+- Fitur baru yang ikut naik: nomor versi aplikasi (klik "Ver"), baris total Stok Material, filter tanggal paling atas dan
+  "Data yang dihapus" paling bawah, date picker menutup sendiri, menu Meat Processing (izin `view_meat_processing_stocks` dan
+  `view_meat_processing_movements`, diberikan Ayah per peran).
+- Urutan deploy tiap kali: backup `~/backup/`, `git --no-pager pull`, `php8.4 artisan migrate --force`, `optimize:clear` lalu cache config, route, view.
