@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources;
 use App\Filament\Admin\Resources\BeefStockResource\Pages;
 use App\Filament\Admin\Resources\BeefStockResource\RelationManagers;
 use App\Models\Product;
+use App\Models\ProductCategory;
 use App\Models\BeefStock;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -231,6 +232,7 @@ class BeefStockResource extends Resource
             ->join('warehouses', 'warehouses.id', '=', 'beef_stocks.warehouse_id')
             ->join('grades', 'grades.id', '=', 'beef_stocks.grade_id')
             ->where('beef_stocks.status', 'IN_STOCK')
+            ->whereIn('beef_stocks.product_id', static::idProduk())
             ->select(
                 'beef_stocks.warehouse_id',
                 'beef_stocks.grade_id',
@@ -256,6 +258,7 @@ class BeefStockResource extends Resource
             ->join('warehouses', 'warehouses.id', '=', 'beef_stock_movements.warehouse_id')
             ->join('grades', 'grades.id', '=', 'beef_stock_movements.condition')
             ->where('beef_stock_movements.created_at', '<=', static::asOf())
+            ->whereIn('beef_stock_movements.product_id', static::idProduk())
             ->groupBy('beef_stock_movements.warehouse_id', 'beef_stock_movements.condition')
             ->havingRaw('ROUND(COALESCE(SUM(weight_in), 0) - COALESCE(SUM(weight_out), 0), 2) <> 0')
             ->selectRaw('beef_stock_movements.warehouse_id, beef_stock_movements.condition as grade_id')
@@ -271,9 +274,27 @@ class BeefStockResource extends Resource
         return $bucket['warehouse'] . ' ' . $bucket['grade'];
     }
 
+    /**
+     * Produk mana yang masuk menu ini.
+     *
+     * Beef Stock berisi semua produk KECUALI kategori Processing; produk olahan itu dilihat di menu Meat Processing
+     * (Owner, 1 November 2026), yang menimpa metode ini dengan kebalikannya. Kedua menu memakai satu kelas supaya tampilan,
+     * kolom gudang x grade, dan ekspornya tidak berbeda.
+     */
+    protected static function cakupanProduk(Builder $produk): Builder
+    {
+        return $produk->whereDoesntHave('category', fn (Builder $kategori) => $kategori->where('name', ProductCategory::PROCESSING));
+    }
+
+    /** Subquery id produk yang masuk menu ini, untuk membatasi tabel stok dan buku besar. */
+    protected static function idProduk(): Builder
+    {
+        return static::cakupanProduk(Product::query())->select('products.id');
+    }
+
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery()->select('products.*');
+        $query = static::cakupanProduk(parent::getEloquentQuery()->select('products.*'));
 
         foreach (static::stockBuckets() as $bucket) {
             $query->addSelect([$bucket['key'] => static::saldo($bucket)]);
@@ -550,7 +571,7 @@ class BeefStockResource extends Resource
                             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.beef-stocks-pdf', [
                                 'records' => $records,
                                 'buckets' => static::stockBuckets(),
-                                'title' => __('Beef Stock'),
+                                'title' => static::getPluralModelLabel(),
                                 'keterangan' => static::keteranganPosisiBerkas()
                             ]);
                             return response()->streamDownload(fn () => print($pdf->output()), 'export_beef_stocks.pdf');
@@ -614,7 +635,7 @@ class BeefStockResource extends Resource
             ->actions([
                 // Clickable rows are enabled, no explicit view action button is needed
             ])
-            ->recordUrl(fn (Product $record): string => Pages\ViewBeefStock::getUrl(['record' => $record]));
+            ->recordUrl(fn (Product $record): string => static::getUrl('view', ['record' => $record]));
     }
 
     public static function getRelations(): array
