@@ -216,6 +216,10 @@ class DatabaseSeeder extends Seeder
             ['name' => 'view_beef_stock_movements', 'module_name' => 'Beef Stock Movements', 'description' => 'View beef stock movements'],
             ['name' => 'view_deleted_beef_stock_movements', 'module_name' => 'Beef Stock Movements', 'description' => 'View deleted beef stock movements'],
 
+            // Meat Processing Module (stok kategori Processing, terpisah dari Beef Stock)
+            ['name' => 'view_meat_processing_stocks', 'module_name' => 'Meat Processing Stocks', 'description' => 'View meat processing stocks'],
+            ['name' => 'view_meat_processing_movements', 'module_name' => 'Meat Processing Movements', 'description' => 'View meat processing movements'],
+
             // Repack Module
             ['name' => 'view_repacks', 'module_name' => 'Repack', 'description' => 'View repacks'],
             ['name' => 'create_repacks', 'module_name' => 'Repack', 'description' => 'Create repacks'],

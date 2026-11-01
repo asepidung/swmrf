@@ -129,6 +129,8 @@ class Permission extends Model
                 'Beef Stocks',
                 'Beef Stock Movements',
                 'Beef Stock Aging',
+                'Meat Processing Stocks',
+                'Meat Processing Movements',
                 'Material Stocks',
                 'Material Stock Movements',
                 'Material Findings',
