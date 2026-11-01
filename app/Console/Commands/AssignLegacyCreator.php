@@ -12,8 +12,11 @@ use Illuminate\Support\Str;
  * menjadi akun netral "Legacy" (keputusan Ayah, 31 Oktober 2026), supaya tidak terbaca seolah seorang karyawan membuat ribuan
  * dokumen. Akun Legacy nonaktif dan bersandi acak: tidak bisa dipakai masuk.
  *
- * Bawaannya hanya `invoices` (legacy tidak punya kolom pembuat invoice). Tabel lain di `--tables=` hanya bila Ayah memintanya,
- * karena di sana ada dokumen yang pembuatnya SUNGGUHAN tercatat dan kebetulan akun yang sama.
+ * Bawaannya empat tabel yang pembuatnya memang tidak ada di legacy atau akunnya tidak ada di aplikasi: `invoices` dan `tallies`
+ * (legacy tidak punya kolom pembuat), serta `sales_orders` dan `payables` (pembuat diganti akun cadangan). Keputusan Ayah,
+ * 1 November 2026: semua dokumen yang pembuatnya tidak ada di legacy menjadi "Legacy". Diperiksa di VPS sebelum perintah ini
+ * dilebarkan: setiap baris `opik` di keempat tabel itu hasil akun cadangan, tidak ada yang dibuat opik sungguhan.
+ * Tabel lain tidak diizinkan karena di sana pembuat SUNGGUHAN tercatat dan bisa kebetulan akun yang sama.
  *
  * Dry-run bawaan; `--apply` menulis; aman diulang.
  */
@@ -21,13 +24,13 @@ class AssignLegacyCreator extends Command
 {
     protected $signature = 'legacy:assign-legacy-creator
         {--from=opik : Username akun cadangan impor yang dilepas dari dokumen}
-        {--tables=invoices : Daftar tabel dipisah koma (kolom created_by)}
+        {--tables=invoices,tallies,sales_orders,payables : Daftar tabel dipisah koma (kolom created_by)}
         {--apply : Benar-benar menulis (default hanya laporan dry-run)}';
 
     protected $description = 'Ganti pembuat dokumen impor tanpa pembuat tercatat menjadi akun "Legacy" (dry-run bawaan, aman diulang)';
 
     /** Tabel yang boleh disentuh; bukan masukan bebas karena nama tabel masuk ke kueri. */
-    private const ALLOWED = ['invoices'];
+    private const ALLOWED = ['invoices', 'tallies', 'sales_orders', 'payables'];
 
     public function handle(): int
     {

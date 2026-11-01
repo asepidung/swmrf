@@ -65,6 +65,26 @@ class AssignLegacyCreatorTest extends TestCase
         $this->assertSame(1, User::where('username', 'legacy')->count());
     }
 
+    public function test_the_default_covers_every_document_without_a_real_legacy_creator(): void
+    {
+        $now = now();
+        $customer = DB::table('customers')->value('id');
+        DB::table('sales_orders')->insert(['so_number' => 'SO-LGC-1', 'customer_id' => $customer, 'delivery_date' => '2026-09-01', 'status' => 'completed', 'down_payment' => 0, 'created_by' => $this->opik->id, 'created_at' => $now, 'updated_at' => $now]);
+
+        $this->artisan('legacy:assign-legacy-creator')
+            ->expectsOutputToContain('invoices:')
+            ->expectsOutputToContain('tallies:')
+            ->expectsOutputToContain('sales_orders: 1')
+            ->expectsOutputToContain('payables:')
+            ->assertSuccessful();
+
+        $this->artisan('legacy:assign-legacy-creator', ['--apply' => true])->assertSuccessful();
+
+        $legacy = User::where('username', 'legacy')->firstOrFail();
+        $this->assertSame(1, DB::table('sales_orders')->where('created_by', $legacy->id)->count());
+        $this->assertSame(1, DB::table('sales_orders')->where('created_by', $this->asli->id)->count(), 'SO dengan pembuat sungguhan tidak boleh berpindah.');
+    }
+
     public function test_other_tables_are_refused(): void
     {
         $this->artisan('legacy:assign-legacy-creator', ['--tables' => 'users'])->assertFailed();
