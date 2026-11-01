@@ -7915,3 +7915,6 @@ Rancangan yang diusulkan (belum dikerjakan, menunggu aba-aba): kolom `carcasses.
 **INGATKAN AYAH: bahas 'detail tally' (Ayah minta diingatkan setelah relabel retur beres, 24 Okt 2026; sementara dikesampingkan).**
 
 **24 Okt 2026, detail tally (permintaan Ayah):** halaman `/admin/tallies/{id}/items` (`TallyResource\Pages\TallyItems`) berisi seluruh barcode yang discan (barcode, item, gudang, grade, berat, pcs, POD, asal, jam scan; cari, urut, total berat, ekspor Excel dan PDF), dibuka dari tombol daftar di halaman lihat tally. Izin: view_tallies. Kolom 'Code' legacy (J01 dst) diganti Gudang + Grade.
+
+## Keputusan Ayah 30 Oktober 2026: invoice riwayat saat go-live
+Impor invoice legacy memakai `--payment=settled`: semua invoice riwayat dianggap lunas (piutang awal Rp 0). Accounting yang membuka kembali invoice yang sebenarnya belum lunas. Gladi bersih di coba (30 Okt): 28 langkah impor 545 detik, `legacy:reconcile` 29/29 cocok. Runbook: `docs/hari-h.md`.
