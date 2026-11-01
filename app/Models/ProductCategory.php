@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductCategory extends Model
 {
+    /** Kategori yang stoknya dilihat di menu Meat Processing, bukan di Beef Stock. */
+    public const PROCESSING = 'PROCESSING';
+
     protected $fillable = ['name', 'prefix'];
 
     protected static function booted(): void

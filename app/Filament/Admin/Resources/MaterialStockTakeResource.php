@@ -114,8 +114,6 @@ class MaterialStockTakeResource extends Resource
                 default => null,
             })
             ->filters([
-                Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->user()?->hasPermission('view_deleted_material_stock_takes') ?? false),
                 // Silent date filter: tanggal 1 bulan berjalan sampai hari
                 // ini, diterapkan diam-diam -- pola sama dengan
                 // MaterialStockMovementResource di cluster yang sama.
@@ -143,6 +141,8 @@ class MaterialStockTakeResource extends Resource
                             );
                     })
                     ->indicateUsing(fn (array $data): array => []),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()?->hasPermission('view_deleted_material_stock_takes') ?? false),
     ])
     ->actions([
         Tables\Actions\Action::make('input_stock')

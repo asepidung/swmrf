@@ -181,6 +181,8 @@ class QcReportResource extends Resource
                     ->toggleable(),
             ])
             ->filters([
+                \App\Filament\Support\DateRangeFilter::make('occurred_at'),
+
                 Tables\Filters\SelectFilter::make('reportable_type')
                     ->label(__('Document type'))
                     ->options(fn (): array => collect(QcReport::DOKUMEN)

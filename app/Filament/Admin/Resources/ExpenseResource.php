@@ -561,30 +561,6 @@ class ExpenseResource extends Resource
                     ->color('success'),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make()
-                    ->visible(fn () => auth()->user()?->hasPermission('view_deleted_expenses') ?? false),
-
-                // Pengganti tab "Open Advances": kasbon yang belum beres (belum lapor, atau sisa belum kembali).
-                // Saat aktif, batas tanggal bulan berjalan tidak berlaku -- kasbon lama tetap harus terlihat.
-                Tables\Filters\Filter::make('open')
-                    ->label(__('Open Advances'))
-                    ->toggle()
-                    ->query(fn (Builder $query): Builder => $query->where('status', Expense::STATUS_OPEN)),
-
-                Tables\Filters\SelectFilter::make('status')
-                    ->label(__('Status'))
-                    ->options([
-                        Expense::STATUS_OPEN => __('Open'),
-                        Expense::STATUS_SETTLED => __('Settled'),
-                        Expense::STATUS_CANCELLED => __('Cancelled'),
-                    ]),
-
-                Tables\Filters\SelectFilter::make('expense_category_id')
-                    ->label(__('Category'))
-                    ->options(fn () => ExpenseCategory::orderBy('name')->pluck('name', 'id'))
-                    ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
-                        ? $query->whereHas('items', fn (Builder $items) => $items->where('expense_category_id', $data['value']))
-                        : $query),
 
                 // Silent date filter, standar modul transaksional (rujukan:
                 // CashBookResource) -- default bulan berjalan ADA di form,
@@ -627,6 +603,30 @@ class ExpenseResource extends Resource
 
                         return $indicators;
                     }),
+
+                // Pengganti tab "Open Advances": kasbon yang belum beres (belum lapor, atau sisa belum kembali).
+                // Saat aktif, batas tanggal bulan berjalan tidak berlaku -- kasbon lama tetap harus terlihat.
+                Tables\Filters\Filter::make('open')
+                    ->label(__('Open Advances'))
+                    ->toggle()
+                    ->query(fn (Builder $query): Builder => $query->where('status', Expense::STATUS_OPEN)),
+
+                Tables\Filters\SelectFilter::make('status')
+                    ->label(__('Status'))
+                    ->options([
+                        Expense::STATUS_OPEN => __('Open'),
+                        Expense::STATUS_SETTLED => __('Settled'),
+                        Expense::STATUS_CANCELLED => __('Cancelled'),
+                    ]),
+
+                Tables\Filters\SelectFilter::make('expense_category_id')
+                    ->label(__('Category'))
+                    ->options(fn () => ExpenseCategory::orderBy('name')->pluck('name', 'id'))
+                    ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
+                        ? $query->whereHas('items', fn (Builder $items) => $items->where('expense_category_id', $data['value']))
+                        : $query),
+                Tables\Filters\TrashedFilter::make()
+                    ->visible(fn () => auth()->user()?->hasPermission('view_deleted_expenses') ?? false),
             ])
             ->actions([
                 static::settleAction(),
