@@ -57,7 +57,7 @@ class SalesReport extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasPermission('view_sales_report') ?? false;
+        return ! config('modul.keuangan_ditutup') && (auth()->user()?->hasPermission('view_sales_report') ?? false);
     }
 
     public function mount(): void

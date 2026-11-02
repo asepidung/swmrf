@@ -17,6 +17,16 @@ class PayableResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
 
+    /** Modul keuangan ditutup untuk semua orang (config/modul.php); izin tidak diubah. */
+    public static function canViewAny(): bool
+    {
+        return ! config('modul.keuangan_ditutup') && (auth()->user()?->can('viewAny', Payable::class) ?? false);
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
 
 
     public static function getNavigationGroup(): ?string
