@@ -224,7 +224,6 @@ class BoningResource extends Resource
                 fn (Boning $record): ?string => static::getUrl('view', ['record' => $record->id])
             )
             ->actions([
-                \App\Filament\Admin\Resources\QcReportResource\Actions\LihatLaporanQc::make(),
                 Tables\Actions\Action::make('reopen_for_costing')
                     ->label(__('Open for costing'))
                     ->icon('heroicon-o-arrow-uturn-left')

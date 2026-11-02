@@ -176,7 +176,6 @@ class SalesReturnResource extends Resource
                     ->visible(fn () => auth()->user()?->hasPermission('view_deleted_sales_returns') ?? false),
             ])
             ->actions([
-                \App\Filament\Admin\Resources\QcReportResource\Actions\LihatLaporanQc::make(),
 //
             ])
             ->bulkActions([
