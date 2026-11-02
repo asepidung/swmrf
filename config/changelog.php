@@ -16,6 +16,7 @@
  */
 return [
     'entries' => [
+
         [
             'version' => '2.0.1',
             'date' => '2026-11-02',

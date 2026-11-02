@@ -418,6 +418,19 @@ class InvoiceResource extends Resource
             ->extraInputAttributes(['class' => 'text-right', 'inputmode' => 'numeric']);
     }
 
+    /**
+     * Baris biaya lain yang tidak punya kolom qty sama sekali bukan baris yang ditambahkan lewat tombol (baris asli selalu
+     * lahir dengan qty bawaan): itu "baris hantu" yang hidup lagi lewat permintaan terlambat setelah barisnya dihapus
+     * (Owner, 2 November 2026).
+     *
+     * @param  array<int|string, mixed>  $biaya
+     * @return array<int|string, mixed>
+     */
+    public static function withoutGhostCharges(array $biaya): array
+    {
+        return array_filter($biaya, fn ($baris) => is_array($baris) && array_key_exists('qty', $baris));
+    }
+
     public static function updateTotals(callable $get, callable $set): void
     {
         $items = $get('items');

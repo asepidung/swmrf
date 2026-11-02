@@ -584,6 +584,7 @@ class SalesOrderResource extends Resource
                     ->sortable()
                     ->weight('bold')
                     // Nomor SO langsung membuka halaman cetaknya di tab baru, untuk tangkapan layar user (Owner, 2 November 2026).
+                    ->color('warning')
                     ->url(fn (SalesOrder $record): string => route('print.salesorder', $record->id))
                     ->openUrlInNewTab(),
 

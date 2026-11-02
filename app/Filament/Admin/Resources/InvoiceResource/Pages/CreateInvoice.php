@@ -63,6 +63,14 @@ class CreateInvoice extends CreateRecord
         });
     }
 
+    /**
+     * Baris biaya lain "hantu" (muncul lagi setelah dihapus, kosong dan menolak disimpan) dibuang sebelum divalidasi.
+     */
+    protected function beforeValidate(): void
+    {
+        $this->data['additionalCharges'] = InvoiceResource::withoutGhostCharges($this->data['additionalCharges'] ?? []);
+    }
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $receipt = DeliveryOrderReceipt::with('customer')->find($data['delivery_order_receipt_id'] ?? null);
