@@ -38,6 +38,7 @@ class IsiNilaiStokAwal extends Command
 
         $prices = $this->readPrices($path);
         $products = $this->productMap();
+        $productNames = Product::pluck('name', 'id')->map(fn ($name) => $this->normalize($name))->all();
         $apply = (bool) $this->option('apply');
 
         $lines = [];
@@ -85,9 +86,39 @@ class IsiNilaiStokAwal extends Command
                 }
             }
 
+            // Efek domino: barang yang sudah keluar dari stok sejak go-live (bahan repack, tally/penjualan) juga belum
+            // bernilai; nilai mereka memakai harga produk yang sama, supaya valuasi repack dan laporan HPP penjualan terisi.
+            $pernahKeluar = DB::table('beef_stock_movements')
+                ->whereIn('transaction_type', ['OUT_TO_REPACK', 'TALLY'])
+                ->whereNotNull('barcode')
+                ->select('barcode', 'product_id')
+                ->union(DB::table('repack_materials')->select('barcode', 'product_id'))
+                ->get()
+                ->unique('barcode');
+
+            $hasilRepack = DB::table('repack_results')->pluck('barcode')->flip();
+            $sudahBernilai = DB::table('barcode_costs')->whereNotNull('cost_per_kg')->pluck('barcode')->flip();
+            $domino = ['barcode' => 0, 'kg' => 0.0, 'nilai' => 0.0];
+            $dominoPerProduk = [];
+
+            foreach ($pernahKeluar as $row) {
+                $name = $productNames[$row->product_id] ?? null;
+
+                if ($name === null || ! isset($prices[$name]) || isset($sudahBernilai[$row->barcode]) || isset($hasilRepack[$row->barcode])) {
+                    continue;
+                }
+
+                BarcodeCosts::set($row->barcode, $prices[$name], BarcodeCost::SOURCE_OPENING, null, 'harga awal costing Okt 2026 (sudah keluar dari stok)', (int) $row->product_id);
+                $valued[] = $row->barcode;
+                $domino['barcode']++;
+                $dominoPerProduk[$name] = ($dominoPerProduk[$name] ?? 0) + 1;
+            }
+
             foreach ($valued as $barcode) {
                 $changedByPropagation += BarcodeCosts::propagateFrom($barcode);
             }
+
+            $hasilBernilai = DB::table('repack_valuations')->where('status', '!=', 'pending')->count();
 
             $left = DB::table('beef_stocks as s')
                 ->join('products as p', 'p.id', '=', 's.product_id')
@@ -107,7 +138,8 @@ class IsiNilaiStokAwal extends Command
         $this->line($apply ? 'DITERAPKAN' : 'DRY-RUN (tidak ada yang disimpan; tambahkan --apply)');
         $this->line('Barcode diisi: '.count($valued).sprintf(' | %s kg | nilai Rp %s', number_format($totalKg, 2, ',', '.'), number_format($totalValue, 0, ',', '.')));
         array_map(fn ($line) => $this->line('  '.$line), $lines);
-        $this->line("Turunan yang nilainya berubah lewat rambatan (relabel/repack): {$changedByPropagation}");
+        $this->line('Barang yang sudah keluar (bahan repack, tally) ikut diisi: '.$domino['barcode'].' barcode');
+        $this->line("Turunan yang nilainya berubah lewat rambatan (relabel/repack): {$changedByPropagation} | valuasi repack selesai: {$hasilBernilai}");
 
         if ($unknown !== []) {
             $this->warn('Produk di CSV tidak ada di master produk ('.count($unknown).'): '.implode(', ', $unknown));
