@@ -582,7 +582,10 @@ class SalesOrderResource extends Resource
                     ->label(__('SO Number'))
                     ->searchable()
                     ->sortable()
-                    ->weight('bold'),
+                    ->weight('bold')
+                    // Nomor SO langsung membuka halaman cetaknya di tab baru, untuk tangkapan layar user (Owner, 2 November 2026).
+                    ->url(fn (SalesOrder $record): string => route('print.salesorder', $record->id))
+                    ->openUrlInNewTab(),
 
                 Tables\Columns\TextColumn::make('customer.name')
                     ->label(__('Customer'))

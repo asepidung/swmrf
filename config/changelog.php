@@ -17,6 +17,18 @@
 return [
     'entries' => [
         [
+            'version' => '2.0.1',
+            'date' => '2026-11-02',
+            'kind' => 'fix',
+            'title' => 'Perbaikan invoice dan nomor SO',
+            'items' => [
+                'Daftar Draft Invoice kini hanya berisi penerimaan DO yang memang menunggu ditagih; sisa data lama yang di legacy pun tidak punya invoice sudah tidak muncul.',
+                'Cetakan invoice lebih besar dan memenuhi lebar kertas.',
+                'Nomor SO di daftar Sales Order bisa diklik: membuka halaman cetak SO di tab baru.',
+            ],
+        ],
+
+        [
             'version' => '2.0.0',
             'date' => '2026-11-02',
             'kind' => 'release',

@@ -25,7 +25,9 @@ class CreateInvoice extends CreateRecord
     {
         $receiptId = request()->query('delivery_order_receipt_id');
 
-        if (!$receiptId || !DeliveryOrderReceipt::where('id', $receiptId)->exists()) {
+        // Hanya penerimaan yang menunggu ditagih (Approved) yang boleh dibuatkan invoice; yang sudah Invoiced (juga sisa
+        // legacy tanpa SO) dialihkan ke daftar penerimaan, bukan galat basis data.
+        if (!$receiptId || !DeliveryOrderReceipt::where('id', $receiptId)->where('status', 'Approved')->whereNotNull('sales_order_id')->exists()) {
             $this->redirect(\App\Filament\Admin\Resources\DeliveryOrderReceiptResource::getUrl('index'));
             return;
         }
