@@ -12,6 +12,9 @@
  * nomor versi berikutnya. Versi yang tampil di footer adalah entri teratas. Pengguna melihat catatannya lewat klik
  * "Ver ..." di footer, dan satu kali per versi lewat jendela "Yang baru" saat mereka membuka aplikasi.
  *
+ * Jendela "Yang baru" hanya mengumumkan entri bertanggal SEBELUM hari ini (diumumkan pada pembukaan pertama esok harinya),
+ * jadi tulis SATU entri per hari, dikumpulkan; jangan satu entri per perbaikan kecil.
+ *
  * kind: release | modul | fix. Tulis item dengan bahasa yang dimengerti pengguna lapangan, bukan bahasa teknis.
  */
 return [

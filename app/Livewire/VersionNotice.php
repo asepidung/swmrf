@@ -9,7 +9,8 @@ use Livewire\Component;
 /**
  * Jendela versi aplikasi (permintaan Ayah, 31 Oktober 2026):
  *  - riwayat lengkap, dibuka dengan mengklik "Ver ..." di footer;
- *  - "Yang baru": muncul SEKALI per pengguna per versi, saat ia membuka aplikasi sesudah ada versi yang belum dilihatnya.
+ *  - "Yang baru": muncul SEKALI per pengguna per versi, saat ia membuka aplikasi sesudah ada versi yang belum dilihatnya,
+ *    dan hanya untuk entri bertanggal sebelum hari ini (perubahan hari ini diumumkan besok, paling banyak sekali sehari).
  *
  * Pengguna yang belum pernah tercatat (`seen_version` kosong) TIDAK dibanjiri riwayat: versi sekarang langsung dianggap
  * sudah dilihat, dan jendela baru muncul untuk versi berikutnya.
@@ -33,13 +34,25 @@ class VersionNotice extends Component
             return;
         }
 
-        $this->unseen = AppVersion::entriesAfter($user->seen_version);
+        $this->unseen = AppVersion::entriesToAnnounce($user->seen_version);
     }
 
     public function acknowledge(): void
     {
-        $this->markSeen(AppVersion::current());
+        // Hanya versi yang benar-benar ditampilkan yang ditandai; entri hari ini menunggu besok.
+        if ($this->unseen !== []) {
+            $this->markSeen($this->newestShown());
+        }
+
         $this->unseen = [];
+    }
+
+    private function newestShown(): string
+    {
+        $versions = array_column($this->unseen, 'version');
+        usort($versions, 'version_compare');
+
+        return end($versions);
     }
 
     private function markSeen(string $version): void

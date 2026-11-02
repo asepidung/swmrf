@@ -38,4 +38,21 @@ class AppVersion
             fn (array $entry): bool => version_compare($entry['version'], $seen, '>'),
         ));
     }
+
+    /**
+     * Entri yang BOLEH diumumkan lewat jendela "Yang baru": belum dilihat pengguna DAN tanggalnya sebelum hari ini.
+     * Perubahan hari ini baru diumumkan pada pembukaan pertama besok, jadi paling banyak sekali sehari
+     * (permintaan Ayah, 2 November 2026). Footer dan riwayat lengkap tetap langsung menunjukkan versi terbaru.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function entriesToAnnounce(?string $seen): array
+    {
+        $hariIni = now()->toDateString();
+
+        return array_values(array_filter(
+            self::entriesAfter($seen),
+            fn (array $entry): bool => $entry['date'] < $hariIni,
+        ));
+    }
 }
