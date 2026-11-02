@@ -114,7 +114,7 @@
                     </td>
                 </tr>
                 <tr>
-                    @if(request()->query('show_exp') == 1 && $item->exp_date)
+                    @if(($showExp ?? request()->query('show_exp') == 1) && $item->exp_date)
                     <td style="font-size: 11px;">Expired Date :</td>
                     <td style="font-size: 11px;">{{ \Carbon\Carbon::parse($item->exp_date)->format('d-M-Y') }}</td>
                     @else
@@ -158,12 +158,15 @@
             margin: 0
         });
 
+        // Dicetak dari iframe halaman input (cetak otomatis), cetak dan tutupnya diurus halaman induk.
+        @if(empty($embedded))
         window.onload = function() {
             window.print();
         };
         window.onafterprint = function() {
             window.close();
         };
+        @endif
     </script>
 </body>
 

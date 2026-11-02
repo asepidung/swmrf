@@ -435,7 +435,13 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                     'id' => $insertedItem->id,
                     'show_exp' => $showExp ? 1 : 0
                 ]);
-                $this->dispatch('auto-print', url: $printUrl);
+                // Label dikirim sebagai HTML ke halaman ini dan dicetak lewat iframe tersembunyi: tanpa tab baru dan tanpa
+                // permintaan halaman kedua (keluhan kecepatan user, 2 November 2026). Url tetap dikirim sebagai cadangan.
+                $this->dispatch(
+                    'auto-print',
+                    url: $printUrl,
+                    htmls: [view('print.repack-label', ['item' => $insertedItem->load(['product', 'repack', 'grade']), 'showExp' => (bool) $showExp, 'embedded' => true])->render()],
+                );
             }
         } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
             // Dua scan bersamaan yang menghitung urutan barcode yang sama
