@@ -21,6 +21,23 @@ return [
     'entries' => [
 
         [
+            'version' => '2.0.2',
+            'date' => '2026-11-02',
+            'kind' => 'fix',
+            'title' => 'Perbaikan cetak, daftar tugas, dan tukar faktur',
+            'items' => [
+                'Cetakan invoice diperkecil supaya pas di kertas.',
+                'Menu Bank Accounts, Payables, Receivables, Cash Book, dan Sales Report dihilangkan.',
+                'Daftar Delivery Plans: tanggal yang paling dekat dengan hari ini ada di paling atas.',
+                'Activity Logs bisa dibuka lagi, dan kolom Target kini menampilkan nomor dokumen.',
+                'Cetak label barcode lebih stabil dan tidak lagi bergantung pada layanan di luar aplikasi.',
+                'Stok awal sudah memiliki nilai harga, sehingga nilai repack dan HPP penjualan mulai terisi.',
+                'Daftar tugas di Dashboard dirapikan: pesan dari data lama dibersihkan, angka Draft Invoice sama dengan isi halamannya, dan permintaan material/daging dibuka tanpa batas tanggal.',
+                'Tukar Faktur: pesan di Dashboard membuka ringkasan per customer. Daftar invoice yang belum ditukar lebih ringkas, dan tombol TTF hanya ada di sana.',
+            ],
+        ],
+
+        [
             'version' => '2.0.1',
             'date' => '2026-11-02',
             'kind' => 'fix',

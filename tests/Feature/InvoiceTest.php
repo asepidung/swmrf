@@ -344,7 +344,8 @@ class InvoiceTest extends TestCase
 
         $tgltf = now()->addDays(2)->toDateString();
 
-        Livewire::test(ListInvoices::class)
+        Livewire::withQueryParams(['tableFilters' => ['belum_tukar_faktur' => ['isActive' => true]]])
+            ->test(ListInvoices::class)
             ->callTableAction('tukar_faktur', $invoice, [
                 'invoice_exchange_date' => $tgltf,
                 'exchange_by' => 'Budi',
@@ -617,9 +618,9 @@ class InvoiceTest extends TestCase
 
     /**
      * Tampilan belum tukar faktur (Owner, 2 November 2026): customer, nomor DO, dan pembuat disembunyikan, lencana TTF
-     * diganti tombol di baris; daftar invoice biasa tidak berubah.
+     * hanya tampil di sini, tidak di daftar biasa.
      */
-    public function test_the_exchange_view_hides_customer_do_and_creator_and_exchanges_from_a_row_button(): void
+    public function test_the_exchange_view_hides_customer_do_and_creator_and_shows_the_ttf_badge(): void
     {
         $invoice = Invoice::create([
             'customer_id' => $this->customerExchange->id,
@@ -634,20 +635,21 @@ class InvoiceTest extends TestCase
         ]);
 
         $biasa = Livewire::actingAs($this->user)->test(ListInvoices::class);
-        foreach (['customer.name', 'delivery_order_number', 'creator.name', 'tukar_faktur'] as $kolom) {
+        foreach (['customer.name', 'delivery_order_number', 'creator.name'] as $kolom) {
             $this->assertFalse($biasa->instance()->getTable()->getColumn($kolom)->isHidden(), "{$kolom} harus tampil di daftar biasa");
         }
+        $this->assertTrue($biasa->instance()->getTable()->getColumn('tukar_faktur')->isHidden(), 'lencana TTF tidak tampil di daftar biasa');
 
         $tf = Livewire::actingAs($this->user)
             ->withQueryParams(['tableFilters' => ['belum_tukar_faktur' => ['isActive' => true]]])
             ->test(ListInvoices::class);
 
-        foreach (['customer.name', 'delivery_order_number', 'creator.name', 'tukar_faktur'] as $kolom) {
+        foreach (['customer.name', 'delivery_order_number', 'creator.name'] as $kolom) {
             $this->assertTrue($tf->instance()->getTable()->getColumn($kolom)->isHidden(), "{$kolom} harus tersembunyi di tampilan belum tukar faktur");
         }
+        $this->assertFalse($tf->instance()->getTable()->getColumn('tukar_faktur')->isHidden(), 'lencana TTF tampil di tampilan belum tukar faktur');
 
-        $tf->assertTableActionVisible('tukar_faktur_baris', $invoice)
-            ->callTableAction('tukar_faktur_baris', $invoice, [
+        $tf->callTableAction('tukar_faktur', $invoice, [
                 'invoice_exchange_date' => now()->toDateString(),
                 'exchange_by' => 'Budi',
                 'exchange_note' => 'Resi 1',

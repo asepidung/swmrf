@@ -608,8 +608,8 @@ class InvoiceResource extends Resource
 
     /**
      * Tampilan "belum tukar faktur": daftar dibuka dengan filter belum_tukar_faktur aktif (dari halaman ringkasan per
-     * customer). Di sana customer, nomor DO, pembuat, dan lencana TTF disembunyikan (Owner, 2 November 2026); tukar
-     * fakturnya dilakukan lewat tombol di barisnya.
+     * customer). Di sana customer, nomor DO, dan pembuat disembunyikan, dan lencana TTF (tombol tukar faktur) justru hanya
+     * tampil di sini, bukan di daftar biasa (Owner, 2 November 2026).
      */
     protected static function tampilanTukarFaktur($livewire): bool
     {
@@ -764,7 +764,7 @@ class InvoiceResource extends Resource
                     ->colors([
                         'danger' => 'TTF',
                     ])
-                    ->hidden(fn ($livewire): bool => static::tampilanTukarFaktur($livewire))
+                    ->visible(fn ($livewire): bool => static::tampilanTukarFaktur($livewire))
                     ->action(static::tukarFakturAction('tukar_faktur')),
             ])
             ->filters([
@@ -816,14 +816,7 @@ class InvoiceResource extends Resource
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_invoices')),
             ])
-            ->actions([
-                // Pengganti lencana TTF di tampilan "belum tukar faktur", yang kolomnya disembunyikan.
-                static::tukarFakturAction('tukar_faktur_baris')
-                    ->label(__('Invoice exchange'))
-                    ->button()
-                    ->color('warning')
-                    ->visible(fn ($livewire): bool => static::tampilanTukarFaktur($livewire) && (auth()->user()?->hasPermission('tukar_faktur') ?? false)),
-            ])
+            ->actions([])
             ->headerActions([])
             ->bulkActions([])
             ->recordUrl(function (Invoice $record) {
