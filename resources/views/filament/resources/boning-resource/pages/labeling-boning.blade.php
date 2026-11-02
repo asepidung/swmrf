@@ -156,8 +156,7 @@
             }, 100);
         });
 
-        document.addEventListener('auto-print', (event) => {
-            window.open(event.detail.url, '_blank');
-        });
     </script>
+    @include('partials.auto-print-label')
+
 </x-filament-panels::page>

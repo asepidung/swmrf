@@ -555,12 +555,16 @@ class LabelingBoning extends Page implements HasForms, HasTable
 
             $this->dispatch('refreshTable');
 
+            // Semua label (bisa lebih dari satu bila berat dipecah) dikirim sekali sebagai HTML dan dicetak berurutan lewat
+            // iframe tersembunyi: tanpa tab baru dan tanpa permintaan halaman kedua (keluhan kecepatan user, 2 November 2026).
+            $htmls = [];
+
             foreach ($insertedItems as $insertedItem) {
-                $printUrl = route('boning.label', [
-                    'id' => $insertedItem->id,
-                    'show_exp' => $showExp ? 1 : 0
-                ]);
-                $this->dispatch('auto-print', url: $printUrl);
+                $htmls[] = view('print.boning-label', ['item' => $insertedItem->load(['product', 'boning', 'grade']), 'showExp' => (bool) $showExp, 'embedded' => true])->render();
+            }
+
+            if ($htmls) {
+                $this->dispatch('auto-print', url: route('boning.label', ['id' => $insertedItems[0]->id, 'show_exp' => $showExp ? 1 : 0]), htmls: $htmls);
             }
         } catch (\Exception $e) {
             report($e);
