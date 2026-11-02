@@ -114,7 +114,17 @@ class IsiNilaiStokAwal extends Command
                 $dominoPerProduk[$name] = ($dominoPerProduk[$name] ?? 0) + 1;
             }
 
-            foreach ($valued as $barcode) {
+            // Rambatan hanya untuk yang punya turunan yang dinilai: bahan repack yang sudah punya valuasi dan barcode
+            // yang jadi asal relabel. Repack lama (impor legacy, ribuan) tidak punya valuasi; merambat ke sana
+            // membuatnya dihitung satu per satu dan berjalan berjam-jam.
+            $rambat = DB::table('repack_materials as m')
+                ->join('repack_valuations as v', 'v.repack_id', '=', 'm.repack_id')
+                ->whereIn('m.barcode', $valued)
+                ->pluck('m.barcode')
+                ->merge(DB::table('barcode_costs')->where('source_type', BarcodeCost::SOURCE_RELABEL)->whereIn('source_barcode', $valued)->pluck('source_barcode'))
+                ->unique();
+
+            foreach ($rambat as $barcode) {
                 $changedByPropagation += BarcodeCosts::propagateFrom($barcode);
             }
 
