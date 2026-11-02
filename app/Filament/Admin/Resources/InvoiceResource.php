@@ -606,6 +606,68 @@ class InvoiceResource extends Resource
         return round($subtotal - $downPayment, 0);
     }
 
+    /**
+     * Tampilan "belum tukar faktur": daftar dibuka dengan filter belum_tukar_faktur aktif (dari halaman ringkasan per
+     * customer). Di sana customer, nomor DO, pembuat, dan lencana TTF disembunyikan (Owner, 2 November 2026); tukar
+     * fakturnya dilakukan lewat tombol di barisnya.
+     */
+    protected static function tampilanTukarFaktur($livewire): bool
+    {
+        return (bool) data_get($livewire->tableFilters ?? [], 'belum_tukar_faktur.isActive');
+    }
+
+    protected static function tukarFakturAction(string $name): Tables\Actions\Action
+    {
+        return Tables\Actions\Action::make($name)
+            ->modalHeading(__('Invoice exchange'))
+            ->visible(fn () => auth()->user()->hasPermission('tukar_faktur'))
+            ->authorize(fn (): bool => auth()->user()?->hasPermission('tukar_faktur') ?? false)
+            ->form([
+                Forms\Components\DatePicker::make('invoice_exchange_date')
+                    ->label(__('Invoice exchange date'))
+                    ->required()
+                    ->default(now()),
+                Forms\Components\TextInput::make('exchange_by')
+                    ->label(__('Handed over by (PIC)'))
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\Textarea::make('exchange_note')
+                    ->label(__('Description (waybill number, courier, and so on)'))
+                    ->required()
+                    ->maxLength(255),
+            ])
+            ->action(function (Invoice $record, array $data) {
+                // Status WAJIB ikut berpindah ke 'Sudah TF'. Hook saving()
+                // di model Invoice bercabang pada status: selama masih
+                // 'Belum TF' ia memaksa due_date kembali null, sehingga
+                // jatuh tempo yang diisi di sini akan terhapus lagi.
+                //
+                // due_date sengaja tidak dihitung di sini. Cabang
+                // 'Sudah TF' pada hook itulah yang menghitungnya dari
+                // invoice_exchange_date + term_of_payment, jadi rumusnya
+                // cukup hidup di satu tempat.
+                //
+                // Baris invoice dikunci sebelum ditulis: tukar faktur
+                // memaksa `status` menjadi EXCHANGED tanpa membaca
+                // `balance` sama sekali, jadi kalau baris ini bersamaan
+                // ditulis oleh pelunasan yang sedang berjalan
+                // (ReceivePayment mengunci baris yang sama), salah satu
+                // harus menunggu -- bukan sama-sama menimpa `status`
+                // dengan kebenaran yang berbeda.
+                \Illuminate\Support\Facades\DB::transaction(function () use ($record, $data) {
+                    Invoice::whereKey($record->id)->lockForUpdate()->first();
+    
+                    $record->update([
+                        'status' => Invoice::STATUS_EXCHANGED,
+                        'invoice_exchange_date' => $data['invoice_exchange_date'],
+                        'exchange_by' => $data['exchange_by'],
+                        'exchange_note' => $data['exchange_note'],
+                    ]);
+                });
+            })
+            ->disabled(fn (Invoice $record) => !($record->customer?->invoice_exchange && is_null($record->invoice_exchange_date)) || $record->trashed());
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -628,7 +690,8 @@ class InvoiceResource extends Resource
                 Tables\Columns\TextColumn::make('customer.name')
                     ->label(__('Customer'))
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->hidden(fn ($livewire): bool => static::tampilanTukarFaktur($livewire)),
 
                 Tables\Columns\TextColumn::make('invoice_date')
                     ->label(__('Invoice Date'))
@@ -644,6 +707,7 @@ class InvoiceResource extends Resource
                     ->label(__('DO Number'))
                     ->searchable()
                     ->sortable()
+                    ->hidden(fn ($livewire): bool => static::tampilanTukarFaktur($livewire))
                     // Dipendekkan menjadi enam digit terakhir atas permintaan
                     // Project Owner; kolomnya jadi terbaca sekilas.
                     ->formatStateUsing(function ($state) {
@@ -685,7 +749,8 @@ class InvoiceResource extends Resource
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label(__('Created By'))
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->hidden(fn ($livewire): bool => static::tampilanTukarFaktur($livewire)),
 
                 Tables\Columns\TextColumn::make('tukar_faktur')
                     ->label(__('TTF'))
@@ -699,56 +764,8 @@ class InvoiceResource extends Resource
                     ->colors([
                         'danger' => 'TTF',
                     ])
-                    ->action(
-                        Tables\Actions\Action::make('tukar_faktur')
-                            ->modalHeading(__('Invoice exchange'))
-                            ->visible(fn () => auth()->user()->hasPermission('tukar_faktur'))
-                            ->authorize(fn (): bool => auth()->user()?->hasPermission('tukar_faktur') ?? false)
-                            ->form([
-                                Forms\Components\DatePicker::make('invoice_exchange_date')
-                                    ->label(__('Invoice exchange date'))
-                                    ->required()
-                                    ->default(now()),
-                                Forms\Components\TextInput::make('exchange_by')
-                                    ->label(__('Handed over by (PIC)'))
-                                    ->required()
-                                    ->maxLength(255),
-                                Forms\Components\Textarea::make('exchange_note')
-                                    ->label(__('Description (waybill number, courier, and so on)'))
-                                    ->required()
-                                    ->maxLength(255),
-                            ])
-                            ->action(function (Invoice $record, array $data) {
-                                // Status WAJIB ikut berpindah ke 'Sudah TF'. Hook saving()
-                                // di model Invoice bercabang pada status: selama masih
-                                // 'Belum TF' ia memaksa due_date kembali null, sehingga
-                                // jatuh tempo yang diisi di sini akan terhapus lagi.
-                                //
-                                // due_date sengaja tidak dihitung di sini. Cabang
-                                // 'Sudah TF' pada hook itulah yang menghitungnya dari
-                                // invoice_exchange_date + term_of_payment, jadi rumusnya
-                                // cukup hidup di satu tempat.
-                                //
-                                // Baris invoice dikunci sebelum ditulis: tukar faktur
-                                // memaksa `status` menjadi EXCHANGED tanpa membaca
-                                // `balance` sama sekali, jadi kalau baris ini bersamaan
-                                // ditulis oleh pelunasan yang sedang berjalan
-                                // (ReceivePayment mengunci baris yang sama), salah satu
-                                // harus menunggu -- bukan sama-sama menimpa `status`
-                                // dengan kebenaran yang berbeda.
-                                \Illuminate\Support\Facades\DB::transaction(function () use ($record, $data) {
-                                    Invoice::whereKey($record->id)->lockForUpdate()->first();
-
-                                    $record->update([
-                                        'status' => Invoice::STATUS_EXCHANGED,
-                                        'invoice_exchange_date' => $data['invoice_exchange_date'],
-                                        'exchange_by' => $data['exchange_by'],
-                                        'exchange_note' => $data['exchange_note'],
-                                    ]);
-                                });
-                            })
-                            ->disabled(fn (Invoice $record) => !($record->customer?->invoice_exchange && is_null($record->invoice_exchange_date)) || $record->trashed())
-                    ),
+                    ->hidden(fn ($livewire): bool => static::tampilanTukarFaktur($livewire))
+                    ->action(static::tukarFakturAction('tukar_faktur')),
             ])
             ->filters([
 
@@ -799,7 +816,14 @@ class InvoiceResource extends Resource
                 Tables\Filters\TrashedFilter::make()
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_invoices')),
             ])
-            ->actions([])
+            ->actions([
+                // Pengganti lencana TTF di tampilan "belum tukar faktur", yang kolomnya disembunyikan.
+                static::tukarFakturAction('tukar_faktur_baris')
+                    ->label(__('Invoice exchange'))
+                    ->button()
+                    ->color('warning')
+                    ->visible(fn ($livewire): bool => static::tampilanTukarFaktur($livewire) && (auth()->user()?->hasPermission('tukar_faktur') ?? false)),
+            ])
             ->headerActions([])
             ->bulkActions([])
             ->recordUrl(function (Invoice $record) {

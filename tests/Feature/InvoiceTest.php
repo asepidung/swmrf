@@ -614,4 +614,45 @@ class InvoiceTest extends TestCase
 
         $dariTf->assertSee(__('Back'))->assertDontSee(__('Draft Invoices'))->assertDontSee(__('Not Yet Exchanged'));
     }
+
+    /**
+     * Tampilan belum tukar faktur (Owner, 2 November 2026): customer, nomor DO, dan pembuat disembunyikan, lencana TTF
+     * diganti tombol di baris; daftar invoice biasa tidak berubah.
+     */
+    public function test_the_exchange_view_hides_customer_do_and_creator_and_exchanges_from_a_row_button(): void
+    {
+        $invoice = Invoice::create([
+            'customer_id' => $this->customerExchange->id,
+            'sales_order_id' => $this->receiptExchange->sales_order_id,
+            'delivery_order_receipt_id' => $this->receiptExchange->id,
+            'invoice_date' => now()->toDateString(),
+            'term_of_payment' => 14,
+            'status' => 'Belum TF',
+            'subtotal' => 1960000.0,
+            'total_discount' => 40000.0,
+            'balance' => 1960000.0,
+        ]);
+
+        $biasa = Livewire::actingAs($this->user)->test(ListInvoices::class);
+        foreach (['customer.name', 'delivery_order_number', 'creator.name', 'tukar_faktur'] as $kolom) {
+            $this->assertFalse($biasa->instance()->getTable()->getColumn($kolom)->isHidden(), "{$kolom} harus tampil di daftar biasa");
+        }
+
+        $tf = Livewire::actingAs($this->user)
+            ->withQueryParams(['tableFilters' => ['belum_tukar_faktur' => ['isActive' => true]]])
+            ->test(ListInvoices::class);
+
+        foreach (['customer.name', 'delivery_order_number', 'creator.name', 'tukar_faktur'] as $kolom) {
+            $this->assertTrue($tf->instance()->getTable()->getColumn($kolom)->isHidden(), "{$kolom} harus tersembunyi di tampilan belum tukar faktur");
+        }
+
+        $tf->assertTableActionVisible('tukar_faktur_baris', $invoice)
+            ->callTableAction('tukar_faktur_baris', $invoice, [
+                'invoice_exchange_date' => now()->toDateString(),
+                'exchange_by' => 'Budi',
+                'exchange_note' => 'Resi 1',
+            ]);
+
+        $this->assertSame('Sudah TF', $invoice->fresh()->status);
+    }
 }
