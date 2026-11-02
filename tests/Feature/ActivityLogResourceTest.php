@@ -103,4 +103,29 @@ class ActivityLogResourceTest extends TestCase
 
         return $jumlah;
     }
+
+    /**
+     * Kolom Target / Document No memakai nomor dokumen, bukan id (Owner, 2 November 2026).
+     */
+    public function test_the_target_column_shows_readable_document_numbers_instead_of_ids(): void
+    {
+        $so = \App\Models\SalesOrder::forceCreate([
+            'so_number' => 'SWM-SO#260077', 'customer_id' => \App\Models\Customer::create([
+                'name' => 'PELANGGAN UJI', 'customer_segment_id' => \App\Models\CustomerSegment::create(['name' => 'RETAIL', 'is_active' => true])->id,
+                'address' => 'Jakarta', 'pic' => 'A', 'phone' => '0812', 'top' => 0, 'invoice_exchange' => false,
+            ])->id, 'delivery_date' => now()->toDateString(), 'status' => 'ready', 'created_by' => $this->user->id,
+        ]);
+
+        $log = fn (string $type, int $id, array $properties = []) => Activity::create([
+            'log_name' => 'default', 'description' => 'updated', 'subject_type' => $type, 'subject_id' => $id, 'properties' => $properties,
+        ]);
+
+        $this->assertSame('SWM-SO#260077', \App\Filament\Admin\Resources\ActivityLogResource::getSubjectLabelFromRecord($log(\App\Models\SalesOrder::class, $so->id)));
+
+        // Stok yang sudah terhapus permanen: nomornya diambil dari isi log, bukan id.
+        $this->assertSame(
+            'BC-HAPUS-1',
+            \App\Filament\Admin\Resources\ActivityLogResource::getSubjectLabelFromRecord($log(\App\Models\BeefStock::class, 829, ['old' => ['barcode' => 'BC-HAPUS-1']])),
+        );
+    }
 }
