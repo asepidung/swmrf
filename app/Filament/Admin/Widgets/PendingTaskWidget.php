@@ -274,7 +274,7 @@ class PendingTaskWidget extends Widget
             [
                 $this->getPendingInvoiceExchangeCount(),
                 ':count invoices have not been exchanged yet.',
-                \App\Filament\Admin\Resources\InvoiceResource::getUrl('index'),
+                \App\Filament\Admin\Resources\InvoiceResource::getUrl('unexchanged'),
                 'warning',
             ],
             [
