@@ -7926,5 +7926,5 @@ Atas perintah Ayah (pesan dashboard yang menggantung dari legacy). Dikerjakan la
 - Tally 1592, 1770, 1828, 1832, 1833, 2331, 3423, 3909, 5011 (terkunci, surat jalannya terhapus): `locked` -> `do`.
 - Surat jalan 3972, 4480, 4483, 4484, 4872, 4897, 5046, 5667, 5993 (Ready, 2025): `Ready` -> `Invoiced` (konvensi legacy; tidak punya bukti terima).
 - Dua permintaan material Pending Finance (REQ-26/0139 tanggal 4 Sep, REQ-26/0171 tanggal 26 Okt) sengaja DIBIARKAN; Ayah memutuskan besok setelah melihat tanggalnya.
-- Semua PO material hasil impor legacy memakai penyetuju TAUFIK H (kolom `approved_by` wajib terisi), bukan persetujuan sungguhan.
+- Penyetuju PO hasil impor legacy (359 PO material + 192 PO daging) tadinya TAUFIK H (opsi `--approver`); sesuai kesepakatan "data tanpa user di legacy = user Legacy", diganti ke user Legacy (id 102) pada 2 Nov 2026 (cadangan `pra-penyetuju-legacy-20261102-*`).
 - Dashboard: hitungan Draft Invoice kini hanya penerimaan Approved (sama dengan halamannya); link permintaan material/daging membuka daftar berfilter status tanpa batas tanggal.
