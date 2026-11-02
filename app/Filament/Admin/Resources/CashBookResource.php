@@ -58,7 +58,7 @@ class CashBookResource extends Resource
      */
     public static function canViewAny(): bool
     {
-        return auth()->user()?->hasPermission('view_cash_book') ?? false;
+        return ! config('modul.keuangan_ditutup') && (auth()->user()?->hasPermission('view_cash_book') ?? false);
     }
 
     public static function shouldRegisterNavigation(): bool

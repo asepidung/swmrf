@@ -30,12 +30,12 @@ class BankAccountResource extends Resource
     // yang disisir -- izin yang ditegakkan sudah ada, bukan izin baru.
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasPermission('view_bank_accounts');
+        return ! config('modul.keuangan_ditutup') && auth()->user()->hasPermission('view_bank_accounts');
     }
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->check() && auth()->user()->hasPermission('view_bank_accounts');
+        return ! config('modul.keuangan_ditutup') && auth()->check() && auth()->user()->hasPermission('view_bank_accounts');
     }
 
     public static function getNavigationGroup(): ?string

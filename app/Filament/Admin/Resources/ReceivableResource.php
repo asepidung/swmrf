@@ -32,7 +32,7 @@ class ReceivableResource extends Resource
      */
     public static function canViewAny(): bool
     {
-        return auth()->user()?->hasPermission('view_receivables') ?? false;
+        return ! config('modul.keuangan_ditutup') && (auth()->user()?->hasPermission('view_receivables') ?? false);
     }
 
     public static function shouldRegisterNavigation(): bool

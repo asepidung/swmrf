@@ -55,6 +55,13 @@ class NotifyDuePayables extends Command
         // tanpa tagihan jatuh tempo memang tidak mengirim apa-apa.
         ScheduledRun::stamp(static::LAST_RUN_KEY);
 
+        // Halaman Payables ditutup (config/modul.php): ringkasan akan mengarah ke halaman yang tertolak.
+        if (config('modul.keuangan_ditutup')) {
+            $this->info('Modul keuangan ditutup; pengingat tidak dikirim.');
+
+            return self::SUCCESS;
+        }
+
         if ($summary['total'] === 0) {
             $this->info('Tidak ada hutang yang mendekati atau melewati jatuh tempo.');
 
