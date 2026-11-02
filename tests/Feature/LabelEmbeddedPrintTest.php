@@ -53,4 +53,16 @@ class LabelEmbeddedPrintTest extends TestCase
 
         $this->assertStringNotContainsString('Expired Date', $html);
     }
+
+    public function test_label_views_load_the_barcode_library_from_our_own_server(): void
+    {
+        $this->assertFileExists(public_path('js/JsBarcode.all.min.js'));
+
+        foreach (glob(resource_path('views/print/*-label.blade.php')) as $berkas) {
+            $isi = file_get_contents($berkas);
+
+            $this->assertStringNotContainsString('cdn.jsdelivr.net', $isi, basename($berkas));
+            $this->assertStringContainsString('js/JsBarcode.all.min.js', $isi, basename($berkas));
+        }
+    }
 }

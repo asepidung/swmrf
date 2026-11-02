@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Label Print Goods Receipt Beef</title>
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <script src="{{ asset("js/JsBarcode.all.min.js") }}"></script>
     <style>
         /* Standarisasi font untuk printer thermal */
         * {
