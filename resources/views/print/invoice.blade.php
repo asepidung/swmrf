@@ -217,15 +217,18 @@
         @media print {
             @page { margin: 10mm; }
             /* Cetakan kertas lebih besar: ukuran dalam pt dan lebar penuh, bukan kolom sempit (Owner, 2 November 2026). */
-            body { font-size: 14pt; }
-            .container { max-width: 100% !important; width: 100% !important; padding: 0 !important; }
-            .col-lg-10 { flex: 0 0 100% !important; max-width: 100% !important; }
+            body { font-size: 13pt; }
+            /* Baris Bootstrap bermargin negatif; tanpa padding kontainer isinya terpotong di tepi kertas. */
+            .container { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
+            .row { margin-left: 0 !important; margin-right: 0 !important; }
+            .col-lg-10 { flex: 0 0 100% !important; max-width: 100% !important; padding-left: 0 !important; padding-right: 0 !important; }
+            table { max-width: 100%; }
             .table-collapse { font-size: 13pt; }
             .table-collapse th, .table-collapse td { padding: 6px 8px; }
-            .invoice-meta td, .invoice-meta th, .says-box { font-size: 14pt; }
+            .invoice-meta td, .invoice-meta th, .says-box { font-size: 13pt; }
             .company-name { font-size: 20pt; }
             .company-address { font-size: 11pt; }
-            .doc-title-box h2 { font-size: 30pt; }
+            .doc-title-box h2 { font-size: 26pt; }
         }
     </style>
 </head>
