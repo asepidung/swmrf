@@ -19,6 +19,12 @@ class ListInvoices extends ListRecords
                 ->icon('heroicon-o-list-bullet')
                 ->url(static::getResource()::getUrl('detail_list')),
 
+            Actions\Action::make('unexchanged_list')
+                ->label(__('Not Yet Exchanged'))
+                ->color('danger')
+                ->icon('heroicon-o-arrow-path-rounded-square')
+                ->url(static::getResource()::getUrl('unexchanged')),
+
             Actions\Action::make('draft_list')
                 ->label(__('Draft Invoices'))
                 ->color('warning')

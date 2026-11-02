@@ -1971,5 +1971,7 @@
     "Release": "Rilis",
     "Invoice Amount": "Nilai Invoice",
     "Meat Processing": "Meat Processing",
-    "Processing Stock": "Stok Processing"
+    "Processing Stock": "Stok Processing",
+    "Invoices Not Yet Exchanged": "Invoice Belum Tukar Faktur",
+    "Count Inv": "Jumlah Invoice"
 }

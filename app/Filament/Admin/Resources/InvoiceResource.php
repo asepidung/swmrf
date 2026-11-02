@@ -825,6 +825,7 @@ class InvoiceResource extends Resource
             'create' => Pages\CreateInvoice::route('/create'),
             'detail_list' => Pages\InvoiceDetailList::route('/detail-list'),
             'draft' => Pages\DraftInvoices::route('/draft'),
+            'unexchanged' => Pages\UnexchangedInvoices::route('/unexchanged'),
             'edit' => Pages\EditInvoice::route('/{record}/edit'),
             'view' => Pages\ViewInvoice::route('/{record}'),
         ];
