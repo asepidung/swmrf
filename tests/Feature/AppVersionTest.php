@@ -28,6 +28,8 @@ class AppVersionTest extends TestCase
     /** Dua entri uji: 2.0.0 (rilis) dan 2.1.0 (modul baru), dengan 2.1.0 sebagai versi sekarang. */
     private function withNewerVersion(): void
     {
+        \Illuminate\Support\Carbon::setTestNow('2026-11-20 08:00:00');
+
         config(['changelog.entries' => [
             ['version' => '2.0.0', 'date' => '2026-11-02', 'kind' => 'release', 'title' => 'Aplikasi baru', 'items' => ['Pindah dari legacy.']],
             ['version' => '2.1.0', 'date' => '2026-11-10', 'kind' => 'modul', 'title' => 'Modul Pengiriman', 'items' => ['Jadwal kirim harian.']],
@@ -121,6 +123,42 @@ class AppVersionTest extends TestCase
         $this->assertSame(['2.1.1', '2.1.0'], array_column(AppVersion::entriesAfter('2.0.0'), 'version'));
         $this->assertSame(['2.1.1'], array_column(AppVersion::entriesAfter('2.1.0'), 'version'));
         $this->assertSame([], AppVersion::entriesAfter('2.1.1'));
+    }
+
+    public function test_changes_made_today_are_announced_only_from_tomorrow(): void
+    {
+        $this->withNewerVersion();
+        $user = $this->user('2.0.0');
+
+        // Hari yang sama dengan entri 2.1.0 (10 Nov): belum diumumkan, tetapi footer sudah menunjukkan versinya.
+        \Illuminate\Support\Carbon::setTestNow('2026-11-10 09:00:00');
+        Livewire::actingAs($user)->test(VersionNotice::class)->assertSet('unseen', [])->call('acknowledge');
+        $this->assertSame('2.0.0', $user->fresh()->seen_version);
+        $this->assertSame('2.1.0', AppVersion::current());
+
+        // Besoknya: diumumkan, lalu ditandai sudah dilihat.
+        \Illuminate\Support\Carbon::setTestNow('2026-11-11 07:30:00');
+        Livewire::actingAs($user->fresh())->test(VersionNotice::class)
+            ->assertSee('Modul Pengiriman')
+            ->call('acknowledge');
+        $this->assertSame('2.1.0', $user->fresh()->seen_version);
+    }
+
+    public function test_acknowledging_marks_only_the_versions_that_were_shown(): void
+    {
+        config(['changelog.entries' => [
+            ['version' => '2.0.0', 'date' => '2026-11-02', 'kind' => 'release', 'title' => 'Rilis', 'items' => ['a']],
+            ['version' => '2.1.0', 'date' => '2026-11-10', 'kind' => 'modul', 'title' => 'Kemarin', 'items' => ['b']],
+            ['version' => '2.1.1', 'date' => '2026-11-11', 'kind' => 'fix', 'title' => 'Hari ini', 'items' => ['c']],
+        ]]);
+        \Illuminate\Support\Carbon::setTestNow('2026-11-11 08:00:00');
+        $user = $this->user('2.0.0');
+
+        Livewire::actingAs($user)->test(VersionNotice::class)
+            ->assertSet('unseen', fn (array $unseen) => array_column($unseen, 'title') === ['Kemarin'])
+            ->call('acknowledge');
+
+        $this->assertSame('2.1.0', $user->fresh()->seen_version);
     }
 
     public function test_the_full_history_is_always_available_in_the_component(): void
