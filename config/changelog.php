@@ -16,16 +16,6 @@
  */
 return [
     'entries' => [
-        [
-            'version' => '2.0.2',
-            'date' => '2026-11-02',
-            'kind' => 'fix',
-            'title' => 'Perbaikan biaya lain di invoice',
-            'items' => [
-                'Baris biaya lain yang sudah dihapus tidak lagi muncul kembali sebagai baris kosong yang menahan invoice disimpan.',
-                'Nomor SO yang bisa diklik di daftar Sales Order sekarang berwarna kuning.',
-            ],
-        ],
 
         [
             'version' => '2.0.1',
