@@ -30,6 +30,9 @@ class DraftInvoices extends Page implements HasTable
         return $table
             ->query(
                 DeliveryOrderReceipt::query()
+                    // Hanya penerimaan yang memang menunggu ditagih. Penerimaan berstatus Invoiced tanpa baris invoice
+                    // adalah sisa legacy yang di legacy pun tidak punya invoice; tidak ditagih ulang (Owner, 2 November 2026).
+                    ->where('status', 'Approved')
                     ->whereDoesntHave('invoice')
             )
             ->columns([

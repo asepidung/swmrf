@@ -215,7 +215,17 @@
         }
 
         @media print {
-            @page { margin: 12mm; }
+            @page { margin: 10mm; }
+            /* Cetakan kertas lebih besar: ukuran dalam pt dan lebar penuh, bukan kolom sempit (Owner, 2 November 2026). */
+            body { font-size: 14pt; }
+            .container { max-width: 100% !important; width: 100% !important; padding: 0 !important; }
+            .col-lg-10 { flex: 0 0 100% !important; max-width: 100% !important; }
+            .table-collapse { font-size: 13pt; }
+            .table-collapse th, .table-collapse td { padding: 6px 8px; }
+            .invoice-meta td, .invoice-meta th, .says-box { font-size: 14pt; }
+            .company-name { font-size: 20pt; }
+            .company-address { font-size: 11pt; }
+            .doc-title-box h2 { font-size: 30pt; }
         }
     </style>
 </head>

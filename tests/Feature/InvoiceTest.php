@@ -506,4 +506,42 @@ class InvoiceTest extends TestCase
 
         $this->assertEquals(1, $widget->getPendingInvoiceExchangeCount());
     }
+
+    public function test_draft_invoices_lists_only_approved_receipts_without_invoice(): void
+    {
+        $sisaLegacy = DeliveryOrderReceipt::create([
+            'delivery_order_id' => $this->receiptRegular->delivery_order_id,
+            'sales_order_id' => $this->receiptRegular->sales_order_id,
+            'customer_id' => $this->customerRegular->id,
+            'receipt_number' => 'DO-LEGACY-SISA',
+            'delivery_date' => '2025-01-22',
+            'total_box' => 1,
+            'total_weight' => 1.0,
+            'status' => 'Invoiced',
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(\App\Filament\Admin\Resources\InvoiceResource\Pages\DraftInvoices::class)
+            ->assertCanSeeTableRecords([$this->receiptRegular])
+            ->assertCanNotSeeTableRecords([$sisaLegacy]);
+    }
+
+    public function test_create_invoice_redirects_for_a_receipt_that_is_not_approved(): void
+    {
+        $this->receiptRegular->update(['status' => 'Invoiced']);
+
+        Livewire::actingAs($this->user)
+            ->withQueryParams(['delivery_order_receipt_id' => $this->receiptRegular->id])
+            ->test(CreateInvoice::class)
+            ->assertRedirect(\App\Filament\Admin\Resources\DeliveryOrderReceiptResource::getUrl('index'));
+    }
+
+    public function test_the_so_number_in_the_sales_order_list_links_to_its_print_page(): void
+    {
+        $so = $this->receiptRegular->salesOrder ?? SalesOrder::find($this->receiptRegular->sales_order_id);
+
+        Livewire::actingAs($this->user)
+            ->test(\App\Filament\Admin\Resources\SalesOrderResource\Pages\ListSalesOrders::class)
+            ->assertTableColumnExists('so_number', fn ($column) => $column->getUrl() === route('print.salesorder', $so->id) && $column->shouldOpenUrlInNewTab(), $so);
+    }
 }
