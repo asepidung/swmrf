@@ -97,10 +97,12 @@ class IsiNilaiStokAwalTest extends TestCase
             ['product_id' => $produk->id, 'warehouse_id' => $gudang->id, 'condition' => 'CHILL', 'barcode' => 'BC-TERJUAL-TALLY', 'transaction_type' => 'TALLY', 'weight_out' => 10, 'created_at' => now(), 'updated_at' => now()],
             ['product_id' => $produk->id, 'warehouse_id' => $gudang->id, 'condition' => 'CHILL', 'barcode' => 'BC-BAHAN-REPACK', 'transaction_type' => 'OUT_TO_REPACK', 'weight_out' => 10, 'created_at' => now(), 'updated_at' => now()],
             ['product_id' => $produk->id, 'warehouse_id' => $gudang->id, 'condition' => 'CHILL', 'barcode' => 'BC-HASIL-REPACK', 'transaction_type' => 'IN_REPACK', 'weight_in' => 10, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $produk->id, 'warehouse_id' => $gudang->id, 'condition' => 'CHILL', 'barcode' => 'BC-TALLY-LAMA', 'transaction_type' => 'TALLY', 'weight_out' => 10, 'created_at' => now()->subDays(30), 'updated_at' => now()->subDays(30)],
         ]);
 
-        $this->jalankan(['--apply' => true]);
+        $this->jalankan(['--apply' => true, '--domino-dari' => now()->subDays(7)->toDateString()]);
 
+        $this->assertNull(BarcodeCost::where('barcode', 'BC-TALLY-LAMA')->first());
         $this->assertSame(126400.0, BarcodeCost::where('barcode', 'BC-TERJUAL-TALLY')->first()->cost_per_kg);
         $this->assertSame(126400.0, BarcodeCost::where('barcode', 'BC-BAHAN-REPACK')->first()->cost_per_kg);
         $this->assertNull(BarcodeCost::where('barcode', 'BC-HASIL-REPACK')->first());

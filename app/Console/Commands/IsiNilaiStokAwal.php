@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\BarcodeCost;
 use App\Models\Product;
 use App\Support\BarcodeCosts;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -21,6 +22,7 @@ class IsiNilaiStokAwal extends Command
 {
     protected $signature = 'costing:isi-stok-awal
         {--source=legacy/harga-stok-awal.csv : CSV harga per produk (kolom produk, harga_per_kg; tidak masuk repo)}
+        {--domino-dari=2026-11-02 : Efek domino (barang yang sudah keluar) hanya untuk transaksi mulai tanggal ini}
         {--apply : Simpan (tanpa ini hanya laporan)}';
 
     protected $description = 'Isi nilai awal stok IN_STOCK dari daftar harga per produk, lalu hitung ulang turunannya';
@@ -88,11 +90,14 @@ class IsiNilaiStokAwal extends Command
 
             // Efek domino: barang yang sudah keluar dari stok sejak go-live (bahan repack, tally/penjualan) juga belum
             // bernilai; nilai mereka memakai harga produk yang sama, supaya valuasi repack dan laporan HPP penjualan terisi.
+            $dominoDari = Carbon::parse((string) $this->option('domino-dari'))->startOfDay();
+
             $pernahKeluar = DB::table('beef_stock_movements')
                 ->whereIn('transaction_type', ['OUT_TO_REPACK', 'TALLY'])
                 ->whereNotNull('barcode')
+                ->where('created_at', '>=', $dominoDari)
                 ->select('barcode', 'product_id')
-                ->union(DB::table('repack_materials')->select('barcode', 'product_id'))
+                ->union(DB::table('repack_materials')->where('created_at', '>=', $dominoDari)->select('barcode', 'product_id'))
                 ->get()
                 ->unique('barcode');
 
