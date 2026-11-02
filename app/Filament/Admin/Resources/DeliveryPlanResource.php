@@ -259,7 +259,16 @@ class DeliveryPlanResource extends Resource
                     Tables\Actions\RestoreBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('delivery_date', 'desc');
+            // Yang paling dekat dengan hari ini di atas: hari ini dan ke depan dulu (terdekat lebih dulu), baru yang sudah lewat
+            // (terbaru lebih dulu). Permintaan Owner, 2 November 2026. Tetap bisa diurutkan lewat kepala kolom.
+            ->defaultSort(function (Builder $query): Builder {
+                $hariIni = now()->toDateString();
+
+                return $query
+                    ->orderByRaw('CASE WHEN delivery_date >= ? THEN 0 ELSE 1 END', [$hariIni])
+                    ->orderByRaw('CASE WHEN delivery_date >= ? THEN delivery_date END ASC', [$hariIni])
+                    ->orderBy('delivery_date', 'desc');
+            });
     }
 
     public static function getRelations(): array

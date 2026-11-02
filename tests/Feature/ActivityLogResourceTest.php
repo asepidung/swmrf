@@ -127,5 +127,15 @@ class ActivityLogResourceTest extends TestCase
             'BC-HAPUS-1',
             \App\Filament\Admin\Resources\ActivityLogResource::getSubjectLabelFromRecord($log(\App\Models\BeefStock::class, 829, ['old' => ['barcode' => 'BC-HAPUS-1']])),
         );
+
+        // Rencana kirim: tanggalnya string dari basis data (tanpa cast), jangan memanggil format() langsung.
+        $rencana = \App\Models\DeliveryPlan::forceCreate([
+            'customer_id' => $so->customer_id, 'delivery_date' => '2026-11-03', 'created_by' => $this->user->id,
+        ]);
+
+        $this->assertSame(
+            'PELANGGAN UJI · 03 Nov 2026',
+            \App\Filament\Admin\Resources\ActivityLogResource::getSubjectLabelFromRecord($log(\App\Models\DeliveryPlan::class, $rencana->id)),
+        );
     }
 }

@@ -345,5 +345,26 @@ class DeliveryPlanTest extends TestCase
             'Hanya rencana yang sopir/armadanya kosong yang dihitung sebagai tugas.',
         );
     }
-}
 
+    /** @test */
+    public function the_list_puts_the_plans_nearest_to_today_on_top()
+    {
+        \Illuminate\Support\Carbon::setTestNow('2026-11-15 10:00:00'); // bukan awal bulan: filter bawaan memotong sebelum tanggal 1
+        $this->actingAs($this->adminUser);
+
+        $buat = fn (string $tanggal) => DeliveryPlan::forceCreate([
+            'customer_id' => $this->customer1->id, 'delivery_date' => $tanggal, 'created_by' => $this->adminUser->id,
+        ]);
+
+        $kemarin = $buat(now()->subDay()->toDateString());
+        $lusa = $buat(now()->addDays(2)->toDateString());
+        $hariIni = $buat(now()->toDateString());
+        $besok = $buat(now()->addDay()->toDateString());
+
+        $urutan = fn (array $opsi = []) => \Livewire\Livewire::test(\App\Filament\Admin\Resources\DeliveryPlanResource\Pages\ListDeliveryPlans::class, $opsi)
+            ->instance()->getTableRecords()->pluck('id')->all();
+
+        $this->assertSame([$hariIni->id, $kemarin->id], $urutan(['activeTab' => 'history']));
+        $this->assertSame([$besok->id, $lusa->id], $urutan());
+    }
+}
