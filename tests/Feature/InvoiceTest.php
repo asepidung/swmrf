@@ -602,4 +602,16 @@ class InvoiceTest extends TestCase
             ->test(ListInvoices::class)
             ->assertCanSeeTableRecords([$lama]);
     }
+
+    public function test_the_filtered_list_from_the_exchange_page_only_offers_a_back_button(): void
+    {
+        $biasa = Livewire::actingAs($this->user)->test(ListInvoices::class);
+        $biasa->assertSee(__('Draft Invoices'));
+
+        $dariTf = Livewire::actingAs($this->user)
+            ->withQueryParams(['tableFilters' => ['belum_tukar_faktur' => ['isActive' => true]]])
+            ->test(ListInvoices::class);
+
+        $dariTf->assertSee(__('Back'))->assertDontSee(__('Draft Invoices'))->assertDontSee(__('Not Yet Exchanged'));
+    }
 }
