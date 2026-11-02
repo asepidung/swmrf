@@ -30,6 +30,17 @@ class UnexchangedInvoices extends Page implements HasTable
         return __('Invoices Not Yet Exchanged');
     }
 
+    protected function getHeaderActions(): array
+    {
+        return [
+            \Filament\Actions\Action::make('back')
+                ->label(__('Back'))
+                ->color('gray')
+                ->icon('heroicon-o-arrow-uturn-left')
+                ->url(InvoiceResource::getUrl('index')),
+        ];
+    }
+
     private function belumTukar(Builder $query): Builder
     {
         return $query->where('status', Invoice::STATUS_EXCHANGE_PENDING);

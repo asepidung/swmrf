@@ -12,6 +12,17 @@ class ListInvoices extends ListRecords
 
     protected function getHeaderActions(): array
     {
+        // Dibuka dari halaman Belum Tukar Faktur (filter belum_tukar_faktur aktif): tombol lain tidak relevan, cukup Kembali.
+        if (data_get($this->tableFilters, 'belum_tukar_faktur.isActive')) {
+            return [
+                Actions\Action::make('back_to_unexchanged')
+                    ->label(__('Back'))
+                    ->color('gray')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->url(static::getResource()::getUrl('unexchanged')),
+            ];
+        }
+
         return [
             Actions\Action::make('detail_list')
                 ->label(__('Detail'))
