@@ -52,7 +52,7 @@ class ActivityLogResource extends Resource
             $subject instanceof \App\Models\Receivable => $subject->invoice?->invoice_number,
             $subject instanceof \App\Models\RepackValuation => $subject->repack?->doc_no,
             $subject instanceof \App\Models\SalesOrderItem => trim(($subject->salesOrder?->so_number ?? '').' · '.($subject->product?->name ?? ''), ' ·'),
-            $subject instanceof \App\Models\DeliveryPlan => trim(($subject->customer?->name ?? '').' · '.($subject->delivery_date?->format('d M Y') ?? ''), ' ·'),
+            $subject instanceof \App\Models\DeliveryPlan => trim(($subject->customer?->name ?? '').' · '.($subject->delivery_date ? \Carbon\Carbon::parse($subject->delivery_date)->format('d M Y') : ''), ' ·'),
             $subject instanceof \App\Models\BeefStock, $subject instanceof \App\Models\BeefStockMovement,
             $subject instanceof \App\Models\RepackResult, $subject instanceof \App\Models\RepackMaterial,
             $subject instanceof \App\Models\BarcodeCost => trim(($subject->barcode ?? '').' · '.($subject->product?->name ?? ''), ' ·'),
