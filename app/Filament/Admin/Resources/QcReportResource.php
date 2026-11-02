@@ -181,7 +181,9 @@ class QcReportResource extends Resource
                     ->toggleable(),
             ])
             ->filters([
-                \App\Filament\Support\DateRangeFilter::make('occurred_at'),
+                // Laporan yang belum diisi belum punya waktu kejadian (occurred_at kosong); tanpa ini tugas QC baru tersaring habis
+                // dan daftar tampak kosong (temuan Owner, 2 November 2026). Dasarnya waktu kejadian, atau waktu tugas lahir.
+                \App\Filament\Support\DateRangeFilter::make(\Illuminate\Support\Facades\DB::raw('coalesce(qc_reports.occurred_at, qc_reports.created_at)'), 'occurred_at'),
 
                 Tables\Filters\SelectFilter::make('reportable_type')
                     ->label(__('Document type'))

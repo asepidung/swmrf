@@ -466,4 +466,21 @@ class QcReportTest extends TestCase
             );
         }
     }
+
+    /**
+     * Tugas QC yang baru lahir belum punya waktu kejadian; filter tanggal bawaan (bulan berjalan) tidak boleh menyembunyikannya
+     * (temuan Owner, 2 November 2026: halaman Laporan QC tampak kosong padahal ada tally dan repack).
+     */
+    public function test_a_blank_qc_task_shows_in_the_list_under_the_default_date_filter(): void
+    {
+        $user = \App\Models\User::factory()->create(['role' => 'programmer', 'is_active' => true]);
+        $gudang = \App\Models\Warehouse::create(['code' => 'GD1', 'name' => 'GUDANG 1', 'is_active' => true]);
+        $tugas = QcReport::create(['reportable_type' => \App\Models\Warehouse::class, 'reportable_id' => $gudang->id]);
+
+        $this->assertNull($tugas->occurred_at);
+
+        \Livewire\Livewire::actingAs($user)
+            ->test(\App\Filament\Admin\Resources\QcReportResource\Pages\ListQcReports::class)
+            ->assertCanSeeTableRecords([$tugas]);
+    }
 }

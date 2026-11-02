@@ -544,4 +544,62 @@ class InvoiceTest extends TestCase
             ->test(\App\Filament\Admin\Resources\SalesOrderResource\Pages\ListSalesOrders::class)
             ->assertTableColumnExists('so_number', fn ($column) => $column->getUrl() === route('print.salesorder', $so->id) && $column->shouldOpenUrlInNewTab(), $so);
     }
+
+    public function test_the_not_yet_exchanged_page_groups_belum_tf_invoices_per_customer(): void
+    {
+        Invoice::create([
+            'customer_id' => $this->customerExchange->id,
+            'sales_order_id' => $this->receiptExchange->sales_order_id,
+            'delivery_order_receipt_id' => $this->receiptExchange->id,
+            'invoice_date' => now()->subMonths(3)->toDateString(),
+            'term_of_payment' => 14,
+            'status' => 'Belum TF',
+            'subtotal' => 1960000.0,
+            'balance' => 1960000.0,
+        ]);
+        Invoice::create([
+            'customer_id' => $this->customerRegular->id,
+            'sales_order_id' => $this->receiptRegular->sales_order_id,
+            'delivery_order_receipt_id' => $this->receiptRegular->id,
+            'invoice_date' => now()->toDateString(),
+            'term_of_payment' => 30,
+            'status' => 'Belum Dibayar',
+            'subtotal' => 500000.0,
+            'balance' => 500000.0,
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(\App\Filament\Admin\Resources\InvoiceResource\Pages\UnexchangedInvoices::class)
+            ->assertCanSeeTableRecords([$this->customerExchange])
+            ->assertCanNotSeeTableRecords([$this->customerRegular])
+            ->assertSee('1.960.000');
+
+        Livewire::actingAs($this->user)
+            ->test(ListInvoices::class)
+            ->assertSee(__('Not Yet Exchanged'));
+    }
+
+    public function test_a_customer_row_opens_the_invoice_list_with_the_old_unexchanged_invoices_in_view(): void
+    {
+        $lama = Invoice::create([
+            'customer_id' => $this->customerExchange->id,
+            'sales_order_id' => $this->receiptExchange->sales_order_id,
+            'delivery_order_receipt_id' => $this->receiptExchange->id,
+            'invoice_date' => now()->subMonths(3)->toDateString(),
+            'term_of_payment' => 14,
+            'status' => 'Belum TF',
+            'subtotal' => 1960000.0,
+            'balance' => 1960000.0,
+        ]);
+
+        $url = \App\Filament\Admin\Resources\InvoiceResource\Pages\UnexchangedInvoices::class;
+        $halaman = Livewire::actingAs($this->user)->test($url);
+        $tautan = $halaman->instance()->getTable()->getRecordUrl($this->customerExchange);
+        parse_str((string) parse_url($tautan, PHP_URL_QUERY), $query);
+
+        Livewire::actingAs($this->user)
+            ->withQueryParams($query)
+            ->test(ListInvoices::class)
+            ->assertCanSeeTableRecords([$lama]);
+    }
 }
