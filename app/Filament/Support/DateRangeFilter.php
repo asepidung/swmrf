@@ -17,9 +17,13 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class DateRangeFilter
 {
-    public static function make(string $column, ?string $name = null): Filter
+    /**
+     * @param  string|\Illuminate\Contracts\Database\Query\Expression  $column  Kolom tanggal, atau ekspresi (mis. coalesce) bila
+     *                                                                              kolomnya bisa kosong; `$name` wajib diisi untuk ekspresi.
+     */
+    public static function make(string|\Illuminate\Contracts\Database\Query\Expression $column, ?string $name = null): Filter
     {
-        $name ??= $column;
+        $name ??= (string) $column;
 
         return Filter::make($name)
             ->form([
