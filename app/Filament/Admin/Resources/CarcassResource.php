@@ -558,7 +558,6 @@ class CarcassResource extends Resource
                     ->visible(fn () => auth()->user()?->hasPermission('view_deleted_carcasses') ?? false),
             ])
             ->actions([
-                \App\Filament\Admin\Resources\QcReportResource\Actions\LihatLaporanQc::make(),
                 Tables\Actions\Action::make('reopen_for_boning')
                     ->label(__('Open for boning'))
                     ->icon('heroicon-o-arrow-uturn-left')

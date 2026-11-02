@@ -169,7 +169,6 @@ class RepackResource extends Resource
                     ->limit(30),
             ])
             ->actions([
-                \App\Filament\Admin\Resources\QcReportResource\Actions\LihatLaporanQc::make(),
 Tables\Actions\ActionGroup::make([
                     /* Tombol Lock */
                     Tables\Actions\Action::make('lock')

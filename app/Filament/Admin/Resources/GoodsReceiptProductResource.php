@@ -200,7 +200,6 @@ class GoodsReceiptProductResource extends Resource
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_goods_receipt_products')),
             ])
             ->actions([
-                \App\Filament\Admin\Resources\QcReportResource\Actions\LihatLaporanQc::make(),
 Tables\Actions\Action::make('lock')
                     ->tooltip(fn (GoodsReceiptProduct $record) => $record->is_locked ? __('Unlock') : __('Lock'))
                     ->icon(fn (GoodsReceiptProduct $record) => $record->is_locked ? 'heroicon-o-lock-closed' : 'heroicon-o-lock-open')
