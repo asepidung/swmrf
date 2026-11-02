@@ -202,25 +202,25 @@ class PendingTaskWidget extends Widget
             [
                 $this->getPendingMaterialRequestCount(),
                 ':count material requests are waiting for review.',
-                \App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('index'),
+                $this->requisitionUrl(\App\Filament\Admin\Resources\MaterialRequisitionResource::class, 'Requested'),
                 'warning',
             ],
             [
                 $this->getPendingMaterialFinanceCount(),
                 ':count material requests are waiting for approval.',
-                \App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('index'),
+                $this->requisitionUrl(\App\Filament\Admin\Resources\MaterialRequisitionResource::class, 'Pending Finance'),
                 'warning',
             ],
             [
                 $this->getPendingProductRequestCount(),
                 ':count beef requests are waiting for review.',
-                \App\Filament\Admin\Resources\ProductRequisitionResource::getUrl('index'),
+                $this->requisitionUrl(\App\Filament\Admin\Resources\ProductRequisitionResource::class, 'Requested'),
                 'warning',
             ],
             [
                 $this->getPendingProductFinanceCount(),
                 ':count beef requests are waiting for approval.',
-                \App\Filament\Admin\Resources\ProductRequisitionResource::getUrl('index'),
+                $this->requisitionUrl(\App\Filament\Admin\Resources\ProductRequisitionResource::class, 'Pending Finance'),
                 'warning',
             ],
             [
@@ -407,8 +407,27 @@ class PendingTaskWidget extends Widget
         }
 
         return \App\Models\DeliveryOrderReceipt::query()
+            ->where('status', 'Approved')
             ->whereDoesntHave('invoice')
             ->count();
+    }
+
+    /**
+     * Daftar permintaan yang dibuka dari dashboard: berfilter status dan TANPA batas tanggal.
+     *
+     * Filter tanggal bawaan daftar hanya bulan ini, sehingga permintaan yang menunggu sejak bulan lalu terhitung di
+     * dashboard tetapi tidak terlihat di daftarnya (Owner, 2 November 2026).
+     *
+     * @param class-string<\Filament\Resources\Resource> $resource
+     */
+    protected function requisitionUrl(string $resource, string $status): string
+    {
+        return $resource::getUrl('index', [
+            'tableFilters' => [
+                'created_at' => ['created_from' => null, 'created_until' => null],
+                'status' => ['value' => $status],
+            ],
+        ]);
     }
 
     /** Goods Receipt material yang belum dikunci; akibatnya sama. */

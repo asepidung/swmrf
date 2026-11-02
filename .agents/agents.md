@@ -7918,3 +7918,13 @@ Rancangan yang diusulkan (belum dikerjakan, menunggu aba-aba): kolom `carcasses.
 
 ## Keputusan Ayah 30 Oktober 2026: invoice riwayat saat go-live
 Impor invoice legacy memakai `--payment=settled`: semua invoice riwayat dianggap lunas (piutang awal Rp 0). Accounting yang membuka kembali invoice yang sebenarnya belum lunas. Gladi bersih di coba (30 Okt): 28 langkah impor 545 detik, `legacy:reconcile` 29/29 cocok. Runbook: `docs/hari-h.md`.
+
+## Penutupan data lama di VPS, 2 November 2026
+Atas perintah Ayah (pesan dashboard yang menggantung dari legacy). Dikerjakan langsung di basis data VPS (tanpa event model), cadangan `~/backups/pra-tutup-data-lama-20261102-1508.sql.gz`:
+- Boning 419, 420, 421 (OPEN, Mei 2026): `kunci=true`, `status=LOCKED` (cadangan `pra-kunci-boning-20261102-1232`).
+- PO material 8 buah jadi `canceled`. Kondisi awal untuk dibuka kembali bila Ayah minta: partial = 232, 326, 331, 348; pending = 336, 341, 345, 346.
+- Tally 1592, 1770, 1828, 1832, 1833, 2331, 3423, 3909, 5011 (terkunci, surat jalannya terhapus): `locked` -> `do`.
+- Surat jalan 3972, 4480, 4483, 4484, 4872, 4897, 5046, 5667, 5993 (Ready, 2025): `Ready` -> `Invoiced` (konvensi legacy; tidak punya bukti terima).
+- Dua permintaan material Pending Finance (REQ-26/0139 tanggal 4 Sep, REQ-26/0171 tanggal 26 Okt) sengaja DIBIARKAN; Ayah memutuskan besok setelah melihat tanggalnya.
+- Semua PO material hasil impor legacy memakai penyetuju TAUFIK H (kolom `approved_by` wajib terisi), bukan persetujuan sungguhan.
+- Dashboard: hitungan Draft Invoice kini hanya penerimaan Approved (sama dengan halamannya); link permintaan material/daging membuka daftar berfilter status tanpa batas tanggal.

@@ -242,6 +242,21 @@ class InvoiceLifecycleTest extends TestCase
         $this->assertNotNull($belum->fresh());
     }
 
+    /**
+     * Angka dashboard mengikuti halaman Draft Invoice: penerimaan berstatus Invoiced tanpa baris invoice (sisa legacy)
+     * tidak dihitung (Owner, 2 November 2026).
+     */
+    public function test_legacy_receipts_marked_invoiced_without_an_invoice_are_not_counted(): void
+    {
+        $this->beriIzin('create_invoices');
+
+        $this->buatBuktiTerima();
+        $lama = $this->buatBuktiTerima();
+        $lama->forceFill(['status' => 'Invoiced'])->saveQuietly();
+
+        $this->assertSame(1, (new PendingTaskWidget())->getDraftInvoiceCount());
+    }
+
     /** Dan hanya kepada yang memang membuat invoice. */
     public function test_the_draft_invoice_count_stays_hidden_from_everyone_else(): void
     {

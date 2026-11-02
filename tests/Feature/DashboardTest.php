@@ -41,4 +41,24 @@ class DashboardTest extends TestCase
         $this->assertContains(PushSubscriptionCoverageWidget::class, $widgets);
         $this->assertContains(ScheduledReminderHealthWidget::class, $widgets);
     }
+
+    /**
+     * Link permintaan di dashboard membuka daftar berfilter status dan tanpa batas tanggal; filter bulan ini membuat
+     * permintaan lama terhitung di dashboard tetapi tidak terlihat di daftarnya (Owner, 2 November 2026).
+     */
+    public function test_requisition_links_filter_by_status_and_drop_the_date_limit(): void
+    {
+        $url = (new \ReflectionMethod(PendingTaskWidget::class, 'requisitionUrl'))->invoke(
+            new PendingTaskWidget(),
+            \App\Filament\Admin\Resources\MaterialRequisitionResource::class,
+            'Pending Finance',
+        );
+
+        $query = [];
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+        $this->assertSame('Pending Finance', $query['tableFilters']['status']['value']);
+        $this->assertEmpty($query['tableFilters']['created_at']['created_from'] ?? null);
+        $this->assertEmpty($query['tableFilters']['created_at']['created_until'] ?? null);
+    }
 }
