@@ -168,19 +168,12 @@ class SalesOrder extends Model
             }
         });
 
-        // Hal yang sama bila SO-nya dihapus (soft maupun force); dan bila SO dipulihkan, rencananya ikut dipulihkan
-        // supaya SO tidak menunjuk rencana yang sudah terhapus.
+        // Hal yang sama bila SO-nya dihapus (soft maupun force). Dokumen terhapus tidak dikembalikan (Owner, 3 November 2026).
         static::deleted(function ($model) {
             $plan = $model->delivery_plan_id;
 
             if ($plan && ! static::where('delivery_plan_id', $plan)->exists()) {
                 DeliveryPlan::find($plan)?->delete();
-            }
-        });
-
-        static::restored(function ($model) {
-            if ($model->delivery_plan_id) {
-                DeliveryPlan::withTrashed()->find($model->delivery_plan_id)?->restore();
             }
         });
     }
