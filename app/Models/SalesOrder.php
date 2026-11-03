@@ -146,6 +146,16 @@ class SalesOrder extends Model
                 $model->delivery_date = $normalizedDate;
             }
         });
+
+        // SO yang dipindah ke tanggal/customer lain meninggalkan rencana lamanya kosong; rencana kosong itu dihapus
+        // (Owner, 3 November 2026). Rencana yang masih dipakai SO lain tidak disentuh.
+        static::saved(function ($model) {
+            $lama = $model->getOriginal('delivery_plan_id');
+
+            if ($lama && $model->wasChanged('delivery_plan_id') && ! static::where('delivery_plan_id', $lama)->exists()) {
+                DeliveryPlan::find($lama)?->delete();
+            }
+        });
     }
 
     public function customer()
