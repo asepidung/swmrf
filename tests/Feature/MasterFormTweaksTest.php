@@ -61,7 +61,7 @@ class MasterFormTweaksTest extends TestCase
         }
 
         $quick = file_get_contents(app_path('Filament/Support/QuickCreate.php'));
-        $driver = substr($quick, strpos($quick, "'driver' => ["), 200);
+        $driver = substr($quick, strpos($quick, "'driver', 'expenseCategory' => ["), 200);
         $this->assertStringContainsString('uppercaseName', $driver, 'form cepat supir memakai isian huruf besar');
         $this->assertStringContainsString('text-transform:uppercase', substr($quick, strpos($quick, "'vehicle' => ["), 700));
     }

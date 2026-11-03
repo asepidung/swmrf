@@ -12,9 +12,9 @@ class ProductPolicy
     public function create(User $user): bool { return $user->hasPermission('create_products'); }
     public function update(User $user, Product $model): bool { return $user->hasPermission('edit_products'); }
     public function delete(User $user, Product $model): bool { return $user->hasPermission('delete_products'); }
-    public function restore(User $user, Product $model): bool { return $user->hasPermission('delete_products'); }
+    public function restore(User $user, Product $model): bool { return false; }
     public function forceDelete(User $user, Product $model): bool { return $user->hasPermission('delete_products'); }
     public function deleteAny(User $user): bool { return $user->hasPermission('delete_products'); }
-    public function restoreAny(User $user): bool { return $user->hasPermission('delete_products'); }
+    public function restoreAny(User $user): bool { return false; }
     public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_products'); }
 }

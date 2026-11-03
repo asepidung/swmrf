@@ -34,7 +34,7 @@ class BoningPolicy
 
     public function restore(User $user, Boning $model): bool
     {
-        return $user->hasPermission('delete_bonings');
+        return false;
     }
 
     public function forceDelete(User $user, Boning $model): bool
@@ -54,7 +54,7 @@ class BoningPolicy
 
     public function restoreAny(User $user): bool
     {
-        return $user->hasPermission('delete_bonings');
+        return false;
     }
 
     public function forceDeleteAny(User $user): bool

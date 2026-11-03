@@ -256,7 +256,6 @@ class DeliveryPlanResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                     Tables\Actions\ForceDeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
                 ]),
             ])
             // Yang paling dekat dengan hari ini di atas: hari ini dan ke depan dulu (terdekat lebih dulu), baru yang sudah lewat

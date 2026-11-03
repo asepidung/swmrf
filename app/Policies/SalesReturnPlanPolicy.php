@@ -31,7 +31,7 @@ class SalesReturnPlanPolicy
 
     public function restore($user, $model): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('delete_sales_return_plans');
+        return false;
     }
 
     public function forceDelete($user, $model): bool
@@ -46,7 +46,7 @@ class SalesReturnPlanPolicy
 
     public function restoreAny($user): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('delete_sales_return_plans');
+        return false;
     }
 
     public function forceDeleteAny($user): bool

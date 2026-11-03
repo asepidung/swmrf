@@ -119,11 +119,6 @@ class EditSalesReturn extends EditRecord
                 // jejaknya tercatat -- baru returnya dihapus.
                 ->hidden(fn (): bool => $this->record->status === 'Approved'),
             
-            Actions\RestoreAction::make()
-                ->label('')
-                ->extraAttributes(['style' => 'gap: 0 !important;'])
-                ->tooltip(__('Restore'))
-                ->icon('heroicon-o-arrow-path'),
         ];
     }
 

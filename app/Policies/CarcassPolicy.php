@@ -12,9 +12,9 @@ class CarcassPolicy
     public function create(User $user): bool { return $user->hasPermission('create_carcasses'); }
     public function update(User $user, Carcass $model): bool { return $user->hasPermission('edit_carcasses'); }
     public function delete(User $user, Carcass $model): bool { return $user->hasPermission('delete_carcasses'); }
-    public function restore(User $user, Carcass $model): bool { return $user->hasPermission('delete_carcasses'); }
+    public function restore(User $user, Carcass $model): bool { return false; }
     public function forceDelete(User $user, Carcass $model): bool { return $user->hasPermission('delete_carcasses'); }
     public function deleteAny(User $user): bool { return $user->hasPermission('delete_carcasses'); }
-    public function restoreAny(User $user): bool { return $user->hasPermission('delete_carcasses'); }
+    public function restoreAny(User $user): bool { return false; }
     public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_carcasses'); }
 }

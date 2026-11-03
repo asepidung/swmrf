@@ -183,7 +183,6 @@ class MaterialStockTakeResource extends Resource
                             $action->cancel();
                         }),
                     Tables\Actions\ForceDeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
                 ]),
             ]);
     }

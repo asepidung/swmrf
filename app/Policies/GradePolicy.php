@@ -12,9 +12,9 @@ class GradePolicy
     public function create(User $user): bool { return $user->hasPermission('create_grades'); }
     public function update(User $user, Grade $model): bool { return $user->hasPermission('edit_grades'); }
     public function delete(User $user, Grade $model): bool { return $user->hasPermission('delete_grades'); }
-    public function restore(User $user, Grade $model): bool { return $user->hasPermission('delete_grades'); }
+    public function restore(User $user, Grade $model): bool { return false; }
     public function forceDelete(User $user, Grade $model): bool { return $user->hasPermission('delete_grades'); }
     public function deleteAny(User $user): bool { return $user->hasPermission('delete_grades'); }
-    public function restoreAny(User $user): bool { return $user->hasPermission('delete_grades'); }
+    public function restoreAny(User $user): bool { return false; }
     public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_grades'); }
 }

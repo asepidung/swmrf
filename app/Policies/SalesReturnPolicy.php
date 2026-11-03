@@ -53,7 +53,7 @@ class SalesReturnPolicy
      */
     public function restore($user, $model): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('delete_sales_returns');
+        return false;
     }
 
     /**
@@ -71,7 +71,7 @@ class SalesReturnPolicy
 
     public function restoreAny($user): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('delete_sales_returns');
+        return false;
     }
 
     public function forceDeleteAny($user): bool

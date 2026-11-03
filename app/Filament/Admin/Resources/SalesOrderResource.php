@@ -726,7 +726,6 @@ class SalesOrderResource extends Resource
                                     ->send();
                             }
                         }),
-                    Tables\Actions\RestoreBulkAction::make(),
                 ]),
             ])
             ->defaultSort('id', 'desc');

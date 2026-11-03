@@ -12,9 +12,9 @@ class BankAccountPolicy
     public function create(User $user): bool { return $user->hasPermission('create_bank_accounts'); }
     public function update(User $user, BankAccount $model): bool { return $user->hasPermission('edit_bank_accounts'); }
     public function delete(User $user, BankAccount $model): bool { return $user->hasPermission('delete_bank_accounts'); }
-    public function restore(User $user, BankAccount $model): bool { return $user->hasPermission('delete_bank_accounts'); }
+    public function restore(User $user, BankAccount $model): bool { return false; }
     public function forceDelete(User $user, BankAccount $model): bool { return $user->hasPermission('delete_bank_accounts'); }
     public function deleteAny(User $user): bool { return $user->hasPermission('delete_bank_accounts'); }
-    public function restoreAny(User $user): bool { return $user->hasPermission('delete_bank_accounts'); }
+    public function restoreAny(User $user): bool { return false; }
     public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_bank_accounts'); }
 }

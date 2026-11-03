@@ -34,7 +34,7 @@ class RepackPolicy
 
     public function restore(User $user, Repack $model): bool
     {
-        return $user->hasPermission('delete_repacks');
+        return false;
     }
 
     public function forceDelete(User $user, Repack $model): bool
@@ -49,7 +49,7 @@ class RepackPolicy
 
     public function restoreAny(User $user): bool
     {
-        return $user->hasPermission('delete_repacks');
+        return false;
     }
 
     public function forceDeleteAny(User $user): bool

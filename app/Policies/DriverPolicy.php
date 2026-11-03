@@ -12,9 +12,9 @@ class DriverPolicy
     public function create(User $user): bool { return $user->hasPermission('create_drivers'); }
     public function update(User $user, Driver $model): bool { return $user->hasPermission('edit_drivers'); }
     public function delete(User $user, Driver $model): bool { return $user->hasPermission('delete_drivers'); }
-    public function restore(User $user, Driver $model): bool { return $user->hasPermission('delete_drivers'); }
+    public function restore(User $user, Driver $model): bool { return false; }
     public function forceDelete(User $user, Driver $model): bool { return $user->hasPermission('delete_drivers'); }
     public function deleteAny(User $user): bool { return $user->hasPermission('delete_drivers'); }
-    public function restoreAny(User $user): bool { return $user->hasPermission('delete_drivers'); }
+    public function restoreAny(User $user): bool { return false; }
     public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_drivers'); }
 }

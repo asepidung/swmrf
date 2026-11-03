@@ -31,7 +31,6 @@ class EditCarcass extends EditRecord
                 ->disabled(fn ($record) => \App\Models\BoningCarcass::where('carcass_id', $record->id)->exists()),
             Actions\ForceDeleteAction::make()
                 ->disabled(fn ($record) => \App\Models\BoningCarcass::where('carcass_id', $record->id)->exists()),
-            Actions\RestoreAction::make(),
         ];
     }
 

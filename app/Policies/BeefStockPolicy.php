@@ -50,7 +50,7 @@ class BeefStockPolicy
 
     public function restoreAny(User $user): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('delete_beef_stocks');
+        return false;
     }
 
     public function forceDeleteAny(User $user): bool

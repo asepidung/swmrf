@@ -53,7 +53,7 @@ class DeliveryOrderPolicy
      */
     public function restore(User $user, DeliveryOrder $deliveryOrder): bool
     {
-        return $user->hasPermission('delete_delivery_orders');
+        return false;
     }
 
     /**
@@ -71,7 +71,7 @@ class DeliveryOrderPolicy
 
     public function restoreAny(User $user): bool
     {
-        return $user->hasPermission('delete_delivery_orders');
+        return false;
     }
 
     public function forceDeleteAny(User $user): bool

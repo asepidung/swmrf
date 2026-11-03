@@ -72,7 +72,6 @@ class EditInvoice extends EditRecord
                         $this->redirect($this->getResource()::getUrl('index'));
                     }
                 }),
-            Actions\RestoreAction::make(),
         ];
     }
 }

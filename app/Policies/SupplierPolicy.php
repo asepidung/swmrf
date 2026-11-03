@@ -12,9 +12,9 @@ class SupplierPolicy
     public function create(User $user): bool { return $user->hasPermission('create_suppliers'); }
     public function update(User $user, Supplier $model): bool { return $user->hasPermission('edit_suppliers'); }
     public function delete(User $user, Supplier $model): bool { return $user->hasPermission('delete_suppliers'); }
-    public function restore(User $user, Supplier $model): bool { return $user->hasPermission('delete_suppliers'); }
+    public function restore(User $user, Supplier $model): bool { return false; }
     public function forceDelete(User $user, Supplier $model): bool { return $user->hasPermission('delete_suppliers'); }
     public function deleteAny(User $user): bool { return $user->hasPermission('delete_suppliers'); }
-    public function restoreAny(User $user): bool { return $user->hasPermission('delete_suppliers'); }
+    public function restoreAny(User $user): bool { return false; }
     public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_suppliers'); }
 }

@@ -626,7 +626,6 @@ class CarcassResource extends Resource
                                     ->send();
                             }
                         }),
-                    Tables\Actions\RestoreBulkAction::make(),
                 ]),
             ]);
     }

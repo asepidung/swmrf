@@ -182,7 +182,6 @@ class SalesReturnResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                     Tables\Actions\ForceDeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
                 ]),
             ])
             ->recordClasses(fn (SalesReturn $record) => $record->trashed() ? 'border-s-2 border-red-600 bg-red-50' : null)

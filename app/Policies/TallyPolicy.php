@@ -34,7 +34,7 @@ class TallyPolicy
 
     public function restore(User $user, Tally $model): bool
     {
-        return $user->hasPermission('delete_tallies');
+        return false;
     }
 
     public function forceDelete(User $user, Tally $model): bool
@@ -49,7 +49,7 @@ class TallyPolicy
 
     public function restoreAny(User $user): bool
     {
-        return $user->hasPermission('delete_tallies');
+        return false;
     }
 
     public function forceDeleteAny(User $user): bool

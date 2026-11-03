@@ -96,22 +96,13 @@ class DraftTally extends Page implements HasTable
 
                             session(['tally_pod_limit' => (int) $data['pod_limit']]);
 
-                            // Tally yang pernah dihapus (soft delete) masih memegang
-                            // sales_order_id, dan kolom itu unique: membuat baris baru
-                            // untuk SO yang sama menabrak constraint. Hapusnya
-                            // sudah mengosongkan karton dan mengembalikan SO ke
-                            // waiting, jadi tally lama cukup dipulihkan (nomornya tetap).
-                            $tally = Tally::onlyTrashed()->where('sales_order_id', $record->id)->first();
-
-                            if ($tally) {
-                                $tally->restore();
-                                $tally->update(['status' => Tally::STATUS_PROCESSING]);
-                            } else {
-                                $tally = Tally::create([
-                                    'sales_order_id' => $record->id,
-                                    'status' => Tally::STATUS_PROCESSING,
-                                ]);
-                            }
+                            // Tally yang pernah dihapus tidak dipulihkan (Owner, 3 November 2026): SO-nya dibuatkan tally BARU
+                            // dengan nomor berikutnya, nomor lama dibiarkan melompat. Hapusnya sudah mengosongkan karton dan
+                            // mengembalikan SO ke waiting.
+                            $tally = Tally::create([
+                                'sales_order_id' => $record->id,
+                                'status' => Tally::STATUS_PROCESSING,
+                            ]);
 
                             $locked->update(['status' => SalesOrder::STATUS_PROCESSING]);
 
