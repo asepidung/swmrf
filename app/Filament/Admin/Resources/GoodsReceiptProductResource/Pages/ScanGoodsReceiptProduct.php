@@ -154,7 +154,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
                             $item->delete();
                         });
 
-                        Notification::make()
+                        Notification::make('scan-toast')
                             ->title(__('Data voided and removed from stock!'))
                             ->success()
                             ->send();
@@ -175,7 +175,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
         // langsung. Sama seperti keputusan Bank Account: dua lapis, bukan
         // satu.
         if (! (auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('edit_goods_receipt_products') ?? false))) {
-            Notification::make()
+            Notification::make('scan-toast')
                 ->title(__('You do not have permission to scan items'))
                 ->danger()
                 ->send();
@@ -192,7 +192,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
         // dipilih; tanpa penjagaan ini, stok akan tercatat tanpa gudang sama
         // sekali.
         if (! $this->warehouse_id) {
-            \Filament\Notifications\Notification::make()
+            \Filament\Notifications\Notification::make('scan-toast')
                 ->title(__('Choose a warehouse first'))
                 ->body(__('The scanned goods need to be recorded somewhere.'))
                 ->warning()
@@ -213,8 +213,8 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
         //    ada di dalam transaksi di bawah.
         $existsInGr = $this->record->items()->where('barcode', $barcode)->exists();
         if ($existsInGr) {
-            Notification::make()
-                ->title(__('Scan Failed'))
+            Notification::make('scan-toast')
+                ->title(__('Already Scanned'))
                 ->body(__('Item Already Recorded'))
                 ->warning()
                 ->send();
@@ -227,7 +227,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
         // 3. Cari data lengkap di TallyItem (Buyback scenario)
         $tallyItem = \App\Models\TallyItem::where('barcode', $barcode)->first();
         if (!$tallyItem) {
-            Notification::make()
+            Notification::make('scan-toast')
                 ->title(__('Scan Failed'))
                 ->body(__('This item is not on any tally, so it did not come from our own production'))
                 ->danger()
@@ -249,7 +249,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
         // 4. Pastikan product_id ada di purchase_product_items (PO)
         $poItem = $this->record->purchaseProduct->items()->where('product_id', $product->id)->first();
         if (!$poItem) {
-            Notification::make()
+            Notification::make('scan-toast')
                 ->title(__('Scan Failed'))
                 ->body(__('Item Not in PO'))
                 ->danger()
@@ -262,7 +262,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
         // Validate grade
         $grade = \App\Models\Grade::find($gradeId);
         if (!$grade) {
-            Notification::make()
+            Notification::make('scan-toast')
                 ->title(__('Scan Failed'))
                 ->body(__('The grade coming from the tally is not valid'))
                 ->danger()
@@ -357,14 +357,14 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
                 ]);
             });
 
-            Notification::make()
+            Notification::make('scan-toast')
                 ->title(__('Scan Successful'))
                 ->success()
                 ->send();
 
         } catch (\Exception $e) {
             report($e);
-            Notification::make()
+            Notification::make('scan-toast')
                 ->title(__('Error!'))
                 ->body($e->getMessage())
                 ->danger()

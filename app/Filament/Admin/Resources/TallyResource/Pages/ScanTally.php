@@ -118,7 +118,7 @@ class ScanTally extends Page implements HasForms, HasTable
                             ->log('Approved Tally: ' . $this->record->tally_number);
                     });
 
-                    Notification::make()
+                    Notification::make('scan-toast')
                         ->title(__('Tally Approved Successfully'))
                         ->success()
                         ->send();
@@ -140,7 +140,7 @@ class ScanTally extends Page implements HasForms, HasTable
                     DB::transaction(function () {
                         $this->record->delete();
                     });
-                    Notification::make()
+                    Notification::make('scan-toast')
                         ->title(__('Tally Deleted and Stock Restored'))
                         ->success()
                         ->send();
@@ -329,7 +329,7 @@ class ScanTally extends Page implements HasForms, HasTable
                                     ]);
                                 });
                                 
-                                Notification::make()
+                                Notification::make('scan-toast')
                                     ->title(__('Tally Item Relabeled Successfully'))
                                     ->success()
                                     ->send();
@@ -396,7 +396,7 @@ class ScanTally extends Page implements HasForms, HasTable
                         });
 
                         if ($ditolak) {
-                            Notification::make()
+                            Notification::make('scan-toast')
                                 ->title(__('This tally can no longer be edited'))
                                 ->body(__('It has already been approved or turned into a Delivery Order, so items can no longer be removed from it.'))
                                 ->danger()
@@ -405,7 +405,7 @@ class ScanTally extends Page implements HasForms, HasTable
                             return;
                         }
 
-                        Notification::make()
+                        Notification::make('scan-toast')
                             ->title(__('Item removed and returned to stock'))
                             ->success()
                             ->send();
@@ -421,7 +421,7 @@ class ScanTally extends Page implements HasForms, HasTable
         // (lewat canViewAny() Resource), jadi siapa pun berizin MELIHAT
         // saja bisa mengonsumsi stok lewat scan.
         if (! auth()->user()?->hasPermission('edit_tallies')) {
-            Notification::make()
+            Notification::make('scan-toast')
                 ->title(__('You do not have permission to scan items'))
                 ->danger()
                 ->send();
@@ -441,9 +441,8 @@ class ScanTally extends Page implements HasForms, HasTable
         // 1. Cek duplikat barcode di tally_items (hanya dalam Tally ID yang sama)
         $exists = $this->record->items()->where('barcode', $barcode)->exists();
         if ($exists) {
-            Notification::make()
-                ->title(__('Scan Failed'))
-                ->body(__('This item has already been scanned on this tally'))
+            Notification::make('scan-toast')
+                ->title(__('Already Scanned'))
                 ->warning()
                 ->send();
             $this->barcode = '';
@@ -500,14 +499,14 @@ class ScanTally extends Page implements HasForms, HasTable
                 ]);
             });
 
-            Notification::make()
+            Notification::make('scan-toast')
                 ->title(__('Scan Successful'))
                 ->success()
                 ->send();
 
         } catch (\Exception $e) {
             report($e);
-            Notification::make()
+            Notification::make('scan-toast')
                 ->title(__('Error!'))
                 ->body($e->getMessage())
                 ->danger()
