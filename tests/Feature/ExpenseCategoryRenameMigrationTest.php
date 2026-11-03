@@ -29,13 +29,14 @@ class ExpenseCategoryRenameMigrationTest extends TestCase
         $this->assertSame('ONGKOS KIRIM & EKSPEDISI', $kirim->fresh()->name);
     }
 
-    public function test_the_shipping_category_is_then_named_tracking(): void
+    public function test_the_shipping_category_ends_up_named_trucking(): void
     {
         $kirim = ExpenseCategory::create(['name' => 'PENGIRIMAN & PENGANGKUTAN']);
 
         (include database_path('migrations/2026_11_03_100000_clarify_expense_category_names.php'))->up();
         (include database_path('migrations/2026_11_03_110000_rename_shipping_expense_category_to_tracking.php'))->up();
+        (include database_path('migrations/2026_11_03_120000_rename_tracking_expense_category_to_trucking.php'))->up();
 
-        $this->assertSame('TRACKING', $kirim->fresh()->name);
+        $this->assertSame('TRUCKING', $kirim->fresh()->name);
     }
 }
