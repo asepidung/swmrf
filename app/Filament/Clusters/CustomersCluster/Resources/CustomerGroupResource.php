@@ -73,6 +73,13 @@ class CustomerGroupResource extends Resource
                             ->label(fn() => __('Each customer pays separately'))
                             ->helperText(__('Turn ON for groups whose members are different people (for example employees): receiving a payment then asks for one customer and never mixes money between customers.'))
                             ->columnSpanFull(),
+
+                        Forms\Components\Toggle::make('is_active')
+                            ->label(fn() => __('Active'))
+                            ->helperText(__('Turn OFF for groups that are no longer used: they disappear from the customer form, nothing is deleted.'))
+                            ->default(true)
+                            ->visibleOn('edit')
+                            ->columnSpanFull(),
                     ])->columns(2),
             ]);
     }
@@ -93,6 +100,10 @@ class CustomerGroupResource extends Resource
                     ->searchable()
                     ->limit(50)
                     ->toggleable(),
+                Tables\Columns\IconColumn::make('is_active')
+                    ->label(fn() => __('Active'))
+                    ->boolean()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(fn() => __('Created at'))
                     ->dateTime()
@@ -105,7 +116,9 @@ class CustomerGroupResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\TernaryFilter::make('is_active')
+                    ->label(fn() => __('Active'))
+                    ->default(true),
             ])
             ->defaultSort('name')
             // Master data lain yang setara (Grade, CattleClass, Warehouse,
