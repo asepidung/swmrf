@@ -156,6 +156,22 @@ class SalesOrder extends Model
                 DeliveryPlan::find($lama)?->delete();
             }
         });
+
+        // Hal yang sama bila SO-nya dihapus (soft maupun force); dan bila SO dipulihkan, rencananya ikut dipulihkan
+        // supaya SO tidak menunjuk rencana yang sudah terhapus.
+        static::deleted(function ($model) {
+            $plan = $model->delivery_plan_id;
+
+            if ($plan && ! static::where('delivery_plan_id', $plan)->exists()) {
+                DeliveryPlan::find($plan)?->delete();
+            }
+        });
+
+        static::restored(function ($model) {
+            if ($model->delivery_plan_id) {
+                DeliveryPlan::withTrashed()->find($model->delivery_plan_id)?->restore();
+            }
+        });
     }
 
     public function customer()

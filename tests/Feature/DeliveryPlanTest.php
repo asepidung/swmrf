@@ -133,6 +133,24 @@ class DeliveryPlanTest extends TestCase
     }
 
     /** @test */
+    public function deleting_the_last_sales_order_of_a_plan_removes_the_plan_and_restoring_it_brings_the_plan_back()
+    {
+        $tanggal = now()->addDays(2)->format('Y-m-d');
+        $a = SalesOrder::create(['customer_id' => $this->customer1->id, 'delivery_date' => $tanggal, 'created_by' => $this->adminUser->id]);
+        $b = SalesOrder::create(['customer_id' => $this->customer1->id, 'delivery_date' => $tanggal, 'created_by' => $this->adminUser->id]);
+        $planId = $a->fresh()->delivery_plan_id;
+
+        $a->delete();
+        $this->assertNotNull(DeliveryPlan::find($planId), 'Masih dipakai SO lain.');
+
+        $b->delete();
+        $this->assertNull(DeliveryPlan::find($planId));
+
+        $b->restore();
+        $this->assertNotNull(DeliveryPlan::find($planId));
+    }
+
+    /** @test */
     public function it_groups_multiple_sales_orders_for_the_same_customer_and_date()
     {
         $deliveryDate = now()->addDays(2)->format('Y-m-d');
