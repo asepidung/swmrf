@@ -102,6 +102,37 @@ class DeliveryPlanTest extends TestCase
     }
 
     /** @test */
+    public function moving_a_sales_order_to_another_date_removes_the_plan_it_leaves_empty()
+    {
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer1->id,
+            'delivery_date' => now()->addDays(2)->format('Y-m-d'),
+            'created_by' => $this->adminUser->id,
+        ]);
+        $lama = $so->fresh()->delivery_plan_id;
+
+        $so->update(['delivery_date' => now()->addDays(4)->format('Y-m-d')]);
+
+        $this->assertNotEquals($lama, $so->fresh()->delivery_plan_id);
+        $this->assertNull(DeliveryPlan::find($lama));
+        $this->assertNotNull(DeliveryPlan::find($so->fresh()->delivery_plan_id));
+    }
+
+    /** @test */
+    public function moving_one_sales_order_keeps_a_plan_other_orders_still_use()
+    {
+        $tanggal = now()->addDays(2)->format('Y-m-d');
+        $a = SalesOrder::create(['customer_id' => $this->customer1->id, 'delivery_date' => $tanggal, 'created_by' => $this->adminUser->id]);
+        $b = SalesOrder::create(['customer_id' => $this->customer1->id, 'delivery_date' => $tanggal, 'created_by' => $this->adminUser->id]);
+        $bersama = $a->fresh()->delivery_plan_id;
+
+        $a->update(['delivery_date' => now()->addDays(4)->format('Y-m-d')]);
+
+        $this->assertNotNull(DeliveryPlan::find($bersama));
+        $this->assertEquals($bersama, $b->fresh()->delivery_plan_id);
+    }
+
+    /** @test */
     public function it_groups_multiple_sales_orders_for_the_same_customer_and_date()
     {
         $deliveryDate = now()->addDays(2)->format('Y-m-d');
