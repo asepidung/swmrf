@@ -121,6 +121,15 @@ class AdminPanelProvider extends PanelProvider
                      */
                     @media (max-width: 1599px) { html { font-size: 90%; } }
                     @media (max-width: 1279px) { html { font-size: 85%; } }
+
+                    /*
+                     * Dua pengikut skala di atas (Owner, 3 November 2026).
+                     *  1. Lebar isi halaman dibatasi max-w-7xl (80rem); karena rem ikut mengecil, sisi kiri-kanan jadi
+                     *     kosong. Di layar kecil isi dibiarkan memenuhi lebar; layar lebar tetap dibatasi.
+                     *  2. Tinggi baris tabel bawaan Filament (py-4 per sel) dirapatkan ke py-2, sekitar tinggi baris judul grup.
+                     */
+                    @media (max-width: 1599px) { .fi-main.max-w-7xl { max-width: none; } }
+                    .fi-ta-cell .px-3.py-4 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
                     /* Compact sidebar spacing */
                     .fi-sidebar-nav-groups { gap: 0.15rem !important; }
                     .fi-sidebar-group { margin-top: 0.1rem !important; }
