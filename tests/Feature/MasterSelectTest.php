@@ -427,6 +427,19 @@ class MasterSelectTest extends TestCase
     }
 
     /** @test */
+    public function multiple_labels_keep_the_order_they_were_chosen_in(): void
+    {
+        $a = $this->product('PRODUK A');
+        $b = $this->product('PRODUK B');
+        $c = $this->product('PRODUK C');
+
+        $this->assertSame(
+            [$c->id, $a->id, $b->id],
+            array_keys(MasterSelect::labels(Product::class, [$c->id, $a->id, $b->id])),
+        );
+    }
+
+    /** @test */
     public function the_add_products_modal_does_not_offer_products_already_on_the_order(): void
     {
         $a = $this->product('PRODUK SUDAH ADA');
