@@ -360,7 +360,7 @@ class RepackTest extends TestCase
             // Kalimatnya kini kunci Inggris dengan terjemahan Indonesia
             // terdaftar; test berjalan pada locale bawaan, jadi yang tampil
             // versi Inggrisnya.
-            ->assertSee('repacks have not been locked yet');
+            ->assertSee('Repacks not locked');
 
         // Test widget directly using helper methods
         $widget = new \App\Filament\Admin\Widgets\PendingTaskWidget();
