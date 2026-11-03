@@ -154,6 +154,29 @@ protected $fillable = [
         return '#'.$dokumen->getKey();
     }
 
+    /**
+     * Keterangan singkat dokumen yang didampingi, supaya daftar laporan terbaca tanpa membuka dokumennya (Owner, 3 November 2026):
+     * tally dan retur milik siapa (customer), penerimaan dari siapa (supplier), selebihnya dari catatan dokumen.
+     */
+    public function keterangan(): string
+    {
+        $dokumen = $this->reportable;
+
+        if (! $dokumen) {
+            return '-';
+        }
+
+        $teks = match (true) {
+            $dokumen instanceof Tally => $dokumen->salesOrder?->customer?->name,
+            $dokumen instanceof SalesReturn => $dokumen->customer?->name,
+            $dokumen instanceof GoodsReceiptProduct => $dokumen->supplier?->name,
+            $dokumen instanceof StockTake => $dokumen->summary_note,
+            default => $dokumen->note ?? null,
+        };
+
+        return filled($teks) ? (string) $teks : '-';
+    }
+
     /** Nama jenis dokumennya, untuk dibaca manusia. */
     public function jenisDokumen(): string
     {

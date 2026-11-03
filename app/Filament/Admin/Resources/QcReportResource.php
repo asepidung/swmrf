@@ -143,6 +143,14 @@ class QcReportResource extends Resource
                     ->label(__('Document number'))
                     ->formatStateUsing(fn (QcReport $record): string => $record->nomorDokumen()),
 
+                // Tally milik siapa, penerimaan dari siapa, repack apa (dari catatannya).
+                Tables\Columns\TextColumn::make('keterangan')
+                    ->label(__('Remarks'))
+                    ->state(fn (QcReport $record): string => $record->keterangan())
+                    ->limit(40)
+                    ->tooltip(fn (QcReport $record): ?string => mb_strlen($record->keterangan()) > 40 ? $record->keterangan() : null)
+                    ->wrap(),
+
                 /*
                  * Keadaannya, dan ini kolom yang paling dibaca.
                  *
@@ -242,6 +250,12 @@ class QcReportResource extends Resource
              * tugas yang belum dikerjakan -- yang justru belum punya waktu
              * kejadian -- terdampar di paling bawah.
              */
+            // Keterangan membaca customer/supplier lewat dokumennya; dimuat sekali supaya daftar tidak menembak kueri per baris.
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['reportable' => fn (\Illuminate\Database\Eloquent\Relations\MorphTo $morph) => $morph->morphWith([
+                \App\Models\Tally::class => ['salesOrder.customer'],
+                \App\Models\SalesReturn::class => ['customer'],
+                \App\Models\GoodsReceiptProduct::class => ['supplier'],
+            ])]))
             ->defaultSort(fn ($query) => $query
                 ->orderByRaw('submitted_at is null desc')
                 ->orderByDesc('created_at'));
