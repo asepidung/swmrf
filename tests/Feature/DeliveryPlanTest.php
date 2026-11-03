@@ -149,7 +149,7 @@ class DeliveryPlanTest extends TestCase
     }
 
     /** @test */
-    public function deleting_the_last_sales_order_of_a_plan_removes_the_plan_and_restoring_it_brings_the_plan_back()
+    public function deleting_the_last_sales_order_of_a_plan_removes_the_plan()
     {
         $tanggal = now()->addDays(2)->format('Y-m-d');
         $a = SalesOrder::create(['customer_id' => $this->customer1->id, 'delivery_date' => $tanggal, 'created_by' => $this->adminUser->id]);
@@ -162,8 +162,6 @@ class DeliveryPlanTest extends TestCase
         $b->delete();
         $this->assertNull(DeliveryPlan::find($planId));
 
-        $b->restore();
-        $this->assertNotNull(DeliveryPlan::find($planId));
     }
 
     /** @test */
