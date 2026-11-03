@@ -577,7 +577,7 @@ class InvoiceTest extends TestCase
 
         Livewire::actingAs($this->user)
             ->test(ListInvoices::class)
-            ->assertSee(__('Not Yet Exchanged'));
+            ->assertSee('TTF');
     }
 
     public function test_a_customer_row_opens_the_invoice_list_with_the_old_unexchanged_invoices_in_view(): void
@@ -613,7 +613,7 @@ class InvoiceTest extends TestCase
             ->withQueryParams(['tableFilters' => ['belum_tukar_faktur' => ['isActive' => true]]])
             ->test(ListInvoices::class);
 
-        $dariTf->assertSee(__('Back'))->assertDontSee(__('Draft Invoices'))->assertDontSee(__('Not Yet Exchanged'));
+        $dariTf->assertSee(__('Back'))->assertDontSee('Draft')->assertDontSee('TTF');
     }
 
     /**

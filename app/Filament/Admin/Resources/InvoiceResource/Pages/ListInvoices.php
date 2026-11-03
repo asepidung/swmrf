@@ -29,23 +29,25 @@ class ListInvoices extends ListRecords
                 ->color('info')
                 ->icon('heroicon-o-list-bullet')
                 ->outlined()
-                ->extraAttributes(['class' => 'rounded-full', 'style' => 'width: 12rem; justify-content: center;'])
+                ->extraAttributes(['class' => 'rounded-full', 'style' => 'width: 8rem; justify-content: center;'])
                 ->url(static::getResource()::getUrl('detail_list')),
 
             Actions\Action::make('unexchanged_list')
-                ->label(__('Not Yet Exchanged'))
+                ->label('TTF')
+                ->tooltip(__('Not Yet Exchanged'))
                 ->color('danger')
                 ->icon('heroicon-o-arrow-path-rounded-square')
                 ->outlined()
-                ->extraAttributes(['class' => 'rounded-full', 'style' => 'width: 12rem; justify-content: center;'])
+                ->extraAttributes(['class' => 'rounded-full', 'style' => 'width: 8rem; justify-content: center;'])
                 ->url(static::getResource()::getUrl('unexchanged')),
 
             Actions\Action::make('draft_list')
-                ->label(__('Draft Invoices'))
+                ->label('Draft')
+                ->tooltip(__('Draft Invoices'))
                 ->color('warning')
                 ->icon('heroicon-o-document-text')
                 ->outlined()
-                ->extraAttributes(['class' => 'rounded-full', 'style' => 'width: 12rem; justify-content: center;'])
+                ->extraAttributes(['class' => 'rounded-full', 'style' => 'width: 8rem; justify-content: center;'])
                 ->url(static::getResource()::getUrl('draft')),
         ];
     }
