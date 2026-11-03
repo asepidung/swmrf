@@ -404,4 +404,31 @@ class ExpenseResourceTest extends TestCase
             ->filterTable('trashed', 'with')
             ->assertCanSeeTableRecords([$hidup, $mati]);
     }
+
+    /**
+     * Kategori baru bisa dibuat cepat lewat ikon "+" di baris barang (Owner, 3 November 2026): hanya terlihat bagi yang
+     * boleh mengelola kategori, dan yang dibuat disimpan huruf besar lalu dikembalikan sebagai pilihan.
+     *
+     * @test
+     */
+    public function a_category_can_be_created_from_the_item_row_by_someone_allowed_to_manage_categories(): void
+    {
+        $pilihan = function (User $user) {
+            $page = Livewire::actingAs($user)->test(CreateExpense::class);
+            $key = array_key_first($page->get('data.items'));
+
+            return $page->instance()->getForm('form')->getComponent("data.items.{$key}.expense_category_id");
+        };
+
+        $boleh = $pilihan($this->employee(['view_expenses', 'create_expenses', 'manage_expense_categories']));
+        $this->assertFalse($boleh->getActions()['createOption']->isHidden());
+
+        $tanpaIzin = $pilihan($this->employee(['view_expenses', 'create_expenses']));
+        $this->assertTrue($tanpaIzin->getActions()['createOption']->isHidden());
+
+        $buat = (new \ReflectionProperty($boleh, 'createOptionUsing'))->getValue($boleh);
+        $id = $buat(['name' => 'listrik air', 'is_active' => true]);
+
+        $this->assertSame($id, ExpenseCategory::where('name', 'LISTRIK AIR')->value('id'));
+    }
 }
