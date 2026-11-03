@@ -163,11 +163,22 @@
     <script>
         JsBarcode("#barcode", "{{ $item->barcode }}", {
             format: "CODE128",
-            width: 1.5,
+            width: 2,
             height: 40,
             displayValue: false,
             margin: 0
         });
+
+        // Barcode dilebarkan memenuhi lebar label: batang lebih renggang, lebih mudah dibaca scanner.
+        (function () {
+            var s = document.getElementById("barcode");
+            var w = parseFloat(s.getAttribute("width")), h = parseFloat(s.getAttribute("height"));
+            s.setAttribute("viewBox", "0 0 " + w + " " + h);
+            s.setAttribute("preserveAspectRatio", "none");
+            s.style.width = "100%";
+            s.style.height = "13mm";
+            s.style.display = "block";
+        })();
 
         window.onload = function() {
             window.print();
