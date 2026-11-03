@@ -383,10 +383,19 @@ class MaterialRequisitionResource extends Resource
                             ->label(fn() => __('Until Date'))
                             ->default(now()),
                     ])
+                    // Request yang masih menunggu tindakan (review, persetujuan Finance, atau kembali ke Purchasing) SELALU
+                    // tampil, juga yang dibuat di bulan lain; filter tanggal hanya menyaring yang sudah selesai (Owner,
+                    // 3 November 2026: yang menggantung di bulan lalu tidak terlihat oleh reviewer/approver).
                     ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
-                        return $query
-                            ->when($data['created_from'], fn($q, $date) => $q->whereDate('created_at', '>=', $date))
-                            ->when($data['created_until'], fn($q, $date) => $q->whereDate('created_at', '<=', $date));
+                        if (empty($data['created_from']) && empty($data['created_until'])) {
+                            return $query;
+                        }
+
+                        return $query->where(fn ($q) => $q
+                            ->whereIn('status', ['Requested', 'Pending Finance', 'Returned to Purchasing'])
+                            ->orWhere(fn ($q) => $q
+                                ->when($data['created_from'], fn ($q, $date) => $q->whereDate('created_at', '>=', $date))
+                                ->when($data['created_until'], fn ($q, $date) => $q->whereDate('created_at', '<=', $date))));
                     }),
                 \App\Filament\Support\MasterSelect::filter(
                     Tables\Filters\SelectFilter::make('supplier_id')
