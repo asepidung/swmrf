@@ -3,15 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Activitylog\LogOptions;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Services\WarehouseFreezeService;
 
 class BeefStock extends Model
 {
-    use HasFactory, LogsActivity, \App\Models\Concerns\InheritsBatch;
+    use HasFactory, \App\Models\Concerns\InheritsBatch;
 
     protected static function booted()
     {
@@ -57,14 +55,6 @@ class BeefStock extends Model
         'pack_date' => 'date',
         'exp_date' => 'date',
     ];
-
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logAll()
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
-    }
 
     public function product(): BelongsTo
     {

@@ -4,8 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * Nilai (harga pokok per kg) satu barcode -- HPP tahap 2, issue #522.
@@ -15,8 +13,6 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class BarcodeCost extends Model
 {
-    use LogsActivity;
-
     public const SOURCE_BONING = 'boning';
 
     public const SOURCE_GOODS_RECEIPT = 'goods_receipt';
@@ -44,15 +40,6 @@ class BarcodeCost extends Model
         'cost_per_kg' => 'float',
         'valued_at' => 'datetime',
     ];
-
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->useLogName('barcode_costs')
-            ->logAll()
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
-    }
 
     public function product(): BelongsTo
     {
