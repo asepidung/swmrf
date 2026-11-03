@@ -116,6 +116,11 @@ class ExpenseResource extends Resource
                     ->options(fn () => ExpenseCategory::where('is_active', true)->orderBy('name')->pluck('name', 'id'))
                     ->searchable()
                     ->required()
+                    // Kategori baru dibuat cepat dari sini (Owner, 3 November 2026); Select ini berbasis options(), jadi
+                    // penyimpanan dan pemilihan otomatisnya ditulis sendiri.
+                    ->createOptionForm(\App\Filament\Support\QuickCreate::schema('expenseCategory'))
+                    ->createOptionAction(\App\Filament\Support\QuickCreate::action('expenseCategory'))
+                    ->createOptionUsing(fn (array $data): int => ExpenseCategory::create($data)->getKey())
                     ->columnSpan(['md' => 4]),
                 Forms\Components\TextInput::make('description')
                     ->label(__('Description'))

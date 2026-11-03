@@ -44,8 +44,8 @@ class QuickCreateTest extends TestCase
     public static function kinds(): array
     {
         return array_map(fn (string $kind): array => [$kind], array_combine(
-            ['materialUnit', 'materialCategory', 'productCategory', 'driver', 'vehicle', 'cattleClass', 'customerSegment', 'customerGroup'],
-            ['materialUnit', 'materialCategory', 'productCategory', 'driver', 'vehicle', 'cattleClass', 'customerSegment', 'customerGroup'],
+            ['materialUnit', 'materialCategory', 'productCategory', 'driver', 'vehicle', 'cattleClass', 'customerSegment', 'customerGroup', 'expenseCategory'],
+            ['materialUnit', 'materialCategory', 'productCategory', 'driver', 'vehicle', 'cattleClass', 'customerSegment', 'customerGroup', 'expenseCategory'],
         ));
     }
 

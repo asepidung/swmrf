@@ -6,6 +6,7 @@ use App\Models\CattleClass;
 use App\Models\CustomerGroup;
 use App\Models\CustomerSegment;
 use App\Models\Driver;
+use App\Models\ExpenseCategory;
 use App\Models\MaterialCategory;
 use App\Models\MaterialUnit;
 use App\Models\ProductCategory;
@@ -49,6 +50,7 @@ class QuickCreate
         'cattleClass' => CattleClass::class,
         'customerSegment' => CustomerSegment::class,
         'customerGroup' => CustomerGroup::class,
+        'expenseCategory' => ExpenseCategory::class,
     ];
 
     /** Model sebuah jenis master. */
@@ -89,7 +91,7 @@ class QuickCreate
                     ->helperText(fn () => __('Suggested from the highest existing prefix. Change it if needed.')),
             ],
 
-            'driver' => [
+            'driver', 'expenseCategory' => [
                 self::uppercaseName($kind),
                 Toggle::make('is_active')->default(true),
             ],
