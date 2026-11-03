@@ -66,7 +66,9 @@ class ScanTally extends Page implements HasForms, HasTable
             session(['tally_pod_limit' => null]);
             return;
         }
-        session(['tally_pod_limit' => (int) $value]);
+        // Kotak angka di layar membatasi 0-99, tetapi hanya di peramban; angka di luarnya (mis. -3) akan memerahkan semua baris.
+        $this->podLimit = max(0, min(99, (int) $value));
+        session(['tally_pod_limit' => $this->podLimit]);
     }
 
     protected function getHeaderActions(): array
@@ -365,6 +367,28 @@ class ScanTally extends Page implements HasForms, HasTable
                     ->alignCenter(),
             ])
             ->actions([
+                // Cetak ulang apa adanya, tanpa mengubah POD maupun barcode (Owner, 3 November 2026). Selalu tampil, tidak
+                // bergantung pada batas POD; relabel tetap lewat sel POD yang merah.
+                Tables\Actions\Action::make('reprint')
+                    ->iconButton()
+                    ->icon('heroicon-m-printer')
+                    ->color('info')
+                    ->tooltip(__('Reprint Barcode'))
+                    ->modalHeading(__('Reprint Barcode'))
+                    ->modalDescription(__('Print this label again as it is. The date and barcode do not change.'))
+                    ->modalSubmitActionLabel(__('Print'))
+                    ->form([
+                        Forms\Components\Checkbox::make('show_exp')
+                            ->label(__('Show Expiry'))
+                            ->default(false),
+                    ])
+                    ->action(function (TallyItem $record, array $data, $livewire) {
+                        $livewire->dispatch('auto-print', url: route('tally-item.label', [
+                            'id' => $record->id,
+                            'show_exp' => ! empty($data['show_exp']) ? 1 : 0,
+                        ]));
+                    }),
+
                 Tables\Actions\DeleteAction::make()
                     ->iconButton()
                     ->requiresConfirmation()

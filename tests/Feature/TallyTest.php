@@ -1081,4 +1081,40 @@ class TallyTest extends TestCase
         $so->refresh();
         $this->assertEquals('waiting', $so->status);
     }
+
+    /**
+     * Cetak ulang barcode selalu tersedia di baris, dan tidak mengubah barcode maupun POD (Owner, 3 November 2026);
+     * batas POD dijaga 0-99 di server.
+     */
+    public function test_a_tally_item_can_be_reprinted_as_it_is_and_the_pod_limit_stays_in_range(): void
+    {
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer->id,
+            'delivery_date' => now()->addDays(2)->format('Y-m-d'),
+            'po_number' => 'PO-REPRINT',
+            'created_by' => $this->user->id,
+            'status' => 'processing',
+        ]);
+        SalesOrderItem::create(['sales_order_id' => $so->id, 'product_id' => $this->product->id, 'weight' => 20.0, 'price' => 1]);
+        $tally = Tally::create(['sales_order_id' => $so->id, 'status' => 'processing']);
+
+        $item = \App\Models\TallyItem::create([
+            'tally_id' => $tally->id, 'barcode' => 'BC_REPRINT', 'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse->id, 'grade_id' => $this->grade->id, 'weight' => 3.5, 'qty_pcs' => 1,
+            'pack_date' => now()->toDateString(), 'origin' => 'BONING',
+        ]);
+
+        $page = Livewire::actingAs($this->user)->test(ScanTally::class, ['record' => $tally]);
+
+        $page->assertTableActionVisible('reprint', $item)
+            ->callTableAction('reprint', $item, ['show_exp' => true])
+            ->assertDispatched('auto-print', url: route('tally-item.label', ['id' => $item->id, 'show_exp' => 1]));
+
+        $this->assertSame('BC_REPRINT', $item->fresh()->barcode);
+        $this->assertSame(now()->toDateString(), $item->fresh()->pack_date->toDateString());
+
+        $page->set('podLimit', 150)->assertSet('podLimit', 99)
+            ->set('podLimit', -3)->assertSet('podLimit', 0)
+            ->set('podLimit', 40)->assertSet('podLimit', 40);
+    }
 }

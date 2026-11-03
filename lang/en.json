@@ -863,6 +863,8 @@
     "Price Lists": "Price Lists",
     "Price is required and cannot be zero.": "Price is required and cannot be zero.",
     "Print": "Print",
+    "Reprint Barcode": "Reprint Barcode",
+    "Print this label again as it is. The date and barcode do not change.": "Print this label again as it is. The date and barcode do not change.",
     "Print Berita Acara": "Print Handover Report",
     "Print Mutation": "Print Mutation",
     "Print Opname": "Print Opname",
