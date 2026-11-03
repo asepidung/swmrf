@@ -140,8 +140,8 @@ class AdminPanelProvider extends PanelProvider
                         .fi-ta-header-ctn { display: flex; flex-wrap: wrap; align-items: center; }
                         .fi-ta-header-ctn[hidden] { display: none; }
                         .fi-ta-header-ctn > * { border-top-width: 0; }
-                        .fi-ta-header-ctn > .fi-ta-header { flex: 0 0 auto; padding-top: 0.5rem; padding-bottom: 0.5rem; }
-                        .fi-ta-header-ctn > .fi-ta-header-toolbar { flex: 1 1 20rem; padding-top: 0.5rem; padding-bottom: 0.5rem; }
+                        .fi-ta-header-ctn > .fi-ta-header { flex: 0 0 auto; padding-top: 1rem; padding-bottom: 1rem; }
+                        .fi-ta-header-ctn > .fi-ta-header-toolbar { flex: 1 1 20rem; padding-top: 1rem; padding-bottom: 1rem; }
                         .fi-ta-header-ctn > .fi-ta-filters-above-content-ctn { flex: 0 0 100%; }
                     }
                     /* Compact sidebar spacing */
