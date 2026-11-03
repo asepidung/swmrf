@@ -53,6 +53,8 @@ class ActivityLogResource extends Resource
             $subject instanceof \App\Models\RepackValuation => $subject->repack?->doc_no,
             $subject instanceof \App\Models\SalesOrderItem => trim(($subject->salesOrder?->so_number ?? '').' · '.($subject->product?->name ?? ''), ' ·'),
             $subject instanceof \App\Models\DeliveryPlan => trim(($subject->customer?->name ?? '').' · '.($subject->delivery_date ? \Carbon\Carbon::parse($subject->delivery_date)->format('d M Y') : ''), ' ·'),
+            $subject instanceof \App\Models\CustomerProductSpec => trim(($subject->customer?->name ?? '').' · '.($subject->product?->name ?? ''), ' ·'),
+            $subject instanceof \App\Models\SalesReturnPlanItem => trim(($subject->plan?->plan_number ?? '').' · '.($subject->product?->name ?? ''), ' ·'),
             $subject instanceof \App\Models\BeefStock, $subject instanceof \App\Models\BeefStockMovement,
             $subject instanceof \App\Models\RepackResult, $subject instanceof \App\Models\RepackMaterial,
             $subject instanceof \App\Models\BarcodeCost => trim(($subject->barcode ?? '').' · '.($subject->product?->name ?? ''), ' ·'),
@@ -64,7 +66,7 @@ class ActivityLogResource extends Resource
         }
 
         // Try common naming fields in order of preference
-        foreach (['document_number', 'receiving_number', 'doc_no', 'so_number', 'tally_number', 'delivery_order_number', 'receipt_number', 'invoice_number', 'po_number', 'carcass_number', 'cow_number', 'rfid_tag', 'name', 'username', 'bank_name', 'account_number', 'title', 'initial'] as $field) {
+        foreach (['weighing_number', 'expense_number', 'return_number', 'plan_number', 'mutation_number', 'costing_number', 'payment_number', 'document_number', 'receiving_number', 'doc_no', 'so_number', 'tally_number', 'delivery_order_number', 'receipt_number', 'invoice_number', 'po_number', 'carcass_number', 'cow_number', 'rfid_tag', 'name', 'username', 'bank_name', 'account_number', 'title', 'initial'] as $field) {
             if (!empty($subject->{$field})) {
                 return $subject->{$field};
             }
@@ -105,7 +107,7 @@ class ActivityLogResource extends Resource
         // Data yang sudah terhapus permanen: ambil nomornya dari isi log (data lama/baru) sebelum menyerah ke id.
         $isi = array_merge($record->properties['attributes'] ?? [], $record->properties['old'] ?? []);
 
-        foreach (['barcode', 'invoice_number', 'so_number', 'tally_number', 'delivery_order_number', 'receipt_number', 'doc_no', 'name'] as $kolom) {
+        foreach (['barcode', 'expense_number', 'return_number', 'plan_number', 'mutation_number', 'costing_number', 'payment_number', 'weighing_number', 'invoice_number', 'so_number', 'tally_number', 'delivery_order_number', 'receipt_number', 'doc_no', 'name'] as $kolom) {
             if (! empty($isi[$kolom]) && is_string($isi[$kolom])) {
                 return $isi[$kolom];
             }
