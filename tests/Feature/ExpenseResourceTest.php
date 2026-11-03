@@ -156,14 +156,86 @@ class ExpenseResourceTest extends TestCase
     }
 
     /** @test */
-    public function a_settled_expense_redirects_away_from_the_edit_page(): void
+    public function a_cancelled_expense_redirects_away_from_the_edit_page(): void
     {
         $expense = $this->openAdvance();
-        $expense->settle($this->items(100000));
+        $expense->cancel();
 
         Livewire::actingAs($this->employee(['view_expenses', 'edit_expenses']))
             ->test(EditExpense::class, ['record' => $expense->getRouteKey()])
             ->assertRedirect(ExpenseResource::getUrl('index'));
+    }
+
+    /**
+     * Pengeluaran yang sudah Settled (reimburse) boleh dikoreksi: barang, kategori, keterangan, dan harga; mutasi
+     * kasnya ikut, dan jejaknya tercatat (Owner, 3 November 2026).
+     *
+     * @test
+     */
+    public function a_settled_reimburse_can_be_corrected_and_the_cash_movement_follows(): void
+    {
+        $expense = Expense::createReimburse(['expense_date' => now()->toDateString(), 'recipient_name' => 'budi'], $this->items(50000));
+        $lain = ExpenseCategory::create(['name' => 'KATEGORI LAIN']);
+
+        $page = Livewire::actingAs($this->employee(['view_expenses', 'edit_expenses']))
+            ->test(EditExpense::class, ['record' => $expense->getRouteKey()])
+            ->assertNoRedirect()
+            ->fillForm([
+                'recipient_name' => 'siti',
+                'items' => [['expense_category_id' => $lain->id, 'description' => 'lakban besar', 'amount' => 65000]],
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $expense->refresh();
+        $this->assertSame(Expense::STATUS_SETTLED, $expense->status);
+        $this->assertSame('SITI', $expense->recipient_name);
+        $this->assertSame(65000.0, (float) $expense->receipt_amount);
+        $this->assertSame('lakban besar', $expense->items()->firstOrFail()->description);
+        $this->assertSame($lain->id, $expense->items()->firstOrFail()->expense_category_id);
+        $this->assertSame(1, $expense->transactions()->count());
+        $this->assertSame(65000.0, (float) $expense->transactions()->firstOrFail()->amount);
+        $this->assertDatabaseHas('activity_log', ['subject_type' => Expense::class, 'subject_id' => $expense->id, 'description' => 'corrected']);
+    }
+
+    /** Kasbon yang belum dilaporkan: harga ikut mengubah uang muka dan uang yang keluar. */
+    public function test_an_open_advance_price_change_updates_the_advance_and_its_cash_movement(): void
+    {
+        $expense = $this->openAdvance();
+
+        $expense->correct([], $this->items(120000));
+
+        $this->assertSame(120000.0, (float) $expense->fresh()->advance_amount);
+        $this->assertSame(120000.0, (float) $expense->transactions()->firstOrFail()->amount);
+        $this->assertSame(Expense::STATUS_OPEN, $expense->fresh()->status);
+    }
+
+    /** Kasbon yang sudah dilaporkan: kategori dan keterangan boleh dikoreksi, harganya terkunci. */
+    public function test_a_reported_advance_can_change_its_description_but_not_its_prices(): void
+    {
+        $expense = $this->openAdvance();
+        $expense->settle($this->items(85000));
+        $lain = ExpenseCategory::create(['name' => 'KATEGORI LAIN']);
+        $masuk = $expense->transactions()->count();
+
+        $expense->correct([], [['expense_category_id' => $lain->id, 'description' => 'diperbaiki', 'amount' => 85000]]);
+
+        $this->assertSame('diperbaiki', $expense->items()->firstOrFail()->description);
+        $this->assertSame($masuk, $expense->transactions()->count());
+        $this->assertSame(85000.0, (float) $expense->fresh()->receipt_amount);
+
+        $this->expectException(\RuntimeException::class);
+        $expense->correct([], $this->items(90000));
+    }
+
+    /** Yang dibatalkan tetap terkunci. */
+    public function test_a_cancelled_expense_cannot_be_corrected(): void
+    {
+        $expense = $this->openAdvance();
+        $expense->cancel();
+
+        $this->expectException(\RuntimeException::class);
+        $expense->correct([], $this->items(70000));
     }
 
     // =========================================================================

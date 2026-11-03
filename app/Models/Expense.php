@@ -425,6 +425,93 @@ class Expense extends Model
         });
     }
 
+
+    /**
+     * Koreksi pengeluaran yang sudah dibuat (Owner, 3 November 2026): tanggal, pemohon, dan barang -- kategori,
+     * keterangan, harga -- boleh diubah selama belum dibatalkan, juga setelah Settled.
+     *
+     * Harga ikut mengoreksi uangnya: total barang menjadi nominal nota (reimburse) atau uang muka (kasbon yang
+     * belum dilaporkan), dan mutasi kas pertama dokumen ini disesuaikan. Kasbon yang SUDAH dilaporkan hanya boleh
+     * dikoreksi kategori dan keterangannya: totalnya terkait uang yang sudah dikembalikan atau ditambahkan, jadi
+     * harganya terkunci. Rekening dan jenis pembayaran tidak pernah berubah di sini.
+     *
+     * Dokumen yang Settled melewati penjaga `updating()` (yang menahan perubahan dari luar), jadi disimpan tanpa
+     * event dan jejaknya ditulis sendiri di Activity Log.
+     *
+     * @param  array<string, mixed>  $data  expense_date, recipient_name
+     * @param  array<int, array<string, mixed>>  $items
+     *
+     * @throws \RuntimeException
+     */
+    public function correct(array $data, array $items): void
+    {
+        $items = static::cleanItems($items);
+        $newTotal = round(array_sum(array_column($items, 'amount')), 2);
+
+        DB::transaction(function () use ($data, $items, $newTotal) {
+            $locked = self::whereKey($this->id)->lockForUpdate()->first();
+
+            if (! $locked || $locked->status === self::STATUS_CANCELLED) {
+                throw new \RuntimeException(__('This expense is locked and can no longer be edited.'));
+            }
+
+            $reported = $locked->type === self::TYPE_ADVANCE && $locked->receipt_amount !== null;
+
+            if ($reported && abs($newTotal - (float) $locked->receipt_amount) >= 0.005) {
+                throw new \RuntimeException(__('The prices of an advance that has been reported can no longer change; only the category and description.'));
+            }
+
+            $before = [
+                'expense_date' => $locked->expense_date?->toDateString(),
+                'recipient_name' => $locked->recipient_name,
+                'total' => $locked->type === self::TYPE_ADVANCE && ! $reported ? (float) $locked->advance_amount : (float) $locked->receipt_amount,
+                'items' => $locked->items->map(fn ($i) => $i->only(['expense_category_id', 'description', 'amount']))->all(),
+            ];
+
+            $fill = [];
+
+            if (array_key_exists('expense_date', $data)) {
+                $fill['expense_date'] = $data['expense_date'];
+            }
+
+            if (array_key_exists('recipient_name', $data)) {
+                $fill['recipient_name'] = strtoupper(trim((string) $data['recipient_name']));
+            }
+
+            if (! $reported) {
+                $fill[$locked->type === self::TYPE_ADVANCE ? 'advance_amount' : 'receipt_amount'] = $newTotal;
+            }
+
+            $locked->forceFill($fill)->saveQuietly();
+
+            $locked->writeItems($items);
+
+            // Mutasi kas pertama dokumen ini (uang muka atau pembayaran reimburse) mengikuti total dan tanggalnya.
+            $first = $locked->transactions()->where('type', 'out')->orderBy('id')->first();
+
+            if ($first) {
+                $first->update(array_filter([
+                    'amount' => $reported ? null : $newTotal,
+                    'transaction_date' => $locked->expense_date,
+                ], fn ($v) => $v !== null));
+            }
+
+            activity()
+                ->performedOn($locked)
+                ->withProperties([
+                    'old' => $before,
+                    'attributes' => [
+                        'expense_date' => $locked->expense_date?->toDateString(),
+                        'recipient_name' => $locked->recipient_name,
+                        'total' => $reported ? (float) $locked->receipt_amount : $newTotal,
+                        'items' => $items,
+                    ],
+                ])
+                ->log('corrected');
+        });
+
+        $this->refresh();
+    }
     /**
      * Sesuaikan nilai baris ke `$total` secara proporsional; sisa pembulatan ke baris terbesar.
      *

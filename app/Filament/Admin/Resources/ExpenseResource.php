@@ -97,6 +97,14 @@ class ExpenseResource extends Resource
             ->all();
     }
 
+    /** Kasbon yang sudah dilaporkan: harganya terkunci, hanya kategori dan keterangan yang boleh dikoreksi. */
+    private static function priceLocked(?Expense $record): bool
+    {
+        return $record !== null
+            && $record->type === Expense::TYPE_ADVANCE
+            && $record->receipt_amount !== null;
+    }
+
     private static function canManage(): bool
     {
         return auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('edit_expenses') ?? false);
@@ -131,6 +139,8 @@ class ExpenseResource extends Resource
                     ->label(__('Total Price'))
                     ->required()
                     ->live(onBlur: true)
+                    ->disabled(fn (?Expense $record): bool => static::priceLocked($record))
+                    ->dehydrated()
                     ->columnSpan(['md' => 3]),
             ])
             ->columns(['md' => 12])
@@ -184,10 +194,12 @@ class ExpenseResource extends Resource
                     ->schema([
                         static::itemsRepeater()
                             ->hiddenLabel()
-                            // Barang menentukan BankTransaction yang lahir saat dibuat; sesudahnya hanya
-                            // berubah lewat laporan balik kasbon (aksi Settle).
-                            ->disabled(fn (string $context): bool => $context === 'edit')
-                            ->dehydrated(fn (string $context): bool => $context === 'create'),
+                            // Barang boleh dikoreksi sesudah dibuat, juga setelah Settled (Owner, 3 November 2026);
+                            // `Expense::correct()` menyesuaikan mutasi kasnya. Kasbon yang sudah dilaporkan terkunci
+                            // harganya (terkait uang yang sudah kembali/ditambah), jadi baris tidak bisa ditambah atau
+                            // dihapus dan harga tidak bisa diubah.
+                            ->addable(fn (?Expense $record): bool => ! static::priceLocked($record))
+                            ->deletable(fn (?Expense $record): bool => ! static::priceLocked($record)),
                         static::itemsTotalPlaceholder(),
                     ]),
 
