@@ -9,22 +9,22 @@
             font-family: 'Poppins', sans-serif;
             font-size: 14px;
             color: #000;
-            margin: 20px;
+            margin: 8px;
         }
         table {
             width: 100%;
             border-collapse: collapse;
         }
         .info-table td {
-            padding: 4px;
+            padding: 2px 4px;
         }
         .items-table {
             border: 1px solid black;
-            margin-top: 15px;
+            margin-top: 8px;
         }
         .items-table th, .items-table td {
             border: 1px solid black;
-            padding: 6px;
+            padding: 4px;
             text-align: center;
         }
         .items-table td.left-align {
@@ -34,11 +34,11 @@
             text-align: right;
         }
         .signatures-table {
-            margin-top: 50px;
+            margin-top: 0;
             text-align: center;
         }
         .signatures-table td {
-            padding-top: 50px;
+            padding-top: 0;
         }
         hr {
             border: 0;
@@ -47,19 +47,19 @@
     </style>
 </head>
 <body>
-    <table style="width: 100%; margin-bottom: 10px;">
+    <table style="width: 100%; margin-bottom: 4px;">
         <tr>
             <td style="vertical-align: top;">
-                <span style="font-size: 16px; font-weight: bold; text-transform: uppercase;">Delivery Order</span><br />
-                <strong style="font-size: 18px;">PT. SANTI WIJAYA MEAT</strong>
+                <span style="font-weight: bold; text-transform: uppercase;">Delivery Order</span><br />
+                <strong>PT. SANTI WIJAYA MEAT</strong>
             </td>
             <td style="text-align: right; vertical-align: top; width: 40%;">
-                <span style="font-size: 12px; color: #555;">DO Number :</span><br />
-                <strong style="font-size: 20px;">{{ $record->delivery_order_number }}</strong>
+                <span>DO Number :</span><br />
+                <strong>{{ $record->delivery_order_number }}</strong>
             </td>
         </tr>
         <tr>
-            <td colspan="2" style="font-size: 11px; color: #555; white-space: nowrap;">Jl. Perum Asabri Blok B Desa Sukasirna Kec. Jonggol Kab. Bogor Telp. 021-89935103</td>
+            <td colspan="2" style="font-size: 12px;">Jl. Perum Asabri Blok B Desa Sukasirna Kec. Jonggol Kab. Bogor Telp. 021-89935103</td>
         </tr>
     </table>
     <hr />
