@@ -132,16 +132,16 @@ class AdminPanelProvider extends PanelProvider
                     .fi-ta-cell .px-3.py-4 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
 
                     /*
-                     * Tombol aksi header (mis. Ekspor Data) dan baris cari/filter dijadikan satu baris di layar sedang ke atas
-                     * (Owner, 3 November 2026). Di HP tetap bertumpuk. [hidden] ditegaskan lagi karena display:flex di bawah
+                     * Tombol aksi header (mis. Ekspor Data) dan baris cari/filter dijadikan satu baris
+                     * (Owner, 3 November 2026). [hidden] ditegaskan lagi karena display:flex di bawah
                      * mengalahkan atribut hidden bawaan.
                      */
-                    @media (min-width: 768px) {
+                    @media (min-width: 0px) {
                         .fi-ta-header-ctn { display: flex; flex-wrap: wrap; align-items: center; }
                         .fi-ta-header-ctn[hidden] { display: none; }
                         .fi-ta-header-ctn > * { border-top-width: 0; }
                         .fi-ta-header-ctn > .fi-ta-header { flex: 0 0 auto; padding-top: 1rem; padding-bottom: 1rem; }
-                        .fi-ta-header-ctn > .fi-ta-header-toolbar { flex: 1 1 20rem; padding-top: 1rem; padding-bottom: 1rem; }
+                        .fi-ta-header-ctn > .fi-ta-header-toolbar { flex: 1 1 12rem; padding-top: 1rem; padding-bottom: 1rem; }
                         .fi-ta-header-ctn > .fi-ta-filters-above-content-ctn { flex: 0 0 100%; }
                     }
                     /* Compact sidebar spacing */
