@@ -4,12 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Activitylog\LogOptions;
 
 class PriceListItem extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory;
 
     protected $fillable = [
         'price_list_id',
@@ -17,14 +15,6 @@ class PriceListItem extends Model
         'price',
         'note',
     ];
-
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logOnly(['priceList.id', 'product.name', 'price', 'note'])
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
-    }
 
     /**
      * Urutan cetak dan ekspor (Owner, 28 Oktober 2026): kategori produk dulu (menurut id kategori), lalu nama

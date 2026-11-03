@@ -138,4 +138,18 @@ class ActivityLogResourceTest extends TestCase
             \App\Filament\Admin\Resources\ActivityLogResource::getSubjectLabelFromRecord($log(\App\Models\DeliveryPlan::class, $rencana->id)),
         );
     }
+
+    /**
+     * Pengeluaran memakai nomornya, bukan id; dan baris item dokumen tidak lagi menulis log sendiri (Owner, 3 November 2026:
+     * detail cukup di dokumen induknya).
+     */
+    public function test_an_expense_shows_its_number_and_document_items_write_no_log_of_their_own(): void
+    {
+        $pengeluaran = new \App\Models\Expense(['expense_number' => 'EXP#260003']);
+
+        $this->assertSame('EXP#260003', \App\Filament\Admin\Resources\ActivityLogResource::getSubjectLabel($pengeluaran));
+
+        $this->assertNotContains(\Spatie\Activitylog\Traits\LogsActivity::class, class_uses_recursive(\App\Models\SalesOrderItem::class));
+        $this->assertNotContains(\Spatie\Activitylog\Traits\LogsActivity::class, class_uses_recursive(\App\Models\PriceListItem::class));
+    }
 }
