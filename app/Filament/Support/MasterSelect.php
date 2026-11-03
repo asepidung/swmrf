@@ -165,7 +165,11 @@ class MasterSelect
      */
     public static function labels(string $model, array $values, bool $withCode = false): array
     {
+        // Urutan pilihan dipertahankan: tanpa ini label kembali urut id dan chip/baris ikut berpindah.
+        $urutan = array_flip(array_map('strval', $values));
+
         return $model::query()->whereKey($values)->get()
+            ->sortBy(fn ($row): int => $urutan[(string) $row->getKey()] ?? PHP_INT_MAX)
             ->mapWithKeys(fn ($row): array => [$row->getKey() => self::text($row, $withCode)])
             ->all();
     }
