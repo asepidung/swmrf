@@ -114,6 +114,13 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 \Filament\View\PanelsRenderHook::HEAD_START,
                 fn (): string => '<style>
+                    /*
+                     * Skala tampilan menurut lebar layar (Owner, 3 November 2026, dicoba dengan zoom browser 100/90/80/75%).
+                     * Seluruh ukuran Filament memakai rem, jadi cukup mengubah ukuran akar: teks, jarak, dan tombol mengecil
+                     * bersama seperti zoom. Layar lebar tetap 100%; di bawah 85% dianggap terlalu kecil untuk dibaca seharian.
+                     */
+                    @media (max-width: 1599px) { html { font-size: 90%; } }
+                    @media (max-width: 1279px) { html { font-size: 85%; } }
                     /* Compact sidebar spacing */
                     .fi-sidebar-nav-groups { gap: 0.15rem !important; }
                     .fi-sidebar-group { margin-top: 0.1rem !important; }
