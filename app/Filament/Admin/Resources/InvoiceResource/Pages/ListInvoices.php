@@ -28,18 +28,24 @@ class ListInvoices extends ListRecords
                 ->label(__('Detail'))
                 ->color('info')
                 ->icon('heroicon-o-list-bullet')
+                ->outlined()
+                ->extraAttributes(['class' => 'rounded-full'])
                 ->url(static::getResource()::getUrl('detail_list')),
 
             Actions\Action::make('unexchanged_list')
                 ->label(__('Not Yet Exchanged'))
                 ->color('danger')
                 ->icon('heroicon-o-arrow-path-rounded-square')
+                ->outlined()
+                ->extraAttributes(['class' => 'rounded-full'])
                 ->url(static::getResource()::getUrl('unexchanged')),
 
             Actions\Action::make('draft_list')
                 ->label(__('Draft Invoices'))
                 ->color('warning')
                 ->icon('heroicon-o-document-text')
+                ->outlined()
+                ->extraAttributes(['class' => 'rounded-full'])
                 ->url(static::getResource()::getUrl('draft')),
         ];
     }
