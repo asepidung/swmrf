@@ -99,7 +99,7 @@ class PriceListDetailList extends Page implements HasTable
             ->filters([
                 Tables\Filters\SelectFilter::make('customer_group')
                     ->label(__('Customer Group'))
-                    ->relationship('priceList.customerGroup', 'name'),
+                    ->relationship('priceList.customerGroup', 'name', fn ($query) => $query->where('is_active', true)),
             ]);
     }
 }
