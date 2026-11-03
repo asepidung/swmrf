@@ -33,7 +33,7 @@ class ListInvoices extends ListRecords
                 ->url(static::getResource()::getUrl('detail_list')),
 
             Actions\Action::make('unexchanged_list')
-                ->label('TTF')
+                ->label(__('TTF'))
                 ->tooltip(__('Not Yet Exchanged'))
                 ->color('danger')
                 ->icon('heroicon-o-arrow-path-rounded-square')
@@ -42,7 +42,7 @@ class ListInvoices extends ListRecords
                 ->url(static::getResource()::getUrl('unexchanged')),
 
             Actions\Action::make('draft_list')
-                ->label('Draft')
+                ->label(__('Draft'))
                 ->tooltip(__('Draft Invoices'))
                 ->color('warning')
                 ->icon('heroicon-o-document-text')
