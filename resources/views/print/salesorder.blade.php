@@ -325,6 +325,9 @@
                 btn.classList.replace('btn-success', 'btn-warning');
             }
         }
+
+        // Bawaan: harga disembunyikan; tombol "Show Price" menampilkannya (Owner, 3 November 2026).
+        togglePrice();
     </script>
 </body>
 </html>

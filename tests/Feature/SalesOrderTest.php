@@ -111,6 +111,8 @@ class SalesOrderTest extends TestCase
         
         // Check presence of printing control buttons
         $response->assertSee('Hide Price');
+        // Halaman dibuka dengan harga tersembunyi: skrip memanggil togglePrice() sekali saat dimuat.
+        $response->assertSee('        togglePrice();', false);
         $response->assertSee('Close Tab');
         $response->assertSee('Print Document');
         $response->assertSee('function togglePrice()');
