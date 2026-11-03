@@ -863,6 +863,8 @@
     "Price Lists": "Daftar Harga",
     "Price is required and cannot be zero.": "Harga wajib diisi dan tidak boleh nol.",
     "Print": "Cetak",
+    "Reprint Barcode": "Cetak Ulang Barcode",
+    "Print this label again as it is. The date and barcode do not change.": "Cetak label ini lagi apa adanya. Tanggal dan barcode tidak berubah.",
     "Print Berita Acara": "Cetak Berita Acara",
     "Print Mutation": "Cetak Mutasi",
     "Print Opname": "Cetak Opname",
