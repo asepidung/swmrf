@@ -11,6 +11,7 @@ use App\Models\CustomerGroup;
 use App\Models\CustomerSegment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Filament\Clusters\CustomersCluster\Resources\CustomerResource\Pages\ListCustomers;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -79,5 +80,17 @@ class CustomerGroupActiveTest extends TestCase
 
         $this->assertContains('UNGROUP', $edit->instance()->form->getComponent('data.customer_group_id')->getOptions());
         $this->assertNotNull($aktif);
+    }
+
+    public function test_the_customer_list_group_filter_only_offers_active_groups(): void
+    {
+        CustomerGroup::create(['name' => 'GRUP AKTIF', 'top' => 30]);
+        CustomerGroup::create(['name' => 'UNGROUP', 'top' => 30, 'is_active' => false]);
+
+        $opsi = Livewire::test(ListCustomers::class)->instance()
+            ->getTableFiltersForm()->getComponent('tableFilters.customer_group_id.value')->getOptions();
+
+        $this->assertContains('GRUP AKTIF', $opsi);
+        $this->assertNotContains('UNGROUP', $opsi);
     }
 }

@@ -325,7 +325,7 @@ class CustomerResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('customer_group_id')
-                    ->relationship('group', 'name')
+                    ->relationship('group', 'name', fn ($query) => $query->where('is_active', true))
                     ->label(fn() => __('Customer Group')),
                 Tables\Filters\SelectFilter::make('customer_segment_id')
                     ->relationship('segment', 'name')
