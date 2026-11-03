@@ -29,7 +29,7 @@
     ":count material purchase orders are ready to be received.": "Ada :count PO material yang siap diterima.",
     ":count material receipts": ":count penerimaan material",
     ":count material receipts have not been locked yet.": "Ada :count penerimaan material yang belum dikunci.",
-    ":count material requests are waiting for approval.": "Ada :count permintaan material yang menunggu persetujuan.",
+    ":count material requests are waiting for approval.": "Ada :count permintaan material yang menunggu persetujuan Finance.",
     ":count material requests are waiting for review.": "Ada :count permintaan material yang menunggu review.",
     ":count mutations have not been received yet.": "Ada :count mutasi yang belum diterima.",
     ":count of :total active users still miss every alert. Ask them to turn notifications on from the bell icon.": ":count dari :total pengguna aktif masih melewatkan semua pemberitahuan. Minta mereka menyalakannya lewat ikon lonceng.",
