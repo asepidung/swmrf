@@ -5,13 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Activitylog\LogOptions;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class BoningItem extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity, \App\Models\Concerns\InheritsBatch;
+    use HasFactory, SoftDeletes, \App\Models\Concerns\InheritsBatch;
 
     protected $table = 'boning_items';
 
@@ -37,14 +35,6 @@ class BoningItem extends Model
         'pack_date' => 'date',
         'exp_date' => 'date',
     ];
-
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logAll()
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
-    }
 
     protected static function booted(): void
     {

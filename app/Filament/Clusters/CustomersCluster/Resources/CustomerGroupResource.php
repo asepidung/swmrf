@@ -117,8 +117,7 @@ class CustomerGroupResource extends Resource
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_active')
-                    ->label(fn() => __('Active'))
-                    ->default(true),
+                    ->label(fn() => __('Active')),
             ])
             ->defaultSort('name')
             // Master data lain yang setara (Grade, CattleClass, Warehouse,

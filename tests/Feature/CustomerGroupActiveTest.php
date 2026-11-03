@@ -46,16 +46,16 @@ class CustomerGroupActiveTest extends TestCase
         $this->assertFalse($group->fresh()->is_active);
     }
 
-    public function test_the_list_shows_only_active_groups_until_the_filter_is_cleared(): void
+    public function test_the_list_shows_every_group_and_the_active_filter_narrows_it(): void
     {
         $aktif = CustomerGroup::create(['name' => 'GRUP AKTIF', 'top' => 30]);
         $mati = CustomerGroup::create(['name' => 'UNGROUP', 'top' => 30, 'is_active' => false]);
 
         Livewire::test(ListCustomerGroups::class)
+            ->assertCanSeeTableRecords([$aktif, $mati])
+            ->filterTable('is_active', true)
             ->assertCanSeeTableRecords([$aktif])
-            ->assertCanNotSeeTableRecords([$mati])
-            ->removeTableFilter('is_active')
-            ->assertCanSeeTableRecords([$aktif, $mati]);
+            ->assertCanNotSeeTableRecords([$mati]);
     }
 
     public function test_an_inactive_group_is_not_offered_for_new_customers_but_stays_on_its_own_customers(): void

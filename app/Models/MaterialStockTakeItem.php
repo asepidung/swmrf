@@ -5,12 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 class MaterialStockTakeItem extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory;
 
     protected $fillable = [
         'material_stock_take_id',
@@ -32,14 +30,6 @@ class MaterialStockTakeItem extends Model
      * difference_qty berubah, dan Spatie mencatat siapa yang melakukannya
      * secara bawaan.
      */
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logOnly(['physical_qty', 'difference_qty', 'is_locked'])
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
-    }
-
     /**
      * Selisih hitungan ini dibaca sebagai apa: Over, Short, atau Sesuai.
      *

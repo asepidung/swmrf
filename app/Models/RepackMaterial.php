@@ -4,8 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Activitylog\LogOptions;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RepackMaterial extends Model
@@ -24,7 +22,7 @@ class RepackMaterial extends Model
         static::updated($cabut);
         static::deleted($cabut);
     }
-    use HasFactory, LogsActivity;
+    use HasFactory;
 
     protected $table = 'repack_materials';
 
@@ -50,14 +48,6 @@ class RepackMaterial extends Model
         'pack_date' => 'date',
         'exp_date' => 'date',
     ];
-
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logAll()
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
-    }
 
     public function repack(): BelongsTo
     {

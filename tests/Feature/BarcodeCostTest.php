@@ -254,8 +254,13 @@ class BarcodeCostTest extends TestCase
         $this->assertSame($logs, Activity::where('log_name', 'barcode_costs')->count(), 'Idempoten: tidak ada log baru.');
     }
 
-    /** @test */
-    public function every_change_of_value_is_in_the_activity_log(): void
+    /**
+     * Nilai per barcode tidak masuk Activity Log (Owner, 3 November 2026): rinciannya sudah ada di modul costing,
+     * dan log per barcode memenuhi tabel (ribuan baris dalam dua hari).
+     *
+     * @test
+     */
+    public function value_changes_per_barcode_stay_out_of_the_activity_log(): void
     {
         $boning = $this->boning();
         $this->label($boning, $this->tenderloin, 'TL-1');
@@ -266,12 +271,8 @@ class BarcodeCostTest extends TestCase
         $costing->items()->update(['hpp_per_kg' => 120000]);
         $costing->fresh()->lock();
 
-        $row = BarcodeCost::where('barcode', 'TL-1')->first();
-        $changes = Activity::where('log_name', 'barcode_costs')
-            ->where('subject_type', BarcodeCost::class)->where('subject_id', $row->id)->get();
-
-        $this->assertTrue($changes->contains(fn ($a) => (string) ($a->properties['old']['cost_per_kg'] ?? '') === '100000'
-            && (string) ($a->properties['attributes']['cost_per_kg'] ?? '') === '120000'), 'Nilai lama dan baru tercatat.');
+        $this->assertSame(120000.0, (float) BarcodeCost::where('barcode', 'TL-1')->value('cost_per_kg'));
+        $this->assertSame(0, Activity::where('subject_type', BarcodeCost::class)->count());
     }
 
     /** @test */
