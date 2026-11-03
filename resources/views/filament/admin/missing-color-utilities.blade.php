@@ -45,6 +45,17 @@
     .swm-wide-only { display: none; }
     @media (min-width: 1024px) { .swm-wide-only { display: grid; } }
 
+    /*
+        Daftar Faktur di HP (Owner, 3 November 2026): kolom pendukung (tanggal, PO, DO, pembuat) disembunyikan di bawah
+        768px supaya Nomor, Customer, dan Nilai terbaca tanpa menggeser; tiga tombol pintasan muat satu baris.
+        Filament tidak membawa kelas md:table-cell di CSS panel ini, jadi disebut sendiri.
+    */
+    .swm-list-shortcut { width: 8rem; justify-content: center; }
+    @media (max-width: 767px) {
+        .swm-hide-phone { display: none !important; }
+        .swm-list-shortcut { width: 5.5rem; padding-inline: 0.5rem; }
+    }
+
     .bg-danger-50 { background-color: rgba(var(--danger-50),1); }
     .bg-danger-500 { background-color: rgba(var(--danger-500),1); }
     .bg-gradient-to-b { background-image: linear-gradient(to bottom, var(--tw-gradient-stops)); }
