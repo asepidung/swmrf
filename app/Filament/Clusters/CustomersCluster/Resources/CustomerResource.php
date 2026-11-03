@@ -132,7 +132,10 @@ class CustomerResource extends Resource
                         // dikosongkan, `KeepsCustomerInAGroup` membuatkan grup
                         // bernama sama dengan customer.
                         Forms\Components\Select::make('customer_group_id')
-                            ->relationship('group', 'name')
+                            // Grup nonaktif tidak ditawarkan lagi, kecuali grup yang sedang dipakai customer ini.
+                            ->relationship('group', 'name', fn ($query, ?\Illuminate\Database\Eloquent\Model $record) => $query->where(
+                                fn ($q) => $q->where('is_active', true)->orWhere('id', $record?->customer_group_id)
+                            ))
                             ->label(fn() => __('Customer Group'))
                             ->placeholder(__('Create a group named after the customer'))
                             ->searchable()

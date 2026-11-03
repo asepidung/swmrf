@@ -21,6 +21,7 @@ class CustomerGroup extends Model
         'is_costing_reference',
         'is_general_price_reference',
         'pays_per_customer',
+        'is_active',
     ];
 
     protected $casts = [
@@ -28,6 +29,7 @@ class CustomerGroup extends Model
         'is_costing_reference' => 'boolean',
         'is_general_price_reference' => 'boolean',
         'pays_per_customer' => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     /**
