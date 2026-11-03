@@ -169,13 +169,14 @@
             margin: 0
         });
 
-        // Barcode dilebarkan memenuhi lebar label: batang lebih renggang, lebih mudah dibaca scanner.
+        // Barcode dilebarkan (sisa 6mm kiri-kanan sebagai ruang tenang): batang lebih renggang, lebih mudah dibaca scanner.
         (function () {
             var s = document.getElementById("barcode");
             var w = parseFloat(s.getAttribute("width")), h = parseFloat(s.getAttribute("height"));
             s.setAttribute("viewBox", "0 0 " + w + " " + h);
             s.setAttribute("preserveAspectRatio", "none");
-            s.style.width = "100%";
+            s.style.width = "calc(100% - 12mm)";
+            s.style.margin = "0 auto";
             s.style.height = "13mm";
             s.style.display = "block";
         })();
