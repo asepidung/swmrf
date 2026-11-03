@@ -166,7 +166,7 @@
             s.setAttribute("preserveAspectRatio", "none");
             s.style.width = "calc(100% - 12mm)";
             s.style.margin = "0 auto";
-            s.style.height = "13mm";
+            s.style.height = "10mm";
             s.style.display = "block";
         })();
 
