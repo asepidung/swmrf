@@ -483,4 +483,39 @@ class QcReportTest extends TestCase
             ->test(\App\Filament\Admin\Resources\QcReportResource\Pages\ListQcReports::class)
             ->assertCanSeeTableRecords([$tugas]);
     }
+
+    /**
+     * Daftar laporan QC menerangkan dokumennya (Owner, 3 November 2026): tally milik customer siapa, repack apa
+     * (dari catatannya), tanpa membuka dokumennya.
+     */
+    public function test_the_list_describes_the_document_beside_its_number(): void
+    {
+        $user = \App\Models\User::factory()->create(['role' => 'programmer', 'is_active' => true]);
+
+        $customer = \App\Models\Customer::create([
+            'name' => 'PELANGGAN UJI', 'address' => 'Bogor', 'top' => 0,
+            'customer_segment_id' => \App\Models\CustomerSegment::firstOrCreate(['name' => 'RETAIL'])->id,
+        ]);
+        $so = \App\Models\SalesOrder::create([
+            'customer_id' => $customer->id, 'delivery_date' => now()->addDay()->toDateString(),
+            'po_number' => 'PO-QC', 'created_by' => $user->id, 'status' => 'processing',
+        ]);
+        $tally = \App\Models\Tally::create(['sales_order_id' => $so->id, 'status' => 'processing']);
+        $repack = \App\Models\Repack::forceCreate([
+            'doc_no' => 'RP#QC1', 'repack_date' => now()->toDateString(), 'status' => 'OPEN',
+            'note' => 'GILING BAKSO 5 KG', 'created_by' => $user->id,
+        ]);
+
+        $laporanTally = QcReport::firstOrCreate(['reportable_type' => \App\Models\Tally::class, 'reportable_id' => $tally->id]);
+        $laporanRepack = QcReport::firstOrCreate(['reportable_type' => \App\Models\Repack::class, 'reportable_id' => $repack->id]);
+
+        $this->assertSame('PELANGGAN UJI', $laporanTally->fresh()->keterangan());
+        $this->assertSame('GILING BAKSO 5 KG', $laporanRepack->fresh()->keterangan());
+
+        \Livewire\Livewire::actingAs($user)
+            ->test(\App\Filament\Admin\Resources\QcReportResource\Pages\ListQcReports::class)
+            ->assertCanSeeTableRecords([$laporanTally, $laporanRepack])
+            ->assertSee('PELANGGAN UJI')
+            ->assertSee('GILING BAKSO 5 KG');
+    }
 }
