@@ -32,7 +32,7 @@ class ViewExpense extends ViewRecord
             Actions\Action::make('edit')
                 ->label(__('Edit'))
                 ->icon('heroicon-o-pencil')
-                ->visible(fn (): bool => $this->record->status === Expense::STATUS_OPEN
+                ->visible(fn (): bool => $this->record->status !== Expense::STATUS_CANCELLED && ! $this->record->trashed()
                     && (auth()->user()?->hasPermission('edit_expenses') ?? false))
                 ->url(fn () => ExpenseResource::getUrl('edit', ['record' => $this->record])),
 

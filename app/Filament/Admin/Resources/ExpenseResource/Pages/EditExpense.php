@@ -8,6 +8,8 @@ use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Exceptions\Halt;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 
 class EditExpense extends EditRecord
 {
@@ -31,14 +33,14 @@ class EditExpense extends EditRecord
     }
 
     /**
-     * Pola sama dengan `EditGoodsReceiptMaterial`: `mount()` menolak
-     * MEMBUKA halaman untuk expense yang sudah terkunci (Settled/Cancelled).
+     * `mount()` menolak MEMBUKA halaman untuk expense yang dibatalkan atau sudah dihapus. Yang Open maupun
+     * Settled boleh dikoreksi (Owner, 3 November 2026).
      */
     public function mount($record): void
     {
         parent::mount($record);
 
-        if ($this->getRecord()->status !== Expense::STATUS_OPEN) {
+        if ($this->getRecord()->status === Expense::STATUS_CANCELLED || $this->getRecord()->trashed()) {
             Notification::make()
                 ->title(__('This expense is locked and can no longer be edited.'))
                 ->danger()
@@ -48,16 +50,14 @@ class EditExpense extends EditRecord
     }
 
     /**
-     * Lapis kedua: tab yang sudah terbuka sebelum expense-nya di-settle/
-     * dibatalkan dari sesi lain masih bisa menyimpan tanpa ini. Baris
-     * dikunci dan dibaca ULANG di sini sebelum penyimpanan benar-benar
-     * terjadi -- sama seperti `EditGoodsReceiptMaterial::beforeSave()`.
+     * Lapis kedua: tab yang sudah terbuka sebelum expense-nya dibatalkan dari sesi lain masih bisa menyimpan tanpa
+     * ini. Baris dikunci dan dibaca ULANG di sini sebelum penyimpanan benar-benar terjadi.
      */
     protected function beforeSave(): void
     {
         $locked = Expense::whereKey($this->record->id)->lockForUpdate()->first();
 
-        if ($locked && $locked->status !== Expense::STATUS_OPEN) {
+        if ($locked && $locked->status === Expense::STATUS_CANCELLED) {
             Notification::make()
                 ->title(__('This expense is locked and can no longer be edited.'))
                 ->danger()
@@ -67,7 +67,24 @@ class EditExpense extends EditRecord
         }
     }
 
-    /** Barang tidak ikut form (terkunci di Edit) -- hanya ditampilkan dari relasinya. */
+    /** Disimpan lewat `Expense::correct()`: harga ikut mengoreksi mutasi kas, dan jejaknya tercatat. */
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        try {
+            $record->correct(
+                Arr::only($data, ['expense_date', 'recipient_name']),
+                $data['items'] ?? [],
+            );
+        } catch (\RuntimeException $e) {
+            Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
+
+            throw new Halt();
+        }
+
+        return $record;
+    }
+
+    /** Barang diisi dari relasinya. */
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $data['items'] = $this->getRecord()->items->map(fn ($item) => [
