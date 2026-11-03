@@ -77,7 +77,7 @@ class ScanMutation extends Page implements HasForms, HasTable
         // diperbaiki: siapa pun berizin MELIHAT saja bisa mengonsumsi
         // stok lewat scan.
         if (! auth()->user()?->hasPermission('edit_mutations')) {
-            Notification::make()
+            Notification::make('scan-toast')
                 ->title(__('You do not have permission to scan items'))
                 ->danger()
                 ->send();
@@ -94,7 +94,7 @@ class ScanMutation extends Page implements HasForms, HasTable
 
         // Fast-path agar pesannya ramah; penjagaan yang mengikat ada di dalam transaksi.
         if (MutationItem::where('mutation_id', $this->record->id)->where('barcode', $barcode)->exists()) {
-            Notification::make()->title(__('This barcode has already been scanned on this mutation.'))->warning()->send();
+            Notification::make('scan-toast')->title(__('This barcode has already been scanned on this mutation.'))->warning()->send();
             $this->dispatch('focus-barcode');
             return;
         }
@@ -153,10 +153,10 @@ class ScanMutation extends Page implements HasForms, HasTable
                 $stock->delete();
             });
 
-            Notification::make()->title(__('Barcode scanned'))->success()->send();
+            Notification::make('scan-toast')->title(__('Barcode scanned'))->success()->send();
         } catch (\Exception $e) {
             report($e);
-            Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
+            Notification::make('scan-toast')->title(__('Failed'))->body($e->getMessage())->danger()->send();
         }
         
         $this->dispatch('focus-barcode');
@@ -207,7 +207,7 @@ class ScanMutation extends Page implements HasForms, HasTable
                         });
 
                         if ($ditolak) {
-                            Notification::make()
+                            Notification::make('scan-toast')
                                 ->title(__('This mutation can no longer be edited'))
                                 ->body(__('It has already been sent or received, so items can no longer be removed from it.'))
                                 ->danger()
@@ -216,7 +216,7 @@ class ScanMutation extends Page implements HasForms, HasTable
                             return;
                         }
 
-                        Notification::make()
+                        Notification::make('scan-toast')
                             ->title(__('Item removed and returned to stock'))
                             ->success()
                             ->send();
@@ -245,7 +245,7 @@ class ScanMutation extends Page implements HasForms, HasTable
                 ->disabled(fn (): bool => $this->record->items()->doesntExist())
                 ->action(function () {
                     if ($this->record->items()->doesntExist()) {
-                        Notification::make()
+                        Notification::make('scan-toast')
                             ->title(__('Nothing has been scanned yet'))
                             ->body(__('Scan at least one item before sending this mutation.'))
                             ->danger()
@@ -255,7 +255,7 @@ class ScanMutation extends Page implements HasForms, HasTable
                     }
 
                     $this->record->update(['status' => 'SENT']);
-                    Notification::make()->title(__('Mutation locked and sent'))->success()->send();
+                    Notification::make('scan-toast')->title(__('Mutation locked and sent'))->success()->send();
                     $this->redirect(MutationResource::getUrl('view', ['record' => $this->record->id]));
                 }),
         ];

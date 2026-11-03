@@ -82,7 +82,7 @@ class FoundItemScanner extends Page implements HasForms, HasTable
         // 1. Cek apakah barang sudah ada di IN_STOCK
         $exists = BeefStock::where('barcode', $barcode)->where('status', 'IN_STOCK')->first();
         if ($exists) {
-            Notification::make()
+            Notification::make('scan-toast')
                 ->title(__('This item is already registered in stock'))
                 ->warning()
                 ->send();
@@ -370,7 +370,7 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                 ]);
                 $this->dispatch('auto-print', url: $printUrl);
 
-                Notification::make()
+                Notification::make('scan-toast')
                     ->title(__('Found item saved'))
                     ->body(__('New label created: :barcode', ['barcode' => $finalBarcode]))
                     ->success()

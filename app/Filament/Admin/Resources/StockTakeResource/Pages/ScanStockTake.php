@@ -95,7 +95,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
         $this->record = $record;
 
         if (! $this->record->isCountable()) {
-            \Filament\Notifications\Notification::make()
+            \Filament\Notifications\Notification::make('scan-toast')
                 ->title(__('This stock count is finished, so it can no longer be scanned.'))
                 ->warning()
                 ->send();
@@ -122,7 +122,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
             return true;
         }
 
-        \Filament\Notifications\Notification::make()
+        \Filament\Notifications\Notification::make('scan-toast')
             ->title(__('This stock count is finished, so it can no longer be scanned.'))
             ->danger()
             ->send();
@@ -178,7 +178,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
                 });
 
                 if (! $cocok) {
-                    \Filament\Notifications\Notification::make()
+                    \Filament\Notifications\Notification::make('scan-toast')
                         ->title(__('This stock count is finished, so it can no longer be scanned.'))
                         ->danger()
                         ->send();
@@ -188,12 +188,12 @@ class ScanStockTake extends Page implements HasForms, HasTable
                     return;
                 }
 
-                \Filament\Notifications\Notification::make()
+                \Filament\Notifications\Notification::make('scan-toast')
                     ->title(__('Barcode Matched!'))
                     ->success()
                     ->send();
             } else {
-                \Filament\Notifications\Notification::make()
+                \Filament\Notifications\Notification::make('scan-toast')
                     ->title(__('Barcode already scanned!'))
                     ->warning()
                     ->send();
@@ -207,7 +207,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
                     ->exists();
                     
                 if ($alreadyConverted) {
-                    \Filament\Notifications\Notification::make()
+                    \Filament\Notifications\Notification::make('scan-toast')
                         ->title(__('Scanned'))
                         ->body(__('This old barcode has already been converted and its new label printed.'))
                         ->warning()
@@ -247,7 +247,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
                 $productId = $product ? $product->id : null;
                 
                 if (!$productId) {
-                    \Filament\Notifications\Notification::make()
+                    \Filament\Notifications\Notification::make('scan-toast')
                         ->title(__('Product not found'))
                         // Kuncinya TIDAK boleh disusun dengan penyambungan
                         // teks: setiap kode produk akan melahirkan kunci
@@ -270,7 +270,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
 
             } catch (\Exception $e) {
                 report($e);
-                \Filament\Notifications\Notification::make()
+                \Filament\Notifications\Notification::make('scan-toast')
                     ->title(__('Error Parsing Barcode'))
                     ->body($e->getMessage())
                     ->danger()
@@ -409,7 +409,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
                         throw $e;
                     }
 
-                    \Filament\Notifications\Notification::make()
+                    \Filament\Notifications\Notification::make('scan-toast')
                         ->title(__('This stock count is finished, so it can no longer be scanned.'))
                         ->danger()
                         ->send();
@@ -428,7 +428,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
                     // orang kedua tanpa penjelasan.
                     report($e);
 
-                    \Filament\Notifications\Notification::make()
+                    \Filament\Notifications\Notification::make('scan-toast')
                         ->title(__('Barcode collision, please try again'))
                         ->body(__('Someone else just added an item with the exact same barcode sequence. Nothing was lost -- submit the form again.'))
                         ->danger()
@@ -437,7 +437,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
                     return;
                 }
 
-                \Filament\Notifications\Notification::make()
+                \Filament\Notifications\Notification::make('scan-toast')
                     ->title(__('Manual item added'))
                     ->success()
                     ->send();

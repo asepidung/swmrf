@@ -169,6 +169,37 @@ class TallyTest extends TestCase
         ]);
     }
 
+    /**
+     * Scan ulang barcode yang sama di tally yang sama dilaporkan "Sudah Dipindai", bukan gagal (Owner, 3 November 2026).
+     *
+     * @test
+     */
+    public function it_reports_duplicate_scans_as_duplicates()
+    {
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer->id,
+            'delivery_date' => now()->addDays(2)->format('Y-m-d'),
+            'po_number' => 'PO-DUP',
+            'created_by' => $this->user->id,
+            'status' => 'processing',
+        ]);
+        SalesOrderItem::create(['sales_order_id' => $so->id, 'product_id' => $this->product->id, 'weight' => 20.0, 'price' => 1]);
+
+        $tally = Tally::create(['sales_order_id' => $so->id, 'status' => 'processing']);
+
+        BeefStock::create([
+            'barcode' => 'BC_DUP', 'product_id' => $this->product->id, 'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id, 'weight' => 5, 'qty_pcs' => 1, 'pack_date' => now(),
+            'origin' => 'BONING', 'status' => 'IN_STOCK',
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(ScanTally::class, ['record' => $tally])
+            ->set('barcode', 'BC_DUP')->call('scan')
+            ->set('barcode', 'BC_DUP')->call('scan')
+            ->assertNotified(__('Already Scanned'));
+    }
+
     /** @test */
     public function it_restores_stock_and_logs_movement_when_tally_item_is_deleted()
     {
