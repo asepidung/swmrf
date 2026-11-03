@@ -58,7 +58,7 @@ class ReceivablePolicy
      */
     public function restore($user, $model): bool
     {
-        return $user->isProgrammer();
+        return false;
     }
 
     /**
@@ -76,7 +76,7 @@ class ReceivablePolicy
 
     public function restoreAny($user): bool
     {
-        return $user->isProgrammer();
+        return false;
     }
 
     public function forceDeleteAny($user): bool

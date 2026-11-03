@@ -46,8 +46,6 @@ class EditSalesOrder extends EditRecord
                         $this->redirect($this->getResource()::getUrl('index'));
                     }
                 }),
-            Actions\RestoreAction::make()
-                ->hidden(fn(): bool => in_array($this->record->status, SalesOrder::STATUS_LOCKED_FOR_EDIT, true)),
         ];
     }
 

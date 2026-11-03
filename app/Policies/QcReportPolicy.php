@@ -45,7 +45,7 @@ class QcReportPolicy
 
     public function restore(User $user, QcReport $report): bool
     {
-        return $user->hasPermission('delete_qc_reports');
+        return false;
     }
 
     public function forceDelete(User $user, QcReport $report): bool
@@ -60,7 +60,7 @@ class QcReportPolicy
 
     public function restoreAny(User $user): bool
     {
-        return $user->hasPermission('delete_qc_reports');
+        return false;
     }
 
     public function forceDeleteAny(User $user): bool

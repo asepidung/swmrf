@@ -36,7 +36,7 @@ class ExpenseCategoryPolicy
 
     public function restore($user, $model): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('manage_expense_categories');
+        return false;
     }
 
     public function forceDelete($user, $model): bool
@@ -51,7 +51,7 @@ class ExpenseCategoryPolicy
 
     public function restoreAny($user): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('manage_expense_categories');
+        return false;
     }
 
     public function forceDeleteAny($user): bool

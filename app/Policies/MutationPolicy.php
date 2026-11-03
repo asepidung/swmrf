@@ -53,7 +53,7 @@ class MutationPolicy
      */
     public function restore($user, $model): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('delete_mutations');
+        return false;
     }
 
     /**
@@ -71,7 +71,7 @@ class MutationPolicy
 
     public function restoreAny($user): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('delete_mutations');
+        return false;
     }
 
     public function forceDeleteAny($user): bool

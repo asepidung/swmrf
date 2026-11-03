@@ -53,7 +53,7 @@ class MaterialUsagePolicy
      */
     public function restore($user, $model): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('delete_material_usages');
+        return false;
     }
 
     /**
@@ -71,7 +71,7 @@ class MaterialUsagePolicy
 
     public function restoreAny($user): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('delete_material_usages');
+        return false;
     }
 
     public function forceDeleteAny($user): bool

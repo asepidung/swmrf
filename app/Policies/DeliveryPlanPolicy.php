@@ -34,7 +34,7 @@ class DeliveryPlanPolicy
 
     public function restore(User $user, DeliveryPlan $model): bool
     {
-        return $user->hasPermission('delete_delivery_plans');
+        return false;
     }
 
     public function forceDelete(User $user, DeliveryPlan $model): bool
@@ -49,7 +49,7 @@ class DeliveryPlanPolicy
 
     public function restoreAny(User $user): bool
     {
-        return $user->hasPermission('delete_delivery_plans');
+        return false;
     }
 
     public function forceDeleteAny(User $user): bool

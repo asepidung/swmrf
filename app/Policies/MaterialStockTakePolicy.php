@@ -53,7 +53,7 @@ class MaterialStockTakePolicy
      */
     public function restore($user, $model): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('delete_material_stock_takes');
+        return false;
     }
 
     /**
@@ -71,7 +71,7 @@ class MaterialStockTakePolicy
 
     public function restoreAny($user): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('delete_material_stock_takes');
+        return false;
     }
 
     public function forceDeleteAny($user): bool

@@ -12,9 +12,9 @@ class CustomerPolicy
     public function create(User $user): bool { return $user->hasPermission('create_customers'); }
     public function update(User $user, Customer $model): bool { return $user->hasPermission('edit_customers'); }
     public function delete(User $user, Customer $model): bool { return $user->hasPermission('delete_customers'); }
-    public function restore(User $user, Customer $model): bool { return $user->hasPermission('delete_customers'); }
+    public function restore(User $user, Customer $model): bool { return false; }
     public function forceDelete(User $user, Customer $model): bool { return $user->hasPermission('delete_customers'); }
     public function deleteAny(User $user): bool { return $user->hasPermission('delete_customers'); }
-    public function restoreAny(User $user): bool { return $user->hasPermission('delete_customers'); }
+    public function restoreAny(User $user): bool { return false; }
     public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_customers'); }
 }

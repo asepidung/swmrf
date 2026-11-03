@@ -28,9 +28,9 @@ class CustomerProductSpecPolicy
     public function create(User $user): bool { return $this->canWrite($user); }
     public function update(User $user, CustomerProductSpec $model): bool { return $this->canWrite($user); }
     public function delete(User $user, CustomerProductSpec $model): bool { return $this->canWrite($user); }
-    public function restore(User $user, CustomerProductSpec $model): bool { return $this->canWrite($user); }
+    public function restore(User $user, CustomerProductSpec $model): bool { return false; }
     public function forceDelete(User $user, CustomerProductSpec $model): bool { return $this->canWrite($user); }
     public function deleteAny(User $user): bool { return $this->canWrite($user); }
-    public function restoreAny(User $user): bool { return $this->canWrite($user); }
+    public function restoreAny(User $user): bool { return false; }
     public function forceDeleteAny(User $user): bool { return $this->canWrite($user); }
 }

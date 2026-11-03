@@ -331,7 +331,6 @@ Tables\Actions\Action::make('scan')
                             $action->cancel();
                         }),
                     Tables\Actions\ForceDeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
                 ]),
             ]);
     }

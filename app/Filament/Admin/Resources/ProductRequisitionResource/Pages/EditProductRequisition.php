@@ -118,7 +118,6 @@ class EditProductRequisition extends EditRecord
             // mencegah orang menabraknya lewat jalur normal.
             Actions\DeleteAction::make()
                 ->hidden(fn (): bool => $this->getRecord()->purchaseProduct()->exists()),
-            Actions\RestoreAction::make(),
             Actions\Action::make('cancel')
                 ->label('Cancel')
                 ->color('gray')

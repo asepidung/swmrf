@@ -42,7 +42,7 @@ class MaterialUsageHeaderPolicy
 
     public function restore(User $user, MaterialUsageHeader $model): bool
     {
-        return $user->hasPermission('delete_material_usages');
+        return false;
     }
 
     public function forceDelete(User $user, MaterialUsageHeader $model): bool
@@ -57,7 +57,7 @@ class MaterialUsageHeaderPolicy
 
     public function restoreAny(User $user): bool
     {
-        return $user->hasPermission('delete_material_usages');
+        return false;
     }
 
     public function forceDeleteAny(User $user): bool

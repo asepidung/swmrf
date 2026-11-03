@@ -648,7 +648,7 @@ class TallyTest extends TestCase
     }
 
     /** @test */
-    public function a_deleted_tally_can_be_created_again_for_the_same_sales_order()
+    public function a_deleted_tally_is_not_restored_the_sales_order_gets_a_new_tally_with_the_next_number()
     {
         $so = SalesOrder::create([
             'customer_id' => $this->customer->id,
@@ -668,10 +668,12 @@ class TallyTest extends TestCase
             ->callTableAction('process', $so, ['pod_limit' => 15])
             ->assertHasNoTableActionErrors();
 
-        $this->assertSame(1, Tally::withTrashed()->where('sales_order_id', $so->id)->count(), 'satu SO tetap satu tally');
+        $this->assertSame(2, Tally::withTrashed()->where('sales_order_id', $so->id)->count(), 'yang lama tetap terhapus, yang baru ditambahkan');
         $tally = Tally::where('sales_order_id', $so->id)->first();
         $this->assertNotNull($tally, 'tally aktif lagi');
-        $this->assertSame($first->id, $tally->id, 'tally lama dipulihkan, nomornya tetap');
+        $this->assertNotSame($first->id, $tally->id, 'tally lama tidak dipulihkan');
+        $this->assertNotSame($first->tally_number, $tally->tally_number, 'nomor baru, nomor lama melompat');
+        $this->assertTrue(Tally::withTrashed()->find($first->id)->trashed());
         $this->assertSame(Tally::STATUS_PROCESSING, $tally->status);
         $this->assertSame(SalesOrder::STATUS_PROCESSING, $so->fresh()->status);
     }

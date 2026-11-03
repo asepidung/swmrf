@@ -12,9 +12,9 @@ class CattleWeighingPolicy
     public function create(User $user): bool { return $user->hasPermission('create_cattle_weighings'); }
     public function update(User $user, CattleWeighing $model): bool { return $user->hasPermission('edit_cattle_weighings'); }
     public function delete(User $user, CattleWeighing $model): bool { return $user->hasPermission('delete_cattle_weighings'); }
-    public function restore(User $user, CattleWeighing $model): bool { return $user->hasPermission('delete_cattle_weighings'); }
+    public function restore(User $user, CattleWeighing $model): bool { return false; }
     public function forceDelete(User $user, CattleWeighing $model): bool { return $user->hasPermission('delete_cattle_weighings'); }
     public function deleteAny(User $user): bool { return $user->hasPermission('delete_cattle_weighings'); }
-    public function restoreAny(User $user): bool { return $user->hasPermission('delete_cattle_weighings'); }
+    public function restoreAny(User $user): bool { return false; }
     public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_cattle_weighings'); }
 }

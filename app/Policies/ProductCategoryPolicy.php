@@ -12,9 +12,9 @@ class ProductCategoryPolicy
     public function create(User $user): bool { return $user->hasPermission('create_product_categories'); }
     public function update(User $user, ProductCategory $model): bool { return $user->hasPermission('edit_product_categories'); }
     public function delete(User $user, ProductCategory $model): bool { return $user->hasPermission('delete_product_categories'); }
-    public function restore(User $user, ProductCategory $model): bool { return $user->hasPermission('delete_product_categories'); }
+    public function restore(User $user, ProductCategory $model): bool { return false; }
     public function forceDelete(User $user, ProductCategory $model): bool { return $user->hasPermission('delete_product_categories'); }
     public function deleteAny(User $user): bool { return $user->hasPermission('delete_product_categories'); }
-    public function restoreAny(User $user): bool { return $user->hasPermission('delete_product_categories'); }
+    public function restoreAny(User $user): bool { return false; }
     public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_product_categories'); }
 }

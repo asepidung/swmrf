@@ -34,7 +34,7 @@ class SalesOrderPolicy
 
     public function restore(User $user, SalesOrder $model): bool
     {
-        return $user->hasPermission('delete_sales_orders') && in_array($model->status, [SalesOrder::STATUS_WAITING, SalesOrder::STATUS_CANCELLED], true);
+        return false;
     }
 
     public function forceDelete(User $user, SalesOrder $model): bool
@@ -63,7 +63,7 @@ class SalesOrderPolicy
 
     public function restoreAny(User $user): bool
     {
-        return $user->hasPermission('delete_sales_orders');
+        return false;
     }
 
     public function forceDeleteAny(User $user): bool

@@ -19,7 +19,6 @@ class EditDeliveryPlan extends EditRecord
                 ->url($this->getResource()::getUrl('index')),
             Actions\DeleteAction::make(),
             Actions\ForceDeleteAction::make(),
-            Actions\RestoreAction::make(),
         ];
     }
 

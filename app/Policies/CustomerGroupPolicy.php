@@ -12,9 +12,9 @@ class CustomerGroupPolicy
     public function create(User $user): bool { return $user->hasPermission('create_customer_groups'); }
     public function update(User $user, CustomerGroup $model): bool { return $user->hasPermission('edit_customer_groups'); }
     public function delete(User $user, CustomerGroup $model): bool { return $user->hasPermission('delete_customer_groups'); }
-    public function restore(User $user, CustomerGroup $model): bool { return $user->hasPermission('delete_customer_groups'); }
+    public function restore(User $user, CustomerGroup $model): bool { return false; }
     public function forceDelete(User $user, CustomerGroup $model): bool { return $user->hasPermission('delete_customer_groups'); }
     public function deleteAny(User $user): bool { return $user->hasPermission('delete_customer_groups'); }
-    public function restoreAny(User $user): bool { return $user->hasPermission('delete_customer_groups'); }
+    public function restoreAny(User $user): bool { return false; }
     public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_customer_groups'); }
 }

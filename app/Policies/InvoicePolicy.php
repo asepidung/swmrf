@@ -53,7 +53,7 @@ class InvoicePolicy
      */
     public function restore($user, $model): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('delete_invoices');
+        return false;
     }
 
     /**
@@ -71,7 +71,7 @@ class InvoicePolicy
 
     public function restoreAny($user): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('delete_invoices');
+        return false;
     }
 
     public function forceDeleteAny($user): bool

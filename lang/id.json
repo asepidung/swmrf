@@ -1977,5 +1977,7 @@
     "Meat Processing": "Meat Processing",
     "Processing Stock": "Stok Processing",
     "Invoices Not Yet Exchanged": "Invoice Belum Tukar Faktur",
-    "Count Inv": "Jumlah Invoice"
+    "Count Inv": "Jumlah Invoice",
+    "Turn OFF for groups that are no longer used: they disappear from the customer form, nothing is deleted.": "Matikan untuk grup yang tidak dipakai lagi: grup itu hilang dari form customer, tidak ada yang dihapus.",
+    "The prices of an advance that has been reported can no longer change; only the category and description.": "Harga pada uang muka yang sudah dilaporkan tidak bisa diubah lagi; hanya kategori dan keterangan."
 }

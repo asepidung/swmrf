@@ -53,7 +53,7 @@ class PriceListPolicy
      */
     public function restore($user, $model): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('delete_price_lists');
+        return false;
     }
 
     /**
@@ -71,7 +71,7 @@ class PriceListPolicy
 
     public function restoreAny($user): bool
     {
-        return $user->isProgrammer() || $user->hasPermission('delete_price_lists');
+        return false;
     }
 
     public function forceDeleteAny($user): bool

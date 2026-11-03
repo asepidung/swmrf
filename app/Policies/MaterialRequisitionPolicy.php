@@ -53,7 +53,7 @@ class MaterialRequisitionPolicy
      */
     public function restore(User $user, MaterialRequisition $materialRequisition): bool
     {
-        return $user->hasPermission('delete_material_requisitions');
+        return false;
     }
 
     /**
@@ -71,7 +71,7 @@ class MaterialRequisitionPolicy
 
     public function restoreAny(User $user): bool
     {
-        return $user->hasPermission('delete_material_requisitions');
+        return false;
     }
 
     public function forceDeleteAny(User $user): bool

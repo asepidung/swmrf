@@ -13,6 +13,6 @@ class ProductMaterialPolicy
     public function update(User $user, ProductMaterial $model): bool { return $user->hasPermission('edit_product_materials'); }
     public function delete(User $user, ProductMaterial $model): bool { return $user->hasPermission('delete_product_materials'); }
     public function deleteAny(User $user): bool { return $user->hasPermission('delete_product_materials'); }
-    public function restoreAny(User $user): bool { return $user->hasPermission('delete_product_materials'); }
+    public function restoreAny(User $user): bool { return false; }
     public function forceDeleteAny(User $user): bool { return $user->hasPermission('delete_product_materials'); }
 }

@@ -108,7 +108,6 @@ class EditMaterialStockTake extends EditRecord
             ->visible(fn (): bool => $this->record->isDeletable());
         $actions[] = Actions\ForceDeleteAction::make()
             ->visible(fn (): bool => auth()->user()?->isProgrammer() ?? false);
-        $actions[] = Actions\RestoreAction::make();
 
         return $actions;
     }

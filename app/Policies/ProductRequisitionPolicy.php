@@ -35,7 +35,7 @@ class ProductRequisitionPolicy
 
     public function restore(User $user, ProductRequisition $productRequisition): bool
     {
-        return $user->hasPermission('delete_product_requisitions');
+        return false;
     }
 
     public function forceDelete(User $user, ProductRequisition $productRequisition): bool
@@ -50,7 +50,7 @@ class ProductRequisitionPolicy
 
     public function restoreAny(User $user): bool
     {
-        return $user->hasPermission('delete_product_requisitions');
+        return false;
     }
 
     public function forceDeleteAny(User $user): bool

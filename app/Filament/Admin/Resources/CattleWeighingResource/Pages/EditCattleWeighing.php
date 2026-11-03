@@ -30,7 +30,6 @@ class EditCattleWeighing extends EditRecord
                 ->disabled(fn ($record) => \App\Models\Carcass::where('cattle_weighing_id', $record->id)->exists()),
             Actions\ForceDeleteAction::make()
                 ->disabled(fn ($record) => \App\Models\Carcass::where('cattle_weighing_id', $record->id)->exists()),
-            Actions\RestoreAction::make(),
         ];
     }
 
