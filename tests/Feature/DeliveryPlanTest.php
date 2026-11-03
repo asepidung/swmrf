@@ -102,20 +102,36 @@ class DeliveryPlanTest extends TestCase
     }
 
     /** @test */
-    public function moving_a_sales_order_to_another_date_removes_the_plan_it_leaves_empty()
+    public function editing_the_date_of_the_only_sales_order_moves_its_plan_along_with_the_driver()
     {
         $so = SalesOrder::create([
             'customer_id' => $this->customer1->id,
             'delivery_date' => now()->addDays(2)->format('Y-m-d'),
             'created_by' => $this->adminUser->id,
         ]);
-        $lama = $so->fresh()->delivery_plan_id;
+        $rencana = DeliveryPlan::find($so->fresh()->delivery_plan_id);
+        $rencana->update(['driver_id' => \App\Models\Driver::create(['name' => 'BUDI'])->id]);
+        $baru = now()->addDays(4)->format('Y-m-d');
 
-        $so->update(['delivery_date' => now()->addDays(4)->format('Y-m-d')]);
+        $so->update(['delivery_date' => $baru]);
 
-        $this->assertNotEquals($lama, $so->fresh()->delivery_plan_id);
+        $this->assertEquals($rencana->id, $so->fresh()->delivery_plan_id);
+        $this->assertEquals($baru, \Carbon\Carbon::parse($rencana->fresh()->delivery_date)->format('Y-m-d'));
+        $this->assertNotNull($rencana->fresh()->driver_id);
+        $this->assertSame(1, DeliveryPlan::where('customer_id', $this->customer1->id)->count());
+    }
+
+    /** @test */
+    public function moving_into_a_date_that_already_has_a_plan_merges_and_drops_the_emptied_plan()
+    {
+        $a = SalesOrder::create(['customer_id' => $this->customer1->id, 'delivery_date' => now()->addDays(2)->format('Y-m-d'), 'created_by' => $this->adminUser->id]);
+        $b = SalesOrder::create(['customer_id' => $this->customer1->id, 'delivery_date' => now()->addDays(4)->format('Y-m-d'), 'created_by' => $this->adminUser->id]);
+        $lama = $a->fresh()->delivery_plan_id;
+
+        $a->update(['delivery_date' => now()->addDays(4)->format('Y-m-d')]);
+
+        $this->assertEquals($b->fresh()->delivery_plan_id, $a->fresh()->delivery_plan_id);
         $this->assertNull(DeliveryPlan::find($lama));
-        $this->assertNotNull(DeliveryPlan::find($so->fresh()->delivery_plan_id));
     }
 
     /** @test */
@@ -176,7 +192,7 @@ class DeliveryPlanTest extends TestCase
     }
 
     /** @test */
-    public function it_relocates_sales_order_to_new_plan_when_customer_or_date_changes()
+    public function the_plan_follows_the_only_sales_order_when_customer_or_date_changes()
     {
         $date1 = now()->addDays(2)->format('Y-m-d');
         $date2 = now()->addDays(3)->format('Y-m-d');
@@ -193,7 +209,7 @@ class DeliveryPlanTest extends TestCase
         $so->update(['delivery_date' => $date2]);
 
         $so = $so->fresh();
-        $this->assertNotEquals($oldPlanId, $so->delivery_plan_id);
+        $this->assertEquals($oldPlanId, $so->delivery_plan_id);
 
         $this->assertDatabaseHas('delivery_plans', [
             'customer_id' => $this->customer1->id,

@@ -126,7 +126,18 @@ class SalesOrder extends Model
                 
                 $customerChanged = $model->isDirty('customer_id');
 
-                if ($dateChanged || $customerChanged || is_null($model->delivery_plan_id)) {
+                // SO yang tanggal/customernya diubah dan menjadi satu-satunya isi rencananya: rencana itu ikut berpindah
+                // (driver dan armada yang sudah diisi tetap), bukan diganti rencana baru (Owner, 3 November 2026).
+                // Kalau rencana tujuan sudah ada, atau rencana lama dipakai SO lain, jalur biasa di bawah yang berlaku.
+                $lama = $model->getOriginal('delivery_plan_id');
+
+                if (($dateChanged || $customerChanged) && $lama
+                    && ! DeliveryPlan::withTrashed()->where('customer_id', $model->customer_id)->where('delivery_date', $normalizedDate)->exists()
+                    && ! static::where('delivery_plan_id', $lama)->whereKeyNot($model->getKey())->exists()
+                    && ($rencanaLama = DeliveryPlan::find($lama))) {
+                    $rencanaLama->update(['customer_id' => $model->customer_id, 'delivery_date' => $normalizedDate]);
+                    $model->delivery_plan_id = $rencanaLama->id;
+                } elseif ($dateChanged || $customerChanged || is_null($model->delivery_plan_id)) {
                     $plan = DeliveryPlan::withTrashed()->firstOrCreate(
                         [
                             'customer_id' => $model->customer_id,
