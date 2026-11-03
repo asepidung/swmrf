@@ -21,6 +21,27 @@ return [
     'entries' => [
 
         [
+            'version' => '2.0.3',
+            'date' => '2026-11-03',
+            'kind' => 'fix',
+            'title' => 'Perbaikan tampilan, cetak, dan aturan hapus',
+            'items' => [
+                'Aturan hapus: dokumen yang dihapus tidak bisa dikembalikan. Kalau perlu lagi, buat dokumen baru; nomor lama dilewati. Tally yang dihapus juga dibuat ulang dengan nomor baru.',
+                'Tampilan lebih lega di laptop kecil: ukuran otomatis menyesuaikan lebar layar, isi halaman memenuhi lebar, baris tabel lebih rapat, dan tombol Ekspor sebaris dengan kotak cari.',
+                'Daftar Faktur: tombol Detail, TTF, dan Draft seragam dan rapi, juga lebih nyaman di HP.',
+                'Sales Order: pilihan produk di Add Products tetap sesuai urutan klik. Halaman cetak SO dibuka tanpa harga (tombol Show Price menampilkannya).',
+                'Rencana Pengiriman ikut berpindah saat tanggal atau customer SO diubah, dan hilang bila SO-nya dihapus, jadi tidak ada baris kosong.',
+                'Cetak DO lebih ringkas seperti legacy, ada tanda tangan Driver, dan kotak centang dokumen (Invoice, NKV, Halal) sesuai data customer.',
+                'Scan Tally: notifikasi cukup satu, barcode yang sudah dipindai ditandai jelas, ada tombol Cetak Ulang Barcode, dan batas Max POD aman.',
+                'Label barcode lebih lebar, tidak mentok tepi, dan lebih pendek.',
+                'Master Customer Group punya status aktif/nonaktif; grup nonaktif tidak muncul lagi di pilihan.',
+                'Pengeluaran (Expenses): bisa diedit, termasuk yang sudah Settled; kategori bisa ditambah langsung dengan tombol +, dan nama kategori dirapikan.',
+                'Laporan QC punya kolom Keterangan. Activity Logs tidak lagi mencatat item per baris dokumen, dan kolom Target selalu berupa nomor dokumen.',
+                'Dashboard: pesan tugas lebih singkat, permintaan material/daging yang masih menunggu selalu tampil walau beda bulan, dan pesan menyebut Finance yang menyetujui.',
+            ],
+        ],
+
+        [
             'version' => '2.0.2',
             'date' => '2026-11-02',
             'kind' => 'fix',
