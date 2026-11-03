@@ -694,16 +694,22 @@ class InvoiceResource extends Resource
                     ->hidden(fn ($livewire): bool => static::tampilanTukarFaktur($livewire)),
 
                 Tables\Columns\TextColumn::make('invoice_date')
+                    ->extraHeaderAttributes(['class' => 'swm-hide-phone'])
+                    ->extraCellAttributes(['class' => 'swm-hide-phone'])
                     ->label(__('Invoice Date'))
                     ->date('d M Y')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('po_number')
+                    ->extraHeaderAttributes(['class' => 'swm-hide-phone'])
+                    ->extraCellAttributes(['class' => 'swm-hide-phone'])
                     ->label(__('PO Number'))
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('delivery_order_number')
+                    ->extraHeaderAttributes(['class' => 'swm-hide-phone'])
+                    ->extraCellAttributes(['class' => 'swm-hide-phone'])
                     ->label(__('DO Number'))
                     ->searchable()
                     ->sortable()
@@ -747,6 +753,8 @@ class InvoiceResource extends Resource
                     ->alignEnd(),
 
                 Tables\Columns\TextColumn::make('creator.name')
+                    ->extraHeaderAttributes(['class' => 'swm-hide-phone'])
+                    ->extraCellAttributes(['class' => 'swm-hide-phone'])
                     ->label(__('Created By'))
                     ->searchable()
                     ->sortable()
