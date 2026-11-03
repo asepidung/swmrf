@@ -145,12 +145,29 @@
     </i>
     <table class="signatures-table">
         <tr>
-            <td width="25%">Warehouse <br><br><br><br><br> ( ................................ )</td>
-            <td width="25%">QC/QA <br><br><br><br><br> ( ................................ )</td>
-            <td width="25%">Security <br><br><br><br><br> ( ................................ )</td>
-            <td width="25%">Customer <br><br><br><br><br> ( ................................ )</td>
+            <td width="20%">Warehouse <br><br><br><br><br> ( ................................ )</td>
+            <td width="20%">QC/QA <br><br><br><br><br> ( ................................ )</td>
+            <td width="20%">Driver <br><br><br><br><br> ( ................................ )</td>
+            <td width="20%">Security <br><br><br><br><br> ( ................................ )</td>
+            <td width="20%">Customer <br><br><br><br><br> ( ................................ )</td>
         </tr>
     </table>
+
+    @php
+        // Dokumen yang harus ikut saat pengiriman (master customer), dicetak sebagai kotak centang seperti legacy.
+        $urutanDokumen = ['PO (Purchase Order)', 'Invoice', 'NKV', 'Sertifikat Halal', 'SV', 'JOSS', 'PHD', 'Uji Lab'];
+        $dokumen = array_values(array_filter($urutanDokumen, fn ($d) => in_array($d, (array) $record->customer?->required_documents, true)));
+    @endphp
+    @if ($dokumen)
+        <br>
+        <table style="width: 100%;">
+            <tr>
+                @foreach ($dokumen as $d)
+                    <td style="padding: 2px 4px;"><span style="display: inline-block; width: 11px; height: 11px; border: 1px solid #000; vertical-align: middle;"></span> {{ $d }}</td>
+                @endforeach
+            </tr>
+        </table>
+    @endif
 
     <script>
         window.onload = function() {

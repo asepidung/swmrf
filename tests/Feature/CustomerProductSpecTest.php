@@ -369,6 +369,33 @@ class CustomerProductSpecTest extends TestCase
             ->assertSee('Jl. Perum Asabri Blok B Desa Sukasirna Kec. Jonggol Kab. Bogor Telp. 021-89935103', false);
     }
 
+    /** Cetak DO seperti legacy: tanda tangan Driver, dan kotak centang dokumen sesuai master customer (Owner, 3 November 2026). */
+    public function test_the_delivery_order_prints_the_required_documents_and_a_driver_signature(): void
+    {
+        $so = $this->salesOrderWithSpec(['weight_per_pack' => '1 kg an']);
+        $this->customer->update(['required_documents' => ['Sertifikat Halal', 'Invoice', 'NKV']]);
+
+        $delivery = DeliveryOrder::create([
+            'sales_order_id' => $so->id, 'customer_id' => $this->customer->id,
+            'delivery_order_number' => 'DO-'.uniqid(), 'delivery_date' => now()->format('Y-m-d'),
+            'status' => 'draft', 'created_by' => $this->admin->id,
+        ]);
+        $delivery->items()->create(['product_id' => $this->product->id, 'box' => 2, 'weight' => 20]);
+
+        $this->actingAs($this->admin)
+            ->get(route('print.delivery-order', $delivery))
+            ->assertOk()
+            ->assertSee('Driver <br>', false)
+            ->assertSeeInOrder(['Invoice', 'NKV', 'Sertifikat Halal'])
+            ->assertDontSee('JOSS');
+
+        $this->customer->update(['required_documents' => null]);
+
+        $this->actingAs($this->admin)
+            ->get(route('print.delivery-order', $delivery))
+            ->assertDontSee('Sertifikat Halal');
+    }
+
     // =========================================================================
     // Izin
     // =========================================================================
