@@ -129,7 +129,8 @@ class AdminPanelProvider extends PanelProvider
                      *  2. Tinggi baris tabel bawaan Filament (py-4 per sel) dirapatkan ke py-2, sekitar tinggi baris judul grup.
                      */
                     @media (max-width: 1599px) { .fi-main.max-w-7xl { max-width: none; } }
-                    .fi-ta-cell .px-3.py-4 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+                    /* :where() menjaga kekhususan nol, agar gaya rapat khusus Stock Overview (stock-overview-table-style) tetap menang. */
+                    :where(.fi-ta-cell .px-3.py-4) { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
 
                     /*
                      * Tombol aksi header (mis. Ekspor Data) dan baris cari/filter dijadikan satu baris
