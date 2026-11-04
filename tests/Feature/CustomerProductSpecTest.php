@@ -538,4 +538,16 @@ class CustomerProductSpecTest extends TestCase
 
         $this->assertSame(0, CustomerProductSpec::count());
     }
+
+    /** @test */
+    public function only_the_creation_of_a_spec_is_logged_not_its_changes()
+    {
+        $spec = $this->fixedSpec();
+        $this->assertSame(1, \Spatie\Activitylog\Models\Activity::where('subject_type', CustomerProductSpec::class)->where('event', 'created')->count());
+
+        $spec->update(['cut' => 'slice 5 mm']);
+        $spec->delete();
+
+        $this->assertSame(1, \Spatie\Activitylog\Models\Activity::where('subject_type', CustomerProductSpec::class)->count());
+    }
 }

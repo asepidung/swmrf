@@ -4,21 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * Satu baris klaim (produk + berat yang menurut pelanggan diretur) di
  * dalam sebuah `SalesReturnPlan`.
  *
  * `claimed_weight` boleh dinego SETELAH plan `Submitted` (lihat
- * `SalesReturnPlan::booted()`) -- `LogsActivity` di sini yang menjaga
- * angka lamanya tidak hilang begitu diubah.
+ * `SalesReturnPlan::booted()`).
  */
 class SalesReturnPlanItem extends Model
 {
-    use LogsActivity;
-
     protected $fillable = [
         'plan_id',
         'product_id',
@@ -31,14 +26,6 @@ class SalesReturnPlanItem extends Model
         'claimed_weight' => 'float',
         'claimed_qty_pcs' => 'integer',
     ];
-
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logAll()
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
-    }
 
     public function plan(): BelongsTo
     {
