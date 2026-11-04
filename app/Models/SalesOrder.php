@@ -124,6 +124,15 @@ class SalesOrder extends Model
                     ? \Carbon\Carbon::parse($model->getOriginal('delivery_date'))->format('Y-m-d') !== $normalizedDate
                     : true;
                 
+                // Grup yang dikeluarkan dari Rencana Kirim (KARYAWAN, WARGA +62): SO-nya tidak punya rencana. Rencana lama,
+                // kalau ada dan jadi kosong, dibereskan hook `saved` di bawah.
+                if (CustomerGroup::whereKey(Customer::whereKey($model->customer_id)->value('customer_group_id'))->value('skips_delivery_plan')) {
+                    $model->delivery_plan_id = null;
+                    $model->delivery_date = $normalizedDate;
+
+                    return;
+                }
+
                 $customerChanged = $model->isDirty('customer_id');
 
                 // SO yang tanggal/customernya diubah dan menjadi satu-satunya isi rencananya: rencana itu ikut berpindah

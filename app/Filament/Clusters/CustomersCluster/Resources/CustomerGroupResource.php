@@ -74,6 +74,11 @@ class CustomerGroupResource extends Resource
                             ->helperText(__('Turn ON for groups whose members are different people (for example employees): receiving a payment then asks for one customer and never mixes money between customers.'))
                             ->columnSpanFull(),
 
+                        Forms\Components\Toggle::make('skips_delivery_plan')
+                            ->label(fn() => __('Left out of delivery plans'))
+                            ->helperText(__('Turn ON for groups whose orders are not scheduled for delivery (for example employees): their Sales Orders do not create a delivery plan.'))
+                            ->columnSpanFull(),
+
                         Forms\Components\Toggle::make('is_active')
                             ->label(fn() => __('Active'))
                             ->helperText(__('Turn OFF for groups that are no longer used: they disappear from the customer form, nothing is deleted.'))

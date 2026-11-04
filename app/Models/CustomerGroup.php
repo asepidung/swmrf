@@ -21,6 +21,7 @@ class CustomerGroup extends Model
         'is_costing_reference',
         'is_general_price_reference',
         'pays_per_customer',
+        'skips_delivery_plan',
         'is_active',
     ];
 
@@ -29,6 +30,7 @@ class CustomerGroup extends Model
         'is_costing_reference' => 'boolean',
         'is_general_price_reference' => 'boolean',
         'pays_per_customer' => 'boolean',
+        'skips_delivery_plan' => 'boolean',
         'is_active' => 'boolean',
     ];
 
