@@ -208,7 +208,7 @@ class BoningSusulanTest extends TestCase
         $halaman->assertCanSeeTableRecords(BoningItem::withTrashed()->get())
             ->assertTableActionHidden('delete', BoningItem::withTrashed()->find($dihapus->id));
 
-        $this->assertStringContainsString('Deleted at', $halaman->html());
+        $this->assertStringContainsString('title="Deleted at', $halaman->html());
         $this->assertStringContainsString($user->name, $halaman->html(), 'catatan menyebut penghapusnya');
 
         $isi = $halaman->call('exportExcel')->effects['download']['content'] ?? '';
