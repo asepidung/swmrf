@@ -292,7 +292,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
             ->columns([
                 Tables\Columns\TextColumn::make('barcode')
                     ->extraCellAttributes($mati)
-                    ->extraHeaderAttributes(['style' => 'padding-top: 1rem; padding-bottom: 1rem;'], true)
+                    ->extraHeaderAttributes(['style' => 'padding-top: 1.25rem !important; padding-bottom: 1.25rem !important;'], true)
                     ->label(__('Barcode'))
                     ->weight('bold')
                     ->size('sm')
@@ -302,7 +302,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
 
                 Tables\Columns\TextColumn::make('product.name')
                     ->extraCellAttributes($mati)
-                    ->extraHeaderAttributes(['style' => 'padding-top: 1rem; padding-bottom: 1rem;'], true)
+                    ->extraHeaderAttributes(['style' => 'padding-top: 1.25rem !important; padding-bottom: 1.25rem !important;'], true)
                     ->label(__('Product'))
                     ->size('sm')
                     ->alignLeft()
@@ -315,7 +315,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
 
                 Tables\Columns\TextColumn::make('weight')
                     ->extraCellAttributes($mati)
-                    ->extraHeaderAttributes(['style' => 'padding-top: 1rem; padding-bottom: 1rem;'], true)
+                    ->extraHeaderAttributes(['style' => 'padding-top: 1.25rem !important; padding-bottom: 1.25rem !important;'], true)
                     ->label(__('Weight'))
                     ->size('sm')
                     ->alignCenter()
@@ -325,7 +325,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
 
                 Tables\Columns\TextColumn::make('grade.name')
                     ->extraCellAttributes($mati)
-                    ->extraHeaderAttributes(['style' => 'padding-top: 1rem; padding-bottom: 1rem;'], true)
+                    ->extraHeaderAttributes(['style' => 'padding-top: 1.25rem !important; padding-bottom: 1.25rem !important;'], true)
                     ->label(__('Grade'))
                     ->alignCenter()
                     ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center'], true)
@@ -334,7 +334,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
 
                 Tables\Columns\TextColumn::make('qty_pcs')
                     ->extraCellAttributes($mati)
-                    ->extraHeaderAttributes(['style' => 'padding-top: 1rem; padding-bottom: 1rem;'], true)
+                    ->extraHeaderAttributes(['style' => 'padding-top: 1.25rem !important; padding-bottom: 1.25rem !important;'], true)
                     ->label(__('Pcs'))
                     ->size('sm')
                     ->alignCenter()
@@ -342,7 +342,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
 
                 Tables\Columns\TextColumn::make('creator.name')
                     ->extraCellAttributes($mati)
-                    ->extraHeaderAttributes(['style' => 'padding-top: 1rem; padding-bottom: 1rem;'], true)
+                    ->extraHeaderAttributes(['style' => 'padding-top: 1.25rem !important; padding-bottom: 1.25rem !important;'], true)
                     ->label(__('Operator'))
                     ->size('sm')
                     ->alignLeft()
@@ -350,7 +350,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->extraCellAttributes($mati)
-                    ->extraHeaderAttributes(['style' => 'padding-top: 1rem; padding-bottom: 1rem;'], true)
+                    ->extraHeaderAttributes(['style' => 'padding-top: 1.25rem !important; padding-bottom: 1.25rem !important;'], true)
                     ->label(__('Time'))
                     ->time('H:i:s')
                     ->size('sm')
