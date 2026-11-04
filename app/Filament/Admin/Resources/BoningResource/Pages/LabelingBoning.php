@@ -292,19 +292,21 @@ class LabelingBoning extends Page implements HasForms, HasTable
             ->columns([
                 Tables\Columns\TextColumn::make('barcode')
                     ->extraCellAttributes($mati)
+                    ->extraHeaderAttributes(['style' => 'padding-top: 1rem; padding-bottom: 1rem;'], true)
                     ->label(__('Barcode'))
                     ->weight('bold')
                     ->size('sm')
                     ->alignCenter()
-                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center'])
+                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center'], true)
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('product.name')
                     ->extraCellAttributes($mati)
+                    ->extraHeaderAttributes(['style' => 'padding-top: 1rem; padding-bottom: 1rem;'], true)
                     ->label(__('Product'))
                     ->size('sm')
                     ->alignLeft()
-                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center'])
+                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center'], true)
                     ->searchable()
                     ->weight('bold')
                     ->color(fn ($record) => $record->trashed() ? 'gray' : 'primary')
@@ -313,42 +315,47 @@ class LabelingBoning extends Page implements HasForms, HasTable
 
                 Tables\Columns\TextColumn::make('weight')
                     ->extraCellAttributes($mati)
+                    ->extraHeaderAttributes(['style' => 'padding-top: 1rem; padding-bottom: 1rem;'], true)
                     ->label(__('Weight'))
                     ->size('sm')
                     ->alignCenter()
-                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center'])
+                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center'], true)
                     ->searchable()
                     ->formatStateUsing(fn($state) => number_format((float) $state, 2, '.', '')),
 
                 Tables\Columns\TextColumn::make('grade.name')
                     ->extraCellAttributes($mati)
+                    ->extraHeaderAttributes(['style' => 'padding-top: 1rem; padding-bottom: 1rem;'], true)
                     ->label(__('Grade'))
                     ->alignCenter()
-                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center'])
+                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center'], true)
                     ->badge()
                     ->color(fn($state, BoningItem $record) => $record->trashed() ? 'gray' : (in_array($state, ['CHILL', 'A']) ? 'info' : 'danger')),
 
                 Tables\Columns\TextColumn::make('qty_pcs')
                     ->extraCellAttributes($mati)
+                    ->extraHeaderAttributes(['style' => 'padding-top: 1rem; padding-bottom: 1rem;'], true)
                     ->label(__('Pcs'))
                     ->size('sm')
                     ->alignCenter()
-                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center']),
+                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center'], true),
 
                 Tables\Columns\TextColumn::make('creator.name')
                     ->extraCellAttributes($mati)
+                    ->extraHeaderAttributes(['style' => 'padding-top: 1rem; padding-bottom: 1rem;'], true)
                     ->label(__('Operator'))
                     ->size('sm')
                     ->alignLeft()
-                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center']),
+                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center'], true),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->extraCellAttributes($mati)
+                    ->extraHeaderAttributes(['style' => 'padding-top: 1rem; padding-bottom: 1rem;'], true)
                     ->label(__('Time'))
                     ->time('H:i:s')
                     ->size('sm')
                     ->alignCenter()
-                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center']),
+                    ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center'], true),
             ])
             ->filters([
                 \App\Filament\Support\MasterSelect::filter(
