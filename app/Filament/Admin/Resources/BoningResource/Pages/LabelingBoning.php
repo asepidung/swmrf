@@ -251,15 +251,21 @@ class LabelingBoning extends Page implements HasForms, HasTable
 
     public function table(Table $table): Table
     {
+        // Baris terhapus: abu-abu, tak bisa diklik atau disalin. Gaya ditulis di sel (bukan kelas CSS di head) supaya ikut
+        // setiap render Livewire, bukan bergantung pada halaman yang dimuat ulang.
+        $mati = fn (BoningItem $record): array => $record->trashed()
+            ? ['style' => 'opacity: 0.4; pointer-events: none; user-select: none; -webkit-user-select: none; color: rgb(156 163 175);']
+            : [];
+
         return $table
             // Baris yang dihapus tetap tampil, abu-abu dan tak bisa diapa-apakan (Owner, 4 November 2026); ekspor dan
             // ringkasan membuangnya lagi lewat withoutTrashed().
             ->query(BoningItem::query()->withTrashed()->where('boning_id', $this->record->id))
-            ->recordClasses(fn (BoningItem $record) => $record->trashed() ? 'swm-row-disabled' : null)
             ->defaultSort('id', 'desc')
             ->paginated([10, 25, 50, 'all'])
             ->columns([
                 Tables\Columns\TextColumn::make('barcode')
+                    ->extraCellAttributes($mati)
                     ->label(__('Barcode'))
                     ->weight('bold')
                     ->size('sm')
@@ -268,6 +274,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('product.name')
+                    ->extraCellAttributes($mati)
                     ->label(__('Product'))
                     ->size('sm')
                     ->alignLeft()
@@ -279,6 +286,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
                     ->openUrlInNewTab(),
 
                 Tables\Columns\TextColumn::make('weight')
+                    ->extraCellAttributes($mati)
                     ->label(__('Weight'))
                     ->size('sm')
                     ->alignCenter()
@@ -287,25 +295,29 @@ class LabelingBoning extends Page implements HasForms, HasTable
                     ->formatStateUsing(fn($state) => number_format((float) $state, 2, '.', '')),
 
                 Tables\Columns\TextColumn::make('grade.name')
+                    ->extraCellAttributes($mati)
                     ->label(__('Grade'))
                     ->alignCenter()
                     ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center'])
                     ->badge()
-                    ->color(fn($state) => in_array($state, ['CHILL', 'A']) ? 'info' : 'danger'),
+                    ->color(fn($state, BoningItem $record) => $record->trashed() ? 'gray' : (in_array($state, ['CHILL', 'A']) ? 'info' : 'danger')),
 
                 Tables\Columns\TextColumn::make('qty_pcs')
+                    ->extraCellAttributes($mati)
                     ->label(__('Pcs'))
                     ->size('sm')
                     ->alignCenter()
                     ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center']),
 
                 Tables\Columns\TextColumn::make('creator.name')
+                    ->extraCellAttributes($mati)
                     ->label(__('Operator'))
                     ->size('sm')
                     ->alignLeft()
                     ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center']),
 
                 Tables\Columns\TextColumn::make('created_at')
+                    ->extraCellAttributes($mati)
                     ->label(__('Time'))
                     ->time('H:i:s')
                     ->size('sm')

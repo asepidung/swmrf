@@ -50,9 +50,6 @@
         768px supaya Nomor, Customer, dan Nilai terbaca tanpa menggeser; tiga tombol pintasan muat satu baris.
         Filament tidak membawa kelas md:table-cell di CSS panel ini, jadi disebut sendiri.
     */
-    /* Baris dokumen yang sudah dihapus tetapi tetap ditampilkan: abu-abu dan tidak bisa diklik. */
-    .swm-row-disabled { opacity: 0.45; pointer-events: none; user-select: none; }
-    .swm-row-disabled td, .swm-row-disabled td * { color: rgb(156 163 175) !important; }
     .swm-list-shortcut { width: 8rem; justify-content: center; }
     @media (max-width: 767px) {
         .swm-hide-phone { display: none !important; }
