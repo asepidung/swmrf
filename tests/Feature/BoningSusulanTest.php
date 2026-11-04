@@ -172,4 +172,39 @@ class BoningSusulanTest extends TestCase
     // sungguhan di CarcassYieldTest::test_a_locked_boning_cannot_be_locked_twice
     // -- dijalankan sebagai bagian dari suite penuh untuk membuktikan
     // perubahan ini tidak meregresi perilakunya, tidak diulang di sini.
+
+    /** @test */
+    public function a_deleted_label_stays_listed_but_cannot_be_acted_on_and_is_left_out_of_the_export(): void
+    {
+        $boning = $this->boning();
+        $user = $this->employee(['edit_bonings']);
+        $user->permissions()->attach(Permission::firstOrCreate(['name' => 'delete_bonings'], ['module_name' => 'Boning', 'description' => 'x'])->id);
+
+        $buat = fn (string $berat) => Livewire::actingAs($user)
+            ->test(LabelingBoning::class, ['record' => $boning])
+            ->set('data.warehouse_id', $this->warehouse->id)
+            ->set('data.product_id', $this->product->id)
+            ->set('data.grade_id', $this->grade->id)
+            ->set('data.pack_date', now()->format('Y-m-d'))
+            ->set('data.qty_pcs_combined', $berat)
+            ->set('data.ph_level', '5.5')
+            ->call('create');
+
+        $buat('10.5/2');
+        $buat('8/1');
+        $this->assertSame(2, BoningItem::count());
+
+        $dihapus = BoningItem::where('weight', 8)->firstOrFail();
+        $dihapus->delete();
+
+        $halaman = Livewire::actingAs($user)->test(LabelingBoning::class, ['record' => $boning]);
+
+        $halaman->assertCanSeeTableRecords(BoningItem::withTrashed()->get())
+            ->assertTableActionHidden('delete', BoningItem::withTrashed()->find($dihapus->id));
+
+        $isi = $halaman->call('exportExcel')->effects['download']['content'] ?? '';
+        $csv = base64_decode($isi);
+
+        $this->assertStringContainsString('"GRAND TOTAL",1,2,10.5', $csv, 'Hanya label yang masih aktif yang diekspor.');
+    }
 }
