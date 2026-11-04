@@ -199,6 +199,7 @@ class BoningSusulanTest extends TestCase
 
         $halaman = Livewire::actingAs($user)->test(LabelingBoning::class, ['record' => $boning]);
 
+        $this->assertStringContainsString('user-select: none', $halaman->html(), 'sel baris terhapus tidak bisa disalin');
         $halaman->assertCanSeeTableRecords(BoningItem::withTrashed()->get())
             ->assertTableActionHidden('delete', BoningItem::withTrashed()->find($dihapus->id));
 
