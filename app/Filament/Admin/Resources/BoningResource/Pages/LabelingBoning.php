@@ -253,7 +253,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
     protected ?array $infoHapus = null;
 
     /**
-     * Catatan di bawah waktu pada baris yang sudah dihapus: jam dan siapa yang menghapus (dari pergerakan stok
+     * Tooltip (saat disorot) pada baris yang sudah dihapus: jam dan siapa yang menghapus (dari pergerakan stok
      * VOID_BONING). Operator dan waktu aslinya tetap menunjuk pembuat label (Owner, 4 November 2026).
      */
     protected function catatanHapus(BoningItem $record): ?string
@@ -280,7 +280,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
         // Baris terhapus: abu-abu, tak bisa diklik atau disalin. Gaya ditulis di sel (bukan kelas CSS di head) supaya ikut
         // setiap render Livewire, bukan bergantung pada halaman yang dimuat ulang.
         $mati = fn (BoningItem $record): array => $record->trashed()
-            ? ['style' => 'opacity: 0.4; pointer-events: none; user-select: none; -webkit-user-select: none; color: rgb(156 163 175);']
+            ? ['style' => 'opacity: 0.4; user-select: none; -webkit-user-select: none; color: rgb(156 163 175);', 'title' => $this->catatanHapus($record)]
             : [];
 
         return $table
@@ -344,7 +344,6 @@ class LabelingBoning extends Page implements HasForms, HasTable
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->extraCellAttributes($mati)
-                    ->description(fn (BoningItem $record): ?string => $this->catatanHapus($record))
                     ->label(__('Time'))
                     ->time('H:i:s')
                     ->size('sm')
