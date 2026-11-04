@@ -450,4 +450,14 @@ class DeliveryPlanTest extends TestCase
         $this->assertNull($biasa->fresh()->delivery_plan_id);
         $this->assertSame(0, DeliveryPlan::count());
     }
+
+    /** @test */
+    public function an_overdue_plan_with_a_delivery_note_reads_awaiting_receipt(): void
+    {
+        $lewat = SalesOrder::create(['customer_id' => $this->customer1->id, 'delivery_date' => now()->subDays(2)->toDateString(), 'status' => 'on_delivery', 'created_by' => $this->adminUser->id]);
+        $nanti = SalesOrder::create(['customer_id' => $this->customer2->id, 'delivery_date' => now()->addDay()->toDateString(), 'status' => 'on_delivery', 'created_by' => $this->adminUser->id]);
+
+        $this->assertSame(__('Awaiting receipt'), DeliveryPlan::with('salesOrders')->find($lewat->delivery_plan_id)->progressLabel());
+        $this->assertSame(__('Delivery note issued'), DeliveryPlan::with('salesOrders')->find($nanti->delivery_plan_id)->progressLabel());
+    }
 }
