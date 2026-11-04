@@ -249,6 +249,32 @@ class LabelingBoning extends Page implements HasForms, HasTable
         }, 'Hasil_Produksi_' . $this->record->doc_no . '.csv');
     }
 
+    /** @var array<string, string>|null barcode => "dihapus jam · nama", dibaca sekali per render. */
+    protected ?array $infoHapus = null;
+
+    /**
+     * Catatan di bawah waktu pada baris yang sudah dihapus: jam dan siapa yang menghapus (dari pergerakan stok
+     * VOID_BONING). Operator dan waktu aslinya tetap menunjuk pembuat label (Owner, 4 November 2026).
+     */
+    protected function catatanHapus(BoningItem $record): ?string
+    {
+        if (! $record->trashed()) {
+            return null;
+        }
+
+        $this->infoHapus ??= BeefStockMovement::query()
+            ->where('transaction_type', 'VOID_BONING')
+            ->whereIn('barcode', BoningItem::onlyTrashed()->where('boning_id', $this->record->id)->pluck('barcode'))
+            ->leftJoin('users', 'users.id', '=', 'beef_stock_movements.created_by')
+            ->orderBy('beef_stock_movements.id')
+            ->get(['beef_stock_movements.barcode', 'beef_stock_movements.created_at', 'users.name'])
+            ->mapWithKeys(fn ($baris): array => [$baris->barcode => __('Deleted at').' '.\Carbon\Carbon::parse($baris->created_at)->format('H:i:s').($baris->name ? ' · '.$baris->name : '')])
+            ->all();
+
+        return $this->infoHapus[$record->barcode]
+            ?? __('Deleted at').' '.\Carbon\Carbon::parse($record->deleted_at)->format('H:i:s');
+    }
+
     public function table(Table $table): Table
     {
         // Baris terhapus: abu-abu, tak bisa diklik atau disalin. Gaya ditulis di sel (bukan kelas CSS di head) supaya ikut
@@ -318,6 +344,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->extraCellAttributes($mati)
+                    ->description(fn (BoningItem $record): ?string => $this->catatanHapus($record))
                     ->label(__('Time'))
                     ->time('H:i:s')
                     ->size('sm')
