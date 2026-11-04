@@ -161,4 +161,21 @@ class SalesOrderSusulanTest extends TestCase
 
         $this->assertSame(0, SalesOrder::count());
     }
+
+    /** @test */
+    public function saving_an_edit_does_not_move_the_delivery_date(): void
+    {
+        $so = $this->salesOrder();
+        $tanggal = $so->fresh()->delivery_date->toDateString();
+
+        foreach ([1, 2] as $kali) {
+            Livewire::actingAs($this->user)
+                ->test(EditSalesOrder::class, ['record' => $so->getRouteKey()])
+                ->set('data.note', 'catatan '.$kali)
+                ->call('save')
+                ->assertHasNoFormErrors();
+
+            $this->assertSame($tanggal, $so->fresh()->delivery_date->toDateString(), 'Simpan ke-'.$kali.' menggeser tanggal kirim.');
+        }
+    }
 }
