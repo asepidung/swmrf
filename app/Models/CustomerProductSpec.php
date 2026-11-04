@@ -39,11 +39,13 @@ class CustomerProductSpec extends Model
         ...self::FIELDS,
     ];
 
+    /** Yang tercatat hanya pembuatannya (Owner, 4 November 2026); ubah dan hapus tidak. */
+    protected static $recordEvents = ['created'];
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['customer.name', 'product.name', ...self::FIELDS])
-            ->logOnlyDirty()
+            ->logOnly(['customer.name', 'product.name'])
             ->dontSubmitEmptyLogs();
     }
 
