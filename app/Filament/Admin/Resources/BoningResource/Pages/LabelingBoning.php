@@ -216,6 +216,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
         // bukan diam-diam mengekspor semuanya walau layarnya sudah
         // disaring.
         $summary = $this->getFilteredTableQuery()
+            ->withoutTrashed()
             ->with('product')
             ->get()
             ->groupBy('product_id')
@@ -251,7 +252,10 @@ class LabelingBoning extends Page implements HasForms, HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(BoningItem::query()->where('boning_id', $this->record->id))
+            // Baris yang dihapus tetap tampil, abu-abu dan tak bisa diapa-apakan (Owner, 4 November 2026); ekspor dan
+            // ringkasan membuangnya lagi lewat withoutTrashed().
+            ->query(BoningItem::query()->withTrashed()->where('boning_id', $this->record->id))
+            ->recordClasses(fn (BoningItem $record) => $record->trashed() ? 'swm-row-disabled' : null)
             ->defaultSort('id', 'desc')
             ->paginated([10, 25, 50, 'all'])
             ->columns([
@@ -270,8 +274,8 @@ class LabelingBoning extends Page implements HasForms, HasTable
                     ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center'])
                     ->searchable()
                     ->weight('bold')
-                    ->color('primary')
-                    ->url(fn($record) => route('boning.label', ['id' => $record->id, 'show_exp' => 1]))
+                    ->color(fn ($record) => $record->trashed() ? 'gray' : 'primary')
+                    ->url(fn($record) => $record->trashed() ? null : route('boning.label', ['id' => $record->id, 'show_exp' => 1]))
                     ->openUrlInNewTab(),
 
                 Tables\Columns\TextColumn::make('weight')
@@ -324,7 +328,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
                     ->label('R')
                     ->color('warning')
                     ->tooltip(__('This item is already a repack input'))
-                    ->visible(fn (BoningItem $record) => DB::table('repack_materials')->where('barcode', $record->barcode)->exists())
+                    ->visible(fn (BoningItem $record) => ! $record->trashed() && DB::table('repack_materials')->where('barcode', $record->barcode)->exists())
                     ->extraAttributes([
                         'onclick' => 'event.preventDefault(); event.stopPropagation();',
                         'style' => 'cursor: not-allowed;',
@@ -333,13 +337,14 @@ class LabelingBoning extends Page implements HasForms, HasTable
                     ->label('D')
                     ->color('info')
                     ->tooltip(__('This item is already on a tally'))
-                    ->visible(fn (BoningItem $record) => DB::table('tally_items')->where('barcode', $record->barcode)->exists())
+                    ->visible(fn (BoningItem $record) => ! $record->trashed() && DB::table('tally_items')->where('barcode', $record->barcode)->exists())
                     ->extraAttributes([
                         'onclick' => 'event.preventDefault(); event.stopPropagation();',
                         'style' => 'cursor: not-allowed;',
                     ]),
                 Tables\Actions\DeleteAction::make()
                     ->hidden(fn (BoningItem $record) => 
+                        $record->trashed() ||
                         $this->record->kunci == 1 ||
                         DB::table('repack_materials')->where('barcode', $record->barcode)->exists() ||
                         DB::table('tally_items')->where('barcode', $record->barcode)->exists()
