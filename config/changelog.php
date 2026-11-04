@@ -21,6 +21,18 @@ return [
     'entries' => [
 
         [
+            'version' => '2.0.4',
+            'date' => '2026-11-04',
+            'kind' => 'fix',
+            'title' => 'Perbaikan tanggal, rencana kirim, dan label',
+            'items' => [
+                'Tanggal tidak lagi bergeser mundur sehari setiap kali dokumen diedit dan disimpan (misalnya tanggal kirim Sales Order). Berlaku untuk semua isian tanggal.',
+                'Rencana Pengiriman: customer dari grup KARYAWAN dan WARGA +62 tidak lagi dimasukkan. Pengaturannya ada di master Customer Group.',
+                'Rencana Pengiriman: yang sudah lewat tanggal tetapi surat jalannya sudah keluar kini berlabel "Menunggu penerimaan".',
+            ],
+        ],
+
+        [
             'version' => '2.0.3',
             'date' => '2026-11-03',
             'kind' => 'fix',
