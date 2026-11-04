@@ -430,4 +430,24 @@ class DeliveryPlanTest extends TestCase
         $this->assertSame([$hariIni->id, $kemarin->id], $urutan(['activeTab' => 'history']));
         $this->assertSame([$besok->id, $lusa->id], $urutan());
     }
+
+    /** @test */
+    public function orders_of_a_group_left_out_of_delivery_plans_get_no_plan(): void
+    {
+        $grup = \App\Models\CustomerGroup::create(['name' => 'KARYAWAN', 'skips_delivery_plan' => true]);
+        $this->customer2->update(['customer_group_id' => $grup->id]);
+
+        $biasa = SalesOrder::create(['customer_id' => $this->customer1->id, 'delivery_date' => '2026-11-05', 'status' => 'waiting', 'created_by' => $this->adminUser->id]);
+        $karyawan = SalesOrder::create(['customer_id' => $this->customer2->id, 'delivery_date' => '2026-11-05', 'status' => 'waiting', 'created_by' => $this->adminUser->id]);
+
+        $this->assertNotNull($biasa->fresh()->delivery_plan_id);
+        $this->assertNull($karyawan->fresh()->delivery_plan_id);
+        $this->assertSame(0, DeliveryPlan::where('customer_id', $this->customer2->id)->count());
+
+        // Dipindah dari customer biasa ke grup itu: rencana lama yang jadi kosong ikut hilang.
+        $biasa->update(['customer_id' => $this->customer2->id]);
+
+        $this->assertNull($biasa->fresh()->delivery_plan_id);
+        $this->assertSame(0, DeliveryPlan::count());
+    }
 }
