@@ -1979,5 +1979,6 @@
     "Invoices Not Yet Exchanged": "Invoices Not Yet Exchanged",
     "Count Inv": "Count Inv",
     "Turn OFF for groups that are no longer used: they disappear from the customer form, nothing is deleted.": "Turn OFF for groups that are no longer used: they disappear from the customer form, nothing is deleted.",
-    "The prices of an advance that has been reported can no longer change; only the category and description.": "The prices of an advance that has been reported can no longer change; only the category and description."
+    "The prices of an advance that has been reported can no longer change; only the category and description.": "The prices of an advance that has been reported can no longer change; only the category and description.",
+    "Deleted at": "Deleted at"
 }

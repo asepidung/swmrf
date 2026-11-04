@@ -197,15 +197,24 @@ class BoningSusulanTest extends TestCase
         $dihapus = BoningItem::where('weight', 8)->firstOrFail();
         $dihapus->delete();
 
+        \App\Models\BeefStockMovement::create([
+            'barcode' => $dihapus->barcode, 'product_id' => $this->product->id, 'warehouse_id' => $this->warehouse->id, 'condition' => 'FRESH', 'transaction_type' => 'VOID_BONING', 'reference_document' => 'X',
+            'weight_in' => -8, 'pcs_in' => -1, 'created_by' => $user->id,
+        ]);
+
         $halaman = Livewire::actingAs($user)->test(LabelingBoning::class, ['record' => $boning]);
 
         $this->assertStringContainsString('user-select: none', $halaman->html(), 'sel baris terhapus tidak bisa disalin');
         $halaman->assertCanSeeTableRecords(BoningItem::withTrashed()->get())
             ->assertTableActionHidden('delete', BoningItem::withTrashed()->find($dihapus->id));
 
+        $this->assertStringContainsString('Deleted at', $halaman->html());
+        $this->assertStringContainsString($user->name, $halaman->html(), 'catatan menyebut penghapusnya');
+
         $isi = $halaman->call('exportExcel')->effects['download']['content'] ?? '';
         $csv = base64_decode($isi);
 
         $this->assertStringContainsString('"GRAND TOTAL",1,2,10.5', $csv, 'Hanya label yang masih aktif yang diekspor.');
+        $this->assertStringNotContainsString('Deleted at', $csv);
     }
 }
