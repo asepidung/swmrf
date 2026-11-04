@@ -1982,5 +1982,6 @@
     "The prices of an advance that has been reported can no longer change; only the category and description.": "The prices of an advance that has been reported can no longer change; only the category and description.",
     "Deleted at": "Deleted at",
     "Left out of delivery plans": "Left out of delivery plans",
-    "Turn ON for groups whose orders are not scheduled for delivery (for example employees): their Sales Orders do not create a delivery plan.": "Turn ON for groups whose orders are not scheduled for delivery (for example employees): their Sales Orders do not create a delivery plan."
+    "Turn ON for groups whose orders are not scheduled for delivery (for example employees): their Sales Orders do not create a delivery plan.": "Turn ON for groups whose orders are not scheduled for delivery (for example employees): their Sales Orders do not create a delivery plan.",
+    "Awaiting receipt": "Awaiting receipt"
 }

@@ -139,7 +139,8 @@ class DeliveryPlan extends Model
         }
 
         if ($statuses->contains('on_delivery')) {
-            return __('Delivery note issued');
+            // Surat jalan sudah keluar tapi hari kirimnya lewat: barang belum tercatat diterima (Owner, 4 November 2026).
+            return $this->isOverdue() ? __('Awaiting receipt') : __('Delivery note issued');
         }
 
         if ($statuses->contains(fn ($status) => in_array($status, ['processing', 'ready'], true))) {
