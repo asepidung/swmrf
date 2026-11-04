@@ -104,7 +104,10 @@ class AppServiceProvider extends ServiceProvider
                     }
 
                     try {
-                        $component->state(\Carbon\Carbon::parse($state)->toDateString());
+                        // Tanggal dari model berbentuk ISO UTC ("2026-11-04T17:00:00Z" untuk 5 November WIB). Harus
+                        // dikembalikan ke zona aplikasi dulu; kalau tidak, setiap form Edit membuka dan menyimpan tanggalnya
+                        // mundur SEHARI (ditemukan 4 November 2026 dari tanggal kirim Sales Order yang bergeser).
+                        $component->state(\Carbon\Carbon::parse($state)->setTimezone(config('app.timezone'))->toDateString());
                     } catch (\Throwable) {
                         // Nilai yang tidak bisa dibaca dibiarkan apa adanya;
                         // Filament sendiri yang akan menolaknya.

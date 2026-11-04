@@ -230,7 +230,7 @@ class SalesReturnPlanTest extends TestCase
     // =========================================================================
 
     /** @test */
-    public function a_claimed_weight_can_be_changed_while_submitted_and_the_old_value_is_logged(): void
+    public function a_claimed_weight_can_be_changed_while_submitted(): void
     {
         $plan = $this->plan();
         $item = $plan->items()->create(['product_id' => $this->product->id, 'claimed_weight' => 10]);
@@ -239,16 +239,11 @@ class SalesReturnPlanTest extends TestCase
         $item->update(['claimed_weight' => 8]);
 
         $this->assertSame(8.0, $item->fresh()->claimed_weight);
-        $log = Activity::where('subject_type', SalesReturnPlanItem::class)
-            ->where('subject_id', $item->id)
-            ->where('description', 'updated')
-            ->latest('id')
-            ->first();
-        $this->assertNotNull($log, 'Tidak ada activity log untuk perubahan klaim.');
-        $this->assertEquals(10, $log->properties['old']['claimed_weight'] ?? null);
-        $this->assertEquals(8, $log->properties['attributes']['claimed_weight'] ?? null);
+        // Item rencana retur tidak dicatat sendiri (keputusan Owner, 4 November 2026); yang tercatat induknya.
+        $this->assertNull(Activity::where('subject_type', SalesReturnPlanItem::class)->where('subject_id', $item->id)->first());
     }
 
+    
     /** @test */
     public function no_new_item_can_be_added_once_submitted(): void
     {
