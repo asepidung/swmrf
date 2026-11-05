@@ -135,6 +135,16 @@ Tables\Actions\Action::make('scan')
                     ->iconButton()
                     ->url(fn (StockTake $record) => route('stock-take.print', ['id' => $record->id]))
                     ->openUrlInNewTab(),
+
+                Tables\Actions\Action::make('analysis')
+                    ->label('Analisa')
+                    ->tooltip('Laporan analisa hasil opname')
+                    ->icon('heroicon-o-chart-bar')
+                    ->color('gray')
+                    ->iconButton()
+                    ->visible(fn (StockTake $record): bool => $record->status === StockTake::STATUS_COMPLETED)
+                    ->url(fn (StockTake $record) => route('stock-take.analysis', ['id' => $record->id]))
+                    ->openUrlInNewTab(),
                     
                 Tables\Actions\Action::make('finish')
                     ->label(__('Finish Opname'))
