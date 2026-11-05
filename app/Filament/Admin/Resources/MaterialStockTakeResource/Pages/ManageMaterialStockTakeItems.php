@@ -74,6 +74,28 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
             ->color('gray')
             ->url($this->getResource()::getUrl('index'));
 
+        // Kirim untuk ditinjau dari sini, tempat penghitung selesai bekerja (Owner, 5 November 2026). Sebelumnya tombol
+        // ini hanya ada di halaman Ubah yang tidak punya tautan dari mana pun.
+        if ($this->getOwnerRecord()->isCountable()) {
+            $actions[] = Actions\Action::make('submit_for_review')
+                ->label(__('Submit for Review'))
+                ->color('info')
+                ->icon('heroicon-o-paper-airplane')
+                ->requiresConfirmation()
+                ->modalHeading(__('Submit this stock count for review?'))
+                ->modalDescription(__('Once submitted, the counts can no longer be edited and the variance is shown for review.'))
+                ->action(function () {
+                    if (! $this->getOwnerRecord()->submitForReview()) {
+                        Notification::make()->title(__('This stock count has already been finished'))->warning()->send();
+
+                        return;
+                    }
+
+                    Notification::make()->title(__('Sent for review.'))->success()->send();
+                    $this->redirect($this->getResource()::getUrl('index'));
+                });
+        }
+
         // Keputusan Owner, 17 September 2026: Complete/Finish HANYA dari
         // halaman REVIEW (EditMaterialStockTake) -- tombol di halaman
         // input ini (yang sebelumnya menyelesaikan langsung dari
