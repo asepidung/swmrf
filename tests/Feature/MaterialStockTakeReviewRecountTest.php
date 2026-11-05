@@ -349,4 +349,32 @@ class MaterialStockTakeReviewRecountTest extends TestCase
 
         $this->assertSame(['APEL', 'KERTAS HVS', 'ZEBRA'], $urut);
     }
+
+    /** @test */
+    public function the_detail_table_on_the_document_page_keeps_the_count_blind_too(): void
+    {
+        $rm = \App\Filament\Admin\Resources\MaterialStockTakeResource\RelationManagers\ItemsRelationManager::class;
+        $buka = fn (MaterialStockTake $opname, User $user) => Livewire::actingAs($user)->test($rm, [
+            'ownerRecord' => $opname,
+            'pageClass' => \App\Filament\Admin\Resources\MaterialStockTakeResource\Pages\ViewMaterialStockTake::class,
+        ]);
+
+        $menghitung = $this->opname(MaterialStockTake::STATUS_IN_PROGRESS);
+        $this->hitungan($menghitung, 10, 7);
+        $buka($menghitung, $this->pemeriksa(['finish_material_stock_takes']))
+            ->assertTableColumnHidden('system_qty')
+            ->assertTableColumnHidden('difference_qty')
+            ->assertTableColumnHidden('status');
+
+        $tinjau = $this->opname(MaterialStockTake::STATUS_REVIEW);
+        $this->hitungan($tinjau, 10, 7, locked: true);
+        $buka($tinjau, $this->pemeriksa())->assertTableColumnHidden('difference_qty');
+        $buka($tinjau, $this->pemeriksa(['finish_material_stock_takes']))->assertTableColumnVisible('difference_qty');
+
+        $selesai = $this->opname(MaterialStockTake::STATUS_COMPLETED);
+        $this->hitungan($selesai, 10, 7, locked: true);
+        $buka($selesai, $this->pemeriksa())
+            ->assertTableColumnVisible('system_qty')
+            ->assertTableColumnVisible('difference_qty');
+    }
 }
