@@ -72,7 +72,7 @@ class EditExpense extends EditRecord
     {
         try {
             $record->correct(
-                Arr::only($data, ['expense_date', 'recipient_name']),
+                Arr::only($data, ['expense_date', 'recipient_name', 'type']),
                 $data['items'] ?? [],
             );
         } catch (\RuntimeException $e) {

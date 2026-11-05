@@ -433,12 +433,15 @@ class Expense extends Model
      * Harga ikut mengoreksi uangnya: total barang menjadi nominal nota (reimburse) atau uang muka (kasbon yang
      * belum dilaporkan), dan mutasi kas pertama dokumen ini disesuaikan. Kasbon yang SUDAH dilaporkan hanya boleh
      * dikoreksi kategori dan keterangannya: totalnya terkait uang yang sudah dikembalikan atau ditambahkan, jadi
-     * harganya terkunci. Rekening dan jenis pembayaran tidak pernah berubah di sini.
+     * harganya terkunci. Rekening tidak pernah berubah di sini. Jenis pembayaran (Reimburse atau Kasbon) boleh diganti
+     * (Owner, 5 November 2026) selama belum ada uang lain yang bergerak: kasbon yang sudah dilaporkan, atau yang sudah ada
+     * pengembalian atau tambahan uang, tidak bisa diganti. Reimburse menjadi kasbon `Open` (uangnya sama, menunggu laporan
+     * nota); kasbon yang belum dilaporkan menjadi reimburse `Settled`.
      *
      * Dokumen yang Settled melewati penjaga `updating()` (yang menahan perubahan dari luar), jadi disimpan tanpa
      * event dan jejaknya ditulis sendiri di Activity Log.
      *
-     * @param  array<string, mixed>  $data  expense_date, recipient_name
+     * @param  array<string, mixed>  $data  expense_date, recipient_name, type (opsional)
      * @param  array<int, array<string, mixed>>  $items
      *
      * @throws \RuntimeException
@@ -457,6 +460,18 @@ class Expense extends Model
 
             $reported = $locked->type === self::TYPE_ADVANCE && $locked->receipt_amount !== null;
 
+            $newType = $data['type'] ?? $locked->type;
+
+            if (! in_array($newType, [self::TYPE_ADVANCE, self::TYPE_REIMBURSE], true)) {
+                throw new \RuntimeException(__('Choose how this expense is paid.'));
+            }
+
+            $typeChanges = $newType !== $locked->type;
+
+            if ($typeChanges && ($reported || $locked->transactions()->count() !== 1)) {
+                throw new \RuntimeException(__('The payment method can no longer change: money has already been reported or moved for this expense.'));
+            }
+
             if ($reported && abs($newTotal - (float) $locked->receipt_amount) >= 0.005) {
                 throw new \RuntimeException(__('The prices of an advance that has been reported can no longer change; only the category and description.'));
             }
@@ -464,6 +479,7 @@ class Expense extends Model
             $before = [
                 'expense_date' => $locked->expense_date?->toDateString(),
                 'recipient_name' => $locked->recipient_name,
+                'type' => $locked->type,
                 'total' => $locked->type === self::TYPE_ADVANCE && ! $reported ? (float) $locked->advance_amount : (float) $locked->receipt_amount,
                 'items' => $locked->items->map(fn ($i) => $i->only(['expense_category_id', 'description', 'amount']))->all(),
             ];
@@ -479,7 +495,13 @@ class Expense extends Model
             }
 
             if (! $reported) {
-                $fill[$locked->type === self::TYPE_ADVANCE ? 'advance_amount' : 'receipt_amount'] = $newTotal;
+                $fill[$newType === self::TYPE_ADVANCE ? 'advance_amount' : 'receipt_amount'] = $newTotal;
+            }
+
+            if ($typeChanges) {
+                $fill = array_merge($fill, $newType === self::TYPE_ADVANCE
+                    ? ['type' => self::TYPE_ADVANCE, 'status' => self::STATUS_OPEN, 'receipt_amount' => null, 'returned_amount' => 0, 'settled_at' => null, 'settled_by' => null]
+                    : ['type' => self::TYPE_REIMBURSE, 'status' => self::STATUS_SETTLED, 'advance_amount' => null, 'returned_amount' => 0, 'settled_at' => now(), 'settled_by' => Auth::id()]);
             }
 
             $locked->forceFill($fill)->saveQuietly();
@@ -493,6 +515,11 @@ class Expense extends Model
                 $first->update(array_filter([
                     'amount' => $reported ? null : $newTotal,
                     'transaction_date' => $locked->expense_date,
+                    'description' => $typeChanges
+                        ? ($newType === self::TYPE_ADVANCE
+                            ? __('Advance given for :number', ['number' => $locked->expense_number])
+                            : __('Reimbursement for :number', ['number' => $locked->expense_number]))
+                        : null,
                 ], fn ($v) => $v !== null));
             }
 
@@ -503,6 +530,7 @@ class Expense extends Model
                     'attributes' => [
                         'expense_date' => $locked->expense_date?->toDateString(),
                         'recipient_name' => $locked->recipient_name,
+                        'type' => $locked->type,
                         'total' => $reported ? (float) $locked->receipt_amount : $newTotal,
                         'items' => $items,
                     ],

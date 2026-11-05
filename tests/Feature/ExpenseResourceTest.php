@@ -228,6 +228,75 @@ class ExpenseResourceTest extends TestCase
         $expense->correct([], $this->items(90000));
     }
 
+    /** Cara pembayaran boleh diganti (Owner, 5 November 2026): reimburse menjadi kasbon Open, uangnya sama. */
+    public function test_a_reimbursement_can_become_an_advance_with_the_same_money(): void
+    {
+        $expense = Expense::createReimburse(['expense_date' => now()->toDateString(), 'recipient_name' => 'budi'], $this->items(50000));
+
+        $expense->correct(['type' => Expense::TYPE_ADVANCE], $this->items(50000));
+        $expense = $expense->fresh();
+
+        $this->assertSame(Expense::TYPE_ADVANCE, $expense->type);
+        $this->assertSame(Expense::STATUS_OPEN, $expense->status);
+        $this->assertSame(50000.0, (float) $expense->advance_amount);
+        $this->assertNull($expense->receipt_amount);
+        $this->assertNull($expense->settled_at);
+        $this->assertSame(1, $expense->transactions()->count());
+        $this->assertSame(50000.0, (float) $expense->transactions()->firstOrFail()->amount);
+        $this->assertTrue($expense->awaitingReport());
+    }
+
+    /** Kasbon yang belum dilaporkan menjadi reimburse yang langsung selesai. */
+    public function test_an_unreported_advance_can_become_a_settled_reimbursement(): void
+    {
+        $expense = $this->openAdvance();
+
+        $expense->correct(['type' => Expense::TYPE_REIMBURSE], $this->items(70000));
+        $expense = $expense->fresh();
+
+        $this->assertSame(Expense::TYPE_REIMBURSE, $expense->type);
+        $this->assertSame(Expense::STATUS_SETTLED, $expense->status);
+        $this->assertNull($expense->advance_amount);
+        $this->assertSame(70000.0, (float) $expense->receipt_amount);
+        $this->assertNotNull($expense->settled_at);
+        $this->assertSame(70000.0, (float) $expense->transactions()->firstOrFail()->amount);
+    }
+
+    /** Lewat layar Ubah: jenis pembayaran bisa diganti, dan terkunci untuk kasbon yang sudah dilaporkan. */
+    public function test_the_edit_screen_lets_the_payment_method_change_until_the_advance_is_reported(): void
+    {
+        $expense = Expense::createReimburse(['expense_date' => now()->toDateString(), 'recipient_name' => 'budi'], $this->items(50000));
+
+        Livewire::actingAs($this->employee(['view_expenses', 'edit_expenses']))
+            ->test(EditExpense::class, ['record' => $expense->getRouteKey()])
+            ->set('data.type', Expense::TYPE_ADVANCE)
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(Expense::TYPE_ADVANCE, $expense->fresh()->type);
+
+        $dilaporkan = $this->openAdvance();
+        $dilaporkan->settle($this->items(85000));
+
+        Livewire::actingAs($this->employee(['view_expenses', 'edit_expenses']))
+            ->test(EditExpense::class, ['record' => $dilaporkan->getRouteKey()])
+            ->assertFormFieldIsDisabled('type');
+    }
+
+    /** Kasbon yang sudah dilaporkan tidak bisa berganti jenis. */
+    public function test_a_reported_advance_cannot_change_its_payment_method(): void
+    {
+        $expense = $this->openAdvance();
+        $expense->settle($this->items(85000));
+
+        try {
+            $expense->correct(['type' => Expense::TYPE_REIMBURSE], $this->items(85000));
+            $this->fail('Kasbon yang sudah dilaporkan tidak boleh berganti jenis.');
+        } catch (\RuntimeException) {
+            $this->assertSame(Expense::TYPE_ADVANCE, $expense->fresh()->type);
+        }
+    }
+
     /** Yang dibatalkan tetap terkunci. */
     public function test_a_cancelled_expense_cannot_be_corrected(): void
     {

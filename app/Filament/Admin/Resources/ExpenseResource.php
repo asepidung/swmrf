@@ -186,7 +186,11 @@ class ExpenseResource extends Resource
                             ->default(fn () => BankAccount::cashAccount()->id)
                             ->searchable()
                             ->required()
-                            ->disabled(fn (string $context): bool => $context === 'edit')
+                            // Boleh diganti saat edit (Owner, 5 November 2026), kecuali kasbon yang sudah dilaporkan atau
+                            // yang uangnya sudah bergerak lagi (pengembalian/tambahan): jenisnya sudah ditentukan uang itu.
+                            ->disabled(fn (string $context, ?Expense $record): bool => $context === 'edit'
+                                && $record !== null
+                                && (static::priceLocked($record) || $record->transactions()->count() !== 1))
                             ->dehydrated(),
                     ])->columns(['md' => 3]),
 
