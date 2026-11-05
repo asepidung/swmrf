@@ -35,9 +35,20 @@ class MaterialStockTakePolicy
     /**
      * Determine whether the user can update the model.
      */
+    /**
+     * Pemegang izin Ubah, atau peninjau (izin Selesaikan dan terapkan ke stok) selama dokumennya REVIEW. Tombol Tolak /
+     * Hitung Ulang dan Complete ada di halaman Ubah; tanpa ini peninjau yang hanya punya View + Selesaikan tidak bisa
+     * membukanya (ditemukan 5 November 2026).
+     */
     public function update($user, $model): bool
     {
-        return $user->hasPermission('edit_material_stock_takes');
+        if ($user->hasPermission('edit_material_stock_takes')) {
+            return true;
+        }
+
+        return $model instanceof MaterialStockTake
+            && $model->status === MaterialStockTake::STATUS_REVIEW
+            && ($user->isProgrammer() || $user->hasPermission('finish_material_stock_takes'));
     }
 
     /**

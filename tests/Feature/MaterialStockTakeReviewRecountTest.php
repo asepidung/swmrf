@@ -515,4 +515,67 @@ class MaterialStockTakeReviewRecountTest extends TestCase
         $this->assertSame(MaterialStockTake::STATUS_COMPLETED, $opname->fresh()->status);
         $this->assertSame(7.0, (float) \App\Models\MaterialStock::where('material_id', $this->material->id)->sum('qty'), 'Selisih -3 harus diterapkan ke stok.');
     }
+
+    // =========================================================================
+    // Akses: peninjau (View + Selesaikan, tanpa Ubah) dan tombol yang terjangkau
+    // =========================================================================
+
+    private function peninjauSaja(): User
+    {
+        $user = User::factory()->create(['role' => 'employee', 'is_active' => true]);
+
+        foreach (['view_material_stock_takes', 'finish_material_stock_takes'] as $name) {
+            $user->permissions()->attach(
+                Permission::firstOrCreate(['name' => $name], ['module_name' => 'Material Stock Take', 'description' => $name])->id
+            );
+        }
+
+        return $user->fresh();
+    }
+
+    /** @test */
+    public function a_reviewer_without_the_edit_permission_can_open_the_review_page_only_while_in_review(): void
+    {
+        $edit = \App\Filament\Admin\Resources\MaterialStockTakeResource\Pages\EditMaterialStockTake::class;
+
+        $tinjau = $this->opname(MaterialStockTake::STATUS_REVIEW);
+        $this->hitungan($tinjau, 10, 7, locked: true);
+        Livewire::actingAs($this->peninjauSaja())->test($edit, ['record' => $tinjau->getRouteKey()])
+            ->assertSuccessful()
+            ->assertActionVisible('complete_opname')
+            ->assertActionVisible('reject_recount');
+
+        $menghitung = $this->opname(MaterialStockTake::STATUS_IN_PROGRESS);
+        Livewire::actingAs($this->peninjauSaja())->test($edit, ['record' => $menghitung->getRouteKey()])->assertForbidden();
+    }
+
+    /** @test */
+    public function the_list_offers_a_review_button_only_for_documents_in_review_to_those_who_may_open_them(): void
+    {
+        $tinjau = $this->opname(MaterialStockTake::STATUS_REVIEW);
+        $menghitung = $this->opname(MaterialStockTake::STATUS_DRAFT);
+
+        $daftar = fn (User $u) => Livewire::actingAs($u)->test(\App\Filament\Admin\Resources\MaterialStockTakeResource\Pages\ListMaterialStockTakes::class);
+
+        $daftar($this->peninjauSaja())
+            ->assertTableActionVisible('review', $tinjau)
+            ->assertTableActionHidden('review', $menghitung);
+
+        $daftar($this->pemeriksa()) // hanya View + Ubah, tanpa Selesaikan
+            ->assertTableActionVisible('review', $tinjau); // pemegang Ubah tetap boleh membuka halaman Ubah
+    }
+
+    /** @test */
+    public function the_counter_can_submit_for_review_from_the_input_page(): void
+    {
+        $opname = $this->opname(MaterialStockTake::STATUS_DRAFT);
+        $this->hitungan($opname, 10, 7);
+
+        Livewire::actingAs($this->pemeriksa())
+            ->test(ManageMaterialStockTakeItems::class, ['record' => $opname->getRouteKey()])
+            ->assertActionVisible('submit_for_review')
+            ->callAction('submit_for_review');
+
+        $this->assertSame(MaterialStockTake::STATUS_REVIEW, $opname->fresh()->status);
+    }
 }

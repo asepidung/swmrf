@@ -153,6 +153,17 @@ class MaterialStockTakeResource extends Resource
             ->url(fn (MaterialStockTake $record): string => static::getUrl('items', ['record' => $record]))
             ->visible(fn (MaterialStockTake $record): bool => $record->isCountable()),
 
+        // Opname yang sudah dikirim: peninjau membukanya untuk memutuskan Tolak / Hitung Ulang atau Complete. Tombol-tombol
+        // itu hidup di halaman Ubah, dan sebelumnya tidak ada satu pun tautan ke sana dari layar mana pun.
+        Tables\Actions\Action::make('review')
+            ->label(__('Review'))
+            ->icon('heroicon-o-clipboard-document-check')
+            ->color('info')
+            ->button()
+            ->url(fn (MaterialStockTake $record): string => static::getUrl('edit', ['record' => $record]))
+            ->visible(fn (MaterialStockTake $record): bool => $record->status === MaterialStockTake::STATUS_REVIEW
+                && (auth()->user()?->can('update', $record) ?? false)),
+
         // Hanya selama belum ada satu pun hitungan yang diisi. Sebelumnya
         // yang diperiksa cuma statusnya, jadi opname yang sudah dihitung
         // separuh bisa dibuang begitu saja.
