@@ -22,6 +22,7 @@ class MaterialStockTake extends Model
         'period',
         'status',
         'summary_note',
+        'recount_note',
         'created_by',
         'completed_by',
         'completed_at',
@@ -174,8 +175,10 @@ class MaterialStockTake extends Model
 
             $locked->items()->update(['is_locked' => true]);
 
-            $locked->update(['status' => self::STATUS_REVIEW]);
+            // Permintaan hitung ulang sebelumnya sudah dijawab.
+            $locked->update(['status' => self::STATUS_REVIEW, 'recount_note' => null]);
             $this->status = self::STATUS_REVIEW;
+            $this->recount_note = null;
 
             return true;
         });
@@ -193,13 +196,14 @@ class MaterialStockTake extends Model
      * hitungan sebelumnya, bukan cuma "sekarang kosong" tanpa jejak.
      *
      * @param  array<int, int>  $itemIds
+     * @param  string|null  $note  Alasan hitung ulang untuk penghitung.
      * @return bool  `false` kalau dokumennya sudah bukan REVIEW lagi
      *               (klik ganda / sesi lain), atau kalau tidak ada satu
      *               pun item valid yang dipilih.
      */
-    public function requestRecount(array $itemIds): bool
+    public function requestRecount(array $itemIds, ?string $note = null): bool
     {
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($itemIds): bool {
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($itemIds, $note): bool {
             $locked = self::whereKey($this->id)->lockForUpdate()->first();
 
             if (! $locked || $locked->status !== self::STATUS_REVIEW) {
@@ -219,6 +223,7 @@ class MaterialStockTake extends Model
                     ->withProperties([
                         'previous_physical_qty' => $item->physical_qty,
                         'previous_difference_qty' => $item->difference_qty,
+                        'note' => $note,
                     ])
                     ->log('Recount requested');
 
@@ -229,8 +234,10 @@ class MaterialStockTake extends Model
                 ]);
             }
 
-            $locked->update(['status' => self::STATUS_IN_PROGRESS]);
+            // Alasannya dibaca penghitung (halaman input dan kartu tugas dashboard).
+            $locked->update(['status' => self::STATUS_IN_PROGRESS, 'recount_note' => filled($note) ? trim($note) : null]);
             $this->status = self::STATUS_IN_PROGRESS;
+            $this->recount_note = filled($note) ? trim($note) : null;
 
             return true;
         });

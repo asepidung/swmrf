@@ -53,6 +53,18 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
         ]);
     }
 
+    public function getSubheading(): ?string
+    {
+        $dokumen = $this->getOwnerRecord()->fresh();
+
+        // Alasan peninjau meminta hitung ulang, terlihat selama masih IN_PROGRESS dan belum dikirim ulang.
+        if ($dokumen && $dokumen->isCountable() && filled($dokumen->recount_note)) {
+            return __('Recount requested').': '.$dokumen->recount_note;
+        }
+
+        return null;
+    }
+
     protected function getHeaderActions(): array
     {
         $actions = [];
@@ -248,14 +260,14 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                         ->label(__('Request Recount'))
                         ->icon('heroicon-o-arrow-path')
                         ->color('warning')
-                        ->requiresConfirmation()
+                        ->form([\Filament\Forms\Components\Textarea::make('note')->label(__('Reason for recount'))->required()->maxLength(500)->rows(3)])
                         ->modalHeading(__('Request a recount for the selected items?'))
                         ->modalDescription(__('The stock count returns to In Progress for these items only. Their previous counts are kept as history, and the input fields start empty again.'))
                         // Sama seperti Complete Opname: yang membuka
                         // kembali hitungan yang sudah ditinjau adalah
                         // keputusan peninjau, jadi izin yang sama.
                         ->visible(fn (): bool => $isReview && $bisaMeninjau)
-                        ->action(function (\Illuminate\Support\Collection $records) {
+                        ->action(function (\Illuminate\Support\Collection $records, array $data) {
                             // Lapis kedua: visible() menjaga TOMBOLNYA,
                             // method ini sendiri dipanggil langsung lewat
                             // Livewire terlepas dari itu.
@@ -265,7 +277,7 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                                 return;
                             }
 
-                            if (! $this->getOwnerRecord()->requestRecount($records->pluck('id')->all())) {
+                            if (! $this->getOwnerRecord()->requestRecount($records->pluck('id')->all(), $data['note'] ?? null)) {
                                 Notification::make()
                                     ->title(__('This stock count has already been finished'))
                                     ->warning()

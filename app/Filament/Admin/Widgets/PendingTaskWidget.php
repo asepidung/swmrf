@@ -343,6 +343,21 @@ class PendingTaskWidget extends Widget
                 \App\Filament\Admin\Resources\StockTakeResource::getUrl('index'),
                 'warning',
             ],
+
+            // Opname material: peninjau diberi tahu ada hasil hitungan yang menunggu keputusannya, penghitung diberi tahu
+            // ada barang yang diminta hitung ulang (Owner, 5 November 2026).
+            [
+                $this->getMaterialStockTakesAwaitingReviewCount(),
+                ':count material stock take is waiting for your review|:count material stock takes are waiting for your review',
+                \App\Filament\Admin\Resources\MaterialStockTakeResource::getUrl('index'),
+                'warning',
+            ],
+            [
+                $this->getMaterialStockTakesToRecountCount(),
+                ':count material stock take must be recounted|:count material stock takes must be recounted',
+                \App\Filament\Admin\Resources\MaterialStockTakeResource::getUrl('index'),
+                'danger',
+            ],
         ];
     }
 
@@ -611,6 +626,28 @@ class PendingTaskWidget extends Widget
     public function getPendingBeefStockTakeCount(): int
     {
         return \App\Models\StockTake::whereIn('status', ['DRAFT', 'IN_PROGRESS'])->count();
+    }
+
+    /** Opname material yang sudah dikirim dan menunggu keputusan peninjau (pemegang izin Finish). */
+    public function getMaterialStockTakesAwaitingReviewCount(): int
+    {
+        if (! $this->may('finish_material_stock_takes')) {
+            return 0;
+        }
+
+        return \App\Models\MaterialStockTake::where('status', \App\Models\MaterialStockTake::STATUS_REVIEW)->count();
+    }
+
+    /** Opname material yang barangnya diminta dihitung ulang dan belum dikirim lagi (untuk penghitung). */
+    public function getMaterialStockTakesToRecountCount(): int
+    {
+        if (! $this->may('edit_material_stock_takes')) {
+            return 0;
+        }
+
+        return \App\Models\MaterialStockTake::where('status', \App\Models\MaterialStockTake::STATUS_IN_PROGRESS)
+            ->whereNotNull('recount_note')
+            ->count();
     }
 
     public function getPendingMaterialStockTakeCount(): int
