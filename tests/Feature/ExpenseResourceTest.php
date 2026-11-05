@@ -269,6 +269,8 @@ class ExpenseResourceTest extends TestCase
 
         Livewire::actingAs($this->employee(['view_expenses', 'edit_expenses']))
             ->test(EditExpense::class, ['record' => $expense->getRouteKey()])
+            ->assertFormFieldIsEnabled('type')
+            ->assertFormFieldIsDisabled('bank_account_id')
             ->set('data.type', Expense::TYPE_ADVANCE)
             ->call('save')
             ->assertHasNoFormErrors();
