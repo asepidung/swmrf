@@ -185,6 +185,7 @@
 </head>
 
 <body>
+    @php $lihatSistem = $lihatSistem ?? false; $lihatSelisih = $lihatSelisih ?? false; @endphp
 
     <div class="container">
         <div class="header">
@@ -217,6 +218,7 @@
                     <strong>{{ __('Total Items Checked') }}:</strong> {{ $record->items->count() }} {{ __('Items') }}<br>
                 </div>
             </div>
+            @if($lihatSelisih)
             <div class="meta-box">
                 <h4>{{ __('Variance Summary') }}</h4>
                 <div class="meta-content">
@@ -228,6 +230,7 @@
                     <strong>Kosong / Hilang:</strong> {{ $record->items->whereNull('physical_qty')->count() }} Items
                 </div>
             </div>
+            @endif
         </div>
 
         <table>
@@ -236,9 +239,9 @@
                     <th width="5%">{{ __('No') }}</th>
                     <th width="15%">{{ __('Code') }}</th>
                     <th width="30%">{{ __('Item Name') }}</th>
-                    <th width="15%">{{ __('System Qty') }}</th>
+                    @if($lihatSistem)<th width="15%">{{ __('System Qty') }}</th>@endif
                     <th width="15%">{{ __('Physical Qty') }}</th>
-                    <th width="20%">{{ __('Variance') }}</th>
+                    @if($lihatSelisih)<th width="20%">{{ __('Variance') }}</th>@endif
                 </tr>
             </thead>
             <tbody>
@@ -257,7 +260,7 @@
                     <td class="text-center">{{ $item->material->code ?? '-' }}</td>
                     <td>{{ $item->material->name ?? '-' }}</td>
                     
-                    <td class="text-right">{{ number_format($sys, 0, ',', '.') }}</td>
+                    @if($lihatSistem)<td class="text-right">{{ number_format($sys, 0, ',', '.') }}</td>@endif
                     <td class="text-right" style="font-weight: bold;">
                         @if($isNull)
                             <span style="color: #d9534f;">- (Kosong)</span>
@@ -265,6 +268,7 @@
                             {{ number_format($phys, 0, ',', '.') }}
                         @endif
                     </td>
+                    @if($lihatSelisih)
                     <td class="text-right" style="font-weight: bold; {{ $diff > 0 ? 'color: #5cb85c;' : ($diff < 0 ? 'color: #d9534f;' : '') }}">
                         @if($isNull)
                             <span style="color: #d9534f;">Hilang</span>
@@ -272,10 +276,11 @@
                             {{ $diff > 0 ? '+' : '' }}{{ number_format($diff, 0, ',', '.') }}
                         @endif
                     </td>
+                    @endif
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="text-center">{{ __('No item data available.') }}</td>
+                    <td colspan="{{ 3 + ($lihatSistem ? 1 : 0) + 1 + ($lihatSelisih ? 1 : 0) }}" class="text-center">{{ __('No item data available.') }}</td>
                 </tr>
                 @endforelse
             </tbody>
