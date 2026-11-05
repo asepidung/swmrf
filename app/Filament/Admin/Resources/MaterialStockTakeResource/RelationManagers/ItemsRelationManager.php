@@ -38,6 +38,10 @@ class ItemsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('id')
             ->paginated(false)
+            // Urut abjad menurut nama barang (permintaan Owner, 5 November 2026), bukan urutan masuk.
+            ->modifyQueryUsing(fn (Builder $query) => $query->orderBy(
+                \App\Models\Material::select('name')->whereColumn('materials.id', 'material_stock_take_items.material_id')
+            ))
             ->columns([
                 Tables\Columns\TextColumn::make('material.code')
                     ->label(__('Item Code'))
