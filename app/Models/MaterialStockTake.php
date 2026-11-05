@@ -125,7 +125,10 @@ class MaterialStockTake extends Model
                 // KALI, bukan sekali.
                 $locked = self::whereKey($this->id)->lockForUpdate()->first();
 
-                if (! $locked || ! $locked->isCountable()) {
+                // Boleh dari tahap mana pun yang masih berjalan, TERMASUK REVIEW: sejak 17 September 2026 Complete hanya ada
+                // di REVIEW, tapi pemeriksaan ini dulu `isCountable()` (DRAFT/IN_PROGRESS saja), sehingga Complete dari
+                // REVIEW selalu ditolak dengan pesan "sudah selesai" dan stok tidak pernah diterapkan (ditemukan 5 November 2026).
+                if (! $locked || ! in_array($locked->status, self::STATUS_SEDANG_MENGHITUNG, true)) {
                     return false;
                 }
 

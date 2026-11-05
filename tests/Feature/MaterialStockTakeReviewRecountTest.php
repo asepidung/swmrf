@@ -499,4 +499,20 @@ class MaterialStockTakeReviewRecountTest extends TestCase
         $this->actingAs($penghitung);
         $this->assertSame(0, (new \App\Filament\Admin\Widgets\PendingTaskWidget())->getMaterialStockTakesToRecountCount());
     }
+
+    /** @test */
+    public function the_reviewer_can_complete_an_opname_that_is_in_review(): void
+    {
+        \App\Services\MaterialStockFreezeService::bypass(fn () => \App\Models\MaterialStock::create(['material_id' => $this->material->id, 'qty' => 10]));
+        $opname = $this->opname(MaterialStockTake::STATUS_REVIEW);
+        $this->hitungan($opname, 10, 7, locked: true);
+
+        Livewire::actingAs($this->pemeriksa(['finish_material_stock_takes']))
+            ->test(\App\Filament\Admin\Resources\MaterialStockTakeResource\Pages\EditMaterialStockTake::class, ['record' => $opname->getRouteKey()])
+            ->callAction('complete_opname')
+            ->assertNotified(__('The stock count is finished and the stock has been updated.'));
+
+        $this->assertSame(MaterialStockTake::STATUS_COMPLETED, $opname->fresh()->status);
+        $this->assertSame(7.0, (float) \App\Models\MaterialStock::where('material_id', $this->material->id)->sum('qty'), 'Selisih -3 harus diterapkan ke stok.');
+    }
 }
