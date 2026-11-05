@@ -30,6 +30,7 @@ return [
                 'Opname Material: stok sistem dan selisih tidak terlihat selama menghitung, termasuk di Detail Hitung dan cetakan. Selisih baru terlihat setelah opname selesai, atau oleh peninjau saat tahap review.',
                 'Opname Material: peninjau bisa menolak hasil dengan tombol Tolak / Hitung Ulang, memilih barang yang dihitung ulang dan menulis alasannya. Penghitung membaca alasan itu di halaman input, dan dashboard memberi tahu peninjau (menunggu ditinjau) serta penghitung (harus dihitung ulang).',
                 'Opname Material: kalau tab ditutup atau halaman di-refresh saat ada angka yang belum tersimpan, muncul peringatan dulu.',
+                'Opname Material: ada tombol Submit for Review di halaman Input Stock dan tombol Tinjau di daftar untuk dokumen yang menunggu keputusan. Complete Opname di tahap review kini benar-benar menerapkan selisih ke stok, dan peninjau cukup berizin Selesaikan tanpa izin Ubah.',
                 'Repack: tabel input bahan menampilkan POD barang yang dipindai. Judul kolom POD seragam di Repack dan Tally.',
                 'Pengeluaran (Expenses): cara pembayaran bisa diganti saat edit, dari Reimburse ke Kasbon atau sebaliknya, selama kasbon belum dilaporkan atau uangnya belum bergerak lagi.',
             ],
