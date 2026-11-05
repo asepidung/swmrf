@@ -9,7 +9,8 @@
             font-family: 'Poppins', sans-serif;
             font-size: 14px;
             color: #000;
-            margin: 8px;
+            /* Margin kiri-kanan lebih lebar: printer menggeser/memotong tepi kertas, nomor DO yang rata kanan ikut terpotong. */
+            margin: 8px 22px;
         }
         table {
             width: 100%;
@@ -53,7 +54,7 @@
                 <span style="font-weight: bold; text-transform: uppercase;">Delivery Order</span><br />
                 <strong>PT. SANTI WIJAYA MEAT</strong>
             </td>
-            <td style="text-align: right; vertical-align: top; width: 40%;">
+            <td style="text-align: right; vertical-align: top; width: 40%; white-space: nowrap;">
                 <span>DO Number :</span><br />
                 <strong>{{ $record->delivery_order_number }}</strong>
             </td>
