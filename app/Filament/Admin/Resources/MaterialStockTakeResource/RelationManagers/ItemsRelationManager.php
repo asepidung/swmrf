@@ -35,6 +35,16 @@ class ItemsRelationManager extends RelationManager
 
     public function table(Table $table): Table
     {
+        // Aturan yang sama dengan halaman input (ManageMaterialStockTakeItems), keputusan Owner 17 September 2026:
+        // stok sistem dan selisih TIDAK terlihat selama menghitung (hitungan buta). Terlihat sesudah COMPLETED, atau
+        // selama REVIEW hanya untuk pemegang izin finish_material_stock_takes. Tabel ini dulu menampilkannya
+        // selalu, sehingga penghitung bisa melihat selisih sebelum opname selesai (ditemukan 5 November 2026).
+        $dokumen = $this->getOwnerRecord();
+        $selesai = $dokumen->status === \App\Models\MaterialStockTake::STATUS_COMPLETED;
+        $bisaMeninjau = $dokumen->status === \App\Models\MaterialStockTake::STATUS_REVIEW
+            && (auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('finish_material_stock_takes') ?? false));
+        $lihatSelisih = $selesai || $bisaMeninjau;
+
         return $table
             ->recordTitleAttribute('id')
             ->paginated(false)
@@ -53,6 +63,7 @@ class ItemsRelationManager extends RelationManager
                     ->sortable(),
                 Tables\Columns\TextColumn::make('system_qty')
                     ->label(__('System Qty'))
+                    ->visible($selesai)
                     ->numeric(decimalPlaces: 0, decimalSeparator: ',', thousandsSeparator: '.'),
                 Tables\Columns\TextColumn::make('physical_qty')
                     ->label(__('Physical Qty'))
@@ -67,11 +78,13 @@ class ItemsRelationManager extends RelationManager
                 // kerusakan yang lebih senyap daripada sebelum dirapikan.
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('Variance Status'))
+                    ->visible($lihatSelisih)
                     ->getStateUsing(fn (\App\Models\MaterialStockTakeItem $record): string => $record->varianceLabel())
                     ->badge()
                     ->color(fn ($state, \App\Models\MaterialStockTakeItem $record): string => $record->varianceColor()),
                 Tables\Columns\TextColumn::make('difference_qty')
                     ->label(__('Difference Qty'))
+                    ->visible($lihatSelisih)
                     ->numeric(decimalPlaces: 0, decimalSeparator: ',', thousandsSeparator: '.')
                     ->color(fn ($state) => $state > 0 ? 'info' : ($state < 0 ? 'danger' : 'success')),
             ])
