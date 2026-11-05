@@ -99,7 +99,7 @@ class MaterialStockTakeSusulanTest extends TestCase
             'difference_qty' => -2,
         ]);
 
-        $html = view('print.material-stock-take', ['record' => $opname->load('items.material')])->render();
+        $html = view('print.material-stock-take', ['record' => $opname->load('items.material'), 'lihatSistem' => true, 'lihatSelisih' => true])->render();
 
         // Temuan 3: kolom sebenarnya `period`, bukan `periode` -- field ini
         // dulu SELALU kosong karena Eloquent diam-diam mengembalikan null

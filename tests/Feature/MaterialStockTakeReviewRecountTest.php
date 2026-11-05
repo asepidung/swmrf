@@ -377,4 +377,28 @@ class MaterialStockTakeReviewRecountTest extends TestCase
             ->assertTableColumnVisible('system_qty')
             ->assertTableColumnVisible('difference_qty');
     }
+
+    /** @test */
+    public function the_printout_keeps_the_count_blind_until_it_is_allowed(): void
+    {
+        $cetak = fn (MaterialStockTake $opname, User $user) => $this->actingAs($user)
+            ->get(route('material-stock-take.print', ['id' => $opname->id]))
+            ->assertOk();
+
+        $menghitung = $this->opname(MaterialStockTake::STATUS_IN_PROGRESS);
+        $this->hitungan($menghitung, 10, 7);
+        $cetak($menghitung, $this->pemeriksa(['finish_material_stock_takes']))
+            ->assertDontSee(__('Variance Summary'))
+            ->assertDontSee(__('System Qty'))
+            ->assertDontSee(__('Variance'));
+
+        $tinjau = $this->opname(MaterialStockTake::STATUS_REVIEW);
+        $this->hitungan($tinjau, 10, 7, locked: true);
+        $cetak($tinjau, $this->pemeriksa())->assertDontSee(__('Variance Summary'));
+        $cetak($tinjau, $this->pemeriksa(['finish_material_stock_takes']))->assertSee(__('Variance Summary'));
+
+        $selesai = $this->opname(MaterialStockTake::STATUS_COMPLETED);
+        $this->hitungan($selesai, 10, 7, locked: true);
+        $cetak($selesai, $this->pemeriksa())->assertSee(__('Variance Summary'))->assertSee(__('System Qty'));
+    }
 }
