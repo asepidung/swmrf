@@ -21,6 +21,20 @@ return [
     'entries' => [
 
         [
+            'version' => '2.0.5',
+            'date' => '2026-11-05',
+            'kind' => 'fix',
+            'title' => 'Perbaikan opname material dan repack',
+            'items' => [
+                'Opname Material: kolom Qty Fisik kembali berupa kotak isian sehingga hitungan bisa dimasukkan. Daftar barang urut abjad menurut nama.',
+                'Opname Material: stok sistem dan selisih tidak terlihat selama menghitung, termasuk di Detail Hitung dan cetakan. Selisih baru terlihat setelah opname selesai, atau oleh peninjau saat tahap review.',
+                'Opname Material: peninjau bisa menolak hasil dengan tombol Tolak / Hitung Ulang, memilih barang yang dihitung ulang dan menulis alasannya. Penghitung membaca alasan itu di halaman input, dan dashboard memberi tahu peninjau (menunggu ditinjau) serta penghitung (harus dihitung ulang).',
+                'Opname Material: kalau tab ditutup atau halaman di-refresh saat ada angka yang belum tersimpan, muncul peringatan dulu.',
+                'Repack: tabel input bahan menampilkan POD barang yang dipindai. Judul kolom POD seragam di Repack dan Tally.',
+            ],
+        ],
+
+        [
             'version' => '2.0.4',
             'date' => '2026-11-04',
             'kind' => 'fix',
