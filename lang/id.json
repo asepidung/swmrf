@@ -1991,5 +1991,7 @@
     "Only the items you tick are reopened for counting; the others stay locked. The counter sees your reason.": "Hanya barang yang dicentang yang dibuka lagi untuk dihitung; yang lain tetap terkunci. Penghitung akan melihat alasanmu.",
     "Items to recount": "Barang yang dihitung ulang",
     "Reason for recount": "Alasan hitung ulang",
-    "Recount requested": "Diminta hitung ulang"
+    "Recount requested": "Diminta hitung ulang",
+    "Choose how this expense is paid.": "Pilih cara pembayaran pengeluaran ini.",
+    "The payment method can no longer change: money has already been reported or moved for this expense.": "Cara pembayaran tidak bisa diubah lagi: uangnya sudah dilaporkan atau sudah bergerak."
 }

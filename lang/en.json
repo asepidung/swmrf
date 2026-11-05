@@ -1991,5 +1991,7 @@
     "Only the items you tick are reopened for counting; the others stay locked. The counter sees your reason.": "Only the items you tick are reopened for counting; the others stay locked. The counter sees your reason.",
     "Items to recount": "Items to recount",
     "Reason for recount": "Reason for recount",
-    "Recount requested": "Recount requested"
+    "Recount requested": "Recount requested",
+    "Choose how this expense is paid.": "Choose how this expense is paid.",
+    "The payment method can no longer change: money has already been reported or moved for this expense.": "The payment method can no longer change: money has already been reported or moved for this expense."
 }
