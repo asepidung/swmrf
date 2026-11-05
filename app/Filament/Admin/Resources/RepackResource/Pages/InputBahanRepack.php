@@ -180,6 +180,12 @@ class InputBahanRepack extends Page implements HasForms, HasTable
                     ->label(__('Pcs'))
                     ->alignCenter(),
 
+                // POD bahan yang dipindai ikut tampil (permintaan user, 5 November 2026), format sama dengan Scan Tally.
+                Tables\Columns\TextColumn::make('pack_date')
+                    ->label(__('POD'))
+                    ->date('d-m-y')
+                    ->alignCenter(),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Waktu Scan'))
                     ->time('H:i:s')

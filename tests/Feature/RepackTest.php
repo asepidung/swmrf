@@ -120,6 +120,11 @@ class RepackTest extends TestCase
         $this->assertEquals('BONING', $material->origin);
         $this->assertEquals('IN_STOCK', $material->status);
 
+        // POD bahan tampil di tabel hasil scan (format d-m-y).
+        Livewire::actingAs($this->user)
+            ->test(InputBahanRepack::class, ['record' => $this->repack])
+            ->assertTableColumnStateSet('pack_date', Carbon::parse('2026-06-01'), $material);
+
         // Verify stock movement OUT_TO_REPACK is created
         $this->assertDatabaseHas('beef_stock_movements', [
             'product_id' => $this->product->id,
