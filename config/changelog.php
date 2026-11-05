@@ -24,7 +24,7 @@ return [
             'version' => '2.0.5',
             'date' => '2026-11-05',
             'kind' => 'fix',
-            'title' => 'Perbaikan opname material, repack, dan pengeluaran',
+            'title' => 'Perbaikan opname, repack, dan pengeluaran',
             'items' => [
                 'Opname Material: kolom Qty Fisik kembali berupa kotak isian sehingga hitungan bisa dimasukkan. Daftar barang urut abjad menurut nama.',
                 'Opname Material: stok sistem dan selisih tidak terlihat selama menghitung, termasuk di Detail Hitung dan cetakan. Selisih baru terlihat setelah opname selesai, atau oleh peninjau saat tahap review.',
@@ -33,6 +33,8 @@ return [
                 'Opname Material: ada tombol Submit for Review di halaman Input Stock dan tombol Tinjau di daftar untuk dokumen yang menunggu keputusan. Complete Opname di tahap review kini benar-benar menerapkan selisih ke stok, dan peninjau cukup berizin Selesaikan tanpa izin Ubah.',
                 'Repack: tabel input bahan menampilkan POD barang yang dipindai. Judul kolom POD seragam di Repack dan Tally.',
                 'Pengeluaran (Expenses): cara pembayaran bisa diganti saat edit, dari Reimburse ke Kasbon atau sebaliknya, selama kasbon belum dilaporkan atau uangnya belum bergerak lagi.',
+                'Opname Daging: opname yang sudah selesai punya tombol Analisa, laporan yang disusun otomatis oleh sistem: ringkasan selisih, nilai rupiah (HPP), pasangan barang hilang dan temuan yang kemungkinan karton yang sama, rincian per produk, dan lampiran daftar barcode untuk dicek gudang.',
+                'Cetak DO: nomor DO dan isi di tepi kertas tidak lagi terpotong, karena margin kiri-kanan dilebarkan.',
             ],
         ],
 
