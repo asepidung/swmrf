@@ -1983,5 +1983,13 @@
     "Deleted at": "Dihapus",
     "Left out of delivery plans": "Tidak masuk rencana kirim",
     "Turn ON for groups whose orders are not scheduled for delivery (for example employees): their Sales Orders do not create a delivery plan.": "Aktifkan untuk grup yang pesanannya tidak dijadwalkan kirim (misalnya karyawan): Sales Order mereka tidak membuat rencana kirim.",
-    "Awaiting receipt": "Menunggu penerimaan"
+    "Awaiting receipt": "Menunggu penerimaan",
+    ":count material stock take is waiting for your review|:count material stock takes are waiting for your review": ":count Opname material menunggu ditinjau|:count Opname material menunggu ditinjau",
+    ":count material stock take must be recounted|:count material stock takes must be recounted": ":count Opname material harus dihitung ulang|:count Opname material harus dihitung ulang",
+    "Reject / Recount": "Tolak / Hitung Ulang",
+    "Reject this count and ask for a recount?": "Tolak hasil hitungan ini dan minta hitung ulang?",
+    "Only the items you tick are reopened for counting; the others stay locked. The counter sees your reason.": "Hanya barang yang dicentang yang dibuka lagi untuk dihitung; yang lain tetap terkunci. Penghitung akan melihat alasanmu.",
+    "Items to recount": "Barang yang dihitung ulang",
+    "Reason for recount": "Alasan hitung ulang",
+    "Recount requested": "Diminta hitung ulang"
 }

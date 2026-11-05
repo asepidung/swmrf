@@ -70,6 +70,54 @@ class EditMaterialStockTake extends EditRecord
         }
 
         if ($this->record->status === MaterialStockTake::STATUS_REVIEW) {
+            // Tolak hasil dan minta hitung ulang (Owner, 5 November 2026): peninjau memilih barang yang diragukan
+            // dan menulis alasannya; penghitung membaca alasan itu di halaman input dan di dashboard. Barang yang
+            // tidak dipilih tetap terkunci. Izinnya sama dengan Complete: yang menilai hasil hitungan.
+            $actions[] = Actions\Action::make('reject_recount')
+                ->label(__('Reject / Recount'))
+                ->color('warning')
+                ->icon('heroicon-o-arrow-path')
+                ->visible(fn (): bool => auth()->user()?->isProgrammer()
+                    || (auth()->user()?->hasPermission('finish_material_stock_takes') ?? false))
+                ->modalHeading(__('Reject this count and ask for a recount?'))
+                ->modalDescription(__('Only the items you tick are reopened for counting; the others stay locked. The counter sees your reason.'))
+                ->form(fn (): array => [
+                    \Filament\Forms\Components\CheckboxList::make('item_ids')
+                        ->label(__('Items to recount'))
+                        ->options(fn (): array => $this->record->items()->with('material')->get()
+                            ->sortBy(fn ($item) => $item->material?->name)
+                            ->mapWithKeys(fn ($item) => [$item->id => trim(($item->material?->code ?? '').' - '.($item->material?->name ?? '').' ('.__('System Qty').' '.number_format((float) $item->system_qty, 0, ',', '.').', '.__('Physical Qty').' '.($item->physical_qty === null ? '-' : number_format((float) $item->physical_qty, 0, ',', '.')).')')])
+                            ->all())
+                        ->default(fn (): array => $this->record->items()->get()
+                            ->filter(fn ($item) => $item->physical_qty === null || (float) $item->difference_qty !== 0.0)
+                            ->pluck('id')->all())
+                        ->searchable()
+                        ->bulkToggleable()
+                        ->required()
+                        ->columns(1),
+                    \Filament\Forms\Components\Textarea::make('note')
+                        ->label(__('Reason for recount'))
+                        ->required()
+                        ->maxLength(500)
+                        ->rows(3),
+                ])
+                ->action(function (array $data) {
+                    if (! (auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('finish_material_stock_takes') ?? false))) {
+                        Notification::make()->title(__('You do not have permission to do this.'))->danger()->send();
+
+                        return;
+                    }
+
+                    if (! $this->record->requestRecount(array_map('intval', $data['item_ids'] ?? []), $data['note'] ?? null)) {
+                        Notification::make()->title(__('This stock count has already been finished'))->warning()->send();
+
+                        return;
+                    }
+
+                    Notification::make()->title(__('Recount requested for the selected items.'))->success()->send();
+                    $this->redirect($this->getResource()::getUrl('index'));
+                });
+
             $actions[] = Actions\Action::make('complete_opname')
                 ->label(__('Complete Opname'))
                 ->color('success')

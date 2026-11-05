@@ -401,4 +401,102 @@ class MaterialStockTakeReviewRecountTest extends TestCase
         $this->hitungan($selesai, 10, 7, locked: true);
         $cetak($selesai, $this->pemeriksa())->assertSee(__('Variance Summary'))->assertSee(__('System Qty'));
     }
+
+    // =========================================================================
+    // Tolak / Hitung Ulang dengan alasan, dan pemberitahuan di dashboard
+    // =========================================================================
+
+    /** @test */
+    public function the_reviewer_can_reject_with_a_reason_and_only_the_ticked_items_reopen(): void
+    {
+        $opname = $this->opname(MaterialStockTake::STATUS_REVIEW);
+        $buka = $this->hitungan($opname, 10, 7, locked: true);
+        $tutup = $this->hitungan($opname, 5, 5, locked: true);
+
+        Livewire::actingAs($this->pemeriksa(['finish_material_stock_takes']))
+            ->test(\App\Filament\Admin\Resources\MaterialStockTakeResource\Pages\EditMaterialStockTake::class, ['record' => $opname->getRouteKey()])
+            ->callAction('reject_recount', data: ['item_ids' => [$buka->id], 'note' => 'Selisih terlalu besar, hitung lagi.'])
+            ->assertHasNoActionErrors();
+
+        $opname->refresh();
+        $this->assertSame(MaterialStockTake::STATUS_IN_PROGRESS, $opname->status);
+        $this->assertSame('Selisih terlalu besar, hitung lagi.', $opname->recount_note);
+        $this->assertFalse($buka->fresh()->is_locked);
+        $this->assertNull($buka->fresh()->physical_qty);
+        $this->assertTrue($tutup->fresh()->is_locked);
+        $this->assertSame(5.0, (float) $tutup->fresh()->physical_qty);
+    }
+
+    /** @test */
+    public function rejecting_needs_a_reason_and_at_least_one_item(): void
+    {
+        $opname = $this->opname(MaterialStockTake::STATUS_REVIEW);
+        $item = $this->hitungan($opname, 10, 7, locked: true);
+
+        Livewire::actingAs($this->pemeriksa(['finish_material_stock_takes']))
+            ->test(\App\Filament\Admin\Resources\MaterialStockTakeResource\Pages\EditMaterialStockTake::class, ['record' => $opname->getRouteKey()])
+            ->callAction('reject_recount', data: ['item_ids' => [$item->id], 'note' => ''])
+            ->assertHasActionErrors(['note' => 'required'])
+            ->callAction('reject_recount', data: ['item_ids' => [], 'note' => 'x'])
+            ->assertHasActionErrors(['item_ids' => 'required']);
+
+        $this->assertSame(MaterialStockTake::STATUS_REVIEW, $opname->fresh()->status);
+    }
+
+    /** @test */
+    public function the_reject_button_is_only_for_the_reviewer_and_only_in_review(): void
+    {
+        $edit = \App\Filament\Admin\Resources\MaterialStockTakeResource\Pages\EditMaterialStockTake::class;
+
+        $tinjau = $this->opname(MaterialStockTake::STATUS_REVIEW);
+        Livewire::actingAs($this->pemeriksa())->test($edit, ['record' => $tinjau->getRouteKey()])->assertActionHidden('reject_recount');
+        Livewire::actingAs($this->pemeriksa(['finish_material_stock_takes']))->test($edit, ['record' => $tinjau->getRouteKey()])->assertActionVisible('reject_recount');
+
+        $menghitung = $this->opname(MaterialStockTake::STATUS_IN_PROGRESS);
+        Livewire::actingAs($this->pemeriksa(['finish_material_stock_takes']))->test($edit, ['record' => $menghitung->getRouteKey()])->assertActionDoesNotExist('reject_recount');
+    }
+
+    /** @test */
+    public function the_counter_sees_the_reason_and_it_clears_when_resubmitted(): void
+    {
+        $opname = $this->opname(MaterialStockTake::STATUS_REVIEW);
+        $item = $this->hitungan($opname, 10, 7, locked: true);
+        $opname->requestRecount([$item->id], 'Cek rak belakang.');
+
+        Livewire::actingAs($this->pemeriksa())
+            ->test(ManageMaterialStockTakeItems::class, ['record' => $opname->getRouteKey()])
+            ->assertSee('Cek rak belakang.');
+
+        $opname->fresh()->submitForReview();
+
+        $this->assertNull($opname->fresh()->recount_note);
+    }
+
+    /** @test */
+    public function the_dashboard_tells_the_reviewer_and_the_counter(): void
+    {
+
+        $tinjau = $this->opname(MaterialStockTake::STATUS_REVIEW);
+        $this->hitungan($tinjau, 10, 7, locked: true);
+
+        $peninjau = $this->pemeriksa(['finish_material_stock_takes']);
+        $penghitung = $this->pemeriksa();
+
+        $this->actingAs($peninjau);
+        $this->assertSame(1, (new \App\Filament\Admin\Widgets\PendingTaskWidget())->getMaterialStockTakesAwaitingReviewCount());
+        $this->actingAs($penghitung);
+        $this->assertSame(0, (new \App\Filament\Admin\Widgets\PendingTaskWidget())->getMaterialStockTakesAwaitingReviewCount(), 'Penghitung tidak menilai hasil, jadi tidak diberi kartu tinjau.');
+
+        $item = $tinjau->items()->first();
+        $tinjau->requestRecount([$item->id], 'Hitung ulang.');
+
+        $this->actingAs($penghitung);
+        $this->assertSame(1, (new \App\Filament\Admin\Widgets\PendingTaskWidget())->getMaterialStockTakesToRecountCount());
+        $this->actingAs($peninjau);
+        $this->assertSame(0, (new \App\Filament\Admin\Widgets\PendingTaskWidget())->getMaterialStockTakesAwaitingReviewCount());
+
+        $tinjau->fresh()->submitForReview();
+        $this->actingAs($penghitung);
+        $this->assertSame(0, (new \App\Filament\Admin\Widgets\PendingTaskWidget())->getMaterialStockTakesToRecountCount());
+    }
 }
