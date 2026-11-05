@@ -95,6 +95,18 @@ class MaterialStockTakeReviewRecountTest extends TestCase
     }
 
     /** @test */
+    public function the_items_page_shows_an_input_for_the_physical_count_while_counting(): void
+    {
+        $opname = $this->opname(MaterialStockTake::STATUS_IN_PROGRESS);
+        $this->hitungan($opname, 10, null);
+
+        $halaman = Livewire::actingAs($this->pemeriksa())
+            ->test(ManageMaterialStockTakeItems::class, ['record' => $opname->getRouteKey()]);
+
+        $this->assertMatchesRegularExpression('/<input[^>]*type="text"[^>]*x-model="state"|<input[^>]*x-model="state"[^>]*type="text"/s', $halaman->html(), 'Kolom Qty Fisik harus berupa isian saat opname masih bisa dihitung.');
+    }
+
+    /** @test */
     public function the_review_page_still_offers_complete_only_in_review(): void
     {
         $opname = $this->opname(MaterialStockTake::STATUS_REVIEW);

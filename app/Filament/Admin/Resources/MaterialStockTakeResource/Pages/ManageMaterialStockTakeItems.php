@@ -129,7 +129,10 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                 Tables\Columns\TextInputColumn::make('physical_qty')
                     ->label(__('Physical Qty'))
                     ->type('text')
-                    ->visible($editable)
+                    // Terkunci atau lewat tahap hitung: isian tetap tampil tapi tidak bisa diubah. JANGAN memakai
+                    // ->visible() dengan $record: visibilitas kolom dievaluasi sekali untuk seluruh tabel, tanpa baris,
+                    // sehingga isiannya tidak pernah muncul (ditemukan 5 November 2026).
+                    ->disabled(fn (?\App\Models\MaterialStockTakeItem $record): bool => ! $editable($record))
                     // Hitungan material selalu BILANGAN BULAT.
                     //
                     // Keputusan Owner: "material itu gak ada qty koma-komaan".
@@ -200,15 +203,6 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                         $record->save();
                     }),
                 
-                // Baris yang TIDAK bisa diedit (sudah dikunci, atau
-                // dokumennya sudah lewat tahap hitung) tampil sebagai teks
-                // biasa di sini -- kebalikan tepat dari kolom input di atas.
-                Tables\Columns\TextColumn::make('physical_qty_text')
-                    ->label(__('Physical Qty'))
-                    ->getStateUsing(fn (\App\Models\MaterialStockTakeItem $record) => $record->physical_qty)
-                    ->numeric(decimalPlaces: 0, decimalSeparator: ',', thousandsSeparator: '.')
-                    ->visible(fn (?\App\Models\MaterialStockTakeItem $record): bool => ! $editable($record)),
-
                 // Selisih (dan status Over/Short/Sesuai turunannya) HANYA
                 // terlihat sesudah COMPLETED (riwayat permanen, buat siapa
                 // saja yang boleh melihat halaman ini) atau selama REVIEW
