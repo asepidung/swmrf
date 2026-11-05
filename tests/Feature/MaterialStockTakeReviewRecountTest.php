@@ -103,7 +103,7 @@ class MaterialStockTakeReviewRecountTest extends TestCase
         $halaman = Livewire::actingAs($this->pemeriksa())
             ->test(ManageMaterialStockTakeItems::class, ['record' => $opname->getRouteKey()]);
 
-        $this->assertStringContainsString('x-on:input.debounce.1000ms', $halaman->html(), 'Hitungan harus tersimpan sendiri tanpa menunggu kolom ditinggalkan.');
+        $this->assertStringContainsString('beforeunload', $halaman->html(), 'Menutup tab dengan ketikan yang belum tersimpan harus diperingatkan.');
         $this->assertMatchesRegularExpression('/<input[^>]*type="text"[^>]*x-model="state"|<input[^>]*x-model="state"[^>]*type="text"/s', $halaman->html(), 'Kolom Qty Fisik harus berupa isian saat opname masih bisa dihitung.');
     }
 

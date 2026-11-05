@@ -164,12 +164,14 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                     // Sekarang yang memuat pemisah desimal DITOLAK, bukan
                     // ditebak.
                     ->rules(['nullable', 'integer', 'min:0'])
-                    // Tersimpan sendiri 1 detik setelah berhenti mengetik. Bawaan Filament baru menyimpan saat kolom
-                    // ditinggalkan (blur/Enter), jadi angka yang baru diketik lalu tab ditutup atau halaman di-refresh
-                    // hilang (permintaan Owner, 5 November 2026). Kolom dikunci selama menyimpan, jadi fokusnya
-                    // dikembalikan supaya bisa lanjut mengetik.
+                    // Tersimpan saat kolom ditinggalkan (Tab/Enter/klik di luar), bawaan Filament. Autosave saat mengetik
+                    // PERNAH dicoba (5 November 2026) tapi kolom terkunci selama menyimpan sehingga ketikan hilang-hilangan.
+                    // Sebagai gantinya, menutup tab atau me-refresh saat masih ada ketikan yang belum disimpan memunculkan
+                    // peringatan dari browser, jadi angkanya tidak hilang diam-diam.
                     ->extraInputAttributes([
-                        'x-on:input.debounce.1000ms' => "const el = \$event.target; const fokus = document.activeElement === el; el.dispatchEvent(new Event('change')); if (fokus) { const t = setInterval(() => { if (! el.disabled) { el.focus(); clearInterval(t); } }, 50); setTimeout(() => clearInterval(t), 3000); }",
+                        'x-on:input' => 'window.stokBelumTersimpan = true',
+                        'x-on:change.capture' => 'window.stokBelumTersimpan = false',
+                        'x-on:beforeunload.window' => "if (window.stokBelumTersimpan) { \$event.preventDefault(); \$event.returnValue = ''; }",
                     ])
                     ->updateStateUsing(function (\App\Models\MaterialStockTakeItem $record, $state) use ($doc) {
                         // Lapis kedua: `canAccess()` menjaga PINTU halaman,
