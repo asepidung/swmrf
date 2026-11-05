@@ -109,6 +109,10 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
         return $table
             ->recordTitleAttribute('id')
             ->paginated(false)
+            // Urut abjad menurut nama barang (permintaan Owner, 5 November 2026), bukan urutan masuk.
+            ->modifyQueryUsing(fn (Builder $query) => $query->orderBy(
+                \App\Models\Material::select('name')->whereColumn('materials.id', 'material_stock_take_items.material_id')
+            ))
             ->columns([
                 Tables\Columns\TextColumn::make('material.code')
                     ->label(__('Item Code'))
@@ -148,6 +152,13 @@ class ManageMaterialStockTakeItems extends ManageRelatedRecords
                     // Sekarang yang memuat pemisah desimal DITOLAK, bukan
                     // ditebak.
                     ->rules(['nullable', 'integer', 'min:0'])
+                    // Tersimpan sendiri 1 detik setelah berhenti mengetik. Bawaan Filament baru menyimpan saat kolom
+                    // ditinggalkan (blur/Enter), jadi angka yang baru diketik lalu tab ditutup atau halaman di-refresh
+                    // hilang (permintaan Owner, 5 November 2026). Kolom dikunci selama menyimpan, jadi fokusnya
+                    // dikembalikan supaya bisa lanjut mengetik.
+                    ->extraInputAttributes([
+                        'x-on:input.debounce.1000ms' => "const el = \$event.target; const fokus = document.activeElement === el; el.dispatchEvent(new Event('change')); if (fokus) { const t = setInterval(() => { if (! el.disabled) { el.focus(); clearInterval(t); } }, 50); setTimeout(() => clearInterval(t), 3000); }",
+                    ])
                     ->updateStateUsing(function (\App\Models\MaterialStockTakeItem $record, $state) use ($doc) {
                         // Lapis kedua: `canAccess()` menjaga PINTU halaman,
                         // tapi kolom tabel yang bisa diedit inline adalah

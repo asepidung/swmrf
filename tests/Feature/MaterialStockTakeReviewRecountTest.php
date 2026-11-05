@@ -103,6 +103,7 @@ class MaterialStockTakeReviewRecountTest extends TestCase
         $halaman = Livewire::actingAs($this->pemeriksa())
             ->test(ManageMaterialStockTakeItems::class, ['record' => $opname->getRouteKey()]);
 
+        $this->assertStringContainsString('x-on:input.debounce.1000ms', $halaman->html(), 'Hitungan harus tersimpan sendiri tanpa menunggu kolom ditinggalkan.');
         $this->assertMatchesRegularExpression('/<input[^>]*type="text"[^>]*x-model="state"|<input[^>]*x-model="state"[^>]*type="text"/s', $halaman->html(), 'Kolom Qty Fisik harus berupa isian saat opname masih bisa dihitung.');
     }
 
@@ -323,5 +324,29 @@ class MaterialStockTakeReviewRecountTest extends TestCase
             ->call('updateTableColumnState', 'physical_qty', $item->id, '99');
 
         $this->assertSame(12.0, (float) $item->fresh()->physical_qty);
+    }
+
+    /** @test */
+    public function the_items_are_listed_alphabetically_by_material_name(): void
+    {
+        $opname = $this->opname(MaterialStockTake::STATUS_IN_PROGRESS);
+        $kategori = $this->material->material_category_id;
+        $unit = $this->material->material_unit_id;
+        $buat = fn (string $kode, string $nama) => Material::create([
+            'code' => $kode, 'name' => $nama, 'material_category_id' => $kategori, 'material_unit_id' => $unit, 'min_stock' => 0, 'show_in_stock' => true,
+        ]);
+
+        $zebra = $buat('MTR-Z', 'ZEBRA');
+        $apel = $buat('MTR-A', 'APEL');
+        foreach ([$zebra, $apel] as $m) {
+            MaterialStockTakeItem::create(['material_stock_take_id' => $opname->id, 'material_id' => $m->id, 'system_qty' => 1]);
+        }
+        $this->hitungan($opname, 1, null); // KERTAS HVS
+
+        $urut = Livewire::actingAs($this->pemeriksa())
+            ->test(ManageMaterialStockTakeItems::class, ['record' => $opname->getRouteKey()])
+            ->instance()->getTableRecords()->map(fn ($item) => $item->material->name)->all();
+
+        $this->assertSame(['APEL', 'KERTAS HVS', 'ZEBRA'], $urut);
     }
 }
