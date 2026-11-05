@@ -142,6 +142,16 @@ Route::middleware(['web', 'auth'])->group(function () {
         return view('print.stock-take', compact('record'));
     })->name('stock-take.print');
 
+    // Laporan analisa hasil opname daging (ringkasan + lampiran detail). Hanya dibaca.
+    Route::get('/stock-take/{id}/analysis', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_stock_takes') ?? false, 403);
+
+        $record = \App\Models\StockTake::findOrFail($id);
+        $a = \App\Support\StockTakeAnalysis::for($record);
+
+        return view('print.stock-take-analysis', compact('a'));
+    })->name('stock-take.analysis');
+
     // Izinnya diperiksa di sini, bukan diserahkan kepada tombolnya -- pola
     // sama dengan qc-reports.print di atas. Sebelumnya siapa pun yang login
     // bisa membuka cetakan opname material manapun lewat tebak ID.
