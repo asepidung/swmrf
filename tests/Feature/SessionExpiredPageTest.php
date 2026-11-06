@@ -18,8 +18,8 @@ class SessionExpiredPageTest extends TestCase
 
         $this->get('/_uji-419')
             ->assertStatus(419)
-            ->assertSee('Sesi Anda sudah berakhir')
-            ->assertSee('Masuk lagi')
+            ->assertSee('Sesi Anda masuk chiller dulu')
+            ->assertSee('masuk lagi')
             ->assertSee(route('filament.admin.auth.login'), false);
     }
 
