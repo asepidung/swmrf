@@ -1994,5 +1994,10 @@
     "Reason for recount": "Alasan hitung ulang",
     "Recount requested": "Diminta hitung ulang",
     "Choose how this expense is paid.": "Pilih cara pembayaran pengeluaran ini.",
-    "The payment method can no longer change: money has already been reported or moved for this expense.": "Cara pembayaran tidak bisa diubah lagi: uangnya sudah dilaporkan atau sudah bergerak."
+    "The payment method can no longer change: money has already been reported or moved for this expense.": "Cara pembayaran tidak bisa diubah lagi: uangnya sudah dilaporkan atau sudah bergerak.",
+    "Your session is in the chiller": "Sesi Anda masuk chiller dulu",
+    "Idle for too long, so your session was stored in the cold for safety. Anything you haven't saved wasn't sent.": "Terlalu lama didiamkan, sesi Anda disimpan dulu di tempat dingin demi keamanan. Isian yang belum disimpan belum terkirim.",
+    "Take it out of the chiller (log in again)": "Keluarkan dari chiller (masuk lagi)",
+    "Stay on this page for now": "Tetap di halaman ini dulu",
+    "Stock take analysis report": "Laporan analisa hasil opname"
 }

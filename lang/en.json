@@ -1994,5 +1994,10 @@
     "Reason for recount": "Reason for recount",
     "Recount requested": "Recount requested",
     "Choose how this expense is paid.": "Choose how this expense is paid.",
-    "The payment method can no longer change: money has already been reported or moved for this expense.": "The payment method can no longer change: money has already been reported or moved for this expense."
+    "The payment method can no longer change: money has already been reported or moved for this expense.": "The payment method can no longer change: money has already been reported or moved for this expense.",
+    "Your session is in the chiller": "Your session is in the chiller",
+    "Idle for too long, so your session was stored in the cold for safety. Anything you haven't saved wasn't sent.": "Idle for too long, so your session was stored in the cold for safety. Anything you haven't saved wasn't sent.",
+    "Take it out of the chiller (log in again)": "Take it out of the chiller (log in again)",
+    "Stay on this page for now": "Stay on this page for now",
+    "Stock take analysis report": "Stock take analysis report"
 }
