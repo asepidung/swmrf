@@ -265,6 +265,13 @@ class AdminPanelProvider extends PanelProvider
                     ? \Illuminate\Support\Facades\Blade::render('<livewire:global-task-poller />')
                     : '',
             )
+            // Sesi habis (419 dari Livewire): kotak sendiri menggantikan kotak bawaan peramban. Hanya yang sudah login.
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::BODY_END,
+                fn (): string => auth()->check()
+                    ? view('filament.admin.session-expired')->render()
+                    : '',
+            )
             // Riwayat versi (klik "Ver ..." di footer) dan jendela "Yang baru" sekali per versi. Hanya yang sudah login.
             ->renderHook(
                 \Filament\View\PanelsRenderHook::BODY_END,

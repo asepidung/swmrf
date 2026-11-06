@@ -32,6 +32,7 @@ return [
                 'Opname Material: peninjau di tahap Review kini juga melihat kolom stok sistem (di detail dan cetakan), jadi selisih mudah dibaca, misalnya sistem 0 dan hitungan 5 berarti lebih 5. Penghitung tetap tidak melihatnya.',
                 'Opname Material: kolom Satuan ditambahkan di tabel detail dan cetakan opname.',
                 'Opname Material: barang yang belum diisi saat Submit for Review dianggap 0 dan diberi keterangan "Tidak diisi, dianggap 0", sehingga selisihnya terbaca saat review.',
+                'Sesi habis: kalau aplikasi dibiarkan lama lalu sesi berakhir, muncul kotak "Sesi Anda sudah berakhir" dengan tombol Masuk lagi, menggantikan kotak bawaan peramban. Halaman tidak dimuat ulang sendiri, jadi isian yang belum disimpan masih terlihat.',
             ],
         ],
 
