@@ -368,8 +368,9 @@ class MaterialStockTakeReviewRecountTest extends TestCase
 
         $tinjau = $this->opname(MaterialStockTake::STATUS_REVIEW);
         $this->hitungan($tinjau, 10, 7, locked: true);
-        $buka($tinjau, $this->pemeriksa())->assertTableColumnHidden('difference_qty');
-        $buka($tinjau, $this->pemeriksa(['finish_material_stock_takes']))->assertTableColumnVisible('difference_qty');
+        $buka($tinjau, $this->pemeriksa())->assertTableColumnHidden('difference_qty')->assertTableColumnHidden('system_qty');
+        // Peninjau melihat stok sistem juga, supaya selisihnya terbaca (Owner, 6 November 2026).
+        $buka($tinjau, $this->pemeriksa(['finish_material_stock_takes']))->assertTableColumnVisible('difference_qty')->assertTableColumnVisible('system_qty');
 
         $selesai = $this->opname(MaterialStockTake::STATUS_COMPLETED);
         $this->hitungan($selesai, 10, 7, locked: true);
@@ -394,8 +395,8 @@ class MaterialStockTakeReviewRecountTest extends TestCase
 
         $tinjau = $this->opname(MaterialStockTake::STATUS_REVIEW);
         $this->hitungan($tinjau, 10, 7, locked: true);
-        $cetak($tinjau, $this->pemeriksa())->assertDontSee(__('Variance Summary'));
-        $cetak($tinjau, $this->pemeriksa(['finish_material_stock_takes']))->assertSee(__('Variance Summary'));
+        $cetak($tinjau, $this->pemeriksa())->assertDontSee(__('Variance Summary'))->assertDontSee(__('System Qty'));
+        $cetak($tinjau, $this->pemeriksa(['finish_material_stock_takes']))->assertSee(__('Variance Summary'))->assertSee(__('System Qty'));
 
         $selesai = $this->opname(MaterialStockTake::STATUS_COMPLETED);
         $this->hitungan($selesai, 10, 7, locked: true);

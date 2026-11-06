@@ -39,6 +39,8 @@ class ItemsRelationManager extends RelationManager
         // stok sistem dan selisih TIDAK terlihat selama menghitung (hitungan buta). Terlihat sesudah COMPLETED, atau
         // selama REVIEW hanya untuk pemegang izin finish_material_stock_takes. Tabel ini dulu menampilkannya
         // selalu, sehingga penghitung bisa melihat selisih sebelum opname selesai (ditemukan 5 November 2026).
+        // Peninjau di tahap REVIEW juga boleh melihat stok sistem, supaya selisihnya terbaca (sistem 0, hitungan 5 = lebih 5);
+        // penghitung tetap tidak (Owner, 6 November 2026).
         $dokumen = $this->getOwnerRecord();
         $selesai = $dokumen->status === \App\Models\MaterialStockTake::STATUS_COMPLETED;
         $bisaMeninjau = $dokumen->status === \App\Models\MaterialStockTake::STATUS_REVIEW
@@ -63,7 +65,7 @@ class ItemsRelationManager extends RelationManager
                     ->sortable(),
                 Tables\Columns\TextColumn::make('system_qty')
                     ->label(__('System Qty'))
-                    ->visible($selesai)
+                    ->visible($lihatSelisih)
                     ->numeric(decimalPlaces: 0, decimalSeparator: ',', thousandsSeparator: '.'),
                 Tables\Columns\TextColumn::make('physical_qty')
                     ->label(__('Physical Qty'))
