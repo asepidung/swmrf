@@ -327,6 +327,8 @@ class SalesOrderResource extends Resource
                                 return $summary === '' ? null : __('Spec').': '.Str::limit($summary, 140);
                             })
                             ->extraItemActions([static::specAction()])
+                            // Penanda untuk CSS area sentuh di HP (missing-color-utilities, #808).
+                            ->extraAttributes(['class' => 'swm-so-repeater'])
                             ->columns(12)
                             ->schema([
                                 Forms\Components\Hidden::make('id'),

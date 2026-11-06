@@ -59,6 +59,12 @@ class EditSalesOrder extends EditRecord
         ];
     }
 
+    // Lihat alasan di CreateSalesOrder::getCreateFormAction() (#808).
+    protected function getSaveFormAction(): Actions\Action
+    {
+        return parent::getSaveFormAction()->extraAttributes(['formnovalidate' => true]);
+    }
+
     protected array $itemsData = [];
 
     protected function mutateFormDataBeforeFill(array $data): array
