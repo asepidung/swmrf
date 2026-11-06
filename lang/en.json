@@ -1986,6 +1986,7 @@
     "Awaiting receipt": "Awaiting receipt",
     ":count material stock take is waiting for your review|:count material stock takes are waiting for your review": ":count Material stock take awaiting review|:count Material stock takes awaiting review",
     ":count material stock take must be recounted|:count material stock takes must be recounted": ":count Material stock take to recount|:count Material stock takes to recount",
+    ":count advance has not been reported|:count advances have not been reported": ":count Advance not reported yet|:count Advances not reported yet",
     "Reject / Recount": "Reject / Recount",
     "Reject this count and ask for a recount?": "Reject this count and ask for a recount?",
     "Only the items you tick are reopened for counting; the others stay locked. The counter sees your reason.": "Only the items you tick are reopened for counting; the others stay locked. The counter sees your reason.",

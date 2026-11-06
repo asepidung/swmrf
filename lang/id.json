@@ -1986,6 +1986,7 @@
     "Awaiting receipt": "Menunggu penerimaan",
     ":count material stock take is waiting for your review|:count material stock takes are waiting for your review": ":count Opname material menunggu ditinjau|:count Opname material menunggu ditinjau",
     ":count material stock take must be recounted|:count material stock takes must be recounted": ":count Opname material harus dihitung ulang|:count Opname material harus dihitung ulang",
+    ":count advance has not been reported|:count advances have not been reported": ":count Kasbon belum dilaporkan|:count Kasbon belum dilaporkan",
     "Reject / Recount": "Tolak / Hitung Ulang",
     "Reject this count and ask for a recount?": "Tolak hasil hitungan ini dan minta hitung ulang?",
     "Only the items you tick are reopened for counting; the others stay locked. The counter sees your reason.": "Hanya barang yang dicentang yang dibuka lagi untuk dihitung; yang lain tetap terkunci. Penghitung akan melihat alasanmu.",
