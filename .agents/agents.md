@@ -239,10 +239,9 @@ git checkout main && git pull origin main
 php artisan migrate            # bila PR-nya membawa migrasi
 
 # 3. hosting -- TIDAK menunggu klon otomatis
-ssh -tt -p 65002 u525862761@153.92.9.218
-cd ~/domains/coba.wijayameat.co.id/public_html
-git pull && php artisan migrate --force && php artisan optimize:clear
-php artisan config:cache && php artisan route:cache && php artisan view:cache
+# Perintah dikirim langsung, MULAI OTOMATIS di public_html coba (tidak perlu cd). Shell interaktif ditolak.
+# Alias lama (`ssh -p 65002 ...`, `ssh swm-legacy`) ditolak untuk sesi ini; akses dipersempit ke folder coba (IT Lead, disetujui Owner, 6 November 2026).
+ssh -tt coba-hosting 'git --no-pager pull && php artisan migrate --force && php artisan optimize:clear && php artisan config:cache && php artisan route:cache && php artisan view:cache'
 ```
 
 **`Already up to date` di server BUKAN kegagalan.** Hosting hanya menarik
@@ -999,8 +998,9 @@ Jangan mencampur `localhost` dengan `127.0.0.1` dalam satu sesi. Samakan dengan 
 Owner memberi akses SSH penuh ke server uji coba (bukan produksi):
 
 ```
-ssh -tt -p 65002 u525862761@153.92.9.218
-cd /home/u525862761/domains/coba.wijayameat.co.id/public_html
+# Perintah dikirim langsung, MULAI OTOMATIS di public_html coba (tidak perlu cd). Shell interaktif ditolak.
+# Alias lama (`ssh -p 65002 ...`, `ssh swm-legacy`) ditolak untuk sesi ini; akses dipersempit ke folder coba (IT Lead, disetujui Owner, 6 November 2026).
+ssh -tt coba-hosting '<perintah>'
 ```
 
 #### WAJIB pakai `-tt`. Tanpa itu SSH tampak "rusak" padahal tidak.
