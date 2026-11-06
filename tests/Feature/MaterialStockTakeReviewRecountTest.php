@@ -578,4 +578,22 @@ class MaterialStockTakeReviewRecountTest extends TestCase
 
         $this->assertSame(MaterialStockTake::STATUS_REVIEW, $opname->fresh()->status);
     }
+
+    /** @test */
+    public function force_delete_is_not_offered_on_a_document_that_was_counted_not_even_to_a_programmer(): void
+    {
+        $edit = EditMaterialStockTake::class;
+        $programmer = User::factory()->create(['role' => 'programmer', 'is_active' => true]);
+
+        $tinjau = $this->opname(MaterialStockTake::STATUS_REVIEW);
+        $this->hitungan($tinjau, 10, 7, locked: true);
+        Livewire::actingAs($programmer)->test($edit, ['record' => $tinjau->getRouteKey()])
+            ->assertActionHidden('forceDelete')
+            ->assertActionHidden('delete');
+
+        $kosong = $this->opname(MaterialStockTake::STATUS_DRAFT);
+        $this->hitungan($kosong, 10, null);
+        Livewire::actingAs($programmer)->test($edit, ['record' => $kosong->getRouteKey()])
+            ->assertActionVisible('forceDelete');
+    }
 }
