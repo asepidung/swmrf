@@ -222,10 +222,9 @@ git checkout main && git pull
 php artisan migrate                       # bila membawa migrasi
 
 # hosting
-ssh -tt -p 65002 u525862761@153.92.9.218
-cd ~/domains/coba.wijayameat.co.id/public_html
-git pull && php artisan migrate --force && php artisan optimize:clear
-php artisan config:cache && php artisan route:cache && php artisan view:cache
+# Perintah dikirim langsung, MULAI OTOMATIS di public_html coba (tidak perlu cd). Shell interaktif ditolak.
+# Alias lama (`ssh -p 65002 ...`, `ssh swm-legacy`) ditolak untuk sesi ini; akses dipersempit ke folder coba (IT Lead, disetujui Owner, 6 November 2026).
+ssh -tt coba-hosting 'git --no-pager pull && php artisan migrate --force && php artisan optimize:clear && php artisan config:cache && php artisan route:cache && php artisan view:cache'
 ```
 
 `-tt` wajib. Selalu `git --no-pager` di server. **Deploy belum selesai sebelum
