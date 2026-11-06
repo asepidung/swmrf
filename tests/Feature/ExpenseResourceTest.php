@@ -574,4 +574,23 @@ class ExpenseResourceTest extends TestCase
 
         $this->assertSame($id, ExpenseCategory::where('name', 'LISTRIK AIR')->value('id'));
     }
+
+    /** @test */
+    public function the_dashboard_reminds_expense_creators_of_unreported_advances(): void
+    {
+        $belum = $this->openAdvance();
+        $this->openAdvance();
+        $sudah = $this->openAdvance();
+        $sudah->settle($this->items(85000));
+        Expense::createReimburse(['expense_date' => now()->toDateString(), 'recipient_name' => 'rian'], $this->items(50000));
+
+        $pembuat = $this->employee(['create_expenses']);
+        $lain = $this->employee();
+
+        $this->actingAs($pembuat);
+        $this->assertSame(2, (new \App\Filament\Admin\Widgets\PendingTaskWidget())->getExpenseAdvancesAwaitingReportCount());
+
+        $this->actingAs($lain);
+        $this->assertSame(0, (new \App\Filament\Admin\Widgets\PendingTaskWidget())->getExpenseAdvancesAwaitingReportCount(), 'Yang tidak berhak membuat pengeluaran tidak diberi kartu.');
+    }
 }

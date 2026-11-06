@@ -358,6 +358,15 @@ class PendingTaskWidget extends Widget
                 \App\Filament\Admin\Resources\MaterialStockTakeResource::getUrl('index'),
                 'danger',
             ],
+
+            // Kasbon yang uangnya sudah keluar tetapi belum dilaporkan: yang berhak membuat pengeluaran diingatkan
+            // (Owner, 6 November 2026).
+            [
+                $this->getExpenseAdvancesAwaitingReportCount(),
+                ':count advance has not been reported|:count advances have not been reported',
+                \App\Filament\Admin\Resources\ExpenseResource::getUrl('index'),
+                'warning',
+            ],
         ];
     }
 
@@ -647,6 +656,19 @@ class PendingTaskWidget extends Widget
 
         return \App\Models\MaterialStockTake::where('status', \App\Models\MaterialStockTake::STATUS_IN_PROGRESS)
             ->whereNotNull('recount_note')
+            ->count();
+    }
+
+    /** Kasbon (advance) berstatus Open yang belum dilaporkan, untuk yang berizin membuat pengeluaran. */
+    public function getExpenseAdvancesAwaitingReportCount(): int
+    {
+        if (! $this->may('create_expenses')) {
+            return 0;
+        }
+
+        return \App\Models\Expense::where('type', \App\Models\Expense::TYPE_ADVANCE)
+            ->where('status', \App\Models\Expense::STATUS_OPEN)
+            ->whereNull('receipt_amount')
             ->count();
     }
 
