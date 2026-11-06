@@ -21,6 +21,16 @@ return [
     'entries' => [
 
         [
+            'version' => '2.0.6',
+            'date' => '2026-11-06',
+            'kind' => 'fix',
+            'title' => 'Pengingat kasbon',
+            'items' => [
+                'Dashboard: yang berhak membuat pengeluaran kini melihat kartu pengingat jumlah kasbon (advance) yang belum dilaporkan. Klik kartunya untuk membuka daftar Pengeluaran.',
+            ],
+        ],
+
+        [
             'version' => '2.0.5',
             'date' => '2026-11-05',
             'kind' => 'fix',
