@@ -67,7 +67,7 @@
                 <div class="code">419</div>
                 <div class="title">Sesi Anda masuk chiller dulu</div>
                 <p class="message">
-                    Terlalu lama didiamkan, jadi sesi Anda disimpan di tempat dingin demi keamanan, seperti daging yang tidak boleh kelamaan di luar. Masuk lagi untuk melanjutkan.
+                    Terlalu lama didiamkan, sesi Anda disimpan dulu di tempat dingin demi keamanan.
                 </p>
                 <a class="btn" href="{{ route('filament.admin.auth.login') }}">
                     Keluarkan dari chiller (masuk lagi)
