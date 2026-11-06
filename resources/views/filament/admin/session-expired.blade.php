@@ -28,10 +28,10 @@
         <svg class="jam" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 2v20M4.2 7l15.6 10M4.2 17L19.8 7M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5M2.8 9.5l3.7.8-.8 3.7M21.2 14.5l-3.7-.8.8-3.7M2.8 14.5l3.7-.8-.8-3.7M21.2 9.5l-3.7.8.8 3.7" />
         </svg>
-        <h2 id="sesi-habis-judul">Sesi Anda masuk chiller dulu</h2>
-        <p>Terlalu lama didiamkan, sesi Anda disimpan dulu di tempat dingin demi keamanan. Isian yang belum disimpan belum terkirim.</p>
-        <a class="tombol" href="{{ route('filament.admin.auth.login') }}">Keluarkan dari chiller (masuk lagi)</a>
-        <button type="button" class="tutup" onclick="document.getElementById('sesi-habis').classList.remove('tampil')">Tetap di halaman ini dulu</button>
+        <h2 id="sesi-habis-judul">{{ __("Your session is in the chiller") }}</h2>
+        <p>{{ __("Idle for too long, so your session was stored in the cold for safety. Anything you haven't saved wasn't sent.") }}</p>
+        <a class="tombol" href="{{ route('filament.admin.auth.login') }}">{{ __("Take it out of the chiller (log in again)") }}</a>
+        <button type="button" class="tutup" onclick="document.getElementById('sesi-habis').classList.remove('tampil')">{{ __("Stay on this page for now") }}</button>
     </div>
 </div>
 

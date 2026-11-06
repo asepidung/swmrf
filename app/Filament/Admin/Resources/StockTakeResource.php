@@ -138,7 +138,7 @@ Tables\Actions\Action::make('scan')
 
                 Tables\Actions\Action::make('analysis')
                     ->label('Analisa')
-                    ->tooltip('Laporan analisa hasil opname')
+                    ->tooltip(__('Stock take analysis report'))
                     ->icon('heroicon-o-chart-bar')
                     ->color('gray')
                     ->iconButton()

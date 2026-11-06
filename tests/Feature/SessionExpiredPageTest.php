@@ -27,7 +27,11 @@ class SessionExpiredPageTest extends TestCase
     {
         $user = User::factory()->create(['role' => 'programmer', 'is_active' => true]);
 
-        $this->actingAs($user)->get('/admin')->assertOk()->assertSee('id="sesi-habis"', false);
+        app()->setLocale('id');
+        $this->actingAs($user)->get('/admin')->assertOk()
+            ->assertSee('id="sesi-habis"', false)
+            ->assertSee('Sesi Anda masuk chiller dulu')
+            ->assertSee('Keluarkan dari chiller');
 
         auth()->logout();
         $this->get('/admin/login')->assertOk()->assertDontSee('id="sesi-habis"', false);
