@@ -158,7 +158,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/material-stock-take/{id}/print', function ($id) {
         abort_unless(auth()->user()?->hasPermission('view_material_stock_takes') ?? false, 403);
 
-        $record = \App\Models\MaterialStockTake::with(['items.material'])->findOrFail($id);
+        $record = \App\Models\MaterialStockTake::with(['items.material.unit'])->findOrFail($id);
 
         // Hitungan buta (Owner, 17 September 2026): stok sistem hanya sesudah COMPLETED; selisih sesudah COMPLETED atau
         // di REVIEW untuk pemegang izin finish_material_stock_takes. Cetakan dulu selalu memuatnya.

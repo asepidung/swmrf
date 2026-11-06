@@ -7935,3 +7935,10 @@ Dokumen yang dihapus (soft delete) TIDAK bisa dipulihkan siapa pun lewat aplikas
 - Tally: `tallies.sales_order_id` tidak lagi unique mutlak. Kunci uniknya pindah ke kolom turunan `active_sales_order_id` (NULL bila tally terhapus), sehingga SO yang tally-nya dihapus dibuatkan tally BARU bernomor baru; `DraftTally` tidak lagi memulihkan tally lama.
 - Rencana pengiriman: SO yang dihapus atau dipindah tanggal/customer meninggalkan rencana kosong -> rencana itu dihapus; bila SO satu-satunya isi rencana dan tanggal tujuan belum punya rencana, rencananya ikut pindah (driver/armada tetap).
 - Sisa pemulihan di kode BUKAN fitur pengguna dan dibiarkan: utang GR (`Payable`) dipulihkan saat GR dibuka-kunci lalu dikunci lagi (turunan GR yang sama), kerugian finansial (`financialLoss`) dan item karkas ikut dokumen induknya, dan `SalesOrder` memulihkan rencana pengiriman terhapus yang punya (customer, tanggal) sama karena kuncinya unik. Hook `restored` di model hanya terpanggil lewat jalur kode, tidak ada layar yang memanggilnya.
+
+### Opname material: keputusan Owner, 6 November 2026
+
+- Isi opname hanya material yang di master datanya `show_in_stock` = true (sudah begitu di `CreateMaterialStockTake::afterCreate`). Material baru yang dibuat sesudah opname dibuat tidak ikut.
+- Peninjau (REVIEW + izin `finish_material_stock_takes`, atau programmer) boleh melihat stok sistem DAN selisih; penghitung tetap buta sampai COMPLETED.
+- Barang yang belum diisi saat Submit for Review dianggap 0 dan diberi catatan "Tidak diisi, dianggap 0" (`MaterialStockTake::submitForReview`), supaya selisihnya terbaca. Peninjau memakai Tolak / Hitung Ulang untuk barang yang mencurigakan sebelum Complete.
+- Laporan analisa (`/stock-take/{id}/analysis`, `/material-stock-take/{id}/analysis`) disusun sistem dari data dan hanya dibaca; opname material hanya setelah COMPLETED. Material tanpa harga pokok: laporan dalam jumlah, bukan rupiah.

@@ -63,6 +63,8 @@ class ItemsRelationManager extends RelationManager
                     ->label(__('Item Name'))
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('material.unit.name')
+                    ->label(__('Unit')),
                 Tables\Columns\TextColumn::make('system_qty')
                     ->label(__('System Qty'))
                     ->visible($lihatSelisih)

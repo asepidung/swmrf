@@ -723,7 +723,7 @@
     "Old Data": "Old Data",
     "Old Values": "Old Values",
     "Older than the limit. Click to relabel.": "Older than the limit. Click to relabel.",
-    "Once submitted, the counts can no longer be edited and the variance is shown for review.": "Once submitted, the counts can no longer be edited and the variance is shown for review.",
+    "Once submitted, the counts can no longer be edited and the variance is shown for review.": "Once submitted, the counts can no longer be edited and the variance is shown for review. Items left blank count as 0.",
     "One box is one barcoded package; pcs is how many pieces of meat are inside it.": "One box is one barcoded package; pcs is how many pieces of meat are inside it.",
     "One of these eartags is already recorded in another receiving document. Please check the tags again.": "One of these eartags is already recorded in another receiving document. Please check the tags again.",
     "Only a Delivery Order with status Ready can be approved": "Only a Delivery Order with status Ready can be approved",

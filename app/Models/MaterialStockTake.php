@@ -176,6 +176,16 @@ class MaterialStockTake extends Model
                 return false;
             }
 
+            // Yang belum diisi dianggap 0 dan diberi keterangan, supaya di tahap review selisihnya terbaca (sistem 28, fisik 0 =
+            // kurang 28) dan bukan baris kosong yang tak jelas artinya (Owner, 6 November 2026).
+            foreach ($locked->items()->whereNull('physical_qty')->get() as $item) {
+                $item->update([
+                    'physical_qty' => 0,
+                    'difference_qty' => 0 - (float) $item->system_qty,
+                    'note' => filled($item->note) ? $item->note : 'Tidak diisi, dianggap 0',
+                ]);
+            }
+
             $locked->items()->update(['is_locked' => true]);
 
             // Permintaan hitung ulang sebelumnya sudah dijawab.

@@ -238,7 +238,8 @@
                 <tr>
                     <th width="5%">{{ __('No') }}</th>
                     <th width="15%">{{ __('Code') }}</th>
-                    <th width="30%">{{ __('Item Name') }}</th>
+                    <th width="25%">{{ __('Item Name') }}</th>
+                    <th width="8%">{{ __('Unit') }}</th>
                     @if($lihatSistem)<th width="15%">{{ __('System Qty') }}</th>@endif
                     <th width="15%">{{ __('Physical Qty') }}</th>
                     @if($lihatSelisih)<th width="20%">{{ __('Variance') }}</th>@endif
@@ -259,7 +260,7 @@
                     <td class="text-center">{{ $no++ }}</td>
                     <td class="text-center">{{ $item->material->code ?? '-' }}</td>
                     <td>{{ $item->material->name ?? '-' }}</td>
-                    
+                    <td class="text-center">{{ $item->material->unit->name ?? '-' }}</td>
                     @if($lihatSistem)<td class="text-right">{{ number_format($sys, 0, ',', '.') }}</td>@endif
                     <td class="text-right" style="font-weight: bold;">
                         @if($isNull)
@@ -280,7 +281,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="{{ 3 + ($lihatSistem ? 1 : 0) + 1 + ($lihatSelisih ? 1 : 0) }}" class="text-center">{{ __('No item data available.') }}</td>
+                    <td colspan="{{ 4 + ($lihatSistem ? 1 : 0) + 1 + ($lihatSelisih ? 1 : 0) }}" class="text-center">{{ __('No item data available.') }}</td>
                 </tr>
                 @endforelse
             </tbody>
