@@ -24,9 +24,10 @@ return [
             'version' => '2.0.6',
             'date' => '2026-11-06',
             'kind' => 'fix',
-            'title' => 'Pengingat kasbon',
+            'title' => 'Pengingat kasbon dan analisa opname material',
             'items' => [
                 'Dashboard: yang berhak membuat pengeluaran kini melihat kartu pengingat jumlah kasbon (advance) yang belum dilaporkan. Klik kartunya untuk membuka daftar Pengeluaran.',
+                'Opname Material: opname yang sudah selesai punya tombol Analisa, laporan yang disusun otomatis oleh sistem: ringkasan barang sesuai, lebih, dan kurang, rincian per kategori, barang yang selisih, riwayat hitung ulang beserta alasannya, dan lampiran seluruh barang. Dalam jumlah, bukan rupiah.',
             ],
         ],
 
