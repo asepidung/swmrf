@@ -164,6 +164,16 @@ class MaterialStockTakeResource extends Resource
             ->visible(fn (MaterialStockTake $record): bool => $record->status === MaterialStockTake::STATUS_REVIEW
                 && (auth()->user()?->can('update', $record) ?? false)),
 
+        Tables\Actions\Action::make('analysis')
+            ->label('Analisa')
+            ->tooltip('Laporan analisa hasil opname')
+            ->icon('heroicon-o-chart-bar')
+            ->color('gray')
+            ->iconButton()
+            ->visible(fn (MaterialStockTake $record): bool => $record->status === MaterialStockTake::STATUS_COMPLETED)
+            ->url(fn (MaterialStockTake $record): string => route('material-stock-take.analysis', ['id' => $record->id]))
+            ->openUrlInNewTab(),
+
         // Hanya selama belum ada satu pun hitungan yang diisi. Sebelumnya
         // yang diperiksa cuma statusnya, jadi opname yang sudah dihitung
         // separuh bisa dibuang begitu saja.
