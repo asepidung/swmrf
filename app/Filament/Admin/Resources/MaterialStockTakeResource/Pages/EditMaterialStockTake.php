@@ -154,8 +154,10 @@ class EditMaterialStockTake extends EditRecord
         // yang sudah selesai -- bisa dibuang lewat pintu ini.
         $actions[] = Actions\DeleteAction::make()
             ->visible(fn (): bool => $this->record->isDeletable());
+        // Programmer pun tidak melihat Force delete di dokumen yang sudah dihitung/dikirim/selesai: hasil hitungan
+        // orang gudang tidak dibuang dari halaman Review (Owner, 6 November 2026).
         $actions[] = Actions\ForceDeleteAction::make()
-            ->visible(fn (): bool => auth()->user()?->isProgrammer() ?? false);
+            ->visible(fn (): bool => (auth()->user()?->isProgrammer() ?? false) && $this->record->isDeletable());
 
         return $actions;
     }
