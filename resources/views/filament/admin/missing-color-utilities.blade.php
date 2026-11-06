@@ -46,6 +46,36 @@
     @media (min-width: 1024px) { .swm-wide-only { display: grid; } }
 
     /*
+        Teks shade 600 di mode gelap (audit UI/UX 6 November 2026, #808). Shade 600 primary dan success kini lebih
+        tua (lihat ->colors() di AdminPanelProvider) supaya tombol dan teks di latar terang lolos 4,5:1. Di latar
+        GELAP shade yang lebih tua itu justru turun dari sekitar 5,6:1 ke 3,5:1. Banyak tempat sudah menulis
+        dark:text-primary-400 sendiri dan dibiarkan; belasan lain (total berat di form Request/PO, Boning, Repack,
+        pemicu bahasa) hanya menulis text-primary-600 dan akan ikut turun, jadi mereka dinaikkan di sini.
+        :not([class*="dark:text-"]) menjaga yang sudah punya varian gelap sendiri tidak disentuh.
+        Berkas ini dimuat sesudah CSS Filament, jadi aturan ini menang.
+    */
+    :root.dark .text-primary-600:not([class*="dark:text-"]) { color: rgba(var(--primary-400),1); }
+    :root.dark .text-success-600:not([class*="dark:text-"]) { color: rgba(var(--success-400),1); }
+
+    /*
+        Baris produk Sales Order di HP (audit UI/UX 6 November 2026, #808). Bar atas tiap baris memuat "+ Spec"
+        (aslinya 40x17px) dan ikon hapus (27x27px) yang berdempetan; salah tekan berarti satu baris produk hilang.
+        Keduanya diberi area sentuh 44px dan jarak antar tombol. Dibatasi pada repeater Sales Order (kelas
+        swm-so-repeater) supaya repeater di form lain, yang belum dilihat satu per satu, tidak ikut berubah.
+    */
+    @media (max-width: 767px) {
+        .swm-so-repeater .fi-fo-repeater-item-header ul { gap: 0.5rem; }
+        .swm-so-repeater .fi-fo-repeater-item-header ul > li > .fi-link,
+        .swm-so-repeater .fi-fo-repeater-item-header ul > li > .fi-icon-btn {
+            min-width: 2.75rem;
+            min-height: 2.75rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+    }
+
+    /*
         Daftar Faktur di HP (Owner, 3 November 2026): kolom pendukung (tanggal, PO, DO, pembuat) disembunyikan di bawah
         768px supaya Nomor, Customer, dan Nilai terbaca tanpa menggeser; tiga tombol pintasan muat satu baris.
         Filament tidak membawa kelas md:table-cell di CSS panel ini, jadi disebut sendiri.

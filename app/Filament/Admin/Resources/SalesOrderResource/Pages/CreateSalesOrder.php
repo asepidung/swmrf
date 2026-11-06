@@ -69,4 +69,13 @@ class CreateSalesOrder extends CreateRecord
     {
         return $this->getResource()::getUrl('index');
     }
+
+    // Tanpa ini, isian wajib yang masih kosong memunculkan gelembung bawaan BROWSER ("Please fill out this
+    // field.") dalam bahasa browser, menempel di kolom yang labelnya cuma placeholder, dan form tidak pernah
+    // sampai ke server. Dengan formnovalidate, validasi dikerjakan Filament: pesannya inline, diterjemahkan,
+    // dan menyebut semua kolom yang kurang sekaligus. Audit UI/UX 6 November 2026 (#808).
+    protected function getCreateFormAction(): Actions\Action
+    {
+        return parent::getCreateFormAction()->extraAttributes(['formnovalidate' => true]);
+    }
 }

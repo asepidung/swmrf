@@ -80,8 +80,13 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogoHeight('2.5rem')
             ->homeUrl(fn (): string => \App\Filament\Admin\Pages\Dashboard::getUrl())
             ->favicon(asset('img/light.png'))
+            // Shade 600 dipakai Filament untuk latar tombol berisi (teks putih) dan untuk teks
+            // berwarna di atas latar terang. Amber-600 hanya 3,2:1 terhadap putih dan Green-600
+            // 3,3:1 (batas 4,5:1), jadi keduanya diganti shade 700 (5,0:1). Hanya slot 600 yang
+            // berganti; palet lainnya tetap bawaan. Audit UI/UX 6 November 2026 (#808).
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => array_replace(Color::Amber, [600 => Color::Amber[700]]),
+                'success' => array_replace(Color::Green, [600 => Color::Green[700]]),
             ])
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\\Filament\\Admin\\Resources')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\\Filament\\Admin\\Pages')
@@ -121,6 +126,47 @@ class AdminPanelProvider extends PanelProvider
                      */
                     @media (max-width: 1599px) { html { font-size: 90%; } }
                     @media (max-width: 1279px) { html { font-size: 85%; } }
+                    /*
+                     * Di HP (di bawah 768px) skala 85% itu terlalu kecil: label 11,9px, tombol setinggi 31px.
+                     * Keputusan skala di atas diuji dengan zoom di desktop, bukan di HP (audit UI/UX 6 November
+                     * 2026, #808). Tablet dan desktop tetap memakai skala di atas; hanya HP kembali 100%.
+                     */
+                    @media (max-width: 767px) { html { font-size: 100%; } }
+
+                    /*
+                     * Kontras tombol berisi (audit UI/UX 6 November 2026, #808). Latar tombol memakai shade 600
+                     * (sudah digelapkan di ->colors()) dan teks putih. Dua celah yang tersisa ditutup di sini:
+                     *  1. Hover terang: Filament menyalakan shade 500 yang lebih muda, sehingga teks putih turun
+                     *     ke sekitar 2:1. Hover dibuat lebih tua, bukan lebih muda.
+                     *  2. Mode gelap: latarnya shade 500 yang terang; teks putih di atasnya hanya 2,2:1, jadi
+                     *     teksnya gelap. Hanya tombol berisi (kelas text-white), bukan tombol garis tepi atau tautan.
+                     */
+                    :root:not(.dark) .fi-btn.text-white.fi-btn-color-primary:hover { background-color: rgb(var(--primary-800)); }
+                    :root:not(.dark) .fi-btn.text-white.fi-btn-color-success:hover { background-color: rgb(var(--success-800)); }
+                    .dark .fi-btn.text-white.fi-btn-color-primary,
+                    .dark .fi-btn.text-white.fi-btn-color-success { color: #1c1917; }
+
+                    /*
+                     * Fokus keyboard (audit UI/UX 6 November 2026, #808). Cincin bawaan Filament hanya 2px
+                     * warna utama transparan 50%, sekitar 1,5:1 terhadap latar putih (batas 3:1) dan nyaris
+                     * hilang di tombol oranye. Diganti garis pekat. Hanya untuk fokus lewat keyboard
+                     * (:focus-visible); klik mouse tidak terpengaruh. Kolom isian tidak disentuh: cincinnya
+                     * ada di pembungkus dan memakai shade 600 yang sudah digelapkan.
+                     */
+                    .fi-btn:focus-visible,
+                    .fi-link:focus-visible,
+                    .fi-icon-btn:focus-visible,
+                    .fi-tabs-item:focus-visible,
+                    .fi-sidebar-item-button:focus-visible,
+                    .fi-dropdown-list-item:focus-visible,
+                    .fi-breadcrumbs a:focus-visible { outline: 2px solid rgb(var(--primary-700)); outline-offset: 2px; }
+                    .dark .fi-btn:focus-visible,
+                    .dark .fi-link:focus-visible,
+                    .dark .fi-icon-btn:focus-visible,
+                    .dark .fi-tabs-item:focus-visible,
+                    .dark .fi-sidebar-item-button:focus-visible,
+                    .dark .fi-dropdown-list-item:focus-visible,
+                    .dark .fi-breadcrumbs a:focus-visible { outline-color: rgb(var(--primary-400)); }
 
                     /*
                      * Dua pengikut skala di atas (Owner, 3 November 2026).
