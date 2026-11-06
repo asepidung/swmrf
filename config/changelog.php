@@ -30,6 +30,8 @@ return [
                 'Opname Material: opname yang sudah selesai punya tombol Analisa, laporan yang disusun otomatis oleh sistem: ringkasan barang sesuai, lebih, dan kurang, rincian per kategori, barang yang selisih, riwayat hitung ulang beserta alasannya, dan lampiran seluruh barang. Dalam jumlah, bukan rupiah.',
                 'Opname Material: tombol Force delete tidak lagi muncul di halaman Review untuk dokumen yang sudah dihitung, dikirim, atau selesai.',
                 'Opname Material: peninjau di tahap Review kini juga melihat kolom stok sistem (di detail dan cetakan), jadi selisih mudah dibaca, misalnya sistem 0 dan hitungan 5 berarti lebih 5. Penghitung tetap tidak melihatnya.',
+                'Opname Material: kolom Satuan ditambahkan di tabel detail dan cetakan opname.',
+                'Opname Material: barang yang belum diisi saat Submit for Review dianggap 0 dan diberi keterangan "Tidak diisi, dianggap 0", sehingga selisihnya terbaca saat review.',
             ],
         ],
 

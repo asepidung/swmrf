@@ -723,7 +723,7 @@
     "Old Data": "Data Lama",
     "Old Values": "Nilai Lama",
     "Older than the limit. Click to relabel.": "Sudah melewati batas umur. Klik untuk melabeli ulang.",
-    "Once submitted, the counts can no longer be edited and the variance is shown for review.": "Setelah dikirim, hitungannya tidak bisa diubah lagi dan selisihnya ditampilkan untuk ditinjau.",
+    "Once submitted, the counts can no longer be edited and the variance is shown for review.": "Setelah dikirim, hitungannya tidak bisa diubah lagi dan selisihnya ditampilkan untuk ditinjau. Barang yang belum diisi dianggap 0.",
     "One box is one barcoded package; pcs is how many pieces of meat are inside it.": "Satu box adalah satu kemasan berbarcode; pcs adalah berapa potong daging di dalamnya.",
     "One of these eartags is already recorded in another receiving document. Please check the tags again.": "Salah satu eartag ini sudah tercatat di dokumen penerimaan lain. Mohon periksa kembali nomor telinganya.",
     "Only a Delivery Order with status Ready can be approved": "Hanya Delivery Order berstatus Ready yang bisa disetujui",

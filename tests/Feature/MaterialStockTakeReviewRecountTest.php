@@ -597,4 +597,29 @@ class MaterialStockTakeReviewRecountTest extends TestCase
         Livewire::actingAs($programmer)->test($edit, ['record' => $kosong->getRouteKey()])
             ->assertActionVisible('forceDelete');
     }
+
+    /** @test */
+    public function items_left_blank_count_as_zero_with_a_note_when_submitted_for_review(): void
+    {
+        $opname = $this->opname(MaterialStockTake::STATUS_IN_PROGRESS);
+        $diisi = $this->hitungan($opname, 10, 7);
+        $kosong = MaterialStockTakeItem::create([
+            'material_stock_take_id' => $opname->id,
+            'material_id' => Material::create([
+                'code' => 'MTR-02', 'name' => 'LAKBAN',
+                'material_category_id' => $this->material->material_category_id,
+                'material_unit_id' => $this->material->material_unit_id,
+                'min_stock' => 0, 'show_in_stock' => true,
+            ])->id,
+            'system_qty' => 28,
+        ]);
+
+        $this->assertTrue($opname->fresh()->submitForReview());
+
+        $kosong->refresh();
+        $this->assertEquals(0, $kosong->physical_qty);
+        $this->assertEquals(-28, $kosong->difference_qty);
+        $this->assertSame('Tidak diisi, dianggap 0', $kosong->note);
+        $this->assertEquals(7, $diisi->fresh()->physical_qty, 'Yang sudah diisi tidak disentuh.');
+    }
 }
