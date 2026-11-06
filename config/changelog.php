@@ -24,7 +24,7 @@ return [
             'version' => '2.0.6',
             'date' => '2026-11-06',
             'kind' => 'fix',
-            'title' => 'Pengingat kasbon dan laporan opname material',
+            'title' => 'Pengingat kasbon, laporan opname material, dan tampilan',
             'items' => [
                 'Dashboard: yang berhak membuat pengeluaran kini melihat kartu pengingat jumlah kasbon (advance) yang belum dilaporkan. Klik kartunya untuk membuka daftar Pengeluaran.',
                 'Opname Material: opname yang sudah selesai punya tombol Analisa, laporan yang disusun otomatis oleh sistem: ringkasan barang sesuai, lebih, dan kurang, rincian per kategori, barang yang selisih, riwayat hitung ulang beserta alasannya, dan lampiran seluruh barang. Dalam jumlah, bukan rupiah.',
@@ -33,6 +33,9 @@ return [
                 'Opname Material: kolom Satuan ditambahkan di tabel detail dan cetakan opname.',
                 'Opname Material: barang yang belum diisi saat Submit for Review dianggap 0 dan diberi keterangan "Tidak diisi, dianggap 0", sehingga selisihnya terbaca saat review.',
                 'Sesi habis: kalau aplikasi dibiarkan lama lalu sesi berakhir, muncul kotak "Sesi Anda masuk chiller dulu" dengan tombol masuk lagi, menggantikan kotak bawaan peramban. Halaman tidak dimuat ulang sendiri, jadi isian yang belum disimpan masih terlihat.',
+                'Tampilan: tombol utama dan tombol hijau lebih tua sehingga tulisan putihnya lebih jelas terbaca, dan cincin fokus saat menekan Tab lebih terlihat.',
+                'Tampilan di HP: ukuran huruf dasar mengikuti pengaturan perangkat, dan tombol "+ Spec" serta tong sampah di item Sales Order cukup besar untuk disentuh.',
+                'Sales Order: kalau ada isian wajib yang kosong, pesan galatnya tampil langsung di isian yang bersangkutan saat menekan Simpan.',
             ],
         ],
 
