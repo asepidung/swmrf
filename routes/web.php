@@ -171,6 +171,19 @@ Route::middleware(['web', 'auth'])->group(function () {
         return view('print.material-stock-take', compact('record', 'lihatSistem', 'lihatSelisih'));
     })->name('material-stock-take.print');
 
+    // Laporan analisa opname material. Memuat stok sistem dan selisih, jadi HANYA sesudah COMPLETED
+    // (aturan hitungan buta, Owner 17 September 2026).
+    Route::get('/material-stock-take/{id}/analysis', function ($id) {
+        abort_unless(auth()->user()?->hasPermission('view_material_stock_takes') ?? false, 403);
+
+        $record = \App\Models\MaterialStockTake::findOrFail($id);
+        abort_unless($record->status === \App\Models\MaterialStockTake::STATUS_COMPLETED, 403, 'Laporan analisa baru tersedia setelah opname selesai.');
+
+        $a = \App\Support\MaterialStockTakeAnalysis::for($record);
+
+        return view('print.material-stock-take-analysis', compact('a'));
+    })->name('material-stock-take.analysis');
+
     Route::get('/print-stock-take-label/{id}', function ($id) {
         abort_unless(auth()->user()?->hasPermission('view_stock_takes') ?? false, 403);
 
