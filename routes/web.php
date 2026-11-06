@@ -165,7 +165,7 @@ Route::middleware(['web', 'auth'])->group(function () {
         $selesai = $record->status === \App\Models\MaterialStockTake::STATUS_COMPLETED;
         $bisaMeninjau = $record->status === \App\Models\MaterialStockTake::STATUS_REVIEW
             && (auth()->user()->isProgrammer() || auth()->user()->hasPermission('finish_material_stock_takes'));
-        $lihatSistem = $selesai;
+        $lihatSistem = $selesai || $bisaMeninjau;
         $lihatSelisih = $selesai || $bisaMeninjau;
 
         return view('print.material-stock-take', compact('record', 'lihatSistem', 'lihatSelisih'));

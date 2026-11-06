@@ -29,6 +29,7 @@ return [
                 'Dashboard: yang berhak membuat pengeluaran kini melihat kartu pengingat jumlah kasbon (advance) yang belum dilaporkan. Klik kartunya untuk membuka daftar Pengeluaran.',
                 'Opname Material: opname yang sudah selesai punya tombol Analisa, laporan yang disusun otomatis oleh sistem: ringkasan barang sesuai, lebih, dan kurang, rincian per kategori, barang yang selisih, riwayat hitung ulang beserta alasannya, dan lampiran seluruh barang. Dalam jumlah, bukan rupiah.',
                 'Opname Material: tombol Force delete tidak lagi muncul di halaman Review untuk dokumen yang sudah dihitung, dikirim, atau selesai.',
+                'Opname Material: peninjau di tahap Review kini juga melihat kolom stok sistem (di detail dan cetakan), jadi selisih mudah dibaca, misalnya sistem 0 dan hitungan 5 berarti lebih 5. Penghitung tetap tidak melihatnya.',
             ],
         ],
 
