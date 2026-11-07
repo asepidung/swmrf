@@ -174,4 +174,14 @@ class AppVersionTest extends TestCase
     {
         $this->get('/admin/login')->assertOk()->assertDontSee('version-whats-new', false);
     }
+
+    public function test_the_history_opens_only_the_newest_version_and_folds_the_older_ones(): void
+    {
+        $this->withNewerVersion();
+
+        $html = Livewire::actingAs($this->user('2.1.0'))->test(VersionNotice::class)->html();
+
+        $this->assertSame(1, preg_match_all('/<details class="ver-entry"\s+open\s*>/', $html), 'Hanya versi terbaru yang terbuka.');
+        $this->assertSame(1, preg_match_all('/<details class="ver-entry"\s*>/', $html), 'Versi lama terlipat.');
+    }
 }
