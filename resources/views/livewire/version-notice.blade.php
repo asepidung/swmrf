@@ -5,9 +5,10 @@
     <x-filament::modal id="version-history" width="lg">
         <x-slot name="heading">{{ __('Version history') }}</x-slot>
 
-        <div class="space-y-5">
+        {{-- Yang terbaru terbuka; versi lama terlipat, klik untuk membuka. --}}
+        <div class="space-y-2">
             @foreach ($entries as $entry)
-                @include('livewire.version-entry', ['entry' => $entry, 'current' => $current])
+                @include('livewire.version-entry', ['entry' => $entry, 'current' => $current, 'terbuka' => $loop->first])
             @endforeach
         </div>
     </x-filament::modal>
@@ -17,9 +18,10 @@
         <x-filament::modal id="version-whats-new" width="lg" :close-button="false" :close-by-clicking-away="false" :close-by-escaping="false">
             <x-slot name="heading">{{ __('What is new') }}</x-slot>
 
-            <div class="space-y-5">
+            {{-- Yang terbaru terbuka; kalau ada beberapa versi terlewat, sisanya terlipat. --}}
+            <div class="space-y-2">
                 @foreach ($unseen as $entry)
-                    @include('livewire.version-entry', ['entry' => $entry, 'current' => $current])
+                    @include('livewire.version-entry', ['entry' => $entry, 'current' => $current, 'terbuka' => $loop->first])
                 @endforeach
             </div>
 
