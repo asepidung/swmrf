@@ -410,7 +410,7 @@
 
                 <!-- Says Box -->
                 <div class="says-box mb-3">
-                    Says : <i>{{ \App\Helpers\Terbilang::convertDecimal($record->balance) }}</i>
+                    Says : <i>{{ \App\Helpers\Terbilang::convertDecimal($record->documentAmount() - $returNilai) }}</i>
                 </div>
 
                 @if($record->note)

@@ -29,7 +29,7 @@ return [
                 'Invoice (cetakan): barang yang diretur pelanggan kini tampil sebagai baris pengurang berwarna merah tepat di bawah barisnya, dengan berat dan total bernilai minus (contoh: Retur STRIPLOIN TS -5,18 Kg). Baris asli tetap menunjukkan yang dikirim, sedangkan Grand Total dan total berat sudah memperhitungkan retur dan sama dengan yang ditagih.',
                 'Daftar Invoice: kolom Nilai Invoice kini sudah dikurangi retur yang disetujui, dengan keterangan "Dikurangi Retur" dan besarnya di bawah angka.',
                 'Master Produk: ada isian baru "Harga cadangan per kg" (opsional). Dipakai hanya untuk menilai retur jual dan temuan opname daging saat produk itu tidak punya stok berharga, supaya nilainya tidak kosong. Kalau ada stok berharga, rata-rata stok tetap didahulukan.',
-                'Invoice (cetakan): Grand Total kini ikut menghitung biaya tambahan (Delivery Cost, Ice Gell, Styrofoam, dan sejenisnya). Sebelumnya hanya barang yang dijumlah, sehingga angkanya berbeda dari Nilai Invoice di daftar.',
+                'Invoice (cetakan): Grand Total kini ikut menghitung biaya tambahan (Delivery Cost, Ice Gell, Styrofoam, dan sejenisnya). Sebelumnya hanya barang yang dijumlah, sehingga angkanya berbeda dari Nilai Invoice di daftar. Kalimat "Says" (terbilang) juga kini menuliskan nilai invoice, bukan sisa tagihan, jadi invoice yang sudah lunas tidak lagi tertulis kosong.',
                 'Riwayat versi: hanya versi terbaru yang terbuka, versi-versi lama terlipat dan bisa dibuka satu per satu.',
             ],
         ],

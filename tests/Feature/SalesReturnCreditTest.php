@@ -494,6 +494,8 @@ class SalesReturnCreditTest extends TestCase
 
         $this->assertSame(11128000.0, $invoice->fresh()->documentAmount());
         $this->assertStringContainsString('Rp 11.128.000,00', $html);
+        // Says = nilai invoice (Grand Total), bukan saldo: invoice lunas (saldo 0) tetap terbaca nilainya.
+        $this->assertStringContainsString(\App\Helpers\Terbilang::convertDecimal(11128000), $html);
     }
 
     public function test_an_invoice_without_returns_prints_no_minus_line(): void
