@@ -430,6 +430,58 @@ class SalesReturnCreditTest extends TestCase
         $this->assertSame(98000.0, (float) $retur->items()->first()->unit_price);
     }
 
+    /**
+     * Cetakan invoice (Owner, 9 November 2026, kasus Mike Pizza): berat baris tetap penuh, di bawahnya ada baris
+     * pengurang bernilai minus, dan Grand Total sama dengan yang sungguh ditagih.
+     */
+    public function test_the_printed_invoice_shows_the_return_as_a_minus_line(): void
+    {
+        $this->kirim([
+            ['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000],
+            ['produk' => $this->ribeye, 'berat' => 50, 'harga' => 200000],
+        ]);
+        $invoice = $this->tagih([
+            ['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000],
+            ['produk' => $this->ribeye, 'berat' => 50, 'harga' => 200000],
+        ]);
+
+        $retur = $this->retur([['produk' => $this->sirloin, 'berat' => 20]]);
+        $retur->approve();
+        $invoice->refresh();
+
+        $baris = $invoice->returnedLines();
+        $this->assertCount(1, $baris);
+        $this->assertSame('SIRLOIN', $baris[0]['product']);
+        $this->assertSame(20.0, $baris[0]['weight']);
+        $this->assertSame(2000000.0, $baris[0]['amount']);
+
+        $html = view('print.invoice', ['record' => $invoice->load(['customer', 'items.product'])])->render();
+
+        $this->assertStringContainsString('Retur SIRLOIN', $html);
+        $this->assertStringContainsString('-20,00 Kg', $html);
+        $this->assertStringContainsString('-Rp 2.000.000,00', $html);
+        // Baris aslinya tetap penuh, Grand Total = 20.000.000 + ... - 2.000.000 = 18.000.000 (sama dengan Balance).
+        $this->assertStringContainsString('100,00 Kg', $html);
+        $this->assertStringContainsString('Rp 18.000.000,00', $html);
+        $this->assertSame(18000000.0, (float) $invoice->balance);
+    }
+
+    public function test_an_invoice_without_returns_prints_no_minus_line(): void
+    {
+        $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
+        $invoice = $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
+
+        // Retur yang masih Draft tidak boleh muncul.
+        $this->retur([['produk' => $this->sirloin, 'berat' => 20]]);
+
+        $this->assertCount(0, $invoice->fresh()->returnedLines());
+
+        $html = view('print.invoice', ['record' => $invoice->fresh()->load(['customer', 'items.product'])])->render();
+
+        $this->assertStringNotContainsString('Retur SIRLOIN', $html);
+        $this->assertStringContainsString('Rp 10.000.000,00', $html);
+    }
+
     public function test_only_approved_returns_touch_the_bill(): void
     {
         $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000, 'diskon' => 0]]);
