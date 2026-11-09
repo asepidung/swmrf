@@ -2001,5 +2001,6 @@
     "Stay on this page for now": "Stay on this page for now",
     "Stock take analysis report": "Stock take analysis report",
     "Fallback cost per kg": "Fallback cost per kg",
+    "Charge name": "Charge name",
     "Used only for sales returns and stock take findings when the product has no valued stock to average. Leave empty if unknown.": "Used only for sales returns and stock take findings when the product has no valued stock to average. Leave empty if unknown."
 }
