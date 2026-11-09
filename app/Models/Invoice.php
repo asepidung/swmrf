@@ -377,6 +377,12 @@ class Invoice extends Model
         return (float) $this->subtotal + (float) $this->charge;
     }
 
+    /** Nilai dokumen dikurangi retur jual yang sudah disetujui: angka yang sama dengan Grand Total di cetakan (Owner, 9 November 2026). */
+    public function documentAmountAfterReturns(): float
+    {
+        return round($this->documentAmount() - $this->returnedAmount(), 2);
+    }
+
     /**
      * Berapa yang ditagihkan kepada pelanggan.
      *

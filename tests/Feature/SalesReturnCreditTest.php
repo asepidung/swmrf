@@ -466,6 +466,22 @@ class SalesReturnCreditTest extends TestCase
         $this->assertSame(18000000.0, (float) $invoice->balance);
     }
 
+    public function test_the_invoice_value_in_the_list_is_net_of_approved_returns(): void
+    {
+        $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
+        $invoice = $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
+
+        $this->assertSame(10000000.0, $invoice->documentAmountAfterReturns());
+
+        $this->retur([['produk' => $this->sirloin, 'berat' => 20]]); // Draft: belum mengurangi
+        $this->assertSame(10000000.0, $invoice->fresh()->documentAmountAfterReturns());
+
+        SalesReturn::first()->approve();
+
+        $this->assertSame(8000000.0, $invoice->fresh()->documentAmountAfterReturns());
+        $this->assertSame(10000000.0, $invoice->fresh()->documentAmount(), 'Nilai dokumen aslinya tidak berubah.');
+    }
+
     public function test_an_invoice_without_returns_prints_no_minus_line(): void
     {
         $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);

@@ -190,15 +190,19 @@ class SalesReturnMoneyVisibilityTest extends TestCase
     // =========================================================================
 
     /** @test */
-    public function the_invoice_list_shows_the_document_value_and_no_longer_flags_returns(): void
+    public function the_invoice_list_shows_the_value_net_of_returns_with_the_deduction_noted(): void
     {
         $retur = $this->approvedReturnReducingAnInvoice();
         $invoice = $retur->items()->first()->invoice;
         $this->grant('view_invoices');
 
-        // Retur dihitung di piutang; daftar invoice tetap menampilkan angka yang tertulis di dokumennya.
+        // Nilai dokumen 10.000.000 dikurangi retur yang disetujui (Ayah, 9 November 2026: sama dengan cetakan),
+        // dan besarnya dituliskan di bawah angka.
+        $this->assertSame(10000000.0, $invoice->documentAmount());
+
         Livewire::test(ListInvoices::class)
-            ->assertTableColumnStateSet('subtotal', 10000000.0, $invoice)
+            ->assertTableColumnStateSet('subtotal', $invoice->documentAmountAfterReturns(), $invoice)
+            ->assertTableColumnHasDescription('subtotal', __('Reduced by Return').': -'.number_format($invoice->returnedAmount(), 0, ',', '.'), $invoice)
             ->assertTableColumnDoesNotExist('has_sales_returns')
             ->assertTableActionDoesNotExist('reopen_settled');
     }
