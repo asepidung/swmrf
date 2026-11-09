@@ -744,10 +744,15 @@ class InvoiceResource extends Resource
                         : null),
 
                 // Daftar invoice menampilkan NILAI invoice (keputusan Ayah, 31 Oktober 2026), bukan sisa tagihan: lunas atau belum,
-                // angkanya tetap. Sisa tagihan, retur, dan buka-kembali ada di modul Piutang.
+                // angkanya tetap. Sisa tagihan dan buka-kembali ada di modul Piutang.
+                // Retur jual yang sudah disetujui ikut mengurangi nilainya (Ayah, 9 November 2026, sama dengan cetakan),
+                // dan besarnya ditulis di bawah angka supaya tidak terbaca sebagai salah hitung.
                 Tables\Columns\TextColumn::make('subtotal')
                     ->label(__('Invoice Amount'))
-                    ->getStateUsing(fn (Invoice $record): float => $record->documentAmount())
+                    ->getStateUsing(fn (Invoice $record): float => $record->documentAmountAfterReturns())
+                    ->description(fn (Invoice $record): ?string => ($retur = $record->returnedAmount()) > 0
+                        ? __('Reduced by Return').': -'.number_format($retur, 0, ',', '.')
+                        : null)
                     ->numeric(0, ',', '.')
                     ->sortable()
                     ->alignEnd(),
