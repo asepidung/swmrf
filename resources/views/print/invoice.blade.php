@@ -394,7 +394,7 @@
                         <tr>
                             <th colspan="3" class="text-right">{{ number_format($record->total_weight - $returBerat, 2, ',', '.') }} Kg</th>
                             <td colspan="3" class="text-right font-weight-bold">Grand Total :</td>
-                            <th class="text-right">Rp {{ number_format($record->subtotal - $returNilai, 2, ',', '.') }}</th>
+                            <th class="text-right">Rp {{ number_format($record->documentAmount() - $returNilai, 2, ',', '.') }}</th>
                         </tr>
                         <tr>
                             <td colspan="6" class="text-right border-0 font-weight-bold">Down Payment :</td>

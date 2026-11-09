@@ -482,6 +482,20 @@ class SalesReturnCreditTest extends TestCase
         $this->assertSame(10000000.0, $invoice->fresh()->documentAmount(), 'Nilai dokumen aslinya tidak berubah.');
     }
 
+    /** Kasus INV-SWM/26/I/0257: biaya tambahan (delivery, ice gel) harus ikut Grand Total di cetakan, sama dengan daftar Invoice. */
+    public function test_the_printed_grand_total_includes_the_additional_charges(): void
+    {
+        $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
+        $invoice = $this->tagih([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
+        $invoice->charge = 1128000;
+        $invoice->save();
+
+        $html = view('print.invoice', ['record' => $invoice->fresh()->load(['customer', 'items.product'])])->render();
+
+        $this->assertSame(11128000.0, $invoice->fresh()->documentAmount());
+        $this->assertStringContainsString('Rp 11.128.000,00', $html);
+    }
+
     public function test_an_invoice_without_returns_prints_no_minus_line(): void
     {
         $this->kirim([['produk' => $this->sirloin, 'berat' => 100, 'harga' => 100000]]);
