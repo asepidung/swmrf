@@ -286,6 +286,17 @@ class BarcodeCosts
         }
 
         $average = $productId ? self::averageInStock($productId) : null;
+        $note = 'average cost of product in stock';
+
+        // Tidak ada stok berharga untuk dirata-ratakan: pakai harga cadangan produk bila ada (Owner, 9 November 2026).
+        if ($average === null && $productId) {
+            $cadangan = \App\Models\Product::whereKey($productId)->value('fallback_cost_per_kg');
+
+            if ($cadangan !== null && (float) $cadangan > 0) {
+                $average = (float) $cadangan;
+                $note = 'fallback cost of product (no valued stock)';
+            }
+        }
 
         return BarcodeCost::create([
             'barcode' => $barcode,
@@ -294,7 +305,7 @@ class BarcodeCosts
             'source_type' => $sourceType,
             'source_id' => $sourceId,
             'valued_at' => $average === null ? null : now(),
-            'note' => $average === null ? 'no valued stock to average' : 'average cost of product in stock',
+            'note' => $average === null ? 'no valued stock to average' : $note,
         ]);
     }
 

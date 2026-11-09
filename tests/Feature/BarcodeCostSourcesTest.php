@@ -131,4 +131,48 @@ class BarcodeCostSourcesTest extends TestCase
         $this->assertNotNull($row->note, 'Ditandai supaya kelihatan kenapa kosong.');
         $this->assertNull(BarcodeCosts::averageInStock(999999));
     }
+
+    /** @test */
+    public function with_no_valued_stock_the_product_fallback_cost_is_used_and_labelled(): void
+    {
+        $this->product->update(['fallback_cost_per_kg' => 126400]);
+
+        $row = BarcodeCosts::fromAverage('MANUAL-1', $this->product->id, BarcodeCost::SOURCE_STOCK_TAKE);
+
+        $this->assertSame(126400.0, $row->cost_per_kg);
+        $this->assertStringContainsString('fallback', $row->note);
+    }
+
+    /** @test */
+    public function the_stock_average_wins_over_the_fallback_cost(): void
+    {
+        $this->product->update(['fallback_cost_per_kg' => 126400]);
+        $this->stock('S-1', 10, 100000.0);
+
+        $row = BarcodeCosts::fromAverage('MANUAL-1', $this->product->id, BarcodeCost::SOURCE_SALES_RETURN, 5);
+
+        $this->assertSame(100000.0, $row->cost_per_kg, 'Rata-rata stok didahulukan; harga cadangan hanya bila tidak ada stok berharga.');
+        $this->assertStringNotContainsString('fallback', $row->note);
+    }
+
+    /** @test */
+    public function the_fallback_import_command_reports_first_and_only_fills_empty_products(): void
+    {
+        $sudah = Product::create(['name' => 'RUMP', 'code' => 'MT002', 'category_id' => $this->product->category_id, 'structure_type' => 'main', 'is_active' => true, 'fallback_cost_per_kg' => 1000]);
+        $csv = tempnam(sys_get_temp_dir(), 'hc');
+        file_put_contents($csv, "produk,harga_per_kg
+TENDERLOIN,184500
+RUMP,126400
+TIDAK ADA,1
+");
+
+        $this->artisan('costing:isi-harga-cadangan', ['--source' => $csv])->assertSuccessful();
+        $this->assertNull($this->product->fresh()->fallback_cost_per_kg, 'Tanpa --apply tidak menyimpan apa pun.');
+
+        $this->artisan('costing:isi-harga-cadangan', ['--source' => $csv, '--apply' => true])->assertSuccessful();
+        $this->assertEquals(184500, $this->product->fresh()->fallback_cost_per_kg);
+        $this->assertEquals(1000, $sudah->fresh()->fallback_cost_per_kg, 'Yang sudah punya tidak ditimpa tanpa --timpa.');
+
+        unlink($csv);
+    }
 }

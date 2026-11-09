@@ -19,11 +19,13 @@ class Product extends Model
         'legacy_note',
         'costing_customer_group_id',
         'max_label_weight',
+        'fallback_cost_per_kg',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'excluded_from_overhead' => 'boolean',
+        'fallback_cost_per_kg' => 'decimal:2',
     ];
 
     public function setNameAttribute($value)

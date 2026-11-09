@@ -1999,5 +1999,7 @@
     "Idle for too long, so your session was stored in the cold for safety. Anything you haven't saved wasn't sent.": "Terlalu lama didiamkan, sesi Anda disimpan dulu di tempat dingin demi keamanan. Isian yang belum disimpan belum terkirim.",
     "Take it out of the chiller (log in again)": "Keluarkan dari chiller (masuk lagi)",
     "Stay on this page for now": "Tetap di halaman ini dulu",
-    "Stock take analysis report": "Laporan analisa hasil opname"
+    "Stock take analysis report": "Laporan analisa hasil opname",
+    "Fallback cost per kg": "Harga cadangan per kg",
+    "Used only for sales returns and stock take findings when the product has no valued stock to average. Leave empty if unknown.": "Dipakai hanya untuk retur jual dan temuan opname bila produk tidak punya stok berharga untuk dirata-ratakan. Kosongkan kalau belum diketahui."
 }
