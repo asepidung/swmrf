@@ -120,6 +120,13 @@ class ProductResource extends Resource
                             ->maxValue(\App\Support\BarcodeSegments::BERAT_MAKS)
                             ->placeholder('30'),
 
+                        Forms\Components\TextInput::make('fallback_cost_per_kg')
+                            ->label(fn() => __('Fallback cost per kg'))
+                            ->helperText(fn() => __('Used only for sales returns and stock take findings when the product has no valued stock to average. Leave empty if unknown.'))
+                            ->numeric()
+                            ->minValue(0)
+                            ->prefix('Rp'),
+
                         Forms\Components\Toggle::make('is_active')
                             ->label(fn() => __('Set Active'))
                             ->default(true)
