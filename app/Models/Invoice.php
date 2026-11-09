@@ -216,6 +216,32 @@ class Invoice extends Model
     }
 
     /**
+     * Baris pengurang untuk cetakan invoice: satu baris per produk yang diretur, bernilai MINUS.
+     *
+     * Dibaca dari nota retur yang sudah menempel (Approved) -- angkanya sama persis dengan `returnedAmount()`,
+     * hanya dirinci per produk supaya kertas yang dipegang pelanggan menjelaskan kenapa tagihannya turun
+     * (Owner, 9 November 2026: berat barisnya tetap, di bawahnya ada baris pengurang).
+     *
+     * @return \Illuminate\Support\Collection<int, array{product: string, weight: float, amount: float, numbers: string}>
+     */
+    public function returnedLines(): \Illuminate\Support\Collection
+    {
+        return $this->returnedItems()
+            ->whereHas('salesReturn', fn ($q) => $q->where('status', 'Approved'))
+            ->with(['product', 'salesReturn'])
+            ->get()
+            ->groupBy('product_id')
+            ->map(fn ($items) => [
+                'product' => (string) ($items->first()->product?->name ?? '-'),
+                'weight' => round((float) $items->sum('credited_weight'), 2),
+                'amount' => round((float) $items->sum('line_amount'), 2),
+                'numbers' => $items->map(fn ($i) => $i->salesReturn?->return_number)->filter()->unique()->implode(', '),
+            ])
+            ->filter(fn (array $line) => $line['amount'] > 0 || $line['weight'] > 0)
+            ->values();
+    }
+
+    /**
      * Berat yang sudah DIKREDITKAN untuk satu produk -- bukan berat fisiknya.
      *
      * Dua angka itu memang bisa berbeda. Kita mengirim satu box 20,00 kg;

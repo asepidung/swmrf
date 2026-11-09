@@ -239,6 +239,12 @@
         <div class="watermark">DELETED</div>
     @endif
 
+    @php
+        $returLines = $record->returnedLines();
+        $returBerat = (float) $returLines->sum('weight');
+        $returNilai = (float) $returLines->sum('amount');
+    @endphp
+
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-10 page-container">
@@ -356,7 +362,20 @@
                             <td class="text-right">Rp {{ number_format($item->amount, 2, ',', '.') }}</td>
                         </tr>
                         @endforeach
-                        
+
+                        {{-- Baris pengurang dari retur jual yang sudah disetujui: berat baris di atas tetap, pengurangnya terpisah dan merah. --}}
+                        @foreach($returLines as $retur)
+                        <tr style="color: #c00000; font-weight: bold;">
+                            <td></td>
+                            <td>Retur {{ $retur['product'] }}@if($retur['numbers']) <span style="font-weight: normal;">({{ $retur['numbers'] }})</span>@endif</td>
+                            <td class="text-right">-{{ number_format($retur['weight'], 2, ',', '.') }} Kg</td>
+                            <td class="text-right">{{ $retur['weight'] > 0 ? 'Rp '.number_format($retur['amount'] / $retur['weight'], 0, ',', '.') : '' }}</td>
+                            <td></td>
+                            <td></td>
+                            <td class="text-right">-Rp {{ number_format($retur['amount'], 2, ',', '.') }}</td>
+                        </tr>
+                        @endforeach
+
                         @if($record->additionalCharges && count($record->additionalCharges) > 0)
                             @foreach($record->additionalCharges as $charge)
                             <tr>
@@ -373,9 +392,9 @@
                     </tbody>
                     <tfoot>
                         <tr>
-                            <th colspan="3" class="text-right">{{ number_format($record->total_weight, 2, ',', '.') }} Kg</th>
+                            <th colspan="3" class="text-right">{{ number_format($record->total_weight - $returBerat, 2, ',', '.') }} Kg</th>
                             <td colspan="3" class="text-right font-weight-bold">Grand Total :</td>
-                            <th class="text-right">Rp {{ number_format($record->subtotal, 2, ',', '.') }}</th>
+                            <th class="text-right">Rp {{ number_format($record->subtotal - $returNilai, 2, ',', '.') }}</th>
                         </tr>
                         <tr>
                             <td colspan="6" class="text-right border-0 font-weight-bold">Down Payment :</td>
