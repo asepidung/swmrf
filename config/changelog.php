@@ -21,6 +21,19 @@ return [
     'entries' => [
 
         [
+            'version' => '2.0.7',
+            'date' => '2026-11-09',
+            'kind' => 'fix',
+            'title' => 'Retur di invoice, harga cadangan produk, dan riwayat versi',
+            'items' => [
+                'Invoice (cetakan): barang yang diretur pelanggan kini tampil sebagai baris pengurang berwarna merah tepat di bawah barisnya, dengan berat dan total bernilai minus (contoh: Retur STRIPLOIN TS -5,18 Kg). Baris asli tetap menunjukkan yang dikirim, sedangkan Grand Total dan total berat sudah memperhitungkan retur dan sama dengan yang ditagih.',
+                'Daftar Invoice: kolom Nilai Invoice kini sudah dikurangi retur yang disetujui, dengan keterangan "Dikurangi Retur" dan besarnya di bawah angka.',
+                'Master Produk: ada isian baru "Harga cadangan per kg" (opsional). Dipakai hanya untuk menilai retur jual dan temuan opname daging saat produk itu tidak punya stok berharga, supaya nilainya tidak kosong. Kalau ada stok berharga, rata-rata stok tetap didahulukan.',
+                'Riwayat versi: hanya versi terbaru yang terbuka, versi-versi lama terlipat dan bisa dibuka satu per satu.',
+            ],
+        ],
+
+        [
             'version' => '2.0.6',
             'date' => '2026-11-06',
             'kind' => 'fix',
