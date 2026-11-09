@@ -207,12 +207,8 @@ class InvoiceResource extends Resource
                             ->schema([
                                 Forms\Components\Select::make('name')
                                     ->hiddenLabel()
-                                    ->placeholder(__('Product'))
-                                    ->options([
-                                        'Ice Gell' => 'Ice Gell',
-                                        'Styrofoam' => 'Styrofoam',
-                                        'Delivery Cost' => 'Delivery Cost',
-                                    ])
+                                    ->placeholder(__('Charge name'))
+                                    ->options(fn ($state): array => static::chargeNameOptions($state))
                                     ->required()
                                     ->columnSpan(['default' => 'full', 'lg' => 3]),
                                 Forms\Components\TextInput::make('qty')
@@ -495,6 +491,30 @@ class InvoiceResource extends Resource
         // karena angka sebenarnya juga memperhitungkan pembayaran pelanggan --
         // dan form tidak tahu apa-apa tentang itu.
         $rootSet('balance', round($subtotal + $charge - $downPayment, 0));
+    }
+
+    /**
+     * Pilihan nama biaya tambahan.
+     *
+     * Invoice hasil impor legacy menyimpan nama lain (mis. "STYROFOAM BESAR GARUDA", "DELIVERY COST"). Kalau nama yang
+     * tersimpan tidak ada di pilihan, kotaknya menampilkan teks cadangan seolah kosong, padahal isinya ada. Nama yang
+     * sudah tersimpan karenanya ikut jadi pilihan.
+     *
+     * @return array<string, string>
+     */
+    public static function chargeNameOptions(mixed $current = null): array
+    {
+        $options = [
+            'Ice Gell' => 'Ice Gell',
+            'Styrofoam' => 'Styrofoam',
+            'Delivery Cost' => 'Delivery Cost',
+        ];
+
+        if (is_string($current) && trim($current) !== '' && ! array_key_exists($current, $options)) {
+            $options[$current] = $current;
+        }
+
+        return $options;
     }
 
     /**
