@@ -149,9 +149,14 @@ tertulis; yang paling mudah terlewat:
 - Data HPP (grup acuan, price list, trading terms) **sengaja dikesampingkan**:
   mesin dibangun dengan data sementara, angka sungguhan menunggu import
   (`hpp.md` §15, issue #480).
-- **Susut TETAP di dalam HPP; `financial_losses` dari susut kirim/timbang
-  sengaja Rp 0 selamanya** -- bukan pekerjaan tertunda. Jangan membangun
-  "nilai rupiah susut".
+- **Susut TETAP di dalam HPP.** `financial_losses` susut TIMBANG sapi tetap
+  mengikuti aturannya sendiri. **Susut KIRIM dinilai rupiah sejak 10 November
+  2026 (Owner, membalik "Rp 0 selamanya")**: kg susut x harga pokok karton yang
+  dikirim, lewat `DeliveryShrinkValuator`; hanya diisi bila SEMUA karton produk
+  itu bernilai (tidak ditebak), selebihnya tetap "belum dinilai" dan diisi
+  ulang otomatis saat Costing dikunci (`revalueAllPending`) atau lewat
+  `costing:nilai-susut-kirim`. Angka ini tampilan kerugian, bukan biaya
+  tambahan di atas HPP: jangan dijumlah dengan HPP.
 - Financial Loss retur **sudah** bernilai rupiah: selisih klaim - fisik x
   harga kredit, bukan HPP (`docs/modules/sales-return.md`).
 - Sapi dalam satu karkas **ditimbang semua atau tidak sama sekali** (Owner
