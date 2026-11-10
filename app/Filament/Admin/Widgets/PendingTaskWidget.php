@@ -399,6 +399,7 @@ class PendingTaskWidget extends Widget
         return \App\Models\QcReport::query()
             ->where('reportable_type', $kelas)
             ->belumDiisi()
+            ->dokumenMasihAda()
             ->count();
     }
 

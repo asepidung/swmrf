@@ -97,6 +97,33 @@ protected $fillable = [
         return $query->whereNull('submitted_at');
     }
 
+    /**
+     * Hanya laporan yang dokumen pasangannya MASIH ADA (belum dihapus). Tugas QC untuk dokumen terhapus disembunyikan
+     * dari daftar dan dari hitungan tugas (Owner, 10 November 2026, kasus QC#260024).
+     */
+    public function scopeDokumenMasihAda(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        // Yang disembunyikan hanya laporan yang dokumennya TERBUKTI terhapus; jenis dokumen lain tetap tampil.
+        // Tally juga dianggap terhapus bila Sales Order-nya sudah dihapus: tanpa pesanan tidak ada yang perlu diperiksa QC.
+        foreach (self::DOKUMEN as $kelas) {
+            if (! in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($kelas), true)) {
+                continue;
+            }
+
+            $terhapus = $kelas::onlyTrashed();
+
+            $query->whereNot(fn (\Illuminate\Database\Eloquent\Builder $satu) => $satu
+                ->where('qc_reports.reportable_type', $kelas)
+                ->whereIn('qc_reports.reportable_id', $terhapus->select((new $kelas)->getQualifiedKeyName())));
+        }
+
+        $tanpaPesanan = Tally::query()->whereDoesntHave('salesOrder');
+
+        return $query->whereNot(fn (\Illuminate\Database\Eloquent\Builder $satu) => $satu
+            ->where('qc_reports.reportable_type', Tally::class)
+            ->whereIn('qc_reports.reportable_id', $tanpaPesanan->select('tallies.id')));
+    }
+
     public function reportable(): MorphTo
     {
         // Dokumen yang sudah dihapus (soft delete) tetap dibaca, supaya nomor dan keterangannya tidak jadi "-"

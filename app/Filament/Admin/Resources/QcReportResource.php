@@ -265,7 +265,7 @@ class QcReportResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return TrashedRecords::visibleTo(
-            parent::getEloquentQuery(),
+            parent::getEloquentQuery()->dokumenMasihAda(),
             'view_deleted_qc_reports',
         );
     }
