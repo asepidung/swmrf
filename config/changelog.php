@@ -29,6 +29,7 @@ return [
                 'Financial Loss: susut kirim (Delivery Order) kini punya nilai rupiah, dihitung dari kg susut dikali harga pokok karton yang dikirim. Kalau ada karton yang belum punya harga pokok, nilainya tetap "belum dinilai" dan terisi sendiri begitu harganya masuk. Repack yang sebelumnya tertahan karena barcode berputar juga sudah terhitung.',
                 'QC Reports: tugas QC untuk dokumen yang sudah dihapus, atau tally yang Sales Order-nya dihapus, tidak lagi muncul di daftar dan di hitungan tugas dashboard. Nomor dokumen yang terhapus ditandai "(Dihapus)" dan keterangannya tetap terbaca.',
                 'PO Material dan PO Produk: tanggal PO kini selalu hari finance menyetujui, tidak lagi mengikuti tanggal jatuh tempo request.',
+                'Daftar dokumen: arahkan kursor ke nama pembuat atau penyetuju untuk melihat kapan dokumennya dibuat atau disetujui (tanggal dan jam), tanpa kolom tambahan. Berlaku di semua daftar yang menampilkan nama itu.',
             ],
         ],
 

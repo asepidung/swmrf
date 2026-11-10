@@ -272,6 +272,8 @@
     "Created From": "Dibuat Dari",
     "Created Until": "Dibuat Sampai",
     "Created at": "Dibuat pada",
+    "Created on :datetime": "Dibuat :datetime",
+    "Approved on :datetime": "Disetujui :datetime",
     "Credit Value": "Nilai Potongan",
     "Credited Weight": "Berat Dikreditkan",
     "Current Password": "Password Saat Ini",

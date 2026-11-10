@@ -272,6 +272,8 @@
     "Created From": "Created From",
     "Created Until": "Created Until",
     "Created at": "Created at",
+    "Created on :datetime": "Created on :datetime",
+    "Approved on :datetime": "Approved on :datetime",
     "Credit Value": "Credit Value",
     "Credited Weight": "Credited Weight",
     "Current Password": "Current Password",
