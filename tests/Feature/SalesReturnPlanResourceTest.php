@@ -97,6 +97,27 @@ class SalesReturnPlanResourceTest extends TestCase
     }
 
     // =========================================================================
+    // Daftar menampilkan siapa pembuat plan
+    // =========================================================================
+
+    /** @test */
+    public function the_list_shows_who_created_each_plan(): void
+    {
+        $pembuat = $this->employee(['view_sales_return_plans', 'create_sales_return_plans']);
+        $pembuat->forceFill(['name' => 'SALES PEMBUAT'])->saveQuietly();
+
+        $this->actingAs($pembuat);
+        $plan = $this->draftPlanWithItem();
+
+        $this->assertSame($pembuat->id, $plan->fresh()->created_by);
+
+        Livewire::test(ListSalesReturnPlans::class)
+            ->assertCanSeeTableRecords([$plan])
+            ->assertTableColumnStateSet('createdBy.name', 'SALES PEMBUAT', $plan)
+            ->assertSee('SALES PEMBUAT');
+    }
+
+    // =========================================================================
     // Otorisasi Resource
     // =========================================================================
 
