@@ -157,7 +157,9 @@ class MaterialRequisition extends Model
                 'material_requisition_id' => $this->id,
                 'supplier_id' => $this->supplier_id,
                 'approved_by' => auth()->id(),
-                'po_date' => $this->due_date ?? now(),
+                // Tanggal PO = hari finance menyetujui (saat nomornya lahir), BUKAN tanggal butuh/jatuh tempo request
+                // (Owner, 10 November 2026: REQ-26/0171 jatuh tempo 26 Okt tapi PO terbit 10 Nov).
+                'po_date' => now(),
                 'total_amount' => $this->total_amount,
                 'note' => $this->note,
             ]);
