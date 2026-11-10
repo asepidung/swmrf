@@ -680,6 +680,12 @@ class PendingTaskWidget extends Widget
 
     public function getAging60DaysCount(): int
     {
+        // Kartunya mengarah ke Beef Stock Aging, yang hanya boleh dibuka pemegang izin ini (Owner, 10 November 2026:
+        // sebelumnya semua pengguna melihat kartu lalu mendapat 403 saat mengkliknya).
+        if (! $this->may('view_beef_stock_aging')) {
+            return 0;
+        }
+
         return \App\Models\BeefStock::where('status', 'IN_STOCK')
             ->where('pack_date', '<=', \Carbon\Carbon::now()->subDays(60))
             ->whereHas('grade', function ($q) {
