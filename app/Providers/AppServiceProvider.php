@@ -72,6 +72,16 @@ class AppServiceProvider extends ServiceProvider
                 ->displayFormat('d/m/Y H:i'),
         );
 
+        // Nama pembuat/penyetuju di semua daftar: tooltip kapan dokumennya dibuat (Owner, 10 November 2026),
+        // tanpa kolom tanggal tambahan. Lihat App\Support\StampTooltip.
+        \Filament\Tables\Columns\TextColumn::configureUsing(function (\Filament\Tables\Columns\TextColumn $column): void {
+            $kalimat = \App\Support\StampTooltip::KOLOM[$column->getName()] ?? null;
+
+            if ($kalimat) {
+                $column->tooltip(fn (?\Illuminate\Database\Eloquent\Model $record, $state) => \App\Support\StampTooltip::text($kalimat, $record, $state));
+            }
+        });
+
         \Filament\Forms\Components\DatePicker::configureUsing(
             fn (\Filament\Forms\Components\DatePicker $picker) => $picker
                 ->native(false)
