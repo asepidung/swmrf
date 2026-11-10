@@ -257,6 +257,24 @@ class RequisitionAdvancePaymentCapTest extends TestCase
         }
     }
 
+    /** Tanggal PO = hari PO diterbitkan (finance approve), bukan tanggal jatuh tempo request (Owner, 10 November 2026). */
+    public function test_the_po_date_is_the_day_it_was_issued_not_the_requisition_due_date(): void
+    {
+        $requisition = ProductRequisition::create([
+            'user_id' => $this->user->id,
+            'supplier_id' => $this->supplier->id,
+            'due_date' => now()->subDays(14)->toDateString(),
+            'status' => 'PO Created',
+        ]);
+        $requisition->items()->create(['product_id' => $this->product->id, 'qty' => 1, 'price' => 1000, 'subtotal' => 1000]);
+        $requisition->updateTotalAmount();
+        $requisition->generatePurchaseOrder();
+
+        $po = PurchaseProduct::where('product_requisition_id', $requisition->id)->firstOrFail();
+
+        $this->assertSame(now()->toDateString(), substr((string) $po->po_date, 0, 10));
+    }
+
     /** @test */
     public function it_shows_only_one_toast_after_purchasing_approves()
     {

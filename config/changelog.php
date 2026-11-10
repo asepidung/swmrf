@@ -21,6 +21,18 @@ return [
     'entries' => [
 
         [
+            'version' => '2.0.8',
+            'date' => '2026-11-10',
+            'kind' => 'fix',
+            'title' => 'Nilai susut kirim, QC dokumen terhapus, dan tanggal PO',
+            'items' => [
+                'Financial Loss: susut kirim (Delivery Order) kini punya nilai rupiah, dihitung dari kg susut dikali harga pokok karton yang dikirim. Kalau ada karton yang belum punya harga pokok, nilainya tetap "belum dinilai" dan terisi sendiri begitu harganya masuk. Repack yang sebelumnya tertahan karena barcode berputar juga sudah terhitung.',
+                'QC Reports: tugas QC untuk dokumen yang sudah dihapus, atau tally yang Sales Order-nya dihapus, tidak lagi muncul di daftar dan di hitungan tugas dashboard. Nomor dokumen yang terhapus ditandai "(Dihapus)" dan keterangannya tetap terbaca.',
+                'PO Material dan PO Produk: tanggal PO kini selalu hari finance menyetujui, tidak lagi mengikuti tanggal jatuh tempo request.',
+            ],
+        ],
+
+        [
             'version' => '2.0.7',
             'date' => '2026-11-09',
             'kind' => 'fix',
