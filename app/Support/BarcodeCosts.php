@@ -142,6 +142,9 @@ class BarcodeCosts
                 $changed += self::propagateFrom($barcode);
             }
 
+            // Susut kirim yang menunggu harga pokok kartonnya dicoba lagi sekarang (Owner, 10 November 2026).
+            \App\Services\DeliveryShrinkValuator::revalueAllPending();
+
             return $changed;
         });
     }

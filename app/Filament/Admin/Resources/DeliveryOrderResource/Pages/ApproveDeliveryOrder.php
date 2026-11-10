@@ -458,13 +458,9 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                 // tidak bisa dijumlah, disaring, atau diurut -- hanya bisa
                 // dibaca satu per satu.
                 //
-                // `amount` MASIH nol, dan itu disengaja. Menilai susut kirim
-                // dengan harga jual melebih-lebihkan: perusahaan tidak
-                // kehilangan sebesar harga jual, melainkan sebesar modalnya
-                // ditambah margin yang tidak jadi didapat. Angka yang benar
-                // HPP, dan HPP menunggu B.O.M. Saat itu tiba, rupiahnya
-                // tinggal `quantity x HPP` dari kolom ini -- tanpa menggali
-                // ulang ratusan catatan lama.
+// Rupiahnya dinilai dengan HARGA POKOK (bukan harga jual, yang melebih-lebihkan:
+                // perusahaan kehilangan modalnya, bukan margin yang tidak jadi didapat) --
+                // lihat DeliveryShrinkValuator.
                 $this->record->financialLoss()->updateOrCreate(
                     [
                         'transaction_type' => \App\Models\FinancialLoss::SUMBER_SURAT_JALAN,
@@ -472,7 +468,10 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                     ],
                     [
                         'date' => $this->record->delivery_date,
-                        'amount' => 0.00,
+                        // Dinilai dari harga pokok barcode yang dikirim (10 November 2026, membalik "Rp 0 selamanya").
+                        // Belum ada karton yang bernilai -> tetap 0 dan terbaca "belum dinilai"; diisi lagi nanti oleh
+                        // DeliveryShrinkValuator::revalueAllPending() saat harga pokok masuk.
+                        'amount' => \App\Services\DeliveryShrinkValuator::amountFor($this->record) ?? 0.00,
                         'quantity' => round($totalLossWeight, 2),
                         'unit' => 'Kg',
                         'note' => __('Delivery shrinkage on :document', [
