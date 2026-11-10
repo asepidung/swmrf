@@ -517,5 +517,12 @@ class QcReportTest extends TestCase
             ->assertCanSeeTableRecords([$laporanTally, $laporanRepack])
             ->assertSee('PELANGGAN UJI')
             ->assertSee('GILING BAKSO 5 KG');
+
+        // Kasus QC#260024: tally dihapus sesudah tugas QC-nya lahir. Nomor dan keterangannya tetap terbaca, ditandai dihapus.
+        $tally->delete();
+        $laporanTally = $laporanTally->fresh();
+
+        $this->assertSame($tally->tally_number.' ('.__('Deleted').')', $laporanTally->nomorDokumen());
+        $this->assertSame('PELANGGAN UJI', $laporanTally->keterangan());
     }
 }
