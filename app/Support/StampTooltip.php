@@ -20,6 +20,7 @@ class StampTooltip
     public const KOLOM = [
         'creator.name' => 'Created on :datetime',
         'user.name' => 'Created on :datetime',
+        'createdBy.name' => 'Created on :datetime',
         'approvedBy.name' => 'Approved on :datetime',
         'approver.name' => 'Approved on :datetime',
     ];

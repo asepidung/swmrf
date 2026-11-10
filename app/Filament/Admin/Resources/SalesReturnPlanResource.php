@@ -315,6 +315,12 @@ class SalesReturnPlanResource extends Resource
                         SalesReturnPlan::STATUS_CANCELLED => 'gray',
                         default => 'gray',
                     }),
+                // Siapa yang membuat plan; waktunya muncul sebagai tooltip (App\Support\StampTooltip).
+                Tables\Columns\TextColumn::make('createdBy.name')
+                    ->label(__('Created By'))
+                    ->placeholder('-')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Created'))
                     ->dateTime()
