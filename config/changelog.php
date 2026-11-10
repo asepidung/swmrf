@@ -30,6 +30,8 @@ return [
                 'QC Reports: tugas QC untuk dokumen yang sudah dihapus, atau tally yang Sales Order-nya dihapus, tidak lagi muncul di daftar dan di hitungan tugas dashboard. Nomor dokumen yang terhapus ditandai "(Dihapus)" dan keterangannya tetap terbaca.',
                 'PO Material dan PO Produk: tanggal PO kini selalu hari finance menyetujui, tidak lagi mengikuti tanggal jatuh tempo request.',
                 'Daftar dokumen: arahkan kursor ke nama pembuat atau penyetuju untuk melihat kapan dokumennya dibuat atau disetujui (tanggal dan jam), tanpa kolom tambahan. Berlaku di semua daftar yang menampilkan nama itu.',
+                'Daftar Plan Sales Return: ada kolom baru "Dibuat Oleh" supaya jelas siapa yang membuat tiap plan.',
+                'Dashboard: kartu "Items in stock over 60 days" kini hanya tampil untuk pengguna yang punya izin melihat umur stok daging, sehingga tidak ada lagi kartu yang berujung halaman ditolak.',
             ],
         ],
 
