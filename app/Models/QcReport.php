@@ -99,7 +99,9 @@ protected $fillable = [
 
     public function reportable(): MorphTo
     {
-        return $this->morphTo();
+        // Dokumen yang sudah dihapus (soft delete) tetap dibaca, supaya nomor dan keterangannya tidak jadi "-"
+        // (kasus QC#260024: tally dihapus 10 menit setelah tugas QC-nya lahir).
+        return $this->morphTo()->withTrashed();
     }
 
     public function findings(): HasMany
@@ -145,13 +147,15 @@ protected $fillable = [
             return '-';
         }
 
+        $tanda = method_exists($dokumen, 'trashed') && $dokumen->trashed() ? ' ('.__('Deleted').')' : '';
+
         foreach (['document_number', 'carcass_number', 'doc_no', 'gr_number', 'tally_number', 'return_number', 'number'] as $kolom) {
             if (filled($dokumen->{$kolom} ?? null)) {
-                return (string) $dokumen->{$kolom};
+                return (string) $dokumen->{$kolom}.$tanda;
             }
         }
 
-        return '#'.$dokumen->getKey();
+        return '#'.$dokumen->getKey().$tanda;
     }
 
     /**

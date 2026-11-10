@@ -1981,6 +1981,7 @@
     "Turn OFF for groups that are no longer used: they disappear from the customer form, nothing is deleted.": "Matikan untuk grup yang tidak dipakai lagi: grup itu hilang dari form customer, tidak ada yang dihapus.",
     "The prices of an advance that has been reported can no longer change; only the category and description.": "Harga pada uang muka yang sudah dilaporkan tidak bisa diubah lagi; hanya kategori dan keterangan.",
     "Deleted at": "Dihapus",
+    "Deleted": "Dihapus",
     "Left out of delivery plans": "Tidak masuk rencana kirim",
     "Turn ON for groups whose orders are not scheduled for delivery (for example employees): their Sales Orders do not create a delivery plan.": "Aktifkan untuk grup yang pesanannya tidak dijadwalkan kirim (misalnya karyawan): Sales Order mereka tidak membuat rencana kirim.",
     "Awaiting receipt": "Menunggu penerimaan",
