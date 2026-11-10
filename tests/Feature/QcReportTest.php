@@ -484,6 +484,29 @@ class QcReportTest extends TestCase
             ->assertCanSeeTableRecords([$tugas]);
     }
 
+    /** Sales Order dihapus: tidak ada yang perlu diperiksa QC untuk tally-nya, walau tally itu sendiri belum dihapus (Owner, 10 November 2026). */
+    public function test_a_tally_whose_sales_order_was_deleted_needs_no_qc_task(): void
+    {
+        $user = \App\Models\User::factory()->create(['role' => 'programmer', 'is_active' => true]);
+        $customer = \App\Models\Customer::create([
+            'name' => 'PELANGGAN SO', 'address' => 'Bogor', 'top' => 0,
+            'customer_segment_id' => \App\Models\CustomerSegment::firstOrCreate(['name' => 'RETAIL'])->id,
+        ]);
+        $so = \App\Models\SalesOrder::create([
+            'customer_id' => $customer->id, 'delivery_date' => now()->addDay()->toDateString(),
+            'po_number' => 'PO-SO', 'created_by' => $user->id, 'status' => 'processing',
+        ]);
+        $tally = \App\Models\Tally::create(['sales_order_id' => $so->id, 'status' => 'processing']);
+        $laporan = QcReport::firstOrCreate(['reportable_type' => \App\Models\Tally::class, 'reportable_id' => $tally->id]);
+
+        $this->assertTrue(QcReport::query()->dokumenMasihAda()->whereKey($laporan->id)->exists());
+
+        $so->delete();
+
+        $this->assertNull($tally->fresh()->deleted_at, 'Tally-nya sendiri masih ada.');
+        $this->assertFalse(QcReport::query()->dokumenMasihAda()->whereKey($laporan->id)->exists());
+    }
+
     /**
      * Daftar laporan QC menerangkan dokumennya (Owner, 3 November 2026): tally milik customer siapa, repack apa
      * (dari catatannya), tanpa membuka dokumennya.
@@ -524,5 +547,14 @@ class QcReportTest extends TestCase
 
         $this->assertSame($tally->tally_number.' ('.__('Deleted').')', $laporanTally->nomorDokumen());
         $this->assertSame('PELANGGAN UJI', $laporanTally->keterangan());
+
+        // Tugas QC untuk dokumen terhapus disembunyikan dari daftar dan dari hitungan tugas (Owner, 10 November 2026).
+        \Livewire\Livewire::actingAs($user)
+            ->test(\App\Filament\Admin\Resources\QcReportResource\Pages\ListQcReports::class)
+            ->assertCanNotSeeTableRecords([$laporanTally])
+            ->assertCanSeeTableRecords([$laporanRepack]);
+
+        $this->assertFalse(QcReport::query()->dokumenMasihAda()->whereKey($laporanTally->id)->exists());
+        $this->assertTrue(QcReport::query()->dokumenMasihAda()->whereKey($laporanRepack->id)->exists());
     }
 }
