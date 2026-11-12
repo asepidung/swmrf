@@ -134,13 +134,13 @@ class UsedBarcodeMarkTest extends TestCase
         $repack = $segar->repack;
 
         $test = Livewire::actingAs($this->user)->test(InputHasilRepack::class, ['record' => $repack]);
-        $test->assertTableActionHidden('repack_status', $segar)->assertTableActionHidden('tally_status', $segar)->assertTableActionVisible('delete', $segar);
+        $test->assertTableActionHidden('repack_status', $segar)->assertTableActionHidden('tally_status', $segar)->assertTableActionVisible('delete', $segar)->assertTableActionEnabled('delete', $segar);
 
         Livewire::actingAs($this->user)->test(InputHasilRepack::class, ['record' => $bahan->repack])
-            ->assertTableActionVisible('repack_status', $bahan)->assertTableActionHidden('tally_status', $bahan)->assertTableActionHidden('delete', $bahan);
+            ->assertTableActionDisabled('repack_status', $bahan)->assertTableActionHidden('tally_status', $bahan)->assertTableActionDisabled('delete', $bahan);
 
         Livewire::actingAs($this->user)->test(InputHasilRepack::class, ['record' => $terkirim->repack])
-            ->assertTableActionVisible('tally_status', $terkirim)->assertTableActionHidden('repack_status', $terkirim)->assertTableActionHidden('delete', $terkirim);
+            ->assertTableActionDisabled('tally_status', $terkirim)->assertTableActionHidden('repack_status', $terkirim)->assertTableActionDisabled('delete', $terkirim);
     }
 
     /** @test */
@@ -150,8 +150,24 @@ class UsedBarcodeMarkTest extends TestCase
         $this->jadikanBahanRepack('BC-BAHAN');
 
         Livewire::actingAs($this->user)->test(InputHasilRepack::class, ['record' => $bahan->repack])
-            ->assertTableActionHidden('delete', $bahan);
+            ->assertTableActionDisabled('delete', $bahan);
 
         $this->assertNotNull(RepackResult::find($bahan->id));
+    }
+
+    /** @test */
+    public function delete_comes_back_once_the_barcode_leaves_the_repack_material_or_tally(): void
+    {
+        $bahan = $this->hasilRepack('BC-BAHAN');
+        $this->jadikanBahanRepack('BC-BAHAN');
+
+        Livewire::actingAs($this->user)->test(InputHasilRepack::class, ['record' => $bahan->repack])
+            ->assertTableActionDisabled('delete', $bahan);
+
+        DB::table('repack_materials')->where('barcode', 'BC-BAHAN')->delete();
+
+        Livewire::actingAs($this->user)->test(InputHasilRepack::class, ['record' => $bahan->repack])
+            ->assertTableActionEnabled('delete', $bahan)
+            ->assertTableActionHidden('repack_status', $bahan);
     }
 }
