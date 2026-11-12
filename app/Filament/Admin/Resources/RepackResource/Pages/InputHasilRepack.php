@@ -9,6 +9,7 @@ use App\Models\BeefStock;
 use App\Models\BeefStockMovement;
 use App\Models\Product;
 use App\Models\Grade;
+use App\Support\BarcodeUsage;
 use Filament\Resources\Pages\Page;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Contracts\HasTable;
@@ -242,6 +243,24 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                     ->alignCenter(),
             ])
             ->actions([
+                Tables\Actions\Action::make('repack_status')
+                    ->label('R')
+                    ->color('warning')
+                    ->tooltip(__('This item is already a repack input'))
+                    ->visible(fn (RepackResult $record) => in_array('R', BarcodeUsage::marks($record->barcode), true))
+                    ->extraAttributes([
+                        'onclick' => 'event.preventDefault(); event.stopPropagation();',
+                        'style' => 'cursor: not-allowed;',
+                    ]),
+                Tables\Actions\Action::make('tally_status')
+                    ->label('T')
+                    ->color('info')
+                    ->tooltip(__('This item is already on a tally'))
+                    ->visible(fn (RepackResult $record) => in_array('T', BarcodeUsage::marks($record->barcode), true))
+                    ->extraAttributes([
+                        'onclick' => 'event.preventDefault(); event.stopPropagation();',
+                        'style' => 'cursor: not-allowed;',
+                    ]),
                 Tables\Actions\DeleteAction::make()
                     ->label('')
                     ->tooltip(__('Delete data'))
