@@ -150,9 +150,6 @@
                         <span style="font-size: 12px;">
                             {{ $item->barcode }}
                         </span>
-                        @foreach(\App\Support\BarcodeUsage::marks($item->barcode) as $tanda)
-                        <span style="font-size: 12px; font-weight: bold; border: 1.5px solid #000; padding: 0 4px; margin-left: 6px;">{{ $tanda }}</span>
-                        @endforeach
                     </td>
                 </tr>
             </tbody>
