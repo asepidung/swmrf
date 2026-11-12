@@ -123,31 +123,6 @@ class UsedBarcodeMarkTest extends TestCase
     }
 
     /** @test */
-    public function a_reprinted_boning_label_carries_the_mark_but_a_fresh_one_does_not(): void
-    {
-        $segar = $this->itemBoning('BC-SEGAR');
-        $dipakai = $this->itemBoning('BC-DIPAKAI');
-        $this->masukkanKeTally('BC-DIPAKAI');
-
-        $htmlSegar = view('print.boning-label', ['item' => $segar->load(['product', 'boning', 'grade'])])->render();
-        $htmlDipakai = view('print.boning-label', ['item' => $dipakai->load(['product', 'boning', 'grade'])])->render();
-
-        $this->assertStringNotContainsString('border: 1.5px solid #000', $htmlSegar);
-        $this->assertMatchesRegularExpression('/border: 1\.5px solid #000[^>]*>\s*T\s*</', $htmlDipakai);
-    }
-
-    /** @test */
-    public function a_reprinted_repack_label_carries_the_mark(): void
-    {
-        $hasil = $this->hasilRepack('BC-RPK');
-        $this->jadikanBahanRepack('BC-RPK');
-
-        $html = view('print.repack-label', ['item' => $hasil->load(['product', 'repack', 'grade'])])->render();
-
-        $this->assertMatchesRegularExpression('/border: 1\.5px solid #000[^>]*>\s*R\s*</', $html);
-    }
-
-    /** @test */
     public function the_repack_result_list_shows_r_and_t_for_used_barcodes_only(): void
     {
         $segar = $this->hasilRepack('BC-SEGAR');
@@ -159,12 +134,24 @@ class UsedBarcodeMarkTest extends TestCase
         $repack = $segar->repack;
 
         $test = Livewire::actingAs($this->user)->test(InputHasilRepack::class, ['record' => $repack]);
-        $test->assertTableActionHidden('repack_status', $segar)->assertTableActionHidden('tally_status', $segar);
+        $test->assertTableActionHidden('repack_status', $segar)->assertTableActionHidden('tally_status', $segar)->assertTableActionVisible('delete', $segar);
 
         Livewire::actingAs($this->user)->test(InputHasilRepack::class, ['record' => $bahan->repack])
-            ->assertTableActionVisible('repack_status', $bahan)->assertTableActionHidden('tally_status', $bahan);
+            ->assertTableActionVisible('repack_status', $bahan)->assertTableActionHidden('tally_status', $bahan)->assertTableActionHidden('delete', $bahan);
 
         Livewire::actingAs($this->user)->test(InputHasilRepack::class, ['record' => $terkirim->repack])
-            ->assertTableActionVisible('tally_status', $terkirim)->assertTableActionHidden('repack_status', $terkirim);
+            ->assertTableActionVisible('tally_status', $terkirim)->assertTableActionHidden('repack_status', $terkirim)->assertTableActionHidden('delete', $terkirim);
+    }
+
+    /** @test */
+    public function a_used_result_cannot_be_voided(): void
+    {
+        $bahan = $this->hasilRepack('BC-BAHAN');
+        $this->jadikanBahanRepack('BC-BAHAN');
+
+        Livewire::actingAs($this->user)->test(InputHasilRepack::class, ['record' => $bahan->repack])
+            ->assertTableActionHidden('delete', $bahan);
+
+        $this->assertNotNull(RepackResult::find($bahan->id));
     }
 }

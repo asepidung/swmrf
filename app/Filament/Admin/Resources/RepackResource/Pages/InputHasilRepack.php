@@ -265,10 +265,15 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                     ->label('')
                     ->tooltip(__('Delete data'))
                     ->requiresConfirmation()
-                    ->hidden(fn () => $this->record->kunci == 1)
+                    ->hidden(fn (RepackResult $record) => $this->record->kunci == 1 || BarcodeUsage::marks($record->barcode) !== [])
                     ->action(function ($record, $livewire) {
                         try {
                             DB::transaction(function () use ($record) {
+                                /* Pengaman ganda: barang yang sudah jadi bahan repack atau masuk tally tidak boleh dibatalkan */
+                                if (BarcodeUsage::marks($record->barcode) !== []) {
+                                    throw new \RuntimeException('Barcode already used downstream.');
+                                }
+
                                 /* 1. Mencatat pengurangan stok dari hasil produksi yang dibatalkan */
                                 BeefStockMovement::create([
                                     'product_id' => $record->product_id,
