@@ -374,26 +374,16 @@ class LabelingBoning extends Page implements HasForms, HasTable
                     ->color('warning')
                     ->tooltip(__('This item is already a repack input'))
                     ->visible(fn (BoningItem $record) => ! $record->trashed() && DB::table('repack_materials')->where('barcode', $record->barcode)->exists())
-                    ->extraAttributes([
-                        'onclick' => 'event.preventDefault(); event.stopPropagation();',
-                        'style' => 'cursor: not-allowed;',
-                    ]),
+                    ->disabled(),
                 Tables\Actions\Action::make('tally_status')
                     ->label('T')
                     ->color('info')
                     ->tooltip(__('This item is already on a tally'))
                     ->visible(fn (BoningItem $record) => ! $record->trashed() && DB::table('tally_items')->where('barcode', $record->barcode)->exists())
-                    ->extraAttributes([
-                        'onclick' => 'event.preventDefault(); event.stopPropagation();',
-                        'style' => 'cursor: not-allowed;',
-                    ]),
+                    ->disabled(),
                 Tables\Actions\DeleteAction::make()
-                    ->hidden(fn (BoningItem $record) => 
-                        $record->trashed() ||
-                        $this->record->kunci == 1 ||
-                        DB::table('repack_materials')->where('barcode', $record->barcode)->exists() ||
-                        DB::table('tally_items')->where('barcode', $record->barcode)->exists()
-                    )
+                    ->hidden(fn (BoningItem $record) => $record->trashed() || $this->record->kunci == 1)
+                    ->disabled(fn (BoningItem $record) => \App\Support\BarcodeUsage::marks($record->barcode) !== [])
                     ->icon('heroicon-m-trash')
                     ->hiddenLabel()
                     ->color('danger')

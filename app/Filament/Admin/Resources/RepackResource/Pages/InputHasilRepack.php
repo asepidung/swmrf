@@ -248,24 +248,19 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                     ->color('warning')
                     ->tooltip(__('This item is already a repack input'))
                     ->visible(fn (RepackResult $record) => in_array('R', BarcodeUsage::marks($record->barcode), true))
-                    ->extraAttributes([
-                        'onclick' => 'event.preventDefault(); event.stopPropagation();',
-                        'style' => 'cursor: not-allowed;',
-                    ]),
+                    ->disabled(),
                 Tables\Actions\Action::make('tally_status')
                     ->label('T')
                     ->color('info')
                     ->tooltip(__('This item is already on a tally'))
                     ->visible(fn (RepackResult $record) => in_array('T', BarcodeUsage::marks($record->barcode), true))
-                    ->extraAttributes([
-                        'onclick' => 'event.preventDefault(); event.stopPropagation();',
-                        'style' => 'cursor: not-allowed;',
-                    ]),
+                    ->disabled(),
                 Tables\Actions\DeleteAction::make()
                     ->label('')
                     ->tooltip(__('Delete data'))
                     ->requiresConfirmation()
-                    ->hidden(fn (RepackResult $record) => $this->record->kunci == 1 || BarcodeUsage::marks($record->barcode) !== [])
+                    ->hidden(fn () => $this->record->kunci == 1)
+                    ->disabled(fn (RepackResult $record) => BarcodeUsage::marks($record->barcode) !== [])
                     ->action(function ($record, $livewire) {
                         try {
                             DB::transaction(function () use ($record) {

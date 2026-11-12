@@ -219,7 +219,7 @@ class BoningTest extends TestCase
 
         Livewire::actingAs($user)
             ->test(LabelingBoning::class, ['record' => $boning])
-            ->assertTableActionHidden('delete', $item)
+            ->assertTableActionDisabled('delete', $item)
             ->assertTableActionVisible('repack_status', $item);
     }
 
@@ -308,7 +308,7 @@ class BoningTest extends TestCase
 
         Livewire::actingAs($user)
             ->test(LabelingBoning::class, ['record' => $boning])
-            ->assertTableActionHidden('delete', $item)
+            ->assertTableActionDisabled('delete', $item)
             ->assertTableActionVisible('tally_status', $item);
     }
 }
