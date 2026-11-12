@@ -379,7 +379,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
                         'style' => 'cursor: not-allowed;',
                     ]),
                 Tables\Actions\Action::make('tally_status')
-                    ->label('D')
+                    ->label('T')
                     ->color('info')
                     ->tooltip(__('This item is already on a tally'))
                     ->visible(fn (BoningItem $record) => ! $record->trashed() && DB::table('tally_items')->where('barcode', $record->barcode)->exists())
