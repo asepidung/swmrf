@@ -21,6 +21,16 @@ return [
     'entries' => [
 
         [
+            'version' => '2.0.9',
+            'date' => '2026-11-12',
+            'kind' => 'fix',
+            'title' => 'Penanda barang terpakai di Labeling Boning dan hasil Repack',
+            'items' => [
+                'Labeling Boning dan hasil Repack: barang yang sudah masuk Tally diberi tombol nonaktif bertanda "T", dan yang sudah jadi bahan Repack diberi tanda "R". Selama bertanda T atau R, tombol hapusnya nonaktif supaya barang yang sudah terpakai tidak bisa dibatalkan dan stoknya tidak selisih. Begitu barang itu dilepas dari Tally atau bahan Repack, tombol hapusnya aktif lagi. Sebelumnya hasil Repack belum punya penjagaan ini, dan penanda T di Labeling Boning masih bertanda "D".',
+            ],
+        ],
+
+        [
             'version' => '2.0.8',
             'date' => '2026-11-10',
             'kind' => 'fix',
