@@ -21,6 +21,17 @@ return [
     'entries' => [
 
         [
+            'version' => '2.0.9',
+            'date' => '2026-11-13',
+            'kind' => 'fix',
+            'title' => 'Penjagaan hapus di Penerimaan Produk dan ekspor detail stok',
+            'items' => [
+                'Penerimaan Produk (scan dan labeling): barang yang sudah masuk Tally atau jadi bahan Repack kini diberi tanda "T" atau "R" dan tidak bisa dihapus dari stok, seperti di Labeling Boning dan hasil Repack. Sebelumnya barang yang sudah dimuat untuk dikirim masih bisa terhapus dari sini.',
+                'Detail stok per produk: ada tombol Export Data (Excel dan PDF) untuk barcode yang sedang tampil, lengkap dengan total berat dan pcs. Mencari atau mengurutkan di layar ikut menentukan isi berkasnya.',
+            ],
+        ],
+
+        [
             'version' => '2.0.8',
             'date' => '2026-11-10',
             'kind' => 'fix',
@@ -32,7 +43,7 @@ return [
                 'Daftar dokumen: arahkan kursor ke nama pembuat atau penyetuju untuk melihat kapan dokumennya dibuat atau disetujui (tanggal dan jam), tanpa kolom tambahan. Berlaku di semua daftar yang menampilkan nama itu.',
                 'Daftar Plan Sales Return: ada kolom baru "Dibuat Oleh" supaya jelas siapa yang membuat tiap plan.',
                 'Dashboard: kartu "Items in stock over 60 days" kini hanya tampil untuk pengguna yang punya izin melihat umur stok daging, sehingga tidak ada lagi kartu yang berujung halaman ditolak.',
-                'Labeling Boning dan hasil Repack: barang yang sudah masuk Tally diberi tombol nonaktif bertanda "T", dan yang sudah jadi bahan Repack diberi tanda "R". Selama bertanda T atau R, tombol hapusnya nonaktif supaya barang yang sudah terpakai tidak bisa dibatalkan dan stoknya tidak selisih. Begitu barang itu dilepas dari Tally atau bahan Repack, tombol hapusnya aktif lagi. Sebelumnya hasil Repack belum punya penjagaan ini, dan penanda T di Labeling Boning masih bertanda "D".',
+                'Labeling Boning dan hasil Repack: barang yang sudah masuk Tally diberi tanda "T", dan yang sudah jadi bahan Repack diberi tanda "R". Barang bertanda T atau R tidak bisa dihapus (tombol hapusnya tidak tampil) supaya stoknya tidak selisih; begitu dilepas dari Tally atau bahan Repack, tombol hapusnya muncul lagi. Sebelumnya penanda T di Labeling Boning masih bertanda "D" dan hasil Repack belum punya penjagaan ini.',
             ],
         ],
 
