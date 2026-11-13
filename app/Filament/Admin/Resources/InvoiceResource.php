@@ -850,7 +850,55 @@ class InvoiceResource extends Resource
                     ->visible(fn () => auth()->user()->hasPermission('view_deleted_invoices')),
             ])
             ->actions([])
-            ->headerActions([])
+            ->headerActions([
+                // Ekspor Excel atas baris yang sedang tampil: filter tanggal/pelanggan, pencarian, dan urutan ikut.
+                Tables\Actions\Action::make('excel')
+                    ->label(__('Excel'))
+                    ->icon('heroicon-o-document-text')
+                    ->color('success')
+                    ->action(function ($livewire) {
+                        $query = $livewire->getFilteredSortedTableQuery()->with(['customer:id,name', 'creator:id,name']);
+
+                        return response()->streamDownload(function () use ($query) {
+                            $writer = new \OpenSpout\Writer\XLSX\Writer();
+                            $writer->openToFile('php://output');
+                            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                __('Invoice Number'), __('Customer'), __('Invoice Date'), __('PO Number'), __('DO Number'),
+                                __('Subtotal'), __('Charges'), __('Returns'), __('Invoice Amount'), __('Status'), __('Created By'),
+                            ]));
+
+                            $totals = [0.0, 0.0, 0.0, 0.0];
+
+                            foreach ($query->lazy(200) as $invoice) {
+                                $retur = $invoice->returnedAmount();
+                                $nilai = $invoice->documentAmountAfterReturns();
+                                $totals[0] += (float) $invoice->subtotal;
+                                $totals[1] += (float) $invoice->charge;
+                                $totals[2] += $retur;
+                                $totals[3] += $nilai;
+
+                                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                    $invoice->invoice_number,
+                                    $invoice->customer?->name ?? '',
+                                    $invoice->invoice_date?->format('Y-m-d') ?? '',
+                                    $invoice->po_number ?? '',
+                                    $invoice->delivery_order_number ?? '',
+                                    (float) $invoice->subtotal,
+                                    (float) $invoice->charge,
+                                    $retur,
+                                    $nilai,
+                                    Invoice::statusLabel($invoice->status),
+                                    $invoice->creator?->name ?? '',
+                                ]));
+                            }
+
+                            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                                __('Total'), '', '', '', '', $totals[0], $totals[1], $totals[2], $totals[3],
+                            ]));
+                            $writer->close();
+                        }, 'invoice_'.now()->format('Ymd_His').'.xlsx');
+                    }),
+            ])
             ->bulkActions([])
             ->recordUrl(function (Invoice $record) {
                 if ($record->trashed()) {
