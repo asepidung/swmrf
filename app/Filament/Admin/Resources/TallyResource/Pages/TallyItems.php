@@ -94,7 +94,7 @@ class TallyItems extends Page implements HasTable
                 Tables\Columns\TextColumn::make('barcode')->label(__('Barcode'))->searchable()->sortable()->copyable(),
                 Tables\Columns\TextColumn::make('product.name')->label(__('Item'))->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('warehouse.code')->label(__('Warehouse')),
-                Tables\Columns\TextColumn::make('grade.name')->label(__('Grade')),
+                Tables\Columns\TextColumn::make('grade.name')->formatStateUsing(fn ($state) => \App\Models\Grade::initial($state))->label(__('Grade')),
                 Tables\Columns\TextColumn::make('weight')->label(__('Weight'))->numeric(2, ',', '.')->alignEnd()->sortable()
                     ->summarize(Tables\Columns\Summarizers\Sum::make()->label(__('Total'))->numeric(2, ',', '.')),
                 Tables\Columns\TextColumn::make('qty_pcs')->label(__('Pcs'))->alignEnd()->placeholder('-'),

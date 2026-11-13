@@ -270,7 +270,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                     ->searchable()
                     ->formatStateUsing(fn($state) => number_format((float) $state, 2, '.', ',')),
 
-                Tables\Columns\TextColumn::make('grade.name')
+                Tables\Columns\TextColumn::make('grade.name')->formatStateUsing(fn ($state) => \App\Models\Grade::initial($state))
                     ->label(__('Grade'))
                     ->alignCenter()
                     ->extraHeaderAttributes(['class' => 'text-sm font-bold text-center'])

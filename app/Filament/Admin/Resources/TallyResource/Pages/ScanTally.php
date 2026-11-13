@@ -168,7 +168,7 @@ class ScanTally extends Page implements HasForms, HasTable
                     ->weight('semibold')
                     ->color('primary'),
 
-                Tables\Columns\TextColumn::make('grade.name')
+                Tables\Columns\TextColumn::make('grade.name')->formatStateUsing(fn ($state) => \App\Models\Grade::initial($state))
                     ->label(__('Grade'))
                     ->alignCenter()
                     ->badge()
