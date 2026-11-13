@@ -10,6 +10,22 @@ use Illuminate\Support\Facades\DB;
  */
 class BarcodeUsage
 {
+    /** Dua tombol penanda nonaktif (R dan T) untuk kolom aksi tabel; muncul hanya bila barcode barisnya terpakai. */
+    public static function statusActions(): array
+    {
+        $buat = fn (string $nama, string $huruf, string $warna, string $tooltip) => \Filament\Tables\Actions\Action::make($nama)
+            ->label($huruf)
+            ->color($warna)
+            ->tooltip(__($tooltip))
+            ->visible(fn ($record) => in_array($huruf, static::marks($record->barcode), true))
+            ->disabled();
+
+        return [
+            $buat('repack_status', 'R', 'warning', 'This item is already a repack input'),
+            $buat('tally_status', 'T', 'info', 'This item is already on a tally'),
+        ];
+    }
+
     /** @return list<string> huruf penanda, urut R lalu T; kosong kalau belum terpakai */
     public static function marks(?string $barcode): array
     {

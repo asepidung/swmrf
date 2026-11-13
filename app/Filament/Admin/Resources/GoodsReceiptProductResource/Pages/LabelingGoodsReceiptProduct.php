@@ -302,7 +302,9 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                     ->options(Grade::where('is_active', true)->pluck('name', 'id'))
             ])
             ->actions([
+                ...\App\Support\BarcodeUsage::statusActions(),
                 Tables\Actions\DeleteAction::make()
+                    ->hidden(fn (GoodsReceiptProductItem $record) => \App\Support\BarcodeUsage::marks($record->barcode) !== [])
                     ->icon('heroicon-m-trash')
                     ->hiddenLabel()
                     ->color('danger')
@@ -315,6 +317,10 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                         || (auth()->user()?->hasPermission('edit_goods_receipt_products') ?? false))
                     ->action(function (GoodsReceiptProductItem $record) {
                         DB::transaction(function () use ($record) {
+                            if (\App\Support\BarcodeUsage::marks($record->barcode) !== []) {
+                                throw new \RuntimeException('Barcode already used downstream.');
+                            }
+
                             $stock = BeefStock::where('barcode', $record->barcode)->lockForUpdate()->first();
                             $warehouseId = $stock ? $stock->warehouse_id : 1;
 
