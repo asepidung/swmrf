@@ -190,6 +190,17 @@ class SalesReturnMoneyVisibilityTest extends TestCase
     // =========================================================================
 
     /** @test */
+    public function the_invoice_list_can_be_exported_to_excel(): void
+    {
+        $this->approvedReturnReducingAnInvoice();
+        $this->grant('view_invoices');
+
+        Livewire::test(ListInvoices::class)
+            ->assertTableActionExists('excel')
+            ->callTableAction('excel')
+            ->assertFileDownloaded();
+    }
+    /** @test */
     public function the_invoice_list_shows_the_value_net_of_returns_with_the_deduction_noted(): void
     {
         $retur = $this->approvedReturnReducingAnInvoice();
