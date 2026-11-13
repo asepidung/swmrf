@@ -113,7 +113,24 @@ class BeefStocksRelationManager extends RelationManager
                     ->searchable(),
             ])
             ->filters([])
-            ->headerActions([])
+            ->headerActions([
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('excel')
+                        ->label(__('Excel'))
+                        ->icon('heroicon-o-document-text')
+                        ->color('success')
+                        ->action(fn () => $this->unduhExcel()),
+                    Tables\Actions\Action::make('pdf')
+                        ->label(__('PDF'))
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('danger')
+                        ->action(fn () => $this->unduhPdf()),
+                ])
+                    ->label(__('Export Data'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->button()
+                    ->color('success'),
+            ])
             ->actions([
                 // Hapus satu baris stok.
                 //
@@ -176,5 +193,85 @@ class BeefStocksRelationManager extends RelationManager
                     }),
             ])
             ->bulkActions([]);
+    }
+
+    /**
+     * Isi ekspor = baris yang sedang tampil di tabel (pencarian dan urutan ikut), bukan seluruh stok produk.
+     * Barcode ditutup enam digit terakhirnya selama opname, sama seperti di layar.
+     *
+     * @return array{judul: list<string>, baris: list<list<string>>, totalBerat: float, totalPcs: int}
+     */
+    private function isiEkspor(): array
+    {
+        $records = $this->getFilteredSortedTableQuery()->with(['warehouse', 'grade'])->get();
+        $menutup = \App\Models\StockTake::isCounting();
+
+        $baris = $records->map(fn (BeefStock $r) => [
+            $menutup && strlen((string) $r->barcode) >= 10 ? substr($r->barcode, 0, -6).'******' : (string) $r->barcode,
+            (string) ($r->warehouse->name ?? ''),
+            (string) ($r->grade->name ?? ''),
+            number_format((float) $r->weight, 2, '.', ','),
+            (string) $r->qty_pcs,
+            $r->ph_level ? number_format((float) $r->ph_level, 1) : '-',
+            $r->pack_date ? $r->pack_date->format('d-M-y') : '',
+            $r->pack_date ? sprintf('%03d ', abs((int) now()->diffInDays($r->pack_date))).__('days') : '',
+            (string) ($r->batch_no ?? ''),
+            (string) ($r->note ?? ''),
+        ])->all();
+
+        return [
+            'judul' => [__('Barcode'), __('Warehouse'), __('Grade'), __('Weight (Kg)'), __('Pcs'), __('pH'), __('P.O.D'), __('Age'), __('Batch'), __('Note')],
+            'baris' => $baris,
+            'totalBerat' => (float) $records->sum('weight'),
+            'totalPcs' => (int) $records->sum('qty_pcs'),
+        ];
+    }
+
+    private function namaBerkas(string $ekstensi): string
+    {
+        return 'stok_'.\Illuminate\Support\Str::slug($this->getOwnerRecord()->name ?? 'produk').'_'.now()->format('Ymd_His').'.'.$ekstensi;
+    }
+
+    private function keteranganEkspor(): string
+    {
+        return now()->format('d M Y H:i');
+    }
+
+    public function unduhExcel()
+    {
+        $isi = $this->isiEkspor();
+        $produk = (string) ($this->getOwnerRecord()->name ?? '');
+        $keterangan = $this->keteranganEkspor();
+
+        return response()->streamDownload(function () use ($isi, $produk, $keterangan) {
+            $writer = new \OpenSpout\Writer\XLSX\Writer();
+            $writer->openToFile('php://output');
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([$produk]));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([$keterangan]));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['']));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues($isi['judul']));
+
+            foreach ($isi['baris'] as $baris) {
+                // Berat dan pcs ditulis sebagai angka supaya bisa dijumlah di Excel.
+                $baris[3] = (float) str_replace(',', '', $baris[3]);
+                $baris[4] = (int) $baris[4];
+                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues($baris));
+            }
+
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([__('Total'), '', '', $isi['totalBerat'], $isi['totalPcs']]));
+            $writer->close();
+        }, $this->namaBerkas('xlsx'));
+    }
+
+    public function unduhPdf()
+    {
+        $isi = $this->isiEkspor();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.beef-stock-detail-pdf', $isi + [
+            'title' => (string) ($this->getOwnerRecord()->name ?? ''),
+            'keterangan' => $this->keteranganEkspor(),
+        ])->setPaper('a4', 'landscape');
+
+        return response()->streamDownload(fn () => print($pdf->output()), $this->namaBerkas('pdf'));
     }
 }
