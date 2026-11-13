@@ -323,7 +323,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
                     ->searchable()
                     ->formatStateUsing(fn($state) => number_format((float) $state, 2, '.', '')),
 
-                Tables\Columns\TextColumn::make('grade.name')
+                Tables\Columns\TextColumn::make('grade.name')->formatStateUsing(fn ($state) => \App\Models\Grade::initial($state))
                     ->extraCellAttributes($mati)
                     ->extraHeaderAttributes(['style' => 'padding-top: 1.25rem !important; padding-bottom: 1.25rem !important;'], true)
                     ->label(__('Grade'))

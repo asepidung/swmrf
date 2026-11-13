@@ -19,6 +19,14 @@ class Grade extends Model
         'is_active' => 'boolean',
     ];
 
+    /** Tampilan satu huruf di layar scan/hasil barcode (Owner, 13 Nov 2026): CHILL=C, FROZEN=F, A, B, R. */
+    public static function initial(?string $name): string
+    {
+        $name = trim((string) $name);
+
+        return $name === '' ? '' : mb_strtoupper(mb_substr($name, 0, 1));
+    }
+
     public function setNameAttribute($value)
     {
         $this->attributes['name'] = strtoupper($value);

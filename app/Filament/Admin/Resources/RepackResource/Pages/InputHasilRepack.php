@@ -225,7 +225,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                     ->alignCenter()
                     ->formatStateUsing(fn($state) => number_format((float) $state, 2, '.', '')),
 
-                Tables\Columns\TextColumn::make('grade.name')
+                Tables\Columns\TextColumn::make('grade.name')->formatStateUsing(fn ($state) => \App\Models\Grade::initial($state))
                     ->label(__('Grade'))
                     ->alignCenter()
                     ->badge()

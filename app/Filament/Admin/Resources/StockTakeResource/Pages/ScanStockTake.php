@@ -575,7 +575,7 @@ class ScanStockTake extends Page implements HasForms, HasTable
                 Tables\Columns\TextColumn::make('product.name')
                     ->label(__('Item'))
                     ->searchable(),
-                Tables\Columns\TextColumn::make('grade.name')
+                Tables\Columns\TextColumn::make('grade.name')->formatStateUsing(fn ($state) => \App\Models\Grade::initial($state))
                     ->label(__('Grade')),
                 Tables\Columns\TextColumn::make('qty')
                     ->label(__('Qty'))

@@ -644,7 +644,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
                 Tables\Columns\TextColumn::make('product.name')
                     ->label(__('Product'))
                     ->size('xs'),
-                Tables\Columns\TextColumn::make('grade.name')
+                Tables\Columns\TextColumn::make('grade.name')->formatStateUsing(fn ($state) => \App\Models\Grade::initial($state))
                     ->label(__('Grade'))
                     ->size('xs'),
                 Tables\Columns\TextColumn::make('weight')

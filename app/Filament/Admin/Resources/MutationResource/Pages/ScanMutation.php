@@ -171,7 +171,7 @@ class ScanMutation extends Page implements HasForms, HasTable
                 Tables\Columns\TextColumn::make('product.name')->label(__('Product')),
                 Tables\Columns\TextColumn::make('weight')->label(__('Qty'))->numeric(2),
                 Tables\Columns\TextColumn::make('qty_pcs')->label(__('Pcs')),
-                Tables\Columns\TextColumn::make('grade.name')->label(__('Grade')),
+                Tables\Columns\TextColumn::make('grade.name')->formatStateUsing(fn ($state) => \App\Models\Grade::initial($state))->label(__('Grade')),
                 Tables\Columns\TextColumn::make('ph_level')->label(__('pH'))->numeric(1),
                 Tables\Columns\TextColumn::make('pack_date')->label(__('POD'))->date('d M Y'),
                 Tables\Columns\TextColumn::make('origin')->label(__('Origin')),

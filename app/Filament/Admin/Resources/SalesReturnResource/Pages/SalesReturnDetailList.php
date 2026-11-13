@@ -49,7 +49,7 @@ class SalesReturnDetailList extends Page implements HasTable
                     ->label(__('Weight'))
                     ->numeric(2)
                     ->sortable(),
-                Tables\Columns\TextColumn::make('grade.name')
+                Tables\Columns\TextColumn::make('grade.name')->formatStateUsing(fn ($state) => \App\Models\Grade::initial($state))
                     ->label(__('Grade'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('warehouse.name')

@@ -55,7 +55,7 @@ class GoodsReceiptProductDetailList extends Page implements HasTable
                     ->label(__('Product'))
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('grade.name')
+                Tables\Columns\TextColumn::make('grade.name')->formatStateUsing(fn ($state) => \App\Models\Grade::initial($state))
                     ->label(__('Grade'))
                     ->badge()
                     ->color(fn ($state) => str_contains(strtolower($state), 'chill') ? 'info' : 'danger')
