@@ -215,6 +215,25 @@ class GoodsReceiptProductSusulanTest extends TestCase
         $this->assertSoftDeleted('goods_receipt_product_items', ['id' => $item->id]);
     }
 
+    /** @test */
+    public function an_item_already_on_a_tally_shows_t_and_loses_its_delete_button(): void
+    {
+        $gr = $this->grDenganPo();
+        $item = GoodsReceiptProductItem::create([
+            'goods_receipt_product_id' => $gr->id, 'product_id' => $this->product->id,
+            'grade_id' => $this->grade->id, 'weight' => 10.0, 'qty_pcs' => 1,
+            'barcode' => 'FX-GR-TALLY-0001', 'origin' => 'FIXTURE', 'pack_date' => now(), 'price' => 100, 'subtotal' => 1000,
+        ]);
+        $this->tallyItem('FX-GR-TALLY-0001');
+
+        foreach ([ScanGoodsReceiptProduct::class, LabelingGoodsReceiptProduct::class] as $halaman) {
+            Livewire::actingAs($this->employee(['edit_goods_receipt_products']))
+                ->test($halaman, ['record' => $gr])
+                ->assertTableActionVisible('tally_status', $item)
+                ->assertTableActionHidden('delete', $item);
+        }
+    }
+
     // =========================================================================
     // GR terkunci: scan dan label harus ditolak, bukan menyisip diam-diam
     // =========================================================================

@@ -137,10 +137,10 @@ class UsedBarcodeMarkTest extends TestCase
         $test->assertTableActionHidden('repack_status', $segar)->assertTableActionHidden('tally_status', $segar)->assertTableActionVisible('delete', $segar)->assertTableActionEnabled('delete', $segar);
 
         Livewire::actingAs($this->user)->test(InputHasilRepack::class, ['record' => $bahan->repack])
-            ->assertTableActionDisabled('repack_status', $bahan)->assertTableActionHidden('tally_status', $bahan)->assertTableActionDisabled('delete', $bahan);
+            ->assertTableActionDisabled('repack_status', $bahan)->assertTableActionHidden('tally_status', $bahan)->assertTableActionHidden('delete', $bahan);
 
         Livewire::actingAs($this->user)->test(InputHasilRepack::class, ['record' => $terkirim->repack])
-            ->assertTableActionDisabled('tally_status', $terkirim)->assertTableActionHidden('repack_status', $terkirim)->assertTableActionDisabled('delete', $terkirim);
+            ->assertTableActionDisabled('tally_status', $terkirim)->assertTableActionHidden('repack_status', $terkirim)->assertTableActionHidden('delete', $terkirim);
     }
 
     /** @test */
@@ -150,7 +150,7 @@ class UsedBarcodeMarkTest extends TestCase
         $this->jadikanBahanRepack('BC-BAHAN');
 
         Livewire::actingAs($this->user)->test(InputHasilRepack::class, ['record' => $bahan->repack])
-            ->assertTableActionDisabled('delete', $bahan);
+            ->assertTableActionHidden('delete', $bahan);
 
         $this->assertNotNull(RepackResult::find($bahan->id));
     }
@@ -162,7 +162,7 @@ class UsedBarcodeMarkTest extends TestCase
         $this->jadikanBahanRepack('BC-BAHAN');
 
         Livewire::actingAs($this->user)->test(InputHasilRepack::class, ['record' => $bahan->repack])
-            ->assertTableActionDisabled('delete', $bahan);
+            ->assertTableActionHidden('delete', $bahan);
 
         DB::table('repack_materials')->where('barcode', 'BC-BAHAN')->delete();
 

@@ -259,8 +259,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                     ->label('')
                     ->tooltip(__('Delete data'))
                     ->requiresConfirmation()
-                    ->hidden(fn () => $this->record->kunci == 1)
-                    ->disabled(fn (RepackResult $record) => BarcodeUsage::marks($record->barcode) !== [])
+                    ->hidden(fn (RepackResult $record) => $this->record->kunci == 1 || BarcodeUsage::marks($record->barcode) !== [])
                     ->action(function ($record, $livewire) {
                         try {
                             DB::transaction(function () use ($record) {

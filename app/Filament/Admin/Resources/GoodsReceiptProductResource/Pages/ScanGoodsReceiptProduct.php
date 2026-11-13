@@ -124,7 +124,9 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
                     ->alignCenter(),
             ])
             ->actions([
+                ...\App\Support\BarcodeUsage::statusActions(),
                 Tables\Actions\DeleteAction::make()
+                    ->hidden(fn (GoodsReceiptProductItem $record) => \App\Support\BarcodeUsage::marks($record->barcode) !== [])
                     ->iconButton()
                     ->requiresConfirmation()
                     ->tooltip(__('Delete Data'))
@@ -135,6 +137,10 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
                         || (auth()->user()?->hasPermission('edit_goods_receipt_products') ?? false))
                     ->action(function (GoodsReceiptProductItem $item) {
                         DB::transaction(function () use ($item) {
+                            if (\App\Support\BarcodeUsage::marks($item->barcode) !== []) {
+                                throw new \RuntimeException('Barcode already used downstream.');
+                            }
+
                             $stock = BeefStock::where('barcode', $item->barcode)->lockForUpdate()->first();
                             $warehouseId = $stock ? $stock->warehouse_id : 1;
 

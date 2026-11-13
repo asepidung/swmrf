@@ -382,8 +382,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
                     ->visible(fn (BoningItem $record) => ! $record->trashed() && DB::table('tally_items')->where('barcode', $record->barcode)->exists())
                     ->disabled(),
                 Tables\Actions\DeleteAction::make()
-                    ->hidden(fn (BoningItem $record) => $record->trashed() || $this->record->kunci == 1)
-                    ->disabled(fn (BoningItem $record) => \App\Support\BarcodeUsage::marks($record->barcode) !== [])
+                    ->hidden(fn (BoningItem $record) => $record->trashed() || $this->record->kunci == 1 || \App\Support\BarcodeUsage::marks($record->barcode) !== [])
                     ->icon('heroicon-m-trash')
                     ->hiddenLabel()
                     ->color('danger')
