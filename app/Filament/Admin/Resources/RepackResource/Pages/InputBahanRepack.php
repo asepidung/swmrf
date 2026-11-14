@@ -80,7 +80,7 @@ class InputBahanRepack extends Page implements HasForms, HasTable
     public function submitBarcode()
     {
         if ($this->record->kunci == 1) {
-            Notification::make()
+            Notification::make('scan-toast')
                 ->title(__('Failed'))
                 ->body(__('This repack is locked.'))
                 ->danger()
@@ -137,7 +137,7 @@ class InputBahanRepack extends Page implements HasForms, HasTable
             // Mengosongkan form input setelah berhasil
             $this->form->fill();
 
-            Notification::make()
+            Notification::make('scan-toast')
                 ->title(__('Material added'))
                 ->success()
                 ->send();
@@ -148,7 +148,7 @@ class InputBahanRepack extends Page implements HasForms, HasTable
         } catch (\Exception $e) {
             report($e);
             // Menampilkan notifikasi jika barcode tidak ditemukan atau gagal
-            Notification::make()
+            Notification::make('scan-toast')
                 ->title($e->getMessage())
                 ->danger()
                 ->send();
@@ -236,7 +236,7 @@ class InputBahanRepack extends Page implements HasForms, HasTable
                             // yang sama, yang sudah benar. Tabrakan barcode
                             // (klik ganda/retry) sebelumnya jadi galat mentah.
                             report($e);
-                            Notification::make()
+                            Notification::make('scan-toast')
                                 ->title(__('Failed'))
                                 ->body(__('This item could not be voided. It may have already been removed.'))
                                 ->danger()
@@ -245,7 +245,7 @@ class InputBahanRepack extends Page implements HasForms, HasTable
                             return;
                         }
 
-                        Notification::make()
+                        Notification::make('scan-toast')
                             ->title(__('The material has been returned to stock'))
                             ->warning()
                             ->send();

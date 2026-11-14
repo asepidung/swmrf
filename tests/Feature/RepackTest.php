@@ -379,4 +379,20 @@ class RepackTest extends TestCase
         $this->actingAs($this->user); // Superuser / Programmer
         $this->assertEquals(1, $widget->getPendingRepackLockCount());
     }
+
+    /** @test */
+    public function every_scan_toast_on_the_material_page_shares_one_id_so_they_replace_each_other(): void
+    {
+        session()->forget('filament.notifications');
+
+        Livewire::actingAs($this->user)
+            ->test(InputBahanRepack::class, ['record' => $this->repack])
+            ->set('data.barcode', 'TIDAK-ADA-1')->call('submitBarcode')
+            ->set('data.barcode', 'TIDAK-ADA-2')->call('submitBarcode');
+
+        $toasts = collect(session('filament.notifications', []));
+
+        $this->assertGreaterThanOrEqual(2, $toasts->count());
+        $this->assertSame(['scan-toast'], $toasts->pluck('id')->unique()->values()->all());
+    }
 }
