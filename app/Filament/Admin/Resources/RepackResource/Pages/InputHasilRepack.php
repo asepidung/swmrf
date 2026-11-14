@@ -289,7 +289,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                             // Sebelumnya tidak ada try/catch sama sekali di
                             // sini.
                             report($e);
-                            Notification::make()
+                            Notification::make('scan-toast')
                                 ->title(__('Failed'))
                                 ->body(__('This item could not be voided. It may have already been removed.'))
                                 ->danger()
@@ -298,7 +298,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                             return;
                         }
 
-                        Notification::make()
+                        Notification::make('scan-toast')
                             ->title(__('The output has been deleted'))
                             ->success()
                             ->send();
@@ -312,7 +312,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
     public function create(bool $confirmed = false): void
     {
         if ($this->record->kunci == 1) {
-            Notification::make()
+            Notification::make('scan-toast')
                 ->title(__('Failed'))
                 ->body(__('This repack is locked.'))
                 ->danger()
@@ -430,7 +430,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                 return $item;
             });
 
-            Notification::make()->title(__('Successfully Added'))->success()->send();
+            Notification::make('scan-toast')->title(__('Successfully Added'))->success()->send();
 
             /* Mengembalikan state form setelah sukses input */
             $this->form->fill([
@@ -470,7 +470,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
             // ini jaring pengaman untuk sisa race yang genuinely butuh dua
             // proses bersamaan.
             report($e);
-            Notification::make()
+            Notification::make('scan-toast')
                 ->title(__('Barcode collision, please try again'))
                 ->body(__('Someone else just added an item with the exact same barcode sequence. Nothing was lost -- submit the form again.'))
                 ->danger()
@@ -479,7 +479,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
             if (app()->runningUnitTests()) {
                 throw $e;
             }
-            Notification::make()->title(__('Error!'))->body($e->getMessage())->danger()->send();
+            Notification::make('scan-toast')->title(__('Error!'))->body($e->getMessage())->danger()->send();
         }
     }
 }

@@ -433,13 +433,13 @@ class LabelingBoning extends Page implements HasForms, HasTable
                                 $record->delete();
                             });
 
-                            Notification::make()
+                            Notification::make('scan-toast')
                                 ->title(__('Data voided and removed from stock!'))
                                 ->success()
                                 ->send();
                         } catch (\Exception $e) {
                             report($e);
-                            Notification::make()
+                            Notification::make('scan-toast')
                                 ->title(__('Failed'))
                                 ->body($e->getMessage())
                                 ->danger()
@@ -572,13 +572,13 @@ class LabelingBoning extends Page implements HasForms, HasTable
             });
 
             if (count($insertedItems) > 1) {
-                Notification::make()
+                Notification::make('scan-toast')
                     ->title(__('Split into :count labels'))
                     ->body(__('The weight was too large for one barcode, so it was split evenly into :count labels.', ['count' => count($insertedItems)]))
                     ->warning()
                     ->send();
             } else {
-                Notification::make()->title(__('Successfully Added'))->success()->send();
+                Notification::make('scan-toast')->title(__('Successfully Added'))->success()->send();
             }
 
             $this->form->fill([
@@ -607,7 +607,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
             }
         } catch (\Exception $e) {
             report($e);
-            Notification::make()->title(__('Error!'))->body($e->getMessage())->danger()->send();
+            Notification::make('scan-toast')->title(__('Error!'))->body($e->getMessage())->danger()->send();
         }
     }
 }
