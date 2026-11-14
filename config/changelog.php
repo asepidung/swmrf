@@ -28,6 +28,8 @@ return [
             'items' => [
                 'Penerimaan Produk (scan dan labeling): barang yang sudah masuk Tally atau jadi bahan Repack kini diberi tanda "T" atau "R" dan tidak bisa dihapus dari stok, seperti di Labeling Boning dan hasil Repack. Sebelumnya barang yang sudah dimuat untuk dikirim masih bisa terhapus dari sini.',
                 'Detail stok per produk: ada tombol Export Data (Excel dan PDF) untuk barcode yang sedang tampil, lengkap dengan total berat dan pcs. Mencari atau mengurutkan di layar ikut menentukan isi berkasnya.',
+                'Daftar Invoice: ada tombol Excel untuk mengunduh invoice yang sedang tampil (filter tanggal, pelanggan, pencarian, dan urutan ikut). Isinya nilai barang, biaya, retur, nilai invoice bersih, status, dan pembuat, lengkap dengan baris total.',
+                'Layar scan dan labeling (Repack bahan dan hasil, Retur Jual, Terima Mutasi, Labeling Boning, dan Labeling Penerimaan Produk): pemberitahuan di layar tidak lagi menumpuk saat memindai berturut-turut; yang baru menggantikan yang lama.',
             ],
         ],
 
