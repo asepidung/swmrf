@@ -62,12 +62,12 @@ class InputReturnItems extends Page implements HasForms, HasTable
                         $this->record->approve();
                     } catch (\Throwable $e) {
                         report($e);
-                        Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
+                        Notification::make('scan-toast')->title(__('Failed'))->body($e->getMessage())->danger()->send();
 
                         return;
                     }
 
-                    Notification::make()->title(__('Return Approved & Stock Updated'))->success()->send();
+                    Notification::make('scan-toast')->title(__('Return Approved & Stock Updated'))->success()->send();
                     $this->redirect(SalesReturnResource::getUrl('view', ['record' => $this->record]));
                 }),
 
@@ -499,10 +499,10 @@ class InputReturnItems extends Page implements HasForms, HasTable
             // akan menghapus gudang penerima yang baru saja dipilih orangnya,
             // dan pindaian berikutnya diam-diam mendarat di gudang lain.
             $this->dataScan['barcode'] = null;
-            Notification::make()->title(__('Barcode scanned'))->success()->send();
+            Notification::make('scan-toast')->title(__('Barcode scanned'))->success()->send();
         } catch (\Exception $e) {
             report($e);
-            Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
+            Notification::make('scan-toast')->title(__('Failed'))->body($e->getMessage())->danger()->send();
         }
     }
 
@@ -627,7 +627,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
             $this->dispatch('refreshTable');
         } catch (\Exception $e) {
             report($e);
-            Notification::make()->title(__('Failed'))->body($e->getMessage())->danger()->send();
+            Notification::make('scan-toast')->title(__('Failed'))->body($e->getMessage())->danger()->send();
         }
     }
 

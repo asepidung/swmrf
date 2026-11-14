@@ -45,7 +45,7 @@ class ReceiveMutation extends Page implements HasForms, HasTable
         $this->record = $record;
 
         if ($this->record->status !== 'SENT') {
-            Notification::make()->title(__('This mutation has not been sent yet, or is already finished.'))->warning()->send();
+            Notification::make('scan-toast')->title(__('This mutation has not been sent yet, or is already finished.'))->warning()->send();
             $this->redirect(MutationResource::getUrl('view', ['record' => $this->record->id]));
             return;
         }
@@ -79,20 +79,20 @@ class ReceiveMutation extends Page implements HasForms, HasTable
             ->first();
 
         if (!$item) {
-            Notification::make()->title(__('This barcode is not on this mutation.'))->danger()->send();
+            Notification::make('scan-toast')->title(__('This barcode is not on this mutation.'))->danger()->send();
             $this->dispatch('focus-barcode');
             return;
         }
 
         if ($item->is_received) {
-            Notification::make()->title(__('This barcode has already been received.'))->warning()->send();
+            Notification::make('scan-toast')->title(__('This barcode has already been received.'))->warning()->send();
             $this->dispatch('focus-barcode');
             return;
         }
 
         $item->update(['is_received' => true]);
 
-        Notification::make()->title(__('Barcode scanned'))->success()->send();
+        Notification::make('scan-toast')->title(__('Barcode scanned'))->success()->send();
         $this->dispatch('focus-barcode');
     }
 
@@ -141,7 +141,7 @@ class ReceiveMutation extends Page implements HasForms, HasTable
                     MutationItem::where('mutation_id', $this->record->id)
                         ->where('is_received', false)
                         ->update(['is_received' => true]);
-                    Notification::make()->title(__('Every item has been marked as received'))->success()->send();
+                    Notification::make('scan-toast')->title(__('Every item has been marked as received'))->success()->send();
                 }),
 
             Actions\Action::make('finish')
@@ -157,7 +157,7 @@ class ReceiveMutation extends Page implements HasForms, HasTable
                         ->get();
 
                     if ($receivedItems->isEmpty()) {
-                        Notification::make()->title(__('No items have been scanned yet!'))->danger()->send();
+                        Notification::make('scan-toast')->title(__('No items have been scanned yet!'))->danger()->send();
                         return;
                     }
 
@@ -200,7 +200,7 @@ class ReceiveMutation extends Page implements HasForms, HasTable
                         ]);
                     });
 
-                    Notification::make()->title(__('Mutation finished; the goods are now in the destination warehouse.'))->success()->send();
+                    Notification::make('scan-toast')->title(__('Mutation finished; the goods are now in the destination warehouse.'))->success()->send();
                     $this->redirect(MutationResource::getUrl('view', ['record' => $this->record->id]));
                 }),
         ];

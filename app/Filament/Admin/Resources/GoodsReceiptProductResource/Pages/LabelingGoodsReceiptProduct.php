@@ -340,7 +340,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                             $record->delete();
                         });
 
-                        Notification::make()
+                        Notification::make('scan-toast')
                             ->title(__('Data voided and removed from stock!'))
                             ->success()
                             ->send();
@@ -354,12 +354,12 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
         // `create()` sendiri adalah method Livewire publik yang bisa
         // dipanggil langsung. Sama seperti keputusan Bank Account.
         if (! (auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('edit_goods_receipt_products') ?? false))) {
-            Notification::make()->title(__('You do not have permission to do this.'))->danger()->send();
+            Notification::make('scan-toast')->title(__('You do not have permission to do this.'))->danger()->send();
             return;
         }
 
         if ($this->record->is_locked) {
-            Notification::make()->title(__('Failed'))->body(__('This goods receipt is locked.'))->danger()->send();
+            Notification::make('scan-toast')->title(__('Failed'))->body(__('This goods receipt is locked.'))->danger()->send();
             return;
         }
 
@@ -495,7 +495,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                 'gr_show_exp' => $showExp,
             ]);
 
-            Notification::make()->title(__('Successfully Added'))->success()->send();
+            Notification::make('scan-toast')->title(__('Successfully Added'))->success()->send();
 
             $this->form->fill([
                 'warehouse_id' => $formData['warehouse_id'],
@@ -520,7 +520,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
             }
         } catch (\Exception $e) {
             report($e);
-            Notification::make()->title(__('Error!'))->body($e->getMessage())->danger()->send();
+            Notification::make('scan-toast')->title(__('Error!'))->body($e->getMessage())->danger()->send();
         }
     }
 }
