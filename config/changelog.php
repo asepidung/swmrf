@@ -21,6 +21,19 @@ return [
     'entries' => [
 
         [
+            'version' => '2.0.11',
+            'date' => '2026-11-17',
+            'kind' => 'fix',
+            'title' => 'Barcode asal di Tally, penjagaan hapus setelah relabel, dan pencarian Repack',
+            'items' => [
+                'Detail Tally (layar, Excel, dan PDF): ada kolom "Barcode Asal" yang menunjukkan barcode sebelum barangnya direlabel di Tally. Barang yang tidak pernah direlabel tampil "-".',
+                'Barang yang direlabel di Tally tetap dianggap sudah masuk Tally lewat barcode lamanya. Hasil Repack, Labeling Boning, dan Penerimaan Produk dengan barcode lama itu kini bertanda "T" dan tombol hapusnya tidak tampil, sehingga barang yang sudah di dalam mobil tidak bisa terhapus dari stok.',
+                'Pergerakan Stok: mencari barcode lama kini juga menemukan baris relabel Tally-nya (baris relabel tersimpan di bawah barcode baru dan memang tidak punya qty).',
+                'Repack (hasil dan bahan): pencarian nama barang sekarang berfungsi.',
+            ],
+        ],
+
+        [
             'version' => '2.0.10',
             'date' => '2026-11-14',
             'kind' => 'fix',
