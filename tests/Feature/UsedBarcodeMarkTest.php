@@ -170,4 +170,39 @@ class UsedBarcodeMarkTest extends TestCase
             ->assertTableActionEnabled('delete', $bahan)
             ->assertTableActionHidden('repack_status', $bahan);
     }
+
+    /** @test */
+    public function the_repack_result_list_can_be_searched_by_product_name(): void
+    {
+        $hasil = $this->hasilRepack('BC-CARI');
+
+        Livewire::actingAs($this->user)->test(InputHasilRepack::class, ['record' => $hasil->repack])
+            ->searchTable('SIRLOIN')
+            ->assertCanSeeTableRecords([$hasil])
+            ->searchTable('TIDAK ADA NAMA INI')
+            ->assertCanNotSeeTableRecords([$hasil]);
+    }
+
+    /** @test */
+    public function the_repack_material_list_can_be_searched_by_product_name(): void
+    {
+        $repack = Repack::create(['repack_date' => now()->toDateString(), 'created_by' => $this->user->id]);
+        $id = DB::table('repack_materials')->insertGetId([
+            'repack_id' => $repack->id, 'product_id' => $this->produk()->id, 'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id, 'barcode' => 'BC-BAHAN-CARI', 'weight' => 10, 'qty_pcs' => 1,
+            'pack_date' => now()->toDateString(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $bahan = \App\Models\RepackMaterial::find($id);
+
+        Livewire::actingAs($this->user)->test(\App\Filament\Admin\Resources\RepackResource\Pages\InputBahanRepack::class, ['record' => $repack])
+            ->searchTable('SIRLOIN')
+            ->assertCanSeeTableRecords([$bahan])
+            ->searchTable('TIDAK ADA NAMA INI')
+            ->assertCanNotSeeTableRecords([$bahan]);
+    }
+
+    private function produk(): Product
+    {
+        return $this->product;
+    }
 }
