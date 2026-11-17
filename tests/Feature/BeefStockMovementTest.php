@@ -113,4 +113,29 @@ class BeefStockMovementTest extends TestCase
             ->assertSee('BC_VIEW_TEST')
             ->assertSee('OUT_TO_REPACK');
     }
+
+    /** @test */
+    public function searching_an_old_barcode_also_finds_its_tally_relabel_row(): void
+    {
+        $dasar = [
+            'product_id' => $this->product->id, 'warehouse_id' => $this->warehouse->id, 'condition' => $this->grade->id,
+            'created_by' => $this->user->id,
+        ];
+
+        $relabel = BeefStockMovement::create($dasar + [
+            'barcode' => 'BC-BARU-117', 'transaction_type' => 'TALLY_RELABEL',
+            'note' => 'Relabel: BC-LAMA-115 -> BC-BARU-117 (POD: 2026-10-31 -> 2026-10-31)',
+        ]);
+        $lain = BeefStockMovement::create($dasar + [
+            'barcode' => 'BC-LAIN', 'transaction_type' => 'IN_BONING', 'weight_in' => 5, 'pcs_in' => 1,
+            'note' => 'sebut BC-LAMA-115 di catatan biasa',
+        ]);
+
+        Livewire::actingAs($this->user)->test(ListBeefStockMovements::class)
+            ->searchTable('BC-LAMA-115')
+            ->assertCanSeeTableRecords([$relabel])
+            ->assertCanNotSeeTableRecords([$lain])
+            ->searchTable('BC-BARU-117')
+            ->assertCanSeeTableRecords([$relabel]);
+    }
 }
