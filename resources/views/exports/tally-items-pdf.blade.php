@@ -21,14 +21,14 @@
         <thead>
             <tr>
                 <th>#</th><th>{{ __('Barcode') }}</th><th>{{ __('Item') }}</th><th>{{ __('Warehouse') }}</th><th>{{ __('Grade') }}</th>
-                <th class="text-right">{{ __('Weight') }}</th><th class="text-right">{{ __('Pcs') }}</th><th>{{ __('POD') }}</th><th>{{ __('Origin') }}</th><th>{{ __('Time Scan') }}</th>
+                <th class="text-right">{{ __('Weight') }}</th><th class="text-right">{{ __('Pcs') }}</th><th>{{ __('POD') }}</th><th>{{ __('Origin') }}</th><th>{{ __('Time Scan') }}</th><th>{{ __('Original Barcode') }}</th>
             </tr>
         </thead>
         <tbody>
             @foreach ($rows as $r)
                 <tr>
                     <td>{{ $r[0] }}</td><td>{{ $r[1] }}</td><td>{{ $r[2] }}</td><td>{{ $r[3] }}</td><td>{{ $r[4] }}</td>
-                    <td class="text-right">{{ number_format($r[5], 2, ',', '.') }}</td><td class="text-right">{{ $r[6] }}</td><td>{{ $r[7] }}</td><td>{{ $r[8] }}</td><td>{{ $r[9] }}</td>
+                    <td class="text-right">{{ number_format($r[5], 2, ',', '.') }}</td><td class="text-right">{{ $r[6] }}</td><td>{{ $r[7] }}</td><td>{{ $r[8] }}</td><td>{{ $r[9] }}</td><td>{{ $r[10] }}</td>
                 </tr>
             @endforeach
         </tbody>
@@ -36,7 +36,7 @@
             <tr>
                 <td colspan="5">{{ __('Total') }} ({{ count($rows) }} {{ __('items') }})</td>
                 <td class="text-right">{{ number_format(array_sum(array_column($rows, 5)), 2, ',', '.') }}</td>
-                <td colspan="4"></td>
+                <td colspan="5"></td>
             </tr>
         </tfoot>
     </table>

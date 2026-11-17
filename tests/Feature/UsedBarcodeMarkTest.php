@@ -205,4 +205,31 @@ class UsedBarcodeMarkTest extends TestCase
     {
         return $this->product;
     }
+
+    /** @test */
+    public function a_barcode_relabeled_on_a_tally_still_counts_as_used_under_its_old_barcode(): void
+    {
+        $hasil = $this->hasilRepack('BC-ASAL');
+        $this->masukkanKeTally('BC-ASAL');
+        TallyItem::where('barcode', 'BC-ASAL')->update(['barcode' => 'BC-BARU', 'original_barcode' => 'BC-ASAL']);
+
+        $this->assertSame(['T'], BarcodeUsage::marks('BC-ASAL'));
+        $this->assertSame(['T'], BarcodeUsage::marks('BC-BARU'));
+
+        Livewire::actingAs($this->user)->test(InputHasilRepack::class, ['record' => $hasil->repack])
+            ->assertTableActionVisible('tally_status', $hasil)
+            ->assertTableActionHidden('delete', $hasil);
+    }
+
+    /** @test */
+    public function the_tally_detail_shows_the_original_barcode_of_a_relabeled_item(): void
+    {
+        $this->masukkanKeTally('BC-ASAL');
+        $item = TallyItem::where('barcode', 'BC-ASAL')->first();
+        $item->update(['barcode' => 'BC-BARU', 'original_barcode' => 'BC-ASAL']);
+
+        Livewire::actingAs($this->user)->test(\App\Filament\Admin\Resources\TallyResource\Pages\TallyItems::class, ['record' => $item->tally])
+            ->assertTableColumnStateSet('original_barcode', 'BC-ASAL', $item)
+            ->assertTableColumnStateSet('barcode', 'BC-BARU', $item);
+    }
 }
