@@ -169,7 +169,8 @@ class InputBahanRepack extends Page implements HasForms, HasTable
                 Tables\Columns\TextColumn::make('product.name')
                     ->label(__('Product'))
                     ->weight('bold')
-                    ->color('primary'),
+                    ->color('primary')
+                    ->searchable(),
 
                 Tables\Columns\TextColumn::make('weight')
                     ->label(__('Weight (Kg)'))

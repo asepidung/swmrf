@@ -216,6 +216,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                     ->size('sm')
                     ->weight('bold')
                     ->color('primary')
+                    ->searchable()
                     ->url(fn($record) => route('repack.label', ['id' => $record->id, 'show_exp' => 1]))
                     ->openUrlInNewTab(),
 
