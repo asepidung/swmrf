@@ -151,7 +151,16 @@ class BeefStockMovementResource extends Resource
 
                 Tables\Columns\TextColumn::make('barcode')
                     ->label(__('Barcode'))
-                    ->searchable()
+                    // Baris relabel Tally tersimpan di bawah barcode BARU, dan barcode lamanya hanya ada di catatannya
+                    // ("Relabel: lama -> baru"). Supaya mencari barcode lama juga menemukan baris itu, catatan baris
+                    // relabel ikut dicari; baris lain hanya dicari lewat barcode-nya.
+                    ->searchable(query: fn (\Illuminate\Database\Eloquent\Builder $query, string $search): \Illuminate\Database\Eloquent\Builder => $query->where(
+                        fn (\Illuminate\Database\Eloquent\Builder $q) => $q
+                            ->where('beef_stock_movements.barcode', 'like', "%{$search}%")
+                            ->orWhere(fn (\Illuminate\Database\Eloquent\Builder $r) => $r
+                                ->where('beef_stock_movements.transaction_type', 'TALLY_RELABEL')
+                                ->where('beef_stock_movements.note', 'like', "%{$search}%"))
+                    ))
                     ->alignCenter()
                     ->sortable(),
 
