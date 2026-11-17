@@ -92,6 +92,8 @@ class TallyItems extends Page implements HasTable
             ->columns([
                 Tables\Columns\TextColumn::make('index')->label('#')->rowIndex(),
                 Tables\Columns\TextColumn::make('barcode')->label(__('Barcode'))->searchable()->sortable()->copyable(),
+                // Barcode sebelum direlabel di Tally; kosong bila barangnya tidak pernah direlabel.
+                Tables\Columns\TextColumn::make('original_barcode')->label(__('Original Barcode'))->searchable()->copyable()->placeholder('-')->toggleable(),
                 Tables\Columns\TextColumn::make('product.name')->label(__('Item'))->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('warehouse.code')->label(__('Warehouse')),
                 Tables\Columns\TextColumn::make('grade.name')->formatStateUsing(fn ($state) => \App\Models\Grade::initial($state))->label(__('Grade')),
@@ -121,6 +123,7 @@ class TallyItems extends Page implements HasTable
             $item->pack_date?->format('d-M-Y'),
             static::originName($item->origin),
             $item->created_at?->format('H:i:s'),
+            $item->original_barcode ?? '',
         ])->all();
     }
 
@@ -135,7 +138,7 @@ class TallyItems extends Page implements HasTable
             $row = fn (array $values) => \OpenSpout\Common\Entity\Row::fromValues($values);
 
             $writer->addRow($row([__('Tally Detail'), $number]));
-            $writer->addRow($row(['#', __('Barcode'), __('Item'), __('Warehouse'), __('Grade'), __('Weight'), __('Pcs'), __('POD'), __('Origin'), __('Time Scan')]));
+            $writer->addRow($row(['#', __('Barcode'), __('Item'), __('Warehouse'), __('Grade'), __('Weight'), __('Pcs'), __('POD'), __('Origin'), __('Time Scan'), __('Original Barcode')]));
 
             foreach ($rows as $values) {
                 $writer->addRow($row($values));

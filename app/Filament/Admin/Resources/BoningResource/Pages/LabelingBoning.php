@@ -379,7 +379,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
                     ->label('T')
                     ->color('info')
                     ->tooltip(__('This item is already on a tally'))
-                    ->visible(fn (BoningItem $record) => ! $record->trashed() && DB::table('tally_items')->where('barcode', $record->barcode)->exists())
+                    ->visible(fn (BoningItem $record) => ! $record->trashed() && in_array('T', \App\Support\BarcodeUsage::marks($record->barcode), true))
                     ->disabled(),
                 Tables\Actions\DeleteAction::make()
                     ->hidden(fn (BoningItem $record) => $record->trashed() || $this->record->kunci == 1 || \App\Support\BarcodeUsage::marks($record->barcode) !== [])
@@ -409,7 +409,7 @@ class LabelingBoning extends Page implements HasForms, HasTable
                                     throw new \Exception(__('This item has already been used in Repack.'));
                                 }
 
-                                if (DB::table('tally_items')->where('barcode', $record->barcode)->lockForUpdate()->exists()) {
+                                if (in_array('T', \App\Support\BarcodeUsage::marks($record->barcode), true)) {
                                     throw new \Exception(__('This item has already been used in Tally.'));
                                 }
 

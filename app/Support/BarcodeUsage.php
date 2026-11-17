@@ -39,7 +39,9 @@ class BarcodeUsage
             $marks[] = 'R';
         }
 
-        if (DB::table('tally_items')->where('barcode', $barcode)->exists()) {
+        // Barang yang direlabel di Tally berganti barcode; barcode ASAL-nya tersimpan di `original_barcode`,
+        // jadi barang itu tetap dianggap sudah masuk Tally lewat barcode lamanya juga.
+        if (DB::table('tally_items')->where(fn ($q) => $q->where('barcode', $barcode)->orWhere('original_barcode', $barcode))->exists()) {
             $marks[] = 'T';
         }
 
