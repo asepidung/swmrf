@@ -62,6 +62,13 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
     {
         $this->record = $record;
 
+        // Sama seperti halaman Scan: penerimaan yang sudah dikunci tidak lagi menerima label baru atau penghapusan.
+        if ($this->record->is_locked) {
+            $this->redirect(GoodsReceiptProductResource::getUrl('input', ['record' => $this->record->id]));
+
+            return;
+        }
+
         $defaultPackDate = now()->format('Y-m-d');
         $defaultGrade = 1;
 
@@ -128,6 +135,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                                 '7' => 'TRADING',
                                 '8' => 'IMPORT',
                             ])
+                            ->in(['7', '8'])
                             ->required()
                             ->extraAttributes(['tabindex' => '-1'])
                             ->extraInputAttributes(['tabindex' => '-1']),
@@ -304,7 +312,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
             ->actions([
                 ...\App\Support\BarcodeUsage::statusActions(),
                 Tables\Actions\DeleteAction::make()
-                    ->hidden(fn (GoodsReceiptProductItem $record) => \App\Support\BarcodeUsage::marks($record->barcode) !== [])
+                    ->hidden(fn (GoodsReceiptProductItem $record) => $this->record->is_locked || \App\Support\BarcodeUsage::marks($record->barcode) !== [])
                     ->icon('heroicon-m-trash')
                     ->hiddenLabel()
                     ->color('danger')
@@ -319,6 +327,12 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                         DB::transaction(function () use ($record) {
                             if (\App\Support\BarcodeUsage::marks($record->barcode) !== []) {
                                 throw new \RuntimeException('Barcode already used downstream.');
+                            }
+
+                            // Penerimaan yang sudah dikunci tidak boleh lagi kehilangan barisnya: hutang ke pemasok sudah dihitung dari sana.
+                            // Dibaca ulang dengan baris terkunci karena tab yang terbuka bisa lebih tua dari kuncinya.
+                            if (\App\Models\GoodsReceiptProduct::whereKey($record->goods_receipt_product_id)->lockForUpdate()->value('is_locked')) {
+                                throw new \RuntimeException('Goods receipt is locked.');
                             }
 
                             $stock = BeefStock::where('barcode', $record->barcode)->lockForUpdate()->first();
@@ -336,6 +350,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                                 'created_by' => Auth::id(),
                             ]);
 
+                            \App\Services\WarehouseFreezeService::check(); // pembekuan opname tidak lewat hapus massal lewat query (FZ-01)
                             BeefStock::where('barcode', $record->barcode)->delete();
                             $record->delete();
                         });

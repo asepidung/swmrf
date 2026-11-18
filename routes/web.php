@@ -10,7 +10,13 @@ use App\Http\Controllers\POCattlePrintController;
 use App\Http\Controllers\CattleReceivingPrintController;
 use App\Http\Controllers\CattleWeighingPrintController;
 
-Route::middleware(['web', 'auth'])->group(function () {
+/*
+ * `CheckActiveUser` dan `CheckPasswordChange` ikut dipasang di sini, sama dengan panel Filament
+ * (`AdminPanelProvider::authMiddleware`). Tanpa keduanya, akun yang sudah dinonaktifkan tetapi
+ * sesinya masih hidup, dan akun yang masih memakai kata sandi bawaan, tetap bisa membuka seluruh
+ * cetakan di bawah ini dengan mengetik alamatnya (audit pra-rilis 14 November 2026, A-02).
+ */
+Route::middleware(['web', 'auth', \App\Http\Middleware\CheckActiveUser::class, \App\Http\Middleware\CheckPasswordChange::class])->group(function () {
     /*
      * Laporan QC, satu berkas per laporan.
      *

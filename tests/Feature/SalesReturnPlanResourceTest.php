@@ -409,6 +409,36 @@ class SalesReturnPlanResourceTest extends TestCase
         $this->assertSame(10.0, $plan->fresh()->claimedWeightFor($this->product->id));
     }
 
+    /**
+     * `id` baris datang dari field tersembunyi, jadi bisa diisi dengan id baris milik plan LAIN
+     * (audit pra-rilis 14 November 2026, K-02). Dulu `SalesReturnPlanItem::find($id)` menerimanya
+     * mentah-mentah: mengedit plan sendiri bisa menimpa klaim plan orang lain.
+     *
+     * @test
+     */
+    public function editing_a_plan_cannot_overwrite_an_item_that_belongs_to_another_plan(): void
+    {
+        $planSaya = $this->draftPlanWithItem();
+        $planLain = $this->draftPlanWithItem();
+        $itemSaya = $planSaya->items()->first();
+        $itemLain = $planLain->items()->first();
+
+        Livewire::actingAs($this->employee(['view_sales_return_plans', 'edit_sales_return_plans']))
+            ->test(EditSalesReturnPlan::class, ['record' => $planSaya->getKey()])
+            ->fillForm([
+                'items' => [
+                    ['id' => $itemSaya->id, 'product_id' => $this->product->id, 'claimed_weight' => 10],
+                    // Produk berbeda supaya tidak tertahan aturan "produk tidak boleh kembar" di form.
+                    ['id' => $itemLain->id, 'product_id' => $this->productB->id, 'claimed_weight' => 999],
+                ],
+            ])
+            ->call('save');
+
+        $this->assertSame(10.0, (float) $itemLain->fresh()->claimed_weight, 'Baris milik plan lain tidak boleh ikut berubah.');
+        $this->assertSame($this->product->id, $itemLain->fresh()->product_id);
+        $this->assertSame($planLain->id, $itemLain->fresh()->plan_id);
+    }
+
     // =========================================================================
     // Route cetak
     // =========================================================================

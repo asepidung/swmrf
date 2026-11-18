@@ -45,6 +45,18 @@ class BarcodeUsage
             $marks[] = 'T';
         }
 
+        // Barang yang sedang di dalam mutasi yang belum selesai (DRAFT/SENT) stoknya sudah keluar dari gudang asal dan belum
+        // masuk tujuan; labelnya tidak boleh dihapus selama itu (L-02).
+        if (DB::table('mutation_items')
+            ->join('mutations', 'mutations.id', '=', 'mutation_items.mutation_id')
+            ->where('mutation_items.barcode', $barcode)
+            ->whereNull('mutation_items.deleted_at')
+            ->whereNull('mutations.deleted_at')
+            ->whereIn('mutations.status', ['DRAFT', 'SENT'])
+            ->exists()) {
+            $marks[] = 'M';
+        }
+
         return $marks;
     }
 }
