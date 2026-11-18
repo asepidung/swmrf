@@ -103,9 +103,9 @@ class BoningResource extends Resource
                                         
                                         $parentBoningId = $get('../../id');
 
-                                        // 1. Saring karkas yang berada di batch boning yang sudah dikunci
+                                        // 1. Saring karkas yang sudah dipakai boning LAIN mana pun (terbuka maupun terkunci), supaya satu karkas
+                                        // tidak masuk dua boning (B-01).
                                         $query->whereDoesntHave('boningCarcasses.boning', function ($q) use ($parentBoningId) {
-                                            $q->where('kunci', true);
                                             if ($parentBoningId) {
                                                 $q->where('id', '!=', $parentBoningId);
                                             }
