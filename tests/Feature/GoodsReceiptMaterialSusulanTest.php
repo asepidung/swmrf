@@ -199,4 +199,18 @@ class GoodsReceiptMaterialSusulanTest extends TestCase
         $this->assertStringNotContainsString('GoodsReceiptMaterial::latest', $source);
         $this->assertStringNotContainsString("'gr_number' =>", $source);
     }
+
+    /** @test */
+    public function bulk_delete_leaves_a_locked_receipt_alone(): void
+    {
+        $terkunci = $this->grMaterial(true);
+        $terbuka = $this->grMaterial(false);
+
+        Livewire::actingAs(User::factory()->create(['role' => 'programmer', 'is_active' => true]))
+            ->test(\App\Filament\Admin\Resources\GoodsReceiptMaterialResource\Pages\ListGoodsReceiptMaterials::class)
+            ->callTableBulkAction('delete', [$terkunci->getKey(), $terbuka->getKey()]);
+
+        $this->assertDatabaseHas('goods_receipt_materials', ['id' => $terkunci->id, 'deleted_at' => null]);
+        $this->assertSoftDeleted('goods_receipt_materials', ['id' => $terbuka->id]);
+    }
 }
