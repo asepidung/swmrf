@@ -513,4 +513,23 @@ class GoodsReceiptProductSusulanTest extends TestCase
         $test->set('warehouse_id', $this->warehouse->id)->set('barcode', 'FX-GR-WH-0001')->call('scan');
         $this->assertSame(1, BeefStock::count());
     }
+    /** @test */
+    public function labeling_more_than_the_po_quantity_is_saved_but_warned(): void
+    {
+        $gr = $this->grDenganPo();
+        PurchaseProductItem::where('purchase_product_id', $gr->purchase_product_id)->update(['qty' => 5]); // PO 5 kg
+
+        Livewire::actingAs($this->employee(['edit_goods_receipt_products']))
+            ->test(LabelingGoodsReceiptProduct::class, ['record' => $gr])
+            ->set('data.warehouse_id', $this->warehouse->id)
+            ->set('data.origin', '7')
+            ->set('data.product_id', $this->product->id)
+            ->set('data.grade_id', $this->grade->id)
+            ->set('data.qty_pcs_combined', '10.00/1')
+            ->set('data.ph_level', 5.5)
+            ->call('create')
+            ->assertNotified(__('Received more than the remaining PO quantity'));
+
+        $this->assertSame(1, GoodsReceiptProductItem::where('goods_receipt_product_id', $gr->id)->count(), 'kelebihan tetap boleh disimpan');
+    }
 }
