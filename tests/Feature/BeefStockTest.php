@@ -378,4 +378,29 @@ class BeefStockTest extends TestCase
             'Berkas cetak stok tidak lagi mencetak keterangan posisinya.',
         );
     }
+
+    /** ST-01: kalau penghapusan ditolak (gudang dibekukan opname), kartu stok tidak boleh mencatat barang keluar. */
+    public function test_a_refused_manual_delete_leaves_no_void_movement_behind(): void
+    {
+        $stock = BeefStock::create([
+            'barcode' => 'BC_FROZEN_TEST', 'product_id' => $this->product1->id, 'warehouse_id' => $this->jonggol->id,
+            'grade_id' => $this->chill->id, 'weight' => 10.50, 'qty_pcs' => 1, 'pack_date' => now()->subDays(5), 'status' => 'IN_STOCK',
+        ]);
+
+        \App\Models\StockTake::create([
+            'document_number' => 'ST#FREEZE-DEL', 'period' => now()->format('Y-m'), 'date' => now()->toDateString(),
+            'status' => \App\Models\StockTake::STATUS_IN_PROGRESS, 'created_by' => $this->user->getKey(),
+        ]);
+
+        try {
+            Livewire::actingAs($this->user)
+                ->test(BeefStocksRelationManager::class, ['ownerRecord' => $this->product1, 'pageClass' => ViewBeefStock::class])
+                ->callTableAction('delete', $stock, ['reason' => 'Uji pembekuan']);
+        } catch (\Throwable) {
+            // Ditolak karena opname berjalan: itu yang diharapkan.
+        }
+
+        $this->assertDatabaseHas('beef_stocks', ['barcode' => 'BC_FROZEN_TEST']);
+        $this->assertDatabaseMissing('beef_stock_movements', ['barcode' => 'BC_FROZEN_TEST', 'transaction_type' => 'VOID_STOCK']);
+    }
 }

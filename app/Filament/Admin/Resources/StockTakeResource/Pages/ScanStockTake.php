@@ -608,7 +608,18 @@ class ScanStockTake extends Page implements HasForms, HasTable
                     ->requiresConfirmation()
                     ->visible(fn (StockTakeItem $record): bool => $record->status === 'MATCHED'
                         && $this->record->isCountable())
-                    ->action(fn (StockTakeItem $record) => $record->update(['status' => 'MISSING'])),
+                    ->action(function (StockTakeItem $record) {
+                        // Opname dan barisnya dibaca ULANG dengan kunci: tab lama pada opname yang sudah selesai
+                        // tidak boleh mengubah catatan barisnya (audit pra-rilis 14 November 2026, L-08).
+                        \Illuminate\Support\Facades\DB::transaction(function () use ($record) {
+                            $opname = \App\Models\StockTake::whereKey($this->record->id)->lockForUpdate()->first();
+                            $baris = StockTakeItem::whereKey($record->id)->lockForUpdate()->first();
+
+                            if ($opname?->isCountable() && $baris?->status === 'MATCHED') {
+                                $baris->update(['status' => 'MISSING']);
+                            }
+                        });
+                    }),
                 Tables\Actions\DeleteAction::make()
                     ->label(__('Delete'))
                     ->icon('heroicon-o-x-mark')

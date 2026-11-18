@@ -177,19 +177,23 @@ class BeefStocksRelationManager extends RelationManager
                     ->visible(fn (): bool => auth()->user()?->isProgrammer()
                         || (auth()->user()?->hasPermission('delete_beef_stocks') ?? false))
                     ->action(function (BeefStock $record, array $data) {
-                        BeefStockMovement::create([
-                            'product_id' => $record->product_id,
-                            'warehouse_id' => $record->warehouse_id,
-                            'condition' => $record->grade_id,
-                            'barcode' => $record->barcode,
-                            'transaction_type' => 'VOID_STOCK',
-                            'reference_document' => 'MANUAL_DELETE',
-                            'weight_out' => $record->weight,
-                            'pcs_out' => $record->qty_pcs,
-                            'note' => $data['reason'],
-                            'created_by' => auth()->id(),
-                        ]);
-                        $record->delete();
+                        // Satu transaksi: kalau penghapusan ditolak (misalnya gudang dibekukan opname),
+                        // catatan keluar di kartu stok ikut dibatalkan (audit pra-rilis 14 November 2026, ST-01).
+                        \Illuminate\Support\Facades\DB::transaction(function () use ($record, $data) {
+                            BeefStockMovement::create([
+                                'product_id' => $record->product_id,
+                                'warehouse_id' => $record->warehouse_id,
+                                'condition' => $record->grade_id,
+                                'barcode' => $record->barcode,
+                                'transaction_type' => 'VOID_STOCK',
+                                'reference_document' => 'MANUAL_DELETE',
+                                'weight_out' => $record->weight,
+                                'pcs_out' => $record->qty_pcs,
+                                'note' => $data['reason'],
+                                'created_by' => auth()->id(),
+                            ]);
+                            $record->delete();
+                        });
                     }),
             ])
             ->bulkActions([]);

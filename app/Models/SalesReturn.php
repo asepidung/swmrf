@@ -288,6 +288,14 @@ class SalesReturn extends Model
         }
 
         DB::transaction(function (): void {
+            // Status dibaca ULANG dengan baris terkunci: dua penekanan bersamaan atau salinan lama
+            // tidak boleh sama-sama lolos (audit pra-rilis 14 November 2026, SR-02).
+            $kini = static::whereKey($this->id)->lockForUpdate()->first();
+
+            if (! $kini || $kini->status !== 'Draft') {
+                throw new \RuntimeException(__('Only a draft return can be approved.'));
+            }
+
             $this->update(['status' => 'Approved']);
 
             foreach ($this->items as $item) {
@@ -358,6 +366,12 @@ class SalesReturn extends Model
         }
 
         DB::transaction(function (): void {
+            $kini = static::whereKey($this->id)->lockForUpdate()->first();
+
+            if (! $kini || $kini->status !== 'Approved') {
+                throw new \RuntimeException(__('Only an approved return can be unlocked.'));
+            }
+
             foreach ($this->items as $item) {
                 $stock = BeefStock::where('barcode', $item->barcode)->lockForUpdate()->first();
 
