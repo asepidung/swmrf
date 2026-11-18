@@ -2006,5 +2006,8 @@
     "Stock take analysis report": "Laporan analisa hasil opname",
     "Fallback cost per kg": "Harga cadangan per kg",
     "Charge name": "Nama biaya",
-    "Used only for sales returns and stock take findings when the product has no valued stock to average. Leave empty if unknown.": "Dipakai hanya untuk retur jual dan temuan opname bila produk tidak punya stok berharga untuk dirata-ratakan. Kosongkan kalau belum diketahui."
+    "Used only for sales returns and stock take findings when the product has no valued stock to average. Leave empty if unknown.": "Dipakai hanya untuk retur jual dan temuan opname bila produk tidak punya stok berharga untuk dirata-ratakan. Kosongkan kalau belum diketahui.",
+    "This purchase order is already closed.": "Purchase order ini sudah ditutup.",
+    "This purchase order already has a down payment, so it cannot be cancelled here.": "Purchase order ini sudah punya uang muka, jadi tidak bisa dibatalkan di sini.",
+    "This purchase order already has goods receipts, so it cannot be cancelled.": "Purchase order ini sudah punya penerimaan barang, jadi tidak bisa dibatalkan."
 }
