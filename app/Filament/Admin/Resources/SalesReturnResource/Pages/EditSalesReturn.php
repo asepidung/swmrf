@@ -10,6 +10,16 @@ use Filament\Notifications\Notification;
 class EditSalesReturn extends EditRecord
 {
     protected static string $resource = SalesReturnResource::class;
+
+    /** Retur yang sudah disetujui sudah memotong tagihan dan menarik stok: tidak boleh disimpan lagi (ED-01). Halamannya tetap terbuka karena tombol buka kunci ada di sini. */
+    protected function beforeSave(): void
+    {
+        if (\App\Models\SalesReturn::query()->whereKey($this->getRecord()->getKey())->value('status') !== 'Draft') {
+            Notification::make()->title(__('This return is no longer a draft, so its items cannot be changed.'))->danger()->send();
+            $this->halt();
+        }
+    }
+
     protected function getHeaderActions(): array
     {
         return [
