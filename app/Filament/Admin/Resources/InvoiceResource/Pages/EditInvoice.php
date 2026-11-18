@@ -14,6 +14,24 @@ class EditInvoice extends EditRecord
 {
     protected static string $resource = InvoiceResource::class;
 
+    /**
+     * INV-01 (keputusan Owner): invoice yang sudah ada pembayarannya terkunci. Koreksi dilakukan dengan membatalkan
+     * pembayarannya dulu (yang sudah tersedia), bukan dengan mengubah harga/DP/biaya di bawah pembayaran yang berjalan.
+     */
+    public function mount(int | string $record): void
+    {
+        parent::mount($record);
+
+        if ($this->getRecord()->hasActivePayment()) {
+            \Filament\Notifications\Notification::make()
+                ->title(__('This invoice already has a payment and cannot be edited. Cancel the payment first to correct it.'))
+                ->danger()
+                ->send();
+
+            $this->redirect($this->getResource()::getUrl('view', ['record' => $this->getRecord()]));
+        }
+    }
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
@@ -31,6 +49,16 @@ class EditInvoice extends EditRecord
     {
         return DB::transaction(function () use ($record, $data) {
             Invoice::whereKey($record->id)->lockForUpdate()->first();
+
+            // INV-01: dibaca ulang di dalam transaksi; tab yang terbuka sebelum pembayaran dicatat tidak boleh menimpanya.
+            if ($record->fresh()->hasActivePayment()) {
+                \Filament\Notifications\Notification::make()
+                    ->title(__('This invoice already has a payment and cannot be edited. Cancel the payment first to correct it.'))
+                    ->danger()
+                    ->send();
+
+                throw new \Filament\Support\Exceptions\Halt();
+            }
 
             // Faktur tidak boleh dipindah ke pelanggan, penerimaan, atau SO lain lewat Edit (K-03).
             unset($data['customer_id'], $data['delivery_order_receipt_id'], $data['sales_order_id']);
