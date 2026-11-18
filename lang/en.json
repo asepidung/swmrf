@@ -2006,5 +2006,7 @@
     "Stock take analysis report": "Stock take analysis report",
     "Fallback cost per kg": "Fallback cost per kg",
     "Charge name": "Charge name",
-    "Used only for sales returns and stock take findings when the product has no valued stock to average. Leave empty if unknown.": "Used only for sales returns and stock take findings when the product has no valued stock to average. Leave empty if unknown."
+    "Used only for sales returns and stock take findings when the product has no valued stock to average. Leave empty if unknown.": "Used only for sales returns and stock take findings when the product has no valued stock to average. Leave empty if unknown.",
+    "This boning is locked or already has labels, so it cannot be saved.": "This boning is locked or already has labels, so it cannot be saved.",
+    "This delivery order has already moved on, so it cannot be saved.": "This delivery order has already moved on, so it cannot be saved."
 }

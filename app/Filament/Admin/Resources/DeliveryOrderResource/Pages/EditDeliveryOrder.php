@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\DeliveryOrderResource\Pages;
 
 use App\Filament\Admin\Resources\DeliveryOrderResource;
+use App\Models\DeliveryOrder;
 use App\Models\DeliveryOrderReceipt;
 use App\Models\TallyItem;
 use Filament\Actions;
@@ -64,6 +65,15 @@ class EditDeliveryOrder extends EditRecord
                 ->color('danger')
                 ->iconButton(),
         ];
+    }
+
+    /** Tab lama tidak boleh menyimpan sesudah surat jalan berpindah dari Ready (ED-01). */
+    protected function beforeSave(): void
+    {
+        if (DeliveryOrder::query()->whereKey($this->record->getKey())->value('status') !== 'Ready') {
+            Notification::make()->title(__('This delivery order has already moved on, so it cannot be saved.'))->danger()->send();
+            $this->halt();
+        }
     }
 
     protected function getFormActions(): array

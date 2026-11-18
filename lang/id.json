@@ -2006,5 +2006,7 @@
     "Stock take analysis report": "Laporan analisa hasil opname",
     "Fallback cost per kg": "Harga cadangan per kg",
     "Charge name": "Nama biaya",
-    "Used only for sales returns and stock take findings when the product has no valued stock to average. Leave empty if unknown.": "Dipakai hanya untuk retur jual dan temuan opname bila produk tidak punya stok berharga untuk dirata-ratakan. Kosongkan kalau belum diketahui."
+    "Used only for sales returns and stock take findings when the product has no valued stock to average. Leave empty if unknown.": "Dipakai hanya untuk retur jual dan temuan opname bila produk tidak punya stok berharga untuk dirata-ratakan. Kosongkan kalau belum diketahui.",
+    "This boning is locked or already has labels, so it cannot be saved.": "Boning ini sudah dikunci atau sudah berisi label, jadi tidak bisa disimpan.",
+    "This delivery order has already moved on, so it cannot be saved.": "Surat jalan ini sudah berpindah tahap, jadi tidak bisa disimpan."
 }

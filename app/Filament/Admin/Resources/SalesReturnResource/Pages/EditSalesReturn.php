@@ -10,6 +10,25 @@ use Filament\Notifications\Notification;
 class EditSalesReturn extends EditRecord
 {
     protected static string $resource = SalesReturnResource::class;
+
+    /** Retur yang sudah disetujui sudah memotong tagihan dan menarik stok: tidak boleh disunting lagi (ED-01). */
+    public function mount(int | string $record): void
+    {
+        parent::mount($record);
+
+        if ($this->getRecord()->status !== 'Draft') {
+            $this->redirect($this->getResource()::getUrl('view', ['record' => $this->getRecord()]));
+        }
+    }
+
+    protected function beforeSave(): void
+    {
+        if (\App\Models\SalesReturn::query()->whereKey($this->getRecord()->getKey())->value('status') !== 'Draft') {
+            Notification::make()->title(__('This return is no longer a draft, so its items cannot be changed.'))->danger()->send();
+            $this->halt();
+        }
+    }
+
     protected function getHeaderActions(): array
     {
         return [
