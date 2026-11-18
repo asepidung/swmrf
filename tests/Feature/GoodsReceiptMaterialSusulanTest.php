@@ -249,6 +249,20 @@ class GoodsReceiptMaterialSusulanTest extends TestCase
     }
 
     /** @test */
+    public function bulk_delete_leaves_a_locked_receipt_alone(): void
+    {
+        $terkunci = $this->grMaterial(true);
+        $terbuka = $this->grMaterial(false);
+
+        Livewire::actingAs(User::factory()->create(['role' => 'programmer', 'is_active' => true]))
+            ->test(\App\Filament\Admin\Resources\GoodsReceiptMaterialResource\Pages\ListGoodsReceiptMaterials::class)
+            ->callTableBulkAction('delete', [$terkunci->getKey(), $terbuka->getKey()]);
+
+        $this->assertDatabaseHas('goods_receipt_materials', ['id' => $terkunci->id, 'deleted_at' => null]);
+        $this->assertSoftDeleted('goods_receipt_materials', ['id' => $terbuka->id]);
+    }
+
+    /** @test */
     public function dropping_item_rows_from_the_submitted_state_does_not_delete_them(): void
     {
         $gr = $this->grMaterial(locked: false);
@@ -267,16 +281,5 @@ class GoodsReceiptMaterialSusulanTest extends TestCase
 
         $this->assertSame(2, $gr->items()->count());
         $this->assertNotSame('SJ-KONTROL', $gr->fresh()->sj_number);
-    public function bulk_delete_leaves_a_locked_receipt_alone(): void
-    {
-        $terkunci = $this->grMaterial(true);
-        $terbuka = $this->grMaterial(false);
-
-        Livewire::actingAs(User::factory()->create(['role' => 'programmer', 'is_active' => true]))
-            ->test(\App\Filament\Admin\Resources\GoodsReceiptMaterialResource\Pages\ListGoodsReceiptMaterials::class)
-            ->callTableBulkAction('delete', [$terkunci->getKey(), $terbuka->getKey()]);
-
-        $this->assertDatabaseHas('goods_receipt_materials', ['id' => $terkunci->id, 'deleted_at' => null]);
-        $this->assertSoftDeleted('goods_receipt_materials', ['id' => $terbuka->id]);
     }
 }
