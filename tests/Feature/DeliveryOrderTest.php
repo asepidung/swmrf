@@ -759,12 +759,38 @@ class DeliveryOrderTest extends TestCase
     }
 
     /** @test */
+    public function the_receipt_rows_come_from_the_delivery_order_not_the_browser(): void
     public function an_invoiced_delivery_order_is_not_editable_or_deletable(): void
     {
         $this->actingAs($this->user);
 
         $so = SalesOrder::create([
             'customer_id' => $this->customer->id, 'delivery_date' => now()->addDay()->format('Y-m-d'),
+            'po_number' => 'PO-TAMPER', 'created_by' => $this->user->id, 'status' => 'on_delivery',
+        ]);
+        $tally = Tally::create(['sales_order_id' => $so->id, 'tally_number' => 'TS#260555', 'status' => 'do']);
+        $do = DeliveryOrder::create([
+            'tally_id' => $tally->id, 'sales_order_id' => $so->id, 'customer_id' => $this->customer->id,
+            'delivery_date' => now()->addDay()->format('Y-m-d'), 'po_number' => 'PO-TAMPER',
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'JOKO'])->id, 'status' => 'Ready',
+        ]);
+        DeliveryOrderItem::create(['delivery_order_id' => $do->id, 'product_id' => $this->product->id, 'box' => 2, 'weight' => 20.0]);
+
+        $halaman = Livewire::test(\App\Filament\Admin\Resources\DeliveryOrderResource\Pages\ApproveDeliveryOrder::class, ['record' => $do]);
+
+        $kunci = array_key_first($halaman->get('data.receipt_items'));
+
+        $halaman->set('data.receipt_items', [
+            $kunci => ['product_id' => 99999, 'box' => 50, 'weight' => 19.0],
+            'tambahan' => ['product_id' => 88888, 'box' => 7, 'weight' => 500.0],
+        ])->call('submit');
+
+        $receipt = DeliveryOrderReceipt::where('delivery_order_id', $do->id)->firstOrFail();
+
+        $this->assertSame(1, $receipt->items()->count(), 'Baris tambahan dari browser harus diabaikan.');
+        $this->assertSame($this->product->id, (int) $receipt->items()->first()->product_id);
+        $this->assertSame(2, (int) $receipt->total_box);
+        $this->assertEquals(19.0, (float) $receipt->total_weight);
             'po_number' => 'PO-INV-1', 'created_by' => $this->user->id, 'status' => 'completed',
         ]);
         $tally = Tally::create(['sales_order_id' => $so->id, 'tally_number' => 'TS#260777', 'status' => 'do']);
