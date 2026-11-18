@@ -306,4 +306,25 @@ class CustomerDepositTest extends TestCase
             ->test(\App\Filament\Admin\Resources\ReceivableResource\Pages\ListReceivables::class)
             ->assertCanNotSeeTableRecords([$this->group]);
     }
+    /** PAY-01: grup yang kemudian menjadi "bayar per pelanggan" tidak memakai sisa deposit lamanya. */
+    public function test_a_per_customer_group_does_not_spend_its_old_shared_deposit(): void
+    {
+        $lama = $this->invoice(9000000, umurHari: 30);
+        $this->bayar(10000000, [$lama->id => 9000000]);
+        $this->assertSame(1000000.0, $this->group->availableDeposit());
+
+        $this->group->update(['pays_per_customer' => true]);
+
+        $baru = $this->invoice(3000000, umurHari: 5);
+        Livewire::test(ReceivePayment::class, ['record' => $this->group->fresh()])
+            ->set('data.customer_id', $this->customer->id)
+            ->set('data.bank_account_id', $this->bank->id)
+            ->set('data.payment_date', now()->toDateString())
+            ->set('data.amount', '3.000.000')
+            ->set('data.allocations.'.$baru->id, '3.000.000')
+            ->call('save');
+
+        $this->assertSame(0.0, (float) $baru->fresh()->balance, 'tagihan baru lunas dari uang pelanggan sendiri');
+        $this->assertSame(1000000.0, (float) Payment::orderBy('id')->first()->fresh()->load('allocations')->unallocatedAmount(), 'deposit lama tidak tersentuh');
+    }
 }
