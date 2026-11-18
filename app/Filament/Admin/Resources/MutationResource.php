@@ -111,7 +111,8 @@ class MutationResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(\App\Support\GuardedBulkDelete::action(fn ($mutation) => $mutation->status === "DRAFT" && $mutation->items()->count() === 0)),
                     Tables\Actions\ForceDeleteBulkAction::make(),
                 ]),
             ])
