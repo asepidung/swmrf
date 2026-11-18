@@ -85,14 +85,24 @@ class RepackResource extends Resource
                             ->columnSpanFull()
                             ->content(fn (?Repack $record) => $record ? view('filament.resources.repack-resource.pages.edit-summary', ['record' => $record]) : null),
 
+                        // Ketiganya TIDAK ikut disimpan dari form (`dehydrated(false)`).
+                        // Field tersembunyi tetap dikirim browser: pemegang
+                        // `edit_repacks` saja dulu bisa mengirim `data.kunci` lalu
+                        // memanggil `save` -- repack terkunci atau terbuka tanpa
+                        // melewati `Repack::lock()`/`unlock()` (audit pra-rilis
+                        // 14 November 2026, S-04). Nilai awalnya datang dari bawaan
+                        // kolom dan `Repack::booted()`.
                         Forms\Components\Hidden::make('status')
-                            ->default('OPEN'),
+                            ->default('OPEN')
+                            ->dehydrated(false),
 
                         Forms\Components\Hidden::make('kunci')
-                            ->default(0),
+                            ->default(0)
+                            ->dehydrated(false),
 
                         Forms\Components\Hidden::make('created_by')
-                            ->default(fn() => Auth::id()),
+                            ->default(fn() => Auth::id())
+                            ->dehydrated(false),
                     ])->columns(2),
             ]);
     }
