@@ -232,4 +232,24 @@ class UsedBarcodeMarkTest extends TestCase
             ->assertTableColumnStateSet('original_barcode', 'BC-ASAL', $item)
             ->assertTableColumnStateSet('barcode', 'BC-BARU', $item);
     }
+
+    /** @test */
+    public function a_barcode_inside_an_unfinished_mutation_counts_as_used(): void
+    {
+        $dari = Warehouse::create(['code' => 'DARI', 'name' => 'DARI', 'is_active' => true]);
+
+        foreach (['SENT' => 'BC-MUT-SENT', 'COMPLETED' => 'BC-MUT-DONE'] as $status => $barcode) {
+            $mutasi = \App\Models\Mutation::create([
+                'mutation_date' => now()->toDateString(), 'from_warehouse_id' => $dari->id,
+                'to_warehouse_id' => $this->warehouse->id, 'status' => $status, 'created_by' => $this->user->id,
+            ]);
+            \App\Models\MutationItem::create([
+                'mutation_id' => $mutasi->id, 'barcode' => $barcode, 'product_id' => $this->product->id,
+                'grade_id' => $this->grade->id, 'weight' => 10, 'qty_pcs' => 1,
+            ]);
+        }
+
+        $this->assertSame(['M'], BarcodeUsage::marks('BC-MUT-SENT'));
+        $this->assertSame([], BarcodeUsage::marks('BC-MUT-DONE'));
+    }
 }

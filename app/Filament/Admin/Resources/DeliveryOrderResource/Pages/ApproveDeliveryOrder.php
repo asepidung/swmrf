@@ -318,6 +318,13 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                     }
 
                     DB::transaction(function () use ($barcodes) {
+                        // Surat jalan dikunci dan statusnya dibaca ulang: tab lama tidak boleh menolak barcode sesudah disetujui (DO-01).
+                        if (DeliveryOrder::whereKey($this->record->id)->lockForUpdate()->value('status') !== 'Ready') {
+                            Notification::make()->title(__('This delivery order has already moved on, so the rejection was not done.'))->warning()->send();
+
+                            throw new \Filament\Support\Exceptions\Halt();
+                        }
+
                         // Dikunci sebelum dihapus: dua permintaan yang
                         // menolak barcode yang sama pada saat bersamaan
                         // (klik ganda, atau dua orang) tidak boleh

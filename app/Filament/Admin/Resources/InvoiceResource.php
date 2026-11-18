@@ -427,6 +427,67 @@ class InvoiceResource extends Resource
         return array_filter($biaya, fn ($baris) => is_array($baris) && array_key_exists('qty', $baris));
     }
 
+    /**
+     * Hitung ulang di SERVER kepala dan total invoice dari baris-barisnya (K-03).
+     *
+     * Field berat/jumlah/total di form `disabled()` tetapi tetap dikirim (dehydrated), jadi browser bisa mengisinya
+     * sesukanya. Di sini berat tiap baris dipaksa mengikuti baris bukti terima (dicocokkan per produk), lalu discount_rp,
+     * amount, dan semua total diturunkan dari berat, harga, dan persen diskon.
+     *
+     * @param  array<string, mixed>  $state  isi form ($this->data)
+     * @return array<string, mixed>
+     */
+    public static function recomputeFromState(array $state, \App\Models\DeliveryOrderReceipt $receipt): array
+    {
+        $antrian = [];
+        foreach ($receipt->items as $baris) {
+            $antrian[$baris->product_id][] = (float) $baris->weight;
+        }
+
+        $totalWeight = 0.0;
+        $subtotal = 0.0;
+        $totalDiscount = 0.0;
+
+        foreach (($state['items'] ?? []) as $key => $item) {
+            $productId = $item['product_id'] ?? null;
+            $weight = isset($antrian[$productId]) && $antrian[$productId] !== []
+                ? array_shift($antrian[$productId])
+                : 0.0;
+            $price = InvoiceTotals::number($item['price'] ?? 0);
+            $baris = InvoiceTotals::line($weight, $price, InvoiceTotals::percent($item['discount_percent'] ?? 0));
+
+            $state['items'][$key]['weight'] = $weight;
+            $state['items'][$key]['discount_rp'] = $baris['discount_rp'];
+            $state['items'][$key]['amount'] = $baris['amount'];
+
+            $totalWeight += $weight;
+            $totalDiscount += $baris['discount_rp'];
+            $subtotal += $baris['amount'];
+        }
+
+        $charge = 0.0;
+
+        foreach (($state['additionalCharges'] ?? []) as $key => $item) {
+            $baris = InvoiceTotals::line(
+                InvoiceTotals::quantity($item['qty'] ?? 1),
+                InvoiceTotals::number($item['price'] ?? 0),
+                InvoiceTotals::percent($item['discount_percent'] ?? 0),
+            );
+
+            $state['additionalCharges'][$key]['discount_rp'] = $baris['discount_rp'];
+            $state['additionalCharges'][$key]['amount'] = $baris['amount'];
+            $charge += $baris['amount'];
+        }
+
+        $state['total_weight'] = round($totalWeight, 2);
+        $state['subtotal'] = $subtotal;
+        $state['total_discount'] = $totalDiscount;
+        $state['charge'] = $charge;
+        $state['balance'] = round($subtotal + $charge - InvoiceTotals::number($state['down_payment'] ?? 0), 0);
+
+        return $state;
+    }
+
     public static function updateTotals(callable $get, callable $set): void
     {
         $items = $get('items');

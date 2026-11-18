@@ -108,7 +108,10 @@ class EditSalesReturnPlan extends EditRecord
                     ];
 
                     if (! empty($item['id'])) {
-                        SalesReturnPlanItem::find($item['id'])?->update($payload);
+                        // Dicari DI DALAM plan ini, bukan di seluruh tabel. `id` datang
+                        // dari field tersembunyi dan bisa diisi id baris milik plan lain;
+                        // dulu baris itu ikut ditimpa (audit pra-rilis 14 November 2026, K-02).
+                        $record->items()->whereKey($item['id'])->first()?->update($payload);
                     } else {
                         $record->items()->create($payload);
                     }
