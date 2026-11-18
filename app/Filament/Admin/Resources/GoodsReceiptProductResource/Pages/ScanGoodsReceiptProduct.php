@@ -162,6 +162,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
                                 'created_by' => Auth::id(),
                             ]);
 
+                            \App\Services\WarehouseFreezeService::check(); // pembekuan opname tidak lewat hapus massal lewat query (FZ-01)
                             BeefStock::where('barcode', $item->barcode)->delete();
                             $item->delete();
                         });

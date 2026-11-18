@@ -389,6 +389,7 @@ class SalesReturn extends Model
                     'note' => 'Unlock/Cancel Sales Return',
                 ]);
 
+                \App\Services\WarehouseFreezeService::check(); // pembekuan opname tidak lewat hapus massal lewat query (FZ-01)
                 BeefStock::where('barcode', $item->barcode)->delete();
             }
 

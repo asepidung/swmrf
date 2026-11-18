@@ -357,6 +357,31 @@ class GoodsReceiptProductSusulanTest extends TestCase
     }
 
     /** @test */
+    public function deleting_a_receipt_during_a_stock_count_does_not_pull_its_stock_out(): void
+    {
+        $gr = $this->grDenganPo();
+        $item = GoodsReceiptProductItem::create([
+            'goods_receipt_product_id' => $gr->id, 'product_id' => $this->product->id,
+            'grade_id' => $this->grade->id, 'weight' => 10.0, 'qty_pcs' => 1,
+            'barcode' => 'FX-GR-FREEZE-1', 'origin' => 'FIXTURE', 'pack_date' => now(), 'price' => 100, 'subtotal' => 1000,
+        ]);
+        BeefStock::create([
+            'barcode' => 'FX-GR-FREEZE-1', 'product_id' => $this->product->id, 'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id, 'weight' => 10.0, 'qty_pcs' => 1, 'pack_date' => now(), 'origin' => '1', 'status' => 'IN_STOCK',
+        ]);
+
+        \App\Models\StockTake::create([
+            'document_number' => 'ST#FREEZE', 'period' => now()->format('Y-m'), 'date' => now()->toDateString(),
+            'status' => \App\Models\StockTake::STATUS_IN_PROGRESS, 'created_by' => User::factory()->create()->id,
+        ]);
+
+        try {
+            $gr->delete();
+        } catch (\Throwable) {
+            // Ditolak karena opname berjalan: itu yang diharapkan.
+        }
+
+        $this->assertDatabaseHas('beef_stocks', ['barcode' => 'FX-GR-FREEZE-1']);
     public function a_barcode_on_a_tally_without_a_delivery_order_cannot_be_scanned_as_a_buyback(): void
     {
         $gr = $this->grDenganPo();
