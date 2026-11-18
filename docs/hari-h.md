@@ -27,12 +27,7 @@ Buka kembali dengan `php8.4 artisan up`.
 
 ## 2. Reset data latihan
 
-```bash
-php8.4 artisan app:reset-training-data            # dry-run, baca laporan
-php8.4 artisan app:reset-training-data --apply    # mengetik nama database
-```
-
-Dipertahankan: users, hak akses, langganan push, grade, gudang, akun kas (saldo awal KAS tetap). Dikosongkan: transaksi dan master latihan.
+Perintah `app:reset-training-data` SUDAH DIHAPUS (keputusan Ayah, 18 November 2026): aplikasi sudah go-live dan perintah itu mengosongkan data produksi hanya dengan mengetik nama database. Bagian ini hanya catatan sejarah hari-H; jangan diulang.
 
 Sesudah reset, dua hal manual (keputusan Ayah, 30 Oktober 2026):
 
