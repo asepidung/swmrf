@@ -83,6 +83,9 @@ class CreateInvoice extends CreateRecord
             $this->data['delivery_order_receipt_id'] = $receipt->id;
             $this->data['sales_order_id'] = $receipt->sales_order_id;
             $this->data['customer_id'] = $receipt->customer_id;
+            // K-05: DP invoice tidak boleh melebihi DP yang tercatat untuk SO-nya (dan belum dipakai invoice lain).
+            $batas = \App\Support\CustomerDownPayment::availableForInvoice($receipt->sales_order_id);
+            $this->data['down_payment'] = min(\App\Support\InvoiceTotals::number($this->data['down_payment'] ?? 0), $batas);
             $this->data = InvoiceResource::recomputeFromState($this->data, $receipt);
         }
     }

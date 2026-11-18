@@ -31,6 +31,31 @@ class EditSalesOrder extends EditRecord
                 ->label(__('Cancel'))
                 ->color('gray')
                 ->url($this->getResource()::getUrl('index')),
+            // K-05: membatalkan DP membalik pembayarannya di buku kas; tidak bisa bila DP sudah dipakai invoice.
+            Actions\Action::make('cancel_down_payment')
+                ->label(__('Cancel down payment'))
+                ->color('danger')
+                ->requiresConfirmation()
+                ->authorize(fn (): bool => auth()->user()?->hasPermission('edit_sales_orders') ?? false)
+                ->form([\Filament\Forms\Components\Textarea::make('reason')->label(__('Reason'))->required()])
+                ->visible(fn (): bool => (float) $this->record->down_payment > 0 && ! in_array($this->record->status, SalesOrder::STATUS_LOCKED_FOR_EDIT, true))
+                ->action(function (array $data): void {
+                    $so = $this->getRecord();
+
+                    if (\App\Models\Invoice::where('sales_order_id', $so->id)->where('down_payment', '>', 0)->exists()) {
+                        \Filament\Notifications\Notification::make()->title(__('The down payment is already used by an invoice and cannot be cancelled.'))->danger()->send();
+
+                        return;
+                    }
+
+                    \Illuminate\Support\Facades\DB::transaction(function () use ($so, $data): void {
+                        \App\Support\CustomerDownPayment::activePayment($so)?->cancel($data['reason']);
+                        $so->update(['down_payment' => 0]);
+                    });
+
+                    $this->refreshFormData(['down_payment']);
+                    \Filament\Notifications\Notification::make()->title(__('Down payment cancelled'))->success()->send();
+                }),
             Actions\DeleteAction::make()
                 ->hidden(fn(): bool => in_array($this->record->status, SalesOrder::STATUS_LOCKED_FOR_EDIT, true)),
             // tallies.sales_order_id (unique, RESTRICT) dan
@@ -96,6 +121,11 @@ class EditSalesOrder extends EditRecord
             unset($data['customer_id'], $data['delivery_date'], $data['shipping_address'], $data['down_payment']);
         }
 
+        // K-05: DP yang sudah terisi (tercatat, atau DP lama) tidak bisa diubah lewat Simpan; hanya lewat Batalkan DP.
+        if ((float) SalesOrder::whereKey($this->getRecord()->getKey())->value('down_payment') > 0) {
+            unset($data['down_payment']);
+        }
+
         return $data;
     }
 
@@ -105,6 +135,19 @@ class EditSalesOrder extends EditRecord
      */
     protected function beforeSave(): void
     {
+        $raw = $this->form->getRawState();
+        $dpBaru = (float) str_replace('.', '', (string) ($raw['down_payment'] ?? 0));
+        $dpAda = (float) SalesOrder::whereKey($this->getRecord()->getKey())->value('down_payment');
+        $grup = \App\Models\Customer::whereKey($raw['customer_id'] ?? $this->getRecord()->customer_id)->value('customer_group_id');
+
+        if ($dpAda <= 0 && $dpBaru > 0 && (blank($raw['down_payment_bank_account_id'] ?? null) || ! $grup)) {
+            \Filament\Notifications\Notification::make()
+                ->title(__('The down payment needs a bank/cash account and a customer with a group.'))
+                ->danger()->send();
+
+            $this->halt();
+        }
+
         $status = SalesOrder::whereKey($this->getRecord()->getKey())->value('status');
 
         if (in_array($status, SalesOrder::STATUS_LOCKED_FOR_EDIT, true)) {
@@ -120,6 +163,9 @@ class EditSalesOrder extends EditRecord
     protected function afterSave(): void
     {
         $record = $this->getRecord();
+
+        // K-05: DP yang baru diisi di SO ini dicatat sebagai pembayaran masuk buku kas.
+        \App\Support\CustomerDownPayment::record($record->fresh(), (int) ($this->form->getRawState()['down_payment_bank_account_id'] ?? 0));
         $record->items()->delete();
         
         foreach ($this->itemsData as $item) {

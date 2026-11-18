@@ -124,7 +124,8 @@ class ReceivableResource extends Resource
         // masih berlaku, dikurangi yang sudah menempel ke invoice. Keduanya
         // subkueri pada kueri tabelnya, jadi menambah grup tidak menambah
         // kueri.
-        $aktif = fn (Builder $q) => $q->whereNull('payments.cancelled_at');
+        // Pembayaran DP (sales_order_id terisi) bukan deposit grup: sudah dipakai mengurangi invoice SO-nya (K-05).
+        $aktif = fn (Builder $q) => $q->whereNull('payments.cancelled_at')->whereNull('payments.sales_order_id');
 
         return $query
             ->withSum(

@@ -113,7 +113,10 @@ class SalesOrderResource extends Resource
                             ->label(__('Down Payment (DP)'))
                             ->numeric()
                             ->default(0)
-                            ->disabled(fn (?SalesOrder $record) => in_array($record?->status, [SalesOrder::STATUS_PROCESSING, ...SalesOrder::STATUS_LOCKED_FOR_EDIT], true))
+                            // K-05: DP yang sudah terisi (tercatat sebagai pembayaran, atau DP lama) tidak diketik ulang di sini;
+                            // membatalkannya lewat tombol Batalkan DP.
+                            ->disabled(fn (?SalesOrder $record) => in_array($record?->status, [SalesOrder::STATUS_PROCESSING, ...SalesOrder::STATUS_LOCKED_FOR_EDIT], true) || (float) ($record?->down_payment ?? 0) > 0)
+                            ->live(onBlur: true)
                             ->dehydrated()
                             /*
                              * WAJIB, dan ini bukan soal tampilan saja.
@@ -136,6 +139,15 @@ class SalesOrderResource extends Resource
                             ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                             ->stripCharacters('.')
                             ->extraInputAttributes(['onfocus' => 'this.select()', 'class' => 'text-right'])
+                            ->columnSpan(['default' => 1, 'lg' => 3]),
+
+                        // K-05: DP dicatat sebagai uang masuk ke rekening/kas ini (hanya dipakai saat DP diisi).
+                        Forms\Components\Select::make('down_payment_bank_account_id')
+                            ->label(__('Account receiving the down payment'))
+                            ->options(fn () => \App\Models\BankAccount::where('is_active', true)->get()->mapWithKeys(fn ($a) => [$a->id => trim($a->bank_name.' '.$a->account_number)]))
+                            ->searchable()
+                            ->dehydrated(false)
+                            ->visible(fn (Forms\Get $get, ?SalesOrder $record) => (float) str_replace('.', '', (string) ($get('down_payment') ?? 0)) > 0 && (float) ($record?->down_payment ?? 0) <= 0)
                             ->columnSpan(['default' => 1, 'lg' => 3]),
 
                         Forms\Components\Hidden::make('created_by')
