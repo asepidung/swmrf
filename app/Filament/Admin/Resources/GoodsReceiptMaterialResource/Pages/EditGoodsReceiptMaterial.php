@@ -91,6 +91,20 @@ class EditGoodsReceiptMaterial extends EditRecord
 
             throw new Halt();
         }
+
+        // Jumlah baris tidak boleh berubah dari browser: baris yang hilang dari kiriman akan dihapus tanpa membalik stoknya, dan baris
+        // baru tidak punya bahan/harga (RPT-01).
+        $ada = $this->record->items()->pluck('id')->map(fn ($id) => 'record-'.$id)->sort()->values()->all();
+        $kiriman = collect(array_keys($this->data['items'] ?? []))->map(fn ($k) => (string) $k)->sort()->values()->all();
+
+        if ($ada !== $kiriman) {
+            Notification::make()
+                ->title(__('The item rows do not match this receipt, so it was not saved. Reload the page.'))
+                ->danger()
+                ->send();
+
+            throw new Halt();
+        }
     }
 
     protected function getFormActions(): array

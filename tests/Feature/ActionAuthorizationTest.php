@@ -210,9 +210,17 @@ class ActionAuthorizationTest extends TestCase
         $materialRequisition = MaterialRequisition::create([
             'supplier_id' => (\App\Models\Supplier::first() ?? \App\Models\Supplier::create(['name' => 'Supplier Test ' . uniqid(), 'address' => 'Bogor', 'pic' => 'Test', 'top_days' => 30, 'is_active' => true]))->id,
             'user_id' => $orang->id, 'supplier_id' => $supplier->id,
-            'due_date' => now()->toDateString(), 'status' => 'Pending',
+            'due_date' => now()->toDateString(), 'status' => 'Pending Finance',
         ]);
         $materialRequisition->items()->create([
+            'material_id' => $material->id, 'qty' => 10, 'price' => 1000, 'subtotal' => 10000,
+        ]);
+
+        $materialRequisitionForReview = MaterialRequisition::create([
+            'user_id' => $orang->id, 'supplier_id' => $supplier->id,
+            'due_date' => now()->toDateString(), 'status' => 'Requested',
+        ]);
+        $materialRequisitionForReview->items()->create([
             'material_id' => $material->id, 'qty' => 10, 'price' => 1000, 'subtotal' => 10000,
         ]);
 
@@ -248,7 +256,7 @@ class ActionAuthorizationTest extends TestCase
             [ProductRequisitionResource::getUrl('approve-finance', ['record' => $productRequisitionForApproval->getKey()]), 'approve_product_requisitions', ['view_product_requisitions', 'edit_product_requisitions']],
             [ProductRequisitionResource::getUrl('review', ['record' => $productRequisitionForReview->getKey()]), 'review_product_requisitions', ['view_product_requisitions', 'edit_product_requisitions']],
             [MaterialRequisitionResource::getUrl('approve-finance', ['record' => $materialRequisition->getKey()]), 'approve_material_requisitions', ['view_material_requisitions', 'edit_material_requisitions']],
-            [MaterialRequisitionResource::getUrl('review', ['record' => $materialRequisition->getKey()]), 'review_material_requisitions', ['view_material_requisitions', 'edit_material_requisitions']],
+            [MaterialRequisitionResource::getUrl('review', ['record' => $materialRequisitionForReview->getKey()]), 'review_material_requisitions', ['view_material_requisitions', 'edit_material_requisitions']],
             [DeliveryOrderResource::getUrl('approve', ['record' => $deliveryOrder->getKey()]), 'approve_delivery_orders', ['view_delivery_orders']],
             // Susulan 17 September 2026: `ManageMaterialStockTakeItems`
             // sekarang mensyaratkan `edit_material_stock_takes` di

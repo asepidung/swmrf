@@ -414,7 +414,10 @@ class ReceivePayment extends Page
     /** Seluruh invoice yang masih ditagihkan di grup ini, tertua dulu (tanpa penyaringan customer). */
     private function allOutstandingInvoices()
     {
+        // Invoice yang sudah lunas (riwayat impor legacy bisa ribuan per grup) disaring di kueri,
+        // bukan dimuat lalu dibuang di PHP (audit pra-rilis 14 November 2026, PF-07).
         return $this->record->receivables()
+            ->whereHas('invoice', fn ($q) => $q->where(fn ($w) => $w->whereNull('status')->orWhere('status', '!=', Invoice::STATUS_PAID)))
             ->with(['invoice.customer'])
             ->get()
             ->pluck('invoice')

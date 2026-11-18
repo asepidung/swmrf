@@ -119,6 +119,54 @@ class GoodsReceiptMaterialSusulanTest extends TestCase
         $this->assertSame(1, GoodsReceiptMaterial::where('purchase_material_id', $po->id)->count(), 'penerimaan kedua untuk PO yang sama ditolak');
     }
 
+    // =========================================================================
+    // Harga dan material baris penerimaan berasal dari PO, bukan dari browser
+    // (audit pra-rilis 14 November 2026, K-01). Keduanya dulu dibaca dari field
+    // tersembunyi, sehingga hutang ke pemasok bisa digeser pembuat penerimaan.
+    // =========================================================================
+
+    /** @test */
+    public function the_receipt_price_comes_from_the_purchase_order_not_from_the_browser(): void
+    {
+        $po = $this->poMaterial();
+
+        Livewire::actingAs($this->employee(['create_gr_materials']))
+            ->withQueryParams(['po_id' => $po->id])
+            ->test(CreateGoodsReceiptMaterial::class)
+            ->fillForm([
+                'receive_date' => now()->toDateString(), 'sj_number' => 'SJ-HARGA',
+                'items' => [['material_id' => $this->material->id, 'material_name' => 'GARAM', 'unit_name' => 'KG', 'po_qty' => '100', 'qty_received' => '100', 'price' => 99999]],
+            ])
+            ->call('forceCompleted');
+
+        $item = GoodsReceiptMaterial::where('purchase_material_id', $po->id)->firstOrFail()->items()->firstOrFail();
+
+        $this->assertEquals(10000, (float) $item->price, 'Harga penerimaan harus harga PO.');
+        $this->assertEquals(1000000, (float) $item->subtotal);
+    }
+
+    /** @test */
+    public function a_material_that_is_not_on_the_purchase_order_cannot_be_received(): void
+    {
+        $po = $this->poMaterial();
+        $lain = Material::create([
+            'code' => 'MAT002', 'name' => 'GULA', 'material_category_id' => $this->material->material_category_id,
+            'material_unit_id' => $this->material->material_unit_id, 'min_stock' => 0, 'is_active' => true,
+        ]);
+
+        Livewire::actingAs($this->employee(['create_gr_materials']))
+            ->withQueryParams(['po_id' => $po->id])
+            ->test(CreateGoodsReceiptMaterial::class)
+            ->fillForm([
+                'receive_date' => now()->toDateString(), 'sj_number' => 'SJ-LAIN',
+                'items' => [['material_id' => $lain->id, 'material_name' => 'GULA', 'unit_name' => 'KG', 'po_qty' => '100', 'qty_received' => '100', 'price' => 10000]],
+            ])
+            ->call('forceCompleted');
+
+        $this->assertSame(0, GoodsReceiptMaterial::where('purchase_material_id', $po->id)->count(), 'Penerimaan material di luar PO harus ditolak seluruhnya.');
+        $this->assertSame('pending', $po->fresh()->status);
+    }
+
     /** @test */
     public function create_page_is_closed_over_http_without_create_gr_materials(): void
     {
@@ -198,5 +246,37 @@ class GoodsReceiptMaterialSusulanTest extends TestCase
 
         $this->assertStringNotContainsString('GoodsReceiptMaterial::latest', $source);
         $this->assertStringNotContainsString("'gr_number' =>", $source);
+    }
+
+    /** @test */
+    public function dropping_item_rows_from_the_submitted_state_does_not_delete_them(): void
+    {
+        $gr = $this->grMaterial(locked: false);
+        foreach ([10, 20] as $qty) {
+            $gr->items()->create(['material_id' => $this->material->id, 'qty_received' => $qty, 'price' => 10000, 'subtotal' => $qty * 10000]);
+        }
+
+        $tab = Livewire::actingAs($this->employee(['edit_gr_materials']))
+            ->test(EditGoodsReceiptMaterial::class, ['record' => $gr->getRouteKey()]);
+
+        $baris = $tab->get('data.items');
+        $this->assertCount(2, $baris);
+        unset($baris[array_key_first($baris)]);
+
+        $tab->set('data.items', $baris)->set('data.sj_number', 'SJ-KONTROL')->set('data.po_status_action', 'partial')->call('save');
+
+        $this->assertSame(2, $gr->items()->count());
+        $this->assertNotSame('SJ-KONTROL', $gr->fresh()->sj_number);
+    public function bulk_delete_leaves_a_locked_receipt_alone(): void
+    {
+        $terkunci = $this->grMaterial(true);
+        $terbuka = $this->grMaterial(false);
+
+        Livewire::actingAs(User::factory()->create(['role' => 'programmer', 'is_active' => true]))
+            ->test(\App\Filament\Admin\Resources\GoodsReceiptMaterialResource\Pages\ListGoodsReceiptMaterials::class)
+            ->callTableBulkAction('delete', [$terkunci->getKey(), $terbuka->getKey()]);
+
+        $this->assertDatabaseHas('goods_receipt_materials', ['id' => $terkunci->id, 'deleted_at' => null]);
+        $this->assertSoftDeleted('goods_receipt_materials', ['id' => $terbuka->id]);
     }
 }

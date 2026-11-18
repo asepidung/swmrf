@@ -13,6 +13,8 @@ use Filament\Notifications\Notification;
 
 class ViewTally extends ViewRecord
 {
+    use \App\Filament\Concerns\GuardsTallyTransition;
+
     protected static string $resource = TallyResource::class;
 
     protected static string $view = 'filament.admin.resources.tally-resource.pages.view-tally';
@@ -71,6 +73,8 @@ class ViewTally extends ViewRecord
                 ])
                 ->action(function (array $data) {
                     DB::transaction(function () use ($data) {
+                        $this->lockTallyOrHalt(Tally::STATUS_PROCESSING, needsItems: true);
+
                         $this->record->update([
                             'status' => Tally::STATUS_LOCKED,
                             'seal_number' => $data['seal_number'] ?? null,
@@ -113,6 +117,8 @@ class ViewTally extends ViewRecord
                 ->modalDescription(__('Undo the approval of this tally? Both the tally and its sales order go back to processing.'))
                 ->action(function () {
                     DB::transaction(function () {
+                        $this->lockTallyOrHalt(Tally::STATUS_LOCKED, mustHaveNoDeliveryOrder: true);
+
                         $this->record->update([
                             'status' => Tally::STATUS_PROCESSING,
                         ]);

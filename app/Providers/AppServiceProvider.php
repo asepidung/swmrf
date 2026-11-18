@@ -156,6 +156,11 @@ class AppServiceProvider extends ServiceProvider
             return $user ? $user->hasPermission('view_activity_logs') : false;
         });
 
+        // Menghapus berkas log menghilangkan satu-satunya tempat kegagalan yang ditelan try/catch bisa terlihat: hanya programmer (LV-01).
+        foreach (['deleteLogFile', 'deleteLogFolder'] as $gerbang) {
+            \Illuminate\Support\Facades\Gate::define($gerbang, fn (?\App\Models\User $user) => $user?->isProgrammer() ?? false);
+        }
+
         if (config('app.env') !== 'local' || (request()->getHost() !== 'localhost' && request()->getHost() !== '127.0.0.1')) {
             \Illuminate\Support\Facades\URL::forceScheme('https');
         }
