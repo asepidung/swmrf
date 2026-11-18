@@ -2031,5 +2031,7 @@
     "More than the remaining PO quantity.": "More than the remaining PO quantity.",
     "Received more than the remaining PO quantity": "Received more than the remaining PO quantity",
     "More than the shipped weight.": "More than the shipped weight.",
-    "Received weight is more than the shipped weight": "Received weight is more than the shipped weight"
+    "Received weight is more than the shipped weight": "Received weight is more than the shipped weight",
+    "This payment makes the balance of :account negative": "This payment makes the balance of :account negative",
+    "Balance now: :balance. Check that the opening balance and earlier entries are complete.": "Balance now: :balance. Check that the opening balance and earlier entries are complete."
 }
