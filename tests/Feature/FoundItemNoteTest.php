@@ -86,4 +86,19 @@ class FoundItemNoteTest extends TestCase
         $this->assertSame('0', substr($stock->barcode, 0, 1));
         $this->assertSame(1, BeefStockMovement::where('transaction_type', 'FOUND_ITEM')->count());
     }
+
+    public function test_a_found_item_with_zero_weight_is_refused_and_creates_no_stock(): void
+    {
+        $data = $this->formData('ditemukan di rak 3');
+        $data['qty_pcs_combined'] = '0/5';
+
+        Livewire::actingAs($this->programmer)
+            ->test(FoundItemScanner::class)
+            ->mountAction('manualInput')
+            ->setActionData($data)
+            ->callMountedAction();
+
+        $this->assertSame(0, BeefStock::count());
+        $this->assertSame(0, BeefStockMovement::where('transaction_type', 'FOUND_ITEM')->count());
+    }
 }

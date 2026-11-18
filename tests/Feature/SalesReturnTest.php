@@ -726,4 +726,41 @@ class SalesReturnTest extends TestCase
             );
         }
     }
+
+    public function test_approving_from_a_stale_copy_after_another_approval_is_refused_cleanly(): void
+    {
+        $retur = $this->retur();
+        $this->barang($retur, 'BARCODE-A');
+        $lama = SalesReturn::find($retur->id);
+
+        SalesReturn::find($retur->id)->approve();
+
+        try {
+            $lama->approve();
+            $this->fail('Approve kedua dari salinan lama harus ditolak.');
+        } catch (\RuntimeException $e) {
+            $this->assertSame(__('Only a draft return can be approved.'), $e->getMessage());
+        }
+
+        $this->assertSame(1, BeefStock::where('barcode', 'BARCODE-A')->count());
+    }
+
+    public function test_unlocking_from_a_stale_copy_after_another_unlock_is_refused_cleanly(): void
+    {
+        $retur = $this->retur();
+        $this->barang($retur, 'BARCODE-A');
+        SalesReturn::find($retur->id)->approve();
+        $lama = SalesReturn::find($retur->id);
+
+        SalesReturn::find($retur->id)->unlock();
+
+        try {
+            $lama->unlock();
+            $this->fail('Unlock kedua dari salinan lama harus ditolak.');
+        } catch (\RuntimeException $e) {
+            $this->assertSame(__('Only an approved return can be unlocked.'), $e->getMessage());
+        }
+
+        $this->assertSame(1, \App\Models\BeefStockMovement::where('transaction_type', 'CANCEL_SALES_RETURN')->where('barcode', 'BARCODE-A')->count());
+    }
 }
