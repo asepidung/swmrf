@@ -2029,5 +2029,7 @@
     "This stock count is no longer being counted, so it cannot be changed.": "This stock count is no longer being counted, so it cannot be changed.",
     "Temporary password for ':username': :password. Pass it on now; it is shown only once and must be changed at the next login.": "Temporary password for ':username': :password. Pass it on now; it is shown only once and must be changed at the next login.",
     "More than the remaining PO quantity.": "More than the remaining PO quantity.",
-    "Received more than the remaining PO quantity": "Received more than the remaining PO quantity"
+    "Received more than the remaining PO quantity": "Received more than the remaining PO quantity",
+    "More than the shipped weight.": "More than the shipped weight.",
+    "Received weight is more than the shipped weight": "Received weight is more than the shipped weight"
 }

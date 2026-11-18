@@ -130,6 +130,10 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                                     ->required()
                                     ->extraInputAttributes(['inputmode' => 'decimal', 'class' => 'text-right'])
                                     ->rules(['numeric', 'min:0'])
+                                    ->live(onBlur: true)
+                                    ->helperText(fn (Forms\Get $get) => is_numeric($get('weight')) && (float) $get('weight') > (float) $get('shipped_weight')
+                                        ? __('More than the shipped weight.')
+                                        : null)
                                     ->validationMessages([
                                         'numeric' => __('Received weight must be a number.'),
                                         'min' => __('Received weight cannot be negative.'),
@@ -366,8 +370,9 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
     {
         $data = $this->form->getState();
         $alreadyApproved = false;
+        $lebih = [];
 
-        DB::transaction(function () use ($data, &$alreadyApproved) {
+        DB::transaction(function () use ($data, &$alreadyApproved, &$lebih) {
             // Baris DO dikunci dan statusnya dibaca ULANG dari basis data
             // sebelum apa pun ditulis. Tanpa ini, dua permintaan approve
             // yang bersamaan (klik ganda, atau dua tab) bisa sama-sama
@@ -413,6 +418,13 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
             }
 
             $data['receipt_items'] = $baris;
+
+            // DO-02 (keputusan Owner): berat diterima boleh melebihi berat kirim, tetapi diberi peringatan.
+            foreach ($baris as $i => $item) {
+                if ((float) $item['weight'] > (float) $doItemsList[$i]->weight) {
+                    $lebih[] = ($doItemsList[$i]->product?->name ?? '#'.$item['product_id']).': '.number_format((float) $item['weight'], 2, ',', '.').' > '.number_format((float) $doItemsList[$i]->weight, 2, ',', '.').' kg';
+                }
+            }
 
             $totalBox = 0;
             $totalWeight = 0;
@@ -519,6 +531,13 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
             ->title(__('Delivery Order Approved & Receipt Created'))
             ->success()
             ->send();
+
+        if ($lebih !== []) {
+            Notification::make()
+                ->title(__('Received weight is more than the shipped weight'))
+                ->body(implode(', ', $lebih))
+                ->warning()->persistent()->send();
+        }
 
         $this->redirect(DeliveryOrderResource::getUrl('index'));
     }
