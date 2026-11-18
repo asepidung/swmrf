@@ -2020,5 +2020,6 @@
     "This delivery order has already moved on, so the rejection was not done.": "Surat jalan ini sudah berpindah tahap, jadi penolakan tidak dilakukan.",
     "This purchase order is already closed.": "Purchase order ini sudah ditutup.",
     "This purchase order already has a down payment, so it cannot be cancelled here.": "Purchase order ini sudah punya uang muka, jadi tidak bisa dibatalkan di sini.",
-    "This purchase order already has goods receipts, so it cannot be cancelled.": "Purchase order ini sudah punya penerimaan barang, jadi tidak bisa dibatalkan."
+    "This purchase order already has goods receipts, so it cannot be cancelled.": "Purchase order ini sudah punya penerimaan barang, jadi tidak bisa dibatalkan.",
+    "One of the carcasses on this boning is already used by another locked boning.": "Salah satu karkas pada boning ini sudah dipakai boning lain yang terkunci."
 }
