@@ -2009,5 +2009,6 @@
     "This request is no longer at this stage.": "Permintaan ini sudah tidak berada di tahap ini.",
     "This request has already moved on, so this decision was not saved.": "Permintaan ini sudah berpindah tahap, jadi keputusan ini tidak disimpan.",
     ":count documents were skipped because their status no longer allows deletion.": ":count dokumen dilewati karena statusnya sudah tidak boleh dihapus.",
-    "This delivery order has already moved on, so it cannot be deleted.": "Surat jalan ini sudah berpindah tahap, jadi tidak bisa dihapus."
+    "This delivery order has already moved on, so it cannot be deleted.": "Surat jalan ini sudah berpindah tahap, jadi tidak bisa dihapus.",
+    "This return is no longer a draft, so its items cannot be changed.": "Retur ini sudah bukan draf, jadi barisnya tidak bisa diubah."
 }
