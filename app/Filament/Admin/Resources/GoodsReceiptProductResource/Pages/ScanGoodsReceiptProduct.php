@@ -214,6 +214,17 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
             return;
         }
 
+        // Gudang dari browser: harus gudang aktif yang dikenal (audit pra-rilis 14 November 2026, L-07).
+        if (! \App\Models\Warehouse::whereKey($this->warehouse_id)->where('is_active', true)->exists()) {
+            \Filament\Notifications\Notification::make('scan-toast')
+                ->title(__('Choose a warehouse first'))
+                ->body(__('The scanned goods need to be recorded somewhere.'))
+                ->warning()
+                ->send();
+
+            return;
+        }
+
         $barcode = trim($this->barcode);
         if (empty($barcode)) {
             return;

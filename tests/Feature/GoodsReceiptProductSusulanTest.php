@@ -462,4 +462,55 @@ class GoodsReceiptProductSusulanTest extends TestCase
 
         $this->assertDatabaseHas('beef_stocks', ['barcode' => 'FX-GR-FREEZE-1']);
     }
+
+    /** @test */
+    public function a_zero_weight_label_is_refused_but_a_normal_one_is_accepted(): void
+    {
+        $gr = $this->grDenganPo();
+
+        $isi = fn (string $berat) => Livewire::actingAs($this->employee(['edit_goods_receipt_products']))
+            ->test(LabelingGoodsReceiptProduct::class, ['record' => $gr])
+            ->set('data.warehouse_id', $this->warehouse->id)
+            ->set('data.origin', '7')
+            ->set('data.product_id', $this->product->id)
+            ->set('data.grade_id', $this->grade->id)
+            ->set('data.qty_pcs_combined', $berat)
+            ->set('data.ph_level', 5.5)
+            ->call('create');
+
+        try {
+            $isi('0/1');
+        } catch (\Throwable $e) {
+        }
+        $this->assertSame(0, BeefStock::count());
+
+        $isi('10.00/1');
+        $this->assertSame(1, BeefStock::count());
+    }
+
+    /** @test */
+    public function scanning_into_an_unknown_or_inactive_warehouse_is_refused(): void
+    {
+        $gr = $this->grDenganPo();
+        $tally = $this->tallyItem('FX-GR-WH-0001')->tally;
+        \App\Models\DeliveryOrder::create([
+            'tally_id' => $tally->id, 'sales_order_id' => $tally->sales_order_id, 'customer_id' => $tally->salesOrder->customer_id,
+            'delivery_date' => now()->toDateString(), 'status' => 'Ready',
+        ]);
+        $gudangMati = Warehouse::create(['code' => 'OFF', 'name' => 'GUDANG MATI', 'is_active' => false]);
+
+        $test = Livewire::actingAs($this->employee(['edit_goods_receipt_products']))
+            ->test(ScanGoodsReceiptProduct::class, ['record' => $gr]);
+
+        foreach ([999999, $gudangMati->id] as $gudang) {
+            try {
+                $test->set('warehouse_id', $gudang)->set('barcode', 'FX-GR-WH-0001')->call('scan');
+            } catch (\Throwable $e) {
+            }
+        }
+        $this->assertSame(0, BeefStock::count(), 'Gudang tidak dikenal/nonaktif tidak boleh menerima stok.');
+
+        $test->set('warehouse_id', $this->warehouse->id)->set('barcode', 'FX-GR-WH-0001')->call('scan');
+        $this->assertSame(1, BeefStock::count());
+    }
 }

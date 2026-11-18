@@ -265,6 +265,11 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                     ->action(function ($record, $livewire) {
                         try {
                             DB::transaction(function () use ($record) {
+                                $repackKini = \App\Models\Repack::whereKey($record->repack_id)->lockForUpdate()->first();
+                                if (! $repackKini || $repackKini->kunci) {
+                                    throw new \RuntimeException('Repack is locked.');
+                                }
+
                                 /* Pengaman ganda: barang yang sudah jadi bahan repack atau masuk tally tidak boleh dibatalkan */
                                 if (BarcodeUsage::marks($record->barcode) !== []) {
                                     throw new \RuntimeException('Barcode already used downstream.');
@@ -340,6 +345,13 @@ class InputHasilRepack extends Page implements HasForms, HasTable
         $weight = (float) trim($parts[0]);
         $pcs = isset($parts[1]) && trim($parts[1]) !== '' ? (int) trim($parts[1]) : 1;
 
+        // Berat nol atau negatif tidak boleh jadi hasil repack (audit pra-rilis 14 November 2026, L-05).
+        if ($weight <= 0) {
+            Notification::make('scan-toast')->title(__('That weight is not valid.'))->danger()->send();
+
+            return;
+        }
+
         // Berat di atas batas wajar produknya: konfirmasi dulu (#486).
         if ($this->abnormalLabelWeight($formData['product_id'] ?? null, $weight, $confirmed)) {
             return;
@@ -347,6 +359,12 @@ class InputHasilRepack extends Page implements HasForms, HasTable
 
         try {
             $insertedItem = DB::transaction(function () use ($formData, $weight, $pcs) {
+                // Status kunci dibaca ULANG dengan baris terkunci (audit pra-rilis 14 November 2026, L-06),
+                // sama seperti Repack::lock(): hasil tidak boleh menyelip sementara penilaian dihitung.
+                $repackKini = \App\Models\Repack::whereKey($this->record->id)->lockForUpdate()->first();
+                if (! $repackKini || $repackKini->kunci) {
+                    throw new \Exception(__('This repack is already locked.'));
+                }
 
                 /* Proses pembuatan kode barcode */
                 $origin = $formData['origin'];

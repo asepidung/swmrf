@@ -265,6 +265,16 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                 $weight = (float) trim($parts[0]);
                 $pcs = isset($parts[1]) && trim($parts[1]) !== '' ? (int) trim($parts[1]) : 1;
 
+                // Berat nol atau negatif tidak boleh jadi stok (audit pra-rilis 14 November 2026, R-05).
+                if ($weight <= 0) {
+                    Notification::make('scan-toast')->title(__('That weight is not valid.'))->danger()->send();
+
+                    return;
+                }
+
+                // Urutan barcode dan stok ditulis dalam satu transaksi, dengan baris stok terkunci.
+                \Illuminate\Support\Facades\DB::transaction(function () use ($data, $weight, $pcs) {
+
                 // Tentukan barcode baru
                 $origin = '0'; // Default '0' for manual/unknown finding without label
                 $dateStr = Carbon::parse($data['pack_date'] ?? now())->format('dmy');
@@ -303,7 +313,7 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                 $prefix = $origin . $dateStr;
 
                 $counterStr = \App\Support\BarcodeSequence::nextPadded($prefix, [
-                    BeefStock::query(),
+                    BeefStock::query()->lockForUpdate(),
                 ]);
 
                 $finalBarcode = $origin . $dateStr . $productCode . $gradeId . $weightStr . $pcsStr . $phStr . $counterStr;
@@ -377,6 +387,7 @@ class FoundItemScanner extends Page implements HasForms, HasTable
                     ->send();
                     
                 $this->dispatch('focus-barcode');
+                });
             });
     }
 

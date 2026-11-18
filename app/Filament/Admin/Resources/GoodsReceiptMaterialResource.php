@@ -117,6 +117,7 @@ class GoodsReceiptMaterialResource extends Resource
                                     ->hiddenLabel()
                                     ->placeholder(__('Qty Received'))
                                     ->numeric()
+                                    ->minValue(0)
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'text-right'])
                                     ->required()
                                     ->live(onBlur: true)
@@ -309,6 +310,10 @@ class GoodsReceiptMaterialResource extends Resource
                     ->action(function (GoodsReceiptMaterial $record) {
                         \Illuminate\Support\Facades\DB::beginTransaction();
                         try {
+                            // Baris dikunci dan dibaca ULANG: dua penekanan bersamaan tidak boleh sama-sama mengunci/membuka
+                            // (audit pra-rilis 14 November 2026, L-08).
+                            $record = $record->newQuery()->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
+
                             if ($record->is_locked) {
                                 // Unlock logic
                                 $payable = \App\Models\Payable::where('payableable_type', get_class($record))

@@ -228,6 +228,8 @@ class ScanTally extends Page implements HasForms, HasTable
                             // kliknya di layar; ini menghentikan pemanggilan
                             // yang tidak lewat layar.
                             ->visible(fn (?TallyItem $record, $livewire) => $livewire->isPastPodLimit($record))
+                            // Izin dan status dijaga juga di server (audit pra-rilis 14 November 2026, TL-02).
+                            ->authorize(fn (): bool => auth()->user()?->hasPermission('edit_tallies') ?? false)
                             ->modalHeading(__('Relabel Tally Item'))
                             ->modalDescription(__('Change the POD date and reprint the label.'))
                             ->form(fn (TallyItem $record) => [
@@ -252,7 +254,20 @@ class ScanTally extends Page implements HasForms, HasTable
                                 $newPackDate = $data['pack_date'];
                                 $showExp = $data['show_exp'];
                                 
-                                DB::transaction(function () use ($record, $newPackDate, $showExp) {
+                                $ditolak = false;
+
+                                DB::transaction(function () use ($record, $newPackDate, $showExp, &$ditolak) {
+                                    // Status tally dibaca ULANG dengan baris terkunci: tab lama pada tally yang sudah diapprove
+                                    // atau jadi surat jalan tidak boleh lagi mengganti barcode barisnya.
+                                    $tallyKini = Tally::whereKey($record->tally_id)->lockForUpdate()->first();
+
+                                    if (! $tallyKini || $tallyKini->status !== Tally::STATUS_PROCESSING) {
+                                        $ditolak = true;
+
+                                        return;
+                                    }
+
+                                    $record->refresh();
                                     $oldBarcode = $record->barcode;
                                     $oldPackDate = $record->pack_date?->format('Y-m-d');
                                     $oldExpDate = $record->exp_date?->format('Y-m-d');
@@ -334,7 +349,16 @@ class ScanTally extends Page implements HasForms, HasTable
                                         'created_by' => auth()->id(),
                                     ]);
                                 });
-                                
+
+                                if ($ditolak) {
+                                    Notification::make('scan-toast')
+                                        ->title(__('This tally can no longer be edited'))
+                                        ->danger()
+                                        ->send();
+
+                                    return;
+                                }
+
                                 Notification::make('scan-toast')
                                     ->title(__('Tally Item Relabeled Successfully'))
                                     ->success()

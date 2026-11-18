@@ -387,6 +387,11 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
             $weight = (float) trim($parts[0]);
             $pcs = isset($parts[1]) && trim($parts[1]) !== '' ? (int) trim($parts[1]) : 1;
 
+            // Berat nol atau negatif tidak boleh jadi label (audit pra-rilis 14 November 2026, L-05).
+            if ($weight <= 0) {
+                throw new \InvalidArgumentException(__('That weight is not valid.'));
+            }
+
             // Berat di atas batas wajar produknya: konfirmasi dulu (#486).
             if ($this->abnormalLabelWeight($formData['product_id'] ?? null, $weight, $confirmed)) {
                 return;

@@ -2024,5 +2024,6 @@
     "One of the carcasses on this boning is already used by another locked boning.": "One of the carcasses on this boning is already used by another locked boning.",
     "A weighing row points to a cattle that is not on this receiving.": "A weighing row points to a cattle that is not on this receiving.",
     "The item rows do not match this receipt, so it was not saved. Reload the page.": "The item rows do not match this receipt, so it was not saved. Reload the page.",
+    "Enter a number that is not negative.": "Enter a number that is not negative.",
     "The push address is not valid.": "The push address is not valid."
 }
