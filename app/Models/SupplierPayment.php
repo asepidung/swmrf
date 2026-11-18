@@ -178,6 +178,35 @@ class SupplierPayment extends Model
      * sudah ada supaya dua pembayaran yang diajukan nyaris bersamaan untuk PO
      * yang sama tidak lolos berdasarkan angka sisa yang sama-sama basi.
      */
+    /**
+     * Sisa yang masih boleh dibayarkan sebagai uang muka (DP) untuk sebuah PO (audit pra-rilis, PO-02b; keputusan Ayah 18 Nov 2026).
+     *
+     * Nilai PO dikurangi (a) DP yang sudah tercatat dan (b) hutang penerimaannya yang sudah terbayar LANGSUNG. Bagian hutang yang
+     * terbayar lewat DP tidak dihitung dua kali: yang dikurangkan hanya paid_amount hutang di atas DP yang sudah teralokasi.
+     * Tanpa (b), DP dan pembayaran hutang bisa menghitung barang yang sama dua kali.
+     *
+     * Baris pembayaran dikunci seperti totalPaidFor(); panggil di dalam transaksi bila hasilnya mengikat.
+     */
+    public static function advanceRoomFor(Model $po): float
+    {
+        $dp = static::totalPaidFor($po);
+
+        $dpTeralokasi = (float) static::query()
+            ->where('source_type', get_class($po))
+            ->where('source_id', $po->getKey())
+            ->sum('allocated_amount');
+
+        $penerimaan = $po->goodsReceipts();
+        $hutangTerbayar = (float) Payable::query()
+            ->where('payableable_type', get_class($penerimaan->getRelated()))
+            ->whereIn('payableable_id', $penerimaan->pluck('id'))
+            ->sum('paid_amount');
+
+        $langsung = max($hutangTerbayar - $dpTeralokasi, 0);
+
+        return max((float) $po->total_amount - $dp - $langsung, 0);
+    }
+
     public static function totalPaidFor(Model $source): float
     {
         return (float) static::query()
