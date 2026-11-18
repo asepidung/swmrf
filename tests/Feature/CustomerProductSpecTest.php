@@ -525,6 +525,8 @@ class CustomerProductSpecTest extends TestCase
             ->assertSee('soup 4x4 cm')
             ->assertDontSee('rib 3 cm', false);
 
+        // Pengguna lain = sesi lain (cetakan kini memakai AuthenticateSession, A-04).
+        $this->flushSession();
         $this->actingAs($this->employee('view_customers'))->get(route('print.customer-specs', $this->customer))->assertForbidden();
 
         Livewire::actingAs($viewer)
