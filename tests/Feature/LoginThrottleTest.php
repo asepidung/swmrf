@@ -89,4 +89,22 @@ class LoginThrottleTest extends TestCase
 
         $this->assertAuthenticated();
     }
+    /** @test */
+    public function guessing_one_username_is_capped_even_when_the_address_changes(): void
+    {
+        $this->user('candra');
+
+        // 20 percobaan dari alamat-alamat berbeda (header X-Forwarded-For bisa dipalsukan) tetap terhitung per username.
+        foreach (range(1, 20) as $i) {
+            RateLimiter::hit('login-name:'.sha1('candra'), 600);
+        }
+
+        Livewire::test(Login::class)->set('data.username', 'candra')->set('data.password', 'secret-1234')->call('authenticate')->assertNoRedirect();
+        $this->assertGuest();
+
+        // Kontrol positif: username lain tidak terpengaruh.
+        $this->user('arif');
+        Livewire::test(Login::class)->set('data.username', 'arif')->set('data.password', 'secret-1234')->call('authenticate');
+        $this->assertAuthenticated();
+    }
 }

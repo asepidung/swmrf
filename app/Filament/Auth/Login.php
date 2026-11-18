@@ -25,8 +25,11 @@ class Login extends BasePage
         $username = mb_strtolower(trim((string) ($this->data['username'] ?? '')));
         $userKey = 'login-user:'.sha1($username.'|'.$ip);
         $ipKey = 'login-ip:'.$ip;
+        // P-01: batas per username TANPA alamat (20 per 10 menit). Alamat bisa dipalsukan lewat header X-Forwarded-For, dan
+        // batas di atas bergantung padanya; yang ini tetap menahan tebakan sandi untuk satu akun dari alamat mana pun.
+        $nameKey = 'login-name:'.sha1($username);
 
-        foreach ([[$userKey, 5], [$ipKey, 120]] as [$key, $max]) {
+        foreach ([[$userKey, 5], [$ipKey, 120], [$nameKey, 20]] as [$key, $max]) {
             if (RateLimiter::tooManyAttempts($key, $max)) {
                 $this->getRateLimitedNotification(new TooManyRequestsException(static::class, 'authenticate', $ip, RateLimiter::availableIn($key)))?->send();
 
@@ -36,6 +39,7 @@ class Login extends BasePage
 
         RateLimiter::hit($userKey, 60);
         RateLimiter::hit($ipKey, 60);
+        RateLimiter::hit($nameKey, 600);
 
         $data = $this->form->getState();
 
@@ -55,6 +59,7 @@ class Login extends BasePage
         }
 
         RateLimiter::clear($userKey);
+        RateLimiter::clear($nameKey);
 
         session()->regenerate();
 
