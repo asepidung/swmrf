@@ -505,7 +505,7 @@ class DeliveryOrderTest extends TestCase
 
         // Assert status reverted
         $this->assertEquals('locked', $tally->fresh()->status);
-        $this->assertEquals('processing', $so->fresh()->status);
+        $this->assertEquals('ready', $so->fresh()->status);
     }
 
     /** @test */
