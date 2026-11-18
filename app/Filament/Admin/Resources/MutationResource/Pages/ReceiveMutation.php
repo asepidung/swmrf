@@ -90,10 +90,46 @@ class ReceiveMutation extends Page implements HasForms, HasTable
             return;
         }
 
-        $item->update(['is_received' => true]);
+        if (! $this->selamaMasihDikirim(fn () => $item->update(['is_received' => true]))) {
+            return;
+        }
 
         Notification::make('scan-toast')->title(__('Barcode scanned'))->success()->send();
         $this->dispatch('focus-barcode');
+    }
+
+    /**
+     * Menjalankan perubahan HANYA selama mutasinya masih SENT, dengan baris
+     * Mutation dikunci dan statusnya dibaca ULANG dari basis data.
+     *
+     * `mount()` memeriksa status sekali saat halaman dibuka. Tab yang masih
+     * terbuka sesudah mutasinya diselesaikan di sesi lain tetap bisa
+     * menekan tombol di sini -- dan untuk `finish` itu berarti stok gudang
+     * tujuan dibuat DUA KALI (audit pra-rilis 14 November 2026, S-01/S-03).
+     * Pola yang sama dengan unscan di `ScanMutation`.
+     */
+    private function selamaMasihDikirim(callable $ubah): bool
+    {
+        $boleh = DB::transaction(function () use ($ubah): bool {
+            $mutation = Mutation::whereKey($this->record->id)->lockForUpdate()->first();
+
+            if (! $mutation || $mutation->status !== 'SENT') {
+                return false;
+            }
+
+            $ubah($mutation);
+
+            return true;
+        });
+
+        if (! $boleh) {
+            Notification::make('scan-toast')
+                ->title(__('This mutation has not been sent yet, or is already finished.'))
+                ->warning()
+                ->send();
+        }
+
+        return $boleh;
     }
 
     public function table(Table $table): Table
@@ -116,8 +152,10 @@ class ReceiveMutation extends Page implements HasForms, HasTable
                     ->icon('heroicon-o-x-mark')
                     ->tooltip(__('Undo receiving'))
                     ->color('danger')
-                    ->action(function (MutationItem $record) {
-                        $record->update(['is_received' => false]);
+                    ->action(function (MutationItem $record, Tables\Actions\Action $action) {
+                        if (! $this->selamaMasihDikirim(fn () => $record->update(['is_received' => false]))) {
+                            $action->cancel();
+                        }
                     })
                     ->successNotificationTitle(__('Receiving undone')),
             ])
@@ -138,10 +176,13 @@ class ReceiveMutation extends Page implements HasForms, HasTable
                 ->icon('heroicon-o-check-circle')
                 ->requiresConfirmation()
                 ->action(function () {
-                    MutationItem::where('mutation_id', $this->record->id)
+                    $ditandai = $this->selamaMasihDikirim(fn () => MutationItem::where('mutation_id', $this->record->id)
                         ->where('is_received', false)
-                        ->update(['is_received' => true]);
-                    Notification::make('scan-toast')->title(__('Every item has been marked as received'))->success()->send();
+                        ->update(['is_received' => true]));
+
+                    if ($ditandai) {
+                        Notification::make('scan-toast')->title(__('Every item has been marked as received'))->success()->send();
+                    }
                 }),
 
             Actions\Action::make('finish')
@@ -152,16 +193,23 @@ class ReceiveMutation extends Page implements HasForms, HasTable
                 ->modalHeading(__('Finish receiving?'))
                 ->modalDescription(__('Everything scanned goes into the destination warehouse. Anything not scanned is left out and recorded as a shortage.'))
                 ->action(function () {
-                    $receivedItems = MutationItem::where('mutation_id', $this->record->id)
-                        ->where('is_received', true)
-                        ->get();
+                    $kosong = false;
 
-                    if ($receivedItems->isEmpty()) {
-                        Notification::make('scan-toast')->title(__('No items have been scanned yet!'))->danger()->send();
-                        return;
-                    }
+                    // Daftar barang diterima dibaca DI DALAM transaksi yang sama
+                    // dengan kunci baris Mutation, supaya dua penekanan tombol
+                    // (dua tab, dua orang, atau klik ganda) tidak sama-sama
+                    // membuat stok gudang tujuan.
+                    $selesai = $this->selamaMasihDikirim(function (Mutation $mutation) use (&$kosong) {
+                        $receivedItems = MutationItem::where('mutation_id', $mutation->id)
+                            ->where('is_received', true)
+                            ->get();
 
-                    DB::transaction(function () use ($receivedItems) {
+                        if ($receivedItems->isEmpty()) {
+                            $kosong = true;
+
+                            return;
+                        }
+
                         foreach ($receivedItems as $item) {
                             \App\Models\BeefStock::create([
                                 'barcode' => $item->barcode,
@@ -193,12 +241,24 @@ class ReceiveMutation extends Page implements HasForms, HasTable
                                 'created_by' => auth()->id(),
                             ]);
                         }
-                        
-                        $this->record->update([
+
+                        $mutation->update([
                             'status' => 'COMPLETED',
                             'received_by' => auth()->id()
                         ]);
                     });
+
+                    if (! $selesai) {
+                        return;
+                    }
+
+                    if ($kosong) {
+                        Notification::make('scan-toast')->title(__('No items have been scanned yet!'))->danger()->send();
+
+                        return;
+                    }
+
+                    $this->record->refresh();
 
                     Notification::make('scan-toast')->title(__('Mutation finished; the goods are now in the destination warehouse.'))->success()->send();
                     $this->redirect(MutationResource::getUrl('view', ['record' => $this->record->id]));

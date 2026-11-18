@@ -18,7 +18,8 @@ class EditDeliveryOrder extends EditRecord
     {
         parent::mount($record);
 
-        if ($this->record->status === 'Approved') {
+        // Hanya `Ready` yang boleh disunting; Approved/Invoiced sudah punya bukti terima atau tagihan (DO-03).
+        if ($this->record->status !== 'Ready') {
             $this->redirect($this->getResource()::getUrl('view', ['record' => $this->record->id]));
         }
     }
@@ -62,7 +63,14 @@ class EditDeliveryOrder extends EditRecord
                 ->tooltip(__('Delete'))
                 ->icon('heroicon-o-trash')
                 ->color('danger')
-                ->iconButton(),
+                ->iconButton()
+                ->visible(fn (): bool => $this->record->status === 'Ready')
+                ->before(function (Actions\DeleteAction $action) {
+                    if (\App\Models\DeliveryOrder::whereKey($this->record->getKey())->value('status') !== 'Ready') {
+                        Notification::make()->title(__('This delivery order has already moved on, so it cannot be deleted.'))->danger()->send();
+                        $action->cancel();
+                    }
+                }),
         ];
     }
 

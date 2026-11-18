@@ -307,7 +307,7 @@ class DeliveryOrderResource extends Resource
     {
         return $table
             ->defaultSort('id', 'desc')
-            ->recordUrl(fn (DeliveryOrder $record): string => ($record->trashed() || $record->status === 'Approved') 
+            ->recordUrl(fn (DeliveryOrder $record): string => ($record->trashed() || $record->status !== 'Ready') 
                 ? static::getUrl('view', ['record' => $record->id]) 
                 : static::getUrl('edit', ['record' => $record->id])
             )
