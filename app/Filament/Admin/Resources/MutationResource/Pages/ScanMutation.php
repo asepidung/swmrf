@@ -101,6 +101,18 @@ class ScanMutation extends Page implements HasForms, HasTable
 
         try {
             DB::transaction(function () use ($barcode) {
+                // Status dibaca ULANG dengan baris Mutation terkunci. mount() hanya
+                // memeriksanya sekali; tab yang masih terbuka sesudah mutasinya
+                // dikirim atau diterima tetap bisa memindai -- stoknya keluar dari
+                // gudang asal lalu menggantung di dokumen yang sudah selesai dan
+                // tidak pernah masuk gudang tujuan (audit pra-rilis 14 November
+                // 2026, S-02). Pola yang sama dengan unscan di bawah.
+                $mutation = Mutation::whereKey($this->record->id)->lockForUpdate()->first();
+
+                if (! $mutation || $mutation->status !== 'DRAFT') {
+                    throw new \Exception(__('This mutation can no longer be edited'));
+                }
+
                 // TOCTOU: cek duplikat harus di dalam transaksi dan terkunci, supaya
                 // dua scan berbarengan tidak sama-sama lolos.
                 $alreadyScanned = MutationItem::where('mutation_id', $this->record->id)
@@ -254,7 +266,33 @@ class ScanMutation extends Page implements HasForms, HasTable
                         return;
                     }
 
-                    $this->record->update(['status' => 'SENT']);
+                    // Hanya DRAFT yang boleh menjadi SENT, diperiksa dengan baris
+                    // terkunci. Tanpa ini tab basi bisa mengembalikan mutasi yang
+                    // sudah COMPLETED menjadi SENT, lalu penerimaan kedua membuat
+                    // stok gudang tujuan dua kali (audit pra-rilis, S-02).
+                    $terkirim = DB::transaction(function (): bool {
+                        $mutation = Mutation::whereKey($this->record->id)->lockForUpdate()->first();
+
+                        if (! $mutation || $mutation->status !== 'DRAFT') {
+                            return false;
+                        }
+
+                        $mutation->update(['status' => 'SENT']);
+
+                        return true;
+                    });
+
+                    if (! $terkirim) {
+                        Notification::make('scan-toast')
+                            ->title(__('This mutation can no longer be edited'))
+                            ->danger()
+                            ->send();
+                        $this->redirect(MutationResource::getUrl('view', ['record' => $this->record->id]));
+
+                        return;
+                    }
+
+                    $this->record->refresh();
                     Notification::make('scan-toast')->title(__('Mutation locked and sent'))->success()->send();
                     $this->redirect(MutationResource::getUrl('view', ['record' => $this->record->id]));
                 }),

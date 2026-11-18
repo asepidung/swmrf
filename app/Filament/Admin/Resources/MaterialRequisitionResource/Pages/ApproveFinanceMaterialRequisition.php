@@ -12,6 +12,8 @@ use Filament\Support\RawJs;
 
 class ApproveFinanceMaterialRequisition extends EditRecord
 {
+    use \App\Filament\Concerns\GuardsRequisitionStage;
+
     /**
      * Halaman ini TIDAK boleh terbuka lewat alamatnya saja.
      *
@@ -35,6 +37,21 @@ class ApproveFinanceMaterialRequisition extends EditRecord
     public function getTitle(): string
     {
         return 'Finance Approval: ' . $this->record->document_number;
+    }
+
+    public function mount(int | string $record): void
+    {
+        parent::mount($record);
+
+        if (! in_array($this->record->status, ['Pending Finance'], true)) {
+            Notification::make()
+                ->title(__('This request is no longer at this stage.'))
+                ->body(__('Current status') . ': ' . $this->record->status . '.')
+                ->warning()
+                ->send();
+
+            $this->redirect(\App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('view', ['record' => $this->record]));
+        }
     }
 
     public array $itemsData = [];
@@ -114,6 +131,10 @@ class ApproveFinanceMaterialRequisition extends EditRecord
             ->modalDescription(__('Are you sure you want to approve this request and generate the Purchase Order?'))
             ->modalSubmitActionLabel(__('Approve & Generate PO'))
             ->action(function () {
+                if (! $this->stageStillOpen(['Pending Finance'], \App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('view', ['record' => $this->record]))) {
+                    return;
+                }
+
                 // Argumen KEDUA mematikan toast "Saved" bawaan Filament, supaya
                 // pengguna tidak melihat dua toast sekaligus.
                 $this->save(false, false);
@@ -153,6 +174,10 @@ class ApproveFinanceMaterialRequisition extends EditRecord
                     ->required(),
             ])
             ->action(function (array $data) {
+                if (! $this->stageStillOpen(['Pending Finance'], \App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('view', ['record' => $this->record]))) {
+                    return;
+                }
+
                 $this->record->update([
                     'status' => 'Returned to Purchasing',
                     'reject_note' => $data['reject_note'],

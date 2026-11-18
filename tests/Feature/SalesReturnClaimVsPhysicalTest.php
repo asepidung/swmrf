@@ -417,4 +417,46 @@ class SalesReturnClaimVsPhysicalTest extends TestCase
         $this->assertFalse($ringkasan->firstWhere('product_id', $produkB->id)['received_without_claim']);
         $this->assertTrue($ringkasan->firstWhere('product_id', $produkD->id)['received_without_claim']);
     }
+
+    /** @test */
+    public function the_input_page_is_closed_for_a_return_that_is_no_longer_a_draft(): void
+    {
+        ['tally' => $tally, 'do' => $do] = $this->kirimDanTagih(50, 100000);
+        $retur = $this->tarikPlan($this->planDenganKlaim($do, 50));
+
+        $this->user->permissions()->attach(Permission::firstOrCreate(['name' => 'view_sales_returns'], ['module_name' => 'x', 'description' => 'x'])->id);
+        $this->user->permissions()->attach(
+            Permission::firstOrCreate(['name' => 'edit_sales_returns'], ['module_name' => 'x', 'description' => 'x'])->id
+        );
+        $this->actingAs($this->user->fresh());
+
+        $retur->forceFill(['status' => 'Approved'])->saveQuietly();
+
+        Livewire::test(InputReturnItems::class, ['record' => $retur->fresh()])->assertRedirect();
+    }
+
+    /** @test */
+    public function a_scan_from_a_stale_tab_is_refused_once_the_return_was_approved(): void
+    {
+        ['tally' => $tally, 'do' => $do] = $this->kirimDanTagih(50, 100000);
+        TallyItem::create([
+            'tally_id' => $tally->id, 'barcode' => 'BC-LATE', 'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse->id, 'grade_id' => $this->grade->id,
+            'weight' => 10, 'qty_pcs' => 1, 'pack_date' => now()->toDateString(), 'origin' => '1',
+        ]);
+        $do->syncItemsFromTally();
+        $retur = $this->tarikPlan($this->planDenganKlaim($do, 50));
+        foreach (['view_sales_returns', 'edit_sales_returns'] as $izin) {
+            $this->user->permissions()->attach(Permission::firstOrCreate(['name' => $izin], ['module_name' => 'x', 'description' => 'x'])->id);
+        }
+        $this->actingAs($this->user->fresh());
+
+        $tab = Livewire::test(InputReturnItems::class, ['record' => $retur]);
+
+        SalesReturn::whereKey($retur->id)->update(['status' => 'Approved']);
+
+        $tab->set('dataScan.barcode', 'BC-LATE')->call('processScan');
+
+        $this->assertDatabaseMissing('sales_return_items', ['sales_return_id' => $retur->id, 'barcode' => 'BC-LATE']);
+    }
 }

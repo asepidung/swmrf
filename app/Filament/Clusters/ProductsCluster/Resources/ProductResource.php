@@ -167,7 +167,9 @@ class ProductResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\ToggleColumn::make('is_active')
-                    ->label(fn() => __('Set Active')),
+                    ->label(fn() => __('Set Active'))
+                    // Sakelar menulis langsung ke basis data; izin LIHAT tidak cukup (PRD-01).
+                    ->disabled(fn () => ! (auth()->user()?->hasPermission('edit_products') ?? false)),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('category_id')

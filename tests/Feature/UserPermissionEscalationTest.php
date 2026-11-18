@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Admin\Resources\UserResource;
+use App\Filament\Admin\Resources\UserResource\Pages\CreateUser;
 use App\Filament\Admin\Resources\UserResource\Pages\EditUser;
 use App\Models\Permission;
 use App\Models\User;
@@ -159,6 +160,50 @@ class UserPermissionEscalationTest extends TestCase
         $this->assertTrue(
             $target->fresh()->hasPermission('test_probe_permission'),
             'Jalur normal (bukan akun sendiri, punya manage_user_permissions) tidak boleh ikut tertutup.',
+        );
+    }
+
+    // =====================================================================
+    // Create User: jalur yang sama, lewat pintu sebelah (audit pra-rilis
+    // 14 November 2026, A-01). `CreateUser::afterCreate()` dulu menjalankan
+    // sync() tanpa syarat -- pemegang `create_users` saja bisa membuat akun
+    // baru berisi izin apa pun, lalu masuk dengan kata sandi bawaannya.
+    // =====================================================================
+
+    /** @test */
+    public function creating_a_user_with_permissions_is_refused_for_a_holder_of_create_users_alone(): void
+    {
+        $actor = $this->makeEmployee(['view_users', 'create_users']);
+        $add = Permission::firstOrCreate(['name' => 'test_probe_permission'], ['module_name' => 'Test', 'description' => 'x']);
+
+        Livewire::actingAs($actor->fresh())
+            ->test(CreateUser::class)
+            ->fillForm(['name' => 'Akun Titipan', 'username' => 'akun_titipan', 'permissions_Test' => [$add->id]])
+            ->call('create');
+
+        $baru = User::where('username', 'akun_titipan')->first();
+
+        $this->assertNotNull($baru, 'Akunnya sendiri tetap harus terbuat.');
+        $this->assertFalse(
+            $baru->hasPermission('test_probe_permission'),
+            'create_users saja tidak boleh cukup untuk membuat akun yang langsung berizin.',
+        );
+    }
+
+    /** @test */
+    public function creating_a_user_with_permissions_still_works_for_a_holder_of_manage_user_permissions(): void
+    {
+        $actor = $this->makeEmployee(['view_users', 'create_users', 'manage_user_permissions']);
+        $add = Permission::firstOrCreate(['name' => 'test_probe_permission'], ['module_name' => 'Test', 'description' => 'x']);
+
+        Livewire::actingAs($actor->fresh())
+            ->test(CreateUser::class)
+            ->fillForm(['name' => 'Akun Sah', 'username' => 'akun_sah', 'permissions_Test' => [$add->id]])
+            ->call('create');
+
+        $this->assertTrue(
+            User::where('username', 'akun_sah')->firstOrFail()->hasPermission('test_probe_permission'),
+            'Jalur normal (punya manage_user_permissions) tidak boleh ikut tertutup.',
         );
     }
 }

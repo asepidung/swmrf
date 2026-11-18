@@ -700,7 +700,8 @@ class SalesOrderResource extends Resource
             ->recordUrl(fn(SalesOrder $record) => !$record->trashed() ? Pages\EditSalesOrder::getUrl([$record->id]) : null)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(\App\Support\GuardedBulkDelete::action(fn ($order) => in_array($order->status, [SalesOrder::STATUS_WAITING, SalesOrder::STATUS_CANCELLED], true))),
                     // tallies.sales_order_id (unique, RESTRICT) dan
                     // invoices.sales_order_id (RESTRICT) -- sama dengan
                     // ForceDeleteAction di EditSalesOrder. Tanpa ini,

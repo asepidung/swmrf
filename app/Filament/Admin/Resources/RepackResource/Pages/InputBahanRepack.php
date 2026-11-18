@@ -94,6 +94,11 @@ class InputBahanRepack extends Page implements HasForms, HasTable
 
         try {
             DB::transaction(function () use ($scannedBarcode) {
+                // Repack dikunci dan statusnya dibaca ulang: dua permintaan bersamaan tidak boleh lolos pemeriksaan kunci yang sama (R-01).
+                if (Repack::whereKey($this->record->id)->lockForUpdate()->value('kunci')) {
+                    throw new \Exception(__('This repack is locked.'));
+                }
+
                 // Mencari barang di tabel beef_stocks berdasarkan barcode dengan lockForUpdate
                 $stock = BeefStock::where('barcode', $scannedBarcode)->lockForUpdate()->first();
 
@@ -200,6 +205,15 @@ class InputBahanRepack extends Page implements HasForms, HasTable
                     ->action(function ($record, $livewire) {
                         try {
                             DB::transaction(function () use ($record) {
+                                // Repack dan baris bahan dikunci, lalu dibaca ulang: stok tidak boleh dikembalikan dua kali (R-01).
+                                if (Repack::whereKey($record->repack_id)->lockForUpdate()->value('kunci')) {
+                                    throw new \Exception(__('This repack is locked.'));
+                                }
+
+                                if (! RepackMaterial::whereKey($record->getKey())->lockForUpdate()->exists()) {
+                                    throw new \Exception('Repack material already removed.');
+                                }
+
                                 // Mengembalikan data stok ke tabel beef_stocks dengan atribut lengkap
                                 BeefStock::create([
                                     'barcode' => $record->barcode,
