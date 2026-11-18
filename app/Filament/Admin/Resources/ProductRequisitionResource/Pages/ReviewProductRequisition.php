@@ -12,6 +12,8 @@ use App\Models\User;
 
 class ReviewProductRequisition extends EditRecord
 {
+    use \App\Filament\Concerns\GuardsRequisitionStage;
+
     /**
      * Halaman ini TIDAK boleh terbuka lewat alamatnya saja.
      *
@@ -185,6 +187,10 @@ class ReviewProductRequisition extends EditRecord
             ->icon('heroicon-s-check-circle')
             ->requiresConfirmation()
             ->action(function () {
+                if (! $this->stageStillOpen(['Requested', 'Returned to Purchasing'], \App\Filament\Admin\Resources\ProductRequisitionResource::getUrl('view', ['record' => $this->record]))) {
+                    return;
+                }
+
                 if ($this->hasNoItems()) {
                     Notification::make()
                         ->title(__('Request has no items, it cannot be sent to Finance'))
@@ -256,6 +262,10 @@ class ReviewProductRequisition extends EditRecord
                     ->required(),
             ])
             ->action(function (array $data) {
+                if (! $this->stageStillOpen(['Requested', 'Returned to Purchasing'], \App\Filament\Admin\Resources\ProductRequisitionResource::getUrl('view', ['record' => $this->record]))) {
+                    return;
+                }
+
                 $this->record->update([
                     'status' => 'Rejected',
                     'reject_note' => $data['reject_note'],

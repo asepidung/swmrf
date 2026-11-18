@@ -23,8 +23,20 @@ class CreateUser extends CreateRecord
         return $this->getResource()::getUrl('index');
     }
 
+    /**
+     * Penolakan yang sama dengan `EditUser::afterSave()`: seksi izin di form
+     * hanya DISEMBUNYIKAN bagi yang tidak memegang `manage_user_permissions`,
+     * sedangkan `getRawState()` tetap memuat apa pun yang dikirim browser ke
+     * `data.permissions_*`. Tanpa syarat di sini, pemegang `create_users`
+     * saja bisa membuat akun baru berisi izin apa pun lalu masuk memakai
+     * kata sandi bawaannya (audit pra-rilis 14 November 2026, A-01).
+     */
     protected function afterCreate(): void
     {
+        if (! auth()->user()?->hasPermission('manage_user_permissions')) {
+            return;
+        }
+
         $data = $this->form->getRawState();
         $permissionIds = [];
 
