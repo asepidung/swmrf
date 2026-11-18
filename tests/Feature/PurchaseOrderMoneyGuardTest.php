@@ -101,4 +101,32 @@ class PurchaseOrderMoneyGuardTest extends TestCase
 
         $this->assertSame(0, SupplierPayment::where('source_id', $po->id)->count());
     }
+
+    /** @test */
+    public function a_down_payment_cannot_exceed_what_is_left_after_the_receipts_already_paid(): void
+    {
+        $po = $this->po('partial');
+
+        // Barang Rp 600.000 sudah diterima dan hutangnya dilunasi langsung (bukan lewat uang muka).
+        $gr = \App\Models\GoodsReceiptMaterial::create([
+            'purchase_material_id' => $po->id, 'supplier_id' => $this->supplier->id,
+            'receive_date' => now()->toDateString(), 'is_locked' => true, 'created_by' => $this->user->id,
+        ]);
+        \App\Models\Payable::create([
+            'payableable_type' => \App\Models\GoodsReceiptMaterial::class, 'payableable_id' => $gr->id,
+            'supplier_id' => $this->supplier->id, 'document_number' => 'GRM-HUTANG-'.uniqid(),
+            'amount' => 600000, 'paid_amount' => 600000, 'balance' => 0, 'due_date' => now()->toDateString(), 'status' => 'paid',
+        ]);
+
+        $bayar = fn (string $jumlah) => Livewire::test(ViewPurchaseMaterial::class, ['record' => $po->id])
+            ->callAction('pay_down_payment', [
+                'payment_date' => now()->toDateString(), 'method' => SupplierPayment::METHOD_CASH, 'amount_input' => $jumlah,
+            ]);
+
+        $bayar('500.000');
+        $this->assertSame(0, SupplierPayment::where('source_id', $po->id)->count(), 'Sisa PO cuma Rp 400.000; DP Rp 500.000 harus ditolak.');
+
+        $bayar('400.000');
+        $this->assertSame(1, SupplierPayment::where('source_id', $po->id)->count(), 'Kontrol positif: DP sebesar sisa diterima.');
+    }
 }

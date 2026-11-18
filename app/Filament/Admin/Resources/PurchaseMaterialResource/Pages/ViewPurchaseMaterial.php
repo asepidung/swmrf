@@ -44,13 +44,7 @@ class ViewPurchaseMaterial extends ViewRecord
                         ->content(fn () => 'Rp ' . number_format($this->record->total_amount, 0, ',', '.')),
                     \Filament\Forms\Components\Placeholder::make('sisa_tagihan')
                         ->label(__('Outstanding Balance'))
-                        ->content(fn () => 'Rp ' . number_format(
-                            $this->record->total_amount - \App\Models\SupplierPayment::query()
-                                ->where('source_type', get_class($this->record))
-                                ->where('source_id', $this->record->id)
-                                ->sum('amount'),
-                            0, ',', '.',
-                        )),
+                        ->content(fn () => 'Rp ' . number_format(\App\Models\SupplierPayment::advanceRoomFor($this->record), 0, ',', '.')),
                     \Filament\Forms\Components\TextInput::make('amount_input')
                         ->label(__('Amount (Rp)'))
                         ->required()
@@ -72,7 +66,7 @@ class ViewPurchaseMaterial extends ViewRecord
                                     $fail(__('Amount must be greater than 0.'));
                                 }
 
-                                $sisa = (float) $this->record->total_amount - \App\Models\SupplierPayment::totalPaidFor($this->record);
+                                $sisa = \App\Models\SupplierPayment::advanceRoomFor($this->record);
 
                                 if ($val > $sisa) {
                                     $fail(__('Payment cannot exceed the outstanding balance of Rp :total.', ['total' => number_format($sisa, 0, ',', '.')]));
@@ -104,7 +98,7 @@ class ViewPurchaseMaterial extends ViewRecord
                     $recorded = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $amount): bool {
                         $record = $this->record->newQuery()->lockForUpdate()->findOrFail($this->record->getKey());
 
-                        $sisa = (float) $record->total_amount - \App\Models\SupplierPayment::totalPaidFor($record);
+                        $sisa = \App\Models\SupplierPayment::advanceRoomFor($record);
 
                         if ($amount > $sisa) {
                             return false;
