@@ -509,6 +509,13 @@ class InputReturnItems extends Page implements HasForms, HasTable
     public function processWeigh(bool $confirmed = false): void
     {
         $formData = $this->weighForm->getState();
+
+        // Surat jalan asal hanya boleh surat jalan retur ini sendiri atau salah satu pilihan milik pelanggannya; id lain dari
+        // browser dibuang, supaya kredit retur tidak memotong invoice pelanggan lain (OPT-01).
+        $asal = $this->record->delivery_order_id ?: ($formData['origin_delivery_order_id'] ?? null);
+        $formData['origin_delivery_order_id'] = ($asal !== null && ($asal == $this->record->delivery_order_id || array_key_exists($asal, $this->originDeliveryOptions())))
+            ? $asal
+            : null;
         
         try {
             $qtyInput = $formData['qty_pcs_combined'];

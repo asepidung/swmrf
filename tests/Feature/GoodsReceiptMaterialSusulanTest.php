@@ -199,4 +199,25 @@ class GoodsReceiptMaterialSusulanTest extends TestCase
         $this->assertStringNotContainsString('GoodsReceiptMaterial::latest', $source);
         $this->assertStringNotContainsString("'gr_number' =>", $source);
     }
+
+    /** @test */
+    public function dropping_item_rows_from_the_submitted_state_does_not_delete_them(): void
+    {
+        $gr = $this->grMaterial(locked: false);
+        foreach ([10, 20] as $qty) {
+            $gr->items()->create(['material_id' => $this->material->id, 'qty_received' => $qty, 'price' => 10000, 'subtotal' => $qty * 10000]);
+        }
+
+        $tab = Livewire::actingAs($this->employee(['edit_gr_materials']))
+            ->test(EditGoodsReceiptMaterial::class, ['record' => $gr->getRouteKey()]);
+
+        $baris = $tab->get('data.items');
+        $this->assertCount(2, $baris);
+        unset($baris[array_key_first($baris)]);
+
+        $tab->set('data.items', $baris)->set('data.sj_number', 'SJ-KONTROL')->set('data.po_status_action', 'partial')->call('save');
+
+        $this->assertSame(2, $gr->items()->count());
+        $this->assertNotSame('SJ-KONTROL', $gr->fresh()->sj_number);
+    }
 }
