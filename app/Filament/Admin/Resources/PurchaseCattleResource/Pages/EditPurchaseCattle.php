@@ -3,12 +3,33 @@
 namespace App\Filament\Admin\Resources\PurchaseCattleResource\Pages;
 
 use App\Filament\Admin\Resources\PurchaseCattleResource;
+use App\Models\PurchaseCattle;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Support\Exceptions\Halt;
 
 class EditPurchaseCattle extends EditRecord
 {
     protected static string $resource = PurchaseCattleResource::class;
+
+    /**
+     * CR-02 (keputusan Owner): PO yang sudah punya penerimaan terkunci penuh DI SERVER. Menyembunyikan tombol Simpan
+     * tidak cukup, karena state form yang dikirim paksa tetap tersimpan; statusnya dibaca ulang dengan baris terkunci.
+     */
+    protected function beforeSave(): void
+    {
+        $po = PurchaseCattle::whereKey($this->record->id)->lockForUpdate()->first();
+
+        if ($po && $po->receivings()->exists()) {
+            Notification::make()
+                ->title(__('This purchase order already has a receiving and cannot be edited.'))
+                ->danger()
+                ->send();
+
+            throw new Halt();
+        }
+    }
 
     protected function beforeValidate(): void
     {
