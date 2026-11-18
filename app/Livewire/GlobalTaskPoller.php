@@ -17,6 +17,7 @@ class GlobalTaskPoller extends Component
 
     public function checkTasks()
     {
+        // PF-01 (keputusan Ayah): poller tiap 60 detik (dulu 10), hanya menjaga sesi tetap hidup selama tab terbuka.
         // Semua toast lintas-pengguna buatan tangan sudah dihapus 
         // atas instruksi Project Owner, agar tidak tumpang tindih 
         // dengan notifikasi Web Push PWA yang akan/sedang dibangun.
@@ -25,7 +26,7 @@ class GlobalTaskPoller extends Component
     public function render()
     {
         return <<<'HTML'
-            <div wire:poll.10s="checkTasks" class="hidden"></div>
+            <div wire:poll.60s="checkTasks" class="hidden"></div>
         HTML;
     }
 }
