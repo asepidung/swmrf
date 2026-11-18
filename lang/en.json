@@ -1278,6 +1278,7 @@
     "This repack has no input goods yet.": "This repack has no input goods yet.",
     "This repack has no output goods yet.": "This repack has no output goods yet.",
     "This repack is already locked.": "This repack is already locked.",
+    "This sales order is locked, so it cannot be saved.": "This sales order is locked, so it cannot be saved.",
     "This repack is locked.": "This repack is locked.",
     "This repack is not locked.": "This repack is not locked.",
     "This request can no longer be edited because it has moved past the Requested stage.": "This request can no longer be edited because it has moved past the Requested stage.",

@@ -1278,6 +1278,7 @@
     "This repack has no input goods yet.": "Repack ini belum ada bahannya.",
     "This repack has no output goods yet.": "Repack ini belum ada hasilnya.",
     "This repack is already locked.": "Repack ini sudah terkunci.",
+    "This sales order is locked, so it cannot be saved.": "Sales Order ini sudah terkunci, jadi tidak bisa disimpan.",
     "This repack is locked.": "Dokumen Repack ini sudah dikunci.",
     "This repack is not locked.": "Repack ini tidak terkunci.",
     "This request can no longer be edited because it has moved past the Requested stage.": "Request ini sudah tidak bisa diubah karena sudah lewat tahap Requested.",
