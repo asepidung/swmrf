@@ -221,6 +221,17 @@ class Boning extends Model
                 throw new \RuntimeException(__('This boning has no carcass yet.'));
             }
 
+            // Satu karkas tidak boleh dihitung di dua boning terkunci: biaya belinya akan terhitung dua kali di costing (B-01).
+            $karkasIds = $this->carcasses()->pluck('carcass_id');
+
+            if (BoningCarcass::query()
+                ->whereIn('carcass_id', $karkasIds)
+                ->where('boning_id', '!=', $this->id)
+                ->whereHas('boning', fn ($q) => $q->where('kunci', true))
+                ->exists()) {
+                throw new \RuntimeException(__('One of the carcasses on this boning is already used by another locked boning.'));
+            }
+
             if ($this->items()->doesntExist()) {
                 throw new \RuntimeException(__('This boning has no output goods yet.'));
             }
