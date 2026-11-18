@@ -46,6 +46,8 @@ class MasterSnapshotTest extends TestCase
     /** Mengosongkan tabel master (urutan terbalik) seolah basis data tujuan masih kosong. */
     private function emptyMaster(): void
     {
+        DB::table('products')->update(['parent_id' => null]); // parent_id RESTRICT (FK-01)
+
         foreach (array_reverse(MasterSnapshot::TABLES) as $table) {
             DB::table($table)->delete();
         }
