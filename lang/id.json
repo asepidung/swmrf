@@ -2034,5 +2034,6 @@
     "Received weight is more than the shipped weight": "Berat diterima melebihi berat yang dikirim",
     "This payment makes the balance of :account negative": "Pengeluaran ini membuat saldo :account minus",
     "Balance now: :balance. Check that the opening balance and earlier entries are complete.": "Saldo sekarang: :balance. Periksa apakah saldo awal dan catatan sebelumnya sudah lengkap.",
-    "This purchase order already has a receiving and cannot be edited.": "PO ini sudah punya penerimaan dan tidak bisa diubah."
+    "This purchase order already has a receiving and cannot be edited.": "PO ini sudah punya penerimaan dan tidak bisa diubah.",
+    "User created": "Akun dibuat"
 }

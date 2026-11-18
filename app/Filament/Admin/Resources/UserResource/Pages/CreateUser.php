@@ -10,9 +10,14 @@ class CreateUser extends CreateRecord
 {
     protected static string $resource = UserResource::class;
 
+    private string $temporaryPassword = '';
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $data['password'] = bcrypt('1234');
+        // Akun baru: kata sandi sementara ACAK (angka), ditampilkan sekali ke admin di afterCreate().
+        $this->temporaryPassword = \App\Support\TemporaryPassword::generate();
+        $data['password'] = bcrypt($this->temporaryPassword);
+        $data['must_change_password'] = true;
         $data['role'] = 'employee';
 
         return $data;
@@ -33,6 +38,13 @@ class CreateUser extends CreateRecord
      */
     protected function afterCreate(): void
     {
+        \Filament\Notifications\Notification::make()
+            ->title(__('User created'))
+            ->body(__("Temporary password for ':username': :password. Pass it on now; it is shown only once and must be changed at the next login.", ['username' => $this->record->username, 'password' => $this->temporaryPassword]))
+            ->success()
+            ->persistent()
+            ->send();
+
         if (! auth()->user()?->hasPermission('manage_user_permissions')) {
             return;
         }
