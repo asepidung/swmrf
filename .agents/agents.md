@@ -7947,3 +7947,6 @@ Dokumen yang dihapus (soft delete) TIDAK bisa dipulihkan siapa pun lewat aplikas
 - Peninjau (REVIEW + izin `finish_material_stock_takes`, atau programmer) boleh melihat stok sistem DAN selisih; penghitung tetap buta sampai COMPLETED.
 - Barang yang belum diisi saat Submit for Review dianggap 0 dan diberi catatan "Tidak diisi, dianggap 0" (`MaterialStockTake::submitForReview`), supaya selisihnya terbaca. Peninjau memakai Tolak / Hitung Ulang untuk barang yang mencurigakan sebelum Complete.
 - Laporan analisa (`/stock-take/{id}/analysis`, `/material-stock-take/{id}/analysis`) disusun sistem dari data dan hanya dibaca; opname material hanya setelah COMPLETED. Material tanpa harga pokok: laporan dalam jumlah, bukan rupiah.
+
+## `app:reset-training-data` dihapus, 18 November 2026 (audit pra-rilis CMD-01)
+Keputusan Ayah: perintah pengosong data pelatihan DIHAPUS beserta tesnya. Aplikasi sudah go-live (dipakai sejak 2 November) dan perintah itu men-TRUNCATE seratus tabel dengan satu-satunya pengaman mengetik nama database; coba dan VPS sama-sama `APP_ENV=production` sehingga lingkungan tidak bisa dipakai membedakannya. Bila suatu saat perlu data uji bersih, buat database baru atau pulihkan dari cadangan, jangan menghidupkan perintah ini lagi. Terjemahan grade legacy (`LegacyGradeMap`) di bagian sebelumnya tidak terpengaruh.

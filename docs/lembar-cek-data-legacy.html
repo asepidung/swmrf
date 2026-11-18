@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lembar Cek Data Legacy</title>
+<style>
+  :root { --bg:#fff; --fg:#1b1f24; --muted:#5b6672; --line:#d7dde4; --head:#f1f4f8; --ok:#1a7f4b; --accent:#b45309; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#14181d; --fg:#e8ecf1; --muted:#9aa6b2; --line:#2c343d; --head:#1c222a; --ok:#4ade80; --accent:#fbbf24; } }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; max-width:820px; margin-inline:auto; }
+  h1 { font-size:20px; margin:0 0 2px; }
+  .sub { color:var(--muted); margin:0 0 14px; font-size:13px; }
+  h2 { font-size:14px; margin:18px 0 6px; padding:5px 8px; background:var(--head); border-left:3px solid var(--accent); }
+  table { width:100%; border-collapse:collapse; }
+  th, td { border:1px solid var(--line); padding:5px 7px; text-align:left; vertical-align:top; }
+  th { background:var(--head); font-size:12px; color:var(--muted); font-weight:600; }
+  td.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  td.c { text-align:center; width:34px; }
+  input[type=checkbox] { width:20px; height:20px; accent-color:var(--ok); }
+  .note { color:var(--muted); font-size:12px; }
+  textarea { width:100%; min-height:90px; background:transparent; color:inherit; border:1px solid var(--line); border-radius:6px; padding:8px; font:inherit; }
+  .progress { position:sticky; top:0; background:var(--bg); padding:6px 0; border-bottom:1px solid var(--line); font-weight:600; z-index:2; }
+  .progress b { color:var(--ok); }
+  .wrap { overflow-x:auto; }
+  @media print { .progress { display:none; } body { padding:0; font-size:12px; } h2 { break-after:avoid; } }
+</style>
+</head>
+<body>
+<h1>Lembar Cek Data Legacy &rarr; Aplikasi Baru</h1>
+<p class="sub">Data legacy dimuat 31 Okt 2026 (tarikan 21.18&ndash;21.24 WIB, setelah legacy dikunci). Rekonsiliasi mesin: 53 dari 53 pemeriksaan cocok. Centang bila angka di layar aplikasi baru sama dengan kolom "Seharusnya".</p>
+<div class="progress">Tercentang: <b id="done">0</b> dari <span id="total">0</span></div>
+
+<h2>A. Angka besar (cek di layar tiap modul, bandingkan dengan legacy)</h2>
+<div class="wrap"><table>
+<tr><th class="c">&#10003;</th><th>Modul</th><th>Seharusnya</th><th>Catatan</th></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Stok daging (total berat)</td><td class="n">17.411,67 kg &middot; 1.074 baris</td><td class="note">Dari laporan stok legacy</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Stok material</td><td class="n">5.948 unit &middot; 63 item</td><td class="note">4 item saldo nol tidak dibuatkan baris</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Penerimaan sapi</td><td class="n">106 dokumen &middot; 3.876 ekor</td><td class="note">Berat awal total 1.986.764 kg</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Karkas</td><td class="n">322 dokumen &middot; 7.901 ekor</td><td class="note">Karkas 1: 1.145.229 kg &middot; Karkas 2: 1.174.301 kg</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Boning</td><td class="n">447 dokumen</td><td class="note"></td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Sales Order</td><td class="n">8.784 (8.290 + 494 awalan SO-LGC)</td><td class="note">494 SO lama 2023 berawalan SO-LGC-</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Tally</td><td class="n">8.107</td><td class="note"></td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Delivery Order</td><td class="n">8.598</td><td class="note"></td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Invoice</td><td class="n">8.566 &middot; 8.560 Lunas + 6 Belum TF</td><td class="note">Piutang Rp 119.452.220 (6 invoice Belum TF); daftar Invoice menampilkan nilai invoice, bukan sisa</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Repack</td><td class="n">1.239</td><td class="note"></td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Retur penjualan</td><td class="n">34</td><td class="note"></td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Request / PO / Penerimaan material</td><td class="n">362 / 359 / 148</td><td class="note">Nomor kembar diberi akhiran -2, -3</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Request / PO / Penerimaan produk</td><td class="n">190 / 192 / 179</td><td class="note"></td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>PO sapi</td><td class="n">106</td><td class="note"></td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Hutang pemasok</td><td class="n">258 baris</td><td class="note">Penerimaan berharga 0 tidak dibuatkan hutang</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Master: pelanggan / pemasok / produk / material</td><td class="n">294 / 39 / 153 / 161</td><td class="note">Material aktif 151</td></tr>
+</table></div>
+
+<h2>B. Dokumen terbaru (buka di aplikasi, cocokkan dengan legacy)</h2>
+<div class="wrap"><table>
+<tr><th class="c">&#10003;</th><th>Dokumen</th><th>Tanggal</th><th>Pihak</th><th>Nilai</th></tr>
+<tr><td class="c"><input type="checkbox"></td><td>INV-SWM/26/X/2039</td><td>31 Okt 2026</td><td>YADI (BPK)</td><td class="n">Rp 64.738.120 &middot; 1.779,36 kg</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>INV-SWM/26/X/2038</td><td>31 Okt 2026</td><td>AKHMAD SAFARI</td><td class="n">Rp 385.000 &middot; 4 kg</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>INV-SWM/26/X/2037</td><td>31 Okt 2026</td><td>SANTI (IBU)</td><td class="n">Rp 0 &middot; 2 kg</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>DO-SWM/26/X/2033</td><td>31 Okt 2026</td><td>DAVID</td><td class="n">Approved</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>DO-SWM/26/X/2032</td><td>31 Okt 2026</td><td>YADI (BPK)</td><td class="n">Invoiced</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>DO-SWM/26/X/2031</td><td>31 Okt 2026</td><td>MULYADI (BPK)</td><td class="n">Approved</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>PO-SWM/26/X/153</td><td>24 Okt 2026</td><td>SINERGY INDOPACK MAKMUR PT</td><td class="n">Rp 9.546.000</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>PO-SWM/26/X/152</td><td>24 Okt 2026</td><td>DWIPA MEGAH LESTARI PT</td><td class="n">Rp 42.705.474</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>PO-SWM/26/X/154</td><td>29 Okt 2026</td><td>MARKETPLACE</td><td class="n">Rp 0 (belum diberi harga)</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>RPC-26334 dan RPC-26333</td><td>31 Okt 2026</td><td>Repack</td><td class="n">Status LOCKED</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>SO-SWM/26/IX/1764</td><td>kirim 22 Des 2026</td><td>MURINO BERSATU INDONESIA (BLACK OWL) PT</td><td class="n">SO terjadwal</td></tr>
+</table></div>
+
+<h2>C. Kasus khusus (supaya tidak kaget)</h2>
+<div class="wrap"><table>
+<tr><th class="c">&#10003;</th><th>Hal</th><th>Yang benar</th></tr>
+<tr><td class="c"><input type="checkbox"></td><td>PO-SWM/26/X/140 (5 Okt)</td><td>Harga bawang putih 35 dan ketumbar 39 memang salah dari legacy (aslinya sekitar 35.000 dan 39.000&ndash;50.000). Menunggu angka asli dari Ayah.</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>PO 139 dan 144</td><td>Harga 0,00 karena barang belum diberi harga, bukan bug.</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Dokumen berakhiran -2 / -3</td><td>Nomor kembar di legacy; buka satu, isinya harus wajar (konflik: request 163, PO material 156, GR material 46).</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Invoice lama</td><td>8.560 berstatus Lunas; 6 invoice "Belum TF" tetap belum lunas (Rp 119.452.220) dan terbaca di Piutang.</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Batas susut repack</td><td>Sengaja kosong; QC yang mengisi.</td></tr>
+</table></div>
+
+<h2>D. Sisi pengguna</h2>
+<div class="wrap"><table>
+<tr><th class="c">&#10003;</th><th>Cek</th></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Masuk dengan satu akun biasa (mis. Rafi atau Ayu): menu sesuai peran, tidak ada menu kosong atau 403.</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Buat satu dokumen uji dan hapus lagi? <b>Jangan</b>: data sekarang adalah data nyata. Cukup baca.</td></tr>
+<tr><td class="c"><input type="checkbox"></td><td>Notifikasi masuk ke HP (sudah diuji ke HP Ayah).</td></tr>
+</table></div>
+
+<h2>E. Temuan</h2>
+<p class="note">Tulis: modul, nomor dokumen, kolom, apa yang tidak sama. Satu temuan dengan nomor dokumen cukup untuk ditelusuri.</p>
+<textarea id="temuan" placeholder="Contoh: Invoice INV-SWM/26/X/2038, total di aplikasi 385.000, di legacy 395.000"></textarea>
+
+<script>
+(function () {
+  var key = 'lembar-cek-data-legacy-v1';
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('input[type=checkbox]'));
+  var note = document.getElementById('temuan');
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) {}
+  boxes.forEach(function (b, i) { b.checked = !!(state.c && state.c[i]); });
+  if (state.t) note.value = state.t;
+  document.getElementById('total').textContent = boxes.length;
+  function save() {
+    var c = boxes.map(function (b) { return b.checked; });
+    document.getElementById('done').textContent = c.filter(Boolean).length;
+    try { localStorage.setItem(key, JSON.stringify({ c: c, t: note.value })); } catch (e) {}
+  }
+  boxes.forEach(function (b) { b.addEventListener('change', save); });
+  note.addEventListener('input', save);
+  save();
+})();
+</script>
+</body>
+</html>
