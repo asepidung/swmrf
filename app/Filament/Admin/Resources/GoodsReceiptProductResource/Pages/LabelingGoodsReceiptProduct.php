@@ -517,6 +517,9 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
 
             Notification::make('scan-toast')->title(__('Successfully Added'))->success()->send();
 
+            // L-04 (keputusan Owner): boleh lebih dari PO, tapi beri peringatan bila total berat produk ini melewati qty PO.
+            $this->warnIfOverPo((int) ($formData['product_id'] ?? 0));
+
             $this->form->fill([
                 'warehouse_id' => $formData['warehouse_id'],
                 'origin' => $formData['origin'],
@@ -541,6 +544,27 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
         } catch (\Exception $e) {
             report($e);
             Notification::make('scan-toast')->title(__('Error!'))->body($e->getMessage())->danger()->send();
+        }
+    }
+    /** Peringatan (bukan penolakan) bila total berat diterima satu produk di PO ini melebihi qty PO-nya. */
+    protected function warnIfOverPo(int $productId): void
+    {
+        $po = $this->record->purchaseProduct;
+        $poQty = (float) ($po?->items()->where('product_id', $productId)->sum('qty') ?? 0);
+
+        if ($poQty <= 0) {
+            return;
+        }
+
+        $diterima = (float) \App\Models\GoodsReceiptProductItem::where('product_id', $productId)
+            ->whereHas('goodsReceiptProduct', fn ($q) => $q->where('purchase_product_id', $po->id))
+            ->sum('weight');
+
+        if ($diterima > $poQty) {
+            Notification::make('over-po-toast')
+                ->title(__('Received more than the remaining PO quantity'))
+                ->body(number_format($diterima, 2, ',', '.').' > '.number_format($poQty, 2, ',', '.').' kg')
+                ->warning()->send();
         }
     }
 }

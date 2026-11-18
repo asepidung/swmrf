@@ -2027,5 +2027,7 @@
     "Enter a number that is not negative.": "Isi dengan angka yang tidak negatif.",
     "The push address is not valid.": "Alamat notifikasi tidak sah.",
     "This stock count is no longer being counted, so it cannot be changed.": "Opname ini sudah tidak dalam penghitungan, jadi tidak bisa diubah.",
-    "Temporary password for ':username': :password. Pass it on now; it is shown only once and must be changed at the next login.": "Kata sandi sementara untuk ':username': :password. Sampaikan sekarang; hanya tampil sekali dan wajib diganti saat login berikutnya."
+    "Temporary password for ':username': :password. Pass it on now; it is shown only once and must be changed at the next login.": "Kata sandi sementara untuk ':username': :password. Sampaikan sekarang; hanya tampil sekali dan wajib diganti saat login berikutnya.",
+    "More than the remaining PO quantity.": "Melebihi sisa jumlah di PO.",
+    "Received more than the remaining PO quantity": "Penerimaan melebihi sisa jumlah di PO"
 }

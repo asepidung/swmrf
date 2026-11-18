@@ -312,4 +312,21 @@ class GoodsReceiptMaterialSusulanTest extends TestCase
         $simpan('12');
         $this->assertEquals(12, $item->fresh()->qty_received);
     }
+    /** @test */
+    public function receiving_more_than_the_po_remainder_is_saved_but_warned(): void
+    {
+        $po = $this->poMaterial();
+
+        Livewire::actingAs($this->employee(['create_gr_materials']))
+            ->withQueryParams(['po_id' => $po->id])
+            ->test(CreateGoodsReceiptMaterial::class)
+            ->fillForm([
+                'receive_date' => now()->toDateString(), 'sj_number' => 'SJ-LEBIH',
+                'items' => [['material_id' => $this->material->id, 'material_name' => 'GARAM', 'unit_name' => 'KG', 'po_qty' => '100', 'qty_received' => '120', 'price' => 10000]],
+            ])
+            ->call('forceCompleted')
+            ->assertNotified(__('Received more than the remaining PO quantity'));
+
+        $this->assertSame(1, GoodsReceiptMaterial::where('purchase_material_id', $po->id)->count(), 'kelebihan tetap boleh disimpan');
+    }
 }

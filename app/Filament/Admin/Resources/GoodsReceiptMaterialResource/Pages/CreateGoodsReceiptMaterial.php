@@ -172,6 +172,10 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
                                                                         ->extraInputAttributes(['x-on:focus' => '$el.select()'])
                                     ->required()
                                     ->live(onBlur: true)
+                                    // L-04 (keputusan Owner): boleh lebih dari sisa PO, tapi diberi peringatan.
+                                    ->helperText(fn (Forms\Get $get) => self::parseNumber($get('qty_received')) > self::parseNumber($get('po_qty'))
+                                        ? __('More than the remaining PO quantity.')
+                                        : null)
                                     ->suffix(fn (Forms\Get $get) => $get('unit_name')),
                             ])
                             ->columns(3)
@@ -319,6 +323,14 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
             DB::commit();
 
             Notification::make()->title(__('Goods Receipt created successfully!'))->success()->send();
+
+            $lebih = collect($data['items'])->filter(fn ($i) => self::parseNumber($i['qty_received']) > self::parseNumber($i['po_qty']));
+            if ($lebih->isNotEmpty()) {
+                Notification::make()->title(__('Received more than the remaining PO quantity'))
+                    ->body($lebih->map(fn ($i) => ($i['material_name'] ?? '#'.$i['material_id']).': '.self::parseNumber($i['qty_received']).' > '.self::parseNumber($i['po_qty']))->implode(', '))
+                    ->warning()->persistent()->send();
+            }
+
             $this->redirect(GoodsReceiptMaterialResource::getUrl('index'));
 
         } catch (\Exception $e) {
