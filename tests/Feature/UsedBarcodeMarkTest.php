@@ -233,6 +233,18 @@ class UsedBarcodeMarkTest extends TestCase
             ->assertTableColumnStateSet('barcode', 'BC-BARU', $item);
     }
 
+    /** OPT-01: digit asal di barcode hasil repack hanya boleh salah satu dari pilihan. */
+    public function test_a_repack_result_origin_outside_the_choices_is_refused(): void
+    {
+        $repack = Repack::create(['repack_date' => now()->toDateString(), 'created_by' => $this->user->id]);
+
+        Livewire::actingAs($this->user)->test(InputHasilRepack::class, ['record' => $repack])
+            ->set('data.origin', '1')
+            ->set('data.product_id', $this->product->id)
+            ->set('data.grade_id', $this->grade->id)
+            ->set('data.qty_pcs_combined', '10/1')
+            ->call('create')
+            ->assertHasErrors(['data.origin']);
     /** @test */
     public function a_barcode_inside_an_unfinished_mutation_counts_as_used(): void
     {

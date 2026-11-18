@@ -116,6 +116,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
                                 '4' => 'Repack Return',
                                 '5' => 'Repack Trading',
                             ])
+                            ->in(['2', '3', '4', '5'])
                             ->required()
                             ->extraAttributes(['tabindex' => '-1'])
                             ->extraInputAttributes(['tabindex' => '-1']),

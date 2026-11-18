@@ -135,6 +135,7 @@ class LabelingGoodsReceiptProduct extends Page implements HasForms, HasTable
                                 '7' => 'TRADING',
                                 '8' => 'IMPORT',
                             ])
+                            ->in(['7', '8'])
                             ->required()
                             ->extraAttributes(['tabindex' => '-1'])
                             ->extraInputAttributes(['tabindex' => '-1']),
