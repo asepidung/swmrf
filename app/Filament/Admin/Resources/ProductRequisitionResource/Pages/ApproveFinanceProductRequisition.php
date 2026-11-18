@@ -12,6 +12,8 @@ use App\Models\User;
 
 class ApproveFinanceProductRequisition extends EditRecord
 {
+    use \App\Filament\Concerns\GuardsRequisitionStage;
+
     /**
      * Halaman ini TIDAK boleh terbuka lewat alamatnya saja.
      *
@@ -217,6 +219,10 @@ class ApproveFinanceProductRequisition extends EditRecord
             ->modalDescription(__('Are you sure you want to approve this request and generate the Purchase Order?'))
             ->modalSubmitActionLabel(__('Approve & Generate PO'))
             ->action(function () {
+                if (! $this->stageStillOpen(['Pending Finance'], \App\Filament\Admin\Resources\ProductRequisitionResource::getUrl('view', ['record' => $this->record]))) {
+                    return;
+                }
+
                 if ($this->hasNoItems()) {
                     Notification::make()
                         ->title(__('Request has no items, the PO cannot be issued'))
@@ -281,6 +287,10 @@ class ApproveFinanceProductRequisition extends EditRecord
                     ->required(),
             ])
             ->action(function (array $data) {
+                if (! $this->stageStillOpen(['Pending Finance'], \App\Filament\Admin\Resources\ProductRequisitionResource::getUrl('view', ['record' => $this->record]))) {
+                    return;
+                }
+
                 $this->record->update([
                     'status' => 'Returned to Purchasing',
                     'reject_note' => $data['reject_note'],
