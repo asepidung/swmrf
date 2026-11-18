@@ -12,6 +12,8 @@ use App\Models\User;
 
 class ReviewMaterialRequisition extends EditRecord
 {
+    use \App\Filament\Concerns\GuardsRequisitionStage;
+
     /**
      * Halaman ini TIDAK boleh terbuka lewat alamatnya saja.
      *
@@ -35,6 +37,21 @@ class ReviewMaterialRequisition extends EditRecord
     public function getTitle(): string
     {
         return 'Review Request: ' . $this->record->document_number;
+    }
+
+    public function mount(int | string $record): void
+    {
+        parent::mount($record);
+
+        if (! in_array($this->record->status, ['Requested', 'Returned to Purchasing'], true)) {
+            Notification::make()
+                ->title(__('This request is no longer at this stage.'))
+                ->body(__('Current status') . ': ' . $this->record->status . '.')
+                ->warning()
+                ->send();
+
+            $this->redirect(\App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('view', ['record' => $this->record]));
+        }
     }
 
     public array $itemsData = [];
@@ -148,6 +165,10 @@ class ReviewMaterialRequisition extends EditRecord
             ->icon('heroicon-s-check-circle')
             ->requiresConfirmation()
             ->action(function () {
+                if (! $this->stageStillOpen(['Requested', 'Returned to Purchasing'], \App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('view', ['record' => $this->record]))) {
+                    return;
+                }
+
                 if ($this->hasNoItems()) {
                     Notification::make()
                         ->title(__('Request has no items, it cannot be sent to Finance'))
@@ -218,6 +239,10 @@ class ReviewMaterialRequisition extends EditRecord
                     ->required(),
             ])
             ->action(function (array $data) {
+                if (! $this->stageStillOpen(['Requested', 'Returned to Purchasing'], \App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('view', ['record' => $this->record]))) {
+                    return;
+                }
+
                 $this->record->update([
                     'status' => 'Rejected',
                     'reject_note' => $data['reject_note'],

@@ -81,11 +81,17 @@ class BoningResource extends Resource
                             ->autofocus()
                             ->columnSpanFull(),
 
+                        // Tidak ikut disimpan dari form (`dehydrated(false)`): field
+                        // tersembunyi tetap bisa diisi dari browser. Nilai awalnya
+                        // datang dari bawaan kolom dan `Boning::booted()` (audit
+                        // pra-rilis 14 November 2026, S-04).
                         Forms\Components\Hidden::make('status')
-                            ->default('OPEN'),
+                            ->default('OPEN')
+                            ->dehydrated(false),
 
                         Forms\Components\Hidden::make('created_by')
-                            ->default(fn() => Auth::id()),
+                            ->default(fn() => Auth::id())
+                            ->dehydrated(false),
                     ])->columns(2),
 
                 Forms\Components\Section::make(__('Select Carcasses for Boning'))
