@@ -2031,5 +2031,7 @@
     "More than the remaining PO quantity.": "Melebihi sisa jumlah di PO.",
     "Received more than the remaining PO quantity": "Penerimaan melebihi sisa jumlah di PO",
     "More than the shipped weight.": "Melebihi berat yang dikirim.",
-    "Received weight is more than the shipped weight": "Berat diterima melebihi berat yang dikirim"
+    "Received weight is more than the shipped weight": "Berat diterima melebihi berat yang dikirim",
+    "This payment makes the balance of :account negative": "Pengeluaran ini membuat saldo :account minus",
+    "Balance now: :balance. Check that the opening balance and earlier entries are complete.": "Saldo sekarang: :balance. Periksa apakah saldo awal dan catatan sebelumnya sudah lengkap."
 }
