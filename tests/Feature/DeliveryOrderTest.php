@@ -757,4 +757,31 @@ class DeliveryOrderTest extends TestCase
         Livewire::test(\App\Filament\Admin\Resources\DeliveryOrderResource\Pages\DeliveryOrderDetailList::class)
             ->assertCanSeeTableRecords([$do_item]);
     }
+
+    /** @test */
+    public function an_invoiced_delivery_order_is_not_editable_or_deletable(): void
+    {
+        $this->actingAs($this->user);
+
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer->id, 'delivery_date' => now()->addDay()->format('Y-m-d'),
+            'po_number' => 'PO-INV-1', 'created_by' => $this->user->id, 'status' => 'completed',
+        ]);
+        $tally = Tally::create(['sales_order_id' => $so->id, 'tally_number' => 'TS#260777', 'status' => 'do']);
+        $do = DeliveryOrder::create([
+            'tally_id' => $tally->id, 'sales_order_id' => $so->id, 'customer_id' => $this->customer->id,
+            'delivery_date' => now()->addDay()->format('Y-m-d'), 'po_number' => 'PO-INV-1',
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'JOKO'])->id, 'status' => 'Invoiced',
+        ]);
+
+        // Halaman Edit dialihkan ke View, dan daftar tidak lagi mengarahkan baris Invoiced ke Edit.
+        Livewire::test(\App\Filament\Admin\Resources\DeliveryOrderResource\Pages\EditDeliveryOrder::class, ['record' => $do->id])
+            ->assertRedirect(DeliveryOrderResource::getUrl('view', ['record' => $do->id]));
+
+        $daftar = Livewire::test(\App\Filament\Admin\Resources\DeliveryOrderResource\Pages\ListDeliveryOrders::class);
+        $this->assertSame(DeliveryOrderResource::getUrl('view', ['record' => $do->id]), $daftar->instance()->getTable()->getRecordUrl($do));
+
+        $this->assertSame('Invoiced', $do->fresh()->status);
+        $this->assertDatabaseHas('delivery_orders', ['id' => $do->id, 'deleted_at' => null]);
+    }
 }
