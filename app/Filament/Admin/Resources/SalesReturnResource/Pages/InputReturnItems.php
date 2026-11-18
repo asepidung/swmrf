@@ -107,7 +107,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
 
         // Retur yang sudah disetujui sudah menarik barangnya ke stok dan memotong tagihan: baris tidak boleh berubah lagi (SR-01).
         if (SalesReturn::query()->whereKey($this->record->getKey())->value('status') !== 'Draft') {
-            \Filament\Notifications\Notification::make()
+            \Filament\Notifications\Notification::make('scan-toast')
                 ->title(__('This return is no longer a draft, so its items cannot be changed.'))
                 ->warning()
                 ->send();
@@ -722,7 +722,7 @@ class InputReturnItems extends Page implements HasForms, HasTable
                     ->hidden(fn (): bool => $this->record->status !== 'Draft')
                     ->before(function (Tables\Actions\DeleteAction $action): void {
                         if (SalesReturn::query()->whereKey($this->record->getKey())->value('status') !== 'Draft') {
-                            \Filament\Notifications\Notification::make()->title(__('This return is no longer a draft, so its items cannot be changed.'))->danger()->send();
+                            \Filament\Notifications\Notification::make('scan-toast')->title(__('This return is no longer a draft, so its items cannot be changed.'))->danger()->send();
                             $action->cancel();
                         }
                     }),
