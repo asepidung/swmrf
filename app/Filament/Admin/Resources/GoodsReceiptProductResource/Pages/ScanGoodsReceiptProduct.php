@@ -237,7 +237,11 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
 
 
         // 3. Cari data lengkap di TallyItem (Buyback scenario)
-        $tallyItem = \App\Models\TallyItem::where('barcode', $barcode)->first();
+        // Hanya barang yang tally-nya sudah punya surat jalan (benar-benar keluar), dan baris TERBARU bila pernah keluar berkali-kali (L-03).
+        $tallyItem = \App\Models\TallyItem::where('barcode', $barcode)
+            ->whereIn('tally_id', \App\Models\DeliveryOrder::query()->select('tally_id'))
+            ->latest('id')
+            ->first();
         if (!$tallyItem) {
             Notification::make('scan-toast')
                 ->title(__('Scan Failed'))

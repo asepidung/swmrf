@@ -356,6 +356,20 @@ class GoodsReceiptProductSusulanTest extends TestCase
         $this->assertSame($originalSjNumber, $gr->fresh()->sj_number);
     }
 
+    /** @test */
+    public function a_barcode_on_a_tally_without_a_delivery_order_cannot_be_scanned_as_a_buyback(): void
+    {
+        $gr = $this->grDenganPo();
+        $this->tallyItem('FX-GR-NODO');
+
+        Livewire::actingAs($this->employee(['edit_goods_receipt_products']))
+            ->test(ScanGoodsReceiptProduct::class, ['record' => $gr])
+            ->set('warehouse_id', $this->warehouse->id)
+            ->set('barcode', 'FX-GR-NODO')
+            ->call('scan');
+
+        $this->assertSame(0, BeefStock::count());
+        $this->assertSame(0, $gr->items()->count());
     // =========================================================================
     // Penerimaan terkunci: label/barangnya tidak boleh terhapus (hutang sudah dihitung dari barisnya)
     // =========================================================================
