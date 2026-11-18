@@ -7950,3 +7950,18 @@ Dokumen yang dihapus (soft delete) TIDAK bisa dipulihkan siapa pun lewat aplikas
 
 ## `app:reset-training-data` dihapus, 18 November 2026 (audit pra-rilis CMD-01)
 Keputusan Ayah: perintah pengosong data pelatihan DIHAPUS beserta tesnya. Aplikasi sudah go-live (dipakai sejak 2 November) dan perintah itu men-TRUNCATE seratus tabel dengan satu-satunya pengaman mengetik nama database; coba dan VPS sama-sama `APP_ENV=production` sehingga lingkungan tidak bisa dipakai membedakannya. Bila suatu saat perlu data uji bersih, buat database baru atau pulihkan dari cadangan, jangan menghidupkan perintah ini lagi. Terjemahan grade legacy (`LegacyGradeMap`) di bagian sebelumnya tidak terpengaruh.
+
+## Keputusan Ayah 18 November 2026 (audit pra-rilis)
+
+- **FK-01:** kunci asing anak dari Pemasok, Material, Produk (varian, permintaan), dan Grup Pelanggan jadi RESTRICT (#888). Resep BOM, pengaturan biaya, dan spesifikasi pelanggan per produk tetap CASCADE.
+- **DO-04:** surat jalan dihapus (bukan dibatalkan) = tally terkunci, SO kembali `ready` (#889). Alur "batalkan DO" (SO dan tally ikut batal, barang kembali ke stok) belum ada; fitur terpisah.
+- **L-04 / DO-02:** penerimaan melebihi PO, dan berat diterima melebihi berat kirim, BOLEH tetapi diberi peringatan (#890, #891).
+- **KAS-01:** uang keluar yang membuat saldo kas/rekening minus hanya diperingatkan (#892).
+- **CU-01:** pelanggan pindah grup membawa piutang BELUM LUNAS-nya; yang lunas tetap di grup lama; deposit tidak ikut (#893).
+- **PAY-01:** grup bayar-per-pelanggan tidak memakai sisa deposit lama grup (#894). Dicek di VPS: tidak ada sisa deposit.
+- **CR-02:** PO Sapi yang sudah punya penerimaan terkunci penuh di server (#895).
+- **SO-03:** tombol Hide Price di cetak SO hanya menyembunyikan tampilan, dibiarkan (untuk berbagi SO ke grup perusahaan).
+- **A-03:** sandi sementara (akun baru dan reset) = 8 digit angka acak, tampil sekali ke admin, wajib diganti. Akun lama yang masih 1234 diacak lewat migrasi tanpa ditampilkan (#887, #896). Tiga akun aktif di VPS (santi, col, monru) menunggu reset oleh admin.
+- **K-05:** DP pelanggan dicatat sebagai pembayaran (`payments.sales_order_id`) yang masuk buku kas, dibatasi di invoice, bisa dibatalkan lewat tombol Batalkan DP; DP lama dibiarkan sebagai riwayat; yang boleh mengisi = pemegang izin buat SO (#897).
+- **P-01:** ditambah batas login per username tanpa alamat (#898). `trustProxies(at: '*')` BELUM diubah: menunggu info apakah situs di belakang CDN/proxy lain (tanya IT Lead).
+- Belum diputuskan/ditunda: CFG-01 untuk coba, D-01/D-02, HPP-01, PF-01, INV-01, FD-01, REP-01, LG-01, R-06, INFO-01, DP lama di produksi (belum diperiksa), alur batalkan DO.
