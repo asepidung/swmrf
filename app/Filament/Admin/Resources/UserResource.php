@@ -285,7 +285,7 @@ class UserResource extends Resource
                     ->action(function (User $record) {
                         // Kata sandi sementara ACAK, ditampilkan sekali ke admin (A-03, keputusan Ayah 18 November 2026).
                         // Orangnya tetap wajib menggantinya saat login berikutnya (must_change_password).
-                        $sementara = \Illuminate\Support\Str::password(10, symbols: false);
+                        $sementara = \App\Support\TemporaryPassword::generate();
 
                         $record->update([
                             'password' => Hash::make($sementara),

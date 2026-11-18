@@ -2034,5 +2034,6 @@
     "Received weight is more than the shipped weight": "Received weight is more than the shipped weight",
     "This payment makes the balance of :account negative": "This payment makes the balance of :account negative",
     "Balance now: :balance. Check that the opening balance and earlier entries are complete.": "Balance now: :balance. Check that the opening balance and earlier entries are complete.",
-    "This purchase order already has a receiving and cannot be edited.": "This purchase order already has a receiving and cannot be edited."
+    "This purchase order already has a receiving and cannot be edited.": "This purchase order already has a receiving and cannot be edited.",
+    "User created": "User created"
 }
