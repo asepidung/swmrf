@@ -760,7 +760,6 @@ class DeliveryOrderTest extends TestCase
 
     /** @test */
     public function the_receipt_rows_come_from_the_delivery_order_not_the_browser(): void
-    public function an_invoiced_delivery_order_is_not_editable_or_deletable(): void
     {
         $this->actingAs($this->user);
 
@@ -791,6 +790,15 @@ class DeliveryOrderTest extends TestCase
         $this->assertSame($this->product->id, (int) $receipt->items()->first()->product_id);
         $this->assertSame(2, (int) $receipt->total_box);
         $this->assertEquals(19.0, (float) $receipt->total_weight);
+    }
+
+    /** @test */
+    public function an_invoiced_delivery_order_is_not_editable_or_deletable(): void
+    {
+        $this->actingAs($this->user);
+
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer->id, 'delivery_date' => now()->addDay()->format('Y-m-d'),
             'po_number' => 'PO-INV-1', 'created_by' => $this->user->id, 'status' => 'completed',
         ]);
         $tally = Tally::create(['sales_order_id' => $so->id, 'tally_number' => 'TS#260777', 'status' => 'do']);
