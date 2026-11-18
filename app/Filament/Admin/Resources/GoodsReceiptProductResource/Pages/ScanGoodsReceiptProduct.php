@@ -126,7 +126,7 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
             ->actions([
                 ...\App\Support\BarcodeUsage::statusActions(),
                 Tables\Actions\DeleteAction::make()
-                    ->hidden(fn (GoodsReceiptProductItem $record) => \App\Support\BarcodeUsage::marks($record->barcode) !== [])
+                    ->hidden(fn (GoodsReceiptProductItem $record) => $this->record->is_locked || \App\Support\BarcodeUsage::marks($record->barcode) !== [])
                     ->iconButton()
                     ->requiresConfirmation()
                     ->tooltip(__('Delete Data'))
@@ -139,6 +139,12 @@ class ScanGoodsReceiptProduct extends Page implements HasForms, HasTable
                         DB::transaction(function () use ($item) {
                             if (\App\Support\BarcodeUsage::marks($item->barcode) !== []) {
                                 throw new \RuntimeException('Barcode already used downstream.');
+                            }
+
+                            // Penerimaan yang sudah dikunci tidak boleh lagi kehilangan barisnya: hutang ke pemasok sudah dihitung dari sana.
+                            // Dibaca ulang dengan baris terkunci karena tab yang terbuka bisa lebih tua dari kuncinya.
+                            if (\App\Models\GoodsReceiptProduct::whereKey($item->goods_receipt_product_id)->lockForUpdate()->value('is_locked')) {
+                                throw new \RuntimeException('Goods receipt is locked.');
                             }
 
                             $stock = BeefStock::where('barcode', $item->barcode)->lockForUpdate()->first();

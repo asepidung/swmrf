@@ -315,6 +315,34 @@ class CustomerProductSpecTest extends TestCase
         $this->assertSame('soup 4x4 cm', SalesOrderItem::firstOrFail()->spec['cut']);
     }
 
+    private function saveALockedSalesOrderAndCountLines(string $status): int
+    {
+        $this->fixedSpec();
+        $so = $this->salesOrderWithSpec(null);
+        $so->update(['status' => $status]);
+
+        // Tombol Save disembunyikan untuk status terkunci, tetapi method save tetap bisa dipanggil langsung.
+        try {
+            Livewire::actingAs($this->admin)
+                ->test(EditSalesOrder::class, ['record' => $so->getRouteKey()])
+                ->call('save');
+        } catch (\Throwable) {
+            // ditolak boleh berupa pengecualian; yang dinilai datanya
+        }
+
+        return SalesOrderItem::where('sales_order_id', $so->id)->count();
+    }
+
+    public function test_saving_a_ready_sales_order_does_not_wipe_its_lines(): void
+    {
+        $this->assertSame(1, $this->saveALockedSalesOrderAndCountLines(\App\Models\SalesOrder::STATUS_READY));
+    }
+
+    public function test_saving_a_cancelled_sales_order_does_not_wipe_its_lines(): void
+    {
+        $this->assertSame(1, $this->saveALockedSalesOrderAndCountLines(\App\Models\SalesOrder::STATUS_CANCELLED));
+    }
+
     public function test_an_old_sales_order_without_a_spec_is_not_filled_in_on_open(): void
     {
         $this->fixedSpec();

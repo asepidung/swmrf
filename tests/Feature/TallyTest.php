@@ -330,6 +330,12 @@ class TallyTest extends TestCase
             'status' => 'processing',
         ]);
 
+        TallyItem::create([
+            'tally_id' => $tally->id, 'barcode' => 'BC_APPROVE_'.uniqid(), 'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse->id, 'grade_id' => $this->grade->id,
+            'weight' => 10, 'qty_pcs' => 1, 'pack_date' => now(), 'origin' => '1',
+        ]);
+
         Livewire::actingAs($this->user)
             ->test(ScanTally::class, ['record' => $tally])
             ->callAction('approve', [
@@ -360,6 +366,12 @@ class TallyTest extends TestCase
         $tally = Tally::create([
             'sales_order_id' => $so->id,
             'status' => 'processing',
+        ]);
+
+        TallyItem::create([
+            'tally_id' => $tally->id, 'barcode' => 'BC_APPROVE_'.uniqid(), 'product_id' => $this->product->id,
+            'warehouse_id' => $this->warehouse->id, 'grade_id' => $this->grade->id,
+            'weight' => 10, 'qty_pcs' => 1, 'pack_date' => now(), 'origin' => '1',
         ]);
 
         Livewire::actingAs($this->user)
