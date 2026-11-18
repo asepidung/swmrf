@@ -35,6 +35,12 @@ class EditInvoice extends EditRecord
             // Faktur tidak boleh dipindah ke pelanggan, penerimaan, atau SO lain lewat Edit (K-03).
             unset($data['customer_id'], $data['delivery_order_receipt_id'], $data['sales_order_id']);
 
+            // K-05: DP tidak boleh dinaikkan melampaui DP tercatat SO-nya; yang sudah ada (riwayat) boleh tetap.
+            if (array_key_exists('down_payment', $data)) {
+                $batas = max(\App\Support\CustomerDownPayment::availableForInvoice($record->sales_order_id, $record->id), (float) $record->down_payment);
+                $data['down_payment'] = min(\App\Support\InvoiceTotals::number($data['down_payment']), $batas);
+            }
+
             $record->update($data);
 
             return $record;

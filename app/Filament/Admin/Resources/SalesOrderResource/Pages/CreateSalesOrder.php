@@ -13,6 +13,22 @@ class CreateSalesOrder extends CreateRecord
 
     protected array $itemsData = [];
 
+    /** K-05: DP yang diisi harus punya rekening/kas dan pelanggan bergrup, supaya bisa dicatat sebagai uang masuk. */
+    protected function beforeCreate(): void
+    {
+        $raw = $this->form->getRawState();
+        $dp = (float) str_replace('.', '', (string) ($raw['down_payment'] ?? 0));
+        $grup = \App\Models\Customer::whereKey($raw['customer_id'] ?? null)->value('customer_group_id');
+
+        if ($dp > 0 && (blank($raw['down_payment_bank_account_id'] ?? null) || ! $grup)) {
+            \Filament\Notifications\Notification::make()
+                ->title(__('The down payment needs a bank/cash account and a customer with a group.'))
+                ->danger()->send();
+
+            $this->halt();
+        }
+    }
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $this->itemsData = $data['items'] ?? [];
@@ -23,6 +39,9 @@ class CreateSalesOrder extends CreateRecord
     protected function afterCreate(): void
     {
         $record = $this->getRecord();
+
+        // K-05: DP dicatat sebagai pembayaran masuk buku kas.
+        \App\Support\CustomerDownPayment::record($record, (int) ($this->form->getRawState()['down_payment_bank_account_id'] ?? 0));
         foreach ($this->itemsData as $item) {
             $record->items()->create([
                 'product_id' => $item['product_id'],

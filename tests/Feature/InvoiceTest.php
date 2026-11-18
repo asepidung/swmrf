@@ -210,6 +210,9 @@ class InvoiceTest extends TestCase
                 'balance' => '1.000.000',
             ]);
 
+        // K-05: DP invoice dibatasi DP yang tercatat di SO-nya, jadi SO diberi DP sebelum DP diketik di invoice.
+        \App\Models\SalesOrder::whereKey($this->receiptRegular->sales_order_id)->update(['down_payment' => 200000]);
+
         $items = $lw->get('data.items');
 
         // Biaya tambahan kini berupa repeater relasi additionalCharges, bukan

@@ -2035,5 +2035,12 @@
     "This payment makes the balance of :account negative": "This payment makes the balance of :account negative",
     "Balance now: :balance. Check that the opening balance and earlier entries are complete.": "Balance now: :balance. Check that the opening balance and earlier entries are complete.",
     "This purchase order already has a receiving and cannot be edited.": "This purchase order already has a receiving and cannot be edited.",
-    "User created": "User created"
+    "User created": "User created",
+    "The down payment needs a bank/cash account and a customer with a group.": "The down payment needs a bank/cash account and a customer with a group.",
+    "Down payment for sales order :number": "Down payment for sales order :number",
+    "Down payment for sales order :number (:payment)": "Down payment for sales order :number (:payment)",
+    "Account receiving the down payment": "Account receiving the down payment",
+    "Cancel down payment": "Cancel down payment",
+    "The down payment is already used by an invoice and cannot be cancelled.": "The down payment is already used by an invoice and cannot be cancelled.",
+    "Down payment cancelled": "Down payment cancelled"
 }

@@ -821,6 +821,7 @@ class ReceivePayment extends Page
 
             $depositPayments = $this->record->payments()
                 ->active()
+                ->whereNull('sales_order_id') // pembayaran DP bukan deposit grup (K-05)
                 ->with('allocations')
                 ->orderBy('payment_date')
                 ->orderBy('id')
