@@ -106,6 +106,12 @@ class CostReports
             ->get()
             ->keyBy('delivery_order_receipt_id');
 
+        // Satu kueri per 1000 barcode, bukan satu kueri per karton (audit pra-rilis 14 November 2026, PF-06).
+        $costs = [];
+        foreach ($orders->flatMap(fn ($o) => $o->tally?->items ?? collect())->pluck('barcode')->filter()->unique()->chunk(1000) as $chunk) {
+            $costs += \App\Models\BarcodeCost::whereIn('barcode', $chunk->all())->pluck('cost_per_kg', 'barcode')->all();
+        }
+
         $rows = [];
 
         foreach ($orders as $order) {
@@ -123,7 +129,7 @@ class CostReports
 
                 foreach ($items as $item) {
                     $kg += (float) $item->weight;
-                    $cost = BarcodeCosts::for($item->barcode);
+                    $cost = isset($costs[$item->barcode]) ? (float) $costs[$item->barcode] : null;
 
                     if ($cost === null) {
                         $unvaluedBarcodes++;
