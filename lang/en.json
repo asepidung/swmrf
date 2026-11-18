@@ -2007,5 +2007,6 @@
     "Used only for sales returns and stock take findings when the product has no valued stock to average. Leave empty if unknown.": "Used only for sales returns and stock take findings when the product has no valued stock to average. Leave empty if unknown.",
     "This goods receipt contains an item that is not on its purchase order.": "This goods receipt contains an item that is not on its purchase order.",
     "This request is no longer at this stage.": "This request is no longer at this stage.",
-    "This request has already moved on, so this decision was not saved.": "This request has already moved on, so this decision was not saved."
+    "This request has already moved on, so this decision was not saved.": "This request has already moved on, so this decision was not saved.",
+    ":count documents were skipped because their status no longer allows deletion.": ":count documents were skipped because their status no longer allows deletion."
 }

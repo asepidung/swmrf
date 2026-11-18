@@ -2007,5 +2007,6 @@
     "Used only for sales returns and stock take findings when the product has no valued stock to average. Leave empty if unknown.": "Dipakai hanya untuk retur jual dan temuan opname bila produk tidak punya stok berharga untuk dirata-ratakan. Kosongkan kalau belum diketahui.",
     "This goods receipt contains an item that is not on its purchase order.": "Penerimaan ini memuat barang yang tidak ada di Purchase Order-nya.",
     "This request is no longer at this stage.": "Permintaan ini sudah tidak berada di tahap ini.",
-    "This request has already moved on, so this decision was not saved.": "Permintaan ini sudah berpindah tahap, jadi keputusan ini tidak disimpan."
+    "This request has already moved on, so this decision was not saved.": "Permintaan ini sudah berpindah tahap, jadi keputusan ini tidak disimpan.",
+    ":count documents were skipped because their status no longer allows deletion.": ":count dokumen dilewati karena statusnya sudah tidak boleh dihapus."
 }
