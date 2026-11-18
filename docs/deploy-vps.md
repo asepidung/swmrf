@@ -275,3 +275,7 @@ Dilakukan di perangkat yang akan dipakai pengguna, mis. satu laptop dan satu pon
 - Pendaftaran ulang langganan push saat login: `resources/views/push/subscribe.blade.php` menjalankan
   `ensureSubscription()` setiap halaman admin dibuka bila izin notifikasi sudah ada. Fungsi itu membuat ulang
   langganan bila kunci VAPID berubah, dan mengirim ulang ke server setiap kali (endpoint idempoten).
+
+## Cookie sesi
+
+Pasang `SESSION_SECURE_COOKIE=true` di `.env` produksi (lalu `php8.4 artisan optimize`), supaya cookie sesi hanya dikirim lewat HTTPS. Sudah terpasang di VPS pada 18 November 2026; coba menyusul.
