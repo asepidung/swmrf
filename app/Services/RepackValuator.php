@@ -158,8 +158,15 @@ class RepackValuator
         $inCost = [];
         $unvalued = false;
 
+        // HPP-01: harga semua bahan diambil sekaligus (barcode unik), bukan satu kueri per karton. Repack besar memakai
+        // ratusan karton, dan dihitung ulang berkali-kali saat lot bahannya dinilai.
+        $costs = [];
+        foreach ($materials->pluck('barcode')->filter()->unique()->chunk(1000) as $potong) {
+            $costs += \App\Models\BarcodeCost::whereIn('barcode', $potong->all())->pluck('cost_per_kg', 'barcode')->all();
+        }
+
         foreach ($materials as $material) {
-            $perKg = BarcodeCosts::for($material->barcode);
+            $perKg = isset($costs[$material->barcode]) && $costs[$material->barcode] !== null ? (float) $costs[$material->barcode] : null;
             $pid = (int) $material->product_id;
             $inKg[$pid] = ($inKg[$pid] ?? 0.0) + (float) $material->weight;
 
