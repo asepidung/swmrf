@@ -261,6 +261,27 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
                 return;
             }
 
+            // Harga dan material tiap baris diambil dari PO yang terkunci, BUKAN dari form.
+            // Keduanya field tersembunyi, dan field tersembunyi tetap bisa diisi dari
+            // browser: pembuat penerimaan dulu bisa mengirim harga lain atau material
+            // di luar PO, lalu hutang ke pemasok terbentuk dari angka itu saat
+            // penerimaannya dikunci (audit pra-rilis 14 November 2026, K-01).
+            $hargaPo = \App\Models\PurchaseMaterialItem::where('purchase_material_id', $lockedPo->id)
+                ->pluck('price', 'material_id');
+
+            foreach ($data['items'] as $item) {
+                if (self::parseNumber($item['qty_received']) > 0 && ! $hargaPo->has($item['material_id'] ?? null)) {
+                    DB::rollBack();
+
+                    Notification::make()
+                        ->title(__('This goods receipt contains an item that is not on its purchase order.'))
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+            }
+
             // Nomor GR sekarang dibuat oleh GoodsReceiptMaterial::boot()
             // sendiri (creating -> generateGrNumber(), lewat
             // DocumentNumber::next() yang mengunci baris) -- bukan dibaca
@@ -277,11 +298,13 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
             foreach ($data['items'] as $item) {
                 $qtyReceived = self::parseNumber($item['qty_received']);
                 if ($qtyReceived > 0) {
+                    $harga = $hargaPo[$item['material_id']];
+
                     $gr->items()->create([
                         'material_id' => $item['material_id'],
                         'qty_received' => $qtyReceived,
-                        'price' => $item['price'],
-                        'subtotal' => $qtyReceived * $item['price'],
+                        'price' => $harga,
+                        'subtotal' => $qtyReceived * $harga,
                     ]);
                 }
             }

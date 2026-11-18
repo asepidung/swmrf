@@ -16,6 +16,10 @@ class CreateInvoice extends CreateRecord
 
     protected static bool $canCreateAnother = false;
 
+    /** Penerimaan yang halaman ini dibuka untuknya; tidak bisa diubah dari browser (K-03). */
+    #[\Livewire\Attributes\Locked]
+    public ?int $receiptId = null;
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
@@ -31,6 +35,8 @@ class CreateInvoice extends CreateRecord
             $this->redirect(\App\Filament\Admin\Resources\DeliveryOrderReceiptResource::getUrl('index'));
             return;
         }
+
+        $this->receiptId = (int) $receiptId;
 
         parent::mount();
     }
@@ -69,6 +75,16 @@ class CreateInvoice extends CreateRecord
     protected function beforeValidate(): void
     {
         $this->data['additionalCharges'] = InvoiceResource::withoutGhostCharges($this->data['additionalCharges'] ?? []);
+
+        // Kepala dan total ditentukan server dari penerimaan yang dikunci, bukan dari kiriman browser (K-03).
+        $receipt = DeliveryOrderReceipt::with('items')->find($this->receiptId);
+
+        if ($receipt) {
+            $this->data['delivery_order_receipt_id'] = $receipt->id;
+            $this->data['sales_order_id'] = $receipt->sales_order_id;
+            $this->data['customer_id'] = $receipt->customer_id;
+            $this->data = InvoiceResource::recomputeFromState($this->data, $receipt);
+        }
     }
 
     protected function mutateFormDataBeforeCreate(array $data): array

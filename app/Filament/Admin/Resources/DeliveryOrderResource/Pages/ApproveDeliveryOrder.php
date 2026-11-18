@@ -318,6 +318,13 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
                     }
 
                     DB::transaction(function () use ($barcodes) {
+                        // Surat jalan dikunci dan statusnya dibaca ulang: tab lama tidak boleh menolak barcode sesudah disetujui (DO-01).
+                        if (DeliveryOrder::whereKey($this->record->id)->lockForUpdate()->value('status') !== 'Ready') {
+                            Notification::make()->title(__('This delivery order has already moved on, so the rejection was not done.'))->warning()->send();
+
+                            throw new \Filament\Support\Exceptions\Halt();
+                        }
+
                         // Dikunci sebelum dihapus: dua permintaan yang
                         // menolak barcode yang sama pada saat bersamaan
                         // (klik ganda, atau dua orang) tidak boleh
@@ -389,20 +396,29 @@ class ApproveDeliveryOrder extends Page implements Forms\Contracts\HasForms
 
             $doItemsList = $this->record->items->values();
 
+            // Baris bukti terima DISUSUN dari baris surat jalan: produk dan jumlah box dari surat jalan, dari browser hanya berat dan
+            // catatan per baris (menurut urutan baris). Baris tambahan atau produk lain dari browser diabaikan (DO-05).
+            $dikirim = array_values($data['receipt_items'] ?? []);
+            $baris = [];
+
+            foreach ($doItemsList as $i => $doItem) {
+                $masuk = $dikirim[$i] ?? [];
+
+                $baris[] = [
+                    'product_id' => $doItem->product_id,
+                    'box' => $doItem->box,
+                    'weight' => max(0.0, (float) ($masuk['weight'] ?? $doItem->weight)),
+                    'notes' => $masuk['notes'] ?? null,
+                ];
+            }
+
+            $data['receipt_items'] = $baris;
+
             $totalBox = 0;
             $totalWeight = 0;
-            $index = 0;
-            foreach ($data['receipt_items'] as $key => $item) {
-                $doItem = $doItemsList[$index] ?? null;
-                $productId = $item['product_id'] ?? ($doItem ? $doItem->product_id : null);
-                $boxCount = $item['box'] ?? ($doItem ? $doItem->box : 0);
-                
-                $data['receipt_items'][$key]['product_id'] = $productId;
-                $data['receipt_items'][$key]['box'] = $boxCount;
-                
-                $totalBox += $boxCount;
-                $totalWeight += (float)$item['weight'];
-                $index++;
+            foreach ($baris as $item) {
+                $totalBox += $item['box'];
+                $totalWeight += $item['weight'];
             }
 
             $receipt = DeliveryOrderReceipt::updateOrCreate(

@@ -92,6 +92,24 @@ class EditSalesOrder extends EditRecord
         return $data;
     }
 
+    /**
+     * Tombol Save disembunyikan untuk SO terkunci, tetapi method `save` tetap bisa dipanggil langsung (dan dari tab
+     * yang dibuka sebelum SO dikunci). Tanpa ini `afterSave()` menghapus semua baris SO dan tidak membuat penggantinya.
+     */
+    protected function beforeSave(): void
+    {
+        $status = SalesOrder::whereKey($this->getRecord()->getKey())->value('status');
+
+        if (in_array($status, SalesOrder::STATUS_LOCKED_FOR_EDIT, true)) {
+            \Filament\Notifications\Notification::make()
+                ->title(__('This sales order is locked, so it cannot be saved.'))
+                ->danger()
+                ->send();
+
+            $this->halt();
+        }
+    }
+
     protected function afterSave(): void
     {
         $record = $this->getRecord();

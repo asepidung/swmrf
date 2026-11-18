@@ -15,6 +15,10 @@ class CreateDeliveryOrder extends CreateRecord
 {
     protected static string $resource = DeliveryOrderResource::class;
 
+    /** Tally yang halaman ini dibuka untuknya; tidak bisa diubah dari browser (K-04). */
+    #[\Livewire\Attributes\Locked]
+    public ?int $tallyId = null;
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
@@ -24,12 +28,33 @@ class CreateDeliveryOrder extends CreateRecord
     {
         $tallyId = request()->query('tally_id');
 
-        if (!$tallyId || !Tally::where('id', $tallyId)->exists()) {
+        // Hanya tally yang sudah DIKUNCI (selesai dipindai dan disetujui) yang boleh dibuatkan surat jalan.
+        if (!$tallyId || !Tally::where('id', $tallyId)->where('status', Tally::STATUS_LOCKED)->exists()) {
             $this->redirect($this->getResource()::getUrl('draft'));
             return;
         }
 
+        $this->tallyId = (int) $tallyId;
+
         parent::mount();
+    }
+
+    /** Tally, pelanggan, dan SO surat jalan berasal dari tally yang dikunci, bukan dari kiriman browser (K-04). */
+    protected function beforeValidate(): void
+    {
+        $tally = Tally::with('salesOrder')->find($this->tallyId);
+
+        if ($tally) {
+            $this->data['tally_id'] = $tally->id;
+            $this->data['sales_order_id'] = $tally->sales_order_id;
+            $this->data['customer_id'] = $tally->salesOrder?->customer_id;
+        }
+    }
+
+    protected function afterCreate(): void
+    {
+        // Baris surat jalan = isi tally, bukan kiriman form.
+        $this->record->syncItemsFromTally();
     }
 
     /**
@@ -46,7 +71,13 @@ class CreateDeliveryOrder extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         return DB::transaction(function () use ($data) {
-            Tally::whereKey($data['tally_id'])->lockForUpdate()->first();
+            $tally = Tally::whereKey($data['tally_id'])->lockForUpdate()->first();
+
+            if (! $tally || $tally->status !== Tally::STATUS_LOCKED) {
+                throw ValidationException::withMessages([
+                    'data.tally_id' => __('This Tally is not locked, so it cannot get a Delivery Order yet.'),
+                ]);
+            }
 
             if (DeliveryOrder::where('tally_id', $data['tally_id'])->exists()) {
                 throw ValidationException::withMessages([

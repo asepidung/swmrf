@@ -59,8 +59,9 @@ class QcReportResource extends Resource
                         ->dehydrated(false)
                         ->formatStateUsing(fn ($record): ?string => $record?->nomorDokumen()),
 
-                    Forms\Components\Hidden::make('reportable_type'),
-                    Forms\Components\Hidden::make('reportable_id'),
+                    // Dokumen yang diperiksa tidak ikut disimpan: laporan tidak boleh dipindah ke dokumen lain lewat Edit (Q-01).
+                    Forms\Components\Hidden::make('reportable_type')->dehydrated(false),
+                    Forms\Components\Hidden::make('reportable_id')->dehydrated(false),
                 ])
                 ->columns(2),
 
