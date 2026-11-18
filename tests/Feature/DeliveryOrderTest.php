@@ -818,4 +818,28 @@ class DeliveryOrderTest extends TestCase
         $this->assertSame('Invoiced', $do->fresh()->status);
         $this->assertDatabaseHas('delivery_orders', ['id' => $do->id, 'deleted_at' => null]);
     }
+    /** @test */
+    public function approving_with_more_weight_than_shipped_is_saved_but_warned()
+    {
+        $this->actingAs($this->user);
+
+        $so = SalesOrder::create([
+            'customer_id' => $this->customer->id, 'delivery_date' => now()->addDays(1)->format('Y-m-d'),
+            'po_number' => 'PO-LEBIH', 'created_by' => $this->user->id, 'status' => 'ready',
+        ]);
+        $tally = Tally::create(['sales_order_id' => $so->id, 'tally_number' => 'TS#260077', 'status' => 'locked']);
+        $do = DeliveryOrder::create([
+            'tally_id' => $tally->id, 'sales_order_id' => $so->id, 'customer_id' => $this->customer->id,
+            'delivery_date' => now()->addDays(1)->format('Y-m-d'), 'po_number' => 'PO-LEBIH',
+            'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'JOKO'])->id, 'status' => 'Ready',
+        ]);
+        DeliveryOrderItem::create(['delivery_order_id' => $do->id, 'product_id' => $this->product->id, 'box' => 2, 'weight' => 20.0]);
+
+        Livewire::test(\App\Filament\Admin\Resources\DeliveryOrderResource\Pages\ApproveDeliveryOrder::class, ['record' => $do->id])
+            ->set('data.receipt_items', ['item-1' => ['product_id' => $this->product->id, 'weight' => 22.0, 'box' => 2, 'notes' => null]])
+            ->call('submit')
+            ->assertNotified(__('Received weight is more than the shipped weight'));
+
+        $this->assertEquals('Approved', $do->fresh()->status, 'kelebihan tetap boleh disimpan');
+    }
 }
