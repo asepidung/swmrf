@@ -433,4 +433,24 @@ class RepackValuationTest extends TestCase
         Livewire::test(MaterialUsageRepack::class, ['record' => $repack->getRouteKey()])
             ->assertDontSee(__('Repack Valuation'));
     }
+    /** @test */
+    public function recalculating_a_repack_reads_the_material_costs_in_one_query_not_one_per_carton(): void
+    {
+        $bahan = [];
+        foreach (range(1, 40) as $i) {
+            $this->material('B-'.$i, 'TDR', 100000);
+            $bahan[] = ['TDR', 'B-'.$i, 1];
+        }
+        $this->stock('S-FQ', 'FQ', 100, 37000);
+        $repack = $this->repack($bahan, [['TDR', 38], ['FQ', 1]]);
+        $this->lockWithDrylog($repack);
+
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        RepackValuator::recalculate($repack->fresh());
+        $kueri = collect(\Illuminate\Support\Facades\DB::getQueryLog())->filter(fn ($q) => str_contains($q['query'], 'from "barcode_costs" where "barcode" in'));
+        \Illuminate\Support\Facades\DB::disableQueryLog();
+
+        $this->assertGreaterThan(0, $kueri->count(), 'harga bahan dibaca dengan satu kueri whereIn');
+        $this->assertLessThan(5, $kueri->count(), 'tidak satu kueri per karton');
+    }
 }
