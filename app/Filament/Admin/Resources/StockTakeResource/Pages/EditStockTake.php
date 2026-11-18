@@ -10,6 +10,24 @@ class EditStockTake extends EditRecord
 {
     protected static string $resource = StockTakeResource::class;
 
+    /**
+     * Periode, tanggal, dan catatan opname tidak boleh berubah sesudah opname selesai atau dibatalkan. Tab yang dibuka
+     * sebelum itu masih bisa menekan simpan, jadi statusnya dibaca ulang dari basis data (audit pra-rilis, ED-02).
+     */
+    protected function beforeSave(): void
+    {
+        $status = \App\Models\StockTake::whereKey($this->getRecord()->getKey())->value('status');
+
+        if (! in_array($status, \App\Models\StockTake::STATUS_SEDANG_MENGHITUNG, true)) {
+            \Filament\Notifications\Notification::make()
+                ->title(__('This stock count is no longer being counted, so it cannot be changed.'))
+                ->danger()
+                ->send();
+
+            $this->halt();
+        }
+    }
+
     protected function getHeaderActions(): array
     {
         return [

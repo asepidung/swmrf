@@ -25,6 +25,21 @@ class EditMaterialStockTake extends EditRecord
         return $this->getResource()::getUrl('index');
     }
 
+    /** Sama dengan Opname Daging: tombol Save disembunyikan, tapi `save` harus ditolak juga di server (ED-01). */
+    protected function beforeSave(): void
+    {
+        $status = MaterialStockTake::whereKey($this->getRecord()->getKey())->value('status');
+
+        if (! in_array($status, MaterialStockTake::STATUS_SEDANG_MENGHITUNG, true)) {
+            Notification::make()
+                ->title(__('This stock count is no longer being counted, so it cannot be changed.'))
+                ->danger()
+                ->send();
+
+            $this->halt();
+        }
+    }
+
     protected function getFormActions(): array
     {
         // Hide save button if not in progress/draft

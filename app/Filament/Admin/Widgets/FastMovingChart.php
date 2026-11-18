@@ -19,6 +19,9 @@ use Filament\Widgets\ChartWidget;
  */
 class FastMovingChart extends ChartWidget
 {
+    // Angkanya tidak berubah secepat 5 detik bawaan; tanpa ini tiap grafik memanggil server terus-menerus (audit pra-rilis, PF-08).
+    protected static ?string $pollingInterval = null;
+
     public ?string $dari = null;
 
     public ?string $sampai = null;

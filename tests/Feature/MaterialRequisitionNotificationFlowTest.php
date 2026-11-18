@@ -360,4 +360,19 @@ class MaterialRequisitionNotificationFlowTest extends TestCase
 
         $this->assertSame('PO Created', $requisition->fresh()->status);
     }
+
+    /** @test */
+    public function finance_cannot_issue_a_po_while_an_item_price_is_empty()
+    {
+        Notification::fake();
+
+        $requisition = $this->makeRequisition('Pending Finance');
+        $requisition->items()->update(['price' => 0, 'subtotal' => 0]);
+
+        Livewire::actingAs($this->finance)
+            ->test(ApproveFinanceMaterialRequisition::class, ['record' => $requisition->id])
+            ->callAction('approve', ['payment_amount' => 0]);
+
+        $this->assertSame('Pending Finance', $requisition->fresh()->status, 'PO bernilai nol tidak boleh terbit.');
+    }
 }

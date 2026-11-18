@@ -89,6 +89,13 @@ class EditSalesOrder extends EditRecord
     {
         $this->itemsData = $data['items'] ?? [];
         unset($data['items']);
+
+        // SO yang tally-nya sedang dipindai: kolom yang dinonaktifkan di layar tidak boleh berubah lewat state yang
+        // dikirim di luar layar (audit pra-rilis, SO-04). Status dibaca dari basis data, bukan dari kiriman.
+        if (SalesOrder::whereKey($this->getRecord()->getKey())->value('status') === SalesOrder::STATUS_PROCESSING) {
+            unset($data['customer_id'], $data['delivery_date'], $data['shipping_address'], $data['down_payment']);
+        }
+
         return $data;
     }
 

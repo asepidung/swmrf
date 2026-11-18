@@ -111,6 +111,12 @@ class MyProfile extends Page
 
         $user->save();
 
+        // Sesi ini ikut diperbarui, seperti di halaman paksa-ganti-sandi: tanpa ini AuthenticateSession
+        // mengeluarkan pengguna sendiri pada permintaan berikutnya (audit pra-rilis, PR-01).
+        if (! empty($data['new_password'])) {
+            session(['password_hash_web' => $user->getAuthPassword()]);
+        }
+
         Notification::make()
             ->title(__('Profile updated successfully'))
             ->success()

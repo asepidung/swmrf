@@ -367,4 +367,29 @@ class MaterialStockTakeTest extends TestCase
             );
         }
     }
+
+    /** @test */
+    public function a_completed_material_stock_take_cannot_be_edited_but_one_in_progress_can(): void
+    {
+        $user = \App\Models\User::factory()->create(['role' => 'programmer', 'is_active' => true]);
+        $buat = fn (string $status) => \App\Models\MaterialStockTake::create([
+            'document_number' => 'MSO-EDIT-'.uniqid(), 'period' => now()->format('Y-m'), 'date' => now()->toDateString(),
+            'status' => $status, 'created_by' => $user->id,
+        ]);
+
+        $ubah = function (\App\Models\MaterialStockTake $opname) use ($user) {
+            try {
+                \Livewire\Livewire::actingAs($user)
+                    ->test(\App\Filament\Admin\Resources\MaterialStockTakeResource\Pages\EditMaterialStockTake::class, ['record' => $opname->getRouteKey()])
+                    ->set('data.summary_note', 'DIUBAH')
+                    ->call('save');
+            } catch (\Throwable) {
+            }
+
+            return $opname->fresh()->summary_note;
+        };
+
+        $this->assertSame('DIUBAH', $ubah($buat(\App\Models\MaterialStockTake::STATUS_IN_PROGRESS)), 'Kontrol positif.');
+        $this->assertNotSame('DIUBAH', $ubah($buat(\App\Models\MaterialStockTake::STATUS_COMPLETED)));
+    }
 }

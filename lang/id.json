@@ -2025,5 +2025,6 @@
     "A weighing row points to a cattle that is not on this receiving.": "Ada baris timbang yang menunjuk ekor yang bukan milik penerimaan ini.",
     "The item rows do not match this receipt, so it was not saved. Reload the page.": "Baris barang tidak cocok dengan penerimaan ini, jadi tidak disimpan. Muat ulang halaman.",
     "Enter a number that is not negative.": "Isi dengan angka yang tidak negatif.",
-    "The push address is not valid.": "Alamat notifikasi tidak sah."
+    "The push address is not valid.": "Alamat notifikasi tidak sah.",
+    "This stock count is no longer being counted, so it cannot be changed.": "Opname ini sudah tidak dalam penghitungan, jadi tidak bisa diubah."
 }

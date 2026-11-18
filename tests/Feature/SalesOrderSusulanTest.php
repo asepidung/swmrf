@@ -178,4 +178,26 @@ class SalesOrderSusulanTest extends TestCase
             $this->assertSame($tanggal, $so->fresh()->delivery_date->toDateString(), 'Simpan ke-'.$kali.' menggeser tanggal kirim.');
         }
     }
+
+    /** @test */
+    public function the_customer_of_a_sales_order_being_tallied_cannot_be_changed_from_outside_the_screen(): void
+    {
+        $lain = Customer::create([
+            'name' => 'CUSTOMER LAIN', 'customer_segment_id' => $this->customer->customer_segment_id,
+            'address' => 'Y', 'pic' => 'Y', 'phone' => '09', 'top' => 30,
+        ]);
+
+        $ganti = function (string $status) use ($lain) {
+            $so = $this->salesOrder($status);
+            Livewire::actingAs($this->user)
+                ->test(EditSalesOrder::class, ['record' => $so->getRouteKey()])
+                ->set('data.customer_id', $lain->id)
+                ->call('save');
+
+            return $so->fresh()->customer_id;
+        };
+
+        $this->assertSame($lain->id, $ganti(SalesOrder::STATUS_WAITING), 'Kontrol positif: SO waiting boleh ganti customer.');
+        $this->assertSame($this->customer->id, $ganti(SalesOrder::STATUS_PROCESSING), 'SO processing: customer tidak boleh berubah.');
+    }
 }

@@ -25,6 +25,9 @@ class SalesYearlyChart extends ChartWidget
 
     protected int|string|array $columnSpan = 'full';
 
+    // Angkanya tidak berubah secepat 5 detik bawaan; tanpa ini tiap grafik memanggil server terus-menerus (audit pra-rilis, PF-08).
+    protected static ?string $pollingInterval = null;
+
     protected static ?string $maxHeight = '280px';
 
     public function getHeading(): ?string
