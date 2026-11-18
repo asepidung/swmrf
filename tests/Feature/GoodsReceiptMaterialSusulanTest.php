@@ -282,4 +282,34 @@ class GoodsReceiptMaterialSusulanTest extends TestCase
         $this->assertSame(2, $gr->items()->count());
         $this->assertNotSame('SJ-KONTROL', $gr->fresh()->sj_number);
     }
+
+    /** @test */
+    public function a_negative_received_qty_is_refused_but_a_positive_change_is_saved(): void
+    {
+        $gr = $this->grMaterial(locked: false);
+        $item = $gr->items()->create(['material_id' => $this->material->id, 'qty_received' => 10, 'price' => 10000, 'subtotal' => 100000]);
+
+        // Stok cukup, supaya yang menahan nilai negatif adalah aturan qty, bukan penjaga stok minus.
+        \App\Services\StockService::adjustStock($this->material->id, 50, 'GR', 'SEED', 'seed');
+
+        $simpan = function (string $qty) use ($gr, $item) {
+            $tab = Livewire::actingAs($this->employee(['edit_gr_materials']))
+                ->test(EditGoodsReceiptMaterial::class, ['record' => $gr->getRouteKey()]);
+            $tab->set('data.items.record-'.$item->id.'.qty_received', $qty)
+                ->set('data.sj_number', 'SJ-QTY')
+                ->set('data.po_status_action', 'partial')
+                ->call('save');
+        };
+
+        foreach (['-5'] as $salah) {
+            try {
+                $simpan($salah);
+            } catch (\Throwable $e) {
+            }
+            $this->assertEquals(10, $item->fresh()->qty_received, "Qty $salah tidak boleh tersimpan.");
+        }
+
+        $simpan('12');
+        $this->assertEquals(12, $item->fresh()->qty_received);
+    }
 }
