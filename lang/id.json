@@ -2006,5 +2006,9 @@
     "Stock take analysis report": "Laporan analisa hasil opname",
     "Fallback cost per kg": "Harga cadangan per kg",
     "Charge name": "Nama biaya",
-    "Used only for sales returns and stock take findings when the product has no valued stock to average. Leave empty if unknown.": "Dipakai hanya untuk retur jual dan temuan opname bila produk tidak punya stok berharga untuk dirata-ratakan. Kosongkan kalau belum diketahui."
+    "Used only for sales returns and stock take findings when the product has no valued stock to average. Leave empty if unknown.": "Dipakai hanya untuk retur jual dan temuan opname bila produk tidak punya stok berharga untuk dirata-ratakan. Kosongkan kalau belum diketahui.",
+    "This tally has already moved on, so this action was not done.": "Tally ini sudah berpindah tahap, jadi aksi ini tidak dilakukan.",
+    "This tally has no items yet, so it cannot be approved.": "Tally ini belum berisi barang, jadi tidak bisa disetujui.",
+    "This tally already has a delivery order, so its approval cannot be undone.": "Tally ini sudah punya surat jalan, jadi persetujuannya tidak bisa dibatalkan.",
+    "This delivery order has already moved on, so the rejection was not done.": "Surat jalan ini sudah berpindah tahap, jadi penolakan tidak dilakukan."
 }
