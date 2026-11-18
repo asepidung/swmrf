@@ -87,6 +87,13 @@ class ViewPurchaseProduct extends ViewRecord
                 ->action(function (array $data) {
                     $amount = (float) str_replace('.', '', $data['amount_input']);
 
+                    // Uang muka tidak dicatat untuk PO yang sudah batal atau selesai (PO-02).
+                    if (in_array($this->record->newQuery()->whereKey($this->record->getKey())->value('status'), ['canceled', 'completed'], true)) {
+                        \Filament\Notifications\Notification::make()->title(__('This purchase order is already closed.'))->danger()->send();
+
+                        return;
+                    }
+
                     // Uang muka BUKAN sekadar dibandingkan ke tagihan penuh --
                     // itu yang dulu membiarkan DP yang sama dibayar berkali-kali
                     // sampai melebihi tagihan tanpa satu pun galat. Sisa yang

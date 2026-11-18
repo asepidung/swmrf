@@ -73,6 +73,17 @@ class EditCattleWeighing extends EditRecord
 
     protected function beforeSave(): void
     {
+        // Baris timbang hanya boleh menunjuk ekor milik penerimaan dokumen ini (CW-01).
+        $sah = \App\Models\CattleReceiving::find($this->record->cattle_receiving_id)?->items()->pluck('id')->all() ?? [];
+
+        foreach (($this->data['items'] ?? []) as $baris) {
+            if (! in_array($baris['cattle_receiving_item_id'] ?? null, $sah)) {
+                Notification::make()->title(__('A weighing row points to a cattle that is not on this receiving.'))->danger()->send();
+
+                throw new Halt();
+            }
+        }
+
         $locked = CattleWeighing::whereKey($this->record->id)->lockForUpdate()->first();
 
         if ($locked && \App\Models\Carcass::where('cattle_weighing_id', $locked->id)->exists()) {

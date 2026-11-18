@@ -37,6 +37,7 @@ class GoodsReceiptProduct extends Model
             // Adjust stock for all items
             foreach ($gr->items as $item) {
                 // Delete stock record
+                \App\Services\WarehouseFreezeService::check(); // pembekuan opname tidak lewat hapus massal lewat query (FZ-01)
                 BeefStock::where('barcode', $item->barcode)->delete();
 
                 // Log void/movement

@@ -275,4 +275,89 @@ class MaterialRequisitionNotificationFlowTest extends TestCase
             );
         }
     }
+
+    // =========================================================================
+    // Tahap request dijaga: halaman keputusan hanya hidup pada tahapnya, dan tab lama tidak bisa memutuskan sesudah
+    // status berpindah (RQ-01).
+    // =========================================================================
+
+    /** @test */
+    public function the_finance_page_is_closed_for_a_request_that_is_not_pending_finance(): void
+    {
+        Notification::fake();
+
+        foreach (['Requested', 'Rejected', 'PO Created'] as $status) {
+            $requisition = $this->makeRequisition($status);
+
+            Livewire::actingAs($this->finance)
+                ->test(ApproveFinanceMaterialRequisition::class, ['record' => $requisition->id])
+                ->assertRedirect();
+        }
+    }
+
+    /** @test */
+    public function a_finance_tab_opened_earlier_cannot_approve_after_the_status_moved_on(): void
+    {
+        Notification::fake();
+
+        $requisition = $this->makeRequisition('Pending Finance');
+
+        $tab = Livewire::actingAs($this->finance)
+            ->test(ApproveFinanceMaterialRequisition::class, ['record' => $requisition->id]);
+
+        MaterialRequisition::whereKey($requisition->id)->update(['status' => 'Rejected']);
+
+        $tab->callAction('approve', ['payment_amount' => 0]);
+
+        $this->assertSame('Rejected', $requisition->fresh()->status);
+        $this->assertSame(0, \App\Models\PurchaseMaterial::where('material_requisition_id', $requisition->id)->count());
+    }
+
+    /** @test */
+    public function a_finance_tab_opened_earlier_cannot_return_a_request_whose_po_was_already_issued(): void
+    {
+        Notification::fake();
+
+        $requisition = $this->makeRequisition('Pending Finance');
+
+        $tab = Livewire::actingAs($this->finance)
+            ->test(ApproveFinanceMaterialRequisition::class, ['record' => $requisition->id]);
+
+        MaterialRequisition::whereKey($requisition->id)->update(['status' => 'PO Created']);
+
+        $tab->callAction('reject', ['reject_note' => 'Terlambat']);
+
+        $this->assertSame('PO Created', $requisition->fresh()->status);
+    }
+
+    /** @test */
+    public function the_purchasing_review_page_is_closed_once_the_request_has_left_that_stage(): void
+    {
+        Notification::fake();
+
+        foreach (['Pending Finance', 'PO Created'] as $status) {
+            $requisition = $this->makeRequisition($status);
+
+            Livewire::actingAs($this->purchasing)
+                ->test(ReviewMaterialRequisition::class, ['record' => $requisition->id])
+                ->assertRedirect();
+        }
+    }
+
+    /** @test */
+    public function a_purchasing_tab_opened_earlier_cannot_decide_after_the_status_moved_on(): void
+    {
+        Notification::fake();
+
+        $requisition = $this->makeRequisition('Requested');
+
+        $tab = Livewire::actingAs($this->purchasing)
+            ->test(ReviewMaterialRequisition::class, ['record' => $requisition->id]);
+
+        MaterialRequisition::whereKey($requisition->id)->update(['status' => 'PO Created']);
+
+        $tab->callAction('reject', ['reject_note' => 'Terlambat']);
+
+        $this->assertSame('PO Created', $requisition->fresh()->status);
+    }
 }

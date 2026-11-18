@@ -67,7 +67,14 @@ class CattleReceiving extends Model
             // ini, utang tetap berdiri untuk barang yang catatannya sudah
             // tidak ada, dan tidak ada apa pun di layar yang menunjukkan
             // asalnya.
-            $model->payable?->delete();
+            // Hutang yang sudah dibayar (sebagian/penuh) tidak ikut dihapus: pembayarannya tetap ada di buku kas (CR-03).
+            $hutang = $model->payable;
+
+            if ($hutang && (in_array($hutang->status, ['partial', 'paid'], true) || (float) $hutang->paid_amount > 0)) {
+                throw new \Exception(__('This record cannot be deleted because its payable status is partial or paid.'));
+            }
+
+            $hutang?->delete();
         });
 
         static::forceDeleting(function ($model) {
