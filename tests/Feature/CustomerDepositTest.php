@@ -327,4 +327,34 @@ class CustomerDepositTest extends TestCase
         $this->assertSame(0.0, (float) $baru->fresh()->balance, 'tagihan baru lunas dari uang pelanggan sendiri');
         $this->assertSame(1000000.0, (float) Payment::orderBy('id')->first()->fresh()->load('allocations')->unallocatedAmount(), 'deposit lama tidak tersentuh');
     }
+    /** INV-01: invoice yang sudah ada pembayarannya terkunci; terbuka lagi bila pembayarannya dibatalkan. */
+    public function test_an_invoice_with_a_payment_cannot_be_edited_until_the_payment_is_cancelled(): void
+    {
+        $this->user->update(['role' => 'programmer']);
+        $this->actingAs($this->user->fresh());
+        $invoice = $this->invoice(1000000);
+
+        // Kontrol positif: sebelum ada pembayaran, simpan jalan.
+        Livewire::test(\App\Filament\Admin\Resources\InvoiceResource\Pages\EditInvoice::class, ['record' => $invoice->id])->call('save');
+        $this->assertFalse($invoice->fresh()->hasActivePayment());
+
+        $this->bayar(400000, [$invoice->id => 400000]);
+        $this->assertTrue($invoice->fresh()->hasActivePayment());
+
+        $this->get(\App\Filament\Admin\Resources\InvoiceResource::getUrl('edit', ['record' => $invoice->id]))
+            ->assertRedirect(\App\Filament\Admin\Resources\InvoiceResource::getUrl('view', ['record' => $invoice->id]));
+
+        // Tab yang sudah terbuka sebelum pembayaran dicatat tidak boleh menimpa.
+        $terbuka = Livewire::test(\App\Filament\Admin\Resources\InvoiceResource\Pages\EditInvoice::class, ['record' => $this->invoice(500000)->id]);
+        $lain = Invoice::latest('id')->first();
+        $p = \App\Models\Payment::create(['customer_group_id' => $this->group->id, 'bank_account_id' => $this->bank->id, 'payment_date' => now()->toDateString(), 'amount' => 100000, 'total_deduction' => 0]);
+        $p->allocations()->create(['invoice_id' => $lain->id, 'amount_allocated' => 100000]);
+        $this->assertTrue($lain->fresh()->hasActivePayment(), 'fixture: invoice kedua sudah dibayar');
+        $terbuka->set('data.invoice_date', now()->subDays(50)->toDateString())->call('save');
+        $this->assertNotSame(now()->subDays(50)->toDateString(), $lain->fresh()->invoice_date->toDateString(), 'simpan paksa ditolak');
+
+        // Pembayaran dibatalkan: invoice terbuka lagi.
+        \App\Models\Payment::active()->get()->each->cancel('uji');
+        $this->assertFalse($invoice->fresh()->hasActivePayment());
+    }
 }

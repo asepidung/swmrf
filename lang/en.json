@@ -2042,5 +2042,6 @@
     "Account receiving the down payment": "Account receiving the down payment",
     "Cancel down payment": "Cancel down payment",
     "The down payment is already used by an invoice and cannot be cancelled.": "The down payment is already used by an invoice and cannot be cancelled.",
-    "Down payment cancelled": "Down payment cancelled"
+    "Down payment cancelled": "Down payment cancelled",
+    "This invoice already has a payment and cannot be edited. Cancel the payment first to correct it.": "This invoice already has a payment and cannot be edited. Cancel the payment first to correct it."
 }

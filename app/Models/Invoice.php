@@ -390,6 +390,14 @@ class Invoice extends Model
      * arti masing-masing sejak `charge` dipakai; menyimpan jumlahnya lagi
      * hanya menambah satu angka yang bisa berbeda dari penyusunnya.
      */
+    /** Ada pembayaran pelanggan yang MASIH BERLAKU (belum dibatalkan) pada invoice ini. */
+    public function hasActivePayment(): bool
+    {
+        return $this->paymentAllocations()
+            ->whereHas('payment', fn ($q) => $q->whereNull('cancelled_at'))
+            ->exists();
+    }
+
     public function billedAmount(): float
     {
         return $this->salesAmount() - (float) $this->down_payment;

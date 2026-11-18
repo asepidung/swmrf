@@ -2042,5 +2042,6 @@
     "Account receiving the down payment": "Rekening/kas penerima DP",
     "Cancel down payment": "Batalkan DP",
     "The down payment is already used by an invoice and cannot be cancelled.": "DP sudah dipakai invoice dan tidak bisa dibatalkan.",
-    "Down payment cancelled": "DP dibatalkan"
+    "Down payment cancelled": "DP dibatalkan",
+    "This invoice already has a payment and cannot be edited. Cancel the payment first to correct it.": "Invoice ini sudah ada pembayarannya dan tidak bisa diubah. Batalkan pembayarannya dulu untuk mengoreksi."
 }
