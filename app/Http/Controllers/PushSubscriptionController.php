@@ -17,7 +17,7 @@ class PushSubscriptionController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'endpoint' => ['required', 'string', 'max:500'],
+            'endpoint' => ['required', 'string', 'max:500', $this->publicHttpsEndpoint()],
             'keys.p256dh' => ['required', 'string'],
             'keys.auth' => ['required', 'string'],
             'content_encoding' => ['nullable', 'string'],
@@ -31,6 +31,28 @@ class PushSubscriptionController extends Controller
         );
 
         return response()->json(['status' => 'subscribed']);
+    }
+
+    /**
+     * Alamat langganan harus https ke nama host publik. Server mengirim permintaan ke alamat ini tiap ada notifikasi,
+     * jadi alamat jaringan dalam, IP, atau localhost ditolak (audit pra-rilis 14 November 2026, PS-01).
+     */
+    private function publicHttpsEndpoint(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail): void {
+            $parts = parse_url((string) $value);
+            $host = strtolower((string) ($parts['host'] ?? ''));
+
+            $valid = ($parts['scheme'] ?? null) === 'https'
+                && $host !== ''
+                && str_contains($host, '.')
+                && ! filter_var($host, FILTER_VALIDATE_IP)
+                && ! preg_match('/(^|\.)(localhost|local|internal|lan|home|test)$/', $host);
+
+            if (! $valid) {
+                $fail(__('The push address is not valid.'));
+            }
+        };
     }
 
     public function destroy(Request $request): JsonResponse

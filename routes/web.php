@@ -12,11 +12,12 @@ use App\Http\Controllers\CattleWeighingPrintController;
 
 /*
  * `CheckActiveUser` dan `CheckPasswordChange` ikut dipasang di sini, sama dengan panel Filament
- * (`AdminPanelProvider::authMiddleware`). Tanpa keduanya, akun yang sudah dinonaktifkan tetapi
+ * (`AdminPanelProvider::authMiddleware`). `AuthenticateSession` ikut dipasang seperti di panel: sesi lama di perangkat lain keluar begitu
+ * kata sandi diganti (A-04). Tanpa keduanya, akun yang sudah dinonaktifkan tetapi
  * sesinya masih hidup, dan akun yang masih memakai kata sandi bawaan, tetap bisa membuka seluruh
  * cetakan di bawah ini dengan mengetik alamatnya (audit pra-rilis 14 November 2026, A-02).
  */
-Route::middleware(['web', 'auth', \App\Http\Middleware\CheckActiveUser::class, \App\Http\Middleware\CheckPasswordChange::class])->group(function () {
+Route::middleware(['web', 'auth', \Filament\Http\Middleware\AuthenticateSession::class, \App\Http\Middleware\CheckActiveUser::class, \App\Http\Middleware\CheckPasswordChange::class])->group(function () {
     /*
      * Laporan QC, satu berkas per laporan.
      *

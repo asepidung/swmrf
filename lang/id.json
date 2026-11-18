@@ -2023,5 +2023,6 @@
     "This purchase order already has goods receipts, so it cannot be cancelled.": "Purchase order ini sudah punya penerimaan barang, jadi tidak bisa dibatalkan.",
     "One of the carcasses on this boning is already used by another locked boning.": "Salah satu karkas pada boning ini sudah dipakai boning lain yang terkunci.",
     "A weighing row points to a cattle that is not on this receiving.": "Ada baris timbang yang menunjuk ekor yang bukan milik penerimaan ini.",
-    "The item rows do not match this receipt, so it was not saved. Reload the page.": "Baris barang tidak cocok dengan penerimaan ini, jadi tidak disimpan. Muat ulang halaman."
+    "The item rows do not match this receipt, so it was not saved. Reload the page.": "Baris barang tidak cocok dengan penerimaan ini, jadi tidak disimpan. Muat ulang halaman.",
+    "The push address is not valid.": "Alamat notifikasi tidak sah."
 }
