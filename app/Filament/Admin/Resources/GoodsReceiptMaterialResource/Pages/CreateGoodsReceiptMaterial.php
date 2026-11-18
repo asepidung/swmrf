@@ -25,6 +25,7 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
     protected static string $view = 'filament.admin.resources.goods-receipt-material-resource.pages.create-goods-receipt-material';
 
     public ?array $data = [];
+    #[\Livewire\Attributes\Locked]
     public ?int $poId = null;
     public ?PurchaseMaterial $purchaseMaterial = null;
 
@@ -44,6 +45,7 @@ class CreateGoodsReceiptMaterial extends Page implements HasForms
     }
 
     /** Jumlah penerimaan PO ini saat formulir dibuka -- berubah berarti orang lain sudah menerima. */
+    #[\Livewire\Attributes\Locked]
     public int $receiptsAtOpen = 0;
 
     public function mount(): void

@@ -32,6 +32,7 @@ class NewGoodsReceiptProduct extends Page implements HasForms
     public ?array $data = [];
 
     /** Jumlah penerimaan PO ini saat formulir dibuka -- berubah berarti orang lain sudah mulai menerima. */
+    #[\Livewire\Attributes\Locked]
     public int $receiptsAtOpen = 0;
 
     public static function canAccess(array $parameters = []): bool
