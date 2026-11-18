@@ -25,6 +25,21 @@ class Customer extends Model
         'is_active',
     ];
 
+    protected static function booted(): void
+    {
+        // CU-01 (keputusan Owner): piutang BELUM LUNAS ikut pelanggannya ke grup yang baru. Yang sudah lunas tetap
+        // tercatat di grup lama sebagai riwayat; deposit grup tidak ikut.
+        static::updated(function (Customer $customer) {
+            if (! $customer->wasChanged('customer_group_id')) {
+                return;
+            }
+
+            Receivable::where('customer_id', $customer->id)
+                ->whereHas('invoice', fn ($q) => $q->where(fn ($w) => $w->whereNull('status')->orWhere('status', '!=', Invoice::STATUS_PAID)))
+                ->update(['customer_group_id' => $customer->customer_group_id]);
+        });
+    }
+
     protected $casts = [
         'default_discount' => 'integer',
         'required_documents' => 'array',
