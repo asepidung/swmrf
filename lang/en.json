@@ -2010,5 +2010,6 @@
     "This request has already moved on, so this decision was not saved.": "This request has already moved on, so this decision was not saved.",
     ":count documents were skipped because their status no longer allows deletion.": ":count documents were skipped because their status no longer allows deletion.",
     "This delivery order has already moved on, so it cannot be deleted.": "This delivery order has already moved on, so it cannot be deleted.",
-    "This return is no longer a draft, so its items cannot be changed.": "This return is no longer a draft, so its items cannot be changed."
+    "This return is no longer a draft, so its items cannot be changed.": "This return is no longer a draft, so its items cannot be changed.",
+    "This Tally is not locked, so it cannot get a Delivery Order yet.": "This Tally is not locked, so it cannot get a Delivery Order yet."
 }
