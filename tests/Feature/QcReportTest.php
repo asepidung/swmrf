@@ -557,4 +557,21 @@ class QcReportTest extends TestCase
         $this->assertFalse(QcReport::query()->dokumenMasihAda()->whereKey($laporanTally->id)->exists());
         $this->assertTrue(QcReport::query()->dokumenMasihAda()->whereKey($laporanRepack->id)->exists());
     }
+
+    /** Q-01: dokumen yang diperiksa tidak bisa dipindah lewat halaman Edit. */
+    public function test_editing_a_report_cannot_move_it_to_another_document(): void
+    {
+        $asli = $this->carcass();
+        $lain = $this->carcass();
+        $laporan = $this->tugas($asli);
+
+        \Livewire\Livewire::actingAs($this->qc)
+            ->test(\App\Filament\Admin\Resources\QcReportResource\Pages\EditQcReport::class, ['record' => $laporan->getRouteKey()])
+            ->set('data.reportable_type', Carcass::class)
+            ->set('data.reportable_id', $lain->id)
+            ->set('data.note', 'Tidak ada masalah.')
+            ->call('save');
+
+        $this->assertSame($asli->id, (int) $laporan->fresh()->reportable_id);
+    }
 }
