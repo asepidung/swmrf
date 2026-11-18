@@ -11,16 +11,7 @@ class EditSalesReturn extends EditRecord
 {
     protected static string $resource = SalesReturnResource::class;
 
-    /** Retur yang sudah disetujui sudah memotong tagihan dan menarik stok: tidak boleh disunting lagi (ED-01). */
-    public function mount(int | string $record): void
-    {
-        parent::mount($record);
-
-        if ($this->getRecord()->status !== 'Draft') {
-            $this->redirect($this->getResource()::getUrl('view', ['record' => $this->getRecord()]));
-        }
-    }
-
+    /** Retur yang sudah disetujui sudah memotong tagihan dan menarik stok: tidak boleh disimpan lagi (ED-01). Halamannya tetap terbuka karena tombol buka kunci ada di sini. */
     protected function beforeSave(): void
     {
         if (\App\Models\SalesReturn::query()->whereKey($this->getRecord()->getKey())->value('status') !== 'Draft') {
