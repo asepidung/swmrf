@@ -245,6 +245,24 @@ class CostReportsTest extends TestCase
     }
 
     /** @test */
+    public function sales_cost_reads_the_costs_in_one_query_however_many_cartons_there_are(): void
+    {
+        foreach (range(1, 12) as $i) {
+            BarcodeCost::create(['barcode' => 'Q'.$i, 'product_id' => $this->tl->id, 'cost_per_kg' => 1000, 'source_type' => 'boning']);
+        }
+        $this->deliveryOrder(array_map(fn ($i) => ['Q'.$i, $this->tl, 1], range(1, 12)), 20000);
+
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        $report = $this->salesCost();
+        $costQueries = collect(\Illuminate\Support\Facades\DB::getQueryLog())
+            ->filter(fn ($q) => str_contains($q['query'], 'barcode_costs'))
+            ->count();
+
+        $this->assertSame(12000.0, $report['rows'][0]['hpp']);
+        $this->assertSame(1, $costQueries, 'Audit PF-06: satu kueri harga pokok untuk seluruh karton, bukan satu per karton.');
+    }
+
+    /** @test */
     public function a_delivery_order_not_invoiced_yet_has_no_sales_and_no_margin(): void
     {
         BarcodeCost::create(['barcode' => 'S1', 'product_id' => $this->tl->id, 'cost_per_kg' => 100000, 'source_type' => 'boning']);
