@@ -826,7 +826,8 @@ class ReceivePayment extends Page
                 ->orderBy('id')
                 ->lockForUpdate()
                 ->get()
-                ->filter(fn (Payment $p): bool => $p->unallocatedAmount() > 0)
+                // PAY-01: grup "bayar per pelanggan" tidak punya deposit bersama; sisa deposit lama grup itu tidak dipakai.
+                ->filter(fn (Payment $p): bool => ! $this->perCustomer() && $p->unallocatedAmount() > 0)
                 ->values();
 
             foreach ($depositPayments as $deposit) {
