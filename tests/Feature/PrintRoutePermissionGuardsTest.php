@@ -650,7 +650,8 @@ class PrintRoutePermissionGuardsTest extends TestCase
     {
         $source = file_get_contents(base_path('routes/web.php'));
 
-        $groupStart = strpos($source, "Route::middleware(['web', 'auth'])->group(function () {");
+        // Grupnya kini juga memuat CheckActiveUser dan CheckPasswordChange (audit pra-rilis, A-02).
+        $groupStart = strpos($source, "Route::middleware(['web', 'auth', \\App\\Http\\Middleware\\CheckActiveUser::class, \\App\\Http\\Middleware\\CheckPasswordChange::class])->group(function () {");
         $this->assertNotFalse($groupStart, 'Grup web+auth tidak ditemukan -- routes/web.php berubah struktur.');
 
         $pushSubscriptionsStart = strpos($source, "Route::middleware('auth')->group(function () {");
