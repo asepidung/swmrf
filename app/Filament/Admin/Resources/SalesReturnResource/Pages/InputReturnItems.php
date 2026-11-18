@@ -105,6 +105,18 @@ class InputReturnItems extends Page implements HasForms, HasTable
     {
         $this->record = $record;
 
+        // Retur yang sudah disetujui sudah menarik barangnya ke stok dan memotong tagihan: baris tidak boleh berubah lagi (SR-01).
+        if (SalesReturn::query()->whereKey($this->record->getKey())->value('status') !== 'Draft') {
+            \Filament\Notifications\Notification::make('scan-toast')
+                ->title(__('This return is no longer a draft, so its items cannot be changed.'))
+                ->warning()
+                ->send();
+
+            $this->redirect(\App\Filament\Admin\Resources\SalesReturnResource::getUrl('view', ['record' => $this->record]));
+
+            return;
+        }
+
         $defaultPackDate = now()->format('Y-m-d');
         
         $gudangPenerima = $this->receivingWarehouseId();
@@ -345,6 +357,16 @@ class InputReturnItems extends Page implements HasForms, HasTable
             ->value('id');
     }
 
+    /** Baca ulang status retur dengan baris terkunci; harus dipanggil DI DALAM transaksi (SR-01). */
+    private function assertStillDraft(): void
+    {
+        $status = SalesReturn::query()->whereKey($this->record->getKey())->lockForUpdate()->value('status');
+
+        if ($status !== 'Draft') {
+            throw new \Exception(__('This return is no longer a draft, so its items cannot be changed.'));
+        }
+    }
+
     public function processScan(): void
     {
         $formData = $this->scanForm->getState();
@@ -465,6 +487,8 @@ class InputReturnItems extends Page implements HasForms, HasTable
             // ditandai "DITERIMA TANPA KLAIM" di ringkasan supaya
             // sales/finance memperbaiki manual.
             DB::transaction(function () use ($barcode, $productId, $gradeId, $weight, $pcs, $origin, $tallyItem, $gudangPenerima) {
+                $this->assertStillDraft();
+
                 // Cek duplikat wajib berada di dalam transaksi dan terkunci, supaya
                 // dua scan berbarengan (klik ganda / glitch scanner) tidak sama-sama
                 // lolos pengecekan lalu menyisipkan barcode kembar.
@@ -537,6 +561,8 @@ class InputReturnItems extends Page implements HasForms, HasTable
             // processScan() (issue #476, fisik ikut yang datang).
 
             DB::transaction(function () use ($formData, $weight, $pcs) {
+                $this->assertStillDraft();
+
                 $origin = '4'; // Repack Return origin (per project rules)
                 $dateStr = Carbon::parse($formData['pack_date'])->format('dmy');
                 
@@ -699,7 +725,14 @@ class InputReturnItems extends Page implements HasForms, HasTable
             ->actions([
                 Tables\Actions\DeleteAction::make()
                     ->iconButton()
-                    ->tooltip('Delete'),
+                    ->tooltip('Delete')
+                    ->hidden(fn (): bool => $this->record->status !== 'Draft')
+                    ->before(function (Tables\Actions\DeleteAction $action): void {
+                        if (SalesReturn::query()->whereKey($this->record->getKey())->value('status') !== 'Draft') {
+                            \Filament\Notifications\Notification::make('scan-toast')->title(__('This return is no longer a draft, so its items cannot be changed.'))->danger()->send();
+                            $action->cancel();
+                        }
+                    }),
             ]);
     }
 }

@@ -32,6 +32,9 @@ class EditInvoice extends EditRecord
         return DB::transaction(function () use ($record, $data) {
             Invoice::whereKey($record->id)->lockForUpdate()->first();
 
+            // Faktur tidak boleh dipindah ke pelanggan, penerimaan, atau SO lain lewat Edit (K-03).
+            unset($data['customer_id'], $data['delivery_order_receipt_id'], $data['sales_order_id']);
+
             $record->update($data);
 
             return $record;

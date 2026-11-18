@@ -360,7 +360,8 @@ class GoodsReceiptMaterialResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(\App\Support\GuardedBulkDelete::action(fn ($gr) => ! $gr->is_locked && ! $gr->items()->exists())),
                     Tables\Actions\ForceDeleteBulkAction::make(),
                 ]),
             ])

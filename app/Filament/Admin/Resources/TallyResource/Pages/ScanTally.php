@@ -23,6 +23,8 @@ use Filament\Support\Enums\MaxWidth;
 
 class ScanTally extends Page implements HasForms, HasTable
 {
+    use \App\Filament\Concerns\GuardsTallyTransition;
+
     use InteractsWithForms, InteractsWithTable;
 
     protected static string $resource = TallyResource::class;
@@ -107,6 +109,8 @@ class ScanTally extends Page implements HasForms, HasTable
                 ])
                 ->action(function (array $data) {
                     DB::transaction(function () use ($data) {
+                        $this->lockTallyOrHalt(Tally::STATUS_PROCESSING, needsItems: true);
+
                         $this->record->update([
                             'status' => Tally::STATUS_LOCKED,
                             'seal_number' => $data['seal_number'] ?? null,

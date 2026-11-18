@@ -16,6 +16,21 @@ class CreateCattleReceiving extends CreateRecord
 
     protected static string $resource = CattleReceivingResource::class;
 
+    /** PO yang halaman ini dibuka untuknya; tidak bisa diubah dari browser (CR-01). */
+    #[\Livewire\Attributes\Locked]
+    public ?int $poId = null;
+
+    /** Pemasok dan PO ditentukan server dari PO yang dikunci, bukan dari field tersembunyi (CR-01). */
+    protected function beforeValidate(): void
+    {
+        $po = PurchaseCattle::find($this->poId);
+
+        if ($po) {
+            $this->data['purchase_cattle_id'] = $po->id;
+            $this->data['supplier_id'] = $po->supplier_id;
+        }
+    }
+
     protected function handleRecordCreation(array $data): Model
     {
         return $this->saveGuardingEartags(fn (): Model => parent::handleRecordCreation($data));
@@ -59,10 +74,12 @@ class CreateCattleReceiving extends CreateRecord
     public function mount(): void
     {
         $poId = request()->query('po_id');
-        if (!$poId) {
+        if (!$poId || ! PurchaseCattle::whereKey($poId)->exists()) {
             $this->redirect($this->getResource()::getUrl('index'));
             return;
         }
+
+        $this->poId = (int) $poId;
 
         parent::mount();
 
