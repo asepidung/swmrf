@@ -176,11 +176,13 @@ class DeliveryOrder extends Model
                 $do->financialLoss()->delete();
             }
 
+            // Keputusan Owner (DO-04): DO dihapus (bukan dibatalkan) = tally terkunci dan SO kembali "siap", pasangan yang sama
+            // seperti saat tally disetujui, jadi SO tidak bisa disunting selama tallynya terkunci.
             if ($do->tally) {
                 $do->tally->update(['status' => 'locked']);
             }
             if ($do->salesOrder) {
-                $do->salesOrder->update(['status' => SalesOrder::STATUS_PROCESSING]);
+                $do->salesOrder->update(['status' => SalesOrder::STATUS_READY]);
             }
         });
 
