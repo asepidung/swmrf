@@ -120,6 +120,26 @@ class ApproveFinanceMaterialRequisition extends EditRecord
         ];
     }
 
+    /** @return array<int, string> nama bahan yang harganya masih kosong */
+    protected function itemsMissingPrice(): array
+    {
+        $kosong = [];
+
+        foreach ($this->data['items'] ?? [] as $item) {
+            if (empty($item['material_id'])) {
+                continue;
+            }
+
+            if (MaterialRequisitionResource::parseNumber($item['price'] ?? 0) > 0) {
+                continue;
+            }
+
+            $kosong[] = \App\Models\Material::find($item['material_id'])->name ?? ('#'.$item['material_id']);
+        }
+
+        return $kosong;
+    }
+
     protected function getApproveAction(): Actions\Action
     {
         return Actions\Action::make('approve')
@@ -132,6 +152,20 @@ class ApproveFinanceMaterialRequisition extends EditRecord
             ->modalSubmitActionLabel(__('Approve & Generate PO'))
             ->action(function () {
                 if (! $this->stageStillOpen(['Pending Finance'], \App\Filament\Admin\Resources\MaterialRequisitionResource::getUrl('view', ['record' => $this->record]))) {
+                    return;
+                }
+
+                // Harga kosong = PO bernilai nol = hutang palsu; sama seperti kembarannya di Request Produk (audit pra-rilis, ED-02).
+                $kosong = $this->itemsMissingPrice();
+
+                if ($kosong !== []) {
+                    \Filament\Notifications\Notification::make()
+                        ->title(__('Some prices are still empty, so the purchase order cannot be issued'))
+                        ->body(__('A purchase order worth zero creates a fake payable and wrecks the payment-term calculation. These items still have no price').': '.implode(', ', $kosong).'.')
+                        ->danger()
+                        ->persistent()
+                        ->send();
+
                     return;
                 }
 

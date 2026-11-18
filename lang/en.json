@@ -2025,5 +2025,6 @@
     "A weighing row points to a cattle that is not on this receiving.": "A weighing row points to a cattle that is not on this receiving.",
     "The item rows do not match this receipt, so it was not saved. Reload the page.": "The item rows do not match this receipt, so it was not saved. Reload the page.",
     "Enter a number that is not negative.": "Enter a number that is not negative.",
-    "The push address is not valid.": "The push address is not valid."
+    "The push address is not valid.": "The push address is not valid.",
+    "This stock count is no longer being counted, so it cannot be changed.": "This stock count is no longer being counted, so it cannot be changed."
 }

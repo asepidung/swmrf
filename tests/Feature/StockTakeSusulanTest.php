@@ -341,4 +341,29 @@ class StockTakeSusulanTest extends TestCase
         $this->get(route('stock-take.print', $opname->id))->assertSuccessful();
         $this->get(route('stock-take.label', $item->id))->assertSuccessful();
     }
+
+    /** @test */
+    public function a_completed_beef_stock_take_cannot_be_edited_but_one_in_progress_can(): void
+    {
+        $user = User::factory()->create(['role' => 'programmer', 'is_active' => true]);
+        $buat = fn (string $status) => \App\Models\StockTake::create([
+            'document_number' => 'ST#EDIT-'.uniqid(), 'period' => now()->format('Y-m'), 'date' => now()->toDateString(),
+            'status' => $status, 'created_by' => $user->id,
+        ]);
+
+        $ubah = function (\App\Models\StockTake $opname) use ($user) {
+            try {
+                Livewire::actingAs($user)
+                    ->test(\App\Filament\Admin\Resources\StockTakeResource\Pages\EditStockTake::class, ['record' => $opname->getRouteKey()])
+                    ->set('data.summary_note', 'DIUBAH')
+                    ->call('save');
+            } catch (\Throwable) {
+            }
+
+            return $opname->fresh()->summary_note;
+        };
+
+        $this->assertSame('DIUBAH', $ubah($buat(\App\Models\StockTake::STATUS_IN_PROGRESS)), 'Kontrol positif.');
+        $this->assertNotSame('DIUBAH', $ubah($buat(\App\Models\StockTake::STATUS_COMPLETED)));
+    }
 }
