@@ -283,13 +283,19 @@ class UserResource extends Resource
                     ->label(__('Reset Password'))
                     ->requiresConfirmation()
                     ->action(function (User $record) {
+                        // Kata sandi sementara ACAK, ditampilkan sekali ke admin (A-03, keputusan Ayah 18 November 2026).
+                        // Orangnya tetap wajib menggantinya saat login berikutnya (must_change_password).
+                        $sementara = \Illuminate\Support\Str::password(10, symbols: false);
+
                         $record->update([
-                            'password' => Hash::make('1234')
+                            'password' => Hash::make($sementara),
+                            'must_change_password' => true,
                         ]);
                         Notification::make()
                             ->title(__('Password Reset Successfully'))
-                            ->body(__("The password for user ':username' has been reset to '1234'.", ['username' => $record->username]))
+                            ->body(__("Temporary password for ':username': :password. Pass it on now; it is shown only once and must be changed at the next login.", ['username' => $record->username, 'password' => $sementara]))
                             ->success()
+                            ->persistent()
                             ->send();
                     })
                     ->visible(fn () => auth()->user()->hasPermission('reset_password'))

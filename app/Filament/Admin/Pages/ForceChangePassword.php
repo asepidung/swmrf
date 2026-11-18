@@ -57,7 +57,7 @@ class ForceChangePassword extends Page
     {
         // Redirect back to dashboard if user has already changed default password
         $user = Auth::user();
-        if ($user && !Hash::check('1234', $user->password)) {
+        if ($user && ! $user->mustChangePassword()) {
             $this->redirect(route('filament.admin.pages.dashboard'));
         }
 
@@ -107,9 +107,10 @@ class ForceChangePassword extends Page
         $user = Auth::user();
         $user->update([
             'password' => Hash::make($data['new_password']),
+            'must_change_password' => false,
         ]);
 
-        request()->session()->put([
+        session([
             'password_hash_web' => $user->getAuthPassword(),
         ]);
 

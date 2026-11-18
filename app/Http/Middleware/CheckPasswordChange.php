@@ -19,7 +19,7 @@ class CheckPasswordChange
             $user = Auth::user();
             
             // Check if password is the default '1234'
-            if (Hash::check('1234', $user->password)) {
+            if ($user->mustChangePassword()) {
                 // If not already on the force-change-password page, redirect them.
                 if (!$request->routeIs('filament.admin.pages.force-change-password') && 
                     !$request->routeIs('filament.admin.auth.logout')) {

@@ -27,6 +27,7 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'username',
         'password',
+        'must_change_password',
         'gender',
         'role',
         'is_active',
@@ -52,6 +53,7 @@ class User extends Authenticatable implements FilamentUser
         return [
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'must_change_password' => 'boolean',
         ];
     }
 
@@ -84,6 +86,12 @@ class User extends Authenticatable implements FilamentUser
     /**
      * Determine if the user can access the Filament panel.
      */
+    /** Wajib ganti kata sandi: ditandai (hasil reset) atau masih memakai kata sandi bawaan lama 1234. */
+    public function mustChangePassword(): bool
+    {
+        return $this->must_change_password || \Illuminate\Support\Facades\Hash::check('1234', $this->password);
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->is_active;
