@@ -64,7 +64,34 @@ class ListPendingPoProducts extends Page implements HasTable
                     ->visible(fn (): bool => auth()->user()?->isProgrammer()
                         || (auth()->user()?->hasPermission('cancel_purchase_products') ?? false))
                     ->action(function (PurchaseProduct $record) {
-                        $record->update(['status' => 'canceled']);
+                        // Status dibaca ulang dengan baris terkunci; PO yang sudah punya uang muka atau penerimaan tidak dibatalkan
+                        // diam-diam, karena uangnya sudah keluar (PO-01).
+                        $alasan = \Illuminate\Support\Facades\DB::transaction(function () use ($record): ?string {
+                            $po = $record::query()->lockForUpdate()->find($record->getKey());
+
+                            if (! $po || in_array($po->status, ['canceled', 'completed'], true)) {
+                                return __('This purchase order is already closed.');
+                            }
+
+                            if (\App\Models\SupplierPayment::totalPaidFor($po) > 0) {
+                                return __('This purchase order already has a down payment, so it cannot be cancelled here.');
+                            }
+
+                            if ($po->goodsReceipts()->exists()) {
+                                return __('This purchase order already has goods receipts, so it cannot be cancelled.');
+                            }
+
+                            $po->update(['status' => 'canceled']);
+
+                            return null;
+                        });
+
+                        if ($alasan !== null) {
+                            \Filament\Notifications\Notification::make()->title($alasan)->danger()->send();
+
+                            return;
+                        }
+
                         \Filament\Notifications\Notification::make()->title(__('Purchase order cancelled'))->success()->send();
                     }),
             ]);
