@@ -2011,5 +2011,7 @@
     ":count documents were skipped because their status no longer allows deletion.": ":count dokumen dilewati karena statusnya sudah tidak boleh dihapus.",
     "This delivery order has already moved on, so it cannot be deleted.": "Surat jalan ini sudah berpindah tahap, jadi tidak bisa dihapus.",
     "This return is no longer a draft, so its items cannot be changed.": "Retur ini sudah bukan draf, jadi barisnya tidak bisa diubah.",
-    "This Tally is not locked, so it cannot get a Delivery Order yet.": "Tally ini belum dikunci, jadi belum bisa dibuatkan Surat Jalan."
+    "This Tally is not locked, so it cannot get a Delivery Order yet.": "Tally ini belum dikunci, jadi belum bisa dibuatkan Surat Jalan.",
+    "This boning is locked or already has labels, so it cannot be saved.": "Boning ini sudah dikunci atau sudah berisi label, jadi tidak bisa disimpan.",
+    "This delivery order has already moved on, so it cannot be saved.": "Surat jalan ini sudah berpindah tahap, jadi tidak bisa disimpan."
 }
