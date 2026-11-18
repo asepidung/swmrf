@@ -362,6 +362,9 @@ class SalesOrderResource extends Resource
                                     ->hiddenLabel()
                                     ->placeholder(__('Weight'))
                                     ->required()
+                                    // Angka bukan-negatif; titik pemisah ribuan boleh (audit pra-rilis 14 November 2026, SO-02).
+                                    ->rules(['regex:/^[0-9][0-9.]*$/'])
+                                    ->validationMessages(['regex' => __('Enter a number that is not negative.')])
                                     // Click auto select all block as requested
                                     ->extraInputAttributes([
                                         'class' => 'text-right so-weight-input-column',
@@ -374,6 +377,9 @@ class SalesOrderResource extends Resource
                                     ->hiddenLabel()
                                     ->placeholder(__('Price'))
                                     ->required()
+                                    // Angka bukan-negatif; titik pemisah ribuan boleh (audit pra-rilis 14 November 2026, SO-02).
+                                    ->rules(['regex:/^[0-9][0-9.]*$/'])
+                                    ->validationMessages(['regex' => __('Enter a number that is not negative.')])
                                     ->prefix('Rp')
                                     ->extraInputAttributes([
                                         'class' => 'text-right so-price-input-column',

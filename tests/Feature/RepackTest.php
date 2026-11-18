@@ -395,4 +395,29 @@ class RepackTest extends TestCase
         $this->assertGreaterThanOrEqual(2, $toasts->count());
         $this->assertSame(['scan-toast'], $toasts->pluck('id')->unique()->values()->all());
     }
+
+    /** @test */
+    public function a_zero_weight_result_is_refused_but_a_normal_one_is_accepted()
+    {
+        $isi = fn (string $berat) => Livewire::actingAs($this->user)
+            ->test(InputHasilRepack::class, ['record' => $this->repack])
+            ->set('data.origin', '2')
+            ->set('data.product_id', $this->product->id)
+            ->set('data.grade_id', $this->grade->id)
+            ->set('data.pack_date', '2026-06-10')
+            ->set('data.exp_date', '2026-09-10')
+            ->set('data.qty_pcs_combined', $berat)
+            ->set('data.ph_level', 5.5)
+            ->set('data.show_exp', true)
+            ->call('create');
+
+        try {
+            $isi('0/1');
+        } catch (\Throwable $e) {
+        }
+        $this->assertDatabaseEmpty('repack_results');
+
+        $isi('10.50/2');
+        $this->assertDatabaseCount('repack_results', 1);
+    }
 }

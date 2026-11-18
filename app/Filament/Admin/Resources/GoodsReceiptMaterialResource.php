@@ -117,6 +117,7 @@ class GoodsReceiptMaterialResource extends Resource
                                     ->hiddenLabel()
                                     ->placeholder(__('Qty Received'))
                                     ->numeric()
+                                    ->minValue(0)
                                     ->extraInputAttributes(['x-on:focus' => '$el.select()', 'class' => 'text-right'])
                                     ->required()
                                     ->live(onBlur: true)

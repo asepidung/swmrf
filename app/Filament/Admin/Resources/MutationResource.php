@@ -48,6 +48,7 @@ class MutationResource extends Resource
                             ->label(__('To Warehouse'))
                             ->options(\App\Models\Warehouse::where('is_active', true)->pluck('name', 'id'))
                             ->required()
+                            ->different('from_warehouse_id')
                             ->searchable()
                             // Tujuan mutasi tidak boleh diam-diam berubah
                             // sesudah dikirim -- ReceiveMutation::finish()
