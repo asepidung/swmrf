@@ -214,7 +214,7 @@ Tables\Actions\Action::make('scan')
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
-                        ->action(fn (\Illuminate\Support\Collection $records) => $records->each->delete()),
+                        ->action(\App\Support\GuardedBulkDelete::action(fn ($tally) => $tally->status === Tally::STATUS_PROCESSING)),
                 ]),
             ]);
     }
