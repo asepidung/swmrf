@@ -2017,5 +2017,8 @@
     "This tally has already moved on, so this action was not done.": "Tally ini sudah berpindah tahap, jadi aksi ini tidak dilakukan.",
     "This tally has no items yet, so it cannot be approved.": "Tally ini belum berisi barang, jadi tidak bisa disetujui.",
     "This tally already has a delivery order, so its approval cannot be undone.": "Tally ini sudah punya surat jalan, jadi persetujuannya tidak bisa dibatalkan.",
-    "This delivery order has already moved on, so the rejection was not done.": "Surat jalan ini sudah berpindah tahap, jadi penolakan tidak dilakukan."
+    "This delivery order has already moved on, so the rejection was not done.": "Surat jalan ini sudah berpindah tahap, jadi penolakan tidak dilakukan.",
+    "This purchase order is already closed.": "Purchase order ini sudah ditutup.",
+    "This purchase order already has a down payment, so it cannot be cancelled here.": "Purchase order ini sudah punya uang muka, jadi tidak bisa dibatalkan di sini.",
+    "This purchase order already has goods receipts, so it cannot be cancelled.": "Purchase order ini sudah punya penerimaan barang, jadi tidak bisa dibatalkan."
 }

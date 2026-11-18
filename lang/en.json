@@ -2017,5 +2017,8 @@
     "This tally has already moved on, so this action was not done.": "This tally has already moved on, so this action was not done.",
     "This tally has no items yet, so it cannot be approved.": "This tally has no items yet, so it cannot be approved.",
     "This tally already has a delivery order, so its approval cannot be undone.": "This tally already has a delivery order, so its approval cannot be undone.",
-    "This delivery order has already moved on, so the rejection was not done.": "This delivery order has already moved on, so the rejection was not done."
+    "This delivery order has already moved on, so the rejection was not done.": "This delivery order has already moved on, so the rejection was not done.",
+    "This purchase order is already closed.": "This purchase order is already closed.",
+    "This purchase order already has a down payment, so it cannot be cancelled here.": "This purchase order already has a down payment, so it cannot be cancelled here.",
+    "This purchase order already has goods receipts, so it cannot be cancelled.": "This purchase order already has goods receipts, so it cannot be cancelled."
 }
