@@ -112,6 +112,19 @@ class CostReports
             $costs += \App\Models\BarcodeCost::whereIn('barcode', $chunk->all())->pluck('cost_per_kg', 'barcode')->all();
         }
 
+        // REP-01 (keputusan Owner): retur jual yang sudah disetujui mengurangi penjualan DAN HPP. Barangnya kembali ke stok,
+        // jadi nilai tagihannya dan biaya kartonnya sama-sama dikeluarkan dari periode ini.
+        $returns = \App\Models\SalesReturnItem::query()
+            ->whereIn('invoice_id', $invoices->pluck('id')->all())
+            ->whereHas('salesReturn', fn ($q) => $q->where('status', 'Approved'))
+            ->get(['invoice_id', 'product_id', 'barcode', 'weight', 'line_amount'])
+            ->groupBy(fn ($r) => $r->invoice_id.'|'.$r->product_id);
+
+        $returnBarcodes = $returns->flatten(1)->pluck('barcode')->filter()->unique()->diff(array_keys($costs));
+        foreach ($returnBarcodes->chunk(1000) as $chunk) {
+            $costs += \App\Models\BarcodeCost::whereIn('barcode', $chunk->all())->pluck('cost_per_kg', 'barcode')->all();
+        }
+
         $rows = [];
 
         foreach ($orders as $order) {
@@ -140,6 +153,32 @@ class CostReports
                 }
 
                 $sales = $invoice ? round((float) $invoice->items->where('product_id', $pid)->sum('amount'), 2) : null;
+
+                $returnedKg = 0.0;
+                $returnedHpp = 0.0;
+                $returnedSales = 0.0;
+
+                foreach ($invoice ? ($returns->get($invoice->id.'|'.$pid) ?? collect()) : collect() as $ret) {
+                    $returnedKg += (float) $ret->weight;
+                    $returnedSales += (float) $ret->line_amount;
+                    $retCost = isset($costs[$ret->barcode]) ? (float) $costs[$ret->barcode] : null;
+
+                    if ($retCost === null) {
+                        // Barcode retur yang sama dengan karton tally baris ini sudah terhitung belum bernilai di atas; jangan dobel.
+                        if (! $items->contains('barcode', $ret->barcode)) {
+                            $unvaluedBarcodes++;
+                            $unvaluedKg += (float) $ret->weight;
+                        }
+                    } else {
+                        $returnedHpp += (float) $ret->weight * $retCost;
+                    }
+                }
+
+                if ($sales !== null) {
+                    $sales = round($sales - $returnedSales, 2);
+                }
+
+                $hpp -= $returnedHpp;
                 $complete = $sales !== null && $unvaluedBarcodes === 0;
 
                 $rows[] = [
@@ -152,6 +191,7 @@ class CostReports
                     'product_id' => (int) $pid,
                     'product' => $items->first()->product?->name ?? '-',
                     'kg' => round($kg, 2),
+                    'returned_kg' => round($returnedKg, 2),
                     'sales' => $sales,
                     'hpp' => round($hpp, 2),
                     'margin' => $complete ? round($sales - $hpp, 2) : null,
