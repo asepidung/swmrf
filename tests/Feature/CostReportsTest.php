@@ -227,6 +227,35 @@ class CostReportsTest extends TestCase
     }
 
     /** @test */
+    public function an_approved_sales_return_reduces_the_sales_and_the_cost_of_the_row(): void
+    {
+        BarcodeCost::create(['barcode' => 'S1', 'product_id' => $this->tl->id, 'cost_per_kg' => 100000, 'source_type' => 'boning']);
+        $do = $this->deliveryOrder([['S1', $this->tl, 10]], 1900000);
+        $invoice = Invoice::where('sales_order_id', $do->sales_order_id)->first();
+
+        $plan = \App\Models\SalesReturnPlan::create(['plan_date' => now()->toDateString(), 'customer_id' => $this->customer->id]);
+        $plan->items()->create(['product_id' => $this->tl->id, 'claimed_weight' => 2]);
+        $plan->submit();
+        $retur = \App\Models\SalesReturn::create([
+            'return_date' => now()->toDateString(), 'sales_return_plan_id' => $plan->id, 'customer_id' => $this->customer->id,
+        ]);
+        $retur->items()->create([
+            'invoice_id' => $invoice->id, 'product_id' => $this->tl->id, 'warehouse_id' => $this->jonggol->id, 'grade_id' => $this->grade->id,
+            'barcode' => 'S1', 'weight' => 2, 'qty_pcs' => 1, 'pack_date' => now()->toDateString(), 'origin' => '1', 'line_amount' => 380000,
+        ]);
+
+        // Retur yang belum disetujui tidak dihitung.
+        $this->assertSame(1900000.0, $this->salesCost()['rows'][0]['sales']);
+
+        \Illuminate\Support\Facades\DB::table('sales_returns')->where('id', $retur->id)->update(['status' => 'Approved']);
+
+        $row = $this->salesCost()['rows'][0];
+        $this->assertSame(1520000.0, $row['sales']);
+        $this->assertSame(800000.0, $row['hpp'], 'HPP 10 kg dikurangi 2 kg yang kembali.');
+        $this->assertSame(2.0, $row['returned_kg']);
+    }
+
+    /** @test */
     public function the_cost_is_read_when_the_report_is_made_so_a_backfill_shows_up_at_once(): void
     {
         BarcodeCost::create(['barcode' => 'S1', 'product_id' => $this->tl->id, 'cost_per_kg' => null, 'source_type' => 'boning']);
