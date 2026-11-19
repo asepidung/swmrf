@@ -61,7 +61,8 @@ class MaterialRequisitionPolicy
      */
     public function forceDelete(User $user, MaterialRequisition $materialRequisition): bool
     {
-        return $user->hasPermission('delete_material_requisitions');
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 
     public function deleteAny(User $user): bool
@@ -76,6 +77,7 @@ class MaterialRequisitionPolicy
 
     public function forceDeleteAny(User $user): bool
     {
-        return $user->hasPermission('delete_material_requisitions');
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 }

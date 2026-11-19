@@ -40,7 +40,8 @@ class PurchaseProductPolicy
 
     public function forceDelete(User $user, PurchaseProduct $purchaseProduct): bool
     {
-        return false;
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 
     public function deleteAny(User $user): bool
@@ -55,6 +56,7 @@ class PurchaseProductPolicy
 
     public function forceDeleteAny(User $user): bool
     {
-        return false;
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 }
