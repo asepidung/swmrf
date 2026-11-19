@@ -7961,7 +7961,7 @@ Keputusan Ayah: perintah pengosong data pelatihan DIHAPUS beserta tesnya. Aplika
 - **PAY-01:** grup bayar-per-pelanggan tidak memakai sisa deposit lama grup (#894). Dicek di VPS: tidak ada sisa deposit.
 - **CR-02:** PO Sapi yang sudah punya penerimaan terkunci penuh di server (#895).
 - **SO-03:** tombol Hide Price di cetak SO hanya menyembunyikan tampilan, dibiarkan (untuk berbagi SO ke grup perusahaan).
-- **A-03:** sandi sementara (akun baru dan reset) = 8 digit angka acak, tampil sekali ke admin, wajib diganti. Akun lama yang masih 1234 diacak lewat migrasi tanpa ditampilkan (#887, #896). Tiga akun aktif di VPS (santi, col, monru) menunggu reset oleh admin.
+- **A-03:** sandi sementara (akun baru dan reset) = 8 digit angka acak, tampil sekali ke admin, wajib diganti. Akun lama yang masih 1234 diacak lewat migrasi tanpa ditampilkan (#887, #896). Reset sandi tiga akun aktif di VPS sudah beres (info Ayah).
 - **K-05:** DP pelanggan dicatat sebagai pembayaran (`payments.sales_order_id`) yang masuk buku kas, dibatasi di invoice, bisa dibatalkan lewat tombol Batalkan DP; DP lama dibiarkan sebagai riwayat; yang boleh mengisi = pemegang izin buat SO (#897).
 - **P-01:** ditambah batas login per username tanpa alamat (#898). `trustProxies` TIDAK diubah: IT Lead memastikan tidak ada CDN/proxy eksternal; di VPS nginx menyetel `REMOTE_ADDR` ke IP klien dan kepercayaan buta ke `X-Real-IP` sudah dimatikan di sisi server. Jangan mempercayai `X-Forwarded-For`/`X-Real-IP` di aplikasi.
 - **D-01 / D-02:** dependency composer diperbarui lalu diuji penuh (#900); `npm audit fix` tanpa paksa (#901). Sisa advisory npm hanya dev.
@@ -7973,4 +7973,6 @@ Keputusan Ayah: perintah pengosong data pelatihan DIHAPUS beserta tesnya. Aplika
 - **LG-01:** `php artisan stock:write-opening --date=YYYY-MM-DD [--apply]` menulis baris pembuka `OPENING_BALANCE` untuk setiap barcode yang isi stoknya lebih besar daripada hasil buku besarnya (#907, #910). Dijalankan di VPS dengan tanggal 2026-11-02 (peluncuran stok daging): 1.078 baris, `stock:reconcile` bersih. Stok material belum.
 - **R-06:** buka kunci penerimaan hanya ditolak bila hutangnya dibayar LANGSUNG (`Payable::hasDirectPayment`); potongan uang muka dikembalikan ke PO (#908).
 - **INFO-01:** sebutan akun superuser dan rincian hosting dirapikan di dokumentasi (#909); seeder tetap memakai username yang sama karena dipakai kode. Riwayat git lama tetap memuatnya.
-- Belum diputuskan/ditunda: CFG-01 untuk coba, DP lama di produksi (belum diperiksa), alur batalkan DO.
+- **WF-01:** workflow deploy GitHub Actions dihapus (deploy manual lewat SSH).
+- **Batalkan DO:** surat jalan Ready dibatalkan lewat tombol di halaman Edit; SO dan tally `cancelled`, barang kembali ke stok (#914). Yang Approved di-Unapprove dulu.
+- **CFG-01:** `SESSION_SECURE_COOKIE=true` sudah dipasang di `.env` coba. DP lama di produksi: dua SO pelanggan id 11 (SO#260037, SO#260038) dibiarkan sebagai riwayat. PL-01 dan ST-02 diperiksa di VPS: tidak ada masalah.
