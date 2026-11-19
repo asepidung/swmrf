@@ -64,6 +64,27 @@ class WriteOpeningStockMovementsTest extends TestCase
         $this->assertSame(10.0, $pada('2026-11-10'));
     }
 
+    public function test_an_opening_stock_barcode_that_was_reverted_before_leaving_also_gets_an_opening_row(): void
+    {
+        [$product, $wh, $grade] = $this->siapkan();
+        $user = User::first();
+
+        // Stok awal: ditally (keluar), dikembalikan (masuk), lalu keluar ke repack -> baris masuknya ada, pembukanya tidak.
+        foreach ([['TALLY', 0, 7, '2026-11-10 07:00:00'], ['TALLY_REVERT', 7, 0, '2026-11-10 07:10:00'], ['OUT_TO_REPACK', 0, 7, '2026-11-10 07:20:00']] as [$tipe, $in, $out, $waktu]) {
+            DB::table('beef_stock_movements')->insert([
+                'product_id' => $product->id, 'warehouse_id' => $wh->id, 'condition' => (string) $grade->id, 'barcode' => 'AWAL3',
+                'transaction_type' => $tipe, 'weight_in' => $in, 'weight_out' => $out, 'pcs_in' => 0, 'pcs_out' => 0,
+                'created_by' => $user->id, 'created_at' => $waktu, 'updated_at' => $waktu,
+            ]);
+        }
+
+        $this->artisan('stock:write-opening', ['--date' => '2026-11-02', '--apply' => true])->assertSuccessful();
+
+        $this->assertSame(7.0, (float) DB::table('beef_stock_movements')->where('barcode', 'AWAL3')->where('transaction_type', 'OPENING_BALANCE')->value('weight_in'));
+        $net = (float) DB::table('beef_stock_movements')->where('barcode', 'AWAL3')->selectRaw('SUM(weight_in) - SUM(weight_out) as n')->value('n');
+        $this->assertSame(0.0, $net, 'Buku besar barcode yang sudah habis harus nol, bukan minus.');
+    }
+
     public function test_opening_balance_is_registered_as_an_incoming_type(): void
     {
         $this->assertSame('in', BeefStockMovement::TYPES['OPENING_BALANCE']);

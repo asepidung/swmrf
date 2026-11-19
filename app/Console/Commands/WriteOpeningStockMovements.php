@@ -12,9 +12,9 @@ use Illuminate\Support\Facades\DB;
  *
  * Stok awal ditulis ke `beef_stocks` tanpa baris pergerakan MASUK. Saat barangnya keluar, baris KELUAR tercatat, sehingga
  * posisi stok pada tanggal lampau meleset (bisa minus). Perintah ini menulis satu baris `OPENING_BALANCE` per barcode
- * yang tidak punya satu pun baris masuk, sebesar selisih antara isi stok sekarang dan hasil buku besar barcode itu.
+ * yang isi stok sekarangnya lebih besar daripada hasil buku besarnya (termasuk yang sempat dikembalikan lewat revert/mutasi/void).
  *
- * Dry-run bawaan; `--apply` menulis. Aman diulang: barcode yang sudah punya baris masuk (termasuk pembukanya) dilewati.
+ * Dry-run bawaan; `--apply` menulis. Aman diulang: yang sudah dibukakan tidak lagi punya selisih.
  */
 class WriteOpeningStockMovements extends Command
 {
@@ -42,19 +42,19 @@ class WriteOpeningStockMovements extends Command
             return self::FAILURE;
         }
 
-        $tanpaMasuk = DB::table('beef_stock_movements')
-            ->select('barcode')
+        // Kriteria: isi stok sekarang LEBIH BESAR daripada hasil buku besar barcode itu. Barcode stok awal yang dikembalikan
+        // (TALLY_REVERT, MUTATION_IN, VOID) punya baris masuk tetapi tetap kekurangan baris pembuka.
+        $bersih = DB::table('beef_stock_movements')
             ->whereNotNull('barcode')
             ->groupBy('barcode')
-            ->havingRaw('SUM(CASE WHEN weight_in > 0 THEN 1 ELSE 0 END) = 0')
-            ->pluck('barcode');
+            ->selectRaw('barcode, SUM(weight_in) - SUM(weight_out) as net')
+            ->pluck('net', 'barcode');
 
-        $stokTanpaGerakan = DB::table('beef_stocks as s')
-            ->where('s.status', 'IN_STOCK')
-            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))->from('beef_stock_movements as m')->whereColumn('m.barcode', 's.barcode'))
-            ->pluck('s.barcode');
+        $stokSemua = DB::table('beef_stocks')->where('status', 'IN_STOCK')->pluck('weight', 'barcode');
 
-        $barcodes = $tanpaMasuk->merge($stokTanpaGerakan)->unique()->values();
+        $barcodes = collect($bersih->keys())->merge($stokSemua->keys())->unique()
+            ->filter(fn ($b) => round((float) ($stokSemua[$b] ?? 0) - (float) ($bersih[$b] ?? 0), 2) > 0)
+            ->values();
         $baris = [];
 
         foreach ($barcodes->chunk(500) as $potong) {
@@ -67,8 +67,8 @@ class WriteOpeningStockMovements extends Command
                 $pertama = $g->first();
 
                 $sekarang = $s ? (float) $s->weight : 0.0;
-                $bersih = (float) $g->sum('weight_in') - (float) $g->sum('weight_out');
-                $selisih = round($sekarang - $bersih, 2);
+                $net = (float) $g->sum('weight_in') - (float) $g->sum('weight_out');
+                $selisih = round($sekarang - $net, 2);
 
                 if ($selisih <= 0) {
                     continue;
