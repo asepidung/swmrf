@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
  * `DatabaseSeeder` memang tempat resmi permission didaftarkan, dan
  * `view_cash_book` juga ditambahkan di sana untuk lingkungan yang dibangun
  * dari nol. Tetapi seeder itu TIDAK BOLEH dijalankan di server yang sudah
- * hidup: ia menyetel ulang password akun `saepullrock` menjadi '1234' tanpa
+ * hidup: ia menyetel ulang password akun superuser menjadi '1234' tanpa
  * syarat, sehingga setiap kali dijalankan pemiliknya terlempar ke alur
  * penggantian password.
  *

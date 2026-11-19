@@ -1,6 +1,6 @@
 # Basis data legacy produksi -- hasil jelajah 18 September 2026
 
-Dibaca langsung dari server produksi (`u525862761_swm`, 90 tabel), **hanya
+Dibaca langsung dari server produksi (basis data legacy, 90 tabel), **hanya
 baca**, lewat PHP di server yang memakai `konak/conn.php` -- kredensial tidak
 pernah keluar dari server dan tidak boleh disalin ke mana pun. Ditulis sebagai
 bahan pertimbangan sesi import master data (sesi khusus Owner + Hafizh).

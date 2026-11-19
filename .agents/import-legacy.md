@@ -540,7 +540,7 @@ dokumen yang menunjuk pelanggan/supplier yang hilang DILAPORKAN, bukan dibuang d
 
 ## Sales Order (`legacy:import-sales-orders`) — diterapkan di coba. 21 Okt 2026
 - Sumber: `salesorder` + `salesorderdetail` (+ `do` hanya untuk membaca status DO). 8.224 SO, 22.083 baris (1 baris STYROFOAM KECIL dilewati: bukan produk impor, dicatat di note SO). Berat 2.570.361 kg, nilai ±Rp 310,5 miliar.
-- Pasangan: sonumber→so_number (nomor legacy dipertahankan), idcustomer→customer_id lewat peta penggabungan, deliverydate, po→po_number, alamat→shipping_address, note ("-" = kosong), down_payment 0, pembuat = akun pengganti bila akun legacy tidak ada (coba.: `opik`, bukan saepullrock).
+- Pasangan: sonumber→so_number (nomor legacy dipertahankan), idcustomer→customer_id lewat peta penggabungan, deliverydate, po→po_number, alamat→shipping_address, note ("-" = kosong), down_payment 0, pembuat = akun pengganti bila akun legacy tidak ada (coba.: `opik`, bukan akun superuser).
 - Status: Delivered→completed, Cancel/Rejected→cancelled (Rejected diberi catatan), Waiting→waiting, On Process→processing, On Delivery→on_delivery, DRAFT→completed. SO "basi" (belum Delivered tetapi semua DO-nya sudah Invoiced) → completed (5 SO).
 - Diskon legacy dianggap persen; nilai > 100 (4 baris, tampak rupiah, harga 0) tidak dibawa, dicatat di note baris.
 - Tanpa efek model (tugas/notifikasi/stok). Mengisi `legacy_import_map` (sales_order, sales_order_item) untuk Tally/DO/Invoice. Idempoten (rerun: 0 dibuat, 8.224 dilewati).
