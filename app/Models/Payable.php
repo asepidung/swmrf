@@ -235,6 +235,18 @@ class Payable extends Model
         $this->save();
     }
 
+    /**
+     * R-06: sudah ada uang yang dibayarkan LANGSUNG ke hutang ini (SupplierPayment yang bersumber hutangnya).
+     * Hutang yang hanya terpotong uang muka PO tidak termasuk, jadi penerimaannya masih boleh dibuka kuncinya.
+     */
+    public function hasDirectPayment(): bool
+    {
+        return SupplierPayment::query()
+            ->where('source_type', static::class)
+            ->where('source_id', $this->getKey())
+            ->exists();
+    }
+
     public function releaseAdvances(): void
     {
         $outstanding = (float) $this->paid_amount;
