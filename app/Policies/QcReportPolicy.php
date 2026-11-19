@@ -50,7 +50,8 @@ class QcReportPolicy
 
     public function forceDelete(User $user, QcReport $report): bool
     {
-        return $user->hasPermission('delete_qc_reports');
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 
     public function deleteAny(User $user): bool
@@ -65,6 +66,7 @@ class QcReportPolicy
 
     public function forceDeleteAny(User $user): bool
     {
-        return $user->hasPermission('delete_qc_reports');
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 }

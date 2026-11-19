@@ -61,7 +61,8 @@ class DeliveryOrderPolicy
      */
     public function forceDelete(User $user, DeliveryOrder $deliveryOrder): bool
     {
-        return $user->hasPermission('delete_delivery_orders');
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 
     public function deleteAny(User $user): bool
@@ -76,6 +77,7 @@ class DeliveryOrderPolicy
 
     public function forceDeleteAny(User $user): bool
     {
-        return $user->hasPermission('delete_delivery_orders');
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 }

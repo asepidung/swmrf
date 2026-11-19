@@ -39,7 +39,8 @@ class RepackPolicy
 
     public function forceDelete(User $user, Repack $model): bool
     {
-        return $user->hasPermission('delete_repacks');
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 
     public function deleteAny(User $user): bool
@@ -54,6 +55,7 @@ class RepackPolicy
 
     public function forceDeleteAny(User $user): bool
     {
-        return $user->hasPermission('delete_repacks');
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 }

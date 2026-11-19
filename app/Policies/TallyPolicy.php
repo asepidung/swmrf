@@ -39,7 +39,8 @@ class TallyPolicy
 
     public function forceDelete(User $user, Tally $model): bool
     {
-        return $user->hasPermission('delete_tallies');
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 
     public function deleteAny(User $user): bool
@@ -54,6 +55,7 @@ class TallyPolicy
 
     public function forceDeleteAny(User $user): bool
     {
-        return $user->hasPermission('delete_tallies');
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 }

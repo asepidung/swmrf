@@ -60,7 +60,8 @@ class DeliveryOrderReceiptPolicy
      */
     public function forceDelete(User $user, DeliveryOrderReceipt $receipt): bool
     {
-        return false;
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 
     public function deleteAny(User $user): bool
@@ -75,6 +76,7 @@ class DeliveryOrderReceiptPolicy
 
     public function forceDeleteAny(User $user): bool
     {
-        return false;
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 }

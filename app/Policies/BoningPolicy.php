@@ -39,7 +39,8 @@ class BoningPolicy
 
     public function forceDelete(User $user, Boning $model): bool
     {
-        return $user->hasPermission('delete_bonings');
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 
     public function lock(User $user, Boning $model): bool
@@ -59,6 +60,7 @@ class BoningPolicy
 
     public function forceDeleteAny(User $user): bool
     {
-        return $user->hasPermission('delete_bonings');
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 }

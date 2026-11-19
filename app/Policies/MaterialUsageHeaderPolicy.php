@@ -47,7 +47,8 @@ class MaterialUsageHeaderPolicy
 
     public function forceDelete(User $user, MaterialUsageHeader $model): bool
     {
-        return $user->hasPermission('delete_material_usages');
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 
     public function deleteAny(User $user): bool
@@ -62,6 +63,7 @@ class MaterialUsageHeaderPolicy
 
     public function forceDeleteAny(User $user): bool
     {
-        return $user->hasPermission('delete_material_usages');
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 }

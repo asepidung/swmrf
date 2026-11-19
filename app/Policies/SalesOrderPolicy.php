@@ -39,7 +39,8 @@ class SalesOrderPolicy
 
     public function forceDelete(User $user, SalesOrder $model): bool
     {
-        return $user->hasPermission('delete_sales_orders') && in_array($model->status, [SalesOrder::STATUS_WAITING, SalesOrder::STATUS_CANCELLED], true);
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 
     /**
@@ -68,6 +69,7 @@ class SalesOrderPolicy
 
     public function forceDeleteAny(User $user): bool
     {
-        return $user->hasPermission('delete_sales_orders');
+        // FD-01 (keputusan Owner): hapus permanen dokumen transaksi hanya programmer.
+        return $user->isProgrammer();
     }
 }
