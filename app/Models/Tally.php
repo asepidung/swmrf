@@ -38,6 +38,9 @@ class Tally extends Model
     /** Sudah menjadi surat jalan. Disetel oleh `DeliveryOrder`. */
     public const STATUS_DELIVERED = 'do';
 
+    /** Dibatalkan bersama surat jalannya (Batalkan DO); barang sudah kembali ke stok. */
+    public const STATUS_CANCELLED = 'cancelled';
+
     /** @return array<string, string> */
     public static function statuses(): array
     {
@@ -45,6 +48,7 @@ class Tally extends Model
             self::STATUS_PROCESSING => self::STATUS_PROCESSING,
             self::STATUS_LOCKED => self::STATUS_LOCKED,
             self::STATUS_DELIVERED => self::STATUS_DELIVERED,
+            self::STATUS_CANCELLED => self::STATUS_CANCELLED,
         ];
     }
 

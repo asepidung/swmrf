@@ -842,4 +842,48 @@ class DeliveryOrderTest extends TestCase
 
         $this->assertEquals('Approved', $do->fresh()->status, 'kelebihan tetap boleh disimpan');
     }
+
+    /** @test */
+    public function cancelling_a_ready_delivery_order_returns_the_stock_and_cancels_the_tally_and_so()
+    {
+        $this->actingAs($this->user);
+
+        $so = SalesOrder::create(['customer_id' => $this->customer->id, 'delivery_date' => now()->addDay()->format('Y-m-d'), 'po_number' => 'PO-BTL', 'created_by' => $this->user->id, 'status' => 'ready']);
+        $tally = Tally::create(['sales_order_id' => $so->id, 'status' => 'locked']);
+        TallyItem::create([
+            'tally_id' => $tally->id, 'barcode' => 'BTL-1', 'product_id' => $this->product->id, 'warehouse_id' => $this->warehouse->id,
+            'grade_id' => $this->grade->id, 'weight' => 12.5, 'qty_pcs' => 1, 'pack_date' => now()->toDateString(), 'origin' => '1',
+        ]);
+        $do = DeliveryOrder::create([
+            'tally_id' => $tally->id, 'sales_order_id' => $so->id, 'customer_id' => $this->customer->id, 'delivery_date' => now()->addDay()->format('Y-m-d'),
+            'po_number' => 'PO-BTL', 'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'JOKO'])->id, 'status' => 'Ready',
+        ]);
+        $this->assertNull(BeefStock::where('barcode', 'BTL-1')->first());
+
+        Livewire::test(\App\Filament\Admin\Resources\DeliveryOrderResource\Pages\EditDeliveryOrder::class, ['record' => $do->id])
+            ->callAction('cancel_delivery', ['reason' => 'Salah kirim']);
+
+        $this->assertSame('Cancelled', $do->fresh()->status);
+        $this->assertSame('cancelled', $tally->fresh()->status);
+        $this->assertSame('cancelled', $so->fresh()->status);
+        $this->assertSame(12.5, (float) BeefStock::where('barcode', 'BTL-1')->value('weight'), 'Barang kembali ke stok.');
+        $this->assertSame(0, $tally->items()->count());
+    }
+
+    /** @test */
+    public function an_approved_delivery_order_cannot_be_cancelled_directly()
+    {
+        $this->actingAs($this->user);
+
+        $so = SalesOrder::create(['customer_id' => $this->customer->id, 'delivery_date' => now()->addDay()->format('Y-m-d'), 'po_number' => 'PO-BTL2', 'created_by' => $this->user->id, 'status' => 'ready']);
+        $tally = Tally::create(['sales_order_id' => $so->id, 'status' => 'locked']);
+        $do = DeliveryOrder::create([
+            'tally_id' => $tally->id, 'sales_order_id' => $so->id, 'customer_id' => $this->customer->id, 'delivery_date' => now()->addDay()->format('Y-m-d'),
+            'po_number' => 'PO-BTL2', 'driver_id' => \App\Models\Driver::firstOrCreate(['name' => 'JOKO'])->id, 'status' => 'Ready',
+        ]);
+        DeliveryOrder::whereKey($do->id)->update(['status' => 'Approved']);
+
+        $this->assertNotNull($do->fresh()->cancelDelivery('x'));
+        $this->assertSame('Approved', $do->fresh()->status);
+    }
 }

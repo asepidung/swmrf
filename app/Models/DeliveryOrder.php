@@ -139,6 +139,51 @@ class DeliveryOrder extends Model
         });
     }
 
+    /**
+     * Batalkan surat jalan (keputusan Owner, DO-04): SO dan tally ikut batal dan barang tally kembali ke stok.
+     * Beda dengan menghapus (SO kembali siap, tally terkunci). Hanya untuk surat jalan Ready tanpa penerimaan,
+     * invoice, atau retur; yang sudah Approved harus di-Unapprove dulu.
+     *
+     * @return string|null pesan penolakan bila keadaannya tidak memenuhi syarat; null bila berhasil
+     */
+    public function cancelDelivery(?string $alasan = null): ?string
+    {
+        $galat = null;
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($alasan, &$galat) {
+            $do = static::query()->whereKey($this->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($do->status !== 'Ready') {
+                $galat = __('Only a delivery order that is still Ready can be cancelled. Unapprove it first.');
+
+                return;
+            }
+
+            if ($do->receipt()->exists() || $do->salesReturns()->exists()) {
+                $galat = __('This delivery order already has a receipt or a return, so it cannot be cancelled.');
+
+                return;
+            }
+
+            $tally = $do->tally;
+
+            if ($tally) {
+                // Tiap barang dihapus lewat model: stok kembali dan kartu stok mencatatnya (TallyItem::deleted).
+                $tally->items()->get()->each->delete();
+                $tally->update(['status' => Tally::STATUS_CANCELLED]);
+            }
+
+            $do->salesOrder?->update(['status' => SalesOrder::STATUS_CANCELLED]);
+            $do->update(['status' => 'Cancelled', 'note' => trim(($do->note ? $do->note.' | ' : '').'Dibatalkan'.($alasan ? ': '.$alasan : ''))]);
+
+            activity('delivery_order')->performedOn($do)->log('Cancel Delivery Order: '.$do->delivery_order_number);
+        });
+
+        $this->refresh();
+
+        return $galat;
+    }
+
     protected static function booted()
     {
         static::creating(function (DeliveryOrder $do) {
