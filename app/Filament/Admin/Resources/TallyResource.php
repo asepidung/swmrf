@@ -89,6 +89,7 @@ class TallyResource extends Resource
                         'info' => Tally::STATUS_PROCESSING,
                         'success' => Tally::STATUS_LOCKED,
                         'gray' => Tally::STATUS_DELIVERED,
+                        'danger' => Tally::STATUS_CANCELLED,
                     ])
                     // 'do' dulu tampil sebagai "Do" -- hasil `ucfirst()` pada
                     // singkatan, yang tidak berarti apa-apa bagi pembacanya.

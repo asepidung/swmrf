@@ -360,6 +360,7 @@ class DeliveryOrderResource extends Resource
                     ->colors([
                         'warning' => 'Ready',
                         'success' => 'Approved',
+                        'danger' => 'Cancelled',
                     ])
                     ->formatStateUsing(fn ($state) => __($state)),
 

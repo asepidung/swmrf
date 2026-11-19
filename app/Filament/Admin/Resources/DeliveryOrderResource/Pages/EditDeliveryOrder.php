@@ -59,6 +59,32 @@ class EditDeliveryOrder extends EditRecord
 
 
 
+            Actions\Action::make('cancel_delivery')
+                ->label('')
+                ->tooltip(__('Cancel Delivery Order'))
+                ->icon('heroicon-o-no-symbol')
+                ->color('danger')
+                ->iconButton()
+                ->visible(fn (): bool => $this->record->status === 'Ready'
+                    && (auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('delete_delivery_orders') ?? false)))
+                ->authorize(fn (): bool => auth()->user()?->isProgrammer() || (auth()->user()?->hasPermission('delete_delivery_orders') ?? false))
+                ->requiresConfirmation()
+                ->modalHeading(__('Cancel Delivery Order'))
+                ->modalDescription(__('The delivery order, its tally, and the sales order are cancelled, and the tallied goods go back to stock. This cannot be undone.'))
+                ->form([
+                    \Filament\Forms\Components\Textarea::make('reason')->label(__('Reason'))->required()->maxLength(300)->rows(2),
+                ])
+                ->action(function (array $data) {
+                    if ($galat = $this->record->cancelDelivery($data['reason'] ?? null)) {
+                        Notification::make()->title($galat)->danger()->send();
+
+                        return;
+                    }
+
+                    Notification::make()->title(__('Delivery Order cancelled'))->success()->send();
+                    $this->redirect($this->getResource()::getUrl('index'));
+                }),
+
             Actions\DeleteAction::make()
                 ->label('')
                 ->tooltip(__('Delete'))
