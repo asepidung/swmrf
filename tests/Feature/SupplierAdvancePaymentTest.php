@@ -347,6 +347,48 @@ class SupplierAdvancePaymentTest extends TestCase
     }
 
     /**
+     * R-06: penerimaan yang hutangnya hanya terpotong uang muka bisa dibuka kuncinya (uang muka kembali ke kolam);
+     * yang sudah dibayar langsung tetap ditolak.
+     *
+     * @test
+     */
+    public function a_goods_receipt_whose_payable_is_only_cut_by_an_advance_can_be_unlocked()
+    {
+        $gr = $this->buildChain(10_000_000);
+        $advance = $this->recordAdvanceOnPo($gr->purchaseProduct, 4_000_000);
+        $gr->update(['is_locked' => true]);
+        $payable = Payable::generateForGoodsReceiptProduct($gr);
+        $this->assertSame('partial', $payable->fresh()->status);
+
+        \Livewire\Livewire::test(\App\Filament\Admin\Resources\GoodsReceiptProductResource\Pages\ListGoodsReceiptProducts::class)
+            ->callTableAction('lock', $gr);
+
+        $this->assertFalse((bool) $gr->fresh()->is_locked);
+        $this->assertNull(Payable::find($payable->id));
+        $this->assertEquals(0, $advance->fresh()->allocated_amount, 'Uang muka harus kembali ke kolam.');
+    }
+
+    /** @test */
+    public function a_goods_receipt_with_a_direct_payment_on_its_payable_still_cannot_be_unlocked()
+    {
+        $gr = $this->buildChain(10_000_000);
+        $gr->update(['is_locked' => true]);
+        $payable = Payable::generateForGoodsReceiptProduct($gr);
+
+        SupplierPayment::create([
+            'supplier_id' => $this->supplier->id, 'source_type' => Payable::class, 'source_id' => $payable->id,
+            'payment_date' => now()->toDateString(), 'method' => SupplierPayment::METHOD_TRANSFER, 'amount' => 1_000_000, 'allocated_amount' => 1_000_000,
+        ]);
+        $payable->update(['paid_amount' => 1_000_000]);
+
+        \Livewire\Livewire::test(\App\Filament\Admin\Resources\GoodsReceiptProductResource\Pages\ListGoodsReceiptProducts::class)
+            ->callTableAction('lock', $gr);
+
+        $this->assertTrue((bool) $gr->fresh()->is_locked);
+        $this->assertNotNull(Payable::find($payable->id));
+    }
+
+    /**
      * GR yang sudah dibuka harus bisa dikunci ulang, dan DP-nya terpotong lagi.
      *
      * Payable memakai soft delete, sehingga dulu penguncian ulang membuat

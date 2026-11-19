@@ -246,10 +246,8 @@ Tables\Actions\Action::make('lock')
                                 // pernah benar-benar bekerja -- ia meledak
                                 // alih-alih menolak, dan pesan errornya tidak
                                 // menjelaskan apa pun kepada pengguna.
-                                $sudahDibayar = $payable && (
-                                    in_array($payable->status, ['partial', 'paid'], true)
-                                    || (float) $payable->paid_amount > 0
-                                );
+                                // R-06: hanya pembayaran langsung yang menahan; potongan uang muka dilepas oleh releaseAdvances() di bawah.
+                                $sudahDibayar = $payable && $payable->hasDirectPayment();
 
                                 if ($sudahDibayar) {
                                     throw new \Exception(__('This Goods Receipt cannot be unlocked because a payment is already recorded against its payable.'));
