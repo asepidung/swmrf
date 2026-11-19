@@ -24,9 +24,9 @@ return [
             'version' => '2.0.12',
             'date' => '2026-11-19',
             'kind' => 'fix',
-            'title' => 'Peningkatan keamanan dan perbaikan data',
+            'title' => '🔒 PENINGKATAN KEAMANAN dan perbaikan data',
             'items' => [
-                'Peningkatan keamanan: login, kata sandi sementara, dan penyimpanan dokumen kini lebih terlindungi. Akun dengan kata sandi lama diganti, dan akun baru atau yang direset mendapat kata sandi sementara yang wajib diganti saat masuk.',
+                '🔒 PENINGKATAN KEAMANAN: sistem login, kata sandi, dan penyimpanan dokumen kini jauh lebih terlindungi. Akun dengan kata sandi lama sudah diganti, dan akun baru atau yang direset mendapat kata sandi sementara yang WAJIB diganti saat masuk pertama. Jaga kerahasiaan kata sandi Anda.',
                 'Invoice yang sudah ada pembayarannya tidak bisa diubah lagi. Untuk mengoreksi, batalkan dulu pembayarannya.',
                 'Surat Jalan yang masih Ready kini bisa dibatalkan: stok kembali, Tally dan Sales Order ikut batal.',
                 'Uang muka (DP) Sales Order kini tercatat sebagai pembayaran dan muncul di buku kas.',
