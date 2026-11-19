@@ -7963,5 +7963,14 @@ Keputusan Ayah: perintah pengosong data pelatihan DIHAPUS beserta tesnya. Aplika
 - **SO-03:** tombol Hide Price di cetak SO hanya menyembunyikan tampilan, dibiarkan (untuk berbagi SO ke grup perusahaan).
 - **A-03:** sandi sementara (akun baru dan reset) = 8 digit angka acak, tampil sekali ke admin, wajib diganti. Akun lama yang masih 1234 diacak lewat migrasi tanpa ditampilkan (#887, #896). Tiga akun aktif di VPS (santi, col, monru) menunggu reset oleh admin.
 - **K-05:** DP pelanggan dicatat sebagai pembayaran (`payments.sales_order_id`) yang masuk buku kas, dibatasi di invoice, bisa dibatalkan lewat tombol Batalkan DP; DP lama dibiarkan sebagai riwayat; yang boleh mengisi = pemegang izin buat SO (#897).
-- **P-01:** ditambah batas login per username tanpa alamat (#898). `trustProxies(at: '*')` BELUM diubah: menunggu info apakah situs di belakang CDN/proxy lain (tanya IT Lead).
-- Belum diputuskan/ditunda: CFG-01 untuk coba, D-01/D-02, HPP-01, PF-01, INV-01, FD-01, REP-01, LG-01, R-06, INFO-01, DP lama di produksi (belum diperiksa), alur batalkan DO.
+- **P-01:** ditambah batas login per username tanpa alamat (#898). `trustProxies` TIDAK diubah: IT Lead memastikan tidak ada CDN/proxy eksternal; di VPS nginx menyetel `REMOTE_ADDR` ke IP klien dan kepercayaan buta ke `X-Real-IP` sudah dimatikan di sisi server. Jangan mempercayai `X-Forwarded-For`/`X-Real-IP` di aplikasi.
+- **D-01 / D-02:** dependency composer diperbarui lalu diuji penuh (#900); `npm audit fix` tanpa paksa (#901). Sisa advisory npm hanya dev.
+- **HPP-01:** ukur dulu; hitung ulang repack memakai satu kueri harga bahan (#902). Hitung ulang berkali-kali per barcode belum diubah.
+- **PF-01:** poller sesi diperlambat dari 10 ke 60 detik (#903).
+- **INV-01:** invoice yang sudah ada pembayaran aktif terkunci untuk diedit; koreksi dengan membatalkan pembayarannya dulu (#904).
+- **FD-01:** hapus PERMANEN dokumen transaksi hanya untuk programmer (#905).
+- **REP-01:** laporan HPP Penjualan mengurangi retur jual yang sudah disetujui (penjualan dan HPP) dan menampilkan kg retur (#906).
+- **LG-01:** `php artisan stock:write-opening --date=YYYY-MM-DD [--apply]` menulis baris pembuka `OPENING_BALANCE` untuk setiap barcode yang isi stoknya lebih besar daripada hasil buku besarnya (#907, #910). Dijalankan di VPS dengan tanggal 2026-11-02 (peluncuran stok daging): 1.078 baris, `stock:reconcile` bersih. Stok material belum.
+- **R-06:** buka kunci penerimaan hanya ditolak bila hutangnya dibayar LANGSUNG (`Payable::hasDirectPayment`); potongan uang muka dikembalikan ke PO (#908).
+- **INFO-01:** sebutan akun superuser dan rincian hosting dirapikan di dokumentasi (#909); seeder tetap memakai username yang sama karena dipakai kode. Riwayat git lama tetap memuatnya.
+- Belum diputuskan/ditunda: CFG-01 untuk coba, DP lama di produksi (belum diperiksa), alur batalkan DO.
