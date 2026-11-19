@@ -91,6 +91,7 @@ class BeefStockMovement extends Model
         'STOCK_TAKE_LOSS' => 'out',
         'FOUND_ITEM' => 'in',
         'VOID_STOCK' => 'out',
+        'OPENING_BALANCE' => 'in',
     ];
 
     /** Pilihan untuk penyaring: seluruhnya, tanpa kecuali. */
