@@ -32,6 +32,19 @@ class EditInvoice extends EditRecord
         }
     }
 
+    /** RPT-01: baris invoice tidak boleh bertambah atau berkurang dari browser; ia mengikuti bukti terimanya. */
+    protected function beforeSave(): void
+    {
+        if (! \App\Support\RepeaterRows::unchanged($this->getRecord()->items()->pluck('id'), $this->data['items'] ?? null)) {
+            \Filament\Notifications\Notification::make()
+                ->title(__('The item rows do not match this document, so it was not saved. Reload the page.'))
+                ->danger()
+                ->send();
+
+            throw new \Filament\Support\Exceptions\Halt();
+        }
+    }
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');

@@ -146,6 +146,7 @@ class SalesOrderResource extends Resource
                             ->label(__('Account receiving the down payment'))
                             ->options(fn () => \App\Models\BankAccount::where('is_active', true)->get()->mapWithKeys(fn ($a) => [$a->id => trim($a->bank_name.' '.$a->account_number)]))
                             ->searchable()
+                            ->rule(\Illuminate\Validation\Rule::exists('bank_accounts', 'id')->where('is_active', true)) // OPT-01
                             ->dehydrated(false)
                             ->visible(fn (Forms\Get $get, ?SalesOrder $record) => (float) str_replace('.', '', (string) ($get('down_payment') ?? 0)) > 0 && (float) ($record?->down_payment ?? 0) <= 0)
                             ->columnSpan(['default' => 1, 'lg' => 3]),

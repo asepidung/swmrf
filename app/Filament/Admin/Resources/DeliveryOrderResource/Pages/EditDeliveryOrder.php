@@ -82,6 +82,12 @@ class EditDeliveryOrder extends EditRecord
             Notification::make()->title(__('This delivery order has already moved on, so it cannot be saved.'))->danger()->send();
             $this->halt();
         }
+
+        // RPT-01: baris surat jalan mengikuti tally-nya; jumlahnya tidak boleh diubah dari browser.
+        if (! \App\Support\RepeaterRows::unchanged($this->record->items()->pluck('id'), $this->data['items'] ?? null)) {
+            Notification::make()->title(__('The item rows do not match this document, so it was not saved. Reload the page.'))->danger()->send();
+            $this->halt();
+        }
     }
 
     protected function getFormActions(): array
