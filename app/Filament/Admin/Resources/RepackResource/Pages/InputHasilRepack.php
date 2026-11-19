@@ -290,7 +290,7 @@ class InputHasilRepack extends Page implements HasForms, HasTable
 
                                 /* 2. Menghapus data stok hasil dari gudang dan rekaman hasil produksi */
                                 \App\Services\WarehouseFreezeService::check(); // pembekuan opname tidak lewat hapus massal lewat query (FZ-01)
-                                BeefStock::where('barcode', $record->barcode)->delete();
+                                BeefStock::where('barcode', $record->barcode)->get()->each->delete(); // FZ-01: lewat model supaya pembekuan opname berlaku
                                 $record->delete();
                             });
                         } catch (\Throwable $e) {

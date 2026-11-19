@@ -404,7 +404,7 @@ class SalesReturn extends Model
                 ]);
 
                 \App\Services\WarehouseFreezeService::check(); // pembekuan opname tidak lewat hapus massal lewat query (FZ-01)
-                BeefStock::where('barcode', $item->barcode)->delete();
+                BeefStock::where('barcode', $item->barcode)->get()->each->delete(); // FZ-01: lewat model supaya pembekuan opname berlaku
             }
 
             $this->detachFromBill();
