@@ -88,4 +88,17 @@ class InvoiceHeaderTamperTest extends InvoiceTest
         $this->assertSame($this->receiptRegular->id, $segar->delivery_order_receipt_id);
         $this->assertSame($this->receiptRegular->sales_order_id, $segar->sales_order_id);
     }
+
+    public function test_dropping_invoice_rows_from_the_submitted_state_does_not_save(): void
+    {
+        $this->buka()->call('create')->assertHasNoFormErrors();
+        $invoice = Invoice::where('delivery_order_receipt_id', $this->receiptRegular->id)->firstOrFail();
+        $jumlah = $invoice->items()->count();
+        $this->assertGreaterThan(0, $jumlah);
+
+        $tab = Livewire::actingAs($this->user)->test(EditInvoice::class, ['record' => $invoice->getRouteKey()]);
+        $tab->set('data.items', [])->call('save');
+
+        $this->assertSame($jumlah, $invoice->items()->count());
+    }
 }

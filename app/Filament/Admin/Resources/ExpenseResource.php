@@ -183,6 +183,7 @@ class ExpenseResource extends Resource
                         Forms\Components\Select::make('bank_account_id')
                             ->label(__('Cash/Bank Account'))
                             ->options(fn () => BankAccount::where('is_active', true)->pluck('initial', 'id'))
+                            ->rule(\Illuminate\Validation\Rule::exists('bank_accounts', 'id')->where('is_active', true)) // OPT-01: rekening nonaktif ditolak di server
                             ->default(fn () => BankAccount::cashAccount()->id)
                             ->searchable()
                             ->required()

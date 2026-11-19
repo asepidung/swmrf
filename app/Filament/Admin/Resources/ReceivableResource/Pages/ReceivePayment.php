@@ -182,6 +182,7 @@ class ReceivePayment extends Page
                         Select::make('bank_account_id')
                             ->label(__('Into Account'))
                             ->options(BankAccount::where('is_active', true)->pluck('initial', 'id'))
+                            ->rule(\Illuminate\Validation\Rule::exists('bank_accounts', 'id')->where('is_active', true)) // OPT-01
                             ->required()
                             ->searchable()
                             ->autofocus(),

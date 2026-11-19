@@ -76,7 +76,8 @@ class PurchaseOrderDeleteGuardTest extends TestCase
             'Filament/Admin/Resources/GoodsReceiptProductResource.php'
         ));
 
-        $this->assertStringContainsString("in_array(\$payable->status, ['partial', 'paid'], true)", $source);
+        // R-06: yang menahan buka kunci hanya pembayaran langsung ke hutang; potongan uang muka dilepas.
+        $this->assertStringContainsString('$payable->hasDirectPayment()', $source);
         $this->assertStringContainsString(
             'This Goods Receipt cannot be unlocked because a payment is already recorded against its payable.',
             $source,
@@ -111,7 +112,7 @@ class PurchaseOrderDeleteGuardTest extends TestCase
             $source = file_get_contents(app_path($file));
 
             $this->assertStringNotContainsString('$payable->payments()', $source, basename($file));
-            $this->assertStringContainsString('(float) $payable->paid_amount > 0', $source, basename($file));
+            $this->assertStringContainsString('$payable->hasDirectPayment()', $source, basename($file));
         }
     }
 

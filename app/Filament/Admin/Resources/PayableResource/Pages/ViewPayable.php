@@ -39,6 +39,7 @@ class ViewPayable extends ViewRecord
                     \Filament\Forms\Components\Select::make('bank_account_id')
                         ->label(__('Bank Account'))
                         ->options(\App\Models\BankAccount::where('is_active', true)->where('initial', '!=', 'KAS')->pluck('initial', 'id'))
+                        ->rule(\Illuminate\Validation\Rule::exists('bank_accounts', 'id')->where('is_active', true)->where('initial', '!=', 'KAS')) // OPT-01
                         ->required(fn (\Filament\Forms\Get $get) => $get('method') === \App\Models\SupplierPayment::METHOD_TRANSFER)
                         ->visible(fn (\Filament\Forms\Get $get) => $get('method') === \App\Models\SupplierPayment::METHOD_TRANSFER),
                     \Filament\Forms\Components\Placeholder::make('sisa_tagihan')

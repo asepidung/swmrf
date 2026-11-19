@@ -357,4 +357,18 @@ class CustomerDepositTest extends TestCase
         \App\Models\Payment::active()->get()->each->cancel('uji');
         $this->assertFalse($invoice->fresh()->hasActivePayment());
     }
+
+    /** OPT-01: rekening nonaktif tidak diterima walau id-nya dikirim dari browser. */
+    public function test_an_inactive_account_is_refused_on_the_server(): void
+    {
+        $this->invoice(500000);
+        $this->bank->update(['is_active' => false]);
+
+        Livewire::test(ReceivePayment::class, ['record' => $this->group])
+            ->set('data.bank_account_id', $this->bank->id)
+            ->set('data.payment_date', now()->toDateString())
+            ->set('data.amount', '500.000')
+            ->call('save')
+            ->assertHasErrors(['data.bank_account_id']);
+    }
 }
