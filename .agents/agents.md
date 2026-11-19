@@ -7974,5 +7974,6 @@ Keputusan Ayah: perintah pengosong data pelatihan DIHAPUS beserta tesnya. Aplika
 - **R-06:** buka kunci penerimaan hanya ditolak bila hutangnya dibayar LANGSUNG (`Payable::hasDirectPayment`); potongan uang muka dikembalikan ke PO (#908).
 - **INFO-01:** sebutan akun superuser dan rincian hosting dirapikan di dokumentasi (#909); seeder tetap memakai username yang sama karena dipakai kode. Riwayat git lama tetap memuatnya.
 - **WF-01:** workflow deploy GitHub Actions dihapus (deploy manual lewat SSH).
+- **CMD-01:** `app:reset-training-data` sudah dihapus sebelumnya. Perintah impor go-live (`legacy:import-*`, `ImportAccessData`, `ImportMasterSnapshot`, `ImportCostingPrices`, `AssignLegacyCreator`, `LinkLegacyDeliveryPlans`) kini MENOLAK `--apply` bila `APP_ENV=production` (trait `RefusesApplyInProduction`); dry-run tetap boleh. Perintah yang memang aman diulang (`Seed*`, `Reconcile*`, `stock:write-opening`, dll.) tidak dikunci.
 - **Batalkan DO:** surat jalan Ready dibatalkan lewat tombol di halaman Edit; SO dan tally `cancelled`, barang kembali ke stok (#914). Yang Approved di-Unapprove dulu.
 - **CFG-01:** `SESSION_SECURE_COOKIE=true` sudah dipasang di `.env` coba. DP lama di produksi: dua SO pelanggan id 11 (SO#260037, SO#260038) dibiarkan sebagai riwayat. PL-01 dan ST-02 diperiksa di VPS: tidak ada masalah.

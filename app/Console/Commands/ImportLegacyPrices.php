@@ -46,6 +46,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportLegacyPrices extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'legacy:import-prices
                             {--source= : Path ke berkas xlsx harga (bawaan: legacy/harga-terbaru-per-grup-2026-10-13.xlsx)}
                             {--apply : Benar-benar menulis perubahan (default hanya laporan dry-run)}
@@ -144,6 +146,10 @@ class ImportLegacyPrices extends Command
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $source = $this->option('source') ?: base_path(self::DEFAULT_SOURCE);
 
         if (! is_file($source)) {

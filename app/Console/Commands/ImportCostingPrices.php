@@ -19,6 +19,8 @@ use OpenSpout\Common\Entity\Cell\FormulaCell;
  */
 class ImportCostingPrices extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'costing:import-prices
         {--source=legacy/costing-oktober-2026.xlsx : Berkas xlsx costing (tidak masuk repo)}
         {--sheet=LJP 15 - 8 OKT : Nama sheet}
@@ -40,6 +42,10 @@ class ImportCostingPrices extends Command
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $path = base_path((string) $this->option('source'));
 
         if (! is_file($path)) {

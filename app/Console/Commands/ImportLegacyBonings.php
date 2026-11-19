@@ -27,6 +27,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportLegacyBonings extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'legacy:import-bonings
                             {--source= : Berkas snapshot SQL yang memuat tabel boning (tarik.sh sapi)}
                             {--labels= : Berkas label boning, pisah koma (tarik.sh boninglabel2023 ... boninglabel2026)}
@@ -38,6 +40,10 @@ class ImportLegacyBonings extends Command
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $path = $this->option('source');
         $labelFiles = array_values(array_filter(array_map('trim', explode(',', (string) $this->option('labels')))));
 

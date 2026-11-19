@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportLegacyMaterialStock extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'legacy:import-material-stock
                             {--source= : Berkas snapshot SQL pengeluaran dan nama material (legacy/tarik/tarik.sh stokmaterial)}
                             {--grs= : Berkas snapshot SQL penerimaan GR material (legacy/tarik/tarik.sh belanja)}
@@ -32,6 +34,10 @@ class ImportLegacyMaterialStock extends Command
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $path = $this->option('source');
         $grsPath = $this->option('grs');
 

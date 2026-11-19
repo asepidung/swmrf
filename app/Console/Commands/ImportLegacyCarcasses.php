@@ -26,6 +26,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportLegacyCarcasses extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'legacy:import-carcasses
                             {--source= : Berkas snapshot SQL (legacy/tarik/tarik.sh sapi)}
                             {--fallback-user= : Username akun pengganti untuk pembuat yang tidak ada di aplikasi}
@@ -37,6 +39,10 @@ class ImportLegacyCarcasses extends Command
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $path = $this->option('source');
 
         if (! $path || ! is_file($path)) {

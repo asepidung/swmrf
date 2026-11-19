@@ -29,6 +29,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportLegacyRequests extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'legacy:import-requests
                             {--source= : Berkas snapshot SQL (legacy/tarik/tarik.sh belanja)}
                             {--fallback-user= : Username akun cadangan untuk pemohon yang tidak ada di aplikasi}
@@ -58,6 +60,10 @@ class ImportLegacyRequests extends Command
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $path = $this->option('source');
 
         if (! $path || ! is_file($path)) {

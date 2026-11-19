@@ -19,12 +19,18 @@ use Illuminate\Support\Facades\DB;
  */
 class LinkLegacyDeliveryPlans extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'legacy:link-delivery-plans {--apply : Benar-benar menulis (default hanya laporan dry-run)}';
 
     protected $description = 'Tautkan Sales Order impor yang belum selesai ke Rencana Pengiriman (dry-run bawaan, aman diulang)';
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $apply = (bool) $this->option('apply');
 
         $orders = DB::table('sales_orders')

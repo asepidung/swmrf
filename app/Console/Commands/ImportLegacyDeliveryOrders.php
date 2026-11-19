@@ -26,6 +26,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportLegacyDeliveryOrders extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'legacy:import-delivery-orders
                             {--source= : Berkas snapshot SQL DO (legacy/tarik/tarik.sh do)}
                             {--master= : Berkas snapshot master (tabel customers) untuk peta penggabungan pelanggan}
@@ -39,6 +41,10 @@ class ImportLegacyDeliveryOrders extends Command
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $path = $this->option('source');
         $masterPath = $this->option('master');
 

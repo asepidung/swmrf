@@ -25,6 +25,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportLegacyStock extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'legacy:import-stock
                             {--source= : Berkas snapshot SQL stok (legacy/tarik/tarik.sh stok)}
                             {--apply : Benar-benar menulis (default hanya laporan dry-run)}
@@ -47,6 +49,10 @@ class ImportLegacyStock extends Command
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $path = $this->option('source');
 
         if (! $path || ! is_file($path)) {

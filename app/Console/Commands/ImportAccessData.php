@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportAccessData extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'access:import
                             {--file= : Path berkas JSON dari access:export (bawaan: storage/app/access-export.json)}
                             {--apply : Benar-benar menulis (default hanya laporan dry-run)}';
@@ -37,6 +39,10 @@ class ImportAccessData extends Command
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $file = $this->option('file') ?: storage_path('app/access-export.json');
 
         if (! is_file($file)) {
