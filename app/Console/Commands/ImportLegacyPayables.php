@@ -24,6 +24,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportLegacyPayables extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'legacy:import-payables
                             {--before= : Hanya penerimaan dengan tanggal terima SEBELUM tanggal ini (Y-m-d), wajib; mencegah menyentuh penerimaan yang dibuat sesudah go-live}
                             {--fallback-user= : Username pencatat hutang riwayat}
@@ -35,6 +37,10 @@ class ImportLegacyPayables extends Command
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $before = (string) $this->option('before');
 
         if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $before)) {

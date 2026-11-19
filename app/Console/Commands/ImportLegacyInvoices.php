@@ -34,6 +34,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportLegacyInvoices extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'legacy:import-invoices
                             {--source= : Berkas snapshot SQL invoice (legacy/tarik/tarik.sh inv)}
                             {--master= : Berkas snapshot master (tabel customers) untuk peta penggabungan pelanggan}
@@ -53,6 +55,10 @@ class ImportLegacyInvoices extends Command
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $path = $this->option('source');
         $masterPath = $this->option('master');
         $payment = (string) $this->option('payment');

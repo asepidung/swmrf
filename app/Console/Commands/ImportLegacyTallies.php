@@ -26,6 +26,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportLegacyTallies extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'legacy:import-tallies
                             {--source= : Berkas snapshot SQL tally (legacy/tarik/tarik.sh tally)}
                             {--fallback-user= : Username pembuat tally (legacy tidak mencatat pembuat)}
@@ -40,6 +42,10 @@ class ImportLegacyTallies extends Command
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $path = $this->option('source');
 
         if (! $path || ! is_file($path)) {

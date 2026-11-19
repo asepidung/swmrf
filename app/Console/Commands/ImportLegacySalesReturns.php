@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportLegacySalesReturns extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'legacy:import-sales-returns
                             {--source= : Berkas snapshot SQL retur (legacy/tarik/tarik.sh retur)}
                             {--master= : Berkas snapshot master (tabel customers) untuk peta penggabungan pelanggan}
@@ -36,6 +38,10 @@ class ImportLegacySalesReturns extends Command
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $path = $this->option('source');
         $masterPath = $this->option('master');
 

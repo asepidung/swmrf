@@ -22,6 +22,8 @@ use Illuminate\Support\Str;
  */
 class AssignLegacyCreator extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'legacy:assign-legacy-creator
         {--from=opik : Username akun cadangan impor yang dilepas dari dokumen}
         {--tables=invoices,tallies,sales_orders,payables : Daftar tabel dipisah koma (kolom created_by)}
@@ -34,6 +36,10 @@ class AssignLegacyCreator extends Command
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $apply = (bool) $this->option('apply');
         $from = User::withoutGlobalScopes()->where('username', $this->option('from'))->first();
 

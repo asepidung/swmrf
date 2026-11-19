@@ -22,6 +22,8 @@ use Illuminate\Support\Facades\Hash;
  */
 class ImportLegacyUsers extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'legacy:import-users
                             {--source=legacy/users-legacy-2026-10-16.sql : Berkas SQL tabel users legacy (passuser diabaikan; jangan di-commit)}
                             {--apply : Benar-benar menulis (default hanya laporan dry-run)}';
@@ -30,6 +32,10 @@ class ImportLegacyUsers extends Command
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $path = (string) $this->option('source');
         $path = is_file($path) ? $path : base_path($path);
 

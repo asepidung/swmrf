@@ -27,6 +27,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportLegacyPos extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'legacy:import-pos
                             {--source= : Berkas snapshot SQL (legacy/tarik/tarik.sh belanja)}
                             {--approver= : Username akun yang dicatat sebagai penyetuju PO impor}
@@ -41,6 +43,10 @@ class ImportLegacyPos extends Command
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $path = $this->option('source');
 
         if (! $path || ! is_file($path)) {

@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportLegacyCattlePos extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'legacy:import-cattle-pos
                             {--source= : Berkas snapshot SQL (legacy/tarik/tarik.sh sapi)}
                             {--fallback-user= : Username akun pengganti untuk pembuat PO yang tidak ada di aplikasi}
@@ -33,6 +35,10 @@ class ImportLegacyCattlePos extends Command
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $path = $this->option('source');
 
         if (! $path || ! is_file($path)) {

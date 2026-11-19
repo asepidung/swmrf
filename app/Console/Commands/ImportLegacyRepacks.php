@@ -27,6 +27,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportLegacyRepacks extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'legacy:import-repacks
                             {--source= : Berkas snapshot SQL repack (legacy/tarik/tarik.sh repack)}
                             {--fallback-user= : Username akun pengganti untuk pembuat yang tidak ada di aplikasi}
@@ -39,6 +41,10 @@ class ImportLegacyRepacks extends Command
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $path = $this->option('source');
 
         if (! $path || ! is_file($path)) {

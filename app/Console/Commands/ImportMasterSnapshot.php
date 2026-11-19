@@ -12,12 +12,18 @@ use Illuminate\Console\Command;
  */
 class ImportMasterSnapshot extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'master:import-snapshot {file : Berkas snapshot JSON} {--apply : Benar-benar menulis (default hanya dry-run)}';
 
     protected $description = 'Salin master data dari snapshot (id dipertahankan; dry-run bawaan)';
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $file = (string) $this->argument('file');
 
         if (! is_file($file)) {

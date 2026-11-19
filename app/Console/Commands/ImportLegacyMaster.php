@@ -58,6 +58,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportLegacyMaster extends Command
 {
+    use \App\Console\Concerns\RefusesApplyInProduction;
+
     protected $signature = 'legacy:import-master
                             {--source= : Path ke berkas dump SQL legacy}
                             {--only= : Hanya langkah ini (pisah koma): kategori,grade,supplier,kelas-sapi,grup,pelanggan,produk,kategori-material,material,bom}
@@ -202,6 +204,10 @@ class ImportLegacyMaster extends Command
 
     public function handle(): int
     {
+        if ($this->tolakApplyDiProduksi()) {
+            return self::FAILURE;
+        }
+
         $path = $this->option('source');
 
         if (! $path) {
