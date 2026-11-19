@@ -45,9 +45,9 @@ npm run build
 php artisan serve
 ```
 
-Akun superuser bawaan: username `saepullrock`, password `1234`. Aplikasi akan **memaksa penggantian password pada login pertama**.
+Akun superuser dibuat oleh seeder (username dan password awalnya ada di `DatabaseSeeder`, hanya untuk lingkungan baru/lokal). Aplikasi akan **memaksa penggantian password pada login pertama**.
 
-> Password bawaan sengaja dibuat sepele dan **wajib tetap `1234`**. Repositori ini publik, jadi tidak boleh ada password sungguhan di dalamnya.
+> Password awal seeder sengaja sepele. Repositori ini publik, jadi tidak boleh ada password sungguhan di dalamnya.
 
 ## Testing
 

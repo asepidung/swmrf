@@ -220,7 +220,7 @@ Sedang dimigrasikan dari sistem PHP prosedural ke Laravel 12 + Filament v3 denga
 **Konsekuensinya: merge saja tidak membuat perubahan sampai ke server.** Setelah merge, deploy manual lewat SSH:
 
 ```
-cd /home/u525862761/domains/coba.wijayameat.co.id/public_html
+cd <folder aplikasi di hosting coba>
 git pull origin main
 composer install --no-interaction --prefer-dist --optimize-autoloader
 php artisan migrate --force
@@ -759,7 +759,7 @@ Absennya perhitungan pajak di `InvoiceResource::updateTotals()` **bukan bug dan 
 
 ### Password bawaan wajib `1234`
 
-Repositori ini **publik**. Akun superuser `saepullrock` diseed dengan password `1234` justru karena sepele: middleware `CheckPasswordChange` mendeteksinya dan memaksa penggantian pada login pertama, sebelum pengguna sempat membuka menu apa pun.
+Repositori ini **publik**. Akun superuser (programmer) diseed dengan password `1234` justru karena sepele: middleware `CheckPasswordChange` mendeteksinya dan memaksa penggantian pada login pertama, sebelum pengguna sempat membuka menu apa pun.
 
 Sebelumnya seeder memakai password sungguhan yang juga tertulis di `project.md`. Password itu **sudah permanen di riwayat git** dan harus dianggap bocor.
 
@@ -1210,7 +1210,7 @@ DP menggantung sengaja **belum** dibuatkan layar (keputusan Owner, tidak mendesa
 
 Ditemukan 30 Agustus 2026 saat hendak mengirim `view_cash_book` ke server.
 
-`DatabaseSeeder` menyetel ulang password akun `saepullrock` menjadi `1234` **tanpa syarat** setiap kali dijalankan. Menjalankannya di server hidup akan melempar pemiliknya ke alur penggantian password.
+`DatabaseSeeder` menyetel ulang password akun superuser menjadi `1234` **tanpa syarat** setiap kali dijalankan. Menjalankannya di server hidup akan melempar pemiliknya ke alur penggantian password.
 
 Karena deploy sudah menjalankan `migrate --force`, permission baru dikirim lewat migrasi kecil ber-`updateOrInsert` (aman diulang, didukung MySQL maupun SQLite). Tetap didaftarkan juga di `DatabaseSeeder` untuk lingkungan yang dibangun dari nol.
 
@@ -5568,7 +5568,7 @@ Dicek langsung: `PriceListInvitation::offerFor()` cuma menampilkan tombol
 bila `auth()->user()->hasPermission('create_price_lists')` -- sengaja,
 supaya tidak menawarkan pintu yang terkunci. Akun `coba` di hosting
 (role `employee`) memang TIDAK punya izin ini (dicek langsung lewat SSH:
-`coba -> create_price_lists: TIDAK`), sementara `saepullrock`
+`coba -> create_price_lists: TIDAK`), sementara akun superuser
 (programmer) punya. Notifikasinya sendiri tetap tampil untuk akun `coba`
 -- yang hilang cuma tombolnya, persis seperti yang dirancang. Kode ini
 benar, tidak diubah.
@@ -7826,11 +7826,11 @@ Laporan: "request material dibuat tapi tidak ada notifikasi ke Ayah" di VPS. Dip
 
 **Penyempurnaan (19 Oktober 2026, setelah dicoba di HP Ayah):** ikon pembayaran jadi SATU koin besar dengan "Rp" besar (versi tumpukan koin terlalu kecil untuk dibaca di ukuran notifikasi). Judul notifikasi Indonesia diringkas dan kata kuncinya dipindah ke depan, karena tampilan ringkas HyperOS memotong judul sekitar 8-12 huruf dan kata awal "Request" tidak memberi tahu apa-apa: "Material baru", "Setujui material", "Material disetujui/ditolak/dikembalikan/diajukan ulang", "Beef baru", "Setujui beef", "Beef disetujui/ditolak/dikembalikan/diajukan ulang", "Sales Order baru", "GR belum dikunci", "QC perlu laporan", "Costing siap" (hanya terjemahan di `lang/id.json`; judul Inggris tetap). Pedoman untuk judul baru: objek dulu, singkat, kurang dari sekitar 16 huruf.
 
-## Akun programmer (saepullrock) tertutup di dalam aplikasi, 19 Oktober 2026
+## Akun programmer (superuser) tertutup di dalam aplikasi, 19 Oktober 2026
 Keputusan Owner: keuangan baru boleh masuk sistem bila akun ini tertutup, bahkan bagi IT. Sebelumnya hanya daftar pengguna yang menyembunyikannya; Riwayat Aktivitas masih bisa dibaca pemegang `view_activity_logs` (di produksi: 21 aktivitas oleh saepullrock dan 2 tentang akunnya terbaca Rafi dan Santi). Kini `App\Models\Scopes\HideProgrammerAccounts` (global scope pada `User`) membuat akun role programmer tidak terbaca oleh siapa pun KECUALI pemiliknya sendiri, di semua tempat pengguna dibaca lewat aplikasi (daftar, pilihan formulir, filter, relasi pembuat/pengunci/penyetuju, cetakan: nama tampil kosong atau "-"). `ActivityLogResource::getEloquentQuery()` menyaring riwayat yang DILAKUKAN akun itu dan yang DILAKUKAN TERHADAP akunnya (`HideProgrammerAccounts::hiddenIds()`). Aturan TIDAK berlaku tanpa pengguna yang sedang masuk (login, artisan, antrean; memakai `Auth::hasUser()` agar tidak rekursi). Yang harus tetap melihat programmer memakai `User::withoutGlobalScope(HideProgrammerAccounts::class)`: `TaskNotifier::permissionHolders()` (programmer tetap penerima notifikasi). Kode baru yang menampilkan nama pengguna wajib null-safe (`?->name`, `?? '-'`) karena relasi pembuat bisa kosong. Batas: ini penutup lapisan aplikasi; akses langsung ke server/basis data (SSH, root, phpMyAdmin) tetap bisa membaca tabelnya -- jaminan di tingkat itu butuh kebijakan akses server. Dokumen yang dibuat programmer tetap ada sebagai data bisnis; hanya nama pembuatnya tidak terbaca orang lain.
 
 ## Pengecualian migrate:fresh dan db:seed di coba., 19 Oktober 2026
-Larangan menjalankan `migrate:fresh`, `migrate:refresh`, `db:wipe`, dan `db:seed` TETAP BERLAKU untuk `app.wijayameat.co.id` (VPS produksi) dan untuk lokal. Pengecualian HANYA untuk `coba.wijayameat.co.id` (database `u525862761_swmapp`), atas perintah Ayah langsung di sesi ini: coba. dikosongkan untuk latihan import (gladi resik VPS 31 Okt - 1 Nov), tanpa cadangan. Sudah dijalankan: `migrate:fresh --force` lalu `db:seed --force`. Hasil: hanya akun saepullrock (programmer, sandi bawaan seeder, diganti saat masuk pertama), 243 izin, gudang JONGGOL dan PERUM, 5 grade, 1 akun kas; pelanggan, produk, supplier, boning, costing = 0. Sebelumnya berisi data uji (2 pengguna, 1 pelanggan, 14 produk, 3 boning, 3 costing). Latihan import per tabel dicatat di `.agents/import-legacy.md`.
+Larangan menjalankan `migrate:fresh`, `migrate:refresh`, `db:wipe`, dan `db:seed` TETAP BERLAKU untuk `app.wijayameat.co.id` (VPS produksi) dan untuk lokal. Pengecualian HANYA untuk `coba.wijayameat.co.id` (basis data coba), atas perintah Ayah langsung di sesi ini: coba. dikosongkan untuk latihan import (gladi resik VPS 31 Okt - 1 Nov), tanpa cadangan. Sudah dijalankan: `migrate:fresh --force` lalu `db:seed --force`. Hasil: hanya akun superuser (programmer, sandi bawaan seeder, diganti saat masuk pertama), 243 izin, gudang JONGGOL dan PERUM, 5 grade, 1 akun kas; pelanggan, produk, supplier, boning, costing = 0. Sebelumnya berisi data uji (2 pengguna, 1 pelanggan, 14 produk, 3 boning, 3 costing). Latihan import per tabel dicatat di `.agents/import-legacy.md`.
 
 ## Peringatan nama "mirip" di semua formulir master data, 19 Oktober 2026
 Keputusan Ayah: nama master data yang persis sama sudah ditolak (aturan unik formulir + indeks database), tetapi nama yang hanya beda spasi, tanda baca, atau huruf besar/kecil ("CV. X" vs "CV.X", "ABUBA - CIPETE" vs "ABUBA -CIPETE") lolos dan menjadi data kembar. Kini kolom nama menampilkan PERINGATAN (kuning, tidak memblokir) saat selesai diisi: "Mirip dengan data yang sudah ada: ...". `App\Support\LooseName` memegang aturannya (huruf dan angka saja, huruf besar); makro `TextInput::warnIfSimilar(Model::class)` (didaftarkan di `AppServiceProvider`) dipasang di 13 formulir master data (Customer, CustomerGroup, CustomerSegment, Supplier, Product, ProductCategory, Material, MaterialCategory, MaterialUnit, CattleClass, Grade, Warehouse, ExpenseCategory) dan di formulir tambah cepat (`QuickCreate`: unit/kategori material, kategori produk, kelas sapi, segmen, grup, driver). Rekaman yang sedang diedit tidak dihitung. Master data BARU yang punya kolom nama wajib memasangnya; `SimilarNameWarningTest` memeriksa daftarnya.

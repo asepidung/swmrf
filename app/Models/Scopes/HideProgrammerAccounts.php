@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Scope;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Akun programmer (mis. saepullrock) TIDAK terlihat oleh siapa pun di dalam aplikasi, kecuali pemiliknya sendiri
+ * Akun programmer  TIDAK terlihat oleh siapa pun di dalam aplikasi, kecuali pemiliknya sendiri
  * (keputusan Owner, 19 Oktober 2026: keuangan baru boleh masuk sistem bila akun ini tertutup, bahkan bagi IT).
  *
  * Satu aturan pada model User, jadi berlaku di mana pun pengguna dibaca lewat aplikasi: daftar pengguna, pilihan
